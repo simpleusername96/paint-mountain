@@ -19,6 +19,7 @@ func _run_checks() -> void:
 	_assert_true(paint_system.total_eligible_pixels() > 0, "eligible mask must contain countable terrain")
 	_assert_true(paint_system.paint_texture().get_width() == 512, "paint mask must remain 512 pixels wide")
 	_assert_true(paint_system.recent_texture().get_width() == 512, "recent-stamp debug view must match mask resolution")
+	_assert_true(paint_system.excluded_texture().get_width() == 512, "excluded-mask debug view must match mask resolution")
 	_assert_true(material.get_shader_parameter(&"paint_mask") == paint_system.paint_texture(), "terrain shader must use the authoritative mask texture")
 
 	var summit := Vector3(0.0, -2.0 + TerrainMeshFactory.height_at(0, 0.0, 0.0), -112.0)

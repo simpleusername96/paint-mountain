@@ -108,3 +108,9 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - The complete observable checklist is `test-checklist.md`.
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
 - The final evidence includes seven separate full-resolution, debug-free screenshots with the exact required names.
+
+## Implemented Vertical Slice
+
+As verified on 2026-08-02 with Godot 4.7.1, the repository implements the complete scoped experience: exactly three StageData-backed stages, the stationary planning cannon, finite-payload rigid bodies, one authoritative 512×512 paint mask, Burst/Splitter/Bumper mechanisms, progression and settings persistence, deterministic input replay, all specified screens, generated audio, pooled effects, debug tools, and the in-process agent interface.
+
+The Windows release export started successfully and produced the seven required 1920×1080 screenshots. The final measured Burst workload loaded in 355.46 ms and averaged 59.84 FPS at 1920×1080 on Intel Iris Xe graphics, with a 50.83 ms worst measured frame and 62.80 MiB static memory. Detailed evidence and remaining limitations are recorded in `test-checklist.md` and `.agents/Documentation.md`.

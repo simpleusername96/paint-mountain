@@ -13,7 +13,7 @@ related:
 
 ## Context
 
-The repository was created from a complete vertical-slice brief. The current milestone includes the verified projectile, authoritative paint, gameplay loop, cameras, HUD, exactly three mechanisms, three tuned stages, progression/save foundations, replay, and the UI-independent agent interface.
+The repository was created from a complete vertical-slice brief. The delivered milestone includes the verified projectile and preview, authoritative paint, gameplay loop, cameras, HUD, exactly three mechanisms, three tuned stages, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release screenshots.
 
 ## Decision
 
@@ -28,6 +28,9 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Split children are redirected toward the visible downhill face and disperse divided payload over wider lanes. This gives Split Ridge a difficult, high-value route while retaining the one-generation and eight-projectile limits.
 - `AppRoot` owns navigation among separate main-menu, stage-select, settings, and active-gameplay interfaces. Gameplay emits narrow navigation signals instead of knowing the application shell.
 - Presentation uses dependency-free low-poly dressing, a subtle unshaded terrain treatment, an eight-emitter paint-particle pool, bounded camera shake, and runtime-generated PCM music/SFX routed through Master/Music/SFX buses.
+- `DebugOverlay` is debug-build-only and derives four mask views plus metrics/actions from runtime owners; it exports ReplayRecorder-backed JSON rather than maintaining parallel gameplay state.
+- `DeliveryCaptureRunner` deterministically reproduces the seven evidence states only when explicit command-line arguments are present. `export_presets.cfg` owns the Windows Desktop release path.
+- `PaintSystem` keeps paint, eligible, recent, and derived excluded masks in byte buffers; threshold crossings update coverage incrementally and each dirty batch uploads once. This removed the measured Burst-frame stall without adding a second coverage authority.
 - Product behavior, technical ownership, planned work, and implemented status are stored separately to avoid treating plans as working features.
 
 ## Rationale
@@ -39,7 +42,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 ## Consequences
 
 - The bootstrap and projectile sandbox remain isolated validation scenes; the StageData-selected gameplay scene is the project entry.
-- Main menu, stage select, briefing, aiming/observation, result, pause, full settings, all three mechanisms, progression, persistence foundations, replay, agent actions, generated audio, pooled particles, and restrained camera feedback run and have focused checks. Release debug tooling, export, performance evidence, and the required final screenshots remain.
+- The complete menu-to-stage-to-result flow, all three stages and mechanisms, persistence/replay, agent actions, debug tooling, presentation, export, performance evidence, and seven release screenshots run and have focused checks.
 - Future feature completion claims must cite running-game checks and update this record.
 
 ## Current Status
@@ -52,22 +55,22 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 5 Burst, Splitter, and Bumper: complete.
 - Phase 6 three-stage content, progression/save, replay, and agent API: complete.
 - Phase 7 application UI and presentation: complete.
-- Phase 8: not started.
+- Phase 8 debugging, delivery, and final QA: complete.
 
 ## Known Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
 - Final targets and recorded solutions are physically validated at 4%, 27%, and 70%; wider playtesting may still reveal alternative balance preferences.
-- The Phase 2 deterministic check measured 0.12567 m between repeated first-contact positions at an accelerated 2× test rate. A full replay coverage-tolerance run remains a Phase 8 delivery check.
-- The current low-poly material has strong facet contrast and still needs Phase 7 art cleanup; functional Phase 4 captures passed layout and composition but are not final delivery screenshots.
-- Mechanism audio/particles are intentionally deferred to the Phase 7 presentation batch; Phase 5 provides distinct silhouettes and spent transparency only.
+- Fresh-process replay is exact on the current Godot 4.7.1/Windows test machine, but engine or platform changes should rerun the documented tolerance probe.
+- The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
+- Dependency-free procedural art/audio meet the scoped presentation contract but are not a substitute for a later production content pass.
 
 ## Verification
 
 - Run: `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath <path-to-Godot-console.exe>`
 - Phase 2 pure check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase2_test.gd`
 - Phase 2 rigid-body check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase2_physics_test.gd`
-- Observed 2026-08-02: import/runtime smoke passed; 31 deterministic ballistic samples matched exactly; two repeated rigid-body shots physically impacted, settled, and differed by 0.12567 m at first contact.
+- Observed 2026-08-02 after final preview validation: 31 deterministic ballistic samples matched exactly; two repeated rigid-body shots physically impacted and settled within 0.01632 m in the final batch (0.25 m tolerance), while the radius-aware preview was within 1.62103 m of the physical first impact.
 - Phase 3 mask check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase3_paint_test.gd`
 - Phase 3 integration check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase3_projectile_paint_test.gd`
 - Observed 2026-08-02 after stage tuning: overlap remained 0.3802%; bounded flow increased a 0.015406% direct stamp to 0.043754%; one physical shot emitted 57 finite requests, accepted 8 terrain-aligned deposits, and produced 1.3274% authoritative coverage.
@@ -78,8 +81,15 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Observed 2026-08-02 after content tuning: physical Burst collision added 24.0171% and spent one charge; Splitter produced three generation-one children totaling 468/520 payload; Bumper redirected one retained projectile; reset, duplicate, recursion, and eight-ball guards passed.
 - Phase 6 content check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase6_content_test.gd`
 - Phase 6 solution check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase6_solution_test.gd -- --stage=<stage_id>`
-- Observed 2026-08-02: the catalog loaded exactly three stages; atomic save fallback, unlock updates, two-shot replay serialization/control, and UI-independent agent actions passed. End-to-end replay coverage tolerance remains a Phase 8 check. Recorded physical clears reached 4.149% for First Descent, 27.310% for Burst Basin with Burst activation, and 77.921% for Split Ridge after both Bumper and Splitter activation.
+- Observed 2026-08-02: the catalog loaded exactly three stages; atomic save fallback, unlock updates, two-shot replay serialization/control, and UI-independent agent actions passed. Final byte-mask physical clears reached 4.128% for First Descent, 27.306% for Burst Basin with Burst activation, and 76.796% for Split Ridge after both Bumper and Splitter activation.
 - Phase 7 UI check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase7_ui_test.gd`
 - Observed 2026-08-02: menu, stage select, settings return paths, gameplay briefing, pause, clear result, and gameplay cleanup passed through the real app shell. Rendered captures at 1280×720, 1600×900, and fullscreen 1920×1080 showed no panel clipping; the bright faceted mountain, foreground cannon, trajectory, markers, buttons, and hierarchy remained legible.
 - Observed 2026-08-02: the post-presentation regression batch passed Phase 2–7 checks and all three physical solutions without recurring headless errors; Phase 4 restart measured 1.080 ms under the concurrent batch.
+- Phase 8 debug check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase8_debug_test.gd`
+- Observed 2026-08-02: the overlay was hidden by default, exposed every specified live metric, four mask views, and ten actions in debug builds, and exported a complete stage/seed/aim/gain/mechanism/outcome JSON log.
+- Phase 8 fresh-process persistence: run `phase8_persistence_test.gd` in `write`, `read`, then `cleanup` modes. Three unlocks, Split Ridge 77.921%/one star, master volume 0.43, and high quality survived the second process.
+- Phase 8 fresh-process replay: run `phase8_replay_process_test.gd` in `record`, `replay`, then `cleanup` modes. The replay reproduced first impact with 0.00000 m delta and coverage with 0.00000 percentage-point delta.
+- Phase 8 reliability: `phase8_reliability_test.gd` passed 30 fire/restart/out-of-bounds cycles with no projectile nodes, verified empty-payload and lifetime paths, and measured a 1.589 ms slowest restart in the final batch. The Phase 5 test separately retained the one-generation/eight-ball split limits and briefing selection intent.
+- Phase 8 performance: fullscreen 1920×1080 Compatibility rendering on Intel Iris Xe loaded Burst Basin in 355.46 ms and averaged 59.84 FPS over 360 frames; the worst frame was 50.83 ms, static memory was 62.80 MiB, and active balls stayed bounded.
+- Phase 8 production check: the `Windows Desktop` release preset built `builds/windows/PaintMountain.exe`, the executable started successfully, and it generated seven separately inspected 1920×1080 PNGs under `screenshots/` with no debug overlay.
 - Documentation-only fallback: `git diff --check`

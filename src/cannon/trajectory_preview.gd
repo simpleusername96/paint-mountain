@@ -1,8 +1,8 @@
 class_name TrajectoryPreview
 extends Node3D
 
-const SAMPLE_STEP_SECONDS := 0.12
-const MAXIMUM_PREVIEW_SECONDS := 4.8
+const SAMPLE_STEP_SECONDS := 0.18
+const MAXIMUM_PREVIEW_SECONDS := 7.2
 const MAXIMUM_DOTS := 40
 
 @export_flags_3d_physics var collision_mask: int = 1
@@ -12,6 +12,7 @@ var has_first_collision: bool = false
 var _cannon: CannonController
 var _dots: Array[MeshInstance3D] = []
 var _impact_marker: MeshInstance3D
+var _projectile_shape: SphereShape3D
 
 
 func _ready() -> void:
@@ -20,9 +21,19 @@ func _ready() -> void:
 
 func configure(cannon: CannonController) -> void:
 	_cannon = cannon
+	_projectile_shape = SphereShape3D.new()
+	_projectile_shape.radius = _cannon.projectile_data.radius
 	if not _cannon.aim_changed.is_connected(_on_aim_changed):
 		_cannon.aim_changed.connect(_on_aim_changed)
 	call_deferred("refresh")
+
+
+func visible_sample_count() -> int:
+	var result := 0
+	for dot in _dots:
+		if dot.visible:
+			result += 1
+	return result
 
 
 func refresh() -> void:
@@ -34,7 +45,8 @@ func refresh() -> void:
 		_cannon.get_launch_velocity(),
 		gravity,
 		SAMPLE_STEP_SECONDS,
-		MAXIMUM_PREVIEW_SECONDS
+		MAXIMUM_PREVIEW_SECONDS,
+		_cannon.projectile_data.linear_damp + float(ProjectSettings.get_setting("physics/3d/default_linear_damp", 0.1))
 	)
 	var visible_count := 0
 	has_first_collision = false
@@ -42,12 +54,16 @@ func refresh() -> void:
 	for sample_index in range(1, samples.size()):
 		var previous := samples[sample_index - 1]
 		var current := samples[sample_index]
-		var query := PhysicsRayQueryParameters3D.create(previous, current, collision_mask)
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = _projectile_shape
+		query.transform = Transform3D(Basis.IDENTITY, previous)
+		query.motion = current - previous
+		query.collision_mask = collision_mask
 		query.collide_with_areas = true
-		var collision := space_state.intersect_ray(query)
+		var collision := space_state.cast_motion(query)
 		var display_position := current
-		if not collision.is_empty():
-			display_position = collision.position
+		if not collision.is_empty() and collision[0] < 1.0:
+			display_position = previous + query.motion * float(collision[0])
 			first_collision_position = display_position
 			has_first_collision = true
 		_set_dot(visible_count, display_position)

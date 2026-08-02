@@ -33,27 +33,27 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 ### Gameplay loop
 
-- [ ] Main menu and stage select start all three stages.
-- [ ] Briefing camera supports constrained terrain inspection and mechanism selection.
+- [x] Main menu and stage select start all three stages.
+- [x] Briefing camera supports constrained terrain inspection and mechanism selection.
 - [x] Cannon yaw, elevation, and power input work; firing consumes exactly one shot.
-- [ ] Initial trajectory and first-hit preview closely match actual unchanged launch physics.
+- [x] Initial trajectory and first-hit preview closely match actual unchanged launch physics.
 - [x] High-speed projectile collision uses CCD and does not tunnel through the terrain.
-- [ ] Ball bounces, rolls, slides, deposits paint, and terminates by every configured condition.
+- [x] Ball bounces, rolls, slides, deposits paint, and terminates by every configured condition.
 - [x] Firing remains disabled until all parent/child projectiles and paint flow settle.
 - [x] Shot coverage gain appears before returning to aim, clear, or failure.
 - [x] Coverage at/above target clears; exhausted shots below target fail.
-- [ ] Retry, next stage, stage select, and replay execute from the correct result states.
+- [x] Retry, next stage, stage select, and replay execute from the correct result states.
 - [x] Confirmed restart reaches a clean playable state in under one second.
 
 ### Paint and coverage
 
 - [x] Terrain visuals and coverage use the same runtime paint mask.
-- [ ] Eligible mask excludes platform, background, underside, mechanisms, decorations, and bounds.
+- [x] Eligible mask excludes platform, background, underside, mechanisms, decorations, and bounds.
 - [x] Overlapping stamps never double-count coverage.
-- [ ] Impact splash, motion trail, payload width reduction, downhill rivulet, and final puddle are finite and readable.
-- [ ] Empty-payload projectiles stop contributing paint and deactivate correctly.
+- [x] Impact splash, motion trail, payload width reduction, downhill rivulet, and final puddle are finite and readable.
+- [x] Empty-payload projectiles stop contributing paint and deactivate correctly.
 - [x] Coverage updates several times per second without full-mask per-frame readback.
-- [ ] Debug views accurately show eligible, painted, excluded, recent stamps, and numeric coverage.
+- [x] Debug views accurately show eligible, painted, excluded, recent stamps, and numeric coverage.
 
 ### Mechanisms
 
@@ -87,32 +87,41 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 ### Save, replay, agent API, and debug
 
-- [ ] Unlocks, best coverage, best stars, and settings survive a normal process restart.
+- [x] Unlocks, best coverage, best stars, and settings survive a normal process restart.
 - [x] Invalid save data falls back safely without blocking play.
-- [ ] Replay stores stage/version/seed and ordered aim inputs and reproduces the attempt within defined tolerance.
+- [x] Replay stores stage/version/seed and ordered aim inputs and reproduces the attempt within defined tolerance.
 - [x] Replay supports play, pause, restart, 1×, and 2×.
 - [x] In-process observation/action/event API operates without mouse input or screen reading.
-- [ ] Debug overlay contains every specified metric and action and is disabled by default in release.
-- [ ] Shot-result log export contains stage, seed, aim, gains, activations, and settlement outcome.
+- [x] Debug overlay contains every specified metric and action and is disabled by default in release.
+- [x] Shot-result log export contains stage, seed, aim, gains, activations, and settlement outcome.
 
 ### Reliability and performance
 
-- [ ] Repeated identical shots on an unchanged stage stay within the documented trajectory and coverage tolerance.
-- [ ] Repeated restart/out-of-bounds/split-limit tests leave no orphan projectiles or timers.
-- [ ] Large paint and Burst events cause no major frame-rate collapse or unbounded allocation.
-- [ ] Stage loads preferably under three seconds and gameplay sustains 60 FPS at 1920×1080 on the test machine; measured results are recorded.
-- [ ] Normal play produces no recurring console errors.
-- [ ] Windows export builds and starts through its documented production entry path.
+- [x] Repeated identical shots on an unchanged stage stay within the documented trajectory and coverage tolerance.
+- [x] Repeated restart/out-of-bounds/split-limit tests leave no orphan projectiles or timers.
+- [x] Large paint and Burst events cause no major frame-rate collapse or unbounded allocation.
+- [x] Stage loads preferably under three seconds and gameplay sustains 60 FPS at 1920×1080 on the test machine; measured results are recorded.
+- [x] Normal play produces no recurring console errors.
+- [x] Windows export builds and starts through its documented production entry path.
 
 ### Deliverables
 
-- [ ] README reports the final engine version, launch, controls, structure, and known limitations.
-- [ ] Design specification, technical architecture, test results, performance observations, remaining issues, next step, and changed-file summary are current.
-- [ ] `01_main_menu.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `02_stage_select.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `03_stage_briefing.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `04_aiming.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `05_projectile_and_paint_flow.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `06_stage_clear.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
-- [ ] Screenshots are not a collage, contact sheet, poster, or infographic.
+- [x] README reports the final engine version, launch, controls, structure, and known limitations.
+- [x] Design specification, technical architecture, test results, performance observations, remaining issues, next step, and changed-file summary are current.
+- [x] `01_main_menu.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `02_stage_select.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `03_stage_briefing.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `04_aiming.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `05_projectile_and_paint_flow.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `06_stage_clear.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
+- [x] Screenshots are not a collage, contact sheet, poster, or infographic.
+
+## Observed Final Evidence
+
+- Godot 4.7.1 import and main-scene smoke passed through `scripts/verify.ps1`.
+- Identical rigid-body shots stayed within 0.25 m at first impact; the shape-cast preview stayed within 1.622 m. Fresh-process replay reproduced first impact and coverage with measured deltas of 0.00000 m and 0.00000 percentage points.
+- Fresh-process persistence preserved three unlocks, Split Ridge best coverage/stars, master volume, and quality.
+- Thirty repeated fire/restart/out-of-bounds cycles left zero projectile nodes; the slowest final-batch restart was 1.589 ms. Split recursion and the eight-ball limit passed separately.
+- At fullscreen 1920×1080 on Intel Iris Xe Compatibility rendering, Burst Basin loaded in 355.46 ms and a 360-frame Burst workload averaged 59.84 FPS, with a 50.83 ms worst frame, 62.80 MiB static memory, and no allocation growth beyond the eight-ball cap.
+- The Windows Desktop release export built and started. Its running executable generated the seven separate images under `screenshots/`; every image was verified as exactly 1920×1080 and visually inspected without the debug overlay.

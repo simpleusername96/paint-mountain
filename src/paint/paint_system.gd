@@ -15,15 +15,21 @@ var _terrain_origin_y: float = -2.0
 var _paint_image: Image
 var _eligible_image: Image
 var _recent_image: Image
+var _excluded_image: Image
+var _paint_bytes: PackedByteArray
+var _eligible_bytes: PackedByteArray
+var _recent_bytes: PackedByteArray
 var _paint_texture: ImageTexture
 var _eligible_texture: ImageTexture
 var _recent_texture: ImageTexture
+var _excluded_texture: ImageTexture
 var _terrain_material: ShaderMaterial
 var _pending_stamps: Array[Dictionary] = []
 var _painted_eligible_pixels: int = 0
 var _total_eligible_pixels: int = 0
 var _dirty: bool = false
 var _coverage_publish_elapsed: float = 0.0
+var flow_simulation_enabled: bool = true
 
 
 func configure(
@@ -73,28 +79,32 @@ func flush_pending() -> void:
 		return
 	var stamps := _pending_stamps
 	_pending_stamps = []
-	_recent_image.fill(Color.BLACK)
+	_recent_bytes.fill(0)
 	for stamp in stamps:
 		if not _is_near_terrain(stamp.position):
 			continue
 		_apply_circle(stamp.position, stamp.radius, stamp.amount)
 		_apply_recent_circle(stamp.position, stamp.radius)
 		paint_deposited.emit(stamp.kind, stamp.position, stamp.radius)
-		if stamp.flow:
+		if stamp.flow and flow_simulation_enabled:
 			var flow_steps := 28 if stamp.kind == &"burst" else (18 if stamp.kind == &"impact" else 10)
 			_apply_downhill_flow(stamp.position, stamp.radius * 0.42, stamp.amount * 0.36, flow_steps)
 	if _dirty:
+		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 		_paint_texture.update(_paint_image)
 		_dirty = false
 		coverage_changed.emit(coverage_percent())
+	_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 	_recent_texture.update(_recent_image)
 	flow_settled.emit()
 
 
 func clear() -> void:
 	_pending_stamps.clear()
-	_paint_image.fill(Color.BLACK)
-	_recent_image.fill(Color.BLACK)
+	_paint_bytes.fill(0)
+	_recent_bytes.fill(0)
+	_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
+	_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 	_painted_eligible_pixels = 0
 	_dirty = false
 	_paint_texture.update(_paint_image)
@@ -121,6 +131,10 @@ func recent_texture() -> ImageTexture:
 	return _recent_texture
 
 
+func excluded_texture() -> ImageTexture:
+	return _excluded_texture
+
+
 func pending_work_count() -> int:
 	return _pending_stamps.size()
 
@@ -130,17 +144,18 @@ func total_eligible_pixels() -> int:
 
 
 func _create_masks() -> void:
-	var paint_bytes := PackedByteArray()
-	paint_bytes.resize(MASK_SIZE * MASK_SIZE)
-	paint_bytes.fill(0)
-	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, paint_bytes)
-	_recent_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, paint_bytes.duplicate())
+	_paint_bytes = PackedByteArray()
+	_paint_bytes.resize(MASK_SIZE * MASK_SIZE)
+	_paint_bytes.fill(0)
+	_recent_bytes = _paint_bytes.duplicate()
+	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
+	_recent_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 
 	# The terrain owns the full X/Z rectangle; a narrow inset excludes stage bounds.
 	const INSET := 14
-	var eligible_bytes := PackedByteArray()
-	eligible_bytes.resize(MASK_SIZE * MASK_SIZE)
-	eligible_bytes.fill(0)
+	_eligible_bytes = PackedByteArray()
+	_eligible_bytes.resize(MASK_SIZE * MASK_SIZE)
+	_eligible_bytes.fill(0)
 	_total_eligible_pixels = 0
 	for y in range(MASK_SIZE):
 		if y < INSET or y >= MASK_SIZE - INSET:
@@ -161,12 +176,18 @@ func _create_masks() -> void:
 				_:
 					eligible = pow(normalized_x / 0.86, 2.0) + pow(normalized_y / 0.92, 2.0) <= 1.0
 			if eligible:
-				eligible_bytes[row_start + x] = 255
+				_eligible_bytes[row_start + x] = 255
 				_total_eligible_pixels += 1
-	_eligible_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, eligible_bytes)
+	_eligible_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _eligible_bytes)
+	var excluded_bytes := PackedByteArray()
+	excluded_bytes.resize(MASK_SIZE * MASK_SIZE)
+	for index in range(_eligible_bytes.size()):
+		excluded_bytes[index] = 0 if _eligible_bytes[index] >= 128 else 255
+	_excluded_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, excluded_bytes)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
 	_eligible_texture = ImageTexture.create_from_image(_eligible_image)
 	_recent_texture = ImageTexture.create_from_image(_recent_image)
+	_excluded_texture = ImageTexture.create_from_image(_excluded_image)
 	_painted_eligible_pixels = 0
 
 
@@ -186,14 +207,15 @@ func _apply_circle(world_position: Vector3, world_radius: float, amount: float) 
 			var squared_distance := dx * dx + dy * dy
 			if squared_distance > 1.0:
 				continue
-			var existing := _paint_image.get_pixel(pixel_x, pixel_y).r
+			var pixel_index := pixel_y * MASK_SIZE + pixel_x
+			var existing := float(_paint_bytes[pixel_index]) / 255.0
 			var deposited := normalized_amount * (1.0 - squared_distance * 0.7)
 			var updated := maxf(existing, deposited)
-			var is_eligible := _eligible_image.get_pixel(pixel_x, pixel_y).r >= 0.5
+			var is_eligible := _eligible_bytes[pixel_index] >= 128
 			if is_eligible and existing < PAINTED_THRESHOLD and updated >= PAINTED_THRESHOLD:
 				_painted_eligible_pixels += 1
 			if updated > existing + 0.001:
-				_paint_image.set_pixel(pixel_x, pixel_y, Color(updated, updated, updated, 1.0))
+				_paint_bytes[pixel_index] = roundi(updated * 255.0)
 				_dirty = true
 
 
@@ -210,7 +232,7 @@ func _apply_recent_circle(world_position: Vector3, world_radius: float) -> void:
 			var dx := (float(pixel_x) + 0.5 - center.x) / radius_x
 			var dy := (float(pixel_y) + 0.5 - center.y) / radius_y
 			if dx * dx + dy * dy <= 1.0:
-				_recent_image.set_pixel(pixel_x, pixel_y, Color.WHITE)
+				_recent_bytes[pixel_y * MASK_SIZE + pixel_x] = 255
 
 
 func _apply_downhill_flow(world_position: Vector3, radius: float, amount: float, maximum_steps: int) -> void:

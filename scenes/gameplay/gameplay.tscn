@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://src/agent/gameplay_agent_api.gd" id="11_agent"]
 [ext_resource type="Script" path="res://src/effects/presentation_effects.gd" id="12_effects"]
 [ext_resource type="Script" path="res://src/terrain/environment_dressing.gd" id="13_dressing"]
+[ext_resource type="Script" path="res://src/debug/debug_overlay.gd" id="14_debug"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.63, 0.75, 0.88, 1)
@@ -147,3 +148,7 @@ script = ExtResource("12_effects")
 [node name="HUD" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
 script = ExtResource("9_hud")
+
+[node name="DebugOverlay" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("14_debug")

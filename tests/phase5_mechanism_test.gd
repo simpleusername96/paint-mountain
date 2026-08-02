@@ -32,6 +32,13 @@ func _run_checks() -> void:
 	burst.position = Vector3(0.0, summit_y + 0.8, -112.0)
 	burst.configure(manager, paint_system)
 	test_root.add_child(burst)
+	var selected := {"count": 0}
+	burst.mechanism_selected.connect(func(_mechanism: GimmickBase) -> void: selected.count += 1)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	burst._on_input_event(null, click, burst.position, Vector3.UP, 0)
+	_assert_true(selected.count == 1, "briefing mechanism hit areas must emit physical selection intent")
 	var burst_projectile := manager.spawn_projectile(PROJECTILE_DATA, burst.position, Vector3.ZERO)
 	_assert_true(burst.activate(burst_projectile), "charged Burst must accept its first physical projectile")
 	var burst_coverage := paint_system.coverage_percent()

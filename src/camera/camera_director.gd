@@ -86,6 +86,15 @@ func mode_name() -> String:
 	return Mode.keys()[current_mode]
 
 
+func focus_briefing_target(world_position: Vector3) -> bool:
+	if current_mode != Mode.BRIEFING or _camera == null or _stage_data == null:
+		return false
+	var view_direction := (_stage_data.briefing_camera_position - _stage_data.briefing_camera_target).normalized()
+	var desired_position := world_position + view_direction * 42.0 + Vector3.UP * 6.0
+	_move_to(desired_position, world_position, false)
+	return true
+
+
 func _bookmark_for(mode: Mode) -> Array[Vector3]:
 	match mode:
 		Mode.BRIEFING:

@@ -11,3 +11,6 @@ Thumbs.db
 builds/
 reports/
 *.log
+
+# Delivery screenshots are evidence, not runtime texture assets.
+screenshots/*.png.import

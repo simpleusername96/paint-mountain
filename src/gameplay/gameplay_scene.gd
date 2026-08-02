@@ -20,6 +20,7 @@ signal navigation_requested(destination: StringName)
 @onready var _replay_recorder: ReplayRecorder = %ReplayRecorder
 @onready var _agent_api: GameplayAgentApi = %GameplayAgentApi
 @onready var _presentation_effects: PresentationEffects = %PresentationEffects
+@onready var _debug_overlay: DebugOverlay = %DebugOverlay
 
 var _shot_has_impacted: bool = false
 var _mechanisms: Array[GimmickBase] = []
@@ -48,6 +49,19 @@ func _ready() -> void:
 		_camera_director,
 		_mechanisms
 	)
+	_debug_overlay.configure(
+		stage_data,
+		_stage_controller,
+		_cannon,
+		_projectile_manager,
+		_paint_system,
+		_trajectory_preview,
+		_camera_director,
+		_mechanisms,
+		_replay_recorder
+	)
+	_debug_overlay.replay_last_shot_requested.connect(_start_last_shot_replay)
+	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
 
@@ -97,7 +111,7 @@ func _connect_systems() -> void:
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
 	_stage_controller.shot_fired.connect(_on_shot_fired)
-	_stage_controller.shot_result.connect(_hud.show_shot_result)
+	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.stage_cleared.connect(_on_stage_cleared)
 	_stage_controller.stage_failed.connect(_on_stage_failed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming())
@@ -139,6 +153,12 @@ func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float)
 	if not _replay_active:
 		_replay_recorder.record_shot(_number, _yaw, _elevation, _power)
 		_replay_recorder.record_event(&"shot_started", {"order": _number})
+
+
+func _on_shot_result(gain: float, total: float) -> void:
+	_hud.show_shot_result(gain, total)
+	if not _replay_active:
+		_replay_recorder.record_event(&"shot_settled", {"gain": gain, "total": total})
 
 
 func _on_state_changed(current_state: int, _previous_state: int) -> void:
@@ -235,7 +255,13 @@ func _spawn_mechanisms() -> void:
 		mechanism.configure(_projectile_manager, _paint_system)
 		_mechanism_root.add_child(mechanism)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
+		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)
+
+
+func _on_mechanism_selected(mechanism: GimmickBase) -> void:
+	if _stage_controller.current_state == StageController.State.BRIEFING:
+		_camera_director.focus_briefing_target(mechanism.global_position)
 
 
 func _on_mechanism_activated(
@@ -280,6 +306,19 @@ func _start_replay() -> void:
 	var saved_attempt := _replay_recorder.export_attempt()
 	if saved_attempt.get("shots", []).is_empty():
 		return
+	_stage_controller.restart(false)
+	if not _replay_recorder.load_attempt(saved_attempt):
+		return
+	_replay_active = true
+	_continue_replay.call_deferred()
+
+
+func _start_last_shot_replay() -> void:
+	var saved_attempt := _replay_recorder.export_attempt()
+	var shots: Array = saved_attempt.get("shots", [])
+	if shots.is_empty():
+		return
+	saved_attempt["shots"] = [shots.back()]
 	_stage_controller.restart(false)
 	if not _replay_recorder.load_attempt(saved_attempt):
 		return

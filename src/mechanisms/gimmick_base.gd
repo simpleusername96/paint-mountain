@@ -6,6 +6,7 @@ signal mechanism_activated(
 	projectile: PaintProjectile,
 	kind: MechanismData.Kind
 )
+signal mechanism_selected(mechanism: GimmickBase)
 
 @export var data: MechanismData
 
@@ -41,6 +42,7 @@ func _ready() -> void:
 	_label.visible = false
 	add_child(_label)
 	body_entered.connect(_on_body_entered)
+	input_event.connect(_on_input_event)
 	reset_state()
 
 
@@ -129,6 +131,17 @@ func _update_visual_state() -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if body is PaintProjectile:
 		activate(body)
+
+
+func _on_input_event(
+		_camera: Node,
+		event: InputEvent,
+		_event_position: Vector3,
+		_normal: Vector3,
+		_shape_index: int
+) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		mechanism_selected.emit(self)
 
 
 func _build_trigger() -> void:

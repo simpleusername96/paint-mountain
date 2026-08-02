@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-02
 scope: complete the Paint Mountain playable vertical slice after repository bootstrap
 related:
@@ -13,7 +13,7 @@ related:
 
 # Paint Mountain Vertical Slice Execution Plan
 
-The repository now launches the complete three-stage gameplay scene with progression, persistence foundations, replay, and an in-process agent API. The remaining presentation and delivery phases complete the application shell, final QA, export, and running-game evidence.
+The repository now launches the complete three-stage game with progression, persistence, replay, debug tooling, an in-process agent API, a verified Windows release export, and the required running-game evidence.
 
 ## Purpose
 
@@ -56,12 +56,12 @@ The repository now launches the complete three-stage gameplay scene with progres
 
 Already true:
 
-- A Git repository, agent environment, active specs, plan, README, verification script, and runnable 3D bootstrap scene exist.
-- The bootstrap view establishes a perspective camera, small foreground cannon proxy, and distant dominant mountain proxy.
+- All eight implementation phases, focused checks, production export/start, and seven exact screenshots are complete.
+- The bootstrap and sandbox remain isolated regression scenes while `scenes/app/app.tscn` is the production entry.
 
 Remaining implementation:
 
-- All gameplay, paint, mechanisms, content, menus, settings, saving, replay, debug tools, presentation, tuning, exports, screenshots, and acceptance evidence.
+- None within the scoped vertical slice. Future work is optional playtesting, balance iteration, signing/distribution, or production asset replacement.
 
 ## Scope
 
@@ -161,10 +161,10 @@ Guard: no fake storefront, dense simulator dashboard, oversized result obstructi
 
 ### Phase 8: Debugging, delivery, and final QA
 
-- [ ] Complete the release-disabled debug overlay/actions and shot-result log export.
-- [ ] Add automated smoke/state/mask/save/replay checks plus repeated manual restart, bounds, split-limit, solution, and result checks.
-- [ ] Create and run a Windows export preset, measure 1920×1080 performance, and fix recurring errors or frame collapse.
-- [ ] Capture the seven exact full-resolution screenshots from the running release configuration and finalize README/spec/architecture/checklist status.
+- [x] Complete the release-disabled debug overlay/actions and shot-result log export.
+- [x] Add automated smoke/state/mask/save/replay checks plus repeated manual restart, bounds, split-limit, solution, and result checks.
+- [x] Create and run a Windows export preset, measure 1920×1080 performance, and fix recurring errors or frame collapse.
+- [x] Capture the seven exact full-resolution screenshots from the running release configuration and finalize README/spec/architecture/checklist status.
 
 Acceptance: every item in `docs/test-checklist.md` has observed evidence and all required deliverables exist separately.
 
@@ -203,22 +203,22 @@ Final gates:
 - [x] Phase 3: paint system.
 - [x] Phase 4: stage loop, cameras, and HUD.
 - [x] Phase 5: mechanisms.
-- [ ] Phase 6: content, save, replay, and AI hook.
-- [ ] Phase 7: presentation.
-- [ ] Phase 8: delivery and final QA.
+- [x] Phase 6: content, save, replay, and AI hook.
+- [x] Phase 7: presentation.
+- [x] Phase 8: delivery and final QA.
 
 ## Next Steps
 
-1. Build the two remaining StageData resources and stage selection/loading path in Phase 6.
-2. Place Burst in Burst Basin and Splitter plus Bumper in Split Ridge without stage-specific controller rules.
-3. Add progression/save, deterministic attempt replay, the in-process agent API, and verified shot routes.
+1. Optional future work: broader playtesting and balance changes based on player evidence.
+2. Optional distribution work: code signing, installer packaging, and production asset replacement.
+3. Any engine/platform upgrade must rerun the documented performance and fresh-process replay tolerances.
 
 ## Completion Criteria
 
-- [ ] Every user-visible requirement in `docs/test-checklist.md` passes.
-- [ ] Every regression guard and final validation gate passes.
-- [ ] No placeholder, duplicate authority, unbounded simulation path, or unreported limitation remains.
-- [ ] `Documentation.md` and the user-facing deliverables describe observed current behavior.
+- [x] Every user-visible requirement in `docs/test-checklist.md` passes.
+- [x] Every regression guard and final validation gate passes.
+- [x] No placeholder, duplicate authority, unbounded simulation path, or unreported limitation remains.
+- [x] `Documentation.md` and the user-facing deliverables describe observed current behavior.
 
 ## Stop Conditions
 
@@ -233,7 +233,7 @@ Do not stop when: a safe in-scope implementation or verification path remains.
 ```text
 Goal: Complete the Paint Mountain playable vertical slice.
 Read first: AGENTS.md, .agents/Prompt.md, .agents/Documentation.md, .agents/Plan.md.
-Execute exactly: Start with the first unchecked phase and keep its acceptance/guard contract.
+Current state: All eight phases and the acceptance checklist are complete.
 Validate with: scripts/verify.ps1 plus the subsystem and manual gates named above.
-Stop when: docs/test-checklist.md is fully evidenced or a named approval boundary is reached.
+Next work: Treat new requests as post-slice changes and preserve the documented owners and tolerances.
 ```

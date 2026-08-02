@@ -44,6 +44,9 @@ This architecture covers the single-process desktop game. It does not define a b
 | `HUDController` and screen controllers | Display state and emit user intents | Authoritative state mutation |
 | `ReplayRecorder` | Attempt metadata, input stream, deterministic playback/fallback samples | Save progression |
 | `GameplayAgentApi` | UI-independent observations, actions, and event stream | Duplicate simulation rules |
+| `AppRoot` | Main-menu, stage-select, settings, and gameplay navigation/lifetime | Stage outcomes or paint state |
+| `DebugOverlay` | Debug-build-only metrics, derived mask previews, actions, and JSON log export | Alternate gameplay authority |
+| `DeliveryCaptureRunner` | Command-line reproduction of named release evidence states | Normal player navigation or game rules |
 
 ### Data contracts
 
@@ -78,8 +81,8 @@ Human UI / GameplayAgentApi
 
 ### Paint implementation
 
-- Start with a 512×512 CPU-authoritative byte mask and batched texture upload unless measured performance proves a GPU render target simpler and equally testable.
-- Maintain a read-only eligible byte mask in the same UV/world X/Z mapping. Coverage scans eligible pixels at a throttled cadence and counts each painted pixel once.
+- The implemented 512×512 CPU-authoritative byte buffers batch texture uploads and increment coverage only when an eligible byte crosses the threshold; no full-mask readback is used during play.
+- Maintain a read-only eligible byte mask in the same UV/world X/Z mapping. Coverage increments only when an eligible byte first crosses the paint threshold and therefore counts overlap once without recurring scans.
 - Queue stamps during physics updates, apply them in deterministic insertion order, and publish one dirty-region texture update per batch where practical.
 - Downhill flow samples the StageData height grid for a fixed number of steps and transfer budget; seeded tie-breaking prevents frame-dependent paths.
 - Terrain material samples the same runtime texture; no decal nodes or alternative visual-paint state are allowed.
@@ -112,3 +115,9 @@ Human UI / GameplayAgentApi
 - Visual paint and coverage remain demonstrably identical views of one mask.
 - All save/replay formats include explicit versions and deterministic failure behavior.
 - The project passes `scripts/verify.ps1` after architectural changes.
+
+## Implemented Delivery Boundary
+
+- `export_presets.cfg` defines the Windows Desktop release path with an embedded PCK and excludes tests, screenshots, reports, builds, and editor state.
+- Cross-process probes validate persistence and deterministic replay without relying on the HUD or a shared process.
+- The production executable accepts delivery-only capture arguments through `DeliveryCaptureRunner`; normal launches do nothing with this node, and the debug overlay remains unavailable in release builds.

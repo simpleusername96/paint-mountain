@@ -134,6 +134,13 @@ func force_stage_clear() -> void:
 	stage_cleared.emit(_paint_system.coverage_percent(), stage_data.maximum_shots - shots_remaining)
 
 
+func debug_refill_shots() -> void:
+	if not OS.is_debug_build() or stage_data == null:
+		return
+	shots_remaining = stage_data.maximum_shots
+	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
+
+
 func state_name() -> String:
 	return State.keys()[current_state]
 
