@@ -5,6 +5,7 @@ created: 2026-08-02
 scope: complete the Paint Mountain playable vertical slice after repository bootstrap
 related:
   - Prompt.md
+  - ../docs/source-brief.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
   - ../docs/test-checklist.md
@@ -24,7 +25,7 @@ The repository now launches a verified Godot bootstrap scene. The remaining seve
 
 | Source or path | Verified fact | Decision affected | Freshness boundary |
 | --- | --- | --- | --- |
-| User-provided brief | Godot 4.x/GDScript, three stages, mechanisms, UX, architecture, limits, phases, and acceptance criteria are specified | Product and technical contract | Recheck only if the user revises scope |
+| `docs/source-brief.md` | The verbatim user directive specifies Godot 4.x/GDScript, three stages, mechanisms, UX, architecture, limits, phases, and acceptance criteria | Highest-authority product and technical requirement source | Recheck only if the user revises scope |
 | `project.godot` | Compatibility renderer and 60 Hz physics are configured | Runtime baseline | Recheck after project-setting changes |
 | `scenes/bootstrap/bootstrap.tscn` | A dependency-free 3D project entry exists | Phase 1 complete | Retire after gameplay entry passes smoke checks |
 | Local Godot 4.7.1 console binary | The project can be imported and run headlessly | Validation path | Recheck when engine version changes |

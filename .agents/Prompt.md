@@ -2,9 +2,10 @@
 type: spec
 status: active
 created: 2026-08-02
-source: user-provided Paint Mountain implementation brief
+source: ../docs/source-brief.md
 scope: repository purpose and non-negotiable product constraints
 related:
+  - ../docs/source-brief.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
 ---
@@ -17,7 +18,7 @@ Create a polished, playable vertical slice of a deterministic 3D gravity-driven 
 
 ## Scope
 
-This brief governs the complete local single-player vertical slice and its delivery evidence. Detailed behavior is canonical in `docs/design-spec.md`; runtime ownership is canonical in `docs/technical-architecture.md`.
+This file is a compact routing summary. The unabridged directive in `docs/source-brief.md` governs the complete local single-player vertical slice and wins if any summary differs. Detailed working behavior is in `docs/design-spec.md`; runtime ownership is in `docs/technical-architecture.md`.
 
 ## Requirements
 

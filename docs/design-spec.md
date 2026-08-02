@@ -2,10 +2,10 @@
 type: spec
 status: active
 created: 2026-08-02
-canonical_for: Paint Mountain vertical-slice product and UX behavior
 scope: gameplay, content, presentation, performance, and deliverables
-source: user-provided Paint Mountain implementation brief
+source: source-brief.md
 related:
+  - source-brief.md
   - technical-architecture.md
   - test-checklist.md
   - ../.agents/Plan.md
@@ -15,7 +15,7 @@ related:
 
 ## Purpose
 
-Define the compact product contract for a polished three-stage vertical slice of a 3D gravity-driven paintball puzzle game.
+Define the compact working interpretation of `source-brief.md` for a polished three-stage vertical slice of a 3D gravity-driven paintball puzzle game. The verbatim source brief wins if wording conflicts.
 
 ## Scope
 

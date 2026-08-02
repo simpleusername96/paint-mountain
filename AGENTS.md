@@ -3,7 +3,7 @@
 ## Project
 - Build **Paint Mountain**, a focused Godot 4.x desktop 3D physics-puzzle game in which a stationary cannon launches finite-payload paintballs across a distant mountain.
 - Preserve the planning puzzle: the player chooses yaw, elevation, and power before firing and never steers a projectile in flight.
-- Treat `docs/design-spec.md` as the product behavior source of truth and `docs/technical-architecture.md` as the system-boundary source of truth.
+- Treat the verbatim directive in `docs/source-brief.md` as the highest-authority product requirement. `docs/design-spec.md` and `docs/technical-architecture.md` are working interpretations; if they conflict with the source brief, the source brief wins.
 - Check `.agents/Documentation.md` for implemented status before claiming that a planned feature exists.
 
 ## Operating Model

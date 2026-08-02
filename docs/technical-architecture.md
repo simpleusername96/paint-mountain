@@ -4,8 +4,9 @@ status: active
 created: 2026-08-02
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, replay, and verification
-source: user-provided Paint Mountain implementation brief
+source: source-brief.md
 related:
+  - source-brief.md
   - design-spec.md
   - test-checklist.md
   - ../.agents/Plan.md

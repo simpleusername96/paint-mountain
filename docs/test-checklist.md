@@ -4,8 +4,9 @@ status: active
 created: 2026-08-02
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
-source: user-provided Paint Mountain acceptance criteria
+source: source-brief.md
 related:
+  - source-brief.md
   - design-spec.md
   - technical-architecture.md
   - ../.agents/Plan.md
