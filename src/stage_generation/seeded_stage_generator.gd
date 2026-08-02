@@ -5,6 +5,9 @@ const ATTEMPT_COUNT := 32
 const ATTEMPT_STRIDE := 7919
 const MAX_ROUTE_SLOPE_DEGREES := 48.0
 const P95_ROUTE_SLOPE_DEGREES := 42.0
+const DECORATION_MODEL_CYCLE: Array[StringName] = [
+	&"tree_pineSmallA", &"tree_pineSmallB", &"rock_smallA", &"tree_pineTallA", &"rock_largeA",
+]
 
 
 static func generate(
@@ -34,13 +37,18 @@ static func _finalize_placements(
 		stage_data: StageData,
 		layout: GeneratedStageLayout
 ) -> bool:
-	if stage_data == null or stage_data.mechanism_loadout.is_empty():
+	if stage_data == null:
 		return true
-	var placements := MechanismPlacementGenerator.generate(stage_data, layout)
-	if placements.size() != stage_data.mechanism_loadout.size():
-		layout.metrics["rejection"] = "mechanism_placement"
+	if not stage_data.mechanism_loadout.is_empty():
+		var placements := MechanismPlacementGenerator.generate(stage_data, layout)
+		if placements.size() != stage_data.mechanism_loadout.size():
+			layout.metrics["rejection"] = "mechanism_placement"
+			return false
+		layout.mechanism_placements = placements
+	layout.decoration_placements = _generate_decorations(stage_data, layout)
+	if layout.decoration_placements.size() != _decoration_count(stage_data.stage_number):
+		layout.metrics["rejection"] = "decoration_placement"
 		return false
-	layout.mechanism_placements = placements
 	return _exclude_mechanism_footprints(profile, layout)
 
 
@@ -63,6 +71,11 @@ static func _exclude_mechanism_footprints(
 				if placement.local_xz.distance_squared_to(Vector2(local_x, local_z)) <= exclusion_radius * exclusion_radius:
 					excluded = true
 					break
+			if not excluded:
+				for decoration in layout.decoration_placements:
+					if decoration.local_xz.distance_squared_to(Vector2(local_x, local_z)) <= 2.25:
+						excluded = true
+						break
 			if excluded:
 				layout.eligible_mask[index] = 0
 			else:
@@ -73,6 +86,68 @@ static func _exclude_mechanism_footprints(
 		layout.metrics["rejection"] = "eligible_ratio_after_mechanisms"
 		return false
 	return true
+
+
+static func _generate_decorations(
+		stage_data: StageData,
+		layout: GeneratedStageLayout
+) -> Array[DecorationPlacement]:
+	var candidates: Array[Vector2] = []
+	var sample_size := layout.sample_size()
+	for z_index in range(2, sample_size.y - 2):
+		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, float(z_index) / float(layout.cell_count.y))
+		for x_index in range(2, sample_size.x - 2):
+			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, float(x_index) / float(layout.cell_count.x))
+			if layout.height_at_local(local_x, local_z) < 1.1:
+				continue
+			if layout.normal_at_local(local_x, local_z).y < cos(deg_to_rad(42.0)):
+				continue
+			var route_distance := layout.route_distance(local_x, local_z)
+			var route_index := int(route_distance.route_index)
+			if route_index >= 0 and float(route_distance.distance) < 0.75 * layout.route_widths[route_index] + 1.0:
+				continue
+			var local_xz := Vector2(local_x, local_z)
+			var mechanism_clear := true
+			for mechanism in layout.mechanism_placements:
+				if local_xz.distance_to(mechanism.local_xz) < mechanism.mechanism_data.trigger_radius + 6.0:
+					mechanism_clear = false
+					break
+			if mechanism_clear:
+				candidates.append(local_xz)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int((layout.accepted_seed ^ 0x5A17D3C1) & 0x7fffffff)
+	for index in range(candidates.size() - 1, 0, -1):
+		var swap_index := rng.randi_range(0, index)
+		var temporary := candidates[index]
+		candidates[index] = candidates[swap_index]
+		candidates[swap_index] = temporary
+	var result: Array[DecorationPlacement] = []
+	var requested_count := _decoration_count(stage_data.stage_number)
+	for candidate in candidates:
+		var separated := true
+		for existing in result:
+			if candidate.distance_to(existing.local_xz) < 4.0:
+				separated = false
+				break
+		if not separated:
+			continue
+		var model_id := DECORATION_MODEL_CYCLE[result.size() % DECORATION_MODEL_CYCLE.size()]
+		var is_tree := String(model_id).begins_with("tree_")
+		var scale_value := rng.randf_range(3.0, 4.5) if is_tree else rng.randf_range(2.0, 3.2)
+		result.append(DecorationPlacement.new(model_id, candidate, rng.randf_range(0.0, 360.0), scale_value))
+		if result.size() >= requested_count:
+			break
+	return result
+
+
+static func _decoration_count(stage_number: int) -> int:
+	match stage_number:
+		2:
+			return 14
+		3:
+			return 18
+		_:
+			return 10
 
 
 static func _build_attempt(

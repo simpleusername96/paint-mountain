@@ -15,6 +15,7 @@ var metrics: Dictionary = {}
 var checksum: int = 0
 var eligible_mask: PackedByteArray
 var mechanism_placements: Array[MechanismPlacement] = []
+var decoration_placements: Array[DecorationPlacement] = []
 
 
 func sample_size() -> Vector2i:

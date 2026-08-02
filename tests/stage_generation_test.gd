@@ -5,6 +5,11 @@ const PROFILES: Array[StageGenerationProfile] = [
 	preload("res://resources/stage_generation/burst_basin_profile.tres"),
 	preload("res://resources/stage_generation/split_ridge_profile.tres"),
 ]
+const STAGES: Array[StageData] = [
+	preload("res://resources/stages/first_descent.tres"),
+	preload("res://resources/stages/burst_basin.tres"),
+	preload("res://resources/stages/split_ridge.tres"),
+]
 
 var _failed := false
 
@@ -18,9 +23,9 @@ func _run_checks() -> void:
 		var profile := PROFILES[profile_index]
 		_assert_true(profile.is_valid(), "%s must be a valid typed resource" % profile.profile_id)
 		var started_at := Time.get_ticks_msec()
-		var first := SeededStageGenerator.generate(profile, profile.base_seed)
+		var first := SeededStageGenerator.generate(profile, profile.base_seed, STAGES[profile_index])
 		var generation_ms := Time.get_ticks_msec() - started_at
-		var repeated := SeededStageGenerator.generate(profile, profile.base_seed)
+		var repeated := SeededStageGenerator.generate(profile, profile.base_seed, STAGES[profile_index])
 		_assert_true(first != null and first.is_valid(), "%s must produce a validated generated layout" % profile.profile_id)
 		_assert_true(repeated != null and repeated.checksum == first.checksum, "%s must reproduce the height-grid checksum" % profile.profile_id)
 		_assert_true(generation_ms < 3000, "%s generation must complete under three seconds, observed %d ms" % [profile.profile_id, generation_ms])
@@ -36,6 +41,17 @@ func _run_checks() -> void:
 		_assert_true(float(first.metrics.get("p95_route_slope", 99.0)) <= 42.0, "95th percentile route slope must stay within the locked maximum")
 		_assert_true(float(first.metrics.get("eligible_ratio", 0.0)) >= profile.eligible_ratio_range.x, "%s eligible ratio must meet its lower bound" % profile.profile_id)
 		_assert_true(float(first.metrics.get("eligible_ratio", 1.0)) <= profile.eligible_ratio_range.y, "%s eligible ratio must meet its upper bound" % profile.profile_id)
+		var expected_decorations: int = [10, 14, 18][profile_index]
+		_assert_true(first.decoration_placements.size() == expected_decorations, "%s must place its frozen decoration count" % profile.profile_id)
+		_assert_true(repeated.decoration_placements.size() == expected_decorations, "%s repeated decoration count must match" % profile.profile_id)
+		for decoration_index in range(expected_decorations):
+			var first_decoration: DecorationPlacement = first.decoration_placements[decoration_index]
+			var repeated_decoration: DecorationPlacement = repeated.decoration_placements[decoration_index]
+			_assert_true(
+				first_decoration.model_id == repeated_decoration.model_id \
+						and first_decoration.local_xz.is_equal_approx(repeated_decoration.local_xz),
+				"%s decorations must be deterministic" % profile.profile_id
+			)
 		var mesh := TerrainMeshFactory.build_from_layout(first)
 		_assert_true(mesh.get_surface_count() == 1, "generated terrain must be one principal mesh")
 		_assert_true(mesh.surface_get_array_len(0) / 3 == 6144, "generated terrain mesh must emit exactly 6,144 triangles")

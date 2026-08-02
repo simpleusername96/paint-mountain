@@ -12,6 +12,7 @@ signal next_stage_requested
 signal replay_requested
 signal camera_mode_requested(mode: int)
 signal simulation_speed_requested(speed: float)
+signal power_adjust_requested(delta_percent: float)
 
 const NAVY := Color(0.055, 0.095, 0.16, 1.0)
 const CHARCOAL := Color(0.16, 0.18, 0.22, 1.0)
@@ -28,6 +29,7 @@ var _shots_value: Label
 var _status_value: Label
 var _angle_value: Label
 var _power_value: Label
+var _power_segments: Array[ColorRect] = []
 var _coverage_value: Label
 var _coverage_bar: ProgressBar
 var _coverage_panel: Control
@@ -48,12 +50,24 @@ var _fire_button: Button
 var _start_button: Button
 var _next_button: Button
 var _result_stars: Label
+var _power_hold_direction: float = 0.0
+var _power_hold_elapsed: float = 0.0
+var _power_next_repeat: float = 0.3
 
 
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_interface()
+
+
+func _process(delta: float) -> void:
+	if is_zero_approx(_power_hold_direction):
+		return
+	_power_hold_elapsed += delta
+	while _power_hold_elapsed >= _power_next_repeat:
+		power_adjust_requested.emit(_power_hold_direction * 2.0)
+		_power_next_repeat += 0.08
 
 
 func configure(stage_data: StageData) -> void:
@@ -72,6 +86,9 @@ func configure(stage_data: StageData) -> void:
 func update_aim(elevation: float, power: float) -> void:
 	_angle_value.text = "%d°" % roundi(elevation)
 	_power_value.text = "%d%%" % roundi(power)
+	var active_segments := ceili(clampf(power, 0.0, 100.0) / 10.0)
+	for index in range(_power_segments.size()):
+		_power_segments[index].color = BLUE if index < active_segments else Color(0.72, 0.74, 0.77, 0.72)
 
 
 func update_shots(remaining: int, _maximum: int) -> void:
@@ -81,6 +98,10 @@ func update_shots(remaining: int, _maximum: int) -> void:
 func update_coverage(coverage: float) -> void:
 	_coverage_value.text = "%05.2f%%" % coverage
 	_coverage_bar.value = coverage
+
+
+func set_fire_enabled(enabled: bool) -> void:
+	_fire_button.disabled = not enabled
 
 
 func show_state(state: StageController.State) -> void:
@@ -225,12 +246,12 @@ func _build_briefing() -> void:
 
 
 func _build_aim_controls() -> void:
-	_aim_panel = _make_panel(Vector2(300.0, 112.0))
+	_aim_panel = _make_panel(Vector2(330.0, 140.0))
 	_aim_panel.anchor_top = 1.0
 	_aim_panel.anchor_bottom = 1.0
 	_aim_panel.offset_left = 24.0
-	_aim_panel.offset_right = 324.0
-	_aim_panel.offset_top = -136.0
+	_aim_panel.offset_right = 354.0
+	_aim_panel.offset_top = -164.0
 	_aim_panel.offset_bottom = -24.0
 	_root.add_child(_aim_panel)
 	var margin := _add_margin(_aim_panel, 22, 14, 22, 14)
@@ -247,16 +268,55 @@ func _build_aim_controls() -> void:
 
 func _metric_column(caption: String, value: String, is_angle: bool) -> VBoxContainer:
 	var column := VBoxContainer.new()
-	column.custom_minimum_size.x = 105.0
+	column.custom_minimum_size.x = 92.0 if is_angle else 178.0
 	var caption_label := _make_label(caption, 13, MUTED)
 	column.add_child(caption_label)
 	var value_label := _make_label(value, 29, NAVY if is_angle else BLUE)
-	column.add_child(value_label)
+	if is_angle:
+		column.add_child(value_label)
+	else:
+		var power_row := HBoxContainer.new()
+		power_row.add_theme_constant_override("separation", 6)
+		var decrease := _power_button(-1.0, preload("res://assets/ui/icons/minus.png"))
+		power_row.add_child(decrease)
+		value_label.custom_minimum_size.x = 64.0
+		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		power_row.add_child(value_label)
+		var increase := _power_button(1.0, preload("res://assets/ui/icons/plus.png"))
+		power_row.add_child(increase)
+		column.add_child(power_row)
+		var segments := HBoxContainer.new()
+		segments.add_theme_constant_override("separation", 3)
+		for _index in range(10):
+			var segment := ColorRect.new()
+			segment.custom_minimum_size = Vector2(12.0, 9.0)
+			segment.color = BLUE
+			segments.add_child(segment)
+			_power_segments.append(segment)
+		column.add_child(segments)
 	if is_angle:
 		_angle_value = value_label
 	else:
 		_power_value = value_label
 	return column
+
+
+func _power_button(direction: float, icon_texture: Texture2D) -> Button:
+	var button := _make_button("", false, Vector2(44.0, 44.0))
+	button.icon = icon_texture
+	button.expand_icon = true
+	button.button_down.connect(func() -> void:
+		power_adjust_requested.emit(direction * 2.0)
+		_power_hold_direction = direction
+		_power_hold_elapsed = 0.0
+		_power_next_repeat = 0.3
+	)
+	button.button_up.connect(func() -> void: _power_hold_direction = 0.0)
+	button.mouse_exited.connect(func() -> void:
+		if not button.button_pressed:
+			_power_hold_direction = 0.0
+	)
+	return button
 
 
 func _build_coverage() -> void:
@@ -299,7 +359,9 @@ func _build_actions() -> void:
 	_action_panel.offset_bottom = -24.0
 	_action_panel.add_theme_constant_override("separation", 12)
 	_root.add_child(_action_panel)
-	var restart := _make_button("↻\nRESTART", false, Vector2(124.0, 124.0))
+	var restart := _make_button("RESTART", false, Vector2(124.0, 124.0))
+	restart.icon = preload("res://assets/ui/icons/restart.png")
+	restart.expand_icon = true
 	restart.pressed.connect(func() -> void: restart_requested.emit())
 	_action_panel.add_child(restart)
 	_fire_button = _make_button("●\nFIRE", true, Vector2(180.0, 124.0))

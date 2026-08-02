@@ -2,6 +2,7 @@ class_name CannonController
 extends Node3D
 
 signal aim_changed(yaw_degrees: float, elevation_degrees: float, power_percent: float)
+signal aim_validity_changed(is_valid: bool)
 signal fire_requested(origin: Vector3, velocity: Vector3)
 
 @export var projectile_data: ProjectileData
@@ -15,6 +16,7 @@ var yaw_degrees: float = 0.0
 var elevation_degrees: float = 38.0
 var power_percent: float = 68.0
 var input_enabled: bool = true
+var _aim_valid: bool = true
 
 @onready var _yaw_pivot: Node3D = %YawPivot
 @onready var _elevation_pivot: Node3D = %ElevationPivot
@@ -27,42 +29,11 @@ func _ready() -> void:
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
 
-func _process(delta: float) -> void:
-	if not input_enabled:
-		return
-	var yaw_axis := float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-	var elevation_axis := float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S))
-	var power_axis := float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q))
-	if not is_zero_approx(yaw_axis) or not is_zero_approx(elevation_axis) or not is_zero_approx(power_axis):
-		set_aim(
-			yaw_degrees + yaw_axis * 22.0 * delta,
-			elevation_degrees + elevation_axis * 22.0 * delta,
-			power_percent + power_axis * 32.0 * delta
-		)
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if not input_enabled:
-		return
-	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
-		set_aim(
-			yaw_degrees + event.relative.x * 0.08,
-			elevation_degrees - event.relative.y * 0.08,
-			power_percent
-		)
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			set_aim(yaw_degrees, elevation_degrees, power_percent + 2.0)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			set_aim(yaw_degrees, elevation_degrees, power_percent - 2.0)
-	elif event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_SPACE:
-		request_fire()
-
-
 func set_aim(new_yaw: float, new_elevation: float, new_power: float) -> void:
 	var clamped_yaw := clampf(new_yaw, minimum_yaw, maximum_yaw)
 	var clamped_elevation := clampf(new_elevation, minimum_elevation, maximum_elevation)
 	var clamped_power := clampf(new_power, 0.0, 100.0)
+	set_aim_valid(true)
 	if is_equal_approx(clamped_yaw, yaw_degrees) \
 			and is_equal_approx(clamped_elevation, elevation_degrees) \
 			and is_equal_approx(clamped_power, power_percent):
@@ -74,8 +45,24 @@ func set_aim(new_yaw: float, new_elevation: float, new_power: float) -> void:
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
 
+func set_solved_aim(new_yaw: float, new_elevation: float, new_power: float) -> void:
+	set_aim(new_yaw, new_elevation, new_power)
+	set_aim_valid(true)
+
+
+func set_aim_valid(value: bool) -> void:
+	if _aim_valid == value:
+		return
+	_aim_valid = value
+	aim_validity_changed.emit(_aim_valid)
+
+
+func is_aim_valid() -> bool:
+	return _aim_valid
+
+
 func request_fire() -> bool:
-	if not input_enabled or projectile_data == null:
+	if not input_enabled or projectile_data == null or not _aim_valid:
 		return false
 	fire_requested.emit(get_launch_origin(), get_launch_velocity())
 	return true
@@ -83,6 +70,15 @@ func request_fire() -> bool:
 
 func get_launch_origin() -> Vector3:
 	return _muzzle.global_position
+
+
+func get_launch_origin_for(requested_yaw: float, requested_elevation: float) -> Vector3:
+	var yaw_basis := Basis(Vector3.UP, deg_to_rad(requested_yaw))
+	var elevation_basis := Basis(Vector3.RIGHT, deg_to_rad(requested_elevation))
+	var local_origin := _yaw_pivot.position + yaw_basis * (
+		_elevation_pivot.position + elevation_basis * _muzzle.position
+	)
+	return global_transform * local_origin
 
 
 func get_launch_velocity() -> Vector3:

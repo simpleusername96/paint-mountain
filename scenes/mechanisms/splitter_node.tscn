@@ -1,0 +1,80 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/mechanisms/splitter_node.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="Silver"]
+albedo_color = Color(0.82, 0.87, 0.93, 1)
+metallic = 0.36
+roughness = 0.28
+
+[sub_resource type="StandardMaterial3D" id="Blue"]
+albedo_color = Color(0.03, 0.42, 1, 1)
+metallic = 0.2
+roughness = 0.18
+
+[sub_resource type="StandardMaterial3D" id="Dark"]
+albedo_color = Color(0.1, 0.14, 0.2, 1)
+metallic = 0.26
+roughness = 0.34
+
+[sub_resource type="CylinderMesh" id="Base"]
+material = SubResource("Dark")
+top_radius = 2.15
+bottom_radius = 2.25
+height = 0.55
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="Crest"]
+material = SubResource("Silver")
+top_radius = 1.65
+bottom_radius = 1.95
+height = 0.65
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="Outlet"]
+material = SubResource("Blue")
+top_radius = 0.2
+bottom_radius = 0.34
+height = 3.1
+radial_segments = 10
+
+[sub_resource type="SphereMesh" id="Jewel"]
+material = SubResource("Blue")
+radius = 0.58
+height = 1.16
+radial_segments = 12
+rings = 6
+
+[node name="SplitterNode" type="Area3D"]
+script = ExtResource("1_script")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 0.275, 0)
+rotation_degrees = Vector3(0, 90, 0)
+mesh = SubResource("Base")
+
+[node name="Crest" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 0.82, 0)
+rotation_degrees = Vector3(0, 90, 0)
+mesh = SubResource("Crest")
+
+[node name="Jewel" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 1.65, 0)
+mesh = SubResource("Jewel")
+
+[node name="LeftOutlet" type="MeshInstance3D" parent="Visual"]
+position = Vector3(-0.8, 0.95, 1.0)
+rotation_degrees = Vector3(90, 0, -28)
+mesh = SubResource("Outlet")
+
+[node name="CenterOutlet" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0, 0.95, 1.15)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("Outlet")
+
+[node name="RightOutlet" type="MeshInstance3D" parent="Visual"]
+position = Vector3(0.8, 0.95, 1.0)
+rotation_degrees = Vector3(90, 0, 28)
+mesh = SubResource("Outlet")

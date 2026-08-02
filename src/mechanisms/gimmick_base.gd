@@ -26,10 +26,13 @@ func _ready() -> void:
 	monitoring = true
 	monitorable = true
 	_build_trigger()
-	_visual_root = Node3D.new()
-	_visual_root.name = "Visual"
-	add_child(_visual_root)
-	_build_visual(_visual_root)
+	_visual_root = get_node_or_null("Visual") as Node3D
+	if _visual_root == null:
+		# Script-created nodes used by focused tests retain a compact fallback visual.
+		_visual_root = Node3D.new()
+		_visual_root.name = "Visual"
+		add_child(_visual_root)
+		_build_visual(_visual_root)
 	_label = Label3D.new()
 	_label.name = "BriefingLabel"
 	_label.text = data.display_name

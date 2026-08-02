@@ -73,7 +73,7 @@ func enter_briefing() -> bool:
 
 
 func request_fire() -> bool:
-	if current_state != State.AIMING or shots_remaining <= 0:
+	if current_state != State.AIMING or shots_remaining <= 0 or not _cannon.is_aim_valid():
 		return false
 	if _projectile_manager.active_count() > 0 or _paint_system.pending_work_count() > 0:
 		return false

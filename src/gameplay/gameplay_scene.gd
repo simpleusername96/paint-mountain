@@ -2,6 +2,10 @@ extends Node3D
 
 signal navigation_requested(destination: StringName)
 
+const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
+const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
+const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
+
 @export var stage_data: StageData
 
 @onready var _camera: Camera3D = %Camera
@@ -10,6 +14,7 @@ signal navigation_requested(destination: StringName)
 @onready var _mountain_collision: CollisionShape3D = %MountainCollision
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
+@onready var _aim_input: AimInputController = %AimInputController
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
 @onready var _paint_system: PaintSystem = %PaintSystem
 @onready var _stage_controller: StageController = %StageController
@@ -40,6 +45,7 @@ func _ready() -> void:
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
 	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _mechanisms)
+	_aim_input.configure(_camera, _cannon, _stage_controller)
 	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
 	_agent_api.configure(
 		stage_data,
@@ -115,6 +121,7 @@ func _build_stage_world() -> void:
 
 func _connect_systems() -> void:
 	_cannon.aim_changed.connect(func(_yaw: float, elevation: float, power: float) -> void: _hud.update_aim(elevation, power))
+	_cannon.aim_validity_changed.connect(_hud.set_fire_enabled)
 	_cannon.fire_requested.connect(func(_origin: Vector3, _velocity: Vector3) -> void: _stage_controller.request_fire())
 	_projectile_manager.paint_deposit_requested.connect(_on_paint_deposit_requested)
 	_projectile_manager.projectile_impact.connect(_on_projectile_impact)
@@ -127,6 +134,7 @@ func _connect_systems() -> void:
 	_stage_controller.stage_failed.connect(_on_stage_failed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming())
 	_hud.fire_requested.connect(func() -> void: _stage_controller.request_fire())
+	_hud.power_adjust_requested.connect(_aim_input.adjust_power)
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause())
 	_hud.settings_requested.connect(func() -> void: navigation_requested.emit(&"settings"))
@@ -243,14 +251,15 @@ func _spawn_mechanisms() -> void:
 	_mechanisms.clear()
 	var placements: Array[MechanismPlacement] = _generated_layout.mechanism_placements
 	for placement in placements:
-		var mechanism: GimmickBase
+		var mechanism_scene: PackedScene
 		match placement.mechanism_data.kind:
 			MechanismData.Kind.BURST:
-				mechanism = BurstNode.new()
+				mechanism_scene = BURST_SCENE
 			MechanismData.Kind.SPLITTER:
-				mechanism = SplitterNode.new()
+				mechanism_scene = SPLITTER_SCENE
 			MechanismData.Kind.BUMPER:
-				mechanism = BumperNode.new()
+				mechanism_scene = BUMPER_SCENE
+		var mechanism := mechanism_scene.instantiate() as GimmickBase
 		mechanism.name = placement.mechanism_data.display_name.capitalize().replace(" ", "")
 		mechanism.data = placement.mechanism_data
 		var terrain_height := _generated_layout.height_at_local(placement.local_xz.x, placement.local_xz.y)

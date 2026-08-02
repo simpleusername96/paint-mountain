@@ -1,0 +1,49 @@
+---
+type: record
+status: active
+created: 2026-08-03
+last_reviewed: 2026-08-03
+scope: approved third-party runtime assets, provenance, hashes, licenses, and uses
+related:
+  - ../.agents/Plan.md
+  - ../assets/licenses/Kenney-Nature-Kit-CC0.txt
+  - ../assets/licenses/Kenney-Game-Icons-CC0.txt
+  - ../assets/licenses/Kenney-Particle-Pack-CC0.txt
+  - ../assets/licenses/Pretendard-OFL-1.1.txt
+---
+
+# Third-party asset ledger
+
+Only the files listed below are approved and bundled. Runtime loading is entirely local; the game does not download assets or contact these sources.
+
+## Source archives
+
+| Package | Version/source date | License | Official archive | Archive SHA-256 |
+| --- | --- | --- | --- | --- |
+| Kenney Nature Kit | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip` | `FA7974A0D342BFE63C38664BA9F8EC1A4AAB8EA25F099BDC56870E33588C4D9D` |
+| Kenney Game Icons | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/game-icons/1ebf9c14af-1677661579/kenney_game-icons.zip` | `7A86D8D58E0B851E22004B3C70BF90B003632BBF9AC633424DAA3BB17D9E7E4E` |
+| Kenney Particle Pack | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/particle-pack/f8fe0f8cb8-1677578741/kenney_particle-pack.zip` | `B631D4B07F7002549FDCF155F01141AD482F79F3440E4E301EED49CE5F1D8958` |
+| Pretendard | 1.3.9 | SIL Open Font License 1.1 | `https://github.com/orioncactus/pretendard/releases/download/v1.3.9/Pretendard-1.3.9.zip` | `04BE351A74D6BF7D60C480A3087E51D185485D35A52023142AF1DF19EB8C428A` |
+
+## Bundled files
+
+| Local file | SHA-256 | Runtime use |
+| --- | --- | --- |
+| `assets/nature/kenney/tree_pineSmallA.glb` | `BE1A438BBB2E157266C1FB093B775BFF8CE3E29A4C8F04AAF9D44C7A4E1F1FF0` | small pine variant A |
+| `assets/nature/kenney/tree_pineSmallB.glb` | `59392AA6604ADB9DCCD4FB76DF5ED12AE8AC7D7391EB7E04BC84FFFE9F9B36C8` | small pine variant B |
+| `assets/nature/kenney/tree_pineTallA.glb` | `E0A56EB196D8A64BA86C7304D607136E17E6F9AD748DFFCF86BD53B18B91B196` | tall pine |
+| `assets/nature/kenney/rock_smallA.glb` | `DF9FFF9D711E61370E8DF0CAA2514C89B8F8A8DC6C6FAFAF4EB2EC79C5AE07C1` | small rock |
+| `assets/nature/kenney/rock_largeA.glb` | `6DD15390FD96501DCD1454765A17BA61DBBD8D47705DFE5149C8DD92B353CE25` | large rock |
+| `assets/ui/icons/target.png` | `AFD40325569FA91BFC690856DC4C70901BBD7C2E27DEDC9FE3847258C61BBC81` | aim mode |
+| `assets/ui/icons/restart.png` | `99B425EC6D8E49633DDCEA55E7485ADF44A4CA8614ABF39E59B7A83602EE3866` | restart |
+| `assets/ui/icons/minus.png` | `5F4E70ADEA9061D0105DB1860108B669E348D0D99314542A77DD96F707800EC7` | decrease power |
+| `assets/ui/icons/plus.png` | `DC5D564FFE3AE546F2E72CE19EA8349124CF48256418DE50BB045A5D97AB9872` | increase power |
+| `assets/ui/icons/pause.png` | `5C940AD60DD46B3252D4F991F24E9C21865722FE401947830228629BAED28774` | pause |
+| `assets/ui/icons/settings.png` | `50B313FFE97DB1733E529D5B0F5AC91EED5C0C8FFEE1034BBB7766508E4F720C` | settings |
+| `assets/vfx/kenney/muzzle_ring.png` | `4B2D03683BF0FE4A946567ADC3BD86B8BA045DA84CEE58DC2CF8AEF63BBFAA06` | muzzle ring |
+| `assets/vfx/kenney/impact_ripple.png` | `742DA1A1B96B93AE446700F6085385D1F62844352DA870C89427307B7B7CF03B` | impact ripple |
+| `assets/vfx/kenney/paint_mist.png` | `A71F8ABCAC64F8D73A94625CC9A10033DBEAFA7EAEA750560CBA0DAA73FE8752` | paint mist |
+| `assets/vfx/kenney/glint.png` | `6485AC16C773663BD39346F3BEDAE04465AC14C661EB47CC5CFA935CDBF6C2EC` | mechanism and clear glint |
+| `assets/fonts/pretendard/PretendardVariable.woff2` | `9599F12FD42FC0BCE1CD50B47A0C022E108D7AA64DD0D1BB0ED44F3282D900B4` | Korean/English UI font |
+
+Unmodified upstream license texts are stored under `assets/licenses/`. No other member of the four downloaded archives is committed.

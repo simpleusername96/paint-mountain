@@ -110,7 +110,7 @@ This section is normative. Implementers may fix defects discovered by tests, but
 - Splitter samples the center route at `0.56..0.64`, on the visible middle-ridge crest after the second rise; its three downstream route tangents must be separated by at least `18°`. Score is `0.35 branch separation + 0.25 height + 0.20 approach alignment + 0.20 visibility/projected size`.
 - Bumper samples the right route at `0.68..0.78`, on the following visible descent; its impulse direction is the normalized vector from the selected sample toward the next center-route sample, projected onto the XZ plane. Score is `0.35 redirection gain + 0.25 approach alignment + 0.20 height + 0.20 visibility/projected size`.
 - Score inputs are normalized to `[0,1]` within the passing sample set. Highest score wins; ties use the smallest unsigned `(grid_index ^ accepted_seed)`, then smallest `grid_index`. Burst world diameter is `4.2 m`, Splitter `4.5 m`, and Bumper `3.8 m`; existing trigger limits and behavior values remain typed-resource owned.
-- Decoration counts are Stage 1/2/3 = `10/14/18`. Deterministically shuffled passing samples require slope `≤24°`, height `≥4 m`, spacing `≥7 m`, outside route shoulder plus `4 m`, and outside mechanisms plus `8 m`. The stable model cycle is 60% trees (`pineSmallA`, `pineSmallB`, `pineTallA`) and 40% rocks (`rockSmallA`, `rockLargeA`); scales are trees `0.8..1.2`, rocks `0.7..1.4`. Decorations are visual-only and cannot alter projectile physics.
+- Decoration counts are Stage 1/2/3 = `10/14/18`. Deterministically shuffled passing samples require slope `≤42°`, height `≥1.1 m`, spacing `≥4 m`, outside the eligible route core plus `1 m`, and outside mechanisms plus `6 m`. The stable model cycle is 60% trees (`pineSmallA`, `pineSmallB`, `pineTallA`) and 40% rocks (`rockSmallA`, `rockLargeA`); the imported Kenney-native model scales are trees `3.0..4.5`, rocks `2.0..3.2`, as verified in the 1280×720 running capture. Runtime material overrides mute trees to `#59636D` and rocks to `#747B82`, so terrain and blue paint remain the hierarchy. Decorations are visual-only and cannot alter projectile physics.
 
 ### Aiming, solver, preview, and controls
 
@@ -314,12 +314,12 @@ Source owners touched: `src/stage_generation/mechanism_placement_generator.gd`, 
   - To-be: score shelves, ridges, channel entries, downstream drop, approach direction, LoS, screen size, spacing, and bounds; orient Bumper toward its selected downstream target.
   - Accept: fixed-seed tests show Burst on a valuable upper ledge, Splitter with three downhill sectors, and Bumper with a valid approach/redirection path.
   - Guard: no placement policy enters StageController or mechanism behavior scripts.
-- [ ] **3.2 Build distinct scene-owned mechanism visuals**
+- [x] **3.2 Build distinct scene-owned mechanism visuals**
   - As-is: small primitives are created from script.
   - To-be: radial Burst, triangular Splitter, and directional Bumper scenes expose active/spent/cooldown visuals and selection bounds.
   - Accept: every mechanism meets world- and screen-size thresholds in briefing and aiming captures; activation is readable without persistent text during flight.
   - Guard: world scale stays believable and behavior/reset tests remain unchanged.
-- [ ] **3.3 Add approved sparse nature dressing without hiding routes**
+- [x] **3.3 Add approved sparse nature dressing without hiding routes**
   - As-is: a few procedural trees use fixed coordinates.
   - To-be: seeded decoration placement uses the approved low-poly subset outside route clearance and eligible paint surfaces.
   - Accept: trees/rocks establish scale, never overlap mechanisms, and never reduce route visibility below the screenshot checklist.
@@ -335,17 +335,17 @@ Goal: let the player choose an intended first impact directly and see the entire
 
 Source owners touched: `src/input/aim_input_controller.gd`, `src/cannon/impact_target_solver.gd`, `src/cannon/cannon_controller.gd`, `src/cannon/trajectory_preview.gd`, `src/ui/hud_controller.gd`, `scenes/gameplay/gameplay.tscn`, `tests/aim_interaction_test.gd`
 
-- [ ] **4.1 Separate device input from cannon commands**
+- [x] **4.1 Separate device input from cannon commands**
   - As-is: CannonController polls keyboard and handles mouse/Space.
   - To-be: AimInputController owns devices and calls the same validated cannon/stage actions used by replay and the agent API.
   - Accept: human, replay, debug, and agent actions produce equivalent aim/fire commands.
   - Guard: no input code decides shots, state, or outcomes.
-- [ ] **4.2 Add direct impact targeting and explicit invalid state**
+- [x] **4.2 Add direct impact targeting and explicit invalid state**
   - As-is: drag sensitivity changes angles without a terrain target.
   - To-be: hover previews a terrain target; click/drag locks it; the fixed-tick damped solver returns the lowest valid yaw/elevation or an invalid result for the current power.
   - Accept: valid points solve and actual first hit stays within the existing preview tolerance; invalid points show red and cannot fire.
   - Guard: the solver uses the same gravity/speed source as launch and never steers after fire.
-- [ ] **4.3 Add precise power controls and legible preview**
+- [x] **4.3 Add precise power controls and legible preview**
   - As-is: wheel/Q/E and small dots.
   - To-be: segmented slider, `−/+`, hold repeat, wheel fine tune, Space/button fire, continuous dots, and a minimum-size impact ring.
   - Accept: keyboard, mouse, focus, repeat, disabled, and double-fire tests pass; the arc remains visible to first collision at all three resolutions.

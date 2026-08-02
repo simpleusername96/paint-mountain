@@ -8,15 +8,22 @@ func _initialize() -> void:
 
 
 func _capture() -> void:
-	root.get_node("/root/GameState").select_stage(&"first_descent")
+	var requested_stage := &"first_descent"
 	var requested_state := "briefing"
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/gameplay_capture.png")
 	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with("--state="):
+		if argument.begins_with("--stage="):
+			requested_stage = StringName(argument.trim_prefix("--stage="))
+		elif argument.begins_with("--state="):
 			requested_state = argument.trim_prefix("--state=")
 		elif argument.begins_with("--output="):
 			output_path = argument.trim_prefix("--output=")
 	DirAccess.make_dir_recursive_absolute(output_path.get_base_dir())
+	var game_state := root.get_node("/root/GameState")
+	var unlocked_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
+	unlocked_data.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
+	game_state.initialize_from_data(unlocked_data)
+	game_state.select_stage(requested_stage)
 	var gameplay := GAMEPLAY_SCENE.instantiate()
 	root.add_child(gameplay)
 	await process_frame
@@ -38,6 +45,6 @@ func _capture() -> void:
 		push_error("Could not save gameplay capture to %s (error %d)." % [output_path, error])
 		quit(1)
 		return
-	print("Captured gameplay state '%s' to %s." % [requested_state, output_path])
+	print("Captured %s gameplay state '%s' to %s." % [requested_stage, requested_state, output_path])
 	paused = false
 	quit(0)

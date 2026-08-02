@@ -1,11 +1,12 @@
 class_name TrajectoryPreview
 extends Node3D
 
-const SAMPLE_STEP_SECONDS := 0.18
+const SAMPLE_STEP_SECONDS := 1.0 / 60.0
 const MAXIMUM_PREVIEW_SECONDS := 7.2
-const MAXIMUM_DOTS := 40
+const MAXIMUM_DOTS := 72
+const DOT_SPACING := 2.2
 
-@export_flags_3d_physics var collision_mask: int = 1
+@export_flags_3d_physics var collision_mask: int = 1 | 2
 
 var first_collision_position: Vector3 = Vector3.ZERO
 var has_first_collision: bool = false
@@ -49,11 +50,13 @@ func refresh() -> void:
 		_cannon.projectile_data.linear_damp + float(ProjectSettings.get_setting("physics/3d/default_linear_damp", 0.1))
 	)
 	var visible_count := 0
+	var distance_since_dot := 0.0
 	has_first_collision = false
 	var space_state := get_world_3d().direct_space_state
 	for sample_index in range(1, samples.size()):
 		var previous := samples[sample_index - 1]
 		var current := samples[sample_index]
+		distance_since_dot += previous.distance_to(current)
 		var query := PhysicsShapeQueryParameters3D.new()
 		query.shape = _projectile_shape
 		query.transform = Transform3D(Basis.IDENTITY, previous)
@@ -66,15 +69,21 @@ func refresh() -> void:
 			display_position = previous + query.motion * float(collision[0])
 			first_collision_position = display_position
 			has_first_collision = true
-		_set_dot(visible_count, display_position)
-		visible_count += 1
-		if has_first_collision or visible_count >= MAXIMUM_DOTS:
+		if distance_since_dot >= DOT_SPACING or has_first_collision:
+			if visible_count < MAXIMUM_DOTS:
+				_set_dot(visible_count, display_position)
+				visible_count += 1
+			distance_since_dot = 0.0
+		if has_first_collision:
 			break
 	for dot_index in range(visible_count, _dots.size()):
 		_dots[dot_index].visible = false
 	_impact_marker.visible = has_first_collision
 	if has_first_collision:
 		_impact_marker.global_position = first_collision_position
+		var active_camera := get_viewport().get_camera_3d()
+		var marker_scale := clampf(active_camera.global_position.distance_to(first_collision_position) / 60.0, 1.0, 4.0) if active_camera != null else 1.0
+		_impact_marker.scale = Vector3.ONE * marker_scale
 
 
 func _on_aim_changed(_yaw: float, _elevation: float, _power: float) -> void:
@@ -91,14 +100,15 @@ func _set_dot(index: int, world_position: Vector3) -> void:
 
 func _build_visuals() -> void:
 	var dot_mesh := SphereMesh.new()
-	dot_mesh.radius = 0.18
-	dot_mesh.height = 0.36
+	dot_mesh.radius = 0.26
+	dot_mesh.height = 0.52
 	dot_mesh.radial_segments = 8
 	dot_mesh.rings = 4
 	var dot_material := StandardMaterial3D.new()
 	dot_material.albedo_color = Color(0.08, 0.46, 1.0, 0.86)
 	dot_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	dot_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dot_material.no_depth_test = true
 	dot_mesh.material = dot_material
 	for index in range(MAXIMUM_DOTS):
 		var dot := MeshInstance3D.new()
@@ -109,8 +119,8 @@ func _build_visuals() -> void:
 		add_child(dot)
 		_dots.append(dot)
 	var marker_mesh := TorusMesh.new()
-	marker_mesh.inner_radius = 0.45
-	marker_mesh.outer_radius = 0.62
+	marker_mesh.inner_radius = 0.82
+	marker_mesh.outer_radius = 1.2
 	marker_mesh.rings = 12
 	marker_mesh.ring_segments = 8
 	marker_mesh.material = dot_material

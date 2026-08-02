@@ -1,11 +1,13 @@
 class_name EnvironmentDressing
 extends Node3D
 
-const TREE_POSITIONS: Array[Vector2] = [
-	Vector2(-72, 24), Vector2(-63, -18), Vector2(-50, 8), Vector2(-39, 34),
-	Vector2(-26, -33), Vector2(-10, 29), Vector2(19, 34), Vector2(34, -31),
-	Vector2(48, 12), Vector2(59, -19), Vector2(69, 28), Vector2(76, -36),
-]
+const MODEL_PATHS := {
+	&"tree_pineSmallA": "res://assets/nature/kenney/tree_pineSmallA.glb",
+	&"tree_pineSmallB": "res://assets/nature/kenney/tree_pineSmallB.glb",
+	&"tree_pineTallA": "res://assets/nature/kenney/tree_pineTallA.glb",
+	&"rock_smallA": "res://assets/nature/kenney/rock_smallA.glb",
+	&"rock_largeA": "res://assets/nature/kenney/rock_largeA.glb",
+}
 
 var _stage_data: StageData
 var _generated_layout: GeneratedStageLayout
@@ -16,43 +18,34 @@ func configure(stage_data: StageData, generated_layout: GeneratedStageLayout = n
 	_generated_layout = generated_layout
 	for child in get_children():
 		child.queue_free()
-	for index in range(TREE_POSITIONS.size()):
-		_add_tree(TREE_POSITIONS[index], 0.78 + float(index % 4) * 0.1)
+	for placement in _generated_layout.decoration_placements:
+		_add_decoration(placement)
 	_add_summit_flag()
 
 
-func _add_tree(local_xz: Vector2, scale_factor: float) -> void:
-	var tree := Node3D.new()
-	tree.name = "Pine"
-	var height := _height_at(local_xz.x, local_xz.y)
-	tree.position = Vector3(
-		_stage_data.terrain_center.x + local_xz.x,
+func _add_decoration(placement: DecorationPlacement) -> void:
+	var packed_scene := load(String(MODEL_PATHS.get(placement.model_id, ""))) as PackedScene
+	assert(packed_scene != null, "Approved decoration model must import as a PackedScene.")
+	var decoration := packed_scene.instantiate() as Node3D
+	decoration.name = String(placement.model_id)
+	var height := _height_at(placement.local_xz.x, placement.local_xz.y)
+	decoration.position = Vector3(
+		_stage_data.terrain_center.x + placement.local_xz.x,
 		_stage_data.terrain_center.y + height,
-		_stage_data.terrain_center.z + local_xz.y
+		_stage_data.terrain_center.z + placement.local_xz.y
 	)
-	tree.scale = Vector3.ONE * scale_factor
-	add_child(tree)
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.22
-	trunk_mesh.bottom_radius = 0.32
-	trunk_mesh.height = 2.3
-	trunk_mesh.radial_segments = 6
-	trunk_mesh.material = _material(Color(0.25, 0.21, 0.18, 1.0), 1.0)
-	var trunk := MeshInstance3D.new()
-	trunk.mesh = trunk_mesh
-	trunk.position.y = 1.15
-	tree.add_child(trunk)
-	for layer in range(3):
-		var foliage_mesh := CylinderMesh.new()
-		foliage_mesh.top_radius = 0.0
-		foliage_mesh.bottom_radius = 1.55 - float(layer) * 0.27
-		foliage_mesh.height = 2.8
-		foliage_mesh.radial_segments = 7
-		foliage_mesh.material = _material(Color(0.2 + float(layer) * 0.018, 0.27 + float(layer) * 0.018, 0.29, 1.0), 0.96)
-		var foliage := MeshInstance3D.new()
-		foliage.mesh = foliage_mesh
-		foliage.position.y = 2.35 + float(layer) * 1.15
-		tree.add_child(foliage)
+	decoration.rotation.y = deg_to_rad(placement.yaw_degrees)
+	decoration.scale = Vector3.ONE * placement.uniform_scale
+	_apply_muted_material(decoration, String(placement.model_id).begins_with("tree_"))
+	add_child(decoration)
+
+
+func _apply_muted_material(node: Node, is_tree: bool) -> void:
+	var material := _material(Color("59636d") if is_tree else Color("747b82"), 0.94)
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).material_override = material
+		_apply_muted_material(child, is_tree)
 
 
 func _add_summit_flag() -> void:
