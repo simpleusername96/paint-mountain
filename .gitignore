@@ -1,0 +1,13 @@
+# Godot-generated state
+.godot/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local builds and transient validation output
+builds/
+reports/
+*.log
