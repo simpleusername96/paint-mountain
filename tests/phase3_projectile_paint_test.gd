@@ -29,7 +29,7 @@ func _run_checks() -> void:
 		func(_kind: StringName, _position: Vector3, _radius: float) -> void:
 			observed.deposit_count += 1
 	)
-	cannon.set_aim(0.0, 20.0, 30.0)
+	cannon.set_aim(0.0, 38.0, 68.0)
 	_assert_true(cannon.request_fire(), "sandbox cannon must accept a ready fire command")
 	var frame_budget := 60 * 24
 	while manager.active_count() > 0 and frame_budget > 0:

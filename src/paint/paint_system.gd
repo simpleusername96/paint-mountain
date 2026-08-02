@@ -81,7 +81,8 @@ func flush_pending() -> void:
 		_apply_recent_circle(stamp.position, stamp.radius)
 		paint_deposited.emit(stamp.kind, stamp.position, stamp.radius)
 		if stamp.flow:
-			_apply_downhill_flow(stamp.position, stamp.radius * 0.42, stamp.amount * 0.36, 9)
+			var flow_steps := 28 if stamp.kind == &"burst" else (18 if stamp.kind == &"impact" else 10)
+			_apply_downhill_flow(stamp.position, stamp.radius * 0.42, stamp.amount * 0.36, flow_steps)
 	if _dirty:
 		_paint_texture.update(_paint_image)
 		_dirty = false
@@ -139,17 +140,29 @@ func _create_masks() -> void:
 	const INSET := 14
 	var eligible_bytes := PackedByteArray()
 	eligible_bytes.resize(MASK_SIZE * MASK_SIZE)
-	eligible_bytes.fill(255)
+	eligible_bytes.fill(0)
+	_total_eligible_pixels = 0
 	for y in range(MASK_SIZE):
-		var row_start := y * MASK_SIZE
 		if y < INSET or y >= MASK_SIZE - INSET:
-			for x in range(MASK_SIZE):
-				eligible_bytes[row_start + x] = 0
-		else:
-			for x in range(INSET):
-				eligible_bytes[row_start + x] = 0
-				eligible_bytes[row_start + MASK_SIZE - 1 - x] = 0
-	_total_eligible_pixels = (MASK_SIZE - INSET * 2) * (MASK_SIZE - INSET * 2)
+			continue
+		var row_start := y * MASK_SIZE
+		var normalized_y := (float(y) / float(MASK_SIZE - 1) - 0.5) * 2.0
+		for x in range(INSET, MASK_SIZE - INSET):
+			var normalized_x := (float(x) / float(MASK_SIZE - 1) - 0.5) * 2.0
+			var eligible := false
+			match _stage_index:
+				2:
+					var in_channel := absf(normalized_x + 0.267) <= 0.025 \
+							or absf(normalized_x - 0.033) <= 0.025 \
+							or absf(normalized_x - 0.289) <= 0.025
+					eligible = in_channel and normalized_y >= -0.78 and normalized_y <= 0.72
+				1:
+					eligible = pow(normalized_x / 0.82, 2.0) + pow(normalized_y / 0.9, 2.0) <= 1.0
+				_:
+					eligible = pow(normalized_x / 0.86, 2.0) + pow(normalized_y / 0.92, 2.0) <= 1.0
+			if eligible:
+				eligible_bytes[row_start + x] = 255
+				_total_eligible_pixels += 1
 	_eligible_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, eligible_bytes)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
 	_eligible_texture = ImageTexture.create_from_image(_eligible_image)
@@ -165,11 +178,9 @@ func _apply_circle(world_position: Vector3, world_radius: float, amount: float) 
 	var maximum_x := mini(MASK_SIZE - 1, ceili(center.x + radius_x))
 	var minimum_y := maxi(0, floori(center.y - radius_y))
 	var maximum_y := mini(MASK_SIZE - 1, ceili(center.y + radius_y))
-	var normalized_amount := clampf(amount / 22.0, 0.16, 1.0)
+	var normalized_amount := clampf(amount / 22.0, PAINTED_THRESHOLD + 0.08, 1.0)
 	for pixel_y in range(minimum_y, maximum_y + 1):
 		for pixel_x in range(minimum_x, maximum_x + 1):
-			if _eligible_image.get_pixel(pixel_x, pixel_y).r < 0.5:
-				continue
 			var dx := (float(pixel_x) + 0.5 - center.x) / radius_x
 			var dy := (float(pixel_y) + 0.5 - center.y) / radius_y
 			var squared_distance := dx * dx + dy * dy
@@ -178,7 +189,8 @@ func _apply_circle(world_position: Vector3, world_radius: float, amount: float) 
 			var existing := _paint_image.get_pixel(pixel_x, pixel_y).r
 			var deposited := normalized_amount * (1.0 - squared_distance * 0.7)
 			var updated := maxf(existing, deposited)
-			if existing < PAINTED_THRESHOLD and updated >= PAINTED_THRESHOLD:
+			var is_eligible := _eligible_image.get_pixel(pixel_x, pixel_y).r >= 0.5
+			if is_eligible and existing < PAINTED_THRESHOLD and updated >= PAINTED_THRESHOLD:
 				_painted_eligible_pixels += 1
 			if updated > existing + 0.001:
 				_paint_image.set_pixel(pixel_x, pixel_y, Color(updated, updated, updated, 1.0))
@@ -226,7 +238,7 @@ func _apply_downhill_flow(world_position: Vector3, radius: float, amount: float,
 		if best == current:
 			break
 		current = best
-		flow_amount *= 0.8
+		flow_amount *= 0.9
 		if flow_amount < 0.45:
 			break
 		var flow_world_position := Vector3(current.x, _terrain_origin_y + best_height, current.y)

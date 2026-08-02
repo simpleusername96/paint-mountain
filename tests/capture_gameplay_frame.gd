@@ -8,6 +8,7 @@ func _initialize() -> void:
 
 
 func _capture() -> void:
+	root.get_node("/root/GameState").select_stage(&"first_descent")
 	var requested_state := "briefing"
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/gameplay_capture.png")
 	for argument in OS.get_cmdline_user_args():

@@ -18,13 +18,13 @@ enum Kind {
 @export_range(0.5, 8.0, 0.1) var trigger_radius: float = 2.1
 
 @export_category("Burst")
-@export_range(0.5, 30.0, 0.5) var burst_radius: float = 10.0
-@export_range(1.0, 500.0, 1.0) var burst_paint_amount: float = 120.0
+@export_range(0.5, 40.0, 0.5) var burst_radius: float = 28.0
+@export_range(1.0, 800.0, 1.0) var burst_paint_amount: float = 320.0
 
 @export_category("Splitter")
 @export_range(2, 5, 1) var child_count: int = 3
 @export_range(0.05, 0.45, 0.01) var child_payload_ratio: float = 0.3
-@export_range(5.0, 60.0, 1.0) var fan_angle_degrees: float = 34.0
+@export_range(5.0, 120.0, 1.0) var fan_angle_degrees: float = 34.0
 @export_range(0.2, 1.5, 0.05) var child_speed_multiplier: float = 0.78
 
 @export_category("Bumper")

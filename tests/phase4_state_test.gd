@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.time_scale = 2.0
+	root.get_node("/root/GameState").select_stage(&"first_descent")
 	var gameplay := GAMEPLAY_SCENE.instantiate()
 	root.add_child(gameplay)
 	await physics_frame

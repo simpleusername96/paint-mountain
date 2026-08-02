@@ -10,5 +10,5 @@ description = "Paints a wide area once when struck."
 maximum_charges = 1
 cooldown_seconds = 0.35
 trigger_radius = 2.2
-burst_radius = 10.0
-burst_paint_amount = 120.0
+burst_radius = 28.0
+burst_paint_amount = 320.0

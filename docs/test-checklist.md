@@ -67,10 +67,10 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 ### Stages and composition
 
-- [ ] First Descent teaches forgiving impact/roll/coverage and has a recorded reliable clear.
-- [ ] Burst Basin rewards the upper Burst route and has a recorded reliable clear.
-- [ ] Split Ridge offers safe/inefficient and difficult/high-value routes, uses Splitter plus Bumper, targets about 70%, and has a recorded reliable clear.
-- [ ] Stage values are loaded from StageData resources, not stage-specific global code.
+- [x] First Descent teaches forgiving impact/roll/coverage and has a recorded reliable clear.
+- [x] Burst Basin rewards the upper Burst route and has a recorded reliable clear.
+- [x] Split Ridge offers safe/inefficient and difficult/high-value routes, uses Splitter plus Bumper, targets about 70%, and has a recorded reliable clear.
+- [x] Stage values are loaded from StageData resources, not stage-specific global code.
 - [x] Aiming camera keeps the cannon in the lower foreground at about 15–20% or less of the frame.
 - [x] Mountain dominates the middle/upper frame and reads as a distant large landform.
 - [ ] Major routes and mechanisms are legible without absurd scale; cameras do not clip through terrain.
@@ -88,10 +88,10 @@ Run narrow checks throughout development, then complete this full checklist agai
 ### Save, replay, agent API, and debug
 
 - [ ] Unlocks, best coverage, best stars, and settings survive a normal process restart.
-- [ ] Invalid save data falls back safely without blocking play.
+- [x] Invalid save data falls back safely without blocking play.
 - [ ] Replay stores stage/version/seed and ordered aim inputs and reproduces the attempt within defined tolerance.
-- [ ] Replay supports play, pause, restart, 1×, and 2×.
-- [ ] In-process observation/action/event API operates without mouse input or screen reading.
+- [x] Replay supports play, pause, restart, 1×, and 2×.
+- [x] In-process observation/action/event API operates without mouse input or screen reading.
 - [ ] Debug overlay contains every specified metric and action and is disabled by default in release.
 - [ ] Shot-result log export contains stage, seed, aim, gains, activations, and settlement outcome.
 

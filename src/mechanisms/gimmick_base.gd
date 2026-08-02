@@ -15,6 +15,7 @@ var _projectile_manager: ProjectileManager
 var _paint_system: PaintSystem
 var _activated_projectile_ids: Dictionary = {}
 var _visual_root: Node3D
+var _label: Label3D
 
 
 func _ready() -> void:
@@ -28,6 +29,17 @@ func _ready() -> void:
 	_visual_root.name = "Visual"
 	add_child(_visual_root)
 	_build_visual(_visual_root)
+	_label = Label3D.new()
+	_label.name = "BriefingLabel"
+	_label.text = data.display_name
+	_label.font_size = 42
+	_label.outline_size = 8
+	_label.modulate = Color(0.95, 0.97, 1.0, 1.0)
+	_label.outline_modulate = Color(0.04, 0.07, 0.12, 0.9)
+	_label.position = Vector3(0.0, data.trigger_radius + 1.2, 0.0)
+	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_label.visible = false
+	add_child(_label)
 	body_entered.connect(_on_body_entered)
 	reset_state()
 
@@ -87,6 +99,11 @@ func state_snapshot() -> Dictionary:
 		"cooldown": cooldown_remaining,
 		"spent": is_spent(),
 	}
+
+
+func set_label_visible(value: bool) -> void:
+	if _label != null:
+		_label.visible = value
 
 
 func _effect_can_activate(_projectile: PaintProjectile) -> bool:

@@ -11,11 +11,10 @@ func _effect_can_activate(projectile: PaintProjectile) -> bool:
 func _apply_effect(projectile: PaintProjectile) -> void:
 	var incoming_velocity := projectile.linear_velocity
 	var speed := maxf(incoming_velocity.length() * data.child_speed_multiplier, 14.0)
-	var base_direction := incoming_velocity.normalized()
-	if base_direction.length_squared() < 0.5:
-		base_direction = -global_basis.z
-	base_direction.y = maxf(base_direction.y, 0.18)
-	base_direction = base_direction.normalized()
+	# The splitter redirects children back down the visible face of the mountain.
+	# A small inherited lateral component keeps different valid approaches distinct.
+	var inherited_lateral := global_basis.x * incoming_velocity.dot(global_basis.x) * 0.08
+	var base_direction := (global_basis.z + Vector3.DOWN * 0.18 + inherited_lateral).normalized()
 	var available_slots := ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES - _projectile_manager.active_count()
 	var spawn_count := mini(data.child_count, maxi(0, available_slots))
 	var child_payload := projectile.remaining_payload * data.child_payload_ratio

@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/stage/stage_data.gd" id="1_stage"]
+[ext_resource type="Script" path="res://src/stage/mechanism_placement.gd" id="2_placement"]
+[ext_resource type="Resource" path="res://resources/mechanisms/splitter_node.tres" id="3_splitter"]
+[ext_resource type="Resource" path="res://resources/mechanisms/bumper_node.tres" id="4_bumper"]
+
+[sub_resource type="Resource" id="Placement_splitter"]
+script = ExtResource("2_placement")
+mechanism_data = ExtResource("3_splitter")
+local_xz = Vector2(5, -13)
+height_offset = 1.1
+yaw_degrees = 0.0
+
+[sub_resource type="Resource" id="Placement_bumper"]
+script = ExtResource("2_placement")
+mechanism_data = ExtResource("4_bumper")
+local_xz = Vector2(-28, 1)
+height_offset = 0.9
+yaw_degrees = -18.0
+
+[resource]
+script = ExtResource("1_stage")
+stage_id = &"split_ridge"
+stage_version = 1
+display_name = "SPLIT RIDGE"
+stage_number = 3
+target_coverage = 70.0
+maximum_shots = 6
+paint_color = Color(0.03, 0.38, 1, 1)
+star_thresholds = Vector3(70, 82, 92)
+objective = "Use the Bumper and Splitter to reach all three downhill channels."
+terrain_variant = 2
+terrain_center = Vector3(0, -2, -112)
+terrain_size = Vector2(180, 120)
+cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
+mechanisms = Array[ExtResource("2_placement")]([SubResource("Placement_splitter"), SubResource("Placement_bumper")])
+reliable_solution = Array[Vector3]([Vector3(-14, 34, 68), Vector3(2, 40, 94), Vector3(2, 44, 90)])
+briefing_camera_position = Vector3(96, 66, 18)
+briefing_camera_target = Vector3(0, 26, -112)
+aiming_camera_position = Vector3(5, 3.2, 18)
+aiming_camera_target = Vector3(0, 20, -102)
+wide_camera_position = Vector3(86, 57, 2)
+wide_camera_target = Vector3(0, 23, -112)
+result_camera_position = Vector3(-84, 55, -2)
+result_camera_target = Vector3(0, 23, -112)

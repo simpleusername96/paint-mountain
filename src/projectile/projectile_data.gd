@@ -4,9 +4,9 @@ extends Resource
 @export_category("Body")
 @export_range(0.1, 2.0, 0.05) var radius: float = 0.52
 @export_range(0.1, 20.0, 0.1) var mass: float = 2.4
-@export_range(0.0, 1.0, 0.01) var bounce: float = 0.42
-@export_range(0.0, 1.0, 0.01) var friction: float = 0.64
-@export_range(0.0, 5.0, 0.05) var linear_damp: float = 0.16
+@export_range(0.0, 1.0, 0.01) var bounce: float = 0.24
+@export_range(0.0, 1.0, 0.01) var friction: float = 0.5
+@export_range(0.0, 5.0, 0.05) var linear_damp: float = 0.12
 @export_range(0.0, 5.0, 0.05) var angular_damp: float = 0.22
 
 @export_category("Launch")
@@ -19,10 +19,10 @@ extends Resource
 @export_range(0.1, 5.0, 0.1) var stop_duration: float = 1.0
 
 @export_category("Paint Payload")
-@export_range(1.0, 1000.0, 1.0) var initial_payload: float = 260.0
-@export_range(0.05, 5.0, 0.05) var paint_stamp_radius: float = 1.15
-@export_range(0.1, 12.0, 0.1) var impact_splash_radius: float = 3.8
-@export_range(0.1, 100.0, 0.1) var deposit_rate: float = 18.0
+@export_range(1.0, 1000.0, 1.0) var initial_payload: float = 520.0
+@export_range(0.05, 8.0, 0.05) var paint_stamp_radius: float = 4.0
+@export_range(0.1, 20.0, 0.1) var impact_splash_radius: float = 9.0
+@export_range(0.1, 100.0, 0.1) var deposit_rate: float = 32.0
 @export_range(0, 16, 1) var maximum_mechanism_activations: int = 4
 
 

@@ -26,6 +26,11 @@ var _trail_elapsed: float = 0.0
 var _last_deposit_position: Vector3 = Vector3.INF
 
 
+func paint_radius_multiplier() -> float:
+	# Split children disperse their divided payload across wider lanes.
+	return 6.0 if split_generation > 0 else 1.0
+
+
 func configure(
 		data: ProjectileData,
 		bounds: AABB,
@@ -86,7 +91,7 @@ func deactivate(reason: StringName) -> void:
 		_request_deposit(
 			&"puddle",
 			global_position - Vector3.UP * projectile_data.radius * 0.7,
-			projectile_data.paint_stamp_radius * 1.45,
+			projectile_data.paint_stamp_radius * 1.45 * paint_radius_multiplier(),
 			puddle_amount,
 			true
 		)
@@ -105,7 +110,7 @@ func _on_body_entered(_body: Node) -> void:
 	_request_deposit(
 		&"impact",
 		global_position - Vector3.UP * projectile_data.radius * 0.55,
-		projectile_data.impact_splash_radius * splash_scale,
+		projectile_data.impact_splash_radius * splash_scale * paint_radius_multiplier(),
 		splash_amount,
 		impact_speed >= 20.0
 	)
@@ -127,7 +132,7 @@ func _deposit_surface_trail(delta: float) -> void:
 	if not distance_ready and _trail_elapsed < 0.12:
 		return
 	var payload_ratio := clampf(remaining_payload / projectile_data.initial_payload, 0.0, 1.0)
-	var radius := projectile_data.paint_stamp_radius * lerpf(0.48, 1.0, payload_ratio)
+	var radius := projectile_data.paint_stamp_radius * lerpf(0.48, 1.0, payload_ratio) * paint_radius_multiplier()
 	var amount := minf(remaining_payload, maxf(1.0, projectile_data.deposit_rate * _trail_elapsed))
 	_request_deposit(&"trail", _contact_position, radius, amount, false)
 	_last_deposit_position = _contact_position

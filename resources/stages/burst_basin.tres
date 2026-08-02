@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/stage/stage_data.gd" id="1_stage"]
+[ext_resource type="Script" path="res://src/stage/mechanism_placement.gd" id="2_placement"]
+[ext_resource type="Resource" path="res://resources/mechanisms/burst_node.tres" id="3_burst"]
+
+[sub_resource type="Resource" id="Placement_burst"]
+script = ExtResource("2_placement")
+mechanism_data = ExtResource("3_burst")
+local_xz = Vector2(-16, -8)
+height_offset = 1.0
+yaw_degrees = 0.0
+
+[resource]
+script = ExtResource("1_stage")
+stage_id = &"burst_basin"
+stage_version = 1
+display_name = "BURST BASIN"
+stage_number = 2
+target_coverage = 27.0
+maximum_shots = 5
+paint_color = Color(0.03, 0.38, 1, 1)
+star_thresholds = Vector3(27, 38, 50)
+objective = "Land high, strike the Burst Node, and paint the basin below."
+terrain_variant = 1
+terrain_center = Vector3(0, -2, -112)
+terrain_size = Vector2(180, 120)
+cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
+mechanisms = Array[ExtResource("2_placement")]([SubResource("Placement_burst")])
+reliable_solution = Array[Vector3]([Vector3(-7, 36, 74), Vector3(28, 34, 55)])
+briefing_camera_position = Vector3(94, 66, 20)
+briefing_camera_target = Vector3(0, 27, -112)
+aiming_camera_position = Vector3(5, 3.2, 18)
+aiming_camera_target = Vector3(0, 20, -102)
+wide_camera_position = Vector3(84, 56, 4)
+wide_camera_target = Vector3(0, 24, -112)
+result_camera_position = Vector3(-82, 54, 0)
+result_camera_target = Vector3(0, 24, -112)

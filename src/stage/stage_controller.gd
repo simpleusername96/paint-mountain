@@ -31,6 +31,7 @@ var coverage_before_shot: float = 0.0
 var _cannon: CannonController
 var _projectile_manager: ProjectileManager
 var _paint_system: PaintSystem
+var _mechanisms: Array[GimmickBase] = []
 var _state_before_pause: State = State.BRIEFING
 var _decision_generation: int = 0
 
@@ -43,12 +44,14 @@ func configure(
 		data: StageData,
 		cannon: CannonController,
 		projectile_manager: ProjectileManager,
-		paint_system: PaintSystem
+		paint_system: PaintSystem,
+		mechanisms: Array[GimmickBase] = []
 ) -> void:
 	stage_data = data
 	_cannon = cannon
 	_projectile_manager = projectile_manager
 	_paint_system = paint_system
+	_mechanisms = mechanisms
 	_projectile_manager.stage_bounds = stage_data.stage_bounds
 	if not _projectile_manager.all_projectiles_settled.is_connected(_on_all_projectiles_settled):
 		_projectile_manager.all_projectiles_settled.connect(_on_all_projectiles_settled)
@@ -100,6 +103,8 @@ func restart(return_to_briefing: bool = true) -> void:
 	_transition_to(State.LOADING, true)
 	_projectile_manager.cleanup()
 	_paint_system.clear()
+	for mechanism in _mechanisms:
+		mechanism.reset_state()
 	shots_remaining = stage_data.maximum_shots
 	coverage_before_shot = 0.0
 	_cannon.set_aim(0.0, 38.0, 68.0)

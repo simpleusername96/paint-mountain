@@ -13,7 +13,7 @@ related:
 
 # Paint Mountain Vertical Slice Execution Plan
 
-The repository now launches a verified Godot bootstrap scene. The remaining seven phases replace that scene with the complete three-stage game, validate every acceptance path, and capture the required running-game evidence.
+The repository now launches the complete three-stage gameplay scene with progression, persistence foundations, replay, and an in-process agent API. The remaining presentation and delivery phases complete the application shell, final QA, export, and running-game evidence.
 
 ## Purpose
 
@@ -140,10 +140,10 @@ Guard: implement no fourth mechanism and never allow more than eight active ball
 
 ### Phase 6: Three stages, progression, save, replay, and AI hook
 
-- [ ] Build First Descent, Burst Basin, and Split Ridge as StageData-backed scenes with fixed cannon/camera/bounds/mask/result/tutorial data.
-- [ ] Implement versioned saves for unlocks, best coverage/stars, and settings.
-- [ ] Implement deterministic-first attempt replay and the in-process observation/action/event API.
-- [ ] Tune and record at least one reliable successful shot sequence per stage.
+- [x] Build First Descent, Burst Basin, and Split Ridge as StageData-backed scenes with fixed cannon/camera/bounds/mask/result/tutorial data.
+- [x] Implement versioned saves for unlocks, best coverage/stars, and settings.
+- [x] Implement deterministic-first attempt replay and the in-process observation/action/event API.
+- [x] Tune and record at least one reliable successful shot sequence per stage.
 
 Acceptance: all stages select, load, clear/fail, unlock, persist, replay, and expose UI-independent agent actions.
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://src/stage/stage_controller.gd" id="7_stage_controller"]
 [ext_resource type="Script" path="res://src/camera/camera_director.gd" id="8_camera"]
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="9_hud"]
+[ext_resource type="Script" path="res://src/replay/replay_recorder.gd" id="10_replay"]
+[ext_resource type="Script" path="res://src/agent/gameplay_agent_api.gd" id="11_agent"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.63, 0.75, 0.88, 1)
@@ -118,6 +120,17 @@ script = ExtResource("7_stage_controller")
 [node name="CameraDirector" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("8_camera")
+
+[node name="Mechanisms" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="ReplayRecorder" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("10_replay")
+
+[node name="GameplayAgentApi" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("11_agent")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 unique_name_in_owner = true

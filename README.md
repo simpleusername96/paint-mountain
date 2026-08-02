@@ -1,6 +1,6 @@
 # Paint Mountain
 
-Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 4 single-stage gameplay loop, not the finished vertical slice.
+Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. The repository currently contains the complete three-stage gameplay/content layer through Phase 6; the application menus, presentation polish, release tooling, export, and final evidence remain.
 
 ## Engine
 
@@ -37,7 +37,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\
 - `Tab`: switch between briefing inspection and aiming.
 - `Esc`: pause; Resume returns to the prior gameplay state.
 
-Briefing orbit/zoom, follow/wide/cannon observation cameras, retry, and pause foundations are implemented. Menus and three-stage navigation remain scheduled.
+Briefing orbit/zoom, follow/wide/cannon observation cameras, retry, pause, three tuned stages, unlock state, save foundations, replay controls, and the in-process gameplay API are implemented. The standalone main-menu and stage-select flow remains scheduled for Phase 7.
 
 ## Project Structure
 
@@ -46,6 +46,8 @@ Briefing orbit/zoom, follow/wide/cannon observation cameras, retry, and pause fo
 - `scenes/gameplay/`: current state-driven game entry and reusable cannon scene.
 - `src/cannon/`, `src/projectile/`, `src/terrain/`: Phase 2 runtime owners.
 - `src/mechanisms/`: shared activation contract and the Burst, Splitter, and Bumper implementations.
+- `src/stage/`, `resources/stages/`: stage state, exact three-stage catalog, placements, targets, cameras, and recorded solutions.
+- `src/autoload/`, `src/replay/`, `src/agent/`: progression/persistence, replay, and UI-independent actions/observations.
 - `src/bootstrap/`: isolated bootstrap-only setup and procedural mountain proxy.
 - `docs/`: active game design, architecture, and acceptance specifications.
 - `.agents/`: repository-local project memory and the active implementation plan.
@@ -55,8 +57,8 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 
 ## Known Limitations
 
-- Mechanism placement, menus, saving, replay, audio, full debug overlay, three completed stages, and delivery screenshots are not implemented yet.
-- The sandbox mountain is procedural validation geometry with collision, not a tuned stage.
+- Main menu, stage select, complete settings presentation, audio/particle polish, full debug overlay, Windows export, and delivery screenshots are not implemented yet.
+- Persistence has focused atomic/fallback tests; a separate real process-restart persistence check remains for final QA.
 - Godot is not assumed to be installed on PATH.
 
 ## Development Contract

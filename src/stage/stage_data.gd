@@ -8,10 +8,10 @@ extends Resource
 @export var stage_number: int = 1
 
 @export_category("Rules")
-@export_range(0.01, 100.0, 0.01) var target_coverage: float = 0.25
+@export_range(0.01, 100.0, 0.01) var target_coverage: float = 10.0
 @export_range(1, 12, 1) var maximum_shots: int = 4
 @export var paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
-@export var star_thresholds := Vector3(0.25, 0.4, 0.6)
+@export var star_thresholds := Vector3(10.0, 18.0, 28.0)
 @export_multiline var objective: String = "Paint the broad descent and let gravity extend each route."
 
 @export_category("World")
@@ -20,6 +20,8 @@ extends Resource
 @export var terrain_size := Vector2(180.0, 120.0)
 @export var cannon_transform := Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 5.0))
 @export var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
+@export var mechanisms: Array[MechanismPlacement] = []
+@export var reliable_solution: Array[Vector3] = []
 
 @export_category("Camera Bookmarks")
 @export var briefing_camera_position := Vector3(92.0, 62.0, 24.0)
