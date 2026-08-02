@@ -3,6 +3,12 @@ extends GimmickBase
 
 const MAXIMUM_SPLIT_GENERATION := 1
 
+var _route_target_bands: Array[PackedVector3Array] = []
+
+
+func configure_route_target_bands(target_bands: Array[PackedVector3Array]) -> void:
+	_route_target_bands = target_bands.duplicate(true)
+
 
 func _effect_can_activate(projectile: PaintProjectile) -> bool:
 	return projectile.split_generation < MAXIMUM_SPLIT_GENERATION
@@ -19,14 +25,23 @@ func _apply_effect(projectile: PaintProjectile) -> void:
 	var spawn_count := mini(data.child_count, maxi(0, available_slots))
 	var child_payload := projectile.remaining_payload * data.child_payload_ratio
 	var origin := projectile.global_position + Vector3.UP * 0.5
+	var target_band := 1
+	if incoming_velocity.y < data.route_band_velocity_y_thresholds.x:
+		target_band = 2
+	elif incoming_velocity.y < data.route_band_velocity_y_thresholds.y:
+		target_band = 0
 	for child_index in range(spawn_count):
 		var ratio := 0.5 if spawn_count == 1 else float(child_index) / float(spawn_count - 1)
 		var angle := deg_to_rad(lerpf(-data.fan_angle_degrees * 0.5, data.fan_angle_degrees * 0.5, ratio))
 		var direction := base_direction.rotated(Vector3.UP, angle)
+		if target_band < _route_target_bands.size() and child_index < _route_target_bands[target_band].size():
+			# The generated layout supplies destinations only; the splitter retains
+			# ownership of child count, payload, speed, and one-generation limits.
+			direction = (_route_target_bands[target_band][child_index] - origin + Vector3.UP * data.child_target_lift).normalized()
 		_projectile_manager.spawn_projectile(
 			projectile.projectile_data,
 			origin + direction * 0.8,
-			direction * speed,
+			direction * maxf(speed, data.child_minimum_route_speed),
 			child_payload,
 			projectile.split_generation + 1
 		)

@@ -34,7 +34,7 @@ func _run_checks() -> void:
 		for mechanism: GimmickBase in mechanisms:
 			var solved := {}
 			for power in POWERS:
-				solved = ImpactTargetSolver.solve(
+				var candidate := ImpactTargetSolver.solve(
 					space_state,
 					cannon.get_launch_origin(),
 					mechanism.global_position,
@@ -43,8 +43,10 @@ func _run_checks() -> void:
 					mechanism,
 					cannon
 				)
-				if solved.valid:
-					break
+				if candidate.valid:
+					print("%s %s power %.0f solution: yaw=%.6f elevation=%.6f" % [stage_id, mechanism.data.display_name, power, candidate.yaw, candidate.elevation])
+					if solved.is_empty():
+						solved = candidate
 			_assert_true(bool(solved.get("valid", false)), "%s must have a valid first-impact solution for %s" % [stage_id, mechanism.data.display_name])
 			if bool(solved.get("valid", false)):
 				_assert_true(float(solved.elevation) >= 18.0 and float(solved.elevation) <= 68.0, "solver elevation must stay within cannon limits")

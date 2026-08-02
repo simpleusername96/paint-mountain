@@ -273,6 +273,23 @@ func _spawn_mechanisms() -> void:
 		mechanism.rotation.y = deg_to_rad(placement.yaw_degrees)
 		mechanism.configure(_projectile_manager, _paint_system)
 		_mechanism_root.add_child(mechanism)
+		if mechanism is SplitterNode:
+			var route_target_bands: Array[PackedVector3Array] = []
+			for route_t in [
+				mechanism.data.route_target_positions.x,
+				mechanism.data.route_target_positions.y,
+				mechanism.data.route_target_positions.z,
+			]:
+				var route_targets := PackedVector3Array()
+				for route_index in range(_generated_layout.route_spines.size()):
+					var route_target := _generated_layout.route_position(route_index, route_t)
+					route_targets.append(stage_data.terrain_center + Vector3(
+						route_target.x,
+						_generated_layout.height_at_local(route_target.x, route_target.z),
+						route_target.z
+					))
+				route_target_bands.append(route_targets)
+			mechanism.configure_route_target_bands(route_target_bands)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
 		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)

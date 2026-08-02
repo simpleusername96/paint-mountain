@@ -33,6 +33,15 @@ func _run_checks() -> void:
 					first.mechanism_placements[first_index].local_xz.distance_to(first.mechanism_placements[second_index].local_xz) >= 10.0,
 					"%s mechanisms must keep ten metres of center separation" % stage_id
 				)
+		if stage_id == &"split_ridge":
+			var bumper: MechanismPlacement = first.mechanism_placements[1]
+			var route_direction := Vector2(-sin(deg_to_rad(bumper.yaw_degrees)), -cos(deg_to_rad(bumper.yaw_degrees)))
+			var start_height := first.height_at_local(bumper.local_xz.x, bumper.local_xz.y)
+			var end_height := start_height
+			for distance in [0.0, 5.0, 10.0, 15.0, 20.0]:
+				var point: Vector2 = bumper.local_xz + route_direction * float(distance)
+				end_height = first.height_at_local(point.x, point.y)
+			_assert_true(end_height <= start_height - 10.0, "split_ridge Bumper must face a materially descending section of its own route")
 		print("%s placements: seed=%d attempt=%d %s" % [stage_id, first.accepted_seed, first.generation_attempt, _placement_summary(first)])
 	quit(1 if _failed else 0)
 

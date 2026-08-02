@@ -16,6 +16,7 @@ enum Kind {
 @export_range(0, 8, 1) var maximum_charges: int = 1
 @export_range(0.0, 5.0, 0.05) var cooldown_seconds: float = 0.35
 @export_range(0.5, 8.0, 0.1) var trigger_radius: float = 2.1
+@export_range(0.0, 8.0, 0.1) var trigger_height_offset: float = 0.0
 
 @export_category("Burst")
 @export_range(0.5, 40.0, 0.5) var burst_radius: float = 28.0
@@ -26,6 +27,10 @@ enum Kind {
 @export_range(0.05, 0.45, 0.01) var child_payload_ratio: float = 0.3
 @export_range(5.0, 120.0, 1.0) var fan_angle_degrees: float = 34.0
 @export_range(0.2, 1.5, 0.05) var child_speed_multiplier: float = 0.78
+@export_range(1.0, 60.0, 0.5) var child_minimum_route_speed: float = 22.0
+@export_range(0.0, 20.0, 0.5) var child_target_lift: float = 5.0
+@export var route_target_positions := Vector3(0.50, 0.82, 0.96)
+@export var route_band_velocity_y_thresholds := Vector2(-10.0, -2.0)
 
 @export_category("Bumper")
 @export var impulse_direction := Vector3(0.0, 0.62, -0.78)

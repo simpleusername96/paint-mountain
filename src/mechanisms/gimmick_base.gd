@@ -167,6 +167,7 @@ func _build_trigger() -> void:
 	shape.radius = data.trigger_radius
 	var collision := CollisionShape3D.new()
 	collision.name = "TriggerShape"
+	collision.position.y = data.trigger_height_offset
 	collision.shape = shape
 	add_child(collision)
 

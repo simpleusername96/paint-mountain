@@ -4,7 +4,16 @@ extends GimmickBase
 
 func _apply_effect(projectile: PaintProjectile) -> void:
 	var world_direction := global_basis * data.impulse_direction.normalized()
-	projectile.apply_central_impulse(world_direction * data.impulse_strength)
+	# A bumper is a redirector, so the outgoing route must not retain the large
+	# incoming component that would otherwise launch the ball off the mountain.
+	# Defer until the current area-contact step finishes so its incoming velocity
+	# cannot be reintroduced by the same physics integration.
+	_redirect_projectile.call_deferred(projectile, world_direction * data.impulse_strength)
+
+
+func _redirect_projectile(projectile: PaintProjectile, velocity: Vector3) -> void:
+	if is_instance_valid(projectile):
+		projectile.linear_velocity = velocity
 
 
 func _build_visual(parent: Node3D) -> void:

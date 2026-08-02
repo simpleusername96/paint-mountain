@@ -14,12 +14,15 @@ func _run_solution() -> void:
 	Engine.time_scale = 1.0
 	var requested_stage: StringName = &"first_descent"
 	var probe_only := false
+	var safe_route_only := false
 	var shot_probe := Vector3.INF
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
 			requested_stage = StringName(argument.trim_prefix("--stage="))
 		elif argument == "--probe-only":
 			probe_only = true
+		elif argument == "--safe-route-only":
+			safe_route_only = true
 		elif argument.begins_with("--shot="):
 			var components := argument.trim_prefix("--shot=").split(",")
 			if components.size() == 3:
@@ -57,6 +60,15 @@ func _run_solution() -> void:
 		return
 	controller.begin_aiming()
 	var solution: Array[Vector3] = stage.reliable_solution
+	if safe_route_only:
+		solution = [
+			Vector3(-14.0, 34.0, 68.0),
+			Vector3(-18.0, 38.0, 76.0),
+			Vector3(-10.0, 42.0, 68.0),
+			Vector3(-20.0, 46.0, 76.0),
+			Vector3(-12.0, 50.0, 84.0),
+			Vector3(-16.0, 54.0, 84.0),
+		]
 	if shot_probe != Vector3.INF:
 		solution = [shot_probe]
 	for shot in solution:
@@ -90,14 +102,19 @@ func _run_solution() -> void:
 				print("Impacts: %s" % [impact_positions])
 			else:
 				print("Closest mechanism pass: %.3fm at %s; activations=%d; impacts=%s" % [closest_mechanism_distance, closest_projectile_position, mechanism_activations.count, impact_positions])
-	if shot_probe == Vector3.INF:
+	if safe_route_only:
+		_assert_true(requested_stage == &"split_ridge", "safe-route verification is defined only for Split Ridge")
+		_assert_true(float(agent.get_observation().current_coverage) < stage.target_coverage, "the direct left-route sequence must remain below the 70% target")
+		if not _failed:
+			print("Split Ridge safe-route guard passed below target at %.3f%%." % float(agent.get_observation().current_coverage))
+	elif shot_probe == Vector3.INF:
 		_assert_true(controller.current_state == StageController.State.STAGE_CLEAR, "%s recorded solution must clear its target" % stage.display_name_key)
 		if not stage.mechanism_loadout.is_empty():
 			_assert_true(mechanism_activations.count > 0, "%s solution must activate its teaching mechanism" % stage.display_name_key)
 			for mechanism_data in stage.mechanism_loadout:
 				var required_kind: String = MechanismData.Kind.keys()[mechanism_data.kind]
 				_assert_true(mechanism_activations.kinds.has(required_kind), "%s solution must activate %s" % [stage.display_name_key, required_kind])
-	if not _failed and shot_probe == Vector3.INF:
+	if not _failed and shot_probe == Vector3.INF and not safe_route_only:
 		print("Phase 6 solution passed for %s at %.3f%% with %d mechanism activations." % [
 			stage.display_name_key,
 			float(agent.get_observation().current_coverage),

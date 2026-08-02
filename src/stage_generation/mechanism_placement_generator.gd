@@ -92,9 +92,10 @@ static func _place_one(
 	result.local_xz = selected.local_xz
 	result.height_offset = _height_offset_for(mechanism_data.kind)
 	if mechanism_data.kind == MechanismData.Kind.BUMPER:
-		var downstream := layout.route_position(1, minf(float(selected.route_t) + 0.14, 1.0))
+		var downstream := layout.route_position(route_index, minf(float(selected.route_t) + 0.14, 1.0))
 		var direction := Vector2(downstream.x, downstream.z) - result.local_xz
-		result.yaw_degrees = rad_to_deg(atan2(direction.x, -direction.y))
+		# Godot's local -Z axis rotates toward world +X with a negative yaw.
+		result.yaw_degrees = rad_to_deg(atan2(-direction.x, -direction.y))
 	return result
 
 
