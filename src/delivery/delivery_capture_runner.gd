@@ -77,7 +77,12 @@ func _capture_paint_flow() -> void:
 	var cannon: CannonController = gameplay.get_node("Cannon")
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
-	cannon.set_aim(-7.0, 36.0, 74.0)
+	var solution := StageCatalog.get_stage(&"burst_basin").reliable_solution
+	if solution.is_empty():
+		_fail_capture("Burst Basin has no reliable solution for paint-flow capture")
+		return
+	var shot: Vector3 = solution[0]
+	cannon.set_aim(shot.x, shot.y, shot.z)
 	controller.request_fire()
 	Engine.time_scale = 3.0
 	var budget := 60 * 16
@@ -103,7 +108,8 @@ func _capture_clear() -> void:
 
 func _capture_failure() -> void:
 	var gameplay := await _start_stage(&"first_descent", true)
-	var repeated: Array[Vector3] = [Vector3(0, 34, 60), Vector3(0, 34, 60), Vector3(0, 34, 60), Vector3(0, 34, 60)]
+	var miss := Vector3(28, 18, 0)
+	var repeated: Array[Vector3] = [miss, miss, miss, miss]
 	await _play_solution(gameplay, repeated)
 	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_FAILED:
 		_fail_capture("failure sequence did not reach STAGE_FAILED")

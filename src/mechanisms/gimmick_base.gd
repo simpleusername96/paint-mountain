@@ -36,14 +36,15 @@ func _ready() -> void:
 	_label = Label3D.new()
 	_label.name = "BriefingLabel"
 	_label.text = tr(_display_name_key())
-	_label.font_size = 42
-	_label.outline_size = 8
+	_label.font_size = 26
+	_label.outline_size = 5
 	_label.modulate = Color(0.95, 0.97, 1.0, 1.0)
 	_label.outline_modulate = Color(0.04, 0.07, 0.12, 0.9)
-	_label.position = Vector3(0.0, 0.9, 0.0)
+	# Keep the badge below the device, matching the reference layout and avoiding top HUD chips.
+	_label.position = Vector3(0.0, -5.0, 0.0)
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.fixed_size = true
-	_label.pixel_size = 0.0015
+	_label.pixel_size = 0.001
 	_label.no_depth_test = true
 	_label.visible = false
 	add_child(_label)
