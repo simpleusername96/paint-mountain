@@ -21,6 +21,9 @@ var _projectile_manager: ProjectileManager
 var _transition: Tween
 var _briefing_yaw_offset: float = 0.0
 var _briefing_zoom_offset: float = 0.0
+var _shake_remaining: float = 0.0
+var _shake_strength: float = 0.0
+var _shake_phase: float = 0.0
 
 
 func configure(camera: Camera3D, stage_data: StageData, projectile_manager: ProjectileManager) -> void:
@@ -31,18 +34,25 @@ func configure(camera: Camera3D, stage_data: StageData, projectile_manager: Proj
 
 
 func _process(delta: float) -> void:
-	if current_mode != Mode.FOLLOW or _projectile_manager == null:
+	if current_mode == Mode.FOLLOW and _projectile_manager != null:
+		var active := _projectile_manager.active_projectiles()
+		if not active.is_empty():
+			var focus := Vector3.ZERO
+			for projectile in active:
+				focus += projectile.global_position
+			focus /= float(active.size())
+			var desired := focus + Vector3(10.0, 7.0, 14.0)
+			_camera.global_position = _camera.global_position.lerp(desired, clampf(delta * 3.6, 0.0, 1.0))
+			_camera.look_at(focus, Vector3.UP)
+	_update_shake(delta)
+
+
+func add_impact_shake(strength: float) -> void:
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null and not bool(game_state.settings.get("camera_shake", true)):
 		return
-	var active := _projectile_manager.active_projectiles()
-	if active.is_empty():
-		return
-	var focus := Vector3.ZERO
-	for projectile in active:
-		focus += projectile.global_position
-	focus /= float(active.size())
-	var desired := focus + Vector3(10.0, 7.0, 14.0)
-	_camera.global_position = _camera.global_position.lerp(desired, clampf(delta * 3.6, 0.0, 1.0))
-	_camera.look_at(focus, Vector3.UP)
+	_shake_strength = maxf(_shake_strength, clampf(strength, 0.0, 0.5))
+	_shake_remaining = maxf(_shake_remaining, 0.2)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -108,3 +118,17 @@ func _apply_briefing_orbit() -> void:
 	var direction := rotated.normalized()
 	var distance := clampf(rotated.length() + _briefing_zoom_offset, 82.0, 152.0)
 	_move_to(_stage_data.briefing_camera_target + direction * distance, _stage_data.briefing_camera_target, true)
+
+
+func _update_shake(delta: float) -> void:
+	if _camera == null:
+		return
+	if _shake_remaining <= 0.0:
+		_camera.h_offset = 0.0
+		_camera.v_offset = 0.0
+		return
+	_shake_remaining = maxf(0.0, _shake_remaining - delta)
+	_shake_phase += delta * 48.0
+	var fade := clampf(_shake_remaining / 0.2, 0.0, 1.0)
+	_camera.h_offset = sin(_shake_phase * 1.7) * _shake_strength * fade
+	_camera.v_offset = cos(_shake_phase * 2.3) * _shake_strength * fade

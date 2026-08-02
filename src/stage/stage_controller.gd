@@ -98,6 +98,7 @@ func request_fire() -> bool:
 func restart(return_to_briefing: bool = true) -> void:
 	if stage_data == null or _cannon == null or _projectile_manager == null or _paint_system == null:
 		return
+	get_tree().paused = false
 	var started_at := Time.get_ticks_usec()
 	_decision_generation += 1
 	_transition_to(State.LOADING, true)

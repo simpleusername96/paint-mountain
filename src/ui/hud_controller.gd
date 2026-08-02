@@ -5,6 +5,11 @@ signal begin_aiming_requested
 signal fire_requested
 signal restart_requested
 signal pause_requested
+signal settings_requested
+signal stage_select_requested
+signal main_menu_requested
+signal next_stage_requested
+signal replay_requested
 signal camera_mode_requested(mode: int)
 signal simulation_speed_requested(speed: float)
 
@@ -29,6 +34,7 @@ var _coverage_panel: Control
 var _briefing_panel: Control
 var _briefing_title: Label
 var _briefing_objective: Label
+var _briefing_mechanisms: Label
 var _aim_panel: Control
 var _action_panel: Control
 var _observation_panel: Control
@@ -38,9 +44,10 @@ var _result_panel: Control
 var _result_title: Label
 var _result_details: Label
 var _pause_overlay: Control
-var _settings_panel: Control
 var _fire_button: Button
 var _start_button: Button
+var _next_button: Button
+var _result_stars: Label
 
 
 func _ready() -> void:
@@ -55,6 +62,8 @@ func configure(stage_data: StageData) -> void:
 	_target_value.text = "TARGET COVERAGE   %.2f%%" % stage_data.target_coverage
 	_briefing_title.text = stage_data.display_name
 	_briefing_objective.text = stage_data.objective
+	_briefing_mechanisms.text = _mechanism_brief(stage_data)
+	_next_button.disabled = StageCatalog.next_stage_id(stage_data.stage_id).is_empty()
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
 	update_coverage(0.0)
 	update_aim(38.0, 68.0)
@@ -87,8 +96,6 @@ func show_state(state: StageController.State) -> void:
 	_result_panel.visible = state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED]
 	_coverage_panel.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_pause_overlay.visible = state == StageController.State.PAUSED
-	if state != StageController.State.PAUSED:
-		_settings_panel.visible = false
 	_status_value.text = _display_state_name(state)
 	match state:
 		StageController.State.BRIEFING:
@@ -103,22 +110,26 @@ func show_shot_result(gain: float, total: float) -> void:
 	_shot_result_value.text = "+%.2f%%  ·  TOTAL %.2f%%" % [gain, total]
 
 
-func show_clear(final_coverage: float, shots_used: int) -> void:
+func show_clear(final_coverage: float, shots_used: int, stars: int = 1, previous_best: float = 0.0) -> void:
 	_result_title.text = "MOUNTAIN PAINTED"
 	_result_title.add_theme_color_override("font_color", BLUE)
-	_result_details.text = "FINAL COVERAGE  %.2f%%\nTARGET  %.2f%%\nSHOTS USED  %d" % [
+	_result_stars.text = "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
+	_result_details.text = "FINAL COVERAGE  %.2f%%\nTARGET  %.2f%%\nSHOTS USED  %d\nPREVIOUS BEST  %.2f%%" % [
 		final_coverage,
 		_stage_data.target_coverage,
 		shots_used,
+		previous_best,
 	]
 
 
-func show_failure(final_coverage: float, missing: float) -> void:
+func show_failure(final_coverage: float, missing: float, previous_best: float = 0.0) -> void:
 	_result_title.text = "TARGET NOT REACHED"
 	_result_title.add_theme_color_override("font_color", NAVY)
-	_result_details.text = "FINAL COVERAGE  %.2f%%\nMISSING  %.2f%%\nTRY A HIGHER ROUTE" % [
+	_result_stars.text = "☆☆☆"
+	_result_details.text = "FINAL COVERAGE  %.2f%%\nMISSING  %.2f%%\nPREVIOUS BEST  %.2f%%\nTRY A HIGHER ROUTE" % [
 		final_coverage,
 		missing,
+		previous_best,
 	]
 
 
@@ -175,14 +186,15 @@ func _build_top_information() -> void:
 
 
 func _build_briefing() -> void:
-	_briefing_panel = _make_panel(Vector2(680.0, 170.0))
+	_briefing_panel = _make_panel(Vector2(760.0, 210.0))
+	_briefing_panel.name = "BriefingPanel"
 	_briefing_panel.anchor_left = 0.5
 	_briefing_panel.anchor_right = 0.5
 	_briefing_panel.anchor_top = 1.0
 	_briefing_panel.anchor_bottom = 1.0
-	_briefing_panel.offset_left = -340.0
-	_briefing_panel.offset_right = 340.0
-	_briefing_panel.offset_top = -196.0
+	_briefing_panel.offset_left = -380.0
+	_briefing_panel.offset_right = 380.0
+	_briefing_panel.offset_top = -236.0
 	_briefing_panel.offset_bottom = -24.0
 	_root.add_child(_briefing_panel)
 	var margin := _add_margin(_briefing_panel, 24, 18, 24, 18)
@@ -195,12 +207,18 @@ func _build_briefing() -> void:
 	_briefing_objective = _make_label("Read the slope, then choose one high-value landing point.", 16, CHARCOAL)
 	_briefing_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_briefing_objective)
+	_briefing_mechanisms = _make_label("NO MECHANISMS", 13, BLUE)
+	_briefing_mechanisms.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_briefing_mechanisms)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	content.add_child(row)
 	var hint := _make_label("LEFT-DRAG ORBIT  ·  WHEEL ZOOM", 13, MUTED)
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(hint)
+	var back := _make_button("BACK", false, Vector2(104.0, 52.0))
+	back.pressed.connect(func() -> void: stage_select_requested.emit())
+	row.add_child(back)
 	_start_button = _make_button("START AIMING", true, Vector2(178.0, 52.0))
 	_start_button.pressed.connect(func() -> void: begin_aiming_requested.emit())
 	row.add_child(_start_button)
@@ -294,7 +312,7 @@ func _build_observation_controls() -> void:
 	_observation_panel = HBoxContainer.new()
 	_observation_panel.anchor_left = 1.0
 	_observation_panel.anchor_right = 1.0
-	_observation_panel.offset_left = -510.0
+	_observation_panel.offset_left = -560.0
 	_observation_panel.offset_right = -24.0
 	_observation_panel.offset_top = 92.0
 	_observation_panel.offset_bottom = 142.0
@@ -305,9 +323,11 @@ func _build_observation_controls() -> void:
 		var mode: int = entry[1]
 		button.pressed.connect(func() -> void: camera_mode_requested.emit(mode))
 		_observation_panel.add_child(button)
-	var speed := _make_button("2×", false, Vector2(68.0, 48.0))
-	speed.pressed.connect(func() -> void: simulation_speed_requested.emit(2.0))
-	_observation_panel.add_child(speed)
+	for speed_value in [1.0, 2.0]:
+		var speed := _make_button("%d×" % roundi(speed_value), false, Vector2(58.0, 48.0))
+		var requested_speed: float = speed_value
+		speed.pressed.connect(func() -> void: simulation_speed_requested.emit(requested_speed))
+		_observation_panel.add_child(speed)
 	var pause := _make_button("PAUSE", false, Vector2(82.0, 48.0))
 	pause.pressed.connect(func() -> void: pause_requested.emit())
 	_observation_panel.add_child(pause)
@@ -327,15 +347,16 @@ func _build_shot_result() -> void:
 
 
 func _build_result_panel() -> void:
-	_result_panel = _make_panel(Vector2(390.0, 410.0))
+	_result_panel = _make_panel(Vector2(440.0, 520.0))
+	_result_panel.name = "ResultPanel"
 	_result_panel.anchor_left = 1.0
 	_result_panel.anchor_right = 1.0
 	_result_panel.anchor_top = 0.5
 	_result_panel.anchor_bottom = 0.5
-	_result_panel.offset_left = -430.0
+	_result_panel.offset_left = -480.0
 	_result_panel.offset_right = -40.0
-	_result_panel.offset_top = -205.0
-	_result_panel.offset_bottom = 205.0
+	_result_panel.offset_top = -260.0
+	_result_panel.offset_bottom = 260.0
 	_root.add_child(_result_panel)
 	var margin := _add_margin(_result_panel, 28, 28, 28, 28)
 	margin.name = "Margin"
@@ -346,32 +367,47 @@ func _build_result_panel() -> void:
 	_result_title = _make_label("MOUNTAIN PAINTED", 28, BLUE)
 	_result_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_result_title)
+	_result_stars = _make_label("★★★", 30, BLUE)
+	content.add_child(_result_stars)
 	_result_details = _make_label("FINAL COVERAGE  0.00%", 18, CHARCOAL)
 	_result_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(_result_details)
-	var retry := _make_button("RETRY", true, Vector2(0.0, 58.0))
+	var retry := _make_button("RETRY", true, Vector2(0.0, 56.0))
 	retry.name = "Retry"
 	retry.pressed.connect(func() -> void: restart_requested.emit())
 	content.add_child(retry)
+	var primary_row := HBoxContainer.new()
+	primary_row.add_theme_constant_override("separation", 10)
+	content.add_child(primary_row)
+	_next_button = _make_button("NEXT", false, Vector2(182.0, 52.0))
+	_next_button.pressed.connect(func() -> void: next_stage_requested.emit())
+	primary_row.add_child(_next_button)
+	var select := _make_button("STAGES", false, Vector2(182.0, 52.0))
+	select.pressed.connect(func() -> void: stage_select_requested.emit())
+	primary_row.add_child(select)
+	var replay := _make_button("REPLAY ATTEMPT", false, Vector2(0.0, 52.0))
+	replay.pressed.connect(func() -> void: replay_requested.emit())
+	content.add_child(replay)
 
 
 func _build_pause_overlay() -> void:
 	_pause_overlay = Control.new()
+	_pause_overlay.name = "PauseOverlay"
 	_pause_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(_pause_overlay)
 	var dim := ColorRect.new()
 	dim.color = Color(0.02, 0.035, 0.06, 0.56)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_pause_overlay.add_child(dim)
-	var panel := _make_panel(Vector2(360.0, 380.0))
+	var panel := _make_panel(Vector2(380.0, 540.0))
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -180.0
-	panel.offset_right = 180.0
-	panel.offset_top = -190.0
-	panel.offset_bottom = 190.0
+	panel.offset_left = -190.0
+	panel.offset_right = 190.0
+	panel.offset_top = -270.0
+	panel.offset_bottom = 270.0
 	_pause_overlay.add_child(panel)
 	var margin := _add_margin(panel, 28, 28, 28, 28)
 	var content := VBoxContainer.new()
@@ -385,34 +421,14 @@ func _build_pause_overlay() -> void:
 	restart.pressed.connect(func() -> void: restart_requested.emit())
 	content.add_child(restart)
 	var settings := _make_button("SETTINGS", false, Vector2(0.0, 52.0))
-	settings.pressed.connect(_toggle_settings)
+	settings.pressed.connect(func() -> void: settings_requested.emit())
 	content.add_child(settings)
-
-	_settings_panel = _make_panel(Vector2(420.0, 330.0))
-	_settings_panel.anchor_left = 0.5
-	_settings_panel.anchor_right = 0.5
-	_settings_panel.anchor_top = 0.5
-	_settings_panel.anchor_bottom = 0.5
-	_settings_panel.offset_left = 210.0
-	_settings_panel.offset_right = 630.0
-	_settings_panel.offset_top = -165.0
-	_settings_panel.offset_bottom = 165.0
-	_pause_overlay.add_child(_settings_panel)
-	var settings_margin := _add_margin(_settings_panel, 24, 24, 24, 24)
-	var settings_content := VBoxContainer.new()
-	settings_content.add_theme_constant_override("separation", 14)
-	settings_margin.add_child(settings_content)
-	settings_content.add_child(_make_label("SETTINGS FOUNDATION", 23, NAVY))
-	settings_content.add_child(_make_label("Master Volume", 15, CHARCOAL))
-	var volume := HSlider.new()
-	volume.value = 80.0
-	volume.custom_minimum_size.y = 38.0
-	settings_content.add_child(volume)
-	settings_content.add_child(_make_label("Camera Shake   ON\nFollow Camera   ON\nTrajectory Preview   ON", 15, CHARCOAL))
-	var close := _make_button("CLOSE", false, Vector2(0.0, 48.0))
-	close.pressed.connect(_toggle_settings)
-	settings_content.add_child(close)
-	_settings_panel.visible = false
+	var stages := _make_button("STAGE SELECT", false, Vector2(0.0, 52.0))
+	stages.pressed.connect(func() -> void: stage_select_requested.emit())
+	content.add_child(stages)
+	var main_menu := _make_button("QUIT TO MAIN MENU", false, Vector2(0.0, 52.0))
+	main_menu.pressed.connect(func() -> void: main_menu_requested.emit())
+	content.add_child(main_menu)
 
 
 func _make_panel(minimum_size: Vector2, color: Color = OFF_WHITE, radius: int = 14) -> PanelContainer:
@@ -439,6 +455,7 @@ func _make_button(text: String, accent: bool, minimum_size: Vector2) -> Button:
 	button.add_theme_font_size_override("font_size", 17)
 	button.add_theme_color_override("font_color", Color.WHITE if accent else NAVY)
 	button.add_theme_color_override("font_hover_color", Color.WHITE if accent else NAVY)
+	button.add_theme_color_override("font_focus_color", Color.WHITE if accent else NAVY)
 	button.add_theme_stylebox_override("normal", _style(BLUE if accent else OFF_WHITE, 14, true))
 	button.add_theme_stylebox_override("hover", _style(BLUE_HOVER if accent else Color(0.92, 0.95, 1.0, 0.98), 14, true))
 	button.add_theme_stylebox_override("pressed", _style(Color(0.02, 0.28, 0.78, 1.0) if accent else Color(0.86, 0.9, 0.96, 1.0), 14, false))
@@ -489,10 +506,6 @@ func _add_centered(parent: Control, child: Control) -> void:
 	center.add_child(child)
 
 
-func _toggle_settings() -> void:
-	_settings_panel.visible = not _settings_panel.visible
-
-
 func _display_state_name(state: StageController.State) -> String:
 	match state:
 		StageController.State.PROJECTILE_IN_FLIGHT:
@@ -507,3 +520,12 @@ func _display_state_name(state: StageController.State) -> String:
 			return "STAGE FAILED"
 		_:
 			return StageController.State.keys()[state].replace("_", " ")
+
+
+func _mechanism_brief(stage: StageData) -> String:
+	if stage.mechanisms.is_empty():
+		return "NO MECHANISMS  ·  FOLLOW THE NATURAL DESCENT"
+	var descriptions: Array[String] = []
+	for placement in stage.mechanisms:
+		descriptions.append("%s — %s" % [placement.mechanism_data.display_name, placement.mechanism_data.description])
+	return "    ".join(descriptions)

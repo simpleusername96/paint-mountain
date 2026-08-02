@@ -1,5 +1,7 @@
 extends Node3D
 
+signal navigation_requested(destination: StringName)
+
 @export var stage_data: StageData
 
 @onready var _camera: Camera3D = %Camera
@@ -14,11 +16,14 @@ extends Node3D
 @onready var _camera_director: CameraDirector = %CameraDirector
 @onready var _hud: HUDController = %HUD
 @onready var _mechanism_root: Node3D = %Mechanisms
+@onready var _environment_dressing: Node3D = %EnvironmentDressing
 @onready var _replay_recorder: ReplayRecorder = %ReplayRecorder
 @onready var _agent_api: GameplayAgentApi = %GameplayAgentApi
+@onready var _presentation_effects: PresentationEffects = %PresentationEffects
 
 var _shot_has_impacted: bool = false
 var _mechanisms: Array[GimmickBase] = []
+var _replay_active: bool = false
 
 
 func _ready() -> void:
@@ -79,6 +84,7 @@ func _build_stage_world() -> void:
 		stage_data.paint_color
 	)
 	_mountain_mesh.material_override = paint_material
+	_environment_dressing.configure(stage_data)
 	_spawn_mechanisms()
 
 
@@ -98,6 +104,11 @@ func _connect_systems() -> void:
 	_hud.fire_requested.connect(func() -> void: _stage_controller.request_fire())
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause())
+	_hud.settings_requested.connect(func() -> void: navigation_requested.emit(&"settings"))
+	_hud.stage_select_requested.connect(func() -> void: navigation_requested.emit(&"stage_select"))
+	_hud.main_menu_requested.connect(func() -> void: navigation_requested.emit(&"main_menu"))
+	_hud.next_stage_requested.connect(func() -> void: navigation_requested.emit(&"next_stage"))
+	_hud.replay_requested.connect(_start_replay)
 	_hud.camera_mode_requested.connect(_on_camera_mode_requested)
 	_hud.simulation_speed_requested.connect(_on_simulation_speed_requested)
 	_replay_recorder.replay_action_ready.connect(_on_replay_action_ready)
@@ -115,14 +126,19 @@ func _on_paint_deposit_requested(
 
 
 func _on_projectile_impact(_projectile: PaintProjectile, _position: Vector3, _speed: float) -> void:
+	_presentation_effects.splash(_position, clampf(_speed / 32.0, 0.7, 1.5))
+	_audio_cue(&"impact")
+	_camera_director.add_impact_shake(clampf(_speed / 80.0, 0.12, 0.42))
 	_shot_has_impacted = true
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 	_shot_has_impacted = false
 	Engine.time_scale = 1.0
-	_replay_recorder.record_shot(_number, _yaw, _elevation, _power)
-	_replay_recorder.record_event(&"shot_started", {"order": _number})
+	_audio_cue(&"fire")
+	if not _replay_active:
+		_replay_recorder.record_shot(_number, _yaw, _elevation, _power)
+		_replay_recorder.record_event(&"shot_started", {"order": _number})
 
 
 func _on_state_changed(current_state: int, _previous_state: int) -> void:
@@ -136,13 +152,16 @@ func _on_state_changed(current_state: int, _previous_state: int) -> void:
 		StageController.State.AIMING:
 			_set_mechanism_labels_visible(false)
 			Engine.time_scale = 1.0
-			_trajectory_preview.visible = true
-			_trajectory_preview.refresh()
+			_trajectory_preview.visible = _setting_bool("trajectory_preview", true)
+			if _trajectory_preview.visible:
+				_trajectory_preview.refresh()
 			_camera_director.set_mode(CameraDirector.Mode.AIMING)
+			if _replay_active:
+				_continue_replay.call_deferred()
 		StageController.State.PROJECTILE_IN_FLIGHT:
 			_set_mechanism_labels_visible(false)
 			_trajectory_preview.visible = false
-			_camera_director.set_mode(CameraDirector.Mode.FOLLOW)
+			_camera_director.set_mode(CameraDirector.Mode.FOLLOW if _setting_bool("follow_camera", true) else CameraDirector.Mode.WIDE)
 		StageController.State.PAINT_SETTLING, StageController.State.SHOT_RESULT:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.WIDE)
@@ -152,17 +171,26 @@ func _on_state_changed(current_state: int, _previous_state: int) -> void:
 
 
 func _on_stage_cleared(final_coverage: float, shots_used: int) -> void:
-	_hud.show_clear(final_coverage, shots_used)
 	var stars := _stars_for_coverage(final_coverage)
 	var game_state := get_node_or_null("/root/GameState")
+	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) if game_state != null else 0.0
+	_hud.show_clear(final_coverage, shots_used, stars, previous_best)
+	_audio_cue(&"clear")
 	if game_state != null:
 		game_state.complete_stage(stage_data.stage_id, final_coverage, stars)
-	_replay_recorder.record_event(&"stage_cleared", {"coverage": final_coverage, "stars": stars})
+	if not _replay_active:
+		_replay_recorder.record_event(&"stage_cleared", {"coverage": final_coverage, "stars": stars})
+	_replay_active = false
 
 
 func _on_stage_failed(final_coverage: float, missing: float) -> void:
-	_hud.show_failure(final_coverage, missing)
-	_replay_recorder.record_event(&"stage_failed", {"coverage": final_coverage, "missing": missing})
+	var game_state := get_node_or_null("/root/GameState")
+	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) if game_state != null else 0.0
+	_hud.show_failure(final_coverage, missing, previous_best)
+	_audio_cue(&"fail")
+	if not _replay_active:
+		_replay_recorder.record_event(&"stage_failed", {"coverage": final_coverage, "missing": missing})
+	_replay_active = false
 
 
 func _on_camera_mode_requested(mode: int) -> void:
@@ -221,6 +249,9 @@ func _on_mechanism_activated(
 	}
 	_replay_recorder.record_event(&"mechanism_activated", payload)
 	_agent_api.notify_event(&"mechanism_activated", payload)
+	_presentation_effects.mechanism_burst(mechanism.global_position)
+	_audio_cue(&"mechanism")
+	_camera_director.add_impact_shake(0.32)
 
 
 func _set_mechanism_labels_visible(visible: bool) -> void:
@@ -243,3 +274,32 @@ func _on_replay_action_ready(action: Dictionary) -> void:
 		return
 	_cannon.set_aim(float(action.yaw), float(action.elevation), float(action.power))
 	_stage_controller.request_fire()
+
+
+func _start_replay() -> void:
+	var saved_attempt := _replay_recorder.export_attempt()
+	if saved_attempt.get("shots", []).is_empty():
+		return
+	_stage_controller.restart(false)
+	if not _replay_recorder.load_attempt(saved_attempt):
+		return
+	_replay_active = true
+	_continue_replay.call_deferred()
+
+
+func _continue_replay() -> void:
+	if not _replay_active:
+		return
+	if not _replay_recorder.emit_next_action():
+		_replay_active = false
+
+
+func _audio_cue(cue: StringName) -> void:
+	var audio_director := get_node_or_null("/root/AudioDirector")
+	if audio_director != null:
+		audio_director.play_cue(cue)
+
+
+func _setting_bool(key: String, fallback: bool) -> bool:
+	var game_state := get_node_or_null("/root/GameState")
+	return bool(game_state.settings.get(key, fallback)) if game_state != null else fallback

@@ -151,9 +151,9 @@ Guard: stage-specific logic stays out of global controllers and replay does not 
 
 ### Phase 7: Menus and presentation
 
-- [ ] Complete main menu, stage select, stage briefing, gameplay, result, pause, and settings interfaces as separate screens.
-- [ ] Add low-poly art cleanup, readable mechanism silhouettes, restrained particles/shake, generated or properly licensed audio, and pooled frequent effects.
-- [ ] Validate UI hierarchy, clipping, focus, hover/press feedback, and common 16:9 resolutions.
+- [x] Complete main menu, stage select, stage briefing, gameplay, result, pause, and settings interfaces as separate screens.
+- [x] Add low-poly art cleanup, readable mechanism silhouettes, restrained particles/shake, generated or properly licensed audio, and pooled frequent effects.
+- [x] Validate UI hierarchy, clipping, focus, hover/press feedback, and common 16:9 resolutions.
 
 Acceptance: the complete menu-to-game-to-result flow is usable, uncluttered, and visually consistent without debug overlays.
 

@@ -26,6 +26,8 @@ The repository was created from a complete vertical-slice brief. The current mil
 - `StageCatalog` owns the exact three-stage resource list, while `GameState` and `SaveSystem` own selection/unlocks/results/settings and atomic versioned local persistence. Stage scripts contain no stage-specific rule branches.
 - `ReplayRecorder` stores ordered aim inputs and gameplay events with play/pause/restart and 1×/2× controls. `GameplayAgentApi` exposes the same validated aim/fire/restart/camera actions and structured observations without HUD or mouse coupling.
 - Split children are redirected toward the visible downhill face and disperse divided payload over wider lanes. This gives Split Ridge a difficult, high-value route while retaining the one-generation and eight-projectile limits.
+- `AppRoot` owns navigation among separate main-menu, stage-select, settings, and active-gameplay interfaces. Gameplay emits narrow navigation signals instead of knowing the application shell.
+- Presentation uses dependency-free low-poly dressing, a subtle unshaded terrain treatment, an eight-emitter paint-particle pool, bounded camera shake, and runtime-generated PCM music/SFX routed through Master/Music/SFX buses.
 - Product behavior, technical ownership, planned work, and implemented status are stored separately to avoid treating plans as working features.
 
 ## Rationale
@@ -37,7 +39,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 ## Consequences
 
 - The bootstrap and projectile sandbox remain isolated validation scenes; the StageData-selected gameplay scene is the project entry.
-- Briefing, aiming, projectile observation, shot result, retry, clear/failure decisions, pause, camera modes, HUD foundations, all three mechanisms, stage selection state, persistence foundations, replay, and agent actions run and have focused checks. The complete menu shell, presentation/audio pass, release debug tooling, export, and required final screenshots remain.
+- Main menu, stage select, briefing, aiming/observation, result, pause, full settings, all three mechanisms, progression, persistence foundations, replay, agent actions, generated audio, pooled particles, and restrained camera feedback run and have focused checks. Release debug tooling, export, performance evidence, and the required final screenshots remain.
 - Future feature completion claims must cite running-game checks and update this record.
 
 ## Current Status
@@ -49,7 +51,8 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 4 stage loop, cameras, and gameplay HUD: complete.
 - Phase 5 Burst, Splitter, and Bumper: complete.
 - Phase 6 three-stage content, progression/save, replay, and agent API: complete.
-- Phase 7 and Phase 8: not started.
+- Phase 7 application UI and presentation: complete.
+- Phase 8: not started.
 
 ## Known Risks
 
@@ -76,4 +79,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 6 content check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase6_content_test.gd`
 - Phase 6 solution check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase6_solution_test.gd -- --stage=<stage_id>`
 - Observed 2026-08-02: the catalog loaded exactly three stages; atomic save fallback, unlock updates, two-shot replay serialization/control, and UI-independent agent actions passed. End-to-end replay coverage tolerance remains a Phase 8 check. Recorded physical clears reached 4.149% for First Descent, 27.310% for Burst Basin with Burst activation, and 77.921% for Split Ridge after both Bumper and Splitter activation.
+- Phase 7 UI check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase7_ui_test.gd`
+- Observed 2026-08-02: menu, stage select, settings return paths, gameplay briefing, pause, clear result, and gameplay cleanup passed through the real app shell. Rendered captures at 1280×720, 1600×900, and fullscreen 1920×1080 showed no panel clipping; the bright faceted mountain, foreground cannon, trajectory, markers, buttons, and hierarchy remained legible.
+- Observed 2026-08-02: the post-presentation regression batch passed Phase 2–7 checks and all three physical solutions without recurring headless errors; Phase 4 restart measured 1.080 ms under the concurrent batch.
 - Documentation-only fallback: `git diff --check`

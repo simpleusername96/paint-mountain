@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="9_hud"]
 [ext_resource type="Script" path="res://src/replay/replay_recorder.gd" id="10_replay"]
 [ext_resource type="Script" path="res://src/agent/gameplay_agent_api.gd" id="11_agent"]
+[ext_resource type="Script" path="res://src/effects/presentation_effects.gd" id="12_effects"]
+[ext_resource type="Script" path="res://src/terrain/environment_dressing.gd" id="13_dressing"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.63, 0.75, 0.88, 1)
@@ -26,7 +28,7 @@ background_mode = 2
 sky = SubResource("Sky")
 ambient_light_source = 3
 ambient_light_color = Color(0.69, 0.72, 0.77, 1)
-ambient_light_energy = 0.42
+ambient_light_energy = 0.68
 reflected_light_source = 2
 tonemap_mode = 2
 
@@ -86,6 +88,7 @@ position = Vector3(0, -2, -112)
 
 [node name="MountainMesh" type="MeshInstance3D" parent="Mountain"]
 unique_name_in_owner = true
+cast_shadow = 0
 
 [node name="MountainBody" type="StaticBody3D" parent="Mountain"]
 
@@ -93,6 +96,7 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 
 [node name="CannonPlatform" type="MeshInstance3D" parent="."]
+visible = false
 position = Vector3(0, -0.55, 6)
 mesh = SubResource("Mesh_platform")
 
@@ -124,6 +128,10 @@ script = ExtResource("8_camera")
 [node name="Mechanisms" type="Node3D" parent="."]
 unique_name_in_owner = true
 
+[node name="EnvironmentDressing" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_dressing")
+
 [node name="ReplayRecorder" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("10_replay")
@@ -131,6 +139,10 @@ script = ExtResource("10_replay")
 [node name="GameplayAgentApi" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("11_agent")
+
+[node name="PresentationEffects" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("12_effects")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 unique_name_in_owner = true

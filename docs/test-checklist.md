@@ -73,17 +73,17 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] Stage values are loaded from StageData resources, not stage-specific global code.
 - [x] Aiming camera keeps the cannon in the lower foreground at about 15–20% or less of the frame.
 - [x] Mountain dominates the middle/upper frame and reads as a distant large landform.
-- [ ] Major routes and mechanisms are legible without absurd scale; cameras do not clip through terrain.
+- [x] Major routes and mechanisms are legible without absurd scale; cameras do not clip through terrain.
 
 ### UI, settings, feedback, and accessibility architecture
 
-- [ ] Main menu, stage select, briefing, aiming/observation, clear, failure, pause, and settings are separate usable screens.
+- [x] Main menu, stage select, briefing, aiming/observation, clear, failure, pause, and settings are separate usable screens.
 - [x] Target, current coverage, and shots remaining maintain the top information hierarchy.
 - [x] Gameplay controls reduce during observation and result panels leave the mountain readable.
-- [ ] Anchored/container layouts do not clip or overflow at 1280×720, 1600×900, or 1920×1080.
-- [ ] Settings persist master/music/SFX volume, shake, follow camera, trajectory, fullscreen, resolution, quality, and language key.
-- [ ] Required sound cues, restrained shake, and pooled particles trigger without recurring console errors.
-- [ ] No shop, currency, monetization, story, inventory, multiplayer, or live-service UI exists.
+- [x] Anchored/container layouts do not clip or overflow at 1280×720, 1600×900, or 1920×1080.
+- [x] Settings persist master/music/SFX volume, shake, follow camera, trajectory, fullscreen, resolution, quality, and language key.
+- [x] Required sound cues, restrained shake, and pooled particles trigger without recurring console errors.
+- [x] No shop, currency, monetization, story, inventory, multiplayer, or live-service UI exists.
 
 ### Save, replay, agent API, and debug
 
