@@ -1,0 +1,124 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
+[ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cannon.tscn" id="3_cannon"]
+[ext_resource type="Script" path="res://src/cannon/trajectory_preview.gd" id="4_preview"]
+[ext_resource type="Script" path="res://src/projectile/projectile_manager.gd" id="5_projectiles"]
+[ext_resource type="Script" path="res://src/paint/paint_system.gd" id="6_paint"]
+[ext_resource type="Script" path="res://src/stage/stage_controller.gd" id="7_stage_controller"]
+[ext_resource type="Script" path="res://src/camera/camera_director.gd" id="8_camera"]
+[ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="9_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
+sky_top_color = Color(0.63, 0.75, 0.88, 1)
+sky_horizon_color = Color(0.92, 0.9, 0.84, 1)
+ground_bottom_color = Color(0.32, 0.34, 0.38, 1)
+ground_horizon_color = Color(0.78, 0.76, 0.7, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+
+[sub_resource type="Environment" id="Environment_gameplay"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.69, 0.72, 0.77, 1)
+ambient_light_energy = 0.42
+reflected_light_source = 2
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.31, 0.31, 0.3, 1)
+roughness = 0.98
+
+[sub_resource type="PlaneMesh" id="Mesh_ground"]
+material = SubResource("Material_ground")
+size = Vector2(380, 380)
+
+[sub_resource type="BoxShape3D" id="Shape_ground"]
+size = Vector3(380, 1, 380)
+
+[sub_resource type="StandardMaterial3D" id="Material_platform"]
+albedo_color = Color(0.36, 0.37, 0.39, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Mesh_platform"]
+material = SubResource("Material_platform")
+size = Vector3(10, 0.7, 9)
+
+[node name="Gameplay" type="Node3D"]
+script = ExtResource("1_root")
+stage_data = ExtResource("2_stage")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_gameplay")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, -28, 0)
+light_color = Color(1, 0.95, 0.84, 1)
+light_energy = 0.88
+shadow_enabled = true
+directional_shadow_max_distance = 260.0
+
+[node name="Camera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 7.2, 17)
+current = true
+fov = 50.0
+far = 460.0
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+position = Vector3(0, -2.55, -92)
+mesh = SubResource("Mesh_ground")
+
+[node name="GroundBody" type="StaticBody3D" parent="."]
+position = Vector3(0, -3.05, -92)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GroundBody"]
+shape = SubResource("Shape_ground")
+
+[node name="Mountain" type="Node3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, -2, -112)
+
+[node name="MountainMesh" type="MeshInstance3D" parent="Mountain"]
+unique_name_in_owner = true
+
+[node name="MountainBody" type="StaticBody3D" parent="Mountain"]
+
+[node name="MountainCollision" type="CollisionShape3D" parent="Mountain/MountainBody"]
+unique_name_in_owner = true
+
+[node name="CannonPlatform" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.55, 6)
+mesh = SubResource("Mesh_platform")
+
+[node name="Cannon" parent="." instance=ExtResource("3_cannon")]
+unique_name_in_owner = true
+position = Vector3(0, 0, 5)
+
+[node name="TrajectoryPreview" type="Node3D" parent="."]
+unique_name_in_owner = true
+visible = false
+script = ExtResource("4_preview")
+
+[node name="ProjectileManager" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("5_projectiles")
+
+[node name="PaintSystem" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("6_paint")
+
+[node name="StageController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("7_stage_controller")
+
+[node name="CameraDirector" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("8_camera")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("9_hud")

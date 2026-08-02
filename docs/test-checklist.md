@@ -35,15 +35,15 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 - [ ] Main menu and stage select start all three stages.
 - [ ] Briefing camera supports constrained terrain inspection and mechanism selection.
-- [ ] Cannon yaw, elevation, and power input work; firing consumes exactly one shot.
+- [x] Cannon yaw, elevation, and power input work; firing consumes exactly one shot.
 - [ ] Initial trajectory and first-hit preview closely match actual unchanged launch physics.
 - [x] High-speed projectile collision uses CCD and does not tunnel through the terrain.
 - [ ] Ball bounces, rolls, slides, deposits paint, and terminates by every configured condition.
-- [ ] Firing remains disabled until all parent/child projectiles and paint flow settle.
-- [ ] Shot coverage gain appears before returning to aim, clear, or failure.
-- [ ] Coverage at/above target clears; exhausted shots below target fail.
+- [x] Firing remains disabled until all parent/child projectiles and paint flow settle.
+- [x] Shot coverage gain appears before returning to aim, clear, or failure.
+- [x] Coverage at/above target clears; exhausted shots below target fail.
 - [ ] Retry, next stage, stage select, and replay execute from the correct result states.
-- [ ] Confirmed restart reaches a clean playable state in under one second.
+- [x] Confirmed restart reaches a clean playable state in under one second.
 
 ### Paint and coverage
 
@@ -71,15 +71,15 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [ ] Burst Basin rewards the upper Burst route and has a recorded reliable clear.
 - [ ] Split Ridge offers safe/inefficient and difficult/high-value routes, uses Splitter plus Bumper, targets about 70%, and has a recorded reliable clear.
 - [ ] Stage values are loaded from StageData resources, not stage-specific global code.
-- [ ] Aiming camera keeps the cannon in the lower foreground at about 15–20% or less of the frame.
-- [ ] Mountain dominates the middle/upper frame and reads as a distant large landform.
+- [x] Aiming camera keeps the cannon in the lower foreground at about 15–20% or less of the frame.
+- [x] Mountain dominates the middle/upper frame and reads as a distant large landform.
 - [ ] Major routes and mechanisms are legible without absurd scale; cameras do not clip through terrain.
 
 ### UI, settings, feedback, and accessibility architecture
 
 - [ ] Main menu, stage select, briefing, aiming/observation, clear, failure, pause, and settings are separate usable screens.
-- [ ] Target, current coverage, and shots remaining maintain the top information hierarchy.
-- [ ] Gameplay controls reduce during observation and result panels leave the mountain readable.
+- [x] Target, current coverage, and shots remaining maintain the top information hierarchy.
+- [x] Gameplay controls reduce during observation and result panels leave the mountain readable.
 - [ ] Anchored/container layouts do not clip or overflow at 1280×720, 1600×900, or 1920×1080.
 - [ ] Settings persist master/music/SFX volume, shake, follow camera, trajectory, fullscreen, resolution, quality, and language key.
 - [ ] Required sound cues, restrained shake, and pooled particles trigger without recurring console errors.

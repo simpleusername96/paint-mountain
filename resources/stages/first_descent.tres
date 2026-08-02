@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/stage/stage_data.gd" id="1_stage"]
+
+[resource]
+script = ExtResource("1_stage")
+stage_id = &"first_descent"
+stage_version = 1
+display_name = "FIRST DESCENT"
+stage_number = 1
+target_coverage = 0.25
+maximum_shots = 4
+paint_color = Color(0.03, 0.38, 1, 1)
+star_thresholds = Vector3(0.25, 0.4, 0.6)
+objective = "Paint the broad descent and let gravity extend each route."
+terrain_variant = 0
+terrain_center = Vector3(0, -2, -112)
+terrain_size = Vector2(180, 120)
+cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
+briefing_camera_position = Vector3(92, 62, 24)
+briefing_camera_target = Vector3(0, 24, -112)
+aiming_camera_position = Vector3(5, 3.2, 18)
+aiming_camera_target = Vector3(0, 18, -102)
+wide_camera_position = Vector3(82, 52, 8)
+wide_camera_target = Vector3(0, 22, -112)
+result_camera_position = Vector3(-78, 50, 4)
+result_camera_target = Vector3(0, 22, -112)

@@ -120,9 +120,9 @@ Guard: no per-stamp scene nodes or full fluid simulation.
 
 ### Phase 4: Stage loop, cameras, and gameplay HUD
 
-- [ ] Implement `StageController` states, shot accounting, clean restart, clear/failure decisions, and state-driven HUD visibility.
-- [ ] Implement briefing, aiming, projectile follow, wide, cannon, and result camera modes with 0.3–0.7 second transitions and collision-safe limits.
-- [ ] Build briefing, aiming, observation, result, pause, and settings screen foundations using anchors/containers.
+- [x] Implement `StageController` states, shot accounting, clean restart, clear/failure decisions, and state-driven HUD visibility.
+- [x] Implement briefing, aiming, projectile follow, wide, cannon, and result camera modes with 0.3–0.7 second transitions and constrained briefing orbit/zoom.
+- [x] Build briefing, aiming, observation, result, pause, and settings screen foundations using anchors/containers.
 
 Acceptance: the player can inspect, aim, fire, observe, settle, retry, clear, and fail with no illegal fire or stale temporary state.
 
@@ -201,7 +201,7 @@ Final gates:
 - [x] Phase 1: repository, agent environment, project config, bootstrap scene, and smoke path.
 - [x] Phase 2: cannon and projectile sandbox.
 - [x] Phase 3: paint system.
-- [ ] Phase 4: stage loop, cameras, and HUD.
+- [x] Phase 4: stage loop, cameras, and HUD.
 - [ ] Phase 5: mechanisms.
 - [ ] Phase 6: content, save, replay, and AI hook.
 - [ ] Phase 7: presentation.
@@ -209,9 +209,9 @@ Final gates:
 
 ## Next Steps
 
-1. Replace the sandbox-only progression with the authoritative Phase 4 `StageController` state machine.
-2. Add briefing, aiming, follow, wide, cannon, and result camera modes through `CameraDirector`.
-3. Build state-driven gameplay HUD foundations and validate clear/failure/restart guards.
+1. Implement the shared Phase 5 mechanism data and activation/reset contract.
+2. Add exactly Burst, Splitter, and Bumper with bounded activation, child count, and payload accounting.
+3. Validate duplicate-trigger, cooldown/charge, reset, direct-mask paint, and split-generation guards.
 
 ## Completion Criteria
 

@@ -1,6 +1,6 @@
 # Paint Mountain
 
-Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 3 projectile-and-paint sandbox, not the finished vertical slice.
+Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 4 single-stage gameplay loop, not the finished vertical slice.
 
 ## Engine
 
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\
 
 `scripts/verify.ps1` also accepts the `GODOT_BIN` environment variable or a `godot4`/`godot` command on PATH.
 
-## Current Sandbox Controls
+## Current Gameplay Controls
 
 - `A` / `D`: adjust cannon yaw.
 - `W` / `S`: adjust elevation.
@@ -34,15 +34,16 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\
 - Left-drag: adjust yaw and elevation.
 - `Space`: fire when no projectile is active.
 - `R`: clear the current projectile and reset aiming.
-- `F3`: toggle paint, eligible-area, and recent-stamp debug masks.
-- `Esc`: quit the sandbox.
+- `Tab`: switch between briefing inspection and aiming.
+- `Esc`: pause; Resume returns to the prior gameplay state.
 
-Stage inspection, camera switching, pause, and complete gameplay controls remain scheduled in the active plan.
+Briefing orbit/zoom, follow/wide/cannon observation cameras, retry, and pause foundations are implemented. Menus and three-stage navigation remain scheduled.
 
 ## Project Structure
 
 - `scenes/bootstrap/`: temporary runnable 3D smoke scene.
 - `scenes/sandbox/`: current cannon/projectile validation entry.
+- `scenes/gameplay/`: current state-driven game entry and reusable cannon scene.
 - `src/cannon/`, `src/projectile/`, `src/terrain/`: Phase 2 runtime owners.
 - `src/bootstrap/`: isolated bootstrap-only setup and procedural mountain proxy.
 - `docs/`: active game design, architecture, and acceptance specifications.
@@ -53,7 +54,7 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 
 ## Known Limitations
 
-- Stage loop, camera director, mechanisms, menus, saving, replay, audio, full debug overlay, completed stages, and delivery screenshots are not implemented yet.
+- Mechanisms, menus, saving, replay, audio, full debug overlay, three completed stages, and delivery screenshots are not implemented yet.
 - The sandbox mountain is procedural validation geometry with collision, not a tuned stage.
 - Godot is not assumed to be installed on PATH.
 
