@@ -16,9 +16,9 @@ func _run_checks() -> void:
 	var game_state := root.get_node("/root/GameState")
 	var stages := StageCatalog.all_stages()
 	_assert_true(stages.size() == 3, "catalog must expose exactly three stages")
-	_assert_true(stages[0].mechanisms.size() == 0, "First Descent must have no mechanisms")
-	_assert_true(stages[1].mechanisms.size() == 1 and stages[1].mechanisms[0].mechanism_data.kind == MechanismData.Kind.BURST, "Burst Basin must contain one Burst")
-	_assert_true(stages[2].mechanisms.size() == 2, "Split Ridge must contain exactly two placed mechanisms")
+	_assert_true(stages[0].mechanism_loadout.size() == 0, "First Descent must have no mechanisms")
+	_assert_true(stages[1].mechanism_loadout.size() == 1 and stages[1].mechanism_loadout[0].kind == MechanismData.Kind.BURST, "Burst Basin must request one generated Burst")
+	_assert_true(stages[2].mechanism_loadout.size() == 2, "Split Ridge must request exactly two generated mechanisms")
 	_assert_true(stages[2].target_coverage == 70.0, "Split Ridge target must remain 70 percent")
 	for stage in stages:
 		_assert_true(not stage.reliable_solution.is_empty(), "%s must contain a recorded solution sequence" % stage.display_name)

@@ -4,6 +4,7 @@ extends Node
 signal gameplay_event(event_name: StringName, payload: Dictionary)
 
 var _stage_data: StageData
+var _generated_layout: GeneratedStageLayout
 var _stage_controller: StageController
 var _cannon: CannonController
 var _paint_system: PaintSystem
@@ -18,11 +19,13 @@ func configure(
 		stage_controller: StageController,
 		cannon: CannonController,
 		paint_system: PaintSystem,
-		projectile_manager: ProjectileManager,
-		camera_director: CameraDirector,
-		mechanisms: Array[GimmickBase]
+	projectile_manager: ProjectileManager,
+	camera_director: CameraDirector,
+	mechanisms: Array[GimmickBase],
+	generated_layout: GeneratedStageLayout = null
 ) -> void:
 	_stage_data = stage_data
+	_generated_layout = generated_layout
 	_stage_controller = stage_controller
 	_cannon = cannon
 	_paint_system = paint_system
@@ -42,6 +45,9 @@ func get_observation() -> Dictionary:
 		mechanism_states.append(mechanism.state_snapshot())
 	return {
 		"stage_id": String(_stage_data.stage_id),
+		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else _stage_data.stage_number * 1000 + _stage_data.stage_version,
+		"accepted_seed": _generated_layout.accepted_seed if _generated_layout != null else 0,
+		"height_grid_checksum": _generated_layout.checksum if _generated_layout != null else 0,
 		"target_coverage": _stage_data.target_coverage,
 		"current_coverage": _paint_system.coverage_percent(),
 		"shots_remaining": _stage_controller.shots_remaining,
@@ -112,6 +118,10 @@ func _height_grid(columns: int, rows: int) -> Array[PackedFloat32Array]:
 		var local_z := lerpf(-_stage_data.terrain_size.y * 0.5, _stage_data.terrain_size.y * 0.5, float(row) / float(rows - 1))
 		for column in range(columns):
 			var local_x := lerpf(-_stage_data.terrain_size.x * 0.5, _stage_data.terrain_size.x * 0.5, float(column) / float(columns - 1))
-			values.append(TerrainMeshFactory.height_at(_stage_data.terrain_variant, local_x, local_z))
+			values.append(
+				_generated_layout.height_at_local(local_x, local_z)
+				if _generated_layout != null
+				else 0.0
+			)
 		grid.append(values)
 	return grid

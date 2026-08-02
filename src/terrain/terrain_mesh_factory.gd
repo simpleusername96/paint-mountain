@@ -7,6 +7,46 @@ const X_SEGMENTS := 56
 const Z_SEGMENTS := 38
 
 
+static func build_from_layout(layout: GeneratedStageLayout) -> ArrayMesh:
+	assert(layout != null and layout.is_valid(), "Terrain mesh requires a valid generated layout.")
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var size := layout.sample_size()
+	for z_index in range(layout.cell_count.y):
+		var z0_ratio := float(z_index) / float(layout.cell_count.y)
+		var z1_ratio := float(z_index + 1) / float(layout.cell_count.y)
+		var z0 := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, z0_ratio)
+		var z1 := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, z1_ratio)
+		for x_index in range(layout.cell_count.x):
+			var x0_ratio := float(x_index) / float(layout.cell_count.x)
+			var x1_ratio := float(x_index + 1) / float(layout.cell_count.x)
+			var x0 := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, x0_ratio)
+			var x1 := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, x1_ratio)
+			var p00 := Vector3(x0, layout.heights[z_index * size.x + x_index], z0)
+			var p01 := Vector3(x0, layout.heights[(z_index + 1) * size.x + x_index], z1)
+			var p10 := Vector3(x1, layout.heights[z_index * size.x + x_index + 1], z0)
+			var p11 := Vector3(x1, layout.heights[(z_index + 1) * size.x + x_index + 1], z1)
+			_append_triangle(
+				vertices, normals, uvs,
+				p00, p01, p10,
+				Vector2(x0_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z0_ratio)
+			)
+			_append_triangle(
+				vertices, normals, uvs,
+				p10, p01, p11,
+				Vector2(x1_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z1_ratio)
+			)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
 static func build(stage_index: int = 0) -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()

@@ -108,7 +108,7 @@ func restart(return_to_briefing: bool = true) -> void:
 		mechanism.reset_state()
 	shots_remaining = stage_data.maximum_shots
 	coverage_before_shot = 0.0
-	_cannon.set_aim(0.0, 38.0, 68.0)
+	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
 	_cannon.input_enabled = not return_to_briefing
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
 	_transition_to(State.BRIEFING if return_to_briefing else State.AIMING, true)

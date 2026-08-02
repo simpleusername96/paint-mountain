@@ -88,26 +88,27 @@ This section is normative. Implementers may fix defects discovered by tests, but
 - Between listed control points, route X and route height use `smoothstep(t) = t²(3 - 2t)` interpolation. For distance `d = abs(x - route_x(z))`, route influence is `1 - smoothstep(0.45w, 0.75w, d)`. The accepted height at a sample begins with the seeded mountain mass and is blended toward the closest route height by the maximum route influence.
 - Mountain mass is the maximum of three seeded elliptical Gaussian lobes: a central lobe at `(0,-14)` with radii `(68,58)` and nominal peak Stage 1/2/3 = `72/80/88 m`; side lobes at `(-42,2)` and `(42,2)` with radii `(46,48)` and peaks `0.72` and `0.68` of that nominal peak. Each lobe center is jittered independently by X `±5 m`, Z `±4 m`, and peak `±2 m` from the attempt RNG.
 - A shoulder ridge is added at route distance `0.70w`, with a Gaussian half-width `0.18w` and amplitude Stage 1/2/3 = `5/7/9 m`. Noise uses one seeded `FastNoiseLite` with `TYPE_SIMPLEX_SMOOTH`, frequency `0.035`, FBM, 2 octaves, lacunarity `2.0`, gain `0.45`, and amplitude `1.2/1.6/2.0 m`; it is multiplied by `(1 - 0.65 * route_influence)`.
-- Terracing rounds height to 3 m bands and blends toward the rounded result by `0.12` in route cores and `0.32` elsewhere. The outermost 12 m on X and Z blends to zero using smoothstep. Exactly two Laplacian smoothing passes, blend `0.22`, apply only to samples whose central-difference slope exceeds `48°`; route control samples and the outside edge are pinned.
+- Terracing rounds height to 3 m bands and blends toward the rounded result by `0.12` in route cores and `0.32` elsewhere. The outermost 12 m on X and Z blends to zero using smoothstep. Exactly two Laplacian smoothing passes, blend `0.22`, apply only to samples whose central-difference slope exceeds the `42°` percentile threshold; route control samples and the outside edge are pinned, and the separate hard maximum remains `48°`.
+- Required mechanism shelves are part of the typed profile, not placement repairs: Burst Basin Route A at `t=0.36`, radius `8 m`; Split Ridge center Route at `t=0.60`, radius `10 m`; Split Ridge right Route at `t=0.72`, radius `9 m`. After noise/terracing and before edge falloff, height blends to the route-center height with full influence through `0.25 × radius` and a broad smoothstep falloff to zero at the radius. Placement still must pass every slope/visibility/value validator.
 
 ### Frozen stage profiles
 
 | Profile | Route control points `(z; height; x)` | Width and reversal band | Remaining locked rules |
 | --- | --- | --- | --- |
 | First Descent | `(-42;70;0), (-18;54;-8), (8;38;5), (32;23;-4), (54;8;-10)` | one route, width `28 m`, `0..1` meaningful reversals | X jitter `±5 m`, height jitter `±1.5 m`, accepted maximum height `64..76 m`, no mechanism, target `4%`, shots `4` |
-| Burst Basin | Route A `(-44;78;-10), (-26;61;-18), (-8;67;-12), (12;45;-20), (34;28;-8), (54;10;0)`; Route B uses the same heights with X `18,30,24,34,42,30` | two routes, width `18 m`, `2..3` meaningful reversals | X jitter `±4 m`, height jitter `±1.25 m`, accepted maximum `72..84 m`, one Burst, target `27%`, shots `5` |
-| Split Ridge | Z `-46,-30,-14,2,18,36,54`; base heights `84,70,76,60,66,47,28`; left X `0,-8,-20,-34,-42,-48,-54` and subtract height `0,1,2,3,4,5,5`; center X `0,2,6,0,-4,2,0`; right X `0,10,24,36,44,50,58` | widths left/center/right `14/10/10 m`, `4..6` meaningful reversals | X jitter `±3 m`, height jitter `±1 m`, accepted maximum `78..90 m`, left is the safe low route, Splitter + Bumper, target `70%`, shots `6` |
+| Burst Basin | Route A `(-44;78;-10), (-26;65;-18), (-8;71;-12), (12;57;-20), (34;44;-8), (54;31;0)`; Route B uses the same heights with X `18,30,24,34,42,30` | two routes, width `18 m`, `2..3` meaningful reversals | X jitter `±4 m`, height jitter `±1.25 m`, accepted maximum `72..84 m`, one Burst, target `27%`, shots `5` |
+| Split Ridge | Z `-46,-30,-14,2,18,36,54`; base heights `84,74,79,69,74,63,52`; left X `0,-8,-20,-34,-42,-48,-54` and subtract height `0,1,2,3,4,5,5`; center X `0,2,6,0,-4,2,0`; right X `0,10,24,36,44,50,58` | widths left/center/right `14/10/10 m`, `4..6` meaningful reversals | X jitter `±3 m`, height jitter `±1 m`, accepted maximum `78..90 m`, left is the safe low route, Splitter + Bumper, target `70%`, shots `6` |
 
 - A meaningful reversal is a sign change after a 6 m box filter, ignoring segments below `2°`. The profile reversal band is measured on First Descent's route, Burst Basin Route A, and Split Ridge's center route; parallel routes do not multiply the count. Every route must stay inside bounds, have no sample-to-sample gap above one grid diagonal, and retain its specified width within `±1.5 m` at 90% of longitudinal samples.
-- Accepted layouts require: all finite samples; edge height `≤1 m`; maximum height in profile band; route-core 95th-percentile slope `≤42°`; no route-core slope `>48°`; at least one shelf per required mechanism with slope `≤12°`; eligible-area ratio Stage 1/2/3 within `0.14..0.22 / 0.18..0.32 / 0.15..0.30`; and exact route/reversal counts. Geometry always remains 6,144 triangles, below the 50k budget.
+- Accepted layouts require: all finite samples; edge height `≤1 m`; maximum height in profile band; route-core 95th-percentile slope `≤42°`; no route-core slope `>48°`; at least one shelf per required mechanism with slope `≤12°`; eligible-area ratio Stage 1/2/3 within `0.14..0.22 / 0.18..0.32 / 0.12..0.30`; and exact route/reversal counts. Route-slope percentiles cover samples whose finite-difference footprint remains before the fixed outer 12 m ineligible skirt (`15 m` center clearance on this grid); the skirt is validated separately by its `≤1 m` boundary. Geometry always remains 6,144 triangles, below the 50k budget.
 
 ### Eligible mask, mechanisms, and dressing
 
 - The mask is `512 × 512`. A texel is eligible iff it is outside a 14-pixel border, its projected terrain point is within `0.75 × route_width` of any route spine, terrain height is above `1 m`, and `normal.y ≥ 0.529919` (`58°` maximum slope). Exclude each mechanism trigger radius plus `0.75 m` and each decoration center by `1.5 m`. `PaintSystem` intersects this immutable mask with its one mutable paint mask to calculate coverage.
 - Placement samples every second height-grid sample in stable row-major order. Universal filters are slope `≤18°`, mechanism-center separation `≥10 m`, bounds clearance `≥5 m`, route clearance `≤0.55 × route_width`, projected diameter `≥32 px` at 1920×1080 and `≥22 px` at 1280×720, and an unobstructed camera-to-center shape cast. Layout rejection occurs if any required mechanism has no passing sample.
 - Burst samples Route A at normalized route position `0.28..0.44` and height quantile `≥0.62`. Score is `0.35 height + 0.30 downstream eligible area + 0.20 visibility/projected size + 0.15 shelf flatness`.
-- Splitter samples the center route at `0.28..0.42`; its three downstream route tangents must be separated by at least `18°`. Score is `0.35 branch separation + 0.25 height + 0.20 approach alignment + 0.20 visibility/projected size`.
-- Bumper samples the right route at `0.48..0.66`; its impulse direction is the normalized vector from the selected sample toward the next center-route sample, projected onto the XZ plane. Score is `0.35 redirection gain + 0.25 approach alignment + 0.20 height + 0.20 visibility/projected size`.
+- Splitter samples the center route at `0.56..0.64`, on the visible middle-ridge crest after the second rise; its three downstream route tangents must be separated by at least `18°`. Score is `0.35 branch separation + 0.25 height + 0.20 approach alignment + 0.20 visibility/projected size`.
+- Bumper samples the right route at `0.68..0.78`, on the following visible descent; its impulse direction is the normalized vector from the selected sample toward the next center-route sample, projected onto the XZ plane. Score is `0.35 redirection gain + 0.25 approach alignment + 0.20 height + 0.20 visibility/projected size`.
 - Score inputs are normalized to `[0,1]` within the passing sample set. Highest score wins; ties use the smallest unsigned `(grid_index ^ accepted_seed)`, then smallest `grid_index`. Burst world diameter is `4.2 m`, Splitter `4.5 m`, and Bumper `3.8 m`; existing trigger limits and behavior values remain typed-resource owned.
 - Decoration counts are Stage 1/2/3 = `10/14/18`. Deterministically shuffled passing samples require slope `≤24°`, height `≥4 m`, spacing `≥7 m`, outside route shoulder plus `4 m`, and outside mechanisms plus `8 m`. The stable model cycle is 60% trees (`pineSmallA`, `pineSmallB`, `pineTallA`) and 40% rocks (`rockSmallA`, `rockLargeA`); scales are trees `0.8..1.2`, rocks `0.7..1.4`. Decorations are visual-only and cannot alter projectile physics.
 
@@ -115,7 +116,7 @@ This section is normative. Implementers may fix defects discovered by tests, but
 
 - The aiming camera raycasts from the cursor up to `500 m` against terrain layer 1 and mechanism layer 2. Terrain targets are `hit_position + normal * projectile_radius`; mechanism targets are their declared target center. Hover shows an uncommitted ring; left click commits; held left drag retargets continuously. Fire is enabled only for a committed valid solution.
 - Yaw is `atan2(delta.x, -delta.z)` and must remain in `[-28°, 28°]`. For elevation, scan `[18°,68°]` in `0.5°` steps from low to high. Each trial integrates at fixed `1/60 s` using the real recurrence `v += gravity*dt; v *= max(0, 1 - linear_damp*dt); p += v*dt`, with current power mapped through `ProjectileData` speed. The first vertical-error sign bracket at target horizontal distance is refined by 10 bisection steps.
-- Every solver and preview segment uses a sphere shape cast of radius `0.52 m`, collision mask `1|2`, maximum flight `7.2 s`. A target is valid only when its actual first collision is within `1.25 m` of the selected target. The solver returns the lowest passing elevation; no passing elevation returns explicit invalid. Invalid hover is red, Fire is disabled, and the cannon retains its last valid pose.
+- Every solver and preview segment uses a sphere shape cast of radius `0.52 m`, collision mask `1|2`, maximum flight `7.2 s`. A terrain target is valid only when its actual first collision is within `1.25 m`; a mechanism target is valid when the first overlap identifies that exact mechanism collider because its center-to-surface distance exceeds `1.25 m`. The solver returns the lowest passing elevation; no passing elevation returns explicit invalid. Invalid hover is red, Fire is disabled, and the cannon retains its last valid pose.
 - Preview points are resampled every `2.2 m` of arc length into at most 72 pooled, unshaded blue spheres of radius `0.26 m`. The impact torus has `1.2 m` outer radius and distance scaling sufficient to keep at least `28 px` diameter at 1080p and `20 px` at 720p. Preview always ends at the first shape-cast collision and never visualizes a bounce, mechanism result, or future paint.
 - Power range remains `10..100%`. UI `−/+` click changes `2%`; hold starts after `300 ms` and repeats every `80 ms`; wheel changes `1%`; keyboard `-`/`=` changes `2%`. `Space` or Fire requests a shot. `R` restarts, `Esc` pauses, and `Tab` opens inspect mode. `A/D` and `W/S` remain a `0.5°` accessible angle fallback and switch aim mode to `ANGLE_FALLBACK`; `Q/E` power control is removed.
 - Human input, replay, and the agent API call the same cannon command methods. `StageController.request_fire()` checks state, remaining payload, projectile cap, and cannon aim validity before accepting and decrementing a shot; input and HUD never decide shot progression.
@@ -282,17 +283,17 @@ Goal: replace the fixed terrain path with a deterministic generator and run Firs
 
 Source owners touched: `src/stage_generation/*`, `src/terrain/terrain_mesh_factory.gd`, `src/stage/stage_data.gd`, `src/gameplay/gameplay_scene.gd`, `src/paint/paint_system.gd`, `resources/stage_generation/first_descent_profile.tres`, `resources/stages/first_descent.tres`, `tests/stage_generation_test.gd`
 
-- [ ] **2.1 Add typed generation profile and layout contracts**
+- [x] **2.1 Add typed generation profile and layout contracts**
   - As-is: `terrain_variant` selects a hardcoded function.
   - To-be: StageData references a profile and seed; one read-only layout carries the height grid, routes, metrics, bounds, and placements.
   - Accept: Resources load with typed validation; replay metadata includes the accepted seed/profile version.
   - Guard: mutable runtime state does not enter StageData.
-- [ ] **2.2 Implement path-first terrain generation with bounded validation**
+- [x] **2.2 Implement path-first terrain generation with bounded validation**
   - As-is: fixed Gaussian hills build directly into vertices.
   - To-be: generate route spines, shelves, ridge/valley fields, low-amplitude noise, slope repair, and metrics under a 32-attempt cap.
   - Accept: First Descent passes its route/reversal/width/slope metrics and stable checksum test.
   - Guard: no caves, overhangs, unseeded random calls, or second terrain representation.
-- [ ] **2.3 Feed the accepted grid into mesh, collision, paint flow, and restart**
+- [x] **2.3 Feed the accepted grid into mesh, collision, paint flow, and restart**
   - As-is: these systems call the static height function.
   - To-be: one layout supplies height queries everywhere and is recreated identically on restart.
   - Accept: paint/coverage tests, one reliable First Descent solution, replay, and sub-second restart pass on the generated terrain.
@@ -308,7 +309,7 @@ Goal: generate Burst Basin and Split Ridge with verified route complexity and fe
 
 Source owners touched: `src/stage_generation/mechanism_placement_generator.gd`, `resources/stage_generation/*.tres`, `resources/stages/*.tres`, `scenes/mechanisms/*.tscn`, `src/mechanisms/*.gd`, `src/terrain/environment_dressing.gd`, `tests/mechanism_placement_test.gd`
 
-- [ ] **3.1 Implement placement candidate extraction and validators**
+- [x] **3.1 Implement placement candidate extraction and validators**
   - As-is: fixed X/Z coordinates are trusted.
   - To-be: score shelves, ridges, channel entries, downstream drop, approach direction, LoS, screen size, spacing, and bounds; orient Bumper toward its selected downstream target.
   - Accept: fixed-seed tests show Burst on a valuable upper ledge, Splitter with three downhill sectors, and Bumper with a valid approach/redirection path.

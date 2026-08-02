@@ -12,6 +12,7 @@ var _stage_select: StageSelectScreen
 var _settings: SettingsScreen
 var _gameplay: Node3D
 var _settings_return: StringName = &"main_menu"
+var _preview_layout_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -177,14 +178,22 @@ func _build_preview_world() -> void:
 func _set_preview_stage(stage: StageData) -> void:
 	if stage == null or _preview_mountain == null:
 		return
-	_preview_mountain.mesh = TerrainMeshFactory.build(stage.terrain_variant)
+	var layout: GeneratedStageLayout = _preview_layout_cache.get(stage.stage_id)
+	if layout == null:
+		layout = SeededStageGenerator.generate(stage.generation_profile, stage.terrain_seed, stage)
+		if layout != null:
+			_preview_layout_cache[stage.stage_id] = layout
+	if layout == null:
+		push_error("Could not build preview layout for %s." % stage.stage_id)
+		return
+	_preview_mountain.mesh = TerrainMeshFactory.build_from_layout(layout)
 	var material := ShaderMaterial.new()
 	material.shader = load("res://src/paint/terrain_paint.gdshader")
 	material.set_shader_parameter(&"paint_mask", _preview_paint_texture(stage.stage_number))
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
 	material.set_shader_parameter(&"rock_color", Color(0.48, 0.5, 0.53, 1.0))
 	_preview_mountain.material_override = material
-	_preview_dressing.configure(stage)
+	_preview_dressing.configure(stage, layout)
 
 
 func _preview_paint_texture(stage_number: int) -> ImageTexture:

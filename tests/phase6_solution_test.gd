@@ -10,7 +10,8 @@ func _initialize() -> void:
 
 
 func _run_solution() -> void:
-	Engine.time_scale = 3.0
+	# Reliable solutions must be validated against the production 60 Hz trajectory.
+	Engine.time_scale = 1.0
 	var requested_stage: StringName = &"first_descent"
 	var probe_only := false
 	var shot_probe := Vector3.INF
@@ -63,7 +64,6 @@ func _run_solution() -> void:
 			break
 		_assert_true(agent.set_aim(shot.x, shot.y, shot.z), "solution shot must start from AIMING")
 		_assert_true(agent.fire(), "solution shot must pass the shared fire guard")
-		Engine.time_scale = 3.0
 		var closest_mechanism_distance := INF
 		var closest_projectile_position := Vector3.ZERO
 		var frame_budget := 60 * 26
@@ -92,10 +92,10 @@ func _run_solution() -> void:
 				print("Closest mechanism pass: %.3fm at %s; activations=%d; impacts=%s" % [closest_mechanism_distance, closest_projectile_position, mechanism_activations.count, impact_positions])
 	if shot_probe == Vector3.INF:
 		_assert_true(controller.current_state == StageController.State.STAGE_CLEAR, "%s recorded solution must clear its target" % stage.display_name)
-		if not stage.mechanisms.is_empty():
+		if not stage.mechanism_loadout.is_empty():
 			_assert_true(mechanism_activations.count > 0, "%s solution must activate its teaching mechanism" % stage.display_name)
-			for placement in stage.mechanisms:
-				var required_kind: String = MechanismData.Kind.keys()[placement.mechanism_data.kind]
+			for mechanism_data in stage.mechanism_loadout:
+				var required_kind: String = MechanismData.Kind.keys()[mechanism_data.kind]
 				_assert_true(mechanism_activations.kinds.has(required_kind), "%s solution must activate %s" % [stage.display_name, required_kind])
 	if not _failed and shot_probe == Vector3.INF:
 		print("Phase 6 solution passed for %s at %.3f%% with %d mechanism activations." % [

@@ -3,7 +3,7 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 1
+const FORMAT_VERSION := 2
 
 var attempt: Dictionary = {}
 var playback_index: int = 0
@@ -11,12 +11,16 @@ var playback_paused: bool = false
 var playback_speed: float = 1.0
 
 
-func start_attempt(stage_data: StageData, physics_seed: int) -> void:
+func start_attempt(stage_data: StageData, physics_seed: int, generated_layout: GeneratedStageLayout = null) -> void:
 	attempt = {
 		"format_version": FORMAT_VERSION,
 		"stage_id": String(stage_data.stage_id),
 		"stage_version": stage_data.stage_version,
 		"physics_seed": physics_seed,
+		"profile_version": generated_layout.profile_version if generated_layout != null else 0,
+		"terrain_seed": generated_layout.terrain_seed if generated_layout != null else physics_seed,
+		"accepted_seed": generated_layout.accepted_seed if generated_layout != null else physics_seed,
+		"height_grid_checksum": generated_layout.checksum if generated_layout != null else 0,
 		"shots": [],
 		"events": [],
 	}
@@ -43,11 +47,18 @@ func record_event(event_name: StringName, payload: Dictionary = {}) -> void:
 
 
 func load_attempt(data: Dictionary) -> bool:
-	if int(data.get("format_version", -1)) != FORMAT_VERSION:
+	var source_version := int(data.get("format_version", -1))
+	if source_version not in [1, FORMAT_VERSION]:
 		return false
 	if not data.get("shots", []) is Array or String(data.get("stage_id", "")).is_empty():
 		return false
 	attempt = data.duplicate(true)
+	if source_version == 1:
+		attempt["format_version"] = FORMAT_VERSION
+		attempt["profile_version"] = 0
+		attempt["terrain_seed"] = int(attempt.get("physics_seed", 0))
+		attempt["accepted_seed"] = int(attempt.get("physics_seed", 0))
+		attempt["height_grid_checksum"] = 0
 	reset_playback()
 	return true
 

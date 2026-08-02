@@ -8,10 +8,12 @@ const TREE_POSITIONS: Array[Vector2] = [
 ]
 
 var _stage_data: StageData
+var _generated_layout: GeneratedStageLayout
 
 
-func configure(stage_data: StageData) -> void:
+func configure(stage_data: StageData, generated_layout: GeneratedStageLayout = null) -> void:
 	_stage_data = stage_data
+	_generated_layout = generated_layout
 	for child in get_children():
 		child.queue_free()
 	for index in range(TREE_POSITIONS.size()):
@@ -22,7 +24,7 @@ func configure(stage_data: StageData) -> void:
 func _add_tree(local_xz: Vector2, scale_factor: float) -> void:
 	var tree := Node3D.new()
 	tree.name = "Pine"
-	var height := TerrainMeshFactory.height_at(_stage_data.terrain_variant, local_xz.x, local_xz.y)
+	var height := _height_at(local_xz.x, local_xz.y)
 	tree.position = Vector3(
 		_stage_data.terrain_center.x + local_xz.x,
 		_stage_data.terrain_center.y + height,
@@ -58,7 +60,7 @@ func _add_summit_flag() -> void:
 	var summit_height := -INF
 	for z in range(-46, 47, 8):
 		for x in range(-76, 77, 8):
-			var height := TerrainMeshFactory.height_at(_stage_data.terrain_variant, float(x), float(z))
+			var height := _height_at(float(x), float(z))
 			if height > summit_height:
 				summit_height = height
 				summit_xz = Vector2(float(x), float(z))
@@ -95,3 +97,7 @@ func _material(color: Color, roughness: float) -> StandardMaterial3D:
 	result.roughness = roughness
 	return result
 
+
+func _height_at(local_x: float, local_z: float) -> float:
+	assert(_generated_layout != null, "Environment dressing requires the accepted generated layout.")
+	return _generated_layout.height_at_local(local_x, local_z)

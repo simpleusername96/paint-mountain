@@ -10,6 +10,7 @@ const PAINTED_THRESHOLD := 0.18
 const COVERAGE_PUBLISH_INTERVAL := 0.18
 
 var _stage_index: int = 0
+var _generated_layout: GeneratedStageLayout
 var _world_bounds := Rect2(Vector2(-90.0, -172.0), Vector2(180.0, 120.0))
 var _terrain_origin_y: float = -2.0
 var _paint_image: Image
@@ -35,11 +36,13 @@ var flow_simulation_enabled: bool = true
 func configure(
 		stage_index: int,
 		world_bounds: Rect2,
-		terrain_origin_y: float,
-		terrain_material: ShaderMaterial,
-		paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
+	terrain_origin_y: float,
+	terrain_material: ShaderMaterial,
+	paint_color: Color = Color(0.03, 0.38, 1.0, 1.0),
+	generated_layout: GeneratedStageLayout = null
 ) -> void:
 	_stage_index = stage_index
+	_generated_layout = generated_layout
 	_world_bounds = world_bounds
 	_terrain_origin_y = terrain_origin_y
 	_terrain_material = terrain_material
@@ -157,12 +160,23 @@ func _create_masks() -> void:
 	_eligible_bytes.resize(MASK_SIZE * MASK_SIZE)
 	_eligible_bytes.fill(0)
 	_total_eligible_pixels = 0
+	if _generated_layout != null and _generated_layout.eligible_mask.size() == MASK_SIZE * MASK_SIZE:
+		_eligible_bytes = _generated_layout.eligible_mask.duplicate()
+		for byte in _eligible_bytes:
+			if byte >= 128:
+				_total_eligible_pixels += 1
+	else:
+		_fill_eligible_mask_legacy(INSET)
+	_finish_eligible_images()
+
+
+func _fill_eligible_mask_legacy(inset: int) -> void:
 	for y in range(MASK_SIZE):
-		if y < INSET or y >= MASK_SIZE - INSET:
+		if y < inset or y >= MASK_SIZE - inset:
 			continue
 		var row_start := y * MASK_SIZE
 		var normalized_y := (float(y) / float(MASK_SIZE - 1) - 0.5) * 2.0
-		for x in range(INSET, MASK_SIZE - INSET):
+		for x in range(inset, MASK_SIZE - inset):
 			var normalized_x := (float(x) / float(MASK_SIZE - 1) - 0.5) * 2.0
 			var eligible := false
 			match _stage_index:
@@ -178,6 +192,9 @@ func _create_masks() -> void:
 			if eligible:
 				_eligible_bytes[row_start + x] = 255
 				_total_eligible_pixels += 1
+
+
+func _finish_eligible_images() -> void:
 	_eligible_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _eligible_bytes)
 	var excluded_bytes := PackedByteArray()
 	excluded_bytes.resize(MASK_SIZE * MASK_SIZE)
@@ -245,7 +262,7 @@ func _apply_downhill_flow(world_position: Vector3, radius: float, amount: float,
 	]
 	for _step in range(maximum_steps):
 		var local_current := _world_to_local(current)
-		var current_height := TerrainMeshFactory.height_at(_stage_index, local_current.x, local_current.y)
+		var current_height := _terrain_height_at(local_current.x, local_current.y)
 		var best := current
 		var best_height := current_height
 		for offset: Vector2 in neighbor_offsets:
@@ -253,7 +270,7 @@ func _apply_downhill_flow(world_position: Vector3, radius: float, amount: float,
 			if not _world_bounds.has_point(candidate):
 				continue
 			var local_candidate := _world_to_local(candidate)
-			var candidate_height := TerrainMeshFactory.height_at(_stage_index, local_candidate.x, local_candidate.y)
+			var candidate_height := _terrain_height_at(local_candidate.x, local_candidate.y)
 			if candidate_height < best_height - 0.02:
 				best = candidate
 				best_height = candidate_height
@@ -272,7 +289,7 @@ func _is_near_terrain(world_position: Vector3) -> bool:
 	if not _world_bounds.has_point(xz):
 		return false
 	var local := _world_to_local(xz)
-	var surface_y := _terrain_origin_y + TerrainMeshFactory.height_at(_stage_index, local.x, local.y)
+	var surface_y := _terrain_origin_y + _terrain_height_at(local.x, local.y)
 	return absf(world_position.y - surface_y) <= 4.5
 
 
@@ -283,3 +300,9 @@ func _world_to_pixel(world_xz: Vector2) -> Vector2:
 
 func _world_to_local(world_xz: Vector2) -> Vector2:
 	return world_xz - (_world_bounds.position + _world_bounds.size * 0.5)
+
+
+func _terrain_height_at(local_x: float, local_z: float) -> float:
+	if _generated_layout != null:
+		return _generated_layout.height_at_local(local_x, local_z)
+	return TerrainMeshFactory.height_at(_stage_index, local_x, local_z)

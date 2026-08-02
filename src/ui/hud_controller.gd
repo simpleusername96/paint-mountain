@@ -523,9 +523,9 @@ func _display_state_name(state: StageController.State) -> String:
 
 
 func _mechanism_brief(stage: StageData) -> String:
-	if stage.mechanisms.is_empty():
+	if stage.mechanism_loadout.is_empty():
 		return "NO MECHANISMS  ·  FOLLOW THE NATURAL DESCENT"
 	var descriptions: Array[String] = []
-	for placement in stage.mechanisms:
-		descriptions.append("%s — %s" % [placement.mechanism_data.display_name, placement.mechanism_data.description])
+	for mechanism_data in stage.mechanism_loadout:
+		descriptions.append("%s — %s" % [mechanism_data.display_name, mechanism_data.description])
 	return "    ".join(descriptions)

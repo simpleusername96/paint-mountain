@@ -131,11 +131,11 @@ func _update_preview() -> void:
 
 
 func _mechanism_names(stage: StageData) -> String:
-	if stage.mechanisms.is_empty():
+	if stage.mechanism_loadout.is_empty():
 		return "NONE"
 	var names: Array[String] = []
-	for placement in stage.mechanisms:
-		names.append(placement.mechanism_data.display_name)
+	for mechanism_data in stage.mechanism_loadout:
+		names.append(mechanism_data.display_name)
 	return " + ".join(names)
 
 

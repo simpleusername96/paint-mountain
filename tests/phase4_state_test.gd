@@ -17,6 +17,7 @@ func _run_checks() -> void:
 	await physics_frame
 	await physics_frame
 	var controller: StageController = gameplay.get_node("StageController")
+	var cannon: CannonController = gameplay.get_node("Cannon")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var paint_system: PaintSystem = gameplay.get_node("PaintSystem")
 	var restart_observation := {"elapsed_ms": -1.0}
@@ -25,6 +26,10 @@ func _run_checks() -> void:
 	controller.restart_completed.connect(func(elapsed_ms: float) -> void: restart_observation.elapsed_ms = elapsed_ms)
 
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "gameplay must begin in briefing")
+	_assert_true(
+		is_equal_approx(cannon.yaw_degrees, 16.0) and is_equal_approx(cannon.elevation_degrees, 34.0) and is_equal_approx(cannon.power_percent, 60.0),
+		"First Descent must apply its generated-layout-safe initial aim; got %.1f/%.1f/%.1f" % [cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent]
+	)
 	_assert_true(controller.begin_aiming(), "briefing must accept the start-aiming action")
 	_assert_true(controller.current_state == StageController.State.AIMING, "begin aiming must enter AIMING")
 	_assert_true(controller.request_fire(), "ready aiming state must accept exactly one fire action")
@@ -36,7 +41,12 @@ func _run_checks() -> void:
 		await physics_frame
 		frame_budget -= 1
 	_assert_true(frame_budget > 0, "shot loop must settle into a decision state")
-	_assert_true(controller.current_state == StageController.State.AIMING, "a below-target shot with remaining ammo must return to AIMING")
+	_assert_true(
+		controller.current_state == StageController.State.AIMING,
+		"a below-target shot with remaining ammo must return to AIMING; got %s at %.3f%%" % [
+			controller.state_name(), paint_system.coverage_percent()
+		]
+	)
 	_assert_true(manager.active_count() == 0, "shot settlement must leave no managed projectile")
 	_assert_true(paint_system.coverage_percent() > 0.0, "settled shot must finalize authoritative coverage")
 	_assert_true(observed_states.has(StageController.State.PROJECTILE_IN_FLIGHT), "accepted shot must enter projectile observation")

@@ -25,6 +25,7 @@ signal navigation_requested(destination: StringName)
 var _shot_has_impacted: bool = false
 var _mechanisms: Array[GimmickBase] = []
 var _replay_active: bool = false
+var _generated_layout: GeneratedStageLayout
 
 
 func _ready() -> void:
@@ -39,7 +40,7 @@ func _ready() -> void:
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
 	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _mechanisms)
-	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version)
+	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
 	_agent_api.configure(
 		stage_data,
 		_stage_controller,
@@ -47,7 +48,8 @@ func _ready() -> void:
 		_paint_system,
 		_projectile_manager,
 		_camera_director,
-		_mechanisms
+		_mechanisms,
+		_generated_layout
 	)
 	_debug_overlay.configure(
 		stage_data,
@@ -64,6 +66,10 @@ func _ready() -> void:
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
+
+
+func generated_layout() -> GeneratedStageLayout:
+	return _generated_layout
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -83,22 +89,27 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _build_stage_world() -> void:
 	_mountain.position = stage_data.terrain_center
-	var mountain_mesh := TerrainMeshFactory.build(stage_data.terrain_variant)
+	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
+	_generated_layout = SeededStageGenerator.generate(stage_data.generation_profile, stage_data.terrain_seed, stage_data)
+	assert(_generated_layout != null, "Stage generation must produce a validated layout before briefing.")
+	var mountain_mesh := TerrainMeshFactory.build_from_layout(_generated_layout)
 	_mountain_mesh.mesh = mountain_mesh
 	_mountain_collision.shape = mountain_mesh.create_trimesh_shape()
 	_cannon.global_transform = stage_data.cannon_transform
+	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
 	_projectile_manager.stage_bounds = stage_data.stage_bounds
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	_paint_system.configure(
-		stage_data.terrain_variant,
+		stage_data.stage_number - 1,
 		stage_data.paint_world_bounds(),
 		stage_data.terrain_center.y,
 		paint_material,
-		stage_data.paint_color
+		stage_data.paint_color,
+		_generated_layout
 	)
 	_mountain_mesh.material_override = paint_material
-	_environment_dressing.configure(stage_data)
+	_environment_dressing.configure(stage_data, _generated_layout)
 	_spawn_mechanisms()
 
 
@@ -230,7 +241,8 @@ func _on_simulation_speed_requested(speed: float) -> void:
 
 func _spawn_mechanisms() -> void:
 	_mechanisms.clear()
-	for placement in stage_data.mechanisms:
+	var placements: Array[MechanismPlacement] = _generated_layout.mechanism_placements
+	for placement in placements:
 		var mechanism: GimmickBase
 		match placement.mechanism_data.kind:
 			MechanismData.Kind.BURST:
@@ -241,11 +253,7 @@ func _spawn_mechanisms() -> void:
 				mechanism = BumperNode.new()
 		mechanism.name = placement.mechanism_data.display_name.capitalize().replace(" ", "")
 		mechanism.data = placement.mechanism_data
-		var terrain_height := TerrainMeshFactory.height_at(
-			stage_data.terrain_variant,
-			placement.local_xz.x,
-			placement.local_xz.y
-		)
+		var terrain_height := _generated_layout.height_at_local(placement.local_xz.x, placement.local_xz.y)
 		mechanism.position = Vector3(
 			stage_data.terrain_center.x + placement.local_xz.x,
 			stage_data.terrain_center.y + terrain_height + placement.height_offset,

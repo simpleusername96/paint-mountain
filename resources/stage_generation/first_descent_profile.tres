@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="StageGenerationProfile" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_route_profile.gd" id="2_route"]
+
+[sub_resource type="Resource" id="Route_first_descent"]
+script = ExtResource("2_route")
+control_points = PackedVector3Array(0, 70, -42, -8, 54, -18, 5, 38, 8, -4, 23, 32, -10, 8, 54)
+width = 28.0
+
+[resource]
+script = ExtResource("1_profile")
+profile_id = &"first_descent_v2"
+profile_version = 2
+base_seed = 845479992
+fallback_seed = 1820876501
+cell_count = Vector2i(64, 48)
+local_bounds = Rect2(-90, -60, 180, 120)
+nominal_peak = 72.0
+accepted_height_range = Vector2(64, 76)
+routes = Array[ExtResource("2_route")]([SubResource("Route_first_descent")])
+minimum_reversals = 0
+maximum_reversals = 1
+eligible_ratio_range = Vector2(0.14, 0.22)
+route_x_jitter = 5.0
+route_height_jitter = 1.5
+shoulder_amplitude = 5.0
+noise_amplitude = 1.2

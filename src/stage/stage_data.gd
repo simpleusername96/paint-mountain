@@ -15,12 +15,14 @@ extends Resource
 @export_multiline var objective: String = "Paint the broad descent and let gravity extend each route."
 
 @export_category("World")
-@export_range(0, 2, 1) var terrain_variant: int = 0
+@export var generation_profile: StageGenerationProfile
+@export var terrain_seed: int = 0
 @export var terrain_center := Vector3(0.0, -2.0, -112.0)
 @export var terrain_size := Vector2(180.0, 120.0)
 @export var cannon_transform := Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 5.0))
+@export var initial_aim := Vector3(0.0, 38.0, 68.0)
 @export var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
-@export var mechanisms: Array[MechanismPlacement] = []
+@export var mechanism_loadout: Array[MechanismData] = []
 @export var reliable_solution: Array[Vector3] = []
 
 @export_category("Camera Bookmarks")
