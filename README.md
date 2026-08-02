@@ -1,6 +1,6 @@
 # Paint Mountain
 
-Paint Mountain is a planned 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 1 project bootstrap, not the finished vertical slice.
+Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 2 cannon/projectile sandbox, not the finished vertical slice.
 
 ## Engine
 
@@ -26,16 +26,24 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\
 
 `scripts/verify.ps1` also accepts the `GODOT_BIN` environment variable or a `godot4`/`godot` command on PATH.
 
-## Current Controls
+## Current Sandbox Controls
 
-- `Esc`: quit the bootstrap scene.
+- `A` / `D`: adjust cannon yaw.
+- `W` / `S`: adjust elevation.
+- `Q` / `E` or mouse wheel: adjust power.
+- Left-drag: adjust yaw and elevation.
+- `Space`: fire when no projectile is active.
+- `R`: clear the current projectile and reset aiming.
+- `Esc`: quit the sandbox.
 
-Gameplay aiming and camera controls are specified in `docs/design-spec.md` but are not implemented in Phase 1.
+Stage inspection, camera switching, pause, and complete gameplay controls remain scheduled in the active plan.
 
 ## Project Structure
 
 - `scenes/bootstrap/`: temporary runnable 3D smoke scene.
-- `src/bootstrap/`: bootstrap-only scene setup and procedural mountain proxy.
+- `scenes/sandbox/`: current cannon/projectile validation entry.
+- `src/cannon/`, `src/projectile/`, `src/terrain/`: Phase 2 runtime owners.
+- `src/bootstrap/`: isolated bootstrap-only setup and procedural mountain proxy.
 - `docs/`: active game design, architecture, and acceptance specifications.
 - `.agents/`: repository-local project memory and the active implementation plan.
 - `scripts/verify.ps1`: engine import and runtime smoke validation.
@@ -44,8 +52,8 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 
 ## Known Limitations
 
-- The playable cannon, projectile physics, paint mask, coverage, stage loop, cameras, mechanisms, menus, saving, replay, audio, debug overlay, stages, and delivery screenshots are not implemented yet.
-- The bootstrap mountain is procedural preview geometry with collision, not a tuned stage.
+- Paint mask, coverage, stage loop, camera director, mechanisms, menus, saving, replay, audio, debug overlay, completed stages, and delivery screenshots are not implemented yet.
+- The sandbox mountain is procedural validation geometry with collision, not a tuned stage.
 - Godot is not assumed to be installed on PATH.
 
 ## Development Contract

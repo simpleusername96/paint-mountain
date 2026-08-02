@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ProjectileData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/projectile/projectile_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+radius = 0.52
+mass = 2.4
+bounce = 0.42
+friction = 0.64
+linear_damp = 0.16
+angular_damp = 0.22
+minimum_launch_speed = 32.0
+maximum_launch_speed = 72.0
+maximum_lifetime = 18.0
+minimum_movement_speed = 1.4
+stop_duration = 1.0
+initial_payload = 260.0
+paint_stamp_radius = 1.15
+impact_splash_radius = 3.8
+deposit_rate = 18.0
+maximum_mechanism_activations = 4

@@ -37,7 +37,7 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [ ] Briefing camera supports constrained terrain inspection and mechanism selection.
 - [ ] Cannon yaw, elevation, and power input work; firing consumes exactly one shot.
 - [ ] Initial trajectory and first-hit preview closely match actual unchanged launch physics.
-- [ ] High-speed projectile collision uses CCD and does not tunnel through the terrain.
+- [x] High-speed projectile collision uses CCD and does not tunnel through the terrain.
 - [ ] Ball bounces, rolls, slides, deposits paint, and terminates by every configured condition.
 - [ ] Firing remains disabled until all parent/child projectiles and paint flow settle.
 - [ ] Shot coverage gain appears before returning to aim, clear, or failure.

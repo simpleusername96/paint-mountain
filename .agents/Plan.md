@@ -100,9 +100,9 @@ Actions requiring owner approval:
 
 ### Phase 2: Cannon and projectile sandbox
 
-- [ ] Create typed projectile tuning Resource, cannon controller, trajectory sampler, projectile manager, rigid-body paintball, and a sandbox stage.
-- [ ] Use the same gravity, muzzle transform, elevation, and power conversion for preview and launch.
-- [ ] Validate CCD impacts, bounce, roll, slide, stop, payload/lifetime/out-of-bounds termination, and repeated-shot equivalence.
+- [x] Create typed projectile tuning Resource, cannon controller, trajectory sampler, projectile manager, rigid-body paintball, and a sandbox stage.
+- [x] Use the same gravity, muzzle transform, elevation, and power conversion for preview and launch.
+- [x] Validate CCD impacts, bounce, roll, slide, stop, lifetime/out-of-bounds termination, and repeated-shot equivalence. Paint-payload termination remains owned by Phase 3 when deposits consume payload.
 
 Acceptance: one aim tuple repeatedly follows an effectively identical initial flight and settles without orphan bodies.
 
@@ -199,7 +199,7 @@ Final gates:
 ## Progress
 
 - [x] Phase 1: repository, agent environment, project config, bootstrap scene, and smoke path.
-- [ ] Phase 2: cannon and projectile sandbox.
+- [x] Phase 2: cannon and projectile sandbox.
 - [ ] Phase 3: paint system.
 - [ ] Phase 4: stage loop, cameras, and HUD.
 - [ ] Phase 5: mechanisms.
@@ -209,9 +209,9 @@ Final gates:
 
 ## Next Steps
 
-1. Implement the Phase 2 sandbox using the named owners.
-2. Measure repeated shots before adding paint.
-3. Advance only after the phase acceptance and guard checks pass.
+1. Implement the authoritative paint mask and eligible-mask mapping in Phase 3.
+2. Route projectile impact/contact/stop deposits through `PaintSystem` without adding a second visual representation.
+3. Validate overlap, excluded pixels, finite payload, and mask-driven terrain visuals before adding stage rules.
 
 ## Completion Criteria
 
