@@ -2,6 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
+last_reviewed: 2026-08-03
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -16,7 +17,7 @@ related:
 
 ## Purpose
 
-Define the observable checks required before the vertical slice may be reported complete. An unchecked item is not an implemented claim.
+Define the observable checks required before the game may be reported complete. An unchecked item is not an implemented claim. Checks marked complete before the 2026-08-03 remediation remain historical baseline evidence; they do not satisfy the new unchecked remediation release gate.
 
 ## Scope
 
@@ -117,7 +118,42 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
 - [x] Screenshots are not a collage, contact sheet, poster, or infographic.
 
-## Observed Final Evidence
+### Remediation release gate (2026-08-03)
+
+Generated terrain and placement:
+
+- [ ] Each stage generates from its frozen profile/base seed through the deterministic 32-attempt sequence or separately validated fallback, and repeated runs produce the same accepted seed and height-grid checksum.
+- [ ] One immutable generated layout supplies mesh, collision, paint height queries, eligible-mask inputs, decorations, mechanisms, replay metadata, and agent height observations; no fixed stage height function or second terrain representation remains.
+- [ ] First Descent, Burst Basin, and Split Ridge pass their exact route-count, width, meaningful-reversal, slope, edge-height, eligible-area, shelf, height, and 6,144-triangle checks.
+- [ ] Deterministic mechanism placement passes slope, spacing, bounds, route clearance, camera line-of-sight, projected-size, downstream-value, orientation, and stable tie-break checks without authored production X/Z fallback.
+- [ ] Stage 1 has no mechanism; Stage 2 has one Burst; Stage 3 has one Splitter and one Bumper, with all three distinct 3D silhouettes readable in both briefing and aiming captures.
+- [ ] Approved sparse nature dressing uses only the five manifest GLBs, stays outside route/mechanism clearance, does not affect collision, and preserves route readability.
+
+Aiming and controls:
+
+- [ ] Cursor hover, left-click lock, held drag retarget, and mechanism-center targeting work through `AimInputController`; `CannonController` contains no device polling.
+- [ ] The target solver uses the real 60 Hz gravity/damping/radius/collision model, returns the lowest valid elevation, rejects unreachable/occluded first impacts, and actual collision lands within 1.25 m of the selected target.
+- [ ] Invalid aim has red plus non-color feedback, retains the last valid cannon pose, disables Fire, and cannot consume a shot through mouse, keyboard, replay, debug, or agent paths.
+- [ ] Power minus/plus click, 300 ms hold delay, 80 ms repeat, wheel 1%, keyboard 2%, Space fire, and accessible A/D/W/S angle fallback match the frozen steps and do not double-fire.
+- [ ] At most 72 pooled trajectory dots and the distance-scaled impact marker remain legible through the actual first collision at 1280×720, 1600×900, and 1920×1080, with no post-impact route or coverage prediction.
+
+Korean UI, visual direction, and approved assets:
+
+- [ ] Fresh saves and migrated V1 saves open in Korean; `ko`/`en` switching is immediate, complete, glyph-safe, and persistent after a fresh process; StageData and mechanisms store translation keys rather than display strings.
+- [ ] Pretendard 500/700/800 typography, frozen palette, card radii, minimum 40 px controls, focus outline, Korean wrapping, and disabled/invalid states apply coherently across menu, stage select, briefing, aiming, observation, results, pause, and settings.
+- [ ] The aiming HUD matches the frozen edge regions at all three resolutions: top stage/target/shots, mode chip, bottom-left aim/power, bottom-center coverage, bottom-right restart/fire, with no clipping, overflow, unsupported text-symbol icon, or center modal.
+- [ ] Terrain reads as a bright thick faceted/terraced mountain; paint reads as thick glossy blue routes; the cannon remains small; mechanisms remain visible; composition is compared directly with the supplied reference capture.
+- [ ] Only the exact 16 approved runtime files are present, every pinned file hash passes, four license texts are included, and `docs/asset-licenses.md` records official URL/version/hash/destination/use. The release works fully offline.
+
+Regression, solutions, and delivery:
+
+- [ ] The deterministic beam-search verification clears targets `4/27/70%` within `4/5/6` shots and the Stage 3 left-route-only path remains below 70%, without weakening projectile/mechanism/paint rules.
+- [ ] Existing projectile, paint, state, mechanism, content, save, replay, UI, debug, reliability, and performance checks pass after migration; format-2 replay validates profile/seed/checksum and deterministic shot results.
+- [ ] `scripts/verify.ps1` passes after the final scene/resource/project changes, and the Windows release export starts through the already registered fastrun command `& '.\builds\windows\PaintMountain.exe'`.
+- [ ] Fresh release-build screenshots replace all seven named files, are individually inspected at 1920×1080 without debug overlay, and include Korean/default UI plus the required gameplay states.
+- [ ] Final production evidence records generation attempts/time, load/restart time, average FPS, worst frame, memory, active-ball cap, persistence/replay results, console review, known limitations, and the exact tested Godot build.
+
+## Observed Legacy Baseline Evidence (2026-08-02)
 
 - Godot 4.7.1 import and main-scene smoke passed through `scripts/verify.ps1`.
 - Identical rigid-body shots stayed within 0.25 m at first impact; the shape-cast preview stayed within 1.622 m. Fresh-process replay reproduced first impact and coverage with measured deltas of 0.00000 m and 0.00000 percentage points.

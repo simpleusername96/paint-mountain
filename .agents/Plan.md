@@ -261,12 +261,12 @@ Goal: make the new requirements and visible baseline authoritative before gamepl
 
 Source owners touched: `docs/design-spec.md`, `docs/technical-architecture.md`, `docs/test-checklist.md`, `.agents/Documentation.md`, `docs/remediation-report.html`
 
-- [ ] **1.1 Update the active specifications and implemented-state record**
+- [x] **1.1 Update the active specifications and implemented-state record**
   - As-is: the active docs report the fixed vertical slice as complete.
   - To-be: record deterministic generation, placement ownership, direct target aiming, Korean default, selected assets, and reference-parity checks; move earlier completion language into historical context.
   - Accept: specs agree with this plan and the source brief; `Documentation.md` separates implemented behavior from remediation work.
   - Guard: do not weaken `StageController`, `PaintSystem`, replay, fixed-timestep, or scope exclusions.
-- [ ] **1.2 Add visual and generation acceptance fixtures**
+- [x] **1.2 Add visual and generation acceptance fixtures**
   - As-is: tests assert clipping and feature presence but not target composition or generation quality.
   - To-be: preserve the reference/current report images and publish the frozen terminology, seeds, numeric profiles, and screenshot comparison checklist from this contract.
   - Accept: a future executor can identify pass/fail without inventing layout or terrain criteria.
@@ -467,7 +467,7 @@ Rerun policy:
 - [x] Decision contract: generation, placement, controls, localization, visual direction, and selected asset set locked.
 - [x] Planning evidence: `docs/remediation-report.html` and its local images prepared for review.
 - [x] External approval: the exact four-source asset import was approved on 2026-08-03; archive members, destinations, uses, and hashes are frozen above.
-- [ ] Phase 1: product contract and regression fixtures.
+- [x] Phase 1: product contract and regression fixtures.
 - [ ] Phase 2: one generated playable stage.
 - [ ] Phase 3: difficulty scaling and mechanism placement/visuals.
 - [ ] Phase 4: aiming and power interaction.

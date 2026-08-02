@@ -2,6 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
+last_reviewed: 2026-08-03
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -15,7 +16,7 @@ related:
 
 ## Purpose
 
-Define the compact working interpretation of `source-brief.md` for a polished three-stage vertical slice of a 3D gravity-driven paintball puzzle game. The verbatim source brief wins if wording conflicts.
+Define the compact working interpretation of `source-brief.md` and the user's 2026-08-02 remediation directive for a polished three-stage 3D gravity-driven paintball puzzle game. The verbatim source brief remains the baseline; the remediation directive adds generated terrain, direct targeting, Korean-first presentation, and reference-parity requirements.
 
 ## Scope
 
@@ -41,8 +42,9 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 ### Controls and information
 
 - Briefing: left-drag orbit, wheel zoom, mechanism selection, Enter/Start to aim, Escape back.
-- Aiming: mouse or A/D yaw, mouse or W/S elevation, wheel or Q/E power, Space fire, R restart, Escape pause, Tab inspect.
+- Aiming: hover and left-click/drag to lock the intended first impact; wheel or explicit `−/+` controls adjust power; Space fires; R restarts; Escape pauses; Tab inspects. A/D yaw and W/S elevation remain an accessible angle fallback; Q/E power control is retired.
 - Show target, current coverage, shots, angle, power, a dotted initial ballistic arc, and an approximate first impact. Never preview post-impact solution paths or exact coverage.
+- The preview uses the same fixed-tick gravity and damping as launch, remains visible to the actual first collision, and marks invalid/unreachable targets explicitly while Fire is disabled.
 - During observation, reduce aiming controls and offer camera mode plus optional 1×/2× after landing.
 
 ### Stage state
@@ -71,11 +73,13 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 
 ### Stages
 
-- First Descent: broad forgiving slope, no mechanisms, low target, three or four shots.
-- Burst Basin: tall ridge, difficult one-charge Burst ledge, broad basin, moderate target, four or five shots.
-- Split Ridge: two or three channels, Splitter plus Bumper, safe inefficient low route, valuable difficult high route, five or six shots, target around 70%.
-- Each StageData includes identity/name, terrain, cannon transform, camera bookmarks, target/shots/color, mechanisms and states, eligible mask, bounds, star thresholds, best data, and tutorial prompts.
-- Every stage has at least one manually verified reliable solution.
+- Generate one accepted immutable heightfield per stage from its stage ID/version, fixed seed, and typed generation profile. Retry and replay reuse the accepted seed and checksum; failed candidates are rejected by the bounded validator rather than hand-corrected.
+- First Descent: one broad 28 m route, 0–1 meaningful rise/fall reversals, no mechanisms, 4% target, four shots.
+- Burst Basin: two 18 m routes, 2–3 meaningful reversals, one high-value Burst, 27% target, five shots.
+- Split Ridge: three 10–14 m routes, 4–6 meaningful reversals, Splitter plus Bumper, safe inefficient low route, 70% target, six shots.
+- Mechanism placement is derived from accepted shelves/routes and must pass slope, spacing, bounds, aiming-camera line-of-sight, projected-size, and downstream-value checks. Production stage resources contain no authored X/Z fallback.
+- Each StageData includes identity and translation keys, generation profile/seed, cannon transform, camera bookmarks, target/shots/color, mechanism loadout, bounds, star thresholds, best data, and tutorial keys. The generated layout owns height samples, route metrics, eligible-mask inputs, decorations, and resolved placements.
+- Every accepted stage passes the deterministic reliable-solution search defined in `.agents/Plan.md`; no manual balance choice is deferred to implementation.
 
 ### Results, persistence, and replay
 
@@ -87,7 +91,8 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 ### UI, art, audio, and debug
 
 - Separate full-screen menu, stage-select, briefing, gameplay, clear, failure, pause, and settings interfaces; anchors/containers support common 16:9 desktop resolutions.
-- Use off-white/translucent panels, charcoal/navy text, one saturated paint accent, rounded restrained controls, and a strict information hierarchy: target, coverage, shots, aim/power, actions.
+- Use the reference's sparse edge-aligned HUD: top stage/target/shots, small aim-mode chip, bottom-left angle/power, bottom-center coverage, and bottom-right restart/fire. Use off-white panels, navy text, one saturated blue accent, rounded restrained controls, real icons, and no aiming-state center modal.
+- Bundle Pretendard, default fresh and migrated V1 saves to Korean, support immediate persistent Korean/English switching, and store translation keys rather than visible text in gameplay resources. Interactive controls remain at least 40 px high with visible keyboard focus and no clipped Korean at the three supported resolutions.
 - Use low-poly faceted neutral terrain, sparse scale cues, bright glossy non-emissive blue paint, a dark stylized small cannon, readable white/gray/blue mechanisms, soft daylight, one main directional light, and lightweight effects.
 - Provide the specified compact sound set, impact/muzzle/mechanism/clear particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/payload/velocity, coverage gains and masks, preview/collision, mechanisms, seed, bounds, camera, and restart timing plus the specified debug actions.
@@ -109,8 +114,10 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
 - The final evidence includes seven separate full-resolution, debug-free screenshots with the exact required names.
 
-## Implemented Vertical Slice
+## Verified Legacy Baseline and Active Remediation
 
-As verified on 2026-08-02 with Godot 4.7.1, the repository implements the complete scoped experience: exactly three StageData-backed stages, the stationary planning cannon, finite-payload rigid bodies, one authoritative 512×512 paint mask, Burst/Splitter/Bumper mechanisms, progression and settings persistence, deterministic input replay, all specified screens, generated audio, pooled effects, debug tools, and the in-process agent interface.
+As verified on 2026-08-02 with Godot 4.7.1, the repository implements the original vertical-slice baseline: exactly three StageData-backed stages, the stationary planning cannon, finite-payload rigid bodies, one authoritative 512×512 paint mask, Burst/Splitter/Bumper behavior, progression/settings persistence, deterministic input replay, the application screens, generated audio, pooled effects, debug tools, and the in-process agent interface.
 
-The Windows release export started successfully and produced the seven required 1920×1080 screenshots. The final measured Burst workload loaded in 355.46 ms and averaged 59.84 FPS at 1920×1080 on Intel Iris Xe graphics, with a 50.83 ms worst measured frame and 62.80 MiB static memory. Detailed evidence and remaining limitations are recorded in `test-checklist.md` and `.agents/Documentation.md`.
+That baseline still uses three fixed analytic terrains, authored mechanism coordinates, small procedural mechanism visuals, embedded CannonController device input, hardcoded English/default font UI, and the prior layout. It therefore does not satisfy the generated-terrain, direct-targeting, Korean-first, asset, or reference-composition requirements above. `.agents/Plan.md` is the active decision-complete remediation plan; `.agents/Documentation.md` and the unchecked remediation section in `test-checklist.md` are the implemented-truth boundary.
+
+The prior Windows release and seven 1920×1080 screenshots remain historical baseline evidence only. They must be replaced with fresh production-build evidence before the remediated design is reported complete.

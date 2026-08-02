@@ -2,6 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
+last_reviewed: 2026-08-03
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -13,7 +14,7 @@ related:
 
 ## Context
 
-The repository was created from a complete vertical-slice brief. The delivered milestone includes the verified projectile and preview, authoritative paint, gameplay loop, cameras, HUD, exactly three mechanisms, three tuned stages, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release screenshots.
+The repository was created from a complete vertical-slice brief. The 2026-08-02 delivered baseline includes the verified projectile and preview, authoritative paint, gameplay loop, cameras, HUD, exactly three mechanisms, three fixed stages, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release screenshots. The user's later remediation directive adds requirements that this baseline does not yet implement.
 
 ## Decision
 
@@ -45,7 +46,17 @@ The repository was created from a complete vertical-slice brief. The delivered m
 - The complete menu-to-stage-to-result flow, all three stages and mechanisms, persistence/replay, agent actions, debug tooling, presentation, export, performance evidence, and seven release screenshots run and have focused checks.
 - Future feature completion claims must cite running-game checks and update this record.
 
-## Current Status
+## Current Remediation Status (2026-08-03)
+
+- `.agents/Plan.md` is the sole active execution plan and now fixes the terrain synthesis, difficulty profiles, seed sequence, mechanism placement, direct-target solver, control behavior, Korean copy/layout, approved asset manifest, persistence migration, verification search, and fastrun command before implementation.
+- External asset approval is resolved for the exact five Kenney Nature Kit GLBs, six Kenney Game Icons PNGs, four Kenney Particle Pack PNGs, and Pretendard Variable WOFF2 listed in the plan. No runtime asset has been imported at this record point.
+- The current game still uses `TerrainMeshFactory`'s three fixed analytic height functions and StageData-authored mechanism coordinates. Procedural generated layout ownership, placement validation, and immutable height-grid sharing are not implemented.
+- Burst, Splitter, and Bumper behaviors exist, but their current small script-built primitive visuals do not meet the new aiming-camera visibility and silhouette contract.
+- `CannonController` still owns device input and the game does not yet support mouse-selected first-impact targets, explicit invalid targeting, or the damped fixed-tick target solver.
+- The application still defaults to English, uses hardcoded visible strings/default typography, and does not yet ship Pretendard, real Korean/English translations, the V2 locale migration, or the reference-aligned HUD.
+- Existing release screenshots and performance evidence remain valid for the legacy baseline only. None is accepted as evidence for the remediation completion gates.
+
+## Historical Baseline Status (2026-08-02)
 
 - Repository and agent environment: complete.
 - Godot project configuration and bootstrap scene: complete.
@@ -60,6 +71,9 @@ The repository was created from a complete vertical-slice brief. The delivered m
 ## Known Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
+- The generated-terrain validator thresholds and deterministic solution search are plan requirements, not implemented evidence; generation must fail closed rather than accepting an invalid layout.
+- The direct target solver must include the existing projectile linear damping. Reusing a no-damping analytic arc would make preview/impact validation diverge.
+- Korean localization, asset import, reference composition, mechanism projected size, and production screenshots remain open release blockers until their unchecked remediation gates pass.
 - Final targets and recorded solutions are physically validated at 4%, 27%, and 70%; wider playtesting may still reveal alternative balance preferences.
 - Fresh-process replay is exact on the current Godot 4.7.1/Windows test machine, but engine or platform changes should rerun the documented tolerance probe.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
