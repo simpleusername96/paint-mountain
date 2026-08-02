@@ -13,7 +13,7 @@ related:
 
 ## Context
 
-The repository was created from a complete vertical-slice brief. The current milestone includes the verified projectile sandbox, authoritative paint system, and Phase 4 gameplay loop with cameras and HUD; mechanisms and multi-stage content remain planned work.
+The repository was created from a complete vertical-slice brief. The current milestone includes the verified projectile, paint, gameplay-loop, camera, HUD, and exactly three Phase 5 mechanism systems; multi-stage content remains planned work.
 
 ## Decision
 
@@ -22,6 +22,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 2 replaces the configured main entry with a projectile sandbox while preserving the isolated bootstrap scene. `ProjectileData` owns tuning, `CannonBallistics` is shared by preview and launch, and `ProjectileManager` bounds and cleans up rigid bodies.
 - `PaintSystem` owns one 512×512 runtime paint image and its derived texture. The terrain shader samples that texture, while incremental threshold accounting derives coverage from the same pixel writes and an inset eligible mask.
 - `StageController` is the sole stage-state authority. Human buttons and cannon input call the same validated fire/restart methods; `CameraDirector` and `HUDController` only react to emitted state.
+- `GimmickBase` owns common physical activation, duplicate-projectile rejection, cooldown/charges, state snapshots, and reset. Burst delegates to `PaintSystem`, Splitter delegates bounded child creation to `ProjectileManager`, and Bumper applies one directional rigid-body impulse.
 - Product behavior, technical ownership, planned work, and implemented status are stored separately to avoid treating plans as working features.
 
 ## Rationale
@@ -33,7 +34,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 ## Consequences
 
 - The bootstrap scene remains as an isolated baseline, while the verified projectile sandbox is now the temporary main entry until the complete gameplay scene passes the same smoke checks.
-- Briefing, aiming, projectile observation, shot result, retry, clear/failure decisions, pause, camera modes, and HUD foundations now run in `scenes/gameplay/gameplay.tscn`. Mechanisms, three-stage menu flow, persistence, replay, audio, and required final screenshots are not implemented yet.
+- Briefing, aiming, projectile observation, shot result, retry, clear/failure decisions, pause, camera modes, HUD foundations, and all three mechanism classes run and have focused checks. Stage placement, three-stage menu flow, persistence, replay, audio, and required final screenshots are not implemented yet.
 - Future feature completion claims must cite running-game checks and update this record.
 
 ## Current Status
@@ -43,7 +44,8 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 2 cannon and projectile sandbox: complete.
 - Phase 3 authoritative paint system: complete.
 - Phase 4 stage loop, cameras, and gameplay HUD: complete.
-- Phase 5 through Phase 8: not started.
+- Phase 5 Burst, Splitter, and Bumper: complete.
+- Phase 6 through Phase 8: not started.
 
 ## Known Risks
 
@@ -52,6 +54,7 @@ The repository was created from a complete vertical-slice brief. The current mil
 - The Phase 2 deterministic check measured 0.12567 m between repeated first-contact positions at an accelerated 2× test rate; replay coverage tolerance cannot be measured until Phase 3 exists.
 - Current sandbox coverage is intentionally small because stage targets and route tuning begin after the Phase 4 state loop; target percentages are not balanced yet.
 - The current low-poly material has strong facet contrast and still needs Phase 7 art cleanup; functional Phase 4 captures passed layout and composition but are not final delivery screenshots.
+- Mechanism audio/particles are intentionally deferred to the Phase 7 presentation batch; Phase 5 provides distinct silhouettes and spent transparency only.
 
 ## Verification
 
@@ -65,4 +68,6 @@ The repository was created from a complete vertical-slice brief. The current mil
 - Phase 4 state check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase4_state_test.gd`
 - Phase 4 render helper: `Godot_v4.7.1-stable_win64_console.exe --path . --resolution 1280x720 --script res://tests/capture_gameplay_frame.gd -- --state=aiming --output=<path>`
 - Observed 2026-08-02: the live shot traversed every intermediate state and returned to aim below target; duplicate fire was rejected; restart cleared paint/projectiles/refilled shots in 0.452 ms; pure clear/failure boundary checks passed; 1280×720 briefing and aiming captures showed no HUD clipping after one overlap correction.
+- Phase 5 mechanism check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase5_mechanism_test.gd`
+- Observed 2026-08-02: physical Burst collision added 2.5626% and spent one charge; Splitter produced three generation-one children totaling 234/260 payload; Bumper redirected one retained projectile; reset, duplicate, recursion, and eight-ball guards passed.
 - Documentation-only fallback: `git diff --check`

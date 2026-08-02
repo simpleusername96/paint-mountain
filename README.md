@@ -45,6 +45,7 @@ Briefing orbit/zoom, follow/wide/cannon observation cameras, retry, and pause fo
 - `scenes/sandbox/`: current cannon/projectile validation entry.
 - `scenes/gameplay/`: current state-driven game entry and reusable cannon scene.
 - `src/cannon/`, `src/projectile/`, `src/terrain/`: Phase 2 runtime owners.
+- `src/mechanisms/`: shared activation contract and the Burst, Splitter, and Bumper implementations.
 - `src/bootstrap/`: isolated bootstrap-only setup and procedural mountain proxy.
 - `docs/`: active game design, architecture, and acceptance specifications.
 - `.agents/`: repository-local project memory and the active implementation plan.
@@ -54,7 +55,7 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 
 ## Known Limitations
 
-- Mechanisms, menus, saving, replay, audio, full debug overlay, three completed stages, and delivery screenshots are not implemented yet.
+- Mechanism placement, menus, saving, replay, audio, full debug overlay, three completed stages, and delivery screenshots are not implemented yet.
 - The sandbox mountain is procedural validation geometry with collision, not a tuned stage.
 - Godot is not assumed to be installed on PATH.
 

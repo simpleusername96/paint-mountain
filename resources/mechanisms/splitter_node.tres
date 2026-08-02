@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MechanismData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+kind = 1
+display_name = "SPLITTER"
+description = "Consumes one ball and sends three controlled children downhill."
+maximum_charges = 0
+cooldown_seconds = 0.3
+trigger_radius = 2.3
+child_count = 3
+child_payload_ratio = 0.3
+fan_angle_degrees = 34.0
+child_speed_multiplier = 0.78

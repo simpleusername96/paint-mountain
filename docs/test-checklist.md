@@ -57,13 +57,13 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 ### Mechanisms
 
-- [ ] Burst activates once by physical hit, paints the authoritative mask, and shows a spent state.
-- [ ] Splitter consumes the parent, emits three controlled-payload fan children, and cannot recurse beyond one generation.
-- [ ] Bumper applies its visible directional impulse without consuming the ball and respects cooldown.
-- [ ] One collision cannot duplicate an activation.
-- [ ] Restart resets charges, cooldowns, visuals, timers, and children.
-- [ ] Active paintballs never exceed eight.
-- [ ] No fourth mechanism appears in the MVP.
+- [x] Burst activates once by physical hit, paints the authoritative mask, and shows a spent state.
+- [x] Splitter consumes the parent, emits three controlled-payload fan children, and cannot recurse beyond one generation.
+- [x] Bumper applies its visible directional impulse without consuming the ball and respects cooldown.
+- [x] One collision cannot duplicate an activation.
+- [x] Restart resets charges, cooldowns, visuals, timers, and children.
+- [x] Active paintballs never exceed eight.
+- [x] No fourth mechanism appears in the MVP.
 
 ### Stages and composition
 

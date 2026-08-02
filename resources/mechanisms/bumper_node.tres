@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MechanismData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+kind = 2
+display_name = "BUMPER"
+description = "Redirects a ball along the indicated route."
+maximum_charges = 0
+cooldown_seconds = 0.8
+trigger_radius = 2.2
+impulse_direction = Vector3(0, 0.62, -0.78)
+impulse_strength = 34.0

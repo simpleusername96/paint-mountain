@@ -130,9 +130,9 @@ Guard: the aiming composition keeps the cannon small and the mountain dominant a
 
 ### Phase 5: Three mechanisms
 
-- [ ] Implement the shared data-driven activation/reset contract.
-- [ ] Add one-charge Burst direct-mask paint, one-generation Splitter with controlled payload, and cooldown-limited directional Bumper impulse.
-- [ ] Add distinct visual/audio activation feedback and reset/duplicate-trigger tests.
+- [x] Implement the shared data-driven activation/reset contract.
+- [x] Add one-charge Burst direct-mask paint, one-generation Splitter with controlled payload, and cooldown-limited directional Bumper impulse.
+- [x] Add distinct low-poly silhouettes/state feedback and reset/duplicate-trigger tests. Audio cues remain in the Phase 7 presentation batch.
 
 Acceptance: every mechanism affects the authoritative gameplay systems exactly once per eligible trigger and restarts cleanly.
 
@@ -202,16 +202,16 @@ Final gates:
 - [x] Phase 2: cannon and projectile sandbox.
 - [x] Phase 3: paint system.
 - [x] Phase 4: stage loop, cameras, and HUD.
-- [ ] Phase 5: mechanisms.
+- [x] Phase 5: mechanisms.
 - [ ] Phase 6: content, save, replay, and AI hook.
 - [ ] Phase 7: presentation.
 - [ ] Phase 8: delivery and final QA.
 
 ## Next Steps
 
-1. Implement the shared Phase 5 mechanism data and activation/reset contract.
-2. Add exactly Burst, Splitter, and Bumper with bounded activation, child count, and payload accounting.
-3. Validate duplicate-trigger, cooldown/charge, reset, direct-mask paint, and split-generation guards.
+1. Build the two remaining StageData resources and stage selection/loading path in Phase 6.
+2. Place Burst in Burst Basin and Splitter plus Bumper in Split Ridge without stage-specific controller rules.
+3. Add progression/save, deterministic attempt replay, the in-process agent API, and verified shot routes.
 
 ## Completion Criteria
 
