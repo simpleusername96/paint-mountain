@@ -110,9 +110,9 @@ Guard: no paint, menus, or mechanisms are added before the sandbox physics is st
 
 ### Phase 3: Authoritative paint system
 
-- [ ] Implement a batched 512×512 runtime paint mask, eligible mask, world X/Z mapping, circle/elongated stamps, finite payload depletion, and throttled coverage calculation.
-- [ ] Bind the mask to the terrain shader and implement impact splash, contact trail, final puddle, and bounded deterministic downhill flow.
-- [ ] Add debug mask/eligible/recent-stamp visualization and overlap tests.
+- [x] Implement a batched 512×512 runtime paint mask, eligible mask, world X/Z mapping, circular/path stamps, finite payload depletion, and throttled coverage calculation.
+- [x] Bind the mask to the terrain shader and implement impact splash, contact trail, final puddle, and bounded deterministic downhill flow.
+- [x] Add debug mask/eligible/recent-stamp visualization and overlap tests.
 
 Acceptance: visuals and reported coverage change from the same mask, overlap is counted once, excluded surfaces never count, and clearing paint resets both views.
 
@@ -200,7 +200,7 @@ Final gates:
 
 - [x] Phase 1: repository, agent environment, project config, bootstrap scene, and smoke path.
 - [x] Phase 2: cannon and projectile sandbox.
-- [ ] Phase 3: paint system.
+- [x] Phase 3: paint system.
 - [ ] Phase 4: stage loop, cameras, and HUD.
 - [ ] Phase 5: mechanisms.
 - [ ] Phase 6: content, save, replay, and AI hook.
@@ -209,9 +209,9 @@ Final gates:
 
 ## Next Steps
 
-1. Implement the authoritative paint mask and eligible-mask mapping in Phase 3.
-2. Route projectile impact/contact/stop deposits through `PaintSystem` without adding a second visual representation.
-3. Validate overlap, excluded pixels, finite payload, and mask-driven terrain visuals before adding stage rules.
+1. Replace the sandbox-only progression with the authoritative Phase 4 `StageController` state machine.
+2. Add briefing, aiming, follow, wide, cannon, and result camera modes through `CameraDirector`.
+3. Build state-driven gameplay HUD foundations and validate clear/failure/restart guards.
 
 ## Completion Criteria
 

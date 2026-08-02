@@ -47,12 +47,12 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 ### Paint and coverage
 
-- [ ] Terrain visuals and coverage use the same runtime paint mask.
+- [x] Terrain visuals and coverage use the same runtime paint mask.
 - [ ] Eligible mask excludes platform, background, underside, mechanisms, decorations, and bounds.
-- [ ] Overlapping stamps never double-count coverage.
+- [x] Overlapping stamps never double-count coverage.
 - [ ] Impact splash, motion trail, payload width reduction, downhill rivulet, and final puddle are finite and readable.
 - [ ] Empty-payload projectiles stop contributing paint and deactivate correctly.
-- [ ] Coverage updates several times per second without full-mask per-frame readback.
+- [x] Coverage updates several times per second without full-mask per-frame readback.
 - [ ] Debug views accurately show eligible, painted, excluded, recent stamps, and numeric coverage.
 
 ### Mechanisms

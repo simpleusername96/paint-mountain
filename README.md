@@ -1,6 +1,6 @@
 # Paint Mountain
 
-Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 2 cannon/projectile sandbox, not the finished vertical slice.
+Paint Mountain is a 3D physics-puzzle game about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. This repository currently contains the completed Phase 3 projectile-and-paint sandbox, not the finished vertical slice.
 
 ## Engine
 
@@ -34,6 +34,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\
 - Left-drag: adjust yaw and elevation.
 - `Space`: fire when no projectile is active.
 - `R`: clear the current projectile and reset aiming.
+- `F3`: toggle paint, eligible-area, and recent-stamp debug masks.
 - `Esc`: quit the sandbox.
 
 Stage inspection, camera switching, pause, and complete gameplay controls remain scheduled in the active plan.
@@ -52,7 +53,7 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 
 ## Known Limitations
 
-- Paint mask, coverage, stage loop, camera director, mechanisms, menus, saving, replay, audio, debug overlay, completed stages, and delivery screenshots are not implemented yet.
+- Stage loop, camera director, mechanisms, menus, saving, replay, audio, full debug overlay, completed stages, and delivery screenshots are not implemented yet.
 - The sandbox mountain is procedural validation geometry with collision, not a tuned stage.
 - Godot is not assumed to be installed on PATH.
 

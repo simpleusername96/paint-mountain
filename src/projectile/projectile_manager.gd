@@ -3,6 +3,14 @@ extends Node3D
 
 signal projectile_spawned(projectile: PaintProjectile)
 signal projectile_impact(projectile: PaintProjectile, world_position: Vector3, speed: float)
+signal paint_deposit_requested(
+	projectile: PaintProjectile,
+	kind: StringName,
+	world_position: Vector3,
+	radius: float,
+	amount: float,
+	allow_flow: bool
+)
 signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal all_projectiles_settled
 
@@ -29,6 +37,7 @@ func spawn_projectile(
 	projectile.global_position = origin
 	projectile.linear_velocity = velocity
 	projectile.impacted.connect(_on_projectile_impacted)
+	projectile.paint_deposit_requested.connect(_on_paint_deposit_requested)
 	projectile.stopped.connect(_on_projectile_stopped)
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
@@ -55,6 +64,17 @@ func cleanup() -> void:
 
 func _on_projectile_impacted(projectile: PaintProjectile, world_position: Vector3, speed: float) -> void:
 	projectile_impact.emit(projectile, world_position, speed)
+
+
+func _on_paint_deposit_requested(
+		projectile: PaintProjectile,
+		kind: StringName,
+		world_position: Vector3,
+		radius: float,
+		amount: float,
+		allow_flow: bool
+) -> void:
+	paint_deposit_requested.emit(projectile, kind, world_position, radius, amount, allow_flow)
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
