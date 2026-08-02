@@ -1,6 +1,6 @@
 # Paint Mountain
 
-Paint Mountain is a complete three-stage 3D physics-puzzle vertical slice about launching finite-payload paintballs from a small foreground cannon onto a large distant mountain. It includes progression, saves, deterministic replay, a UI-independent agent API, release-disabled debug tooling, a Windows export preset, and final running-build evidence.
+Paint Mountain is a complete Korean-first, three-stage 3D physics-puzzle vertical slice about launching finite-payload paintballs from a small foreground cannon onto a large generated mountain. It includes deterministic stage/placement generation, direct impact targeting, three mechanisms, progression, saves, replay, a UI-independent agent API, release-disabled debug tooling, approved offline assets, a Windows export preset, and final running-build evidence.
 
 ## Engine
 
@@ -35,14 +35,21 @@ Create the production-style Windows build with:
 
 The executable is unsigned and the generated `builds/` directory is intentionally not tracked.
 
+The repository is also registered in fastrun-manager with the canonical project command:
+
+```powershell
+& '.\builds\windows\PaintMountain.exe'
+```
+
 ## Current Gameplay Controls
 
-- `A` / `D`: adjust cannon yaw.
-- `W` / `S`: adjust elevation.
-- `Q` / `E` or mouse wheel: adjust power.
-- Left-drag: adjust yaw and elevation.
+- Mouse hover: preview a solvable first-impact target and its complete trajectory.
+- Left-click or held drag: lock or retarget the terrain/mechanism impact point.
+- Mouse wheel or visible `−/+`: fine-tune power; holding the buttons repeats.
+- `-` / `=`: adjust power by 2%.
+- `A` / `D` and `W` / `S`: accessible yaw/elevation fallback.
 - `Space`: fire when no projectile is active.
-- `R`: clear the current projectile and reset aiming.
+- `R`: restart the stage.
 - `Tab`: switch between briefing inspection and aiming.
 - `Esc`: pause; Resume returns to the prior gameplay state.
 - `F3`: toggle the developer overlay in debug builds only.
@@ -51,13 +58,14 @@ Main menu, stage select, full settings, briefing orbit/zoom, follow/wide/cannon 
 
 ## Project Structure
 
-- `scenes/bootstrap/`: temporary runnable 3D smoke scene.
-- `scenes/sandbox/`: current cannon/projectile validation entry.
-- `scenes/gameplay/`: current state-driven game entry and reusable cannon scene.
+- `scenes/bootstrap/`: isolated 3D engine/render smoke scene.
+- `scenes/sandbox/`: cannon/projectile validation scene.
+- `scenes/gameplay/`: state-driven game scene and reusable cannon scene.
 - `scenes/app/`, `src/app/`, `src/ui/`: application entry, navigation, shared UI components, screens, and gameplay HUD.
-- `src/cannon/`, `src/projectile/`, `src/terrain/`: Phase 2 runtime owners.
+- `src/stage_generation/`, `resources/stage_generation/`: deterministic path-first terrain profiles, accepted layouts, placement, and dressing metadata.
+- `src/cannon/`, `src/projectile/`, `src/terrain/`, `src/paint/`: direct targeting/ballistics, projectile lifecycle, generated terrain rendering, and authoritative paint.
 - `src/mechanisms/`: shared activation contract and the Burst, Splitter, and Bumper implementations.
-- `src/stage/`, `resources/stages/`: stage state, exact three-stage catalog, placements, targets, cameras, and recorded solutions.
+- `src/stage/`, `resources/stages/`: stage state, exact three-stage catalog, generation references, targets, cameras, and recorded solutions.
 - `src/autoload/`, `src/replay/`, `src/agent/`: progression/persistence, replay, and UI-independent actions/observations.
 - `src/debug/`, `src/delivery/`: release-disabled diagnostics and deterministic running-build capture support.
 - `src/bootstrap/`: isolated bootstrap-only setup and procedural mountain proxy.
@@ -74,7 +82,7 @@ The planned gameplay ownership boundaries are defined in `docs/technical-archite
 - Godot is not assumed to be installed on PATH.
 - The Windows executable is unsigned and must be built locally with matching Godot export templates.
 - Physics replay is deterministic within the measured test-machine tolerance; engine/platform changes should rerun the replay probe.
-- Art and audio are dependency-free procedural vertical-slice assets rather than a production content pack.
+- Approved Kenney/Pretendard assets and procedural audio meet the vertical-slice target; bespoke production art, animation, audio, signing, and installer packaging remain outside scope.
 
 ## Development Contract
 

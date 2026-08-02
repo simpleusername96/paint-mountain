@@ -14,7 +14,7 @@ related:
 
 ## Context
 
-The repository was created from a complete vertical-slice brief. The 2026-08-02 delivered baseline includes the verified projectile and preview, authoritative paint, gameplay loop, cameras, HUD, exactly three mechanisms, three fixed stages, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release screenshots. The user's later remediation directive adds requirements that this baseline does not yet implement.
+The repository was created from a complete vertical-slice brief. The 2026-08-02 baseline established the projectile, authoritative paint, gameplay loop, exactly three mechanisms, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release evidence. The 2026-08-03 remediation replaced fixed terrain and indirect controls with the completed deterministic generated-stage, direct-target, Korean-first presentation described below.
 
 ## Decision
 
@@ -28,7 +28,7 @@ The repository was created from a complete vertical-slice brief. The 2026-08-02 
 - `ReplayRecorder` stores ordered aim inputs and gameplay events with play/pause/restart and 1×/2× controls. `GameplayAgentApi` exposes the same validated aim/fire/restart/camera actions and structured observations without HUD or mouse coupling.
 - Split children are redirected toward the visible downhill face and disperse divided payload over wider lanes. This gives Split Ridge a difficult, high-value route while retaining the one-generation and eight-projectile limits.
 - `AppRoot` owns navigation among separate main-menu, stage-select, settings, and active-gameplay interfaces. Gameplay emits narrow navigation signals instead of knowing the application shell.
-- Presentation uses dependency-free low-poly dressing, a subtle unshaded terrain treatment, an eight-emitter paint-particle pool, bounded camera shake, and runtime-generated PCM music/SFX routed through Master/Music/SFX buses.
+- Presentation uses approved Kenney low-poly dressing and particle textures, bright faceted terrain, an eight-emitter paint-particle pool, bounded camera shake, and runtime-generated PCM music/SFX routed through Master/Music/SFX buses.
 - `DebugOverlay` is debug-build-only and derives four mask views plus metrics/actions from runtime owners; it exports ReplayRecorder-backed JSON rather than maintaining parallel gameplay state.
 - `DeliveryCaptureRunner` deterministically reproduces the seven evidence states only when explicit command-line arguments are present. `export_presets.cfg` owns the Windows Desktop release path.
 - `PaintSystem` keeps paint, eligible, recent, and derived excluded masks in byte buffers; threshold crossings update coverage incrementally and each dirty batch uploads once. This removed the measured Burst-frame stall without adding a second coverage authority.
@@ -48,13 +48,16 @@ The repository was created from a complete vertical-slice brief. The 2026-08-02 
 
 ## Current Remediation Status (2026-08-03)
 
-- `.agents/Plan.md` is the sole active execution plan and now fixes the terrain synthesis, difficulty profiles, seed sequence, mechanism placement, direct-target solver, control behavior, Korean copy/layout, approved asset manifest, persistence migration, verification search, and fastrun command before implementation.
-- External asset approval is resolved for the exact five Kenney Nature Kit GLBs, six Kenney Game Icons PNGs, four Kenney Particle Pack PNGs, and Pretendard Variable WOFF2 listed in the plan. No runtime asset has been imported at this record point.
-- The current game still uses `TerrainMeshFactory`'s three fixed analytic height functions and StageData-authored mechanism coordinates. Procedural generated layout ownership, placement validation, and immutable height-grid sharing are not implemented.
-- Burst, Splitter, and Bumper behaviors exist, but their current small script-built primitive visuals do not meet the new aiming-camera visibility and silhouette contract.
-- `CannonController` still owns device input and the game does not yet support mouse-selected first-impact targets, explicit invalid targeting, or the damped fixed-tick target solver.
-- The application still defaults to English, uses hardcoded visible strings/default typography, and does not yet ship Pretendard, real Korean/English translations, the V2 locale migration, or the reference-aligned HUD.
-- Existing release screenshots and performance evidence remain valid for the legacy baseline only. None is accepted as evidence for the remediation completion gates.
+- `.agents/Plan.md` completed all six phases and is lifecycle `done`. It remains a historical execution record; this document is the current implemented-state source.
+- `SeededStageGenerator` produces the exact three deterministic layouts from typed profiles. One accepted immutable `GeneratedStageLayout` supplies the 6,144-triangle mesh, collision, paint queries/mask inputs, dressing, mechanism placement, replay checksum, and agent height observations.
+- Stage profiles increase route count, reversals, shelves, and vertical complexity. Accepted seeds/checksums are First Descent `845487911/3476095321`, Burst Basin `1692123947/1568157987`, and Split Ridge `671737323/3215880357`.
+- Stage 1 has no mechanism, Stage 2 has one Burst, and Stage 3 has one Splitter plus one Bumper. Placement is deterministic and validated; distinct scene-authored 3D silhouettes, compact below-device labels, and validated camera bookmarks keep mechanisms readable.
+- `AimInputController` owns pointer/keyboard device input. It raycasts terrain/mechanisms, asks the fixed-tick damped `ImpactTargetSolver` for the lowest valid elevation at current power, exposes explicit invalid aim, and renders at most 72 dots through the real first collision. `CannonController` remains device-independent.
+- Power uses visible minus/plus controls, hold repeat, wheel fine tuning, and keyboard fallback; Space or Fire requests the same guarded shot action. A/D/W/S remain the accessible angle fallback.
+- The app ships complete `ko`/`en` translations, defaults new/V1-migrated saves to Korean, persists explicit locale choice in save format 2, and applies Pretendard plus shared UI primitives across menu, selection, settings, HUD, pause, and results.
+- The approved runtime import is complete: five Kenney Nature Kit GLBs, six Kenney Game Icons PNGs, four Kenney Particle Pack PNGs, Pretendard Variable WOFF2, and four local license files. `docs/asset-licenses.md` records the pinned hashes, provenance, and uses.
+- Physical reliable solutions clear `4/27/70%` targets at 5.791%, 33.470%, and 74.359%; Stage 2 activates Burst and Stage 3 activates both Splitter and Bumper. The six-shot Stage 3 left-route-only guard remains below target at 4.353%.
+- The final Godot 4.7.1 Windows release and seven Korean-default 1920×1080 screenshots replace the legacy evidence. Separate Korean/English 1280×720 and 1600×900 captures cover responsive settings, pause, menu, stage selection, and aiming.
 
 ## Historical Baseline Status (2026-08-02)
 
@@ -71,16 +74,21 @@ The repository was created from a complete vertical-slice brief. The 2026-08-02 
 ## Known Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
-- The generated-terrain validator thresholds and deterministic solution search are plan requirements, not implemented evidence; generation must fail closed rather than accepting an invalid layout.
-- The direct target solver must include the existing projectile linear damping. Reusing a no-damping analytic arc would make preview/impact validation diverge.
-- Korean localization, asset import, reference composition, mechanism projected size, and production screenshots remain open release blockers until their unchecked remediation gates pass.
+- Generation is intentionally bounded to 32 attempts and fails closed if both the sequence and validated fallback fail; profile changes must preserve that contract and update recorded checksums/solutions together.
+- The direct target solver includes projectile linear damping. Future ballistic changes must update launch, preview, physical-tolerance, replay, and aim-interaction checks together.
 - Final targets and recorded solutions are physically validated at 4%, 27%, and 70%; wider playtesting may still reveal alternative balance preferences.
 - Fresh-process replay is exact on the current Godot 4.7.1/Windows test machine, but engine or platform changes should rerun the documented tolerance probe.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
-- Dependency-free procedural art/audio meet the scoped presentation contract but are not a substitute for a later production content pass.
+- The imported low-poly models, UI icons, particles, and procedural audio meet the scoped vertical-slice presentation contract but are not a substitute for a later bespoke production-art/audio pass.
 
 ## Verification
 
+- Final tested engine: Godot `4.7.1.stable.official.a13da4feb`, Windows Compatibility renderer, Intel Iris Xe, fixed 60 Hz physics.
+- Final 2026-08-03 regression: every Phase 2–8 check plus `stage_generation_test.gd`, `mechanism_placement_test.gd`, `aim_interaction_test.gd`, and `localization_ui_test.gd` passed. `scripts/verify.ps1` passed after final scene/resource/script changes.
+- Generation: First Descent attempt 1/166 ms, Burst Basin attempt 2/236 ms, Split Ridge attempt 30/1,878 ms; repeated checksums matched. Physical clears were 5.791%, 33.470%, and 74.359%; the Stage 3 left-route-only guard failed at 4.353%.
+- Persistence/replay: format-2 save preserved explicit English selection across a fresh process; replay first-impact and coverage deltas were both zero.
+- Reliability/performance: 30 cycles left no projectile nodes; slowest restart was 2.056 ms. The final 1920×1080 Burst workload loaded in 459.79 ms, averaged 60.00 FPS, recorded a 20.18 ms worst frame, used 50.70 MiB static memory, and kept the observed active count within the tested bound. A confirming verbose run exited without the first run's transient two-instance ObjectDB warning.
+- Production: the release preset exported `builds/windows/PaintMountain.exe`; the registered fastrun command `& '.\builds\windows\PaintMountain.exe'` starts it. That executable generated the seven final 1920×1080 Korean-default screenshots, all individually inspected without the debug overlay.
 - Run: `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath <path-to-Godot-console.exe>`
 - Phase 2 pure check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase2_test.gd`
 - Phase 2 rigid-body check: `Godot_v4.7.1-stable_win64_console.exe --headless --path . --script res://tests/phase2_physics_test.gd`

@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-02
 last_reviewed: 2026-08-03
 scope: procedural stage generation, mechanism placement, aiming interaction, Korean-first UI, visual remediation, and licensed asset integration
@@ -17,7 +17,7 @@ related:
 
 # Paint Mountain Core Experience Remediation Plan
 
-The current build contains the original three-stage rules, paint mask, projectile physics, mechanisms, replay, and export path, but it does not yet deliver the requested procedural mountain progression, readable item placement, Korean-first interface, direct aiming interaction, or reference-level visual composition. This plan replaces the completed vertical-slice plan with six executable remediation phases that preserve the working gameplay owners while rebuilding the visible core experience.
+At plan creation, the baseline contained the original three-stage rules, paint mask, projectile physics, mechanisms, replay, and export path but lacked procedural progression, readable placement, Korean-first UI, direct targeting, and the target composition. The six phases below were executed to preserve the working gameplay owners while rebuilding the visible core experience; all completion gates passed on 2026-08-03.
 
 ## Purpose
 
@@ -361,17 +361,17 @@ Goal: replace the English placeholder presentation with one coherent localized i
 
 Source owners touched: `translations/ui.csv`, `resources/ui/paint_mountain_theme.tres`, `assets/fonts/pretendard/*`, `assets/ui/icons/*`, `src/ui/*`, `src/app/app_root.gd`, `src/autoload/save_system.gd`, `project.godot`, `docs/asset-licenses.md`, `tests/localization_ui_test.gd`
 
-- [ ] **5.1 Import the approved font/icons/particles and record provenance**
+- [x] **5.1 Import the approved font/icons/particles and record provenance**
   - As-is: no external runtime assets or font license ledger.
   - To-be: commit only selected source files and licenses, wire Pretendard as the Theme default, and map approved icons/particles to semantic uses.
   - Accept: each imported file has source, license, version/date, and usage; release works offline.
   - Guard: no CDN, remote runtime asset, full unused pack, or unapproved license enters the repo.
-- [ ] **5.2 Implement real `ko`/`en` localization and save migration**
+- [x] **5.2 Implement real `ko`/`en` localization and save migration**
   - As-is: visible English literals and an `en`-only selector.
   - To-be: translation keys cover menus, HUD, mechanisms, results, errors, tutorials, and settings; fresh saves default to Korean; existing saves migrate safely.
   - Accept: locale switches immediately, persists across a fresh process, and every screen shows complete glyphs.
   - Guard: stage rules and identifiers remain locale-independent.
-- [ ] **5.3 Recompose HUD and app screens from shared primitives**
+- [x] **5.3 Recompose HUD and app screens from shared primitives**
   - As-is: duplicated fixed style overrides and weak hierarchy.
   - To-be: one Theme and responsibility-shaped components implement the reference regions, spacing, controls, focus, and localized text fit.
   - Accept: aiming matches the report hierarchy; briefing, observation, result, stage select, menu, pause, and settings are visually coherent at 1280×720, 1600×900, and 1920×1080.
@@ -387,17 +387,17 @@ Goal: validate gameplay quality, visual target, determinism, performance, persis
 
 Source owners touched: `resources/stages/*.tres`, `docs/test-checklist.md`, `.agents/Documentation.md`, `README.md`, `screenshots/*.png`, `export_presets.cfg`
 
-- [ ] **6.1 Freeze generated results and verify scripted solutions**
+- [x] **6.1 Freeze generated results and verify scripted solutions**
   - As-is: solutions target fixed formula terrain.
   - To-be: the predetermined seed sequence, targets `4/27/70%`, shots `4/5/6`, and one recorded reliable route per accepted layout preserve the three teaching roles without manual parameter selection.
   - Accept: all three physical solution tests clear and a safe inefficient Stage 3 route remains below target by design.
   - Guard: do not compensate for bad terrain by inflating mechanism paint or weakening core physics.
-- [ ] **6.2 Run visual comparison and accessibility checks**
+- [x] **6.2 Run visual comparison and accessibility checks**
   - As-is: existing checks prove clipping only.
   - To-be: compare fresh running screenshots against the provided reference and generated target for composition, mechanism visibility, terrain depth, paint thickness, hierarchy, font, and Korean fit.
   - Accept: UIUX Level 4 evidence reports no blocker; every important state has a valid capture.
   - Guard: generated concepts are never substituted for runtime evidence.
-- [ ] **6.3 Complete production regression and delivery**
+- [x] **6.3 Complete production regression and delivery**
   - As-is: the prior release passes the old checklist.
   - To-be: run all old and new tests, export release, launch it, measure performance, verify persistence/replay, and replace the seven named running-game screenshots.
   - Accept: the complete updated checklist passes and `Documentation.md` records observed results and limitations.
@@ -469,29 +469,26 @@ Rerun policy:
 - [x] Planning evidence: `docs/remediation-report.html` and its local images prepared for review.
 - [x] External approval: the exact four-source asset import was approved on 2026-08-03; archive members, destinations, uses, and hashes are frozen above.
 - [x] Phase 1: product contract and regression fixtures.
-- [ ] Phase 2: one generated playable stage.
-- [ ] Phase 3: difficulty scaling and mechanism placement/visuals.
-- [ ] Phase 4: aiming and power interaction.
-- [ ] Phase 5: Korean-first theme, layout, and approved assets.
-- [ ] Phase 6: tuning, production QA, and delivery.
+- [x] Phase 2: one generated playable stage.
+- [x] Phase 3: difficulty scaling and mechanism placement/visuals.
+- [x] Phase 4: aiming and power interaction.
+- [x] Phase 5: Korean-first theme, layout, and approved assets.
+- [x] Phase 6: tuning, production QA, and delivery.
 
 ## Next Steps
 
-1. Start with Phase 1 and keep the game behavior unchanged while correcting active specs and baseline checks.
-2. Deliver Phase 2 as the first user-testable implementation checkpoint before touching all screens.
-3. Continue through Phases 3–5 in order and import only the approved exact asset manifest.
-4. Finish with Phase 6 only after every earlier batch gate passes.
+All six remediation phases completed on 2026-08-03. Future changes should begin from the implemented-state record in `Documentation.md` and open a new plan only when they meet the repository ExecPlan threshold.
 
 ## Completion Criteria
 
-- [ ] Three fixed seeds reproduce three valid generated layouts with the specified route/reversal/width bands and one reliable solution each.
-- [ ] Burst, Splitter, and Bumper are visible, distinct, correctly placed, and behaviorally unchanged.
-- [ ] Mouse target selection, explicit power controls, Space/Button fire, invalid state, and first-collision preview pass input and physics checks.
-- [ ] A fresh install defaults to complete Korean UI, English remains selectable, both persist, and Pretendard renders without missing glyphs or clipping.
-- [ ] Running release screenshots match the reference hierarchy and show a stepped large mountain, thick readable paint, small cannon, and visible mechanisms.
-- [ ] Every imported asset is approved, locally stored, offline-safe, and recorded with its license/source.
-- [ ] Every existing gameplay, paint, mechanism, save, replay, reliability, performance, and production-delivery guard passes.
-- [ ] No retired fixed terrain formula, authored production placement, English-only visible string, duplicate paint authority, placeholder plan text, or unreported limitation remains.
+- [x] Three fixed seeds reproduce three valid generated layouts with the specified route/reversal/width bands and one reliable solution each.
+- [x] Burst, Splitter, and Bumper are visible, distinct, correctly placed, and behaviorally unchanged.
+- [x] Mouse target selection, explicit power controls, Space/Button fire, invalid state, and first-collision preview pass input and physics checks.
+- [x] A fresh install defaults to complete Korean UI, English remains selectable, both persist, and Pretendard renders without missing glyphs or clipping.
+- [x] Running release screenshots match the reference hierarchy and show a stepped large mountain, thick readable paint, small cannon, and visible mechanisms.
+- [x] Every imported asset is approved, locally stored, offline-safe, and recorded with its license/source.
+- [x] Every existing gameplay, paint, mechanism, save, replay, reliability, performance, and production-delivery guard passes.
+- [x] No retired fixed terrain formula, authored production placement, English-only visible string, duplicate paint authority, placeholder plan text, or unreported limitation remains.
 
 ## Stop Conditions
 

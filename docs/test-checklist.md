@@ -122,36 +122,47 @@ Run narrow checks throughout development, then complete this full checklist agai
 
 Generated terrain and placement:
 
-- [ ] Each stage generates from its frozen profile/base seed through the deterministic 32-attempt sequence or separately validated fallback, and repeated runs produce the same accepted seed and height-grid checksum.
-- [ ] One immutable generated layout supplies mesh, collision, paint height queries, eligible-mask inputs, decorations, mechanisms, replay metadata, and agent height observations; no fixed stage height function or second terrain representation remains.
-- [ ] First Descent, Burst Basin, and Split Ridge pass their exact route-count, width, meaningful-reversal, slope, edge-height, eligible-area, shelf, height, and 6,144-triangle checks.
-- [ ] Deterministic mechanism placement passes slope, spacing, bounds, route clearance, camera line-of-sight, projected-size, downstream-value, orientation, and stable tie-break checks without authored production X/Z fallback.
-- [ ] Stage 1 has no mechanism; Stage 2 has one Burst; Stage 3 has one Splitter and one Bumper, with all three distinct 3D silhouettes readable in both briefing and aiming captures.
-- [ ] Approved sparse nature dressing uses only the five manifest GLBs, stays outside route/mechanism clearance, does not affect collision, and preserves route readability.
+- [x] Each stage generates from its frozen profile/base seed through the deterministic 32-attempt sequence or separately validated fallback, and repeated runs produce the same accepted seed and height-grid checksum.
+- [x] One immutable generated layout supplies mesh, collision, paint height queries, eligible-mask inputs, decorations, mechanisms, replay metadata, and agent height observations; no fixed stage height function or second terrain representation remains.
+- [x] First Descent, Burst Basin, and Split Ridge pass their exact route-count, width, meaningful-reversal, slope, edge-height, eligible-area, shelf, height, and 6,144-triangle checks.
+- [x] Deterministic mechanism placement passes slope, spacing, bounds, route clearance, camera line-of-sight, projected-size, downstream-value, orientation, and stable tie-break checks without authored production X/Z fallback.
+- [x] Stage 1 has no mechanism; Stage 2 has one Burst; Stage 3 has one Splitter and one Bumper, with all three distinct 3D silhouettes readable in both briefing and aiming captures.
+- [x] Approved sparse nature dressing uses only the five manifest GLBs, stays outside route/mechanism clearance, does not affect collision, and preserves route readability.
 
 Aiming and controls:
 
-- [ ] Cursor hover, left-click lock, held drag retarget, and mechanism-center targeting work through `AimInputController`; `CannonController` contains no device polling.
-- [ ] The target solver uses the real 60 Hz gravity/damping/radius/collision model, returns the lowest valid elevation, rejects unreachable/occluded first impacts, and actual collision lands within 1.25 m of the selected target.
-- [ ] Invalid aim has red plus non-color feedback, retains the last valid cannon pose, disables Fire, and cannot consume a shot through mouse, keyboard, replay, debug, or agent paths.
-- [ ] Power minus/plus click, 300 ms hold delay, 80 ms repeat, wheel 1%, keyboard 2%, Space fire, and accessible A/D/W/S angle fallback match the frozen steps and do not double-fire.
-- [ ] At most 72 pooled trajectory dots and the distance-scaled impact marker remain legible through the actual first collision at 1280×720, 1600×900, and 1920×1080, with no post-impact route or coverage prediction.
+- [x] Cursor hover, left-click lock, held drag retarget, and mechanism-center targeting work through `AimInputController`; `CannonController` contains no device polling.
+- [x] The target solver uses the real 60 Hz gravity/damping/radius/collision model, returns the lowest valid elevation, rejects unreachable/occluded first impacts, and actual collision lands within 1.25 m of the selected target.
+- [x] Invalid aim has red plus non-color feedback, retains the last valid cannon pose, disables Fire, and cannot consume a shot through mouse, keyboard, replay, debug, or agent paths.
+- [x] Power minus/plus click, 300 ms hold delay, 80 ms repeat, wheel 1%, keyboard 2%, Space fire, and accessible A/D/W/S angle fallback match the frozen steps and do not double-fire.
+- [x] At most 72 pooled trajectory dots and the distance-scaled impact marker remain legible through the actual first collision at 1280×720, 1600×900, and 1920×1080, with no post-impact route or coverage prediction.
 
 Korean UI, visual direction, and approved assets:
 
-- [ ] Fresh saves and migrated V1 saves open in Korean; `ko`/`en` switching is immediate, complete, glyph-safe, and persistent after a fresh process; StageData and mechanisms store translation keys rather than display strings.
-- [ ] Pretendard 500/700/800 typography, frozen palette, card radii, minimum 40 px controls, focus outline, Korean wrapping, and disabled/invalid states apply coherently across menu, stage select, briefing, aiming, observation, results, pause, and settings.
-- [ ] The aiming HUD matches the frozen edge regions at all three resolutions: top stage/target/shots, mode chip, bottom-left aim/power, bottom-center coverage, bottom-right restart/fire, with no clipping, overflow, unsupported text-symbol icon, or center modal.
-- [ ] Terrain reads as a bright thick faceted/terraced mountain; paint reads as thick glossy blue routes; the cannon remains small; mechanisms remain visible; composition is compared directly with the supplied reference capture.
-- [ ] Only the exact 16 approved runtime files are present, every pinned file hash passes, four license texts are included, and `docs/asset-licenses.md` records official URL/version/hash/destination/use. The release works fully offline.
+- [x] Fresh saves and migrated V1 saves open in Korean; `ko`/`en` switching is immediate, complete, glyph-safe, and persistent after a fresh process; StageData and mechanisms store translation keys rather than display strings.
+- [x] Pretendard 500/700/800 typography, frozen palette, card radii, minimum 40 px controls, focus outline, Korean wrapping, and disabled/invalid states apply coherently across menu, stage select, briefing, aiming, observation, results, pause, and settings.
+- [x] The aiming HUD matches the frozen edge regions at all three resolutions: top stage/target/shots, mode chip, bottom-left aim/power, bottom-center coverage, bottom-right restart/fire, with no clipping, overflow, unsupported text-symbol icon, or center modal.
+- [x] Terrain reads as a bright thick faceted/terraced mountain; paint reads as thick glossy blue routes; the cannon remains small; mechanisms remain visible; composition is compared directly with the supplied reference capture.
+- [x] Only the exact 16 approved runtime files are present, every pinned file hash passes, four license texts are included, and `docs/asset-licenses.md` records official URL/version/hash/destination/use. The release works fully offline.
 
 Regression, solutions, and delivery:
 
-- [ ] The deterministic beam-search verification clears targets `4/27/70%` within `4/5/6` shots and the Stage 3 left-route-only path remains below 70%, without weakening projectile/mechanism/paint rules.
-- [ ] Existing projectile, paint, state, mechanism, content, save, replay, UI, debug, reliability, and performance checks pass after migration; format-2 replay validates profile/seed/checksum and deterministic shot results.
-- [ ] `scripts/verify.ps1` passes after the final scene/resource/project changes, and the Windows release export starts through the already registered fastrun command `& '.\builds\windows\PaintMountain.exe'`.
-- [ ] Fresh release-build screenshots replace all seven named files, are individually inspected at 1920×1080 without debug overlay, and include Korean/default UI plus the required gameplay states.
-- [ ] Final production evidence records generation attempts/time, load/restart time, average FPS, worst frame, memory, active-ball cap, persistence/replay results, console review, known limitations, and the exact tested Godot build.
+- [x] The deterministic beam-search verification clears targets `4/27/70%` within `4/5/6` shots and the Stage 3 left-route-only path remains below 70%, without weakening projectile/mechanism/paint rules.
+- [x] Existing projectile, paint, state, mechanism, content, save, replay, UI, debug, reliability, and performance checks pass after migration; format-2 replay validates profile/seed/checksum and deterministic shot results.
+- [x] `scripts/verify.ps1` passes after the final scene/resource/project changes, and the Windows release export starts through the already registered fastrun command `& '.\builds\windows\PaintMountain.exe'`.
+- [x] Fresh release-build screenshots replace all seven named files, are individually inspected at 1920×1080 without debug overlay, and include Korean/default UI plus the required gameplay states.
+- [x] Final production evidence records generation attempts/time, load/restart time, average FPS, worst frame, memory, active-ball cap, persistence/replay results, console review, known limitations, and the exact tested Godot build.
+
+## Observed Remediation Evidence (2026-08-03)
+
+- Godot `4.7.1.stable.official.a13da4feb` passed import, parse, main-scene smoke, and Windows release export checks with the Compatibility renderer at a fixed 60 Hz physics tick.
+- Deterministic generation accepted First Descent on attempt 1 in 166 ms (`seed 845487911`, checksum `3476095321`), Burst Basin on attempt 2 in 236 ms (`seed 1692123947`, checksum `1568157987`), and Split Ridge on attempt 30 in 1,878 ms (`seed 671737323`, checksum `3215880357`). Repeated generation matched each checksum.
+- Physical solutions reached 5.791%, 33.470%, and 74.359% for the `4/27/70%` targets. Burst activated in Stage 2; both Splitter and Bumper activated in Stage 3. The six-shot Stage 3 left-route-only guard reached 4.353% and failed below target.
+- The final 1920×1080 rendered Burst workload loaded in 459.79 ms, averaged 60.00 FPS over 360 frames, recorded a 20.18 ms worst frame, used 50.70 MiB static memory, and kept the measured active-ball count at one; separate mechanism checks retain the eight-ball hard cap. A second verbose run completed without the transient two-instance exit warning seen in the first process.
+- The state test measured a 1.073 ms restart. Thirty reliability cycles left no projectiles and measured a 2.056 ms slowest restart.
+- Fresh-process persistence preserved the explicit English locale and selection flag along with progression/results/settings. Fresh-process replay reproduced first impact and coverage with deltas of 0.00000 m and 0.00000 percentage points.
+- Korean and English captures were inspected at 1280×720 and 1600×900; settings, pause, menu, stage selection, and aiming controls stayed inside the viewport. Seven final Korean-default release-build images were inspected individually at exactly 1920×1080 with no debug overlay.
+- The Windows executable is unsigned and `builds/` remains intentionally ignored. Godot is not assumed to be on `PATH`; verification accepts an explicit `-GodotPath`.
 
 ## Observed Legacy Baseline Evidence (2026-08-02)
 
