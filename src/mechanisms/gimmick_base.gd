@@ -35,15 +35,21 @@ func _ready() -> void:
 		_build_visual(_visual_root)
 	_label = Label3D.new()
 	_label.name = "BriefingLabel"
-	_label.text = data.display_name
+	_label.text = tr(_display_name_key())
 	_label.font_size = 42
 	_label.outline_size = 8
 	_label.modulate = Color(0.95, 0.97, 1.0, 1.0)
 	_label.outline_modulate = Color(0.04, 0.07, 0.12, 0.9)
-	_label.position = Vector3(0.0, data.trigger_radius + 1.2, 0.0)
+	_label.position = Vector3(0.0, 0.9, 0.0)
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_label.fixed_size = true
+	_label.pixel_size = 0.0015
+	_label.no_depth_test = true
 	_label.visible = false
 	add_child(_label)
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null:
+		game_state.settings_changed.connect(_on_settings_changed)
 	body_entered.connect(_on_body_entered)
 	input_event.connect(_on_input_event)
 	reset_state()
@@ -109,6 +115,15 @@ func state_snapshot() -> Dictionary:
 func set_label_visible(value: bool) -> void:
 	if _label != null:
 		_label.visible = value
+
+
+func _display_name_key() -> String:
+	return ["mechanism.burst", "mechanism.splitter", "mechanism.bumper"][data.kind]
+
+
+func _on_settings_changed(_settings: Dictionary) -> void:
+	if _label != null:
+		_label.text = tr(_display_name_key())
 
 
 func _effect_can_activate(_projectile: PaintProjectile) -> bool:

@@ -10,6 +10,7 @@ func _initialize() -> void:
 func _capture() -> void:
 	var requested_stage := &"first_descent"
 	var requested_state := "briefing"
+	var requested_locale := "ko"
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/gameplay_capture.png")
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
@@ -18,10 +19,13 @@ func _capture() -> void:
 			requested_state = argument.trim_prefix("--state=")
 		elif argument.begins_with("--output="):
 			output_path = argument.trim_prefix("--output=")
+		elif argument.begins_with("--locale="):
+			requested_locale = argument.trim_prefix("--locale=")
 	DirAccess.make_dir_recursive_absolute(output_path.get_base_dir())
 	var game_state := root.get_node("/root/GameState")
 	var unlocked_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
 	unlocked_data.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
+	unlocked_data.settings.language = requested_locale
 	game_state.initialize_from_data(unlocked_data)
 	game_state.select_stage(requested_stage)
 	var gameplay := GAMEPLAY_SCENE.instantiate()

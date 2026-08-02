@@ -9,13 +9,20 @@ func _initialize() -> void:
 
 func _capture() -> void:
 	var requested_screen := "main_menu"
+	var requested_locale := "ko"
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/app_capture.png")
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--screen="):
 			requested_screen = argument.trim_prefix("--screen=")
 		elif argument.begins_with("--output="):
 			output_path = argument.trim_prefix("--output=")
+		elif argument.begins_with("--locale="):
+			requested_locale = argument.trim_prefix("--locale=")
 	DirAccess.make_dir_recursive_absolute(output_path.get_base_dir())
+	var game_state := root.get_node("/root/GameState")
+	var capture_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
+	capture_data.settings.language = requested_locale
+	game_state.initialize_from_data(capture_data)
 	var app := APP_SCENE.instantiate()
 	root.add_child(app)
 	await process_frame

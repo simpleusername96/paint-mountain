@@ -9,13 +9,13 @@
 script = ExtResource("1_stage")
 stage_id = &"split_ridge"
 stage_version = 2
-display_name = "SPLIT RIDGE"
+display_name_key = &"stage.split_ridge.name"
 stage_number = 3
 target_coverage = 70.0
 maximum_shots = 6
 paint_color = Color(0.03, 0.38, 1, 1)
 star_thresholds = Vector3(70, 82, 92)
-objective = "Use the Bumper and Splitter to reach all three downhill channels."
+objective_key = &"stage.split_ridge.objective"
 generation_profile = ExtResource("2_profile")
 terrain_seed = 671499753
 terrain_center = Vector3(0, -2, -112)

@@ -11,6 +11,7 @@ func _ready() -> void:
 	layer = 50
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build()
+	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
 	visible = false
 
 
@@ -32,7 +33,7 @@ func _build() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 
-	var panel := UIFactory.panel(Vector2(1120.0, 850.0), Color(0.98, 0.97, 0.94, 0.98), 26)
+	var panel := UIFactory.panel(Vector2(1120.0, 680.0), Color(0.98, 0.97, 0.94, 0.98), 26)
 	panel.name = "Panel"
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
@@ -40,8 +41,8 @@ func _build() -> void:
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -560.0
 	panel.offset_right = 560.0
-	panel.offset_top = -425.0
-	panel.offset_bottom = 425.0
+	panel.offset_top = -340.0
+	panel.offset_bottom = 340.0
 	root.add_child(panel)
 	var margin := UIFactory.margin(panel, Vector4(48, 38, 48, 38))
 	margin.name = "Margin"
@@ -51,34 +52,37 @@ func _build() -> void:
 	margin.add_child(content)
 	var title_row := HBoxContainer.new()
 	content.add_child(title_row)
-	var title := UIFactory.label("SETTINGS", 40, UIFactory.NAVY)
+	var title := UIFactory.label("settings.title", 40, UIFactory.NAVY)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
-	title_row.add_child(UIFactory.label("CHANGES SAVE AUTOMATICALLY", 14, UIFactory.MUTED))
+	title_row.add_child(UIFactory.label("settings.autosave", 14, UIFactory.MUTED))
 
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 54)
 	content.add_child(columns)
-	var audio_column := _settings_column("AUDIO")
+	var audio_column := _settings_column("settings.audio")
 	columns.add_child(audio_column)
-	_add_slider(audio_column, "MASTER VOLUME", &"master_volume")
-	_add_slider(audio_column, "MUSIC VOLUME", &"music_volume")
-	_add_slider(audio_column, "SOUND EFFECTS", &"sfx_volume")
-	audio_column.add_child(_section_heading("GAMEPLAY"))
-	_add_toggle(audio_column, "CAMERA SHAKE", &"camera_shake")
-	_add_toggle(audio_column, "FOLLOW CAMERA", &"follow_camera")
-	_add_toggle(audio_column, "TRAJECTORY PREVIEW", &"trajectory_preview")
+	_add_slider(audio_column, "settings.master", &"master_volume")
+	_add_slider(audio_column, "settings.music", &"music_volume")
+	_add_slider(audio_column, "settings.sfx", &"sfx_volume")
+	audio_column.add_child(_section_heading("settings.gameplay"))
+	_add_toggle(audio_column, "settings.camera_shake", &"camera_shake")
+	_add_toggle(audio_column, "settings.follow_camera", &"follow_camera")
+	_add_toggle(audio_column, "settings.trajectory", &"trajectory_preview")
 
-	var display_column := _settings_column("DISPLAY")
+	var display_column := _settings_column("settings.display")
 	columns.add_child(display_column)
-	_add_toggle(display_column, "FULLSCREEN", &"fullscreen")
-	_add_option(display_column, "RESOLUTION", &"resolution", ["1280x720", "1600x900", "1920x1080"])
-	_add_option(display_column, "GRAPHICS QUALITY", &"quality", ["low", "medium", "high"])
-	display_column.add_child(_section_heading("LANGUAGE"))
-	_add_option(display_column, "INTERFACE LANGUAGE", &"language", ["en"])
-	var language_note := UIFactory.label("English is the initial language. The saved key and selector are ready for additional locales.", 15, UIFactory.MUTED)
+	_add_toggle(display_column, "settings.fullscreen", &"fullscreen")
+	_add_option(display_column, "settings.resolution", &"resolution", ["1280x720", "1600x900", "1920x1080"])
+	_add_option(display_column, "settings.quality", &"quality", ["low", "medium", "high"])
+	display_column.add_child(_section_heading("settings.language"))
+	_add_option(display_column, "settings.interface_language", &"language", ["ko", "en"])
+	var language_note := UIFactory.label("settings.language_note", 15, UIFactory.MUTED)
 	language_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Autowrapped labels otherwise report a one-pixel minimum width before their
+	# container is laid out, which can inflate the settings panel vertically.
+	language_note.custom_minimum_size = Vector2(485.0, 44.0)
 	display_column.add_child(language_note)
 
 	var footer := HBoxContainer.new()
@@ -86,10 +90,10 @@ func _build() -> void:
 	footer.alignment = BoxContainer.ALIGNMENT_END
 	footer.add_theme_constant_override("separation", 14)
 	content.add_child(footer)
-	var defaults := UIFactory.button("RESTORE DEFAULTS", false, Vector2(250.0, 58.0))
+	var defaults := UIFactory.button("ui.restore_defaults", false, Vector2(250.0, 58.0))
 	defaults.pressed.connect(_restore_defaults)
 	footer.add_child(defaults)
-	var close := UIFactory.button("CLOSE", true, Vector2(190.0, 58.0))
+	var close := UIFactory.button("ui.close", true, Vector2(190.0, 58.0))
 	close.name = "Close"
 	close.pressed.connect(func() -> void:
 		visible = false
@@ -158,7 +162,8 @@ func _add_option(parent: VBoxContainer, caption: String, key: StringName, values
 	option.custom_minimum_size = Vector2(0.0, 50.0)
 	option.add_theme_font_size_override("font_size", 16)
 	for value in values:
-		option.add_item(value.to_upper())
+		var visible_value := tr("settings.korean") if value == "ko" else (tr("settings.english") if value == "en" else value.to_upper())
+		option.add_item(visible_value)
 		option.set_item_metadata(option.item_count - 1, value)
 	option.item_selected.connect(func(index: int) -> void: _store(key, option.get_item_metadata(index)))
 	parent.add_child(option)
@@ -187,8 +192,12 @@ func _store(key: StringName, value) -> void:
 	if _syncing:
 		return
 	var game_state := get_node("/root/GameState")
+	if key == &"language":
+		game_state.update_setting(&"language_user_selected", true, false)
 	if game_state.update_setting(key, value):
 		_apply_setting(key, value)
+		if key == &"language":
+			_refresh_language_option_labels()
 
 
 func _apply_setting(key: StringName, value) -> void:
@@ -224,4 +233,21 @@ func _restore_defaults() -> void:
 		game_state.update_setting(StringName(key), defaults[key], false)
 		_apply_setting(StringName(key), defaults[key])
 	game_state.save_now()
+	_refresh_language_option_labels()
 	_sync_from_state()
+
+
+func _refresh_language_option_labels() -> void:
+	var language_option: OptionButton = _controls.get(&"language")
+	if language_option == null:
+		return
+	for index in range(language_option.item_count):
+		match String(language_option.get_item_metadata(index)):
+			"ko":
+				language_option.set_item_text(index, tr("settings.korean"))
+			"en":
+				language_option.set_item_text(index, tr("settings.english"))
+
+
+func _on_settings_changed(_settings: Dictionary) -> void:
+	_refresh_language_option_labels()

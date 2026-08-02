@@ -23,6 +23,14 @@ window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 
+[gui]
+
+theme/custom="res://resources/ui/paint_mountain_theme.tres"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/ui.en.translation", "res://translations/ui.ko.translation")
+
 [physics]
 
 common/physics_ticks_per_second=60

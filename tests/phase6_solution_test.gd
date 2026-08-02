@@ -48,7 +48,7 @@ func _run_solution() -> void:
 		elif event_name == &"projectile_impacted":
 			impact_positions.append(payload.position)
 	)
-	print("%s mechanism observations: %s" % [stage.display_name, agent.get_observation().mechanisms])
+	print("%s mechanism observations: %s" % [stage.display_name_key, agent.get_observation().mechanisms])
 	if probe_only:
 		Engine.time_scale = 1.0
 		game_state.persistence_enabled = true
@@ -78,7 +78,7 @@ func _run_solution() -> void:
 			frame_budget -= 1
 		_assert_true(frame_budget > 0, "solution shot must settle within its bounded lifetime")
 		print("%s shot %.0f/%.0f/%.0f -> %.3f%% (%s)" % [
-			stage.display_name,
+			stage.display_name_key,
 			shot.x,
 			shot.y,
 			shot.z,
@@ -91,15 +91,15 @@ func _run_solution() -> void:
 			else:
 				print("Closest mechanism pass: %.3fm at %s; activations=%d; impacts=%s" % [closest_mechanism_distance, closest_projectile_position, mechanism_activations.count, impact_positions])
 	if shot_probe == Vector3.INF:
-		_assert_true(controller.current_state == StageController.State.STAGE_CLEAR, "%s recorded solution must clear its target" % stage.display_name)
+		_assert_true(controller.current_state == StageController.State.STAGE_CLEAR, "%s recorded solution must clear its target" % stage.display_name_key)
 		if not stage.mechanism_loadout.is_empty():
-			_assert_true(mechanism_activations.count > 0, "%s solution must activate its teaching mechanism" % stage.display_name)
+			_assert_true(mechanism_activations.count > 0, "%s solution must activate its teaching mechanism" % stage.display_name_key)
 			for mechanism_data in stage.mechanism_loadout:
 				var required_kind: String = MechanismData.Kind.keys()[mechanism_data.kind]
-				_assert_true(mechanism_activations.kinds.has(required_kind), "%s solution must activate %s" % [stage.display_name, required_kind])
+				_assert_true(mechanism_activations.kinds.has(required_kind), "%s solution must activate %s" % [stage.display_name_key, required_kind])
 	if not _failed and shot_probe == Vector3.INF:
 		print("Phase 6 solution passed for %s at %.3f%% with %d mechanism activations." % [
-			stage.display_name,
+			stage.display_name_key,
 			float(agent.get_observation().current_coverage),
 			mechanism_activations.count,
 		])

@@ -44,26 +44,26 @@ func _build() -> void:
 	content.add_theme_constant_override("separation", 16)
 	margin.add_child(content)
 
-	var eyebrow := UIFactory.label("A PHYSICS PAINT PUZZLE", 17, UIFactory.BLUE)
+	var eyebrow := UIFactory.label("app.eyebrow", 17, UIFactory.BLUE)
 	content.add_child(eyebrow)
-	var title := UIFactory.label("PAINT\nMOUNTAIN", 70, UIFactory.NAVY)
+	var title := UIFactory.label("app.title", 70, UIFactory.NAVY)
 	title.add_theme_constant_override("line_spacing", -10)
 	content.add_child(title)
-	var subtitle := UIFactory.label("Aim once. Trust gravity.\nPaint the impossible route.", 22, UIFactory.CHARCOAL)
+	var subtitle := UIFactory.label("app.subtitle", 22, UIFactory.CHARCOAL)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(subtitle)
 
-	_play_button = UIFactory.button("PLAY", true, Vector2(0.0, 72.0))
+	_play_button = UIFactory.button("ui.play", true, Vector2(0.0, 72.0))
 	_play_button.pressed.connect(func() -> void: play_requested.emit())
 	content.add_child(_play_button)
-	var stage_select := UIFactory.button("STAGE SELECT", false, Vector2(0.0, 64.0))
+	var stage_select := UIFactory.button("ui.stage_select", false, Vector2(0.0, 64.0))
 	stage_select.pressed.connect(func() -> void: stage_select_requested.emit())
 	content.add_child(stage_select)
-	var settings := UIFactory.button("SETTINGS", false, Vector2(0.0, 64.0))
+	var settings := UIFactory.button("ui.settings", false, Vector2(0.0, 64.0))
 	settings.pressed.connect(func() -> void: settings_requested.emit())
 	content.add_child(settings)
-	var quit := UIFactory.button("QUIT", false, Vector2(0.0, 54.0))
+	var quit := UIFactory.button("ui.quit", false, Vector2(0.0, 54.0))
 	quit.pressed.connect(func() -> void: quit_requested.emit())
 	content.add_child(quit)
 
@@ -78,4 +78,3 @@ func _build() -> void:
 	version.offset_bottom = -44.0
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(version)
-

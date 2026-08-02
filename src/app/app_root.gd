@@ -136,7 +136,7 @@ func _build_preview_world() -> void:
 	var environment := WorldEnvironment.new()
 	var environment_resource := Environment.new()
 	environment_resource.background_mode = Environment.BG_COLOR
-	environment_resource.background_color = Color(0.86, 0.84, 0.8, 1.0)
+	environment_resource.background_color = Color(0.93, 0.91, 0.88, 1.0)
 	environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment_resource.ambient_light_color = Color(0.78, 0.8, 0.84, 1.0)
 	environment_resource.ambient_light_energy = 0.72
@@ -166,7 +166,7 @@ func _build_preview_world() -> void:
 	var ground_mesh := PlaneMesh.new()
 	ground_mesh.size = Vector2(360.0, 360.0)
 	var ground_material := StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.68, 0.67, 0.65, 1.0)
+	ground_material.albedo_color = Color(0.79, 0.78, 0.75, 1.0)
 	ground_material.roughness = 1.0
 	ground_mesh.material = ground_material
 	ground.mesh = ground_mesh
@@ -191,7 +191,7 @@ func _set_preview_stage(stage: StageData) -> void:
 	material.shader = load("res://src/paint/terrain_paint.gdshader")
 	material.set_shader_parameter(&"paint_mask", _preview_paint_texture(stage.stage_number))
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
-	material.set_shader_parameter(&"rock_color", Color(0.48, 0.5, 0.53, 1.0))
+	material.set_shader_parameter(&"rock_color", Color(0.63, 0.65, 0.68, 1.0))
 	_preview_mountain.material_override = material
 	_preview_dressing.configure(stage, layout)
 
@@ -200,15 +200,24 @@ func _preview_paint_texture(stage_number: int) -> ImageTexture:
 	const SIZE := 256
 	var image := Image.create(SIZE, SIZE, false, Image.FORMAT_L8)
 	image.fill(Color.BLACK)
+	var centers: Array[Vector2] = [
+		Vector2(0.45, 0.25),
+		Vector2(0.49, 0.34),
+		Vector2(0.45, 0.43),
+		Vector2(0.51, 0.52),
+	]
+	if stage_number > 1:
+		centers.append_array([Vector2(0.64, 0.32), Vector2(0.68, 0.43), Vector2(0.63, 0.54)])
 	for y in range(SIZE):
 		var normalized_y := float(y) / float(SIZE - 1)
 		for x in range(SIZE):
 			var normalized_x := float(x) / float(SIZE - 1)
-			var curve_a := 0.46 + sin(normalized_y * 8.0 + float(stage_number)) * 0.08
-			var curve_b := 0.68 + cos(normalized_y * 6.0 + float(stage_number)) * 0.07
-			var painted := absf(normalized_x - curve_a) < 0.055 or (stage_number > 1 and absf(normalized_x - curve_b) < 0.038)
-			if painted and normalized_y > 0.12 and normalized_y < 0.92:
-				image.set_pixel(x, y, Color.WHITE)
+			var amount := 0.0
+			for center in centers:
+				var distance := Vector2(normalized_x, normalized_y).distance_to(center)
+				amount = maxf(amount, 1.0 - smoothstep(0.035, 0.075, distance))
+			if amount > 0.0:
+				image.set_pixel(x, y, Color(amount, amount, amount, 1.0))
 	return ImageTexture.create_from_image(image)
 
 

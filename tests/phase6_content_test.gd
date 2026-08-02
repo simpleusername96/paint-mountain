@@ -21,7 +21,7 @@ func _run_checks() -> void:
 	_assert_true(stages[2].mechanism_loadout.size() == 2, "Split Ridge must request exactly two generated mechanisms")
 	_assert_true(stages[2].target_coverage == 70.0, "Split Ridge target must remain 70 percent")
 	for stage in stages:
-		_assert_true(not stage.reliable_solution.is_empty(), "%s must contain a recorded solution sequence" % stage.display_name)
+		_assert_true(not stage.reliable_solution.is_empty(), "%s must contain a recorded solution sequence" % stage.display_name_key)
 
 	var sample_save: Dictionary = save_system.default_data()
 	sample_save.unlocked_stages = ["first_descent", "burst_basin"]

@@ -20,6 +20,8 @@ func _run() -> void:
 			data.best_results = {"split_ridge": {"coverage": 77.921, "stars": 1}}
 			data.settings.master_volume = 0.43
 			data.settings.quality = "high"
+			data.settings.language = "en"
+			data.settings.language_user_selected = true
 			var error: Error = save_system.save_data(data, TEST_PATH)
 			print("Phase 8 persistence write: %s" % error_string(error))
 			quit(0 if error == OK else 1)
@@ -32,7 +34,9 @@ func _run() -> void:
 			var passed: bool = loaded.unlocked_stages.size() == 3 \
 					and is_equal_approx(float(loaded.best_results.split_ridge.coverage), 77.921) \
 					and is_equal_approx(float(loaded.settings.master_volume), 0.43) \
-					and loaded.settings.quality == "high"
+					and loaded.settings.quality == "high" \
+					and loaded.settings.language == "en" \
+					and loaded.settings.language_user_selected
 			if not passed:
 				push_error("Cross-process save did not preserve unlocks, best result, and settings.")
 			else:

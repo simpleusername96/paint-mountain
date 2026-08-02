@@ -1,0 +1,84 @@
+keys,en,ko
+app.eyebrow,A PHYSICS PAINT PUZZLE,물리 기반 페인트 퍼즐
+app.title,PAINT MOUNTAIN,페인트 마운틴
+app.subtitle,Aim once. Trust gravity. Paint the impossible route.,한 번 조준하고 중력을 믿으세요. 불가능한 경로를 칠하세요.
+ui.play,PLAY,플레이
+ui.stage_select,STAGE SELECT,스테이지 선택
+ui.settings,SETTINGS,설정
+ui.quit,QUIT,종료
+ui.back,BACK,뒤로
+ui.start_stage,START STAGE,스테이지 시작
+ui.start_aiming,START AIMING,조준 시작
+ui.restart,RESTART,다시 시작
+ui.fire,FIRE,발사
+ui.pause,PAUSE,일시정지
+ui.resume,RESUME,계속
+ui.next,NEXT,다음
+ui.retry,RETRY,재도전
+ui.close,CLOSE,닫기
+ui.restore_defaults,RESTORE DEFAULTS,기본값 복원
+ui.main_menu,QUIT TO MAIN MENU,메인 메뉴로
+ui.replay,REPLAY ATTEMPT,플레이 다시 보기
+ui.stages,STAGES,스테이지
+ui.choose_mountain,CHOOSE A MOUNTAIN,산을 선택하세요
+hud.stage,STAGE,스테이지
+hud.target,TARGET COVERAGE,목표 면적
+hud.coverage,COVERAGE,칠한 면적
+hud.shots,SHOTS LEFT,남은 탄
+hud.aim,AIM,조준
+hud.angle,ANGLE,각도
+hud.power,POWER,파워
+hud.total,TOTAL,누적
+hud.camera_hint,LEFT-DRAG ORBIT · WHEEL ZOOM,왼쪽 드래그 회전 · 휠 확대
+hud.camera_follow,FOLLOW,추적
+hud.camera_wide,WIDE,전체
+hud.camera_cannon,CANNON,대포
+hud.briefing,BRIEFING,지형 확인
+hud.aiming,AIMING,조준
+hud.in_flight,IN FLIGHT,비행 중
+hud.paint_settling,PAINT SETTLING,페인트 정착 중
+hud.shot_result,SHOT RESULT,탄 결과
+hud.stage_clear,STAGE CLEAR,스테이지 성공
+hud.stage_failed,STAGE FAILED,목표 미달
+result.clear,MOUNTAIN PAINTED,산을 칠했습니다
+result.failed,TARGET NOT REACHED,목표에 도달하지 못했습니다
+result.final,FINAL COVERAGE,최종 면적
+result.target,TARGET,목표
+result.shots_used,SHOTS USED,사용한 탄
+result.previous_best,PREVIOUS BEST,이전 최고
+result.missing,MISSING,부족 면적
+stage.first_descent.name,FIRST DESCENT,첫 번째 하강
+stage.first_descent.objective,Aim high on the broad slope and let gravity carry the paint.,넓은 경사면의 높은 지점을 노리고 중력으로 페인트를 흘리세요.
+stage.burst_basin.name,BURST BASIN,폭발 분지
+stage.burst_basin.objective,Hit the high Burst to cover the basin below.,높은 폭발 장치를 맞혀 아래 분지를 넓게 칠하세요.
+stage.split_ridge.name,SPLIT RIDGE,분열 능선
+stage.split_ridge.objective,Use the Bumper and Splitter to reach all three downhill routes.,범퍼와 분열 장치로 세 개의 내리막 경로를 모두 공략하세요.
+mechanism.burst,BURST,폭발
+mechanism.splitter,SPLITTER,분열
+mechanism.bumper,BUMPER,범퍼
+mechanism.none,NONE,없음
+mechanism.no_mechanisms,NO MECHANISMS · FOLLOW THE NATURAL DESCENT,장치 없음 · 자연 경사를 따라가세요
+settings.title,SETTINGS,설정
+settings.autosave,CHANGES SAVE AUTOMATICALLY,변경 사항은 자동 저장됩니다
+settings.audio,AUDIO,오디오
+settings.gameplay,GAMEPLAY,게임플레이
+settings.display,DISPLAY,화면
+settings.language,LANGUAGE,언어
+settings.master,MASTER VOLUME,전체 음량
+settings.music,MUSIC VOLUME,음악 음량
+settings.sfx,SOUND EFFECTS,효과음
+settings.camera_shake,CAMERA SHAKE,카메라 흔들림
+settings.follow_camera,FOLLOW CAMERA,추적 카메라
+settings.trajectory,TRAJECTORY PREVIEW,궤적 미리 보기
+settings.fullscreen,FULLSCREEN,전체 화면
+settings.resolution,RESOLUTION,해상도
+settings.quality,GRAPHICS QUALITY,그래픽 품질
+settings.interface_language,INTERFACE LANGUAGE,인터페이스 언어
+settings.language_note,Korean is the default. You can switch between Korean and English.,한국어가 기본값입니다. 한국어와 영어를 언제든 바꿀 수 있습니다.
+settings.korean,KOREAN,한국어
+settings.english,ENGLISH,영어
+stage.target,TARGET,목표
+stage.shots,SHOTS,탄 수
+stage.mechanisms,MECHANISMS,장치
+stage.best,BEST,최고 기록
+stage.locked,LOCKED,잠김

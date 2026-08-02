@@ -4,7 +4,7 @@ extends Resource
 @export_category("Identity")
 @export var stage_id: StringName = &"first_descent"
 @export var stage_version: int = 1
-@export var display_name: String = "FIRST DESCENT"
+@export var display_name_key: StringName = &"stage.first_descent.name"
 @export var stage_number: int = 1
 
 @export_category("Rules")
@@ -12,7 +12,7 @@ extends Resource
 @export_range(1, 12, 1) var maximum_shots: int = 4
 @export var paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
 @export var star_thresholds := Vector3(10.0, 18.0, 28.0)
-@export_multiline var objective: String = "Paint the broad descent and let gravity extend each route."
+@export var objective_key: StringName = &"stage.first_descent.objective"
 
 @export_category("World")
 @export var generation_profile: StageGenerationProfile

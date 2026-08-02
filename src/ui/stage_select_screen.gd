@@ -17,6 +17,9 @@ var _start_button: Button
 func _ready() -> void:
 	layer = 20
 	_build()
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null:
+		game_state.settings_changed.connect(_on_settings_changed)
 	refresh()
 
 
@@ -27,10 +30,11 @@ func refresh() -> void:
 		var unlocked: bool = game_state == null or game_state.unlocked_stages.has(stage.stage_id)
 		var best: Dictionary = game_state.best_for(stage.stage_id) if game_state != null else {}
 		_cards[index].disabled = not unlocked
-		_cards[index].text = "%02d  %s\n%s  ·  BEST %.2f%%" % [
+		_cards[index].text = "%02d  %s\n%s  ·  %s %.2f%%" % [
 			stage.stage_number,
-			stage.display_name,
-			_stars_text(int(best.get("stars", 0))) if unlocked else "LOCKED",
+			tr(String(stage.display_name_key)),
+			_stars_text(int(best.get("stars", 0))) if unlocked else tr("stage.locked"),
+			tr("stage.best"),
 			float(best.get("coverage", 0.0)),
 		]
 	if _selected_stage == null or (game_state != null and not game_state.unlocked_stages.has(_selected_stage.stage_id)):
@@ -52,11 +56,11 @@ func _build() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(shade)
 
-	var back := UIFactory.button("←  BACK", false, Vector2(180.0, 58.0))
+	var back := UIFactory.button("ui.back", false, Vector2(180.0, 58.0))
 	back.position = Vector2(54.0, 42.0)
 	back.pressed.connect(func() -> void: back_requested.emit())
 	root.add_child(back)
-	var title := UIFactory.label("CHOOSE A MOUNTAIN", 42, Color.WHITE)
+	var title := UIFactory.label("ui.choose_mountain", 42, Color.WHITE)
 	title.position = Vector2(278.0, 43.0)
 	title.size = Vector2(620.0, 58.0)
 	root.add_child(title)
@@ -69,7 +73,7 @@ func _build() -> void:
 	cards_content.add_theme_constant_override("separation", 18)
 	cards_margin.add_child(cards_content)
 	for stage in StageCatalog.all_stages():
-		var card := UIFactory.button(stage.display_name, false, Vector2(0.0, 190.0))
+		var card := UIFactory.button(String(stage.display_name_key), false, Vector2(0.0, 190.0))
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.add_theme_font_size_override("font_size", 20)
 		card.pressed.connect(_select_stage.bind(stage))
@@ -100,7 +104,7 @@ func _build() -> void:
 	preview_content.add_child(_preview_stats)
 	_preview_best = UIFactory.label("", 17, UIFactory.NAVY)
 	preview_content.add_child(_preview_best)
-	_start_button = UIFactory.button("START STAGE", true, Vector2(0.0, 64.0))
+	_start_button = UIFactory.button("ui.start_stage", true, Vector2(0.0, 64.0))
 	_start_button.pressed.connect(func() -> void:
 		if _selected_stage != null:
 			start_requested.emit(_selected_stage.stage_id)
@@ -119,25 +123,36 @@ func _update_preview() -> void:
 		return
 	var game_state := get_node_or_null("/root/GameState")
 	var best: Dictionary = game_state.best_for(_selected_stage.stage_id) if game_state != null else {}
-	_preview_title.text = _selected_stage.display_name
-	_preview_objective.text = _selected_stage.objective
-	_preview_stats.text = "TARGET  %.0f%%    ·    SHOTS  %d\nMECHANISMS  %s" % [
+	_preview_title.text = tr(String(_selected_stage.display_name_key))
+	_preview_objective.text = tr(String(_selected_stage.objective_key))
+	_preview_stats.text = "%s  %.0f%%    ·    %s  %d\n%s  %s" % [
+		tr("stage.target"),
 		_selected_stage.target_coverage,
+		tr("stage.shots"),
 		_selected_stage.maximum_shots,
+		tr("stage.mechanisms"),
 		_mechanism_names(_selected_stage),
 	]
-	_preview_best.text = "BEST  %.2f%%    %s" % [float(best.get("coverage", 0.0)), _stars_text(int(best.get("stars", 0)))]
+	_preview_best.text = "%s  %.2f%%    %s" % [tr("stage.best"), float(best.get("coverage", 0.0)), _stars_text(int(best.get("stars", 0)))]
 	_start_button.disabled = game_state != null and not game_state.unlocked_stages.has(_selected_stage.stage_id)
 
 
 func _mechanism_names(stage: StageData) -> String:
 	if stage.mechanism_loadout.is_empty():
-		return "NONE"
+		return tr("mechanism.none")
 	var names: Array[String] = []
 	for mechanism_data in stage.mechanism_loadout:
-		names.append(mechanism_data.display_name)
+		names.append(tr(_mechanism_name_key(mechanism_data.kind)))
 	return " + ".join(names)
+
+
+func _mechanism_name_key(kind: MechanismData.Kind) -> String:
+	return ["mechanism.burst", "mechanism.splitter", "mechanism.bumper"][kind]
 
 
 func _stars_text(stars: int) -> String:
 	return "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
+
+
+func _on_settings_changed(_settings: Dictionary) -> void:
+	refresh()

@@ -22,6 +22,7 @@ func initialize_from_data(data: Dictionary) -> void:
 		unlocked_stages.push_front(&"first_descent")
 	best_results = Dictionary(data.get("best_results", {})).duplicate(true)
 	settings = Dictionary(data.get("settings", _save_system().default_data().settings)).duplicate(true)
+	TranslationServer.set_locale(String(settings.get("language", "ko")))
 	if not unlocked_stages.has(selected_stage_id):
 		selected_stage_id = &"first_descent"
 
@@ -56,6 +57,8 @@ func update_setting(key: StringName, value, persist: bool = true) -> bool:
 	if not settings.has(String(key)):
 		return false
 	settings[String(key)] = value
+	if key == &"language":
+		TranslationServer.set_locale(String(value))
 	settings_changed.emit(settings.duplicate(true))
 	if persist and persistence_enabled:
 		save_now()
@@ -71,7 +74,7 @@ func export_data() -> Dictionary:
 	for stage_id in unlocked_stages:
 		unlocked.append(String(stage_id))
 	return {
-		"version": 1,
+		"version": 2,
 		"unlocked_stages": unlocked,
 		"best_results": best_results.duplicate(true),
 		"settings": settings.duplicate(true),

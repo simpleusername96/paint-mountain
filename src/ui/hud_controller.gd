@@ -53,12 +53,15 @@ var _result_stars: Label
 var _power_hold_direction: float = 0.0
 var _power_hold_elapsed: float = 0.0
 var _power_next_repeat: float = 0.3
+var _current_state: StageController.State = StageController.State.LOADING
+var _shots_remaining: int = 0
 
 
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_interface()
+	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
 
 
 func _process(delta: float) -> void:
@@ -72,10 +75,10 @@ func _process(delta: float) -> void:
 
 func configure(stage_data: StageData) -> void:
 	_stage_data = stage_data
-	_stage_value.text = "LEVEL %02d" % stage_data.stage_number
-	_target_value.text = "TARGET COVERAGE   %.2f%%" % stage_data.target_coverage
-	_briefing_title.text = stage_data.display_name
-	_briefing_objective.text = stage_data.objective
+	_stage_value.text = "%s %02d" % [tr("hud.stage"), stage_data.stage_number]
+	_target_value.text = "%s   %.0f%%" % [tr("hud.target"), stage_data.target_coverage]
+	_briefing_title.text = tr(String(stage_data.display_name_key))
+	_briefing_objective.text = tr(String(stage_data.objective_key))
 	_briefing_mechanisms.text = _mechanism_brief(stage_data)
 	_next_button.disabled = StageCatalog.next_stage_id(stage_data.stage_id).is_empty()
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
@@ -92,7 +95,8 @@ func update_aim(elevation: float, power: float) -> void:
 
 
 func update_shots(remaining: int, _maximum: int) -> void:
-	_shots_value.text = "SHOTS LEFT   %d" % remaining
+	_shots_remaining = remaining
+	_shots_value.text = "%s   %d" % [tr("hud.shots"), remaining]
 
 
 func update_coverage(coverage: float) -> void:
@@ -105,6 +109,7 @@ func set_fire_enabled(enabled: bool) -> void:
 
 
 func show_state(state: StageController.State) -> void:
+	_current_state = state
 	_briefing_panel.visible = state == StageController.State.BRIEFING
 	_aim_panel.visible = state == StageController.State.AIMING
 	_action_panel.visible = state == StageController.State.AIMING
@@ -128,28 +133,35 @@ func show_state(state: StageController.State) -> void:
 
 
 func show_shot_result(gain: float, total: float) -> void:
-	_shot_result_value.text = "+%.2f%%  ·  TOTAL %.2f%%" % [gain, total]
+	_shot_result_value.text = "+%.2f%%  ·  %s %.2f%%" % [gain, tr("hud.total"), total]
 
 
 func show_clear(final_coverage: float, shots_used: int, stars: int = 1, previous_best: float = 0.0) -> void:
-	_result_title.text = "MOUNTAIN PAINTED"
+	_result_title.text = tr("result.clear")
 	_result_title.add_theme_color_override("font_color", BLUE)
 	_result_stars.text = "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
-	_result_details.text = "FINAL COVERAGE  %.2f%%\nTARGET  %.2f%%\nSHOTS USED  %d\nPREVIOUS BEST  %.2f%%" % [
+	_result_details.text = "%s  %.2f%%\n%s  %.2f%%\n%s  %d\n%s  %.2f%%" % [
+		tr("result.final"),
 		final_coverage,
+		tr("result.target"),
 		_stage_data.target_coverage,
+		tr("result.shots_used"),
 		shots_used,
+		tr("result.previous_best"),
 		previous_best,
 	]
 
 
 func show_failure(final_coverage: float, missing: float, previous_best: float = 0.0) -> void:
-	_result_title.text = "TARGET NOT REACHED"
+	_result_title.text = tr("result.failed")
 	_result_title.add_theme_color_override("font_color", NAVY)
 	_result_stars.text = "☆☆☆"
-	_result_details.text = "FINAL COVERAGE  %.2f%%\nMISSING  %.2f%%\nPREVIOUS BEST  %.2f%%\nTRY A HIGHER ROUTE" % [
+	_result_details.text = "%s  %.2f%%\n%s  %.2f%%\n%s  %.2f%%" % [
+		tr("result.final"),
 		final_coverage,
+		tr("result.missing"),
 		missing,
+		tr("result.previous_best"),
 		previous_best,
 	]
 
@@ -174,7 +186,7 @@ func _build_top_information() -> void:
 	var stage_panel := _make_panel(Vector2(174.0, 58.0))
 	stage_panel.position = Vector2(24.0, 20.0)
 	_root.add_child(stage_panel)
-	_stage_value = _make_label("LEVEL 01", 21, NAVY)
+	_stage_value = _make_label("hud.stage", 21, NAVY)
 	_add_centered(stage_panel, _stage_value)
 
 	var target_panel := _make_panel(Vector2(430.0, 58.0))
@@ -185,7 +197,7 @@ func _build_top_information() -> void:
 	target_panel.offset_top = 20.0
 	target_panel.offset_bottom = 78.0
 	_root.add_child(target_panel)
-	_target_value = _make_label("TARGET COVERAGE   0.25%", 21, NAVY)
+	_target_value = _make_label("hud.target", 21, NAVY)
 	_add_centered(target_panel, _target_value)
 
 	var shots_panel := _make_panel(Vector2(226.0, 58.0))
@@ -196,13 +208,13 @@ func _build_top_information() -> void:
 	shots_panel.offset_top = 20.0
 	shots_panel.offset_bottom = 78.0
 	_root.add_child(shots_panel)
-	_shots_value = _make_label("SHOTS LEFT   4", 21, NAVY)
+	_shots_value = _make_label("hud.shots", 21, NAVY)
 	_add_centered(shots_panel, _shots_value)
 
 	var status_panel := _make_panel(Vector2(170.0, 44.0), NAVY, 12)
 	status_panel.position = Vector2(30.0, 92.0)
 	_root.add_child(status_panel)
-	_status_value = _make_label("BRIEFING", 15, Color.WHITE)
+	_status_value = _make_label("hud.briefing", 15, Color.WHITE)
 	_add_centered(status_panel, _status_value)
 
 
@@ -223,24 +235,24 @@ func _build_briefing() -> void:
 	content.name = "Content"
 	content.add_theme_constant_override("separation", 7)
 	margin.add_child(content)
-	_briefing_title = _make_label("FIRST DESCENT", 28, NAVY)
+	_briefing_title = _make_label("stage.first_descent.name", 28, NAVY)
 	content.add_child(_briefing_title)
-	_briefing_objective = _make_label("Read the slope, then choose one high-value landing point.", 16, CHARCOAL)
+	_briefing_objective = _make_label("stage.first_descent.objective", 16, CHARCOAL)
 	_briefing_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_briefing_objective)
-	_briefing_mechanisms = _make_label("NO MECHANISMS", 13, BLUE)
+	_briefing_mechanisms = _make_label("mechanism.no_mechanisms", 13, BLUE)
 	_briefing_mechanisms.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_briefing_mechanisms)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	content.add_child(row)
-	var hint := _make_label("LEFT-DRAG ORBIT  ·  WHEEL ZOOM", 13, MUTED)
+	var hint := _make_label("hud.camera_hint", 13, MUTED)
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(hint)
-	var back := _make_button("BACK", false, Vector2(104.0, 52.0))
+	var back := _make_button("ui.back", false, Vector2(104.0, 52.0))
 	back.pressed.connect(func() -> void: stage_select_requested.emit())
 	row.add_child(back)
-	_start_button = _make_button("START AIMING", true, Vector2(178.0, 52.0))
+	_start_button = _make_button("ui.start_aiming", true, Vector2(178.0, 52.0))
 	_start_button.pressed.connect(func() -> void: begin_aiming_requested.emit())
 	row.add_child(_start_button)
 
@@ -259,11 +271,11 @@ func _build_aim_controls() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
 	margin.add_child(row)
-	row.add_child(_metric_column("ANGLE", "38°", true))
+	row.add_child(_metric_column("hud.angle", "38°", true))
 	var divider := VSeparator.new()
 	divider.custom_minimum_size.x = 1.0
 	row.add_child(divider)
-	row.add_child(_metric_column("POWER", "68%", false))
+	row.add_child(_metric_column("hud.power", "68%", false))
 
 
 func _metric_column(caption: String, value: String, is_angle: bool) -> VBoxContainer:
@@ -334,7 +346,7 @@ func _build_coverage() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	margin.add_child(row)
-	row.add_child(_make_label("COVERAGE", 14, MUTED))
+	row.add_child(_make_label("hud.coverage", 14, MUTED))
 	_coverage_bar = ProgressBar.new()
 	_coverage_bar.custom_minimum_size = Vector2(330.0, 22.0)
 	_coverage_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -359,12 +371,12 @@ func _build_actions() -> void:
 	_action_panel.offset_bottom = -24.0
 	_action_panel.add_theme_constant_override("separation", 12)
 	_root.add_child(_action_panel)
-	var restart := _make_button("RESTART", false, Vector2(124.0, 124.0))
+	var restart := _make_button("ui.restart", false, Vector2(124.0, 124.0))
 	restart.icon = preload("res://assets/ui/icons/restart.png")
 	restart.expand_icon = true
 	restart.pressed.connect(func() -> void: restart_requested.emit())
 	_action_panel.add_child(restart)
-	_fire_button = _make_button("●\nFIRE", true, Vector2(180.0, 124.0))
+	_fire_button = _make_button("●\n%s" % tr("ui.fire"), true, Vector2(180.0, 124.0))
 	_fire_button.add_theme_font_size_override("font_size", 24)
 	_fire_button.pressed.connect(func() -> void: fire_requested.emit())
 	_action_panel.add_child(_fire_button)
@@ -380,7 +392,7 @@ func _build_observation_controls() -> void:
 	_observation_panel.offset_bottom = 142.0
 	_observation_panel.add_theme_constant_override("separation", 8)
 	_root.add_child(_observation_panel)
-	for entry in [["FOLLOW", CameraDirector.Mode.FOLLOW], ["WIDE", CameraDirector.Mode.WIDE], ["CANNON", CameraDirector.Mode.CANNON]]:
+	for entry in [["hud.camera_follow", CameraDirector.Mode.FOLLOW], ["hud.camera_wide", CameraDirector.Mode.WIDE], ["hud.camera_cannon", CameraDirector.Mode.CANNON]]:
 		var button := _make_button(entry[0], false, Vector2(92.0, 48.0))
 		var mode: int = entry[1]
 		button.pressed.connect(func() -> void: camera_mode_requested.emit(mode))
@@ -390,7 +402,7 @@ func _build_observation_controls() -> void:
 		var requested_speed: float = speed_value
 		speed.pressed.connect(func() -> void: simulation_speed_requested.emit(requested_speed))
 		_observation_panel.add_child(speed)
-	var pause := _make_button("PAUSE", false, Vector2(82.0, 48.0))
+	var pause := _make_button("ui.pause", false, Vector2(82.0, 48.0))
 	pause.pressed.connect(func() -> void: pause_requested.emit())
 	_observation_panel.add_child(pause)
 
@@ -404,7 +416,7 @@ func _build_shot_result() -> void:
 	_shot_result_panel.offset_top = 92.0
 	_shot_result_panel.offset_bottom = 150.0
 	_root.add_child(_shot_result_panel)
-	_shot_result_value = _make_label("+0.00%  ·  TOTAL 0.00%", 18, Color.WHITE)
+	_shot_result_value = _make_label("+0.00%%  ·  %s 0.00%%" % tr("hud.total"), 18, Color.WHITE)
 	_add_centered(_shot_result_panel, _shot_result_value)
 
 
@@ -426,28 +438,28 @@ func _build_result_panel() -> void:
 	content.name = "Content"
 	content.add_theme_constant_override("separation", 16)
 	margin.add_child(content)
-	_result_title = _make_label("MOUNTAIN PAINTED", 28, BLUE)
+	_result_title = _make_label("result.clear", 28, BLUE)
 	_result_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_result_title)
 	_result_stars = _make_label("★★★", 30, BLUE)
 	content.add_child(_result_stars)
-	_result_details = _make_label("FINAL COVERAGE  0.00%", 18, CHARCOAL)
+	_result_details = _make_label("result.final", 18, CHARCOAL)
 	_result_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(_result_details)
-	var retry := _make_button("RETRY", true, Vector2(0.0, 56.0))
+	var retry := _make_button("ui.retry", true, Vector2(0.0, 56.0))
 	retry.name = "Retry"
 	retry.pressed.connect(func() -> void: restart_requested.emit())
 	content.add_child(retry)
 	var primary_row := HBoxContainer.new()
 	primary_row.add_theme_constant_override("separation", 10)
 	content.add_child(primary_row)
-	_next_button = _make_button("NEXT", false, Vector2(182.0, 52.0))
+	_next_button = _make_button("ui.next", false, Vector2(182.0, 52.0))
 	_next_button.pressed.connect(func() -> void: next_stage_requested.emit())
 	primary_row.add_child(_next_button)
-	var select := _make_button("STAGES", false, Vector2(182.0, 52.0))
+	var select := _make_button("ui.stages", false, Vector2(182.0, 52.0))
 	select.pressed.connect(func() -> void: stage_select_requested.emit())
 	primary_row.add_child(select)
-	var replay := _make_button("REPLAY ATTEMPT", false, Vector2(0.0, 52.0))
+	var replay := _make_button("ui.replay", false, Vector2(0.0, 52.0))
 	replay.pressed.connect(func() -> void: replay_requested.emit())
 	content.add_child(replay)
 
@@ -475,20 +487,20 @@ func _build_pause_overlay() -> void:
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 12)
 	margin.add_child(content)
-	content.add_child(_make_label("PAUSED", 30, NAVY))
-	var resume := _make_button("RESUME", true, Vector2(0.0, 56.0))
+	content.add_child(_make_label("ui.pause", 30, NAVY))
+	var resume := _make_button("ui.resume", true, Vector2(0.0, 56.0))
 	resume.pressed.connect(func() -> void: pause_requested.emit())
 	content.add_child(resume)
-	var restart := _make_button("RESTART", false, Vector2(0.0, 52.0))
+	var restart := _make_button("ui.restart", false, Vector2(0.0, 52.0))
 	restart.pressed.connect(func() -> void: restart_requested.emit())
 	content.add_child(restart)
-	var settings := _make_button("SETTINGS", false, Vector2(0.0, 52.0))
+	var settings := _make_button("ui.settings", false, Vector2(0.0, 52.0))
 	settings.pressed.connect(func() -> void: settings_requested.emit())
 	content.add_child(settings)
-	var stages := _make_button("STAGE SELECT", false, Vector2(0.0, 52.0))
+	var stages := _make_button("ui.stage_select", false, Vector2(0.0, 52.0))
 	stages.pressed.connect(func() -> void: stage_select_requested.emit())
 	content.add_child(stages)
-	var main_menu := _make_button("QUIT TO MAIN MENU", false, Vector2(0.0, 52.0))
+	var main_menu := _make_button("ui.main_menu", false, Vector2(0.0, 52.0))
 	main_menu.pressed.connect(func() -> void: main_menu_requested.emit())
 	content.add_child(main_menu)
 
@@ -571,23 +583,39 @@ func _add_centered(parent: Control, child: Control) -> void:
 func _display_state_name(state: StageController.State) -> String:
 	match state:
 		StageController.State.PROJECTILE_IN_FLIGHT:
-			return "IN FLIGHT"
+			return tr("hud.in_flight")
 		StageController.State.PAINT_SETTLING:
-			return "PAINT SETTLING"
+			return tr("hud.paint_settling")
 		StageController.State.SHOT_RESULT:
-			return "SHOT RESULT"
+			return tr("hud.shot_result")
 		StageController.State.STAGE_CLEAR:
-			return "STAGE CLEAR"
+			return tr("hud.stage_clear")
 		StageController.State.STAGE_FAILED:
-			return "STAGE FAILED"
+			return tr("hud.stage_failed")
+		StageController.State.BRIEFING:
+			return tr("hud.briefing")
+		StageController.State.AIMING:
+			return tr("hud.aiming")
 		_:
 			return StageController.State.keys()[state].replace("_", " ")
 
 
 func _mechanism_brief(stage: StageData) -> String:
 	if stage.mechanism_loadout.is_empty():
-		return "NO MECHANISMS  ·  FOLLOW THE NATURAL DESCENT"
+		return tr("mechanism.no_mechanisms")
 	var descriptions: Array[String] = []
 	for mechanism_data in stage.mechanism_loadout:
-		descriptions.append("%s — %s" % [mechanism_data.display_name, mechanism_data.description])
+		descriptions.append(tr(["mechanism.burst", "mechanism.splitter", "mechanism.bumper"][mechanism_data.kind]))
 	return "    ".join(descriptions)
+
+
+func _on_settings_changed(_settings: Dictionary) -> void:
+	_fire_button.text = "●\n%s" % tr("ui.fire")
+	_status_value.text = _display_state_name(_current_state)
+	if _stage_data != null:
+		_stage_value.text = "%s %02d" % [tr("hud.stage"), _stage_data.stage_number]
+		_target_value.text = "%s   %.0f%%" % [tr("hud.target"), _stage_data.target_coverage]
+		_briefing_title.text = tr(String(_stage_data.display_name_key))
+		_briefing_objective.text = tr(String(_stage_data.objective_key))
+		_briefing_mechanisms.text = _mechanism_brief(_stage_data)
+		update_shots(_shots_remaining, _stage_data.maximum_shots)

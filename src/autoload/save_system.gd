@@ -1,6 +1,6 @@
 extends Node
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 
 
@@ -19,7 +19,8 @@ func default_data() -> Dictionary:
 			"fullscreen": false,
 			"resolution": "1920x1080",
 			"quality": "medium",
-			"language": "en",
+			"language": "ko",
+			"language_user_selected": false,
 		},
 	}
 
@@ -34,7 +35,12 @@ func load_data(path: String = DEFAULT_SAVE_PATH) -> Dictionary:
 	var parse_error := parser.parse(file.get_as_text())
 	file.close()
 	var parsed = parser.data
-	if parse_error != OK or not parsed is Dictionary or int(parsed.get("version", -1)) != SAVE_VERSION:
+	if parse_error != OK or not parsed is Dictionary:
+		_preserve_invalid(path)
+		return default_data()
+	if int(parsed.get("version", -1)) == 1:
+		parsed = _migrate_v1(parsed)
+	elif int(parsed.get("version", -1)) != SAVE_VERSION:
 		_preserve_invalid(path)
 		return default_data()
 	return _merge_with_defaults(parsed)
@@ -79,6 +85,16 @@ func _merge_with_defaults(data: Dictionary) -> Dictionary:
 			settings[key] = incoming_settings[key]
 	merged["settings"] = settings
 	return merged
+
+
+func _migrate_v1(data: Dictionary) -> Dictionary:
+	var migrated := data.duplicate(true)
+	var migrated_settings: Dictionary = Dictionary(migrated.get("settings", {})).duplicate(true)
+	migrated_settings["language"] = "ko"
+	migrated_settings["language_user_selected"] = false
+	migrated["settings"] = migrated_settings
+	migrated["version"] = SAVE_VERSION
+	return migrated
 
 
 func _preserve_invalid(path: String) -> void:

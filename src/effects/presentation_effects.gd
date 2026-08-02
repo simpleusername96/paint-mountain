@@ -2,9 +2,21 @@ class_name PresentationEffects
 extends Node3D
 
 const POOL_SIZE := 8
+const PAINT_MIST := preload("res://assets/vfx/kenney/paint_mist.png")
+const IMPACT_RIPPLE := preload("res://assets/vfx/kenney/impact_ripple.png")
+const MUZZLE_RING := preload("res://assets/vfx/kenney/muzzle_ring.png")
+const GLINT := preload("res://assets/vfx/kenney/glint.png")
 
 var _particles: Array[GPUParticles3D] = []
+var _mist_particles: Array[GPUParticles3D] = []
+var _impact_particles: Array[GPUParticles3D] = []
+var _muzzle_particles: Array[GPUParticles3D] = []
+var _glint_particles: Array[GPUParticles3D] = []
 var _next_particle: int = 0
+var _next_mist: int = 0
+var _next_impact: int = 0
+var _next_muzzle: int = 0
+var _next_glint: int = 0
 
 
 func _ready() -> void:
@@ -12,6 +24,11 @@ func _ready() -> void:
 		var particle := _build_particle(index)
 		add_child(particle)
 		_particles.append(particle)
+		_mist_particles.append(_build_textured_particle("PaintMist%02d" % (index + 1), PAINT_MIST, Vector2(3.4, 3.4), 0.58))
+		_impact_particles.append(_build_textured_particle("ImpactRipple%02d" % (index + 1), IMPACT_RIPPLE, Vector2(2.8, 2.8), 0.42))
+	for index in range(4):
+		_muzzle_particles.append(_build_textured_particle("MuzzleRing%02d" % (index + 1), MUZZLE_RING, Vector2(2.3, 2.3), 0.24))
+		_glint_particles.append(_build_textured_particle("Glint%02d" % (index + 1), GLINT, Vector2(4.2, 4.2), 0.68))
 
 
 func splash(world_position: Vector3, scale: float = 1.0) -> void:
@@ -22,10 +39,21 @@ func splash(world_position: Vector3, scale: float = 1.0) -> void:
 	particle.emitting = false
 	particle.restart()
 	particle.emitting = true
+	_next_mist = _emit_textured(_mist_particles, _next_mist, world_position + Vector3.UP * 0.45, clampi(roundi(5.0 * scale), 3, 8))
+	_next_impact = _emit_textured(_impact_particles, _next_impact, world_position + Vector3.UP * 0.12, 1)
 
 
 func mechanism_burst(world_position: Vector3) -> void:
 	splash(world_position + Vector3.UP, 1.7)
+	_next_glint = _emit_textured(_glint_particles, _next_glint, world_position + Vector3.UP * 3.0, 3)
+
+
+func muzzle_flash(world_position: Vector3) -> void:
+	_next_muzzle = _emit_textured(_muzzle_particles, _next_muzzle, world_position, 2)
+
+
+func clear_glint(world_position: Vector3) -> void:
+	_next_glint = _emit_textured(_glint_particles, _next_glint, world_position, 8)
 
 
 func _build_particle(index: int) -> GPUParticles3D:
@@ -61,3 +89,53 @@ func _build_particle(index: int) -> GPUParticles3D:
 	particle.draw_pass_1 = mesh
 	return particle
 
+
+func _build_textured_particle(
+		particle_name: String,
+		texture: Texture2D,
+		size: Vector2,
+		lifetime: float
+) -> GPUParticles3D:
+	var particle := GPUParticles3D.new()
+	particle.name = particle_name
+	particle.emitting = false
+	particle.one_shot = true
+	particle.amount = 1
+	particle.explosiveness = 1.0
+	particle.lifetime = lifetime
+	particle.randomness = 0.3
+	particle.visibility_aabb = AABB(Vector3(-12.0, -12.0, -12.0), Vector3(24.0, 24.0, 24.0))
+	var process_material := ParticleProcessMaterial.new()
+	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process_material.emission_sphere_radius = 0.55
+	process_material.direction = Vector3.UP
+	process_material.spread = 80.0
+	process_material.initial_velocity_min = 0.4
+	process_material.initial_velocity_max = 2.2
+	process_material.gravity = Vector3(0.0, -1.4, 0.0)
+	process_material.scale_min = 0.65
+	process_material.scale_max = 1.25
+	process_material.color = Color(0.035, 0.38, 1.0, 0.88)
+	particle.process_material = process_material
+	var quad := QuadMesh.new()
+	quad.size = size
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.vertex_color_use_as_albedo = true
+	material.albedo_texture = texture
+	quad.material = material
+	particle.draw_pass_1 = quad
+	add_child(particle)
+	return particle
+
+
+func _emit_textured(pool: Array[GPUParticles3D], next_index: int, world_position: Vector3, amount: int) -> int:
+	var particle := pool[next_index]
+	particle.global_position = world_position
+	particle.amount = amount
+	particle.emitting = false
+	particle.restart()
+	particle.emitting = true
+	return (next_index + 1) % pool.size()

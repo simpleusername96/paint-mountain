@@ -8,13 +8,13 @@
 script = ExtResource("1_stage")
 stage_id = &"burst_basin"
 stage_version = 2
-display_name = "BURST BASIN"
+display_name_key = &"stage.burst_basin.name"
 stage_number = 2
 target_coverage = 27.0
 maximum_shots = 5
 paint_color = Color(0.03, 0.38, 1, 1)
 star_thresholds = Vector3(27, 38, 50)
-objective = "Land high, strike the Burst Node, and paint the basin below."
+objective_key = &"stage.burst_basin.objective"
 generation_profile = ExtResource("2_profile")
 terrain_seed = 1692108109
 terrain_center = Vector3(0, -2, -112)

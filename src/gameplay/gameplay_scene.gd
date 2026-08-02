@@ -168,6 +168,7 @@ func _on_projectile_impact(_projectile: PaintProjectile, _position: Vector3, _sp
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 	_shot_has_impacted = false
 	Engine.time_scale = 1.0
+	_presentation_effects.muzzle_flash(_cannon.get_launch_origin())
 	_audio_cue(&"fire")
 	if not _replay_active:
 		_replay_recorder.record_shot(_number, _yaw, _elevation, _power)
@@ -189,7 +190,7 @@ func _on_state_changed(current_state: int, _previous_state: int) -> void:
 			_trajectory_preview.visible = false
 			_camera_director.set_mode(CameraDirector.Mode.BRIEFING)
 		StageController.State.AIMING:
-			_set_mechanism_labels_visible(false)
+			_set_mechanism_labels_visible(true)
 			Engine.time_scale = 1.0
 			_trajectory_preview.visible = _setting_bool("trajectory_preview", true)
 			if _trajectory_preview.visible:
@@ -214,6 +215,7 @@ func _on_stage_cleared(final_coverage: float, shots_used: int) -> void:
 	var game_state := get_node_or_null("/root/GameState")
 	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) if game_state != null else 0.0
 	_hud.show_clear(final_coverage, shots_used, stars, previous_best)
+	_presentation_effects.clear_glint(stage_data.terrain_center + Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0))
 	_audio_cue(&"clear")
 	if game_state != null:
 		game_state.complete_stage(stage_data.stage_id, final_coverage, stars)
