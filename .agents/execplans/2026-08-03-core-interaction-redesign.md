@@ -1575,7 +1575,21 @@ This checklist is the single canonical progress source for the redesign:
 - [ ] Task 09 — Retire false fixtures and build one truthful verification path.
 - [ ] Task 10 — Complete production evidence and documentation closeout.
 
+Task 09 execution note (2026-08-03): the unified runner, production-scene
+projectile/paint integration test, strengthened performance/restart gates,
+obsolete-sandbox removal, and resumable deterministic solution-search tool are
+implemented. A normally paced 60 Hz validation records First Descent's
+`(12, 26, 100)` shot at `5.335%`. The fixed balance gate is not yet valid for
+the remaining stages: isolated precision probes measured Burst at no more than
+`2.689%`, Splitter at no more than `1.293%`, and eight exact Bumper strikes at
+`0%`; sampled complete five/six-shot sequences ended at `4.533% / 3.443%`.
+Consequently `phase6_content_test.gd` truthfully fails on the two empty
+solutions. Per the locked section 5.4 and the stop rule above, do not lower
+targets, enlarge hidden paint footprints, or change the frozen mechanism
+tuning without an explicit contract revision.
+
 ## Next Steps
 
-Begin Task 09. Do not implement any later task until its predecessor's
-acceptance and regression guards pass.
+Resume Task 09 only after the fixed balance contract is explicitly revised or
+the remaining deterministic search produces conforming Stage 2/3 solutions.
+Do not implement Task 10 until Task 09's acceptance and regression guards pass.

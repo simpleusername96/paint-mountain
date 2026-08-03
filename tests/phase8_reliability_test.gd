@@ -57,7 +57,7 @@ func _run_checks() -> void:
 	controller.restart(false)
 	await process_frame
 	_assert_clean_restart(controller, projectiles)
-	_assert_true(_slowest_restart_ms < 1000.0, "restart must remain under one second")
+	_assert_true(_slowest_restart_ms <= 50.0, "restart must remain at or below 50 ms")
 	print("Phase 8 reliability: %d fire/restart and out-of-bounds cycles passed; slowest restart %.3f ms." % [
 		ITERATIONS,
 		_slowest_restart_ms,

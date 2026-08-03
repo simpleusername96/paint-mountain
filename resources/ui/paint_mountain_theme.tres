@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=14 format=3]
+[gd_resource type="Theme" load_steps=15 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
 
@@ -18,6 +18,13 @@ corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="DebugPanel"]
+bg_color = Color(0.015, 0.025, 0.045, 0.93)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="ButtonNormal"]
 bg_color = Color(1, 0.992157, 0.988235, 0.98)
@@ -149,6 +156,8 @@ PrimaryButton/styles/pressed = SubResource("PrimaryPressed")
 PrimaryButton/styles/focus = SubResource("Focus")
 ModePanel/base_type = &"PanelContainer"
 ModePanel/styles/panel = SubResource("ModePanel")
+DebugPanel/base_type = &"PanelContainer"
+DebugPanel/styles/panel = SubResource("DebugPanel")
 DangerButton/base_type = &"Button"
 DangerButton/colors/font_color = Color(1, 1, 1, 1)
 DangerButton/styles/normal = SubResource("Danger")

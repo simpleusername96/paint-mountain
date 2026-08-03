@@ -100,9 +100,11 @@ func _assert_theme_contract() -> void:
 	var panel := theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat
 	var primary := theme.get_stylebox("normal", "PrimaryButton") as StyleBoxFlat
 	var focus := theme.get_stylebox("focus", "Button") as StyleBoxFlat
+	var debug_panel := theme.get_stylebox("panel", "DebugPanel") as StyleBoxFlat
 	_assert_true(panel.corner_radius_top_left == 12, "panel radius must be 12px")
 	_assert_true(primary.corner_radius_top_left == 16, "primary radius must be 16px")
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
+	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
 
 
 func _assert_hud_rect(control: Control, expected: Rect2, label: String) -> void:

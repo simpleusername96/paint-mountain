@@ -135,6 +135,26 @@ the previously approved committed Kenney/Pretendard files are referenced.
 The dummy headless renderer could not provide a viewport texture, so no render
 capture was produced or treated as visual approval. Task 09 is next.
 
+Task 09 retired the obsolete projectile sandbox and migrated its projectile-
+paint integration check to the production gameplay scene. The new explicit
+`scripts/test.ps1` owns the ordered fresh-process suite and unconditional
+persistence/replay cleanup; reliability and performance assertions now use the
+frozen `50 ms`, `60 FPS`, `33.3 ms`, and `128 MiB` limits. A resumable offline
+search tool evaluates production 60 Hz shots and composes their authoritative
+paint masks. First Descent now has a normally validated one-shot solution at
+`(12, 26, 100)`, reaching `5.335%`.
+
+Task 09 is stopped at its locked balance-contract gate. Precision probes that
+physically activated every mechanism measured a best isolated Burst result of
+`2.689%`, a best Splitter result of `1.293%`, and `0%` for each of eight exact
+Bumper strikes. Sample five/six-shot sequences reached only `4.533% / 3.443%`,
+far below the fixed `27% / 70%` targets. Contact, finite-payload paint, mask
+authority, and mechanism activation tests pass, so silently lowering targets
+or restoring oversized paint would violate the active ExecPlan. Burst Basin
+and Split Ridge intentionally retain empty `reliable_solution` arrays, and
+`phase6_content_test.gd` remains a truthful failing gate pending an explicit
+balance-contract revision or conforming search result.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The
@@ -169,7 +189,7 @@ the static-audit correction above.
 
 ## Consequences
 
-- The bootstrap and projectile sandbox remain isolated validation scenes; the StageData-selected gameplay scene is the project entry.
+- The bootstrap remains an isolated validation scene; the obsolete projectile sandbox is retired and the StageData-selected gameplay scene is the only projectile/paint integration entry.
 - The complete menu-to-stage-to-result flow, all three stages and mechanisms, persistence/replay, agent actions, debug tooling, presentation, export, performance evidence, and seven release screenshots run and have focused checks.
 - Future feature completion claims must cite running-game checks and update this record.
 
@@ -206,14 +226,16 @@ the static-audit correction above.
   authoritative physical contact/deposit path are implemented and verified.
   Manual aim prediction, physical mechanisms, replay format 3, and the
   scene-based Korean-first interface are implemented; unified verification,
-  reliable solutions, and obsolete-fixture retirement remain pending Task 09.
+  obsolete-fixture retirement and unified verification are implemented.
+  Stage 2/3 reliable solutions remain blocked by the frozen Task 09 balance
+  contract described above.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.
 - Targets and shot counts remain fixed at 4%/4, 27%/5, and 70%/6. Prior
   direct-target solution values are historical and cannot validate manual aim.
-- Replay must be revalidated in fresh processes after format-3 action-origin
-  locking is implemented.
+- Fresh-process format-3 replay has been revalidated; the complete runner is
+  still blocked before that matrix by the truthful Stage 2/3 content gate.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
 - The imported low-poly models, UI icons, particles, and procedural audio meet the scoped vertical-slice presentation contract but are not a substitute for a later bespoke production-art/audio pass.
 
@@ -243,6 +265,17 @@ the static-audit correction above.
   329.4 of 520 payload only after contact, and reached 4.2039% coverage with no
   ineligible pixels. Phase 2 ballistics/fixture and Phase 4 state regressions
   also passed headlessly.
+- Active redesign Task 09 partial gate: the ordered `scripts/test.ps1` passed
+  terrain geometry, generation, placement, decoration, ballistics, contact,
+  authoritative paint, production projectile-paint, state, and mechanism
+  tests before stopping at the intentional Stage 2/3 empty-solution assertions.
+  Its `finally` block then completed both persistence and replay cleanup
+  processes. The production integration measured 111/111 accepted requests,
+  295.4 consumed payload, and 4.1488% coverage. Separate strengthened probes
+  measured a 2.686 ms slowest restart and, at 1920x1080 headlessly, 594.76 ms
+  load, 145.05 unpaced average FPS, 10.19 ms worst frame, one active ball, and
+  43.19 MiB static memory. `phase6_solution_test.gd` validated the recorded
+  First Descent shot at 5.335% under the normal 60 Hz path.
 
 - Final tested engine: Godot `4.7.1.stable.official.a13da4feb`, Windows Compatibility renderer, Intel Iris Xe, fixed 60 Hz physics.
 - Final 2026-08-03 regression: every Phase 2–8 check plus `stage_generation_test.gd`, `mechanism_placement_test.gd`, `aim_interaction_test.gd`, and `localization_ui_test.gd` passed. `scripts/verify.ps1` passed after final scene/resource/script changes.

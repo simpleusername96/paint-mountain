@@ -46,8 +46,9 @@ func _run_probe() -> void:
 	var average_fps := float(MEASURED_FRAMES) / maxf(elapsed_seconds, 0.001)
 	var memory_mb := Performance.get_monitor(Performance.MEMORY_STATIC) / (1024.0 * 1024.0)
 	_assert_true(load_ms < 3000.0, "stage load must remain under three seconds")
-	_assert_true(average_fps >= 55.0, "1920x1080 average frame rate must remain at least 55 FPS")
-	_assert_true(maximum_frame_ms < 120.0, "no large paint/Burst frame may stall longer than 120 ms")
+	_assert_true(average_fps >= 60.0, "1920x1080 average frame rate must remain at least 60 FPS")
+	_assert_true(maximum_frame_ms <= 33.3, "no measured frame may exceed 33.3 ms")
+	_assert_true(memory_mb <= 128.0, "static memory must remain at or below 128 MiB")
 	_assert_true(maximum_active <= ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES, "performance run must preserve the eight-ball limit")
 	print("Phase 8 performance: load %.2f ms, avg %.2f FPS, worst %.2f ms, max balls %d, static memory %.2f MiB, coverage %.3f%%." % [
 		load_ms,

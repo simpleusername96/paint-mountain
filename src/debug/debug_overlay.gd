@@ -131,15 +131,9 @@ func _build() -> void:
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_root)
 	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"DebugPanel"
 	panel.position = Vector2(18.0, 18.0)
 	panel.custom_minimum_size = Vector2(520.0, clampf(get_viewport().get_visible_rect().size.y - 36.0, 320.0, 920.0))
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.015, 0.025, 0.045, 0.93)
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
-	panel.add_theme_stylebox_override("panel", style)
 	_root.add_child(panel)
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = panel.custom_minimum_size

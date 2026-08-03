@@ -16,6 +16,9 @@ func _run_solution() -> void:
 	var probe_only := false
 	var safe_route_only := false
 	var shot_probe := Vector3.INF
+	var custom_shots: Array[Vector3] = []
+	var search_speed := 1
+	var compare_shots := false
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
 			requested_stage = StringName(argument.trim_prefix("--stage="))
@@ -27,6 +30,15 @@ func _run_solution() -> void:
 			var components := argument.trim_prefix("--shot=").split(",")
 			if components.size() == 3:
 				shot_probe = Vector3(float(components[0]), float(components[1]), float(components[2]))
+		elif argument.begins_with("--shots="):
+			for encoded_shot in argument.trim_prefix("--shots=").split("|"):
+				var components := encoded_shot.split(",")
+				if components.size() == 3:
+					custom_shots.append(Vector3(float(components[0]), float(components[1]), float(components[2])))
+		elif argument.begins_with("--search-speed="):
+			search_speed = clampi(int(argument.trim_prefix("--search-speed=")), 1, 8)
+		elif argument == "--compare-shots":
+			compare_shots = true
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	var unlocked_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
@@ -71,11 +83,16 @@ func _run_solution() -> void:
 		]
 	if shot_probe != Vector3.INF:
 		solution = [shot_probe]
+	elif not custom_shots.is_empty():
+		solution = custom_shots
 	for shot in solution:
 		if controller.current_state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED]:
 			break
 		_assert_true(agent.set_aim(shot.x, shot.y, shot.z), "solution shot must start from AIMING")
 		_assert_true(agent.fire(), "solution shot must pass the shared fire guard")
+		if search_speed > 1:
+			Engine.physics_ticks_per_second = 60 * search_speed
+			Engine.time_scale = float(search_speed)
 		var closest_mechanism_distance := INF
 		var closest_projectile_position := Vector3.ZERO
 		var frame_budget := 60 * 26
@@ -102,25 +119,30 @@ func _run_solution() -> void:
 				print("Impacts: %s" % [impact_positions])
 			else:
 				print("Closest mechanism pass: %.3fm at %s; activations=%d; impacts=%s" % [closest_mechanism_distance, closest_projectile_position, mechanism_activations.count, impact_positions])
+		if compare_shots and shot != solution[-1]:
+			controller.restart(false, StageController.ActionOrigin.DEBUG)
+			await process_frame
+			await physics_frame
 	if safe_route_only:
 		_assert_true(requested_stage == &"split_ridge", "safe-route verification is defined only for Split Ridge")
 		_assert_true(float(agent.get_observation().current_coverage) < stage.target_coverage, "the direct left-route sequence must remain below the 70% target")
 		if not _failed:
 			print("Split Ridge safe-route guard passed below target at %.3f%%." % float(agent.get_observation().current_coverage))
-	elif shot_probe == Vector3.INF:
+	elif shot_probe == Vector3.INF and custom_shots.is_empty():
 		_assert_true(controller.current_state == StageController.State.STAGE_CLEAR, "%s recorded solution must clear its target" % stage.display_name_key)
 		if not stage.mechanism_loadout.is_empty():
 			_assert_true(mechanism_activations.count > 0, "%s solution must activate its teaching mechanism" % stage.display_name_key)
 			for mechanism_data in stage.mechanism_loadout:
 				var required_kind: String = MechanismData.Kind.keys()[mechanism_data.kind]
 				_assert_true(mechanism_activations.kinds.has(required_kind), "%s solution must activate %s" % [stage.display_name_key, required_kind])
-	if not _failed and shot_probe == Vector3.INF and not safe_route_only:
+	if not _failed and shot_probe == Vector3.INF and custom_shots.is_empty() and not safe_route_only:
 		print("Phase 6 solution passed for %s at %.3f%% with %d mechanism activations." % [
 			stage.display_name_key,
 			float(agent.get_observation().current_coverage),
 			mechanism_activations.count,
 		])
 	Engine.time_scale = 1.0
+	Engine.physics_ticks_per_second = 60
 	game_state.persistence_enabled = true
 	gameplay.queue_free()
 	quit(1 if _failed else 0)

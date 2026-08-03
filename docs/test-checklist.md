@@ -171,7 +171,7 @@ Regression, solutions, and delivery:
 
 - [ ] `scripts/test.ps1` runs the active ordered tests and fresh-process persistence/replay matrices through one explicit Godot path with cleanup on failure.
 - [ ] The deterministic beam search clears targets `4/27/70%` within `4/5/6` manual-aim shots, activates required Stage 3 mechanisms, and proves six safe-route-only shots remain below 70%.
-- [ ] Obsolete sandbox, target solver, duplicate terrain factory, code-built `UIFactory`, and their references are removed after migration.
+- [x] Obsolete sandbox, target solver, duplicate terrain factory, code-built `UIFactory`, and their references are removed after migration.
 - [ ] Complete tests, `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export pass without parser errors, invalid calls, orphan nodes, penetration guards, or replay divergence.
 - [ ] The 1920×1080 Iris Xe workload loads within 3 s, averages at least 60 FPS, has no frame over 33.3 ms, uses at most 128 MiB static memory, restarts within 50 ms, and never exceeds eight balls.
 - [ ] After explicit user coordination, the release executable is inspected at all three resolutions and every named briefing/aiming/impact/mechanism/follow/result/replay bookmark passes.

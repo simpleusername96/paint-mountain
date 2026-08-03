@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SANDBOX_SCENE := preload("res://scenes/sandbox/projectile_sandbox.tscn")
+const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 
 var _failed: bool = false
 
@@ -11,13 +11,18 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.time_scale = 2.0
-	var sandbox := SANDBOX_SCENE.instantiate()
-	root.add_child(sandbox)
+	var game_state := root.get_node("/root/GameState")
+	game_state.persistence_enabled = false
+	game_state.initialize_from_data(root.get_node("/root/SaveSystem").default_data())
+	_assert_true(game_state.select_stage(&"first_descent"), "production First Descent must be selectable")
+	var gameplay := GAMEPLAY_SCENE.instantiate()
+	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
-	var cannon: CannonController = sandbox.get_node("Cannon")
-	var manager: ProjectileManager = sandbox.get_node("ProjectileManager")
-	var paint_system: PaintSystem = sandbox.get_node("PaintSystem")
+	var controller: StageController = gameplay.get_node("StageController")
+	var cannon: CannonController = gameplay.get_node("Cannon")
+	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
+	var paint_system: PaintSystem = gameplay.get_node("PaintSystem")
 	var observed := {
 		"applied_count": 0,
 		"request_count": 0,
@@ -52,8 +57,9 @@ func _run_checks() -> void:
 		func(_request: PaintDepositRequest, _accepted: float, _written: int, _newly_painted: int) -> void:
 			observed.applied_count += 1
 	)
+	_assert_true(controller.begin_aiming(), "production stage must enter aiming")
 	cannon.set_aim(0.0, 38.0, 68.0)
-	_assert_true(cannon.request_fire(), "sandbox cannon must accept a ready fire command")
+	_assert_true(cannon.request_fire(), "production cannon must accept a predicted fire command")
 	var active := manager.active_projectiles()
 	_assert_true(active.size() == 1, "accepted fire must spawn exactly one projectile")
 	var projectile := active[0] if not active.is_empty() else null
@@ -90,7 +96,8 @@ func _run_checks() -> void:
 			]
 		)
 	Engine.time_scale = 1.0
-	sandbox.queue_free()
+	game_state.persistence_enabled = true
+	gameplay.queue_free()
 	quit(1 if _failed else 0)
 
 
