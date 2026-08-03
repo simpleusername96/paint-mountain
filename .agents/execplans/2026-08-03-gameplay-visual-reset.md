@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-03
 last_reviewed: 2026-08-03
-scope: route-graph terrain, direct target reachability, solid rear containment, target-surface scoring, continuous contact paint, collision truth, mechanisms, camera and trajectory presentation, Korean-first HUD, replay migration, balance, and production evidence
+scope: route-graph one-height-per-XZ terrain, exact render/collision/query parity, direct target reachability, solid rear containment, target-surface scoring, continuous contact paint, mechanisms, camera and trajectory presentation, Korean-first left-gauge/bottom-Fire HUD, paused game menu, replay migration, balance, and production evidence
 source: explicit user corrections through 2026-08-03 and the validated Claude gameplay/visual-reset review dated 2026-08-03
 related:
   - ../PLANS.md
@@ -13,6 +13,7 @@ related:
   - ../../docs/design-spec.md
   - ../../docs/technical-architecture.md
   - ../../docs/test-checklist.md
+  - ../../docs/concepts/execplan-outcome-2026-08-03/index.html
   - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/README.md
   - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/external-review-validation.md
   - 2026-08-03-core-interaction-redesign.md
@@ -36,8 +37,12 @@ paint behavior or completion.
 - Deliverable: a Godot 4.7.1 Windows desktop build with three deterministic
   generated stages, a directly reachable scoreable surface, a solid visible
   rear backstop, truthful terrain and mechanism collision, continuous surface
-  paint, `4 / 27 / 70%` targets, Korean-default responsive HUD, and controlled
-  running-build evidence against the supplied reference.
+  paint, `4 / 27 / 70%` targets, and a Korean-default responsive HUD whose
+  coverage gauge is vertical on the left, sole Fire action is bottom-center,
+  shots plus game-menu gear are top-right, and Restart lives in the paused game
+  menu rather than the aiming surface or Settings form. Delivery also includes
+  controlled running-build evidence against the supplied reference and the
+  non-authoritative concept board's achievable visual direction.
 - Completion state: all phase checks, fixed-target solutions, fresh-process
   replay checks, production export, and user-coordinated visual gates pass; no
   unreachable target unit, rear/upper escape, finite-payload, downhill-flow,
@@ -55,9 +60,11 @@ In scope:
 
 - Align active product and architecture documents with the user's later paint
   correction while preserving the source brief verbatim as historical input.
-- Replace lobe-first height synthesis with a deterministic route-graph-first
-  target, one contiguous scoreable target footprint, a faceted top mesh, and a
-  thick closed support shell derived from one immutable generated layout.
+- Replace lobe-first height synthesis with a deterministic route-graph-first,
+  one-height-per-XZ target, one contiguous scoreable target footprint, a
+  faceted top mesh, and a thick closed support shell derived from one immutable
+  generated layout. The same height samples and cell triangles feed rendering,
+  collision, surface queries, target classification, and paint reconstruction.
 - Reject any generated layout unless every scoreable target texel has a legal,
   reproducible yaw/elevation/power witness whose first physical collision is on
   its target-top neighbourhood; derive the default center aim from that same
@@ -78,8 +85,11 @@ In scope:
 - Calibrate the normal projectile/terrain interaction for a short first rebound
   followed by readable rolling or sliding; Bumper remains the sole deliberate
   strong-redirection exception.
-- Recompose terrain, foreground, camera, cannon, trajectory, lighting, and the
-  Korean-first HUD to follow the supplied reference's hierarchy.
+- Recompose terrain, foreground, camera, cannon, trajectory, and lighting to
+  achieve the liked concept board's bright thick-mountain read within the
+  executable terrain contract. Rebuild the Korean-first HUD around the later
+  user decision: a left vertical coverage gauge, bottom-center Fire, top-right
+  shots plus gear, and an input-capturing paused game menu.
 - Migrate replay/agent/debug contracts, rebalance only through the locked
   geometry and physical behaviors, prove all fixed targets, and regenerate
   production evidence.
@@ -97,6 +107,11 @@ Out of scope:
 - True geodesic surface-area scoring, per-triangle paint textures, decals as a
   second paint authority, fluid simulation, erosion, voxel terrain, or runtime
   terrain deformation.
+- Pixel-identical reproduction of generated concept imagery; caves, tunnels,
+  overhangs, stacked top surfaces, detached terrain pieces, literal stair
+  risers on playable routes, or paint islands fabricated to resemble a still
+  image. The concept board is a composition/readability comparator, not a mesh,
+  collision, paint-topology, seed, or placement specification.
 - New dependencies, plugins, engines, network services, asset packs, fonts, or
   downloads. Only the already approved and committed Kenney/Pretendard assets
   may be used.
@@ -115,6 +130,11 @@ Constraints and invariants:
   surface queries, target footprint, direct-reachability certificate, default
   aim, containment specification, placement, replay metadata, and agent
   observations. No consumer regenerates or edits layout data.
+- `GeneratedStageLayout.heights` contains exactly one top height for every
+  in-bounds XZ sample. Its fixed per-cell diagonal and vertex positions are the
+  sole playable-terrain geometry truth; no `HeightMapShape3D`, bilinear query,
+  independently triangulated collider, visual displacement, query-only surface,
+  or authored terrain repair may remain in the production path.
 - Human input, replay, tests, and the agent API invoke the same yaw, elevation,
   power, fire, and restart commands. A projectile is never steered in flight.
 - The user-addressable aim domain is yaw `-45..45 deg`, elevation `10..68 deg`,
@@ -161,11 +181,11 @@ Exact actions requiring owner or user approval:
 | Requirement or concern | Verified current owner and behavior | Evidence | Locked decision | Task IDs |
 | --- | --- | --- | --- | --- |
 | Correct game rule | Active source/docs still describe finite paint, but the latest user correction says the ball paints every target surface it traverses while rolling. | `docs/handoffs/gameplay-visual-reset-2026-08-03/current-state.md`, `external-review-validation.md`, current code | Later explicit user correction supersedes only the finite-payload/flow clauses; all other source-brief rules remain. | 0.1, 1.5 |
-| Terrain topology | `SeededStageGenerator` generates routes, then builds lobe mass and carves/blends them; the result reads as a wall. | `seeded_stage_generator.gd::_generate_lobes`, `_synthesize_height`; target/current images | Generate a typed route graph first; bounded route support envelopes create the whole mountain. Delete lobe fields and code. | 0.2, 1.1, 2.1 |
+| Terrain topology | `SeededStageGenerator` generates routes, then builds lobe mass and carves/blends them; the result reads as a wall. | `seeded_stage_generator.gd::_generate_lobes`, `_synthesize_height`; target/current images | Generate a typed route graph first, then one single-valued `H(x,z)` support surface. Bounded route envelopes create the whole mountain; delete lobe fields/code and prohibit caves, overhangs, stacked surfaces, literal route stairs, and secondary height computation. | 0.2, 1.1, 2.1 |
 | Target surface | `eligible_mask` uses height/normal tests and removes decoration/mechanism circles, which can hide reachable terrain from scoring. | `_build_eligible_mask`, `_exclude_footprints`, validated review | Rename the concept to `target_mask`; construct one filled graph-derived target footprint; never remove terrain by slope or route-distance at paint time. | 1.2, 2.2 |
 | Direct ballistic reachability | Target-mask connectivity is only a topology check; current generation never proves a legal unsteered first hit, and yaw `-28..28 deg` cannot address the Stage 3 front shoulders. | `cannon_controller.gd`, `trajectory_predictor.gd`, graph/target bounds; three independent code/design reviews | Expand the canonical aim domain to `-45..45 / 10..68 deg / 0..100%`; generate a fail-closed exact-predictor certificate covering every target texel on the human input lattice. | 0.2, 1.2, 2.1, 6.1 |
 | Rear containment and 3D read | The terrain shell closes the mountain but is not a rear wall; the flat Ground and open bounds permit a projectile to read as passing through or over a distant card. | `terrain_geometry_factory.gd`, `gameplay.tscn`, `StageData.stage_bounds`, current image | Add one bright `480x284x4 m` rear `BoxMesh`/`BoxShape3D`, a collidable faceted apron, fixed containment bounds, and render/collider/parallax gates. | 1.2, 2.4, 4.1-4.3, 6.2 |
-| Geometry/collision truth | One heightfield, closed shell, top body, shell body, and surface query owner already exist; interior-cell parity is not fully proved. | `terrain_geometry_factory.gd`, `terrain_surface.gd`, `terrain_geometry_test.gd` | Preserve owners and one height source; add deterministic interior triangle/ray parity and collider identity checks. | 1.2, 2.4 |
+| Geometry/collision truth | One heightfield, closed shell, top body, shell body, and surface query owner already exist, but the render uses explicit triangles while the collider uses `HeightMapShape3D` and queries interpolate bilinearly. | `terrain_geometry_factory.gd`, `generated_stage_layout.gd`, `terrain_surface.gd`, `terrain_geometry_test.gd` | Preserve owners and one height source, but emit the top triangle list once and make render, `ConcavePolygonShape3D`, hit classification, height/normal queries, target rasterization, and paint reconstruction consume that exact list/diagonal. Structural parity is exact; engine ray positions may differ by at most `0.01 m`. | 1.2, 2.4 |
 | Contact completeness | The projectile groups contacts per key but emits one global primary begun contact, so simultaneous terrain/mechanism contacts can be lost. | `paint_projectile.gd::_integrate_forces`, `projectile_contact.gd` | Emit one typed event per begun collider/shape key in deterministic key order and retain measured/estimated impulse provenance. | 1.3, 3.1 |
 | Paint continuity | Paint is requested later from spaced, payload-gated point stamps and can flow downhill. | `paint_projectile.gd`, `paint_deposit_request.gd`, `paint_system.gd` | Contact begins with a disc; sustained terrain-top contact emits a 3D surface sweep every physics tick; verified micro-gaps may bridge; real airborne gaps stay blank. | 0.2, 1.3, 1.4 |
 | Paint authority and ordering | `GameplayScene` currently applies requests immediately; there is no stable cross-process projectile ordinal or drain boundary. | `gameplay_scene.gd`, `projectile_manager.gd`, `paint_system.gd` | Manager assigns per-shot spawn ordinals; `PaintSystem` queues and drains at one late fixed-physics boundary sorted by tick/ordinal/sequence/type. | 1.4, 1.5 |
@@ -175,7 +195,8 @@ Exact actions requiring owner or user approval:
 | Mechanism semantics and balance | No special-terrain class exists; Burst/Splitter/Bumper are the source-approved physical special features, but their current blue/white styling and placement do not prove readable tolerance or useful trade-offs. | source brief, mechanism resources/scenes, active plan scope | Do not invent surface effects. Give the three mechanisms fixed distinct colors plus silhouette cues, direct activation witnesses, tolerance neighbourhoods, and solution/ablation gates. | 2.3, 3.2-3.4, 4.4, 6.1 |
 | Aim/default/preview | Independent manual yaw/elevation/power and first-collision prediction exist; bounds exits are currently fireable, the Stage 1 resource overrides a hand-authored aim, and markers ignore depth. | `aim_input_controller.gd`, `trajectory_prediction.gd`, stage resources | Preserve manual controls, make only physical collisions fireable, derive the restart aim nearest the target centroid from the reachability certificate, classify non-target/backstop hits, and depth-test the arc. | 1.2, 4.2, 4.3 |
 | Projectile rebound | Production bounce/friction/damping are `0.24/0.50/0.12/0.22`, with no normal-rebound or settling acceptance fixture. | `basic_paintball.tres`, `paint_projectile.gd`, `projectile_contact_test.gd` | Lock normal terrain tuning to `0.08/0.78/0.18/0.35` and prove bounded rebound, continued surface motion, CCD, and Bumper exception. | 1.3, 3.4, 6.2 |
-| Presentation | Current flat foreground, high ambient ratio, oversized cannon, gray mountain, weak target silhouette, and absolute HUD layout diverge from the reference and later white-world direction. | supplied images, `gameplay.tscn`, HUD scenes/theme, latest user correction | Use the exact off-white composition, palette, lighting, scale, 3D depth, and container contract below. Numerical baselines are gates, not executor-selected suggestions. | 4.1-4.5, 5.1-5.3 |
+| World presentation and concept boundary | Current flat foreground, high ambient ratio, oversized cannon, gray mountain, and weak target silhouette diverge from the supplied reference. The liked generated concept board contains useful depth/material direction but also literal stairs, disconnected paint pools, and illustrative geometry that cannot define physics. | supplied reference/current image, `gameplay.tscn`, `docs/concepts/execplan-outcome-2026-08-03/` | Use the fixed off-white palette, lighting, scale, faceting, shell depth, wall join, shadow, and parallax contract below. Treat the concept board only as a composition, hierarchy, material, and readability comparator; executable topology and paint must come from this contract and real physics. | 0.1, 4.1-4.5, 7.2 |
+| HUD action hierarchy and modal ownership | Current HUD uses absolute offsets, horizontal bottom-center coverage, and bottom-right Restart/Fire; top status has no gear. The existing pause overlay already contains the required destinations and `StageController` already owns pausing. | `hud.tscn`, `coverage_meter.tscn`, `action_buttons.tscn`, `top_status_bar.tscn`, `pause_overlay.tscn`, `hud_controller.gd`, `stage_controller.gd`; latest user decision | Replace the aiming layout with the exact baseline below: left vertical goal-relative coverage with absolute percentage text, sole bottom-center Fire, top-right shots plus gear, and no visible aiming Restart. Gear and Escape invoke one input-capturing paused game menu; Restart is in that menu and result/replay controls, never the Settings form. Preserve `R` as the source-brief quick-restart shortcut. | 0.1, 4.5, 5.1-5.3, 7.2 |
 | State/observation/replay | Stage, observation, HUD, debug, agent, tests, and resources propagate payload; replay is format 3. | mapped files in `source-map.md` | Delete payload semantics coherently, bump replay/observation schema to 4, drain paint before sealing, and record the final mask checksum. | 1.5, 5.4 |
 | Balance | The previous finite-payload plan failed Stage 2/3 solutions; external `35/50/70` advice is unsupported. | superseded plan Task 09, validation | Keep `4/27/70` and `4/5/6`; prove physical solutions only after topology/paint are correct. Never lower targets or hide terrain to pass. | 6.1 |
 | Runtime tooling | Godot 4.7.1 console, headless verification/tests, export preset, release entry, and fastrun command exist. Headless rendering cannot make real viewport evidence; capture runner goes fullscreen. | `scripts/verify.ps1`, `scripts/test.ps1`, `export_presets.cfg`, `delivery_capture_runner.gd` | Use headless checks normally. Use the release executable only during the two approved visible sessions; store interim and final evidence separately. | all gates, 1.6, 7.2 |
@@ -203,6 +224,7 @@ Readiness statement:
 | Term | Meaning | Owner |
 | --- | --- | --- |
 | Target terrain | The generated low-poly 3D mountain board: scoreable top surface plus visibly distinct non-target support/apron/shell. | `GeneratedStageLayout` and `TerrainSurface` |
+| One-height-per-XZ terrain | A route-graph-derived sampled surface with exactly one playable top height at each in-bounds XZ coordinate. It may form broad slopes, terraces, ridges, valleys, and pads, but never caves, overhangs, tunnels, stacked tops, detached route pieces, or vertical stair risers on target corridors. | `GeneratedStageLayout.heights`; all geometry consumers below |
 | Route graph | Deterministic nodes and directed edges that define intended traversable corridors, branches, reversals, pads, and difficulty before any height is synthesized. | `SeededStageGenerator` output |
 | Target footprint / `target_mask` | Immutable 512x512 XZ projection of every scoreable terrain-top texel. It is not painted state. | `GeneratedStageLayout`; copied once into `PaintSystem` |
 | Directly reachable target texel | A target texel for which a human-addressable aim tuple makes its first collision on `terrain/top`, on the same rendered/collision triangle and within `0.50 m` surface distance. It never relies on a mechanism, shell, apron, or backstop contact first. | `DirectReachabilityValidator`; certificate stored by `GeneratedStageLayout` |
@@ -214,11 +236,13 @@ Readiness statement:
 | Radial paint mark | A one-point surface-aware mark for first impact, final rest, or Burst. It has radius/intensity but no amount or flow. | Projectile/mechanism produces; `PaintSystem` applies |
 | Paint mask | Mutable 512x512 byte mask used by both the terrain shader and coverage calculation. | `PaintSystem` only |
 | Coverage | Count of target-mask texels whose paint byte is at least 128, divided by total target-mask texels. Overlap counts once. | `PaintSystem` only |
+| Coverage gauge | Read-only left-edge HUD presentation. It shows the absolute authoritative coverage text, sets its vertical range to the current stage target, fills bottom-to-top by `coverage / target`, caps visually at the target, and never changes or reinterprets `PaintSystem` coverage. | `CoverageGauge` consumes `PaintSystem`/stage signals through `HudController` |
+| Game menu | The full-viewport modal entered by gear or Escape from any pausable non-stage-result gameplay state, including `SHOT_RESULT`. It owns focus/input capture and shows Continue, Restart, Settings, Stage Select, and Main Menu while `StageController` owns the actual paused state. It is not the Settings form. | `PauseOverlay` presentation; `StageController` pause; `AppRoot` settings/navigation |
 | Decoration | A non-gameplay visual scale cue. It is never a route obstacle and never changes target-mask eligibility. | `EnvironmentDressing` |
 
 The Korean user-facing vocabulary remains `스테이지`, `목표 면적`, `칠한
-면적`, `남은 탄`, `조준`, `각도`, `파워`, `다시 시작`, `발사`, `폭발`,
-`분열`, and `범퍼`. No payload term remains.
+면적`, `남은 탄`, `조준`, `각도`, `파워`, `게임 메뉴`, `계속`, `다시
+시작`, `설정`, `발사`, `폭발`, `분열`, and `범퍼`. No payload term remains.
 
 ### Runtime ownership
 
@@ -227,15 +251,27 @@ The Korean user-facing vocabulary remains `스테이지`, `목표 면적`, `칠�
 | `StageController` | State machine, shot count, shot lifecycle, settlement gate, clear/failure, sealed observation | Paint bytes, input devices, terrain generation, mechanism effects |
 | `SeededStageGenerator` | Pure deterministic graph/layout generation, cheap structural validators, and accepted-seed/certificate identity verification | Physics-world solving, runtime paint, camera, stage outcomes, hand-authored repair coordinates |
 | `StageGenerationCertifier` / `DirectReachabilityValidator` / `DefaultAimSolver` | Headless candidate sequence, exact materialized-physics reachability, default aim, and certificate resource emission after a pass | Gameplay-frame work, UI hints, score mutation, or manual repair coordinates |
-| `GeneratedStageLayout` | Immutable graph, heights, checksums, target mask, reachability certificate, default aim, containment specification, placement records, route/surface queries | Mutable coverage or scene nodes |
-| `TerrainGeometryFactory` / `TerrainSurface` / `BackstopEnvironment` | Terrain mesh/collider derivation, narrow world surface queries, and matching apron/backstop render/collision construction | Independent height data, scoring policy, aim solving, or invisible containment |
+| `GeneratedStageLayout` | Immutable graph, single-valued height samples/fixed cell diagonals, checksums, target mask, reachability certificate, default aim, containment specification, placement records, route/surface queries | Mutable coverage, scene nodes, a second height representation, or visual-only playable geometry |
+| `TerrainGeometryFactory` / `TerrainSurface` / `BackstopEnvironment` | Exact shared-triangle terrain render/collision/query derivation and matching apron/backstop render/collision construction | Independent height/interpolation/triangulation data, scoring policy, aim solving, or invisible containment |
 | `ProjectileManager` | Projectile cap/lifecycle, per-shot spawn ordinal, ordered command envelopes | Coverage calculation or stage results |
 | `PaintProjectile` | Real rigid-body contact extraction and typed contact/sweep intent | Persistent paint mutation or coverage |
 | `PaintSystem` | Paint command queue/drain, rasterization, masks, texture, coverage, dirty/upload lifecycle | Projectile physics, stage decisions, a second terrain model |
 | `GimmickBase` subclasses | Body-specific activation/effect intent with duplicate/cooldown guards | Direct mask mutation or stage-specific rules |
-| `CameraDirector`, `AimInputController`, `HudController` | Presentation, human input translation, and UI coordination respectively | Gameplay authority or alternate observations |
+| `CameraDirector`, `AimInputController`, `HudController` | Presentation, human input translation, and UI coordination respectively | Gameplay authority, alternate observations, or direct pause/settings mutation outside typed requests |
+| `PauseOverlay`, `SettingsScreen`, `AppRoot` | Game-menu input barrier/focus, settings form, and application navigation/return layering respectively | Stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 
 ### Deterministic route-graph terrain
+
+Achievable visual-equivalence boundary:
+
+- `docs/concepts/execplan-outcome-2026-08-03/` is non-authoritative concept
+  evidence for composition, palette, hierarchy, low-poly faceting, apparent
+  thickness, route/mechanism readability, and paint contrast only. It does not
+  prescribe pixel identity, terrain or paint topology, a seed/silhouette,
+  mechanism coordinates, or physics. The supplied source/reference, this
+  contract, and verified running behavior remain authoritative. The concept
+  board's aiming/progress HUD placements are explicitly superseded by the HUD
+  baseline in this section.
 
 - Retain the current base/fallback seeds and 32-attempt sequence in the headless
   `StageGenerationCertifier`. Move `StageGenerationProfile.profile_version` and
@@ -346,18 +382,29 @@ Height synthesis is fixed as follows:
    never changes graph height, pad height, reversals, or target eligibility. When
    no edge has support, noise and height are both exactly zero before apron work.
 7. The outermost `12 m` of the full X/Z bounds is a non-target falloff band.
-   Blend support to the apron there. Emit one faceted top mesh, an `8 m` minimum
-   visible skirt and a bottom. The render top and the top
-   `ConcavePolygonShape3D` use the identical per-cell triangles
-   `(p00,p01,p10)` and `(p10,p01,p11)`; the shell collider uses the identical
-   skirt/bottom faces. `TerrainSurface` height/normal queries select that same
-   diagonal and use triangle-plane/barycentric interpolation, not bilinear
-   interpolation.
+   Blend support to the apron there. Emit the top triangle list once, then feed
+   the exact vertex positions, winding, cell IDs, and fixed diagonal
+   `(p00,p01,p10)` / `(p10,p01,p11)` into the render `ArrayMesh`, top
+   `ConcavePolygonShape3D`, `TerrainSurface` hit classification and
+   height/normal queries, target rasterization, and paint surface
+   reconstruction. The shell collider uses the identical skirt/bottom faces;
+   the visible mesh has an `8 m` minimum skirt and a bottom. `HeightMapShape3D`,
+   bilinear interpolation, independently triangulated collision, visual
+   displacement, and query-only playable geometry are prohibited. Structural
+   triangle parity is exact before engine conversion; deterministic engine ray
+   fixtures may differ from the source triangle point by at most `0.01 m`.
 8. In world space the terrain remains centered at `(0,-2,-112)` and spans
    `x=[-90,90]`, `z=[-172,-52]`. Its far edge meets the front face of the rear
    backstop at `z=-172`; all graph mass extends toward the cannon from that
    wall. The containing apron is a faceted, collidable, non-target closed mesh
    over the legal launch cone rather than the current infinite-looking plane.
+
+“Terrace” means a broad, continuously connected rollable change of grade in
+this single-valued surface. It never means discrete treads, vertical risers, or
+literal stairs on a target corridor. Each in-bounds XZ resolves exactly one top
+height; caves, tunnels, overhangs, interior ledges, stacked surfaces, and
+detached route pieces are invalid. The slope and corridor-lip gates below apply
+to the actual shared triangles, including every visible grade transition.
 
 Fail-closed generation gates:
 
@@ -394,6 +441,12 @@ below.
   same target material; adjacent non-target shell/buttress is at least 12%
   darker and 20% less saturated, while the farther apron keeps its separately
   locked value, so scoring boundaries remain visible without an overlay.
+- Persistent blue paint exists only when the authoritative mask received a
+  verified target-top radial mark or surface sweep. Concept-board pools and
+  trails are not paint-topology requirements: do not fabricate disconnected
+  paint islands, decals, shell/apron/wall paint, or coverage to match an image.
+  One continuous real contact interval must read as a continuous surface path;
+  separate real contacts may remain separate.
 - Decorations are sampled only where their entire visual AABB is outside the
   target footprint, route support radius, mechanism pad, and a `2 m` clearance
   ring. They remain non-colliding scale cues. No solid-looking decorative object
@@ -775,6 +828,12 @@ lies inside it, so its declared diameter is exactly `7.0 m`.
   parallax at 1920x1080. The coordinated evidence must show multiple lit face
   normals, ridge/valley occlusion, a wall join, and a cast/self-shadow so the
   distant target reads as a thick 3D object protruding from the wall.
+- Running-image comparison against the concept board judges mountain dominance,
+  warm off-white separation, low-poly faceting, shell depth, wall attachment,
+  ridge/valley occlusion, route and mechanism readability, and blue-paint
+  contrast. It never judges pixel identity and must reject literal route stairs,
+  caves/overhangs, detached visual terrain, collider/query substitutes, or
+  nonphysical paint added only to imitate a concept image.
 
 Camera bookmark resources are exact:
 
@@ -806,28 +865,78 @@ for a plan revision rather than tuning it inside Phase 4.
   `8 m` of the target centroid. The reachability/default solver is generation
   evidence and startup state only; it is never an aim hint, snap-to-target
   control, post-launch steering system, or player-facing solver.
-- Set stretch aspect to `expand`. Use a full-rect CanvasLayer and Containers,
-  never root absolute offsets. The logical baseline is 1280x720; safe margin is
-  `max(16, round(24*viewport_width/1280))`. Baseline components are: stage card
-  `118x48` top-left, mode chip `110x40` below it, target card `300x48` top-center,
-  shots card `180x48` top-right, aim/power card `240x104` bottom-left, coverage
-  card `480x56` bottom-center, restart `112x112`, and Fire `144x140` bottom-right.
+- Set stretch aspect to `expand`. Use a full-rect CanvasLayer, safe-area
+  `MarginContainer`s, and edge/center Containers, never root absolute offsets.
+  The logical baseline is `1280x720`; safe margin is
+  `max(16, round(24*viewport_width/1280))`. At that baseline the final bounding
+  rectangles are exact: stage card `(24,24,118,48)`, mode chip
+  `(24,84,110,40)`, target card `(490,24,300,48)`, shots card
+  `(1016,24,180,48)`, and gear `(1208,24,48,48)`. The left coverage gauge is
+  `(24,228,104,324)`, the aim/power card is `(144,592,300,104)`, and the sole
+  Fire button is `(552,624,176,72)`. These are rendered rectangle gates, not
+  permission to restore fixed root offsets.
+- `CoverageGauge` replaces the horizontal coverage card. Its actual bar fills
+  bottom-to-top with `min(coverage / target, 1)`, while separate localized text
+  always shows authoritative absolute coverage as `칠한 면적 {coverage:.1f}%`
+  and the cap shows `목표 {target:.0f}%`; no normalized progress is labeled as
+  coverage. The rail and all decorative children use `MOUSE_FILTER_IGNORE`,
+  never block playfield drag/wheel input, and receive values only through typed
+  HUD signals. It remains visible during aiming, flight, settling, and shot
+  result, and is hidden during loading, briefing, stage result, and replay.
+- Fire is the only aiming-state pointer action at the bottom edge. It is visible
+  and focusable only in `AIMING`, uses the same guarded action as Space, and is
+  hidden during briefing, flight, settling, shot result, pause, stage result,
+  and replay. One click or one Space press emits exactly one fire request even
+  while Fire owns keyboard focus. No aiming-state Restart button or second Fire
+  control exists. The source-brief `R` quick-restart shortcut remains and calls
+  the same guarded restart-to-`AIMING` action as the game-menu Restart.
+- The top-right gear is a focusable `48x48` ordinary button with localized
+  accessible name/tooltip `게임 메뉴`; it is not a direct Settings shortcut.
+  It remains visible in `BRIEFING`, `AIMING`, `PROJECTILE_IN_FLIGHT`,
+  `PAINT_SETTLING`, and `SHOT_RESULT`, and is hidden during loading, pause,
+  stage result, and replay. Gear and Escape invoke the same typed pause/menu
+  action and never mutate aim, fire, or coverage directly.
+- `PauseOverlay` is the game menu: a full-viewport modal input barrier with a
+  dimmer and centered `384x440` panel at the baseline. It sets/retains
+  `StageController.PAUSED`, captures pointer/keyboard/gameplay input, and focuses
+  Continue on open. Ordered controls are Continue `336x56`, then Restart,
+  Settings, Stage Select, and Main Menu at `336x48` with `12 px` separation.
+  Tab/Shift+Tab remain trapped in that order; Escape and Continue restore the
+  exact pre-pause state, including flight/settling, without advancing one
+  simulation tick while open. Restart closes the menu, resets to generated
+  default aim in `AIMING`, and contains no additional confirmation because the
+  gear/menu entry is already an intentional pointer step.
+- Settings opens above the still-paused game menu and is a separate form. Its
+  full-screen root captures input; Close/Escape returns to the still-paused menu
+  and restores focus to the Settings button in that game menu. The Settings form
+  never contains Restart.
+  Stage Select and Main Menu unpause and release gameplay only through the
+  existing `AppRoot` navigation/cleanup path. Result and replay-specific retry/
+  restart controls remain owned by those states.
 - Surfaces use `#F7F3ED`, navy text, blue accent, radii `12..16 px`, one restrained
   shadow, labels 14 px, main metrics 22 px, buttons 20 px, and headings 18 px.
   No payload control, instructional paragraph, center modal, or debug text is
-  visible while aiming. Every required control has keyboard focus styling.
+  visible while active aiming; the paused game menu is the only centered modal
+  reachable from that state. Every required control has keyboard focus styling,
+  and the gear is never discoverable by icon shape alone.
 - Layout gates cover `1280x720`, `1280x800`, `1366x768`, `1600x900`, and
   `1920x1080`, Korean and English. No visible control/text clips, overlaps,
-  leaves its safe area, or occludes the launch-to-target corridor.
+  leaves its safe area, or occludes the launch-to-target corridor. Modal tests
+  also prove focus order, focus restoration, pointer capture, and zero aim,
+  wheel-power, Fire, or simulation input leakage beneath either menu layer.
 - `DeliveryCaptureRunner` is inert unless all four capture arguments are
   present exactly once: `--capture-screen`, `--capture-output`,
   `--capture-size`, and `--capture-locale`. Allowed screen values are
-  `main_menu`, `stage_select`, `stage_briefing`, `aiming`, `stage1_mid_roll`,
+  `main_menu`, `stage_select`, `stage_briefing`, `aiming`, `pause_menu`, `stage1_mid_roll`,
   `stage1_settled`, `projectile_and_paint_roll`, `stage_clear`, and
   `stage_failed`; allowed locales are `ko/en`; allowed sizes are the five layout
   sizes above. Normalize the output path and require it to be inside either
   `.agents/evidence/gameplay-visual-reset/stage1` or `screenshots`. Reject a
   duplicate, unknown capture argument, unsupported value, or outside path.
+  The `pause_menu` fixture loads First Descent at its generated default aim in
+  `AIMING`, invokes the same typed gear/Escape pause request used in gameplay,
+  verifies `StageController.PAUSED` plus a stopped `SceneTree`, focuses Continue,
+  and captures only after two idle process frames without advancing physics.
   It switches to windowed mode, requests that exact
   viewport, waits until the viewport reports the requested pixels, and fails
   rather than going fullscreen or saving a mismatched image.
@@ -896,6 +1005,17 @@ edge, and new surface-effect types. Supporting those later requires a separate
 world/camera/physics design revision; the current wall is not a temporary
 invisible hack and may not be removed during this plan.
 
+The user's later HUD decision supersedes only the source brief's aiming-screen
+placement of bottom-center coverage and bottom-right Restart/Fire. Required
+status information, manual aim, Space/Fire parity, `R` quick restart, Escape
+pause, responsive Korean-first presentation, and the five pause-menu actions
+remain. The final hierarchy is locked above: goal-relative vertical coverage
+with absolute text at left, Fire alone at bottom-center, shots plus gear at
+top-right, and Restart inside the paused game menu rather than the aiming HUD or
+Settings form. The liked concept images remain the approved art/read direction,
+but their HUD positions, literal geometry, and painted still states are not
+implementation contracts.
+
 ## Tasks
 
 ### Phase 0: Align authority and introduce replacement contracts
@@ -911,6 +1031,7 @@ Preconditions:
 
 Source owners: `AGENTS.md`, `docs/source-brief.md`, `docs/design-spec.md`,
 `docs/technical-architecture.md`, `docs/test-checklist.md`, `.agents/Prompt.md`,
+`docs/concepts/execplan-outcome-2026-08-03/index.html`,
 typed Resources/value objects under `src/stage_generation`, `src/projectile`,
 `src/cannon`, `src/terrain`, and `src/paint`
 
@@ -920,12 +1041,16 @@ typed Resources/value objects under `src/stage_generation`, `src/projectile`,
     replace finite-payload/flow language in active design, architecture,
     checklist, prompt, and documentation sections; add the target-wide direct
     reachability, generated default aim, rear containment, low-rebound, and
-    mechanism-semantic decisions; retain historical plans and evidence as
-    explicitly superseded records.
+    mechanism-semantic decisions; record the later exact HUD placement/menu
+    supersession without editing the original directive; mark the concept
+    board's terrain/art direction as useful but its old HUD placement and
+    illustrative geometry/paint topology as non-authoritative; retain historical
+    plans and evidence as explicitly superseded records.
   - Accept: active docs agree on continuous contact paint, target-mask coverage,
-    `4/27/70`, one mask authority, and the ownership table; source-brief original
-    text and raw Claude review remain byte-unchanged below/within their recorded
-    historical sections.
+    `4/27/70`, one mask authority, one-height-per-XZ/shared-triangle terrain,
+    the exact left-gauge/center-Fire/top-right-gear game-menu hierarchy, and the
+    ownership table; source-brief original text and raw Claude review remain
+    byte-unchanged below/within their recorded historical sections.
   - Guard: exactly one ExecPlan under `.agents/execplans` has `status: active`.
 - [ ] **0.2** Add the version-4 typed contract skeleton.
   - Change: add generated graph node/edge/graph types, replace deposit request
@@ -966,14 +1091,19 @@ for payload removal
 
 - [ ] **1.1** Generate First Descent from the route graph.
   - Change: implement the fixed graph resolver and bounded support/carve pipeline;
-    delete lobe synthesis from the production path; expose derived route queries
-    from the graph while migrating consumers.
+    produce exactly one height per XZ sample; delete lobe synthesis and every
+    multi-height/overhang/detached-terrain path from production; expose derived
+    route queries from the graph while migrating consumers.
   - Accept: base/fallback/repeated generation is deterministic; Stage 1 has the
     exact chain, 0 reversals, accepted height/slope/target-ratio gates, and no
-    lobe field influences any sample.
+    lobe field, secondary height function, literal route stair, or second top
+    height influences any sample.
 - [ ] **1.2** Make the Stage 1 target and solid geometry truthful.
-  - Change: construct `target_mask`, derive top/skirt/bottom and top/shell bodies
-    from the same heights, construct the exact apron/backstop render and
+  - Change: construct `target_mask`; emit one indexed top triangle list from the
+    fixed heights/diagonal and use it for render, top
+    `ConcavePolygonShape3D`, `TerrainSurface` queries/classification, target and
+    paint reconstruction; derive skirt/bottom and shell collision from the same
+    boundary faces; construct the exact apron/backstop render and
     collision, install the containment bounds, build the direct-reachability
     certificate and default aim, expose target/non-target material inputs,
     remove GameplayScene/HUD/StageData initialization writes in favor of the
@@ -987,8 +1117,11 @@ for payload removal
     both restart paths; the analytic full-domain envelope and every required
     exact canonical-lattice check return no rear, side, upper, or lower bounds
     exit and first contact terrain, apron, backstop, or mechanism; every
-    deterministic interior sample agrees within `0.05 m` and returns the
-    expected top/shell/backstop body/shape/triangle identity.
+    source triangles are structurally identical across every consumer; each
+    deterministic interior/edge ray agrees within `0.01 m` and returns the
+    expected top/shell/backstop body/shape/cell/triangle/barycentric identity;
+    static search finds no production `HeightMapShape3D`, bilinear terrain query,
+    independent top triangulation, visual displacement, or query-only surface.
   - Certify: after the non-writing test passes, run the certifier once with
     `--stage=first_descent --write-certificate=res://resources/stages/certificates/first_descent_v4.tres`,
     rerun it three times with `--verify-only`, and commit the resource only with
@@ -1037,7 +1170,12 @@ for payload removal
     ball visibly contacts and follows its surface; paint is continuous beneath
     the traversed path; the rear wall visibly contains the board; the default
     shot hits near center; rebound is short; collision and first-impact location
-    are visually unambiguous. UI polish is not judged in this gate.
+    are visually unambiguous. Compare the running frames beside the concept
+    board for mountain dominance, off-white value separation, faceting, depth,
+    wall join, route readability, and paint contrast only; reject literal route
+    stairs, caves/overhangs, detached visual terrain, collider-mismatched
+    thickness, or nonphysical paint. UI polish and the concept board's old HUD
+    placement are not judged in this gate.
   - Guard: if the user rejects the Stage 1 proof, stop and revise this plan before
     expanding the other stages.
 
@@ -1097,9 +1235,11 @@ generation/terrain/placement tests
     initialization `set_aim`; `SeededStageGenerator` remains the sole consumer
     of route profiles as typed graph input.
   - Accept: static search finds no lobe field, secondary height computation,
-    old eligibility term in active code, or authored production mechanism
-    coordinate/initial aim; interior parity and physical containment pass all
-    stages.
+    `HeightMapShape3D`, bilinear terrain query, independent top triangulation,
+    overhang/cave/detached-terrain branch, query-only surface, old eligibility
+    term in active code, or authored production mechanism coordinate/initial
+    aim; structural triangle parity, engine-ray tolerance, and physical
+    containment pass all stages.
 
 Batch gate:
 
@@ -1180,7 +1320,9 @@ foreground/dressing,
   - Change: replace the plane, expose shell, finish the six-face backstop and
     mountain/wall join, set the fixed off-white palette/roughness/light, preserve
     faceted normals and shadows, and use approved assets only as off-route scale
-    cues or bounded effects.
+    cues or bounded effects. Express the concept board's liked art/read direction
+    only through the single-valued shared-triangle mountain and closed support;
+    never add visual-only terrain, stairs, caves, overhangs, or fake paint.
   - Accept: scene/resource inspection matches every fixed value; wall projection
     overscan, `8..14 m` depth, `8 px` parallax, lit-face/shadow evidence, and
     render/collider identity pass; no plane hides shell thickness and the paint
@@ -1208,7 +1350,8 @@ foreground/dressing,
   - Change: emit a revision-stamped JSON manifest of camera projections, screen
     rectangles, material/light values, target bounds, shell exposure, mechanism
     pixels/colors, wall overscan/depth/parallax, trajectory spacing/collision
-    class, default-center hit, and cannon occupancy from
+    class, default-center hit, cannon occupancy, and the reserved exact HUD
+    rectangles/sightline corridor from
     `tests/composition_contract_test.gd`.
   - Accept: every fixed numerical contract passes for all stage/resolution
     fixtures; the manifest is stored under the current evidence revision.
@@ -1221,35 +1364,66 @@ Batch gate:
 
 ### Phase 5: Rebuild the Korean-first interface and causal feedback
 
-Goal: the HUD matches the reference hierarchy, remains readable at non-16:9
-desktop sizes, and explains physical outcomes without reviving payload data.
+Goal: the HUD matches the decided gameplay hierarchy—left vertical coverage,
+bottom-center Fire, top-right shots plus gear—and the gear-owned paused game
+menu captures all input while the interface explains physical outcomes without
+reviving payload data.
 
 Preconditions:
 
 - Phase 4 acceptance and batch gate pass.
 
-Source owners: HUD component scenes/scripts, `hud_controller.gd`, global Theme,
-translations, settings/pause/results, `project.godot`, observation/debug adapters
+Source owners: `scenes/ui/hud/hud.tscn`, `top_status_bar.tscn`,
+`coverage_meter.tscn` and its replacement, `action_buttons.tscn` and its
+replacement, `pause_overlay.tscn`, `settings.tscn`, their scripts,
+`hud_controller.gd`, `gameplay_scene.gd`, `app_root.gd`, `stage_controller.gd`,
+global Theme, translations/icons, `project.godot`, UI/input/localization tests,
+observation/debug adapters
 
 - [ ] **5.1** Rebuild aiming HUD roots with anchors and Containers.
-  - Change: apply stretch/safe margins, fixed component sizes/positions,
-    typography, palette, and focus states; remove remaining absolute root layout
-    and payload widgets.
-  - Accept: structure tests prove one component owner per card and the exact
-    anchors/sizes; every required label/value/button is present and translated.
+  - Change: apply stretch/safe margins and the exact rendered rectangles above;
+    replace horizontal `CoverageMeter` with responsibility-shaped
+    `CoverageGauge`, replace two-button `ActionButtons` with a Fire-only
+    component, add the gear to the top-right shots group, and wire the existing
+    `PauseOverlay` as the game-menu component. Remove obsolete scene/script UIDs,
+    absolute root layout, aiming Restart, and payload widgets only after their
+    replacements are connected. Apply the fixed typography, palette, focus,
+    accessible name/tooltip, mouse-filter, and translated copy contracts.
+  - Accept: `tests/phase7_ui_test.gd` proves one component owner per card, the
+    exact baseline/scaled rectangles, vertical fill direction, absolute
+    coverage/target labels, state visibility, and focus styles; every required
+    label/value/button is translated; no Restart node exists in the aiming HUD
+    or Settings form and no second Fire control remains.
 - [ ] **5.2** Make HUD feedback follow the sealed physical model.
   - Change: show stage/target/shots, yaw/elevation/power, live coverage/target
     marker, first-impact validity, mechanism callouts, and sealed shot summary
-    from typed signals/observations only.
+    from typed signals/observations only. Feed `CoverageGauge` the authoritative
+    absolute value plus stage target, preserve predictor-owned Fire validity,
+    make click and Space share one deduplicated guarded action, and keep gear as
+    a typed pause/menu request rather than a state mutation.
   - Accept: HUD never calculates coverage, predicts post-impact behavior, or
     decides fire/result; concurrent child balls and delayed queue drain cannot
-    show a premature shot result.
+    show a premature shot result; goal-relative fill never changes the displayed
+    absolute percentage; one click/Space/R input emits exactly one accepted
+    Fire/Restart action and gear never changes aim values.
 - [ ] **5.3** Pass responsive localization and navigation gates.
   - Change: correct wrapping/minimum sizes across all supported resolutions and
-    both locales; preserve settings/pause/result navigation and persistent locale.
+    both locales; make gear/Escape enter the same `StageController.PAUSED`
+    path from every specified pausable state; make the full menu and Settings
+    roots stop pointer/keyboard/gameplay propagation; implement the ordered
+    focus trap, Continue/Escape exact-state restoration, Restart-to-`AIMING`,
+    Settings child-modal return/focus, and unpaused Stage Select/Main Menu
+    cleanup. Preserve result/replay ownership and persistent locale. Add
+    `tests/game_menu_input_test.gd` and extend localization/layout tests.
   - Accept: automated rect/ancestor-clipping checks find zero clipping,
     intersection, overflow, corridor occlusion, untranslated key, or missing
-    Pretendard glyph at all ten resolution/locale combinations.
+    Pretendard glyph at all ten resolution/locale combinations. State/input
+    tests open the menu from briefing, aiming, flight, settling, and shot result;
+    prove zero simulation, drag, wheel-power, Space/Fire, or other gameplay
+    leakage while either modal layer is open; prove Tab/Shift+Tab order, initial
+    and restored focus, Settings close back to the paused menu, exact prior-state
+    resume, clean Restart, and clean application navigation. Static scene checks
+    prove Restart is absent from Settings and the aiming HUD.
 - [ ] **5.4** Complete schema-4 replay, agent, and debug presentation.
   - Change: expose contact/sweep/drain/checksum facts without payload; keep
     replay-origin input isolation and debug-build-only overlay.
@@ -1258,8 +1432,10 @@ translations, settings/pause/results, `project.godot`, observation/debug adapter
 
 Batch gate:
 
-- Run UI, localization, state, observation, agent, debug, persistence, and
-  fresh-process replay suites, then `scripts/verify.ps1`.
+- Run `phase7_ui_test.gd`, `localization_ui_test.gd`,
+  `game_menu_input_test.gd`, `aim_interaction_test.gd`, then the state,
+  observation, agent, debug, persistence, and fresh-process replay suites,
+  followed by `scripts/verify.ps1`.
 
 ### Phase 6: Prove fixed-target gameplay, determinism, and reliability
 
@@ -1333,7 +1509,8 @@ Preconditions:
 - The user explicitly coordinates the final visible session.
 
 Source owners: export preset, delivery capture runner, `screenshots/`,
-`docs/test-checklist.md`, `.agents/Documentation.md`, active specs and this plan
+`docs/test-checklist.md`, `.agents/Documentation.md`, active specs, the concept
+board, and this plan
 
 - [ ] **7.1** Build and smoke the production artifact headlessly.
   - Change: export `Windows Desktop` to `builds/windows/PaintMountain.exe` and
@@ -1343,15 +1520,19 @@ Source owners: export preset, delivery capture runner, `screenshots/`,
 - [ ] **7.2** Run the single coordinated final visual session.
   - Change: launch only the exported executable with the exact capture commands
     below. Capture the seven canonical 1920x1080 Korean-default states plus
-    1280x800 Korean and English aiming frames. Record commit, binary hash,
-    engine, renderer, locale, resolution, seed, state, and shot tuple in
-    `screenshots/capture-manifest.json`.
+    1280x800 Korean and English aiming frames and one 1280x800 Korean paused game
+    menu frame. Record commit, binary hash, engine, renderer, locale, resolution,
+    seed, state, and shot tuple in `screenshots/capture-manifest.json`.
   - Accept: direct inspection confirms the supplied-reference hierarchy; thick
     off-white 3D mountain visibly protruding from its solid wall, readable
     color-distinct mechanisms, small cannon, center-hitting default,
     depth-correct preview, short rebound, unambiguous ball contact, continuous
-    bright paint, target boundary, and HUD all agree with this contract. No
-    clipping, rear escape, or debug overlay appears.
+    physics-authored bright paint, target boundary, left vertical coverage gauge,
+    sole bottom-center Fire action, and top-right shots plus gear all agree with
+    this contract. The paused game menu shows Continue, Restart, Settings, Stage
+    Select, and Main Menu as one focused input barrier; no Restart appears in the
+    aiming HUD or Settings form. No clipping, rear escape, debug overlay, literal
+    stair terrain, detached playable mass, or concept-only fake paint appears.
 - [ ] **7.3** Close records and remove obsolete active claims.
   - Change: update specs/checklist/documentation with measured results and known
     limitations, remove transient evidence not named by policy, verify fastrun
@@ -1444,6 +1625,7 @@ $paintMountainExe = 'D:\npjt\paint-mountain\builds\windows\PaintMountain.exe'
 & $paintMountainExe -- --capture-screen=stage_failed --capture-size=1920x1080 --capture-locale=ko --capture-output=D:/npjt/paint-mountain/screenshots/07_stage_failed.png
 & $paintMountainExe -- --capture-screen=aiming --capture-size=1280x800 --capture-locale=ko --capture-output=D:/npjt/paint-mountain/screenshots/08_aiming_1280x800_ko.png
 & $paintMountainExe -- --capture-screen=aiming --capture-size=1280x800 --capture-locale=en --capture-output=D:/npjt/paint-mountain/screenshots/09_aiming_1280x800_en.png
+& $paintMountainExe -- --capture-screen=pause_menu --capture-size=1280x800 --capture-locale=ko --capture-output=D:/npjt/paint-mountain/screenshots/10_pause_menu_1280x800_ko.png
 ```
 
 Phase 0 renames the obsolete capture state `projectile_and_paint_flow` to
@@ -1459,7 +1641,7 @@ old flow term.
 | Export gate | `& $paintMountainGodot --headless --path . --export-release 'Windows Desktop' 'builds\windows\PaintMountain.exe'` | Phase 1 visual proof and Phase 7 | An export/runtime input changes |
 | Documentation gate | `git diff --check`; `rg -l '^status: active$' .agents/execplans` returns only this plan | Every documentation checkpoint | A document changes |
 | Visible Stage 1 gate | `& '.\builds\windows\PaintMountain.exe'` with the agreed capture arguments | Only after the first explicit coordination | Never automatically |
-| Visible final gate | Existing seven `DeliveryCaptureRunner` state commands, with custom flags after `--` | Only after final explicit coordination | Never automatically |
+| Visible final gate | The seven canonical `DeliveryCaptureRunner` states plus Korean/English aiming and Korean `pause_menu` evidence, with custom flags after `--` | Only after final explicit coordination | Never automatically |
 
 Validation rules:
 
@@ -1491,7 +1673,7 @@ Validation rules:
 | A legal aim exits through any rear, side, upper, or lower bound or passes through the wall/apron | Verify conservative envelope, wall/apron dimensions, collision layers, stage bounds, and predictor/runtime parity in that order | No invisible kill plane, larger projectile, bounds-as-hit classification, or camera concealment; stop and replan if the fixed containment is insufficient |
 | Route graph passes metrics but reads as a wall in Stage 1 evidence | Reject the vertical slice and replan geometry/composition from evidence | Do not build Stage 2/3 or hide the issue with camera/UI |
 | Off-white mountain still reads as a flat card | Verify six-face backstop, mountain/wall join, shell exposure, faceted normals, light/shadow, camera projection, and parallax in that order | Do not substitute a billboard, dark gray palette, texture-only fake depth, or uncollidable visual mass; replan after defects are excluded |
-| Render, collider, or surface-query samples differ | Stop and make all three consume the same heights/triangle diagonal | No offsets, larger projectile, or paint compensation |
+| Render, collider, surface query, target rasterization, or paint reconstruction differs | Stop and make every consumer use the one emitted indexed top-triangle list and diagonal; re-run exact structural comparison and the `0.01 m` engine-ray tolerance gate | No `HeightMapShape3D`, bilinear fallback, duplicate triangulation, visual displacement, query-only repair, offsets, larger projectile, or paint compensation |
 | A gap paints without the full clearance/ray proof | Reject the bridge and trace contact identity/sample order | Never paint an unproved airborne chord |
 | A real continuous roll leaves a blank centerline | Fix contact interval, snapping, component, or queue implementation in that order | Do not enlarge radius or lower coverage threshold |
 | Fresh-process paint checksum differs | Compare seed/layout, spawn ordinals, emitted command tuples, sort/drain order, then raster bytes | Do not waive exact mask identity or claim commutativity is proof |
@@ -1500,7 +1682,11 @@ Validation rules:
 | Normal projectile rebound exceeds the locked gate | Verify resource wiring, material combination, contact normal, CCD, and fixture geometry | Keep Bumper isolated as the only redirect exception; if engine-correct behavior still fails, stop for a numeric plan revision rather than ad hoc tuning |
 | A fixed target has no reliable physical solution | Verify contact/paint first, graph/target surface second, mechanism behavior third, search fourth | After defects are excluded, stop and replan; do not lower target/add shots/hide terrain |
 | Paint performance misses its gate | Reuse arrays, reduce dirty work, batch uploads, and cache surface candidates in that order | Mask/grid/footprint/threshold/gameplay values remain fixed; dependency changes require approval |
-| UI clips or covers gameplay | Fix container flags, anchors, wrapping, and minimum sizes | Do not shrink body text below 14 px or remove required controls |
+| The aiming HUD clips, covers the protected playfield, or departs from the locked hierarchy | Fix safe-area Containers, anchors, wrapping, scaling, and minimum sizes until the exact 1280x720 rendered rectangles and supported-resolution gates pass | Do not move Fire away from bottom-center, return Restart to aiming, make coverage horizontal, shrink body text below 14 px, or remove required controls |
+| An extra gameplay action appears or Restart reappears in aiming or Settings | Remove the stale/duplicate control and route the action through the existing typed owner; verify click, `Space`, and `R` each emit exactly one action | Fire remains the sole bottom-center action; Restart belongs to the paused game menu and result/replay flow, while `R` remains the quick shortcut |
+| Gear or Escape opens a menu without fully pausing/capturing input | Trace the HUD pause request, `StageController` state, `SceneTree.paused`, modal mouse filters, focus trap, and Settings return path in that order | Dimming alone is not pause; no aim, fire, restart shortcut, projectile simulation, or underlying UI input may leak through the game menu |
+| Closing Settings does not return to the still-paused game menu | Restore the child-modal ownership and focus-return contract through `AppRoot`/`PauseOverlay` | Do not resume gameplay, close both layers, or put Restart inside the Settings form |
+| A concept-board detail conflicts with this executable contract or verified physics | Follow this plan, the source brief except for the recorded HUD supersession, and verified runtime behavior; record the visual discrepancy for review | Never fabricate geometry, contact, coverage, or persistent paint to imitate the concept image; the board is not authoritative for topology, seed, placement, paint paths, or pixel identity |
 | A visual metric passes but the coordinated image still fails the reference hierarchy | Treat the image review as the higher gate and replan the affected visual contract | Do not mark complete from structural metrics alone |
 | User postpones a visible session | Stop at the named gate, leave its checkbox unchecked, and report headless status | Never launch, keep open, or repeatedly foreground Godot |
 | Task-owned visible process does not exit | Stop that exact process by recorded PID and report it | Never kill by process name |
@@ -1516,10 +1702,12 @@ safety, persistence, or acceptance.
 - Canonical progress: the task checkboxes in this contract.
 - Current phase: approval gate before Phase 0.
 - Next task: 0.1 after the user instructs execution of this plan.
-- Last completed gate: Discovery Closure Gate; raw Claude guidance was validated
-  against current code, the later reachability/containment direction was
-  independently reviewed against the game loop, and all readiness decisions are
-  locked here.
+- Last completed gate: Discovery Closure Gate; raw Claude guidance, current HUD/
+  pause/settings ownership, current render/collider/query implementation, the
+  later reachability/containment direction, and the liked concept board were
+  checked against the game loop. The revised HUD hierarchy, modal behavior,
+  achievable concept boundary, and shared-triangle terrain contract are locked
+  here.
 - Carried-forward implementation foundations: immutable generated layout,
   heightfield/top+shell geometry owner, real rigid-body projectile, physical
   mechanism bodies, manual aim, first-collision predictor, camera safety,
@@ -1536,9 +1724,14 @@ Complete when:
 
 - Every task acceptance, guard, phase gate, and final gate in this contract
   passes and the user has approved both visible checkpoints.
-- One generated graph/layout supplies all terrain, collision, target, paint,
-  direct-reachability/default-aim/containment, placement, replay, and agent
-  queries; no lobe or authored repair path remains.
+- One generated graph/layout emits a one-height-per-XZ route surface and one exact
+  indexed top-triangle list used by render, `ConcavePolygonShape3D`, hit
+  classification, height/normal queries, target rasterization, paint surface
+  reconstruction, direct-reachability/default-aim/containment, placement, replay,
+  and agent queries. Exact structural parity and the `0.01 m` engine-ray position
+  tolerance pass; no lobe, `HeightMapShape3D`, bilinear query, duplicate
+  triangulation, visual displacement, query-only surface, or authored repair path
+  remains.
 - Every target texel has a legal manual first-hit witness, every restart predicts
   a target-top hit within `8 m` of center, and every legal aim ends at visible
   collision rather than escaping the rear/upper containment.
@@ -1551,7 +1744,13 @@ Complete when:
   solution/replay/reliability/performance checks pass.
 - Korean-default HUD, camera, trajectory, cannon, off-white wall/terrain, and
   color-distinct mechanisms pass all structural and running-image gates against
-  the supplied reference.
+  the supplied reference and the concept board's achievable art/read direction.
+  The HUD has the left vertical goal-relative coverage gauge with authoritative
+  absolute text, one bottom-center Fire action, and top-right shots plus gear.
+- Gear and Escape open the same fully paused, focus-trapped game menu; Continue,
+  Restart, Settings, Stage Select, and Main Menu work without simulation or input
+  leakage, Settings returns to that paused menu, and Restart is absent from both
+  aiming and the Settings form while `R` remains a one-action quick restart.
 - The Windows build exports, starts through the existing fastrun command, and
   final evidence/docs truthfully describe the delivered revision and limits.
 - No placeholder, unresolved material choice, obsolete active claim, or
