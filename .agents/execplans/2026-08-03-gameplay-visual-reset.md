@@ -166,11 +166,21 @@ Destructive or irreversible actions:
 
 Exact actions requiring owner or user approval:
 
-- Before Phase 0 execution, replace only the phrase `finite-payload paintballs`
-  in root `AGENTS.md` with `paintballs that continuously paint every target
-  surface traversed while in contact`. A future user instruction to execute this
-  exact plan counts as approval for that one protected-file edit; it does not
-  authorize any other `AGENTS.md` change.
+- The user explicitly approved both protected root-instruction edits on
+  2026-08-03. Replace only the phrase `finite-payload paintballs` in root
+  `AGENTS.md` with `paintballs that continuously paint every target surface
+  traversed while in contact`. Replace its source-authority sentence with:
+  `Treat the verbatim directive in docs/source-brief.md as the baseline product
+  requirement. Explicit later user revisions recorded in that document
+  supersede only the clauses they name; docs/design-spec.md and
+  docs/technical-architecture.md remain working interpretations, and the
+  effective source brief wins any conflict.` No other `AGENTS.md` change is
+  authorized.
+- The user also approved using
+  `D:\npjt\cardborne-platformer\.codex-runtime\godot-4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe`
+  only for Paint Mountain's headless verification/export commands. This does
+  not authorize a visible editor/game launch, copying the engine, or modifying
+  the owning project.
 - Visible release execution is limited to two explicitly coordinated sessions:
   the Stage 1 vertical-proof gate and the final delivery gate. If the user does
   not approve a session, stop at that gate without launching Godot or substituting
@@ -1025,8 +1035,8 @@ game before runtime behavior changes.
 
 Preconditions:
 
-- The user has instructed execution of this plan, thereby approving the exact
-  one-line root `AGENTS.md` edit named above.
+- The user has instructed execution of this plan and explicitly approved both
+  exact root `AGENTS.md` edits named above.
 - The worktree is inspected and unrelated user changes are preserved.
 
 Source owners: `AGENTS.md`, `docs/source-brief.md`, `docs/design-spec.md`,
@@ -1035,8 +1045,8 @@ Source owners: `AGENTS.md`, `docs/source-brief.md`, `docs/design-spec.md`,
 typed Resources/value objects under `src/stage_generation`, `src/projectile`,
 `src/cannon`, `src/terrain`, and `src/paint`
 
-- [ ] **0.1** Align active written authority without rewriting history.
-  - Change: make the exact protected-line edit; add a clearly dated supersession
+- [x] **0.1** Align active written authority without rewriting history.
+  - Change: make the two exact protected-line edits; add a clearly dated supersession
     note to `source-brief.md` without editing its verbatim original directive;
     replace finite-payload/flow language in active design, architecture,
     checklist, prompt, and documentation sections; add the target-wide direct
@@ -1052,17 +1062,24 @@ typed Resources/value objects under `src/stage_generation`, `src/projectile`,
     ownership table; source-brief original text and raw Claude review remain
     byte-unchanged below/within their recorded historical sections.
   - Guard: exactly one ExecPlan under `.agents/execplans` has `status: active`.
-- [ ] **0.2** Add the version-4 typed contract skeleton.
-  - Change: add generated graph node/edge/graph types, replace deposit request
-    with surface-sweep/radial-mark types, add impulse provenance, version profile
-    resources, add immutable `AimTuple`, `DirectReachabilityCertificate`, and
+- [x] **0.2** Add the version-4 typed contract skeleton.
+  - Change: add generated graph node/edge/graph types, introduce
+    surface-sweep/radial-mark replacements, add impulse provenance, a standalone
+    version-4 generation contract resource, immutable `AimTuple`,
+    `DirectReachabilityCertificate`, and
     `ContainmentSpec` values plus `TrajectoryHitIdentity` and `BACKSTOP`
     settlement, introduce compile-safe narrow queue/observation interfaces, and
-    add `tests/version4_contract_test.gd`. Do not keep aliases for amount/payload
-    or hand-authored initial-aim fields.
+    add `tests/version4_contract_test.gd`. The new version-4 types must not expose
+    aliases for amount/payload or hand-authored initial aim. Legacy version-3
+    production types remain temporarily isolated so the old entry scene stays
+    launchable, are not accepted as version-4 behavior, and must be deleted from
+    all production paths by Task 1.5.
   - Accept: class registration/import passes; deterministic value-object tests
-    cover validation, stable IDs, body-shape and terrain-triangle identity,
-    barycentric/tie mapping, sort keys, snapping, and rejected invalid data.
+    cover validation, the pinned generation contract, stable IDs, body-shape and
+    terrain-triangle identity, barycentric/tie mapping, sort keys, snapping, and
+    rejected invalid data. Static checks prove that the new types contain none
+    of the forbidden compatibility aliases; the remaining legacy production
+    references are recorded as Task 1.5 work rather than Phase-0 conformance.
   - Guard: the production scene remains launchable headlessly even before new
     behavior is wired.
 
@@ -1070,6 +1087,13 @@ Batch gate:
 
 - Run `scripts/verify.ps1`; run the new contract tests; run `git diff --check`.
   Commit only Phase 0 files once all three pass.
+
+Phase 0 evidence (2026-08-03): the original source-brief directive body and raw
+external review remain byte-unchanged; exactly one ExecPlan is active; the v4
+types contain no amount/payload/hand-authored-initial-aim aliases; the focused
+`version4_contract_test.gd`, headless import/main-scene `scripts/verify.ps1`, and
+`git diff --check` all pass with Godot 4.7.1. Commit scope:
+`feat: establish version 4 gameplay contracts`.
 
 ### Phase 1: Prove one route, one real roll, and continuous paint
 
@@ -1665,7 +1689,7 @@ Validation rules:
 
 | Trigger | Required response | Boundary or escalation point |
 | --- | --- | --- |
-| User has not approved the exact protected instruction edit | Keep this plan active and stop before Phase 0; state the exact one-line change | Do not edit root `AGENTS.md` implicitly |
+| User has not approved the exact protected instruction edits | Keep this plan active and stop before Phase 0; state the two exact changes | Do not edit root `AGENTS.md` implicitly |
 | A verified material fact contradicts this contract | Stop the affected branch, record evidence, update this contract, and obtain required approval | Executor may not choose a new product, architecture, data, UX, or validation contract |
 | Base attempts fail generation | Run the pinned fallback once; if it fails, correct implementation against the fixed graph/support algorithm | No authored layout, lobe fallback, target-mask deletion, or threshold retuning |
 | Any target texel lacks a direct first-hit witness | Verify canonical input, shared predictor, triangle identity, and candidate ordering; reject the attempt, then run the pinned fallback | Never remove/hide the texel, enlarge `0.50 m`, expose witnesses as auto-aim, or accept mechanism-first reachability; replan if fallback fails |
@@ -1700,14 +1724,14 @@ safety, persistence, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: approval gate before Phase 0.
-- Next task: 0.1 after the user instructs execution of this plan.
-- Last completed gate: Discovery Closure Gate; raw Claude guidance, current HUD/
-  pause/settings ownership, current render/collider/query implementation, the
-  later reachability/containment direction, and the liked concept board were
-  checked against the game loop. The revised HUD hierarchy, modal behavior,
-  achievable concept boundary, and shared-triangle terrain contract are locked
-  here.
+- Current phase: Phase 1, headless implementation before the coordinated Stage 1
+  visual gate.
+- Next task: 1.1, generate First Descent from the version-4 route graph.
+- Last completed gate: Phase 0. Active authority is aligned without rewriting the
+  original directive or historical evidence; isolated version-4 typed contracts
+  and generation constants pass focused validation, import, and headless
+  main-scene startup. Legacy version-3 runtime paths remain explicitly
+  unaccepted migration work for Phase 1.
 - Carried-forward implementation foundations: immutable generated layout,
   heightfield/top+shell geometry owner, real rigid-body projectile, physical
   mechanism bodies, manual aim, first-collision predictor, camera safety,

@@ -14,6 +14,7 @@ if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) {
 $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path
 
 $ordinaryTests = @(
+    'version4_contract_test.gd',
     'terrain_geometry_test.gd',
     'stage_generation_test.gd',
     'mechanism_placement_test.gd',

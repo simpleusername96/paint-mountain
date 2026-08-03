@@ -19,6 +19,15 @@ var relative_normal_speed: float:
 var impulse: Vector3:
 	get:
 		return _impulse
+var impulse_was_measured: bool:
+	get:
+		return _impulse_was_measured
+var contact_owner_id: StringName:
+	get:
+		return _contact_owner_id
+var contact_shape_id: StringName:
+	get:
+		return _contact_shape_id
 var collider: Object:
 	get:
 		return _collider
@@ -44,6 +53,9 @@ var _impact_center_position: Vector3
 var _incoming_velocity: Vector3
 var _relative_normal_speed: float
 var _impulse: Vector3
+var _impulse_was_measured: bool
+var _contact_owner_id: StringName
+var _contact_shape_id: StringName
 var _collider: Object
 var _collider_instance_id: int
 var _local_shape_index: int
@@ -65,7 +77,10 @@ func _init(
 		contact_local_shape_index: int = -1,
 		contact_collider_shape_index: int = -1,
 		contact_physics_tick: int = 0,
-		contact_is_first: bool = true
+		contact_is_first: bool = true,
+		contact_impulse_was_measured: bool = false,
+		contact_owner_id: StringName = &"",
+		contact_shape_id: StringName = &""
 ) -> void:
 	_world_position = contact_world_position
 	_normal = contact_normal.normalized() if not contact_normal.is_zero_approx() else Vector3.UP
@@ -74,6 +89,9 @@ func _init(
 	_incoming_velocity = contact_incoming_velocity
 	_relative_normal_speed = maxf(contact_relative_normal_speed, 0.0)
 	_impulse = contact_impulse
+	_impulse_was_measured = contact_impulse_was_measured
+	_contact_owner_id = contact_owner_id
+	_contact_shape_id = contact_shape_id
 	_collider = contact_collider
 	_collider_instance_id = contact_collider.get_instance_id() if is_instance_valid(contact_collider) else 0
 	_local_shape_index = contact_local_shape_index

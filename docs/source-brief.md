@@ -2,8 +2,9 @@
 type: spec
 status: active
 created: 2026-08-02
-canonical_for: originating Paint Mountain vertical-slice requirements and conflict resolution
-scope: complete user-provided implementation directive
+last_reviewed: 2026-08-03
+canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
+scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
 related:
   - design-spec.md
@@ -16,11 +17,17 @@ related:
 
 ## Purpose
 
-Preserve the user's complete implementation directive inside the repository so future work can verify every derived specification and plan against the original wording.
+Preserve the user's complete original implementation directive and explicitly
+record later revisions so future work can resolve requirements without changing
+the historical text.
 
 ## Scope
 
-The text under “Verbatim Requirements” is the unedited directive beginning with “You are” and ending with the product's central design question. If a derived repository document conflicts with that text, this source brief wins unless the user explicitly revises the requirement.
+The text under “Verbatim Requirements” is the unedited directive beginning with
+“You are” and ending with the product's central design question. It is the
+baseline requirement. A dated entry under “Later User Supersessions” overrides
+only the original clauses it explicitly names; all other original clauses remain
+in force. This effective source brief wins conflicts with derived documents.
 
 ## Requirements
 
@@ -1438,7 +1445,65 @@ The final product should feel like a clean, focused puzzle game built around one
 
 “Where should I launch this paintball so gravity, terrain, and mechanisms cover the greatest possible area?”
 
+## Later User Supersessions (2026-08-03)
+
+The user explicitly revised the following parts of the baseline directive. These
+decisions are requirements, not optional interpretations:
+
+- **Paint behavior:** replace finite paint payload, payload depletion, trail
+  narrowing caused by depletion, and autonomous downhill paint flow. A ball
+  persistently paints the scoreable target-top surface it physically traverses
+  while in contact. Real first-impact, settlement, and Burst radial marks remain
+  allowed, but airborne travel and contacts with the non-target shell, apron,
+  backstop, or mechanisms never create persistent paint. One authoritative
+  `PaintSystem` mask drives both the visible paint and coverage; coverage is the
+  painted fraction of the immutable `target_mask`, with overlap counted once.
+- **Terrain and physical truth:** generate one deterministic route-graph mountain
+  with exactly one playable top height for every in-bounds XZ position. Broad
+  rollable slopes, terraces, ridges, valleys, and pads are allowed; caves,
+  overhangs, tunnels, stacked tops, detached route pieces, and literal stair
+  risers are not. Rendering, top collision, hit classification, height/normal
+  queries, target rasterization, and paint reconstruction must consume the same
+  emitted indexed top-triangle list and fixed cell diagonal. A separate
+  height-map collider, bilinear surface query, visual displacement, or query-only
+  playable geometry cannot substitute for that shared surface.
+- **Reachability, initial aim, and containment:** every scoreable target texel
+  must have a legal manual yaw/elevation/power tuple whose first physical hit is
+  that same target-top triangle. The generated default aim must select a certified
+  first hit near the target-mask centroid and be reapplied on stage start and
+  restart. A visible, collidable bright off-white rear wall and matching faceted
+  apron contain the current board so legal shots cannot pass through or over the
+  play space. Backstop contact is non-scoreable, creates no paint or bank shot,
+  and terminates the ball. Ordinary terrain uses low rebound; Bumper is the only
+  intentional strong-redirect exception.
+- **Special features:** the approved special gameplay features remain exactly
+  Burst, Splitter, and Bumper. They must be physical 3D objects with collider-
+  matched visible mass, distinct semantic colors and silhouette cues, forgiving
+  activation neighborhoods, and verified useful-but-not-automatic effects. This
+  revision does not add ice, sticky, booster, drain, or other special-terrain
+  material classes.
+- **Gameplay HUD and game menu:** replace bottom-center coverage and the
+  bottom-right Restart/Fire pair. Show coverage as a left-edge vertical gauge
+  with authoritative absolute percentage text and goal-relative bottom-to-top
+  fill; place Fire alone at bottom-center; keep shots plus a focusable gear button
+  at top-right. Gear and Escape open the same fully input-capturing paused game
+  menu with Continue, Restart, Settings, Stage Select, and Main Menu. Restart is
+  not visible in the aiming HUD and is never part of the Settings form; the `R`
+  quick-restart shortcut remains.
+- **Concept-image authority:** the liked concept board is an art/read-direction
+  comparator for composition, warm off-white palette, low-poly faceting,
+  apparent thickness, route/mechanism readability, and paint contrast. Its exact
+  HUD positions, terrain silhouette or seed, literal stairs, mechanism placement,
+  and painted still-state topology are not implementation requirements. Runtime
+  geometry and paint must remain consequences of the shared physical surface and
+  verified contacts rather than being fabricated to match an image.
+
+All baseline clauses not named above remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
-- Derived specifications and plans link back to this file and defer to it when wording conflicts.
+- Later revisions are dated, bounded to named clauses, and kept outside the
+  verbatim directive.
+- Derived specifications and plans link back to this file and defer to its
+  effective baseline-plus-supersession contract when wording conflicts.

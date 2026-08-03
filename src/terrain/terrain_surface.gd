@@ -61,3 +61,30 @@ func is_skirt_collider(object: Object) -> bool:
 
 func layout_read_only() -> GeneratedStageLayout:
 	return _layout
+
+
+static func classify_top_cell_uv(
+		shape_id: StringName,
+		body_shape_index: int,
+		cell: Vector2i,
+		local_uv: Vector2
+) -> TrajectoryHitIdentity:
+	if cell.x < 0 or cell.y < 0 or not local_uv.is_finite() \
+			or local_uv.x < 0.0 or local_uv.x > 1.0 \
+			or local_uv.y < 0.0 or local_uv.y > 1.0:
+		return null
+	if local_uv.x + local_uv.y <= 1.0:
+		return TrajectoryHitIdentity.terrain_top(
+			shape_id,
+			body_shape_index,
+			cell,
+			0,
+			Vector3(1.0 - local_uv.x - local_uv.y, local_uv.y, local_uv.x)
+		)
+	return TrajectoryHitIdentity.terrain_top(
+		shape_id,
+		body_shape_index,
+		cell,
+		1,
+		Vector3(1.0 - local_uv.y, 1.0 - local_uv.x, local_uv.x + local_uv.y - 1.0)
+	)

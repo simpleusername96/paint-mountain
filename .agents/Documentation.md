@@ -16,17 +16,27 @@ related:
 
 ## Current Gameplay and Visual Reset (2026-08-03)
 
-The sole active implementation authority is
+The active execution plan is
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
 It incorporates the user's later correction that the physical ball continuously
 paints every scoreable target surface traversed while in contact. It fixes the
-remaining product decisions before execution: a graph-first mountain, one
-filled target footprint without slope masking, direct first-hit reachability for
-every scoreable target texel, a generated center-hitting default aim, a solid
-off-white rear backstop and collider-matched apron, low ordinary-terrain rebound,
-color-distinct/tolerance-tested Burst/Splitter/Bumper behavior, fixed
-`4 / 27 / 70%` targets, and two user-coordinated visible validation sessions.
+remaining product decisions before execution: a graph-first mountain, a
+one-height-per-XZ surface whose exact triangles are shared by render, collision,
+queries, target rasterization, and paint; one filled target footprint without
+slope masking; direct first-hit reachability for every scoreable target texel; a
+generated center-near default aim; a solid off-white rear backstop and collider-
+matched apron; low ordinary-terrain rebound; color-distinct/tolerance-tested
+Burst/Splitter/Bumper behavior; fixed `4 / 27 / 70%` targets; and two user-
+coordinated visible validation sessions.
 The validated Claude response is supporting evidence, not executable authority.
+
+The later HUD decision is also part of that active contract: authoritative
+coverage appears in a left vertical goal-relative gauge, Fire is the sole
+bottom-center aiming action, shots and a labeled gear occupy the top-right, and
+Restart lives in the fully input-capturing paused game menu rather than the
+aiming HUD or Settings. The liked concept board is useful for art, composition,
+material, depth, and readability comparison only; its exact HUD placement,
+literal geometry, and painted still states are not implementation authority.
 
 The present code already supplies useful foundations: one immutable generated
 layout, a heightfield top plus closed shell, one authoritative `PaintSystem`
@@ -34,14 +44,19 @@ mask, real rigid-body contacts, physical mechanism bodies, manual aim, a first-
 collision predictor, camera safety, replay isolation, Korean localization/theme,
 component HUD scenes, headless tests, Windows export, and the fastrun command.
 Those foundations do not prove the intended game. The active plan replaces
-their lobe-first generation, finite spaced paint, incomplete multi-contact
-reporting, target masking, and weak visual composition before any completion
-claim is made.
+their lobe-first generation, `HeightMapShape3D`/bilinear surface mismatch,
+finite spaced paint and downhill flow, incomplete multi-contact reporting,
+slope/footprint target masking, obsolete HUD hierarchy, and weak visual
+composition before any completion claim is made.
 
-Creating and amending the replacement plan changed documentation only. No
-gameplay behavior was modified or runtime window launched. Execution begins at
-Phase 0 only after the user instructs use of that plan, which also approves its
-exact one-line protected `AGENTS.md` alignment.
+Phase 0 aligned the protected project summary and active product, architecture,
+acceptance, prompt, implemented-status, and concept-authority documents with the
+dated later-user supersessions. It also introduced the isolated version-4 graph,
+aim, reachability, containment, hit-identity, continuous-paint-command, tuning,
+and generation-constant contracts. The original directive body and historical
+evidence remain unchanged. Headless import, contract, and main-scene smoke checks
+pass. Runtime gameplay is still the superseded version-3 implementation until
+Phase 1 rewires these contracts and removes its legacy fields; Task 1.1 is next.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 
@@ -251,23 +266,30 @@ the static-audit correction above.
 
 ## Current Redesign Risks
 
-- Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
-- The version-3 generator, closed production terrain/collider wiring, and
-  authoritative physical contact/deposit path are implemented and verified.
-  Manual aim prediction, physical mechanisms, replay format 3, and the
-  scene-based Korean-first interface are implemented; unified verification,
-  obsolete-fixture retirement and unified verification are implemented.
-  Stage 2/3 reliable solutions remain blocked by the frozen Task 09 balance
-  contract described above.
+- Godot is not currently on PATH. The user approved the discovered Godot 4.7.1
+  console executable for Paint Mountain headless verification/export commands
+  only; no visible editor or game launch is authorized outside the two
+  explicitly coordinated evidence sessions.
+- Current production code still uses version-3 lobe-first terrain, a render mesh
+  paired with `HeightMapShape3D` and bilinear queries, finite payload/deposit/
+  flow behavior, replay format 3, and the superseded horizontal-coverage plus
+  bottom-right Restart/Fire HUD. These are implementation gaps, not accepted
+  variants of the active specification.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.
 - Targets and shot counts remain fixed at 4%/4, 27%/5, and 70%/6. Prior
   direct-target solution values are historical and cannot validate manual aim.
-- Fresh-process format-3 replay has been revalidated; the complete runner is
-  still blocked before that matrix by the truthful Stage 2/3 content gate.
+- Every target texel still needs a direct first-hit certificate, exact shared-
+  triangle predictor/rigid-body parity, generated default aim, and full legal-
+  domain wall/apron containment before Stage 1 can pass the new visible gate.
+- Replay format 4, continuous contact sweeps, ordered paint drain, and the final
+  HUD/game-menu contract remain unimplemented until their active-plan tasks and
+  focused tests pass.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
-- The imported low-poly models, UI icons, particles, and procedural audio meet the scoped vertical-slice presentation contract but are not a substitute for a later bespoke production-art/audio pass.
+- The imported low-poly models, UI icons, particles, and procedural audio are
+  approved inputs, but neither they nor the concept board prove the active
+  physical terrain, paint, HUD, or presentation contracts.
 
 ## Verification
 

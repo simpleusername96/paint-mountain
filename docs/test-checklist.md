@@ -11,6 +11,7 @@ related:
   - design-spec.md
   - technical-architecture.md
   - ../.agents/Plan.md
+  - ../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
 ---
 
@@ -122,60 +123,134 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
 - [x] Screenshots are not a collage, contact sheet, poster, or infographic.
 
-### Core interaction redesign release gate (active 2026-08-03)
+### Gameplay and visual reset release gate (active 2026-08-03)
 
-Generated terrain and placement:
+Authority and deterministic target terrain:
 
-- [ ] Every stage uses a version-3 path-first generator with the fixed draw order, 32 derived attempt seeds, one pinned fallback, and repeatable accepted layout/checksums.
-- [ ] One immutable `GeneratedStageLayout` supplies the height grid, routes, eligibility inputs, decoration/mechanism placement, replay metadata, and agent observations.
-- [ ] First Descent, Burst Basin, and Split Ridge prove route reversal progression `0`, `2/2`, and `2/4/4`, plus all fixed height, slope, spacing, shelf, edge, and eligibility metrics.
-- [ ] Mechanisms use exact role-owned centerline shelf transforms; an invalid fixed transform rejects the candidate and no scoring/authored X/Z fallback exists.
-- [x] The mountain renders as a closed lit shell with exactly 6,912 top, 480 skirt, and 2 bottom triangles while a separate heightmap top collider and skirt/bottom collider match within 0.01 m.
-- [ ] Top, ramp, graze, and skirt fixture casts classify the correct collider body; every intended solution records zero penetration-guard events.
+- [ ] The effective `source-brief.md`, active design/architecture/checklist,
+  project prompt, and implementation record agree on continuous contact paint,
+  `target_mask`, targets `4/27/70%`, shots `4/5/6`, and the current HUD/menu.
+- [ ] Every stage uses a version-4 deterministic route graph with 32 derived
+  attempt seeds plus one pinned fallback; accepted seeds, graph/layout data, and
+  all checksums repeat across fresh processes or generation fails closed.
+- [ ] Each accepted layout has exactly one playable top height per in-bounds XZ,
+  broad connected rollable slopes/terraces/ridges/valleys/pads, and no cave,
+  overhang, tunnel, stacked top, detached route piece, or literal stair riser.
+- [ ] One emitted indexed top-triangle list and fixed diagonal supply the render
+  `ArrayMesh`, top `ConcavePolygonShape3D`, hit classification, height/normal
+  queries, target rasterization, and paint reconstruction. Structural identities
+  match exactly and deterministic engine-ray points differ by no more than
+  `0.01 m`; no `HeightMapShape3D`, bilinear query, independent triangulation,
+  visual displacement, or query-only playable geometry remains.
+- [ ] The immutable filled `target_mask` is one connected route-graph footprint.
+  Only the outer non-target band, apron/shell/bottom, and dilated physical
+  mechanism footprints are excluded; slope, decoration, visibility, and expected
+  difficulty remove no target texel.
+- [ ] First Descent, Burst Basin, and Split Ridge prove the frozen route/reversal,
+  slope, lip, spacing, shelf, edge, target-ratio, and mechanism-placement gates.
+  Failed candidates are rejected rather than repaired with authored coordinates.
 
-Physical contact, paint, and mechanisms:
+Reachability, aim, and containment:
 
-- [x] `PaintProjectile` reports real direct-body contact point, normal, collider, shapes, impulse, incoming velocity, and deterministic first-contact ordering; it never fabricates world-up impact data.
-- [x] All four high-speed terrain fixtures pass 20 real-projectile repetitions with the fixed point/normal/radius/collider tolerances and no tunneling.
-- [x] Persistent paint is accepted only through `PaintDepositRequest` on connected eligible top terrain reconstructed in 3D; visible mask pixels and scored pixels are identical.
-- [x] The fixed flat paint fixture stamps exactly 3,228 threshold pixels for one radius-4/amount-22 trail request and gains zero coverage on an identical second request.
-- [x] Burst, Splitter, and Bumper use matching compound `StaticBody3D` primitives with no gameplay activation `Area3D`; preview and real ball strike the same body/shape.
-- [x] Burst uses the authoritative deposit path, Splitter emits exactly three generation-1 children with 90% total remaining payload, and Bumper applies its queued corrective impulse along the displayed tangent.
-- [x] Contact debounce prevents duplicate activation while permitting a separated later strike; reset restores all mechanism/projectile state and active balls never exceed eight.
+- [ ] Every target-mask texel has a certificate witness in the canonical manual
+  yaw/elevation/power domain whose predictor and real rigid body first contact
+  the same `terrain/top` cell/triangle within `0.50 m` surface distance. No
+  mechanism-first, shell, apron, wall, bounds, or timeout result is accepted.
+- [ ] Three fresh verification processes reproduce the reachability and real-body
+  checksums exactly. Witness tuples remain certification evidence and are absent
+  from player/agent aim assistance.
+- [ ] First entry and every restart apply the certified witness whose target-top
+  impact is closest to the target-mask centroid and within `8 m`; no StageData,
+  scene, or HUD owner hand-authors a replacement aim.
+- [ ] Manual play retains independent yaw/elevation/power, empty-playfield drag,
+  A/D/W/S, wheel and power buttons, Space/Fire parity, `R` restart, Tab inspect,
+  and a depth-tested arc ending at the real first collision. Bounds exit/timeout
+  is non-fireable and no post-impact path or coverage is previewed.
+- [ ] The visible bright six-face rear wall and collider-matched faceted apron
+  contain the entire legal launch domain. Wall contacts produce exactly one
+  `BACKSTOP` contact, no paint/mechanism/bank shot, zero motion that tick, and no
+  active projectile on the next tick.
 
-Manual aiming and prediction:
+Physical contact, continuous paint, and mechanisms:
 
-- [x] Terrain clicks never alter aim; empty-viewport drag, A/D, W/S, wheel, power buttons, Space, and Tab follow the fixed independent mappings, clamps, repeat timings, and UI-consumption boundary.
-- [x] `ImpactTargetSolver` and every production/test reference to it are removed.
-- [x] Every stage's ten frozen aim tuples plus mechanism/bounds fixtures produce a complete collision or bounds-exit prediction with at most 96 dots and no post-impact behavior.
-- [x] Predicted and measured first contact differ by at most 2.0 m; collision markers use the measured normal, bounds exits use a red cross, and predictor timeout cannot fire.
+- [ ] `PaintProjectile` reports every begun collider/shape contact in stable order
+  with real point, normal, shapes, incoming velocity, impulse provenance, and
+  triangle identity; simultaneous terrain/mechanism contacts are not collapsed.
+- [ ] Production contact fixtures prove CCD, no tunneling/penetration, exact body
+  identity, ordinary-terrain bounce/friction `0.08/0.78`, post-impact normal
+  speed at most 10%, and sustained contact/roll/settle within `0.75 s` on target
+  slopes at or below 30 degrees. Bumper alone may redirect strongly.
+- [ ] A valid target-top first contact emits an impact radial mark, consecutive
+  real contact ticks emit continuous 3D surface sweeps, and valid final contact
+  emits an idempotent settle mark. Verified micro-gaps may bridge; airborne and
+  non-target intervals remain blank. No payload, amount, depletion, autonomous
+  downhill flow, fabricated pool, shell/apron/wall paint, or fake coverage exists.
+- [ ] `PaintSystem` alone owns the runtime paint mask and coverage. Ordered paint
+  commands drain once at the locked late-physics boundary, target threshold
+  crossings count overlap once, terrain visuals use that same mask, and shot
+  sealing waits for the last command tick.
+- [ ] Burst, Splitter, and Bumper use collider-matched visible 3D masses, distinct
+  amber/violet/coral plus silhouette cues, direct-hit witnesses, and forgiving
+  activation neighborhoods. Burst emits one authoritative radial mark, Splitter
+  creates exactly three generation-one children with smaller footprints, and
+  Bumper follows its displayed tangent/cooldown; no fourth feature exists.
+- [ ] Full solutions clear `4/27/70%` within `4/5/6` shots, Stage 2 requires Burst,
+  Stage 3 requires both Splitter and Bumper, and safe-route-only Stage 3 remains
+  below 70%. No target reduction, hidden target hole, extra shot, or invented
+  special surface is used to pass.
 
-Shot causality, camera, and replay:
+Korean HUD, game menu, visual direction, and approved assets:
 
-- [x] One sealed `ShotObservation` owns commanded aim, ordered contacts/mechanisms, child and payload facts, settlement reasons, coverage delta, and penetration-guard count.
-- [x] A shot settles only after projectiles and paint flow are inactive for two consecutive physics ticks, and HUD/replay/agent consumers do not reconstruct outcomes.
-- [x] Every named camera fixture maintains at least 1.5 m terrain clearance and avoids terrain occlusion except within the final 0.25 m of a terrain focus.
-- [x] Replay format 3 records deterministic actions and expected observations, rejects format 2, and reproduces contact within 0.5 m, coverage within 0.1 percentage point, exact mechanism order, and final state in a fresh process.
-- [x] Replay presentation disables all human/agent/debug gameplay mutation and accepts only replay-origin actions until a clean exit.
+- [ ] The logical baseline is 1280×720 with safe-area containers. Rendered
+  rectangles are stage `(24,24,118,48)`, mode `(24,84,110,40)`, target
+  `(490,24,300,48)`, shots `(1016,24,180,48)`, gear `(1208,24,48,48)`, left
+  coverage `(24,228,104,324)`, aim/power `(144,592,300,104)`, and sole Fire
+  `(552,624,176,72)`, within the active plan's scaled tolerance.
+- [ ] The left gauge fills bottom-to-top by `min(coverage/target, 1)` while its
+  localized text shows absolute authoritative coverage and the cap shows target.
+  Decorative gauge children do not intercept playfield pointer/wheel input.
+- [ ] Fire is visible/focusable only in `AIMING`, emits exactly one guarded request
+  per click or Space press, and is the only bottom-edge aiming action. No aiming
+  Restart or second Fire exists; the `R` shortcut uses the same restart action.
+- [ ] The labeled top-right gear and Escape open one paused full-viewport input
+  barrier from every allowed gameplay state. Continue, Restart, Settings, Stage
+  Select, and Main Menu appear in order; focus is trapped/restored, simulation
+  advances zero ticks, and no aim, power, Fire, or playfield input leaks through.
+- [ ] Settings opens above the still-paused game menu and Close/Escape returns to
+  that menu with focus on Settings. The Settings form contains no Restart; menu
+  Restart closes the menu, resets cleanly to `AIMING`, and reapplies default aim.
+- [ ] Korean defaults and Korean/English switching, Pretendard, accessible names,
+  visible focus, contrast/color-independent mechanism cues, and non-clipping
+  layout pass at 1280×720, 1280×800, 1366×768, 1600×900, and 1920×1080.
+- [ ] The running world uses the locked warm off-white values, faceted lit target
+  mass, visible shell depth/wall join/shadow/parallax, small cannon, semantic
+  mechanisms, and glossy blue physical paint. Concept images are comparison
+  evidence only; literal stairs, detached terrain, fake paint, or pixel matching
+  cannot satisfy this gate.
+- [ ] Only already approved committed Kenney/Pretendard assets are used; no new
+  dependency, asset pack, or runtime network access exists.
 
-Korean UI, visual direction, and approved assets:
+Replay, regression, performance, and delivery:
 
-- [x] The logical viewport is 1280×720 with canvas-items stretch; component scenes and one Theme own layout/style while HUD scripts only coordinate behavior.
-- [x] Fresh saves default to Korean; Korean/English switching is complete, immediate, glyph-safe, and persistent, and mechanism/shot copy uses translation keys.
-- [x] Pretendard, fixed color/type/radius tokens, visible focus, 40 px ordinary controls, Korean wrapping, and all reachable UI states pass at 1280×720, 1600×900, and 1920×1080.
-- [x] Every aiming-HUD component matches its frozen edge rectangle within 2 px at 1280×720 and 3 px at the scaled resolutions; no clipping, overflow, offscreen action, center modal, or body text below 16 px exists.
-- [ ] Terrain is lit/faceted and physically thick, paint is glossy blue with dry/paint roughness 0.88/0.24 and no emission, the cannon remains small, and mechanisms remain readable without persistent gameplay labels.
-- [x] Only the already approved committed Kenney/Pretendard assets are used; no new dependency, asset pack, or runtime network access exists.
-
-Regression, solutions, and delivery:
-
-- [ ] `scripts/test.ps1` runs the active ordered tests and fresh-process persistence/replay matrices through one explicit Godot path with cleanup on failure.
-- [ ] The deterministic beam search clears targets `4/27/70%` within `4/5/6` manual-aim shots, activates required Stage 3 mechanisms, and proves six safe-route-only shots remain below 70%.
-- [x] Obsolete sandbox, target solver, duplicate terrain factory, code-built `UIFactory`, and their references are removed after migration.
-- [ ] Complete tests, `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export pass without parser errors, invalid calls, orphan nodes, penetration guards, or replay divergence.
-- [ ] The 1920×1080 Iris Xe workload loads within 3 s, averages at least 60 FPS, has no frame over 33.3 ms, uses at most 128 MiB static memory, restarts within 50 ms, and never exceeds eight balls.
-- [ ] After explicit user coordination, the release executable is inspected at all three resolutions and every named briefing/aiming/impact/mechanism/follow/result/replay bookmark passes.
-- [ ] Seven fresh separate 1920×1080 running-release screenshots replace the historical images, and final docs record every measured metric, pass/fail, engine build, limitation, and remaining issue.
+- [ ] Observation/replay schema 4 contains no payload/flow fields, stores stable
+  contact/mechanism/child ordering plus paint-drain/checksum facts, and fresh-
+  process replay reproduces identities, final state, target checksum, and paint
+  checksum exactly while rejecting format 3.
+- [ ] `scripts/test.ps1`, every active focused test, persistence/replay matrices,
+  `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export
+  pass through the approved explicit headless Godot path without parser errors,
+  invalid calls, orphan nodes, penetration guards, or replay divergence.
+- [ ] The locked paint-drain workload passes p95 `<=4 ms` and maximum `<=8 ms`;
+  the 1920×1080 Iris Xe workload loads within 3 s, averages at least 60 FPS, has
+  no frame over 33.3 ms, uses at most 128 MiB static memory, restarts within
+  50 ms, and never exceeds eight balls.
+- [ ] During the explicitly coordinated visible gates, the release executable is
+  inspected at every named gameplay bookmark and all five supported resolutions.
+- [ ] Seven fresh separate 1920×1080 running-release screenshots use the canonical
+  names including `05_projectile_and_paint_roll.png`; separate 1280×800 Korean
+  and English aiming images plus `10_pause_menu_1280x800_ko.png` prove the final
+  responsive HUD/menu. No debug overlay, collage, synthetic image, or concept
+  render is accepted as running-game evidence.
 
 ## Superseded Remediation Evidence (2026-08-03, Historical)
 

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StageGenerationContract" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_contract.gd" id="1_contract"]
+
+[resource]
+script = ExtResource("1_contract")
+generation_version = 4
+profile_version = 4
+layout_version = 4
+cell_count = Vector2i(72, 48)
+local_bounds = Rect2(-90, -60, 180, 120)
+top_triangle_count = 6912
+cell_diagonal = 0
+mask_size = 512
+attempt_count = 32
+attempt_seed_stride = 7919
