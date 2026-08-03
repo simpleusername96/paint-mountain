@@ -34,8 +34,10 @@ paths.
 | 4 | `docs/source-brief.md` | Full original game directive | Highest original source except where the user explicitly revised paint behavior |
 | 5 | `AGENTS.md` | Engine, ownership, verification, and workflow guardrails | Binding repository constraint |
 | 6 | `docs/handoffs/gameplay-visual-reset-2026-08-03/constraints-and-decisions.md` | Fixed constraints and decisions Claude must make | Review contract |
-| 7 | Current code paths below | Actual implementation | Ground truth for implementation, not proof of product quality |
-| 8 | Derived docs and tests below | Prior intent and attempted implementation | Stale where they retain finite payload or unsupported completion claims |
+| 7 | `docs/handoffs/gameplay-visual-reset-2026-08-03/raw/claude-review.md` | Exact returned external review | Advisory source material; do not execute directly |
+| 8 | `docs/handoffs/gameplay-visual-reset-2026-08-03/external-review-validation.md` | Local evidence check and verdicts | Use this when adopting or rejecting external recommendations |
+| 9 | Current code paths below | Actual implementation | Ground truth for implementation, not proof of product quality |
+| 10 | Derived docs and tests below | Prior intent and attempted implementation | Stale where they retain finite payload or unsupported completion claims |
 
 ### Visual evidence provenance
 

@@ -1,6 +1,6 @@
 ---
 type: handoff
-status: active
+status: done
 created: 2026-08-03
 last_reviewed: 2026-08-03
 topic: Paint Mountain gameplay and visual reset
@@ -11,15 +11,18 @@ related:
   - ../../design-spec.md
   - ../../technical-architecture.md
   - ../../../.agents/Documentation.md
+  - external-review-raw.md
+  - external-review-validation.md
 ---
 
 # Paint Mountain Gameplay and Visual Reset Handoff
 
 ## Purpose
 
-This package gives Claude enough local evidence to produce a decisive,
-implementation-ready correction guide for Paint Mountain. It is intentionally a
-review package, not another claim that the current build is complete.
+This package gave Claude enough local evidence to produce a correction guide for
+Paint Mountain and now preserves both the raw response and its local validation.
+It is intentionally evidence, not another claim that the current build is
+complete.
 
 The requested review is read-only. Claude should inspect the files and images,
 resolve the design contradictions described here, and return concrete guidance.
@@ -68,9 +71,12 @@ must not silently override that correction.
 4. Use [source-map.md](source-map.md) to inspect the authoritative requirements,
    current implementation, and stale assumptions.
 5. Read [constraints-and-decisions.md](constraints-and-decisions.md).
-6. Follow [external-model-prompt.md](external-model-prompt.md) exactly.
-7. Return the review in Markdown. A maintainer may paste the unedited response
-   into [external-review-raw.md](external-review-raw.md) for later validation.
+6. Read the exact returned response at
+   [raw/claude-review.md](raw/claude-review.md).
+7. Read [external-review-validation.md](external-review-validation.md) before
+   adopting any recommendation.
+8. Treat [external-model-prompt.md](external-model-prompt.md) as the consumed
+   historical request that produced the response.
 
 ## Current State
 
@@ -85,6 +91,10 @@ mechanisms, and a UI composition far from the supplied target. The code also
 models paint as a finite quantity deposited through spaced stamps, contrary to
 the user's corrected rule that the ball continuously paints every target surface
 area it traverses while in contact.
+
+Claude's response has been captured and locally reconciled. Its central diagnosis
+is useful, but its proposed coverage targets, route-only eligibility, decoration
+policy, and determinism claim were not accepted as written.
 
 ## Requested Result
 
@@ -107,14 +117,12 @@ why, where it belongs, and how a reviewer can tell that it works.
 
 ## Next Steps
 
-1. Give Claude access to the repository at the workspace path above.
-2. Paste the English instruction from `external-model-prompt.md` into Claude.
-3. Save Claude's unedited response in `external-review-raw.md` if a durable record
-   is desired.
-4. Validate every external recommendation against the repository before turning
-   it into a replacement ExecPlan.
-5. Update the stale product and technical documents before implementation so
-   future work no longer treats paint depletion as authoritative.
+1. Use `external-review-validation.md`, not the raw response alone, when deciding
+   what enters a replacement ExecPlan.
+2. Resolve the five plan-readiness decisions listed in that validation.
+3. Align the stale protected/product documents and install one replacement
+   ExecPlan together after approval.
+4. Preserve `raw/claude-review.md` unchanged as external evidence.
 
 ## Risks
 

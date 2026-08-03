@@ -1,6 +1,6 @@
 ---
 type: handoff
-status: active
+status: done
 created: 2026-08-03
 last_reviewed: 2026-08-03
 scope: paste-ready English instruction for Claude
@@ -10,6 +10,7 @@ related:
   - source-map.md
   - constraints-and-decisions.md
   - external-review-raw.md
+  - external-review-validation.md
 ---
 
 # Claude Review Instruction
@@ -22,11 +23,14 @@ composition, and interaction feedback do not match the user's intended game.
 The handoff package records a newer user correction that invalidates the current
 finite-payload paint model.
 
+This prompt has now been consumed. Claude's exact answer is stored at
+`raw/claude-review.md` and its local assessment is stored at
+`external-review-validation.md`.
+
 ## Next Steps
 
-Give Claude read-only access to `D:\npjt\paint-mountain`, then paste the complete
-instruction below. Preserve Claude's raw answer before translating it into any
-implementation plan.
+Do not resend this prompt as a new task by default. Consult the preserved raw
+answer and validation before preparing any replacement implementation plan.
 
 ## Risks
 
