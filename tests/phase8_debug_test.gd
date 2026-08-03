@@ -23,14 +23,18 @@ func _run_checks() -> void:
 	_assert_true(not overlay.visible, "debug overlay must be disabled by default")
 	overlay.set_debug_visible(true)
 	_assert_true(overlay.visible, "debug builds must allow F3 overlay visibility")
-	_assert_true(_count_buttons(overlay) == 10, "debug overlay must expose all ten required actions")
-	_assert_true(_count_texture_rects(overlay) == 4, "debug overlay must expose paint, eligible, recent, and excluded masks")
+	_assert_true(_count_buttons(overlay) == 9, "debug overlay must expose the nine current actions")
+	_assert_true(_count_texture_rects(overlay) == 4, "debug overlay must expose paint, target, recent, and non-target masks")
 	_assert_true(controller.begin_aiming(), "debug log shot must enter aiming")
 	cannon.set_aim(0.0, 38.0, 68.0)
 	_assert_true(controller.request_fire(), "debug log shot must use the normal fire path")
 	Engine.time_scale = 3.0
 	var frame_budget := 60 * 24
-	while controller.current_state != StageController.State.AIMING and frame_budget > 0:
+	while controller.current_state not in [
+		StageController.State.AIMING,
+		StageController.State.STAGE_CLEAR,
+		StageController.State.STAGE_FAILED,
+	] and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
 	_assert_true(frame_budget > 0, "debug log shot must settle within the bounded lifetime")
@@ -45,15 +49,17 @@ func _run_checks() -> void:
 		_assert_true(parsed.stage_id == "first_descent" and int(parsed.accepted_seed) > 0, "shot log must contain stage and accepted seed")
 		_assert_true(_has_aim_and_fire(parsed.actions), "shot log must contain ordered aim/fire actions")
 		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
+		if parsed.expected_observations.size() == 1:
+			var sealed: Dictionary = parsed.expected_observations[0]
+			_assert_true(int(sealed.schema_version) == 4, "debug export must contain schema-4 observations")
+			_assert_true(int(sealed.final_paint_mask_checksum) == paint.paint_mask_checksum(), "debug export checksum must match PaintSystem")
 		_assert_true(parsed.has("mechanisms") and parsed.has("exported_state"), "shot log must contain activations snapshot and outcome state")
-	var flow_before := paint.flow_simulation_enabled
-	paint.flow_simulation_enabled = not flow_before
-	_assert_true(paint.flow_simulation_enabled != flow_before, "paint-flow debug toggle must be independent of paint authority")
-	paint.flow_simulation_enabled = flow_before
+	await process_frame
+	_assert_true("LAST DRAIN TICK" in overlay._metrics.text and "MASK CHECKSUM" in overlay._metrics.text, "debug metrics must expose paint drain and checksum facts")
 	if FileAccess.file_exists(LOG_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(LOG_PATH))
 	if not _failed:
-		print("Phase 8 debug checks passed: hidden default, 10 actions, live metrics, and complete JSON shot log.")
+		print("Phase 8 debug checks passed: hidden default, 9 actions, drain/checksum metrics, and complete JSON shot log.")
 	root.get_node("/root/GameState").persistence_enabled = true
 	gameplay.queue_free()
 	await process_frame

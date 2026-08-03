@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
 [ext_resource type="Script" path="res://src/replay/replay_presentation_controller.gd" id="17_replay_presentation"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/backstop_environment.tscn" id="18_containment"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.63, 0.75, 0.88, 1)
@@ -35,17 +36,6 @@ ambient_light_color = Color(0.69, 0.72, 0.77, 1)
 ambient_light_energy = 0.68
 reflected_light_source = 2
 tonemap_mode = 2
-
-[sub_resource type="StandardMaterial3D" id="Material_ground"]
-albedo_color = Color(0.31, 0.31, 0.3, 1)
-roughness = 0.98
-
-[sub_resource type="PlaneMesh" id="Mesh_ground"]
-material = SubResource("Material_ground")
-size = Vector2(380, 380)
-
-[sub_resource type="BoxShape3D" id="Shape_ground"]
-size = Vector3(380, 1, 380)
 
 [sub_resource type="StandardMaterial3D" id="Material_platform"]
 albedo_color = Color(0.36, 0.37, 0.39, 1)
@@ -76,15 +66,8 @@ current = true
 fov = 50.0
 far = 460.0
 
-[node name="Ground" type="MeshInstance3D" parent="."]
-position = Vector3(0, -2.55, -92)
-mesh = SubResource("Mesh_ground")
-
-[node name="GroundBody" type="StaticBody3D" parent="."]
-position = Vector3(0, -3.05, -92)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="GroundBody"]
-shape = SubResource("Shape_ground")
+[node name="BackstopEnvironment" parent="." instance=ExtResource("18_containment")]
+unique_name_in_owner = true
 
 [node name="TerrainSurface" type="Node3D" parent="."]
 unique_name_in_owner = true

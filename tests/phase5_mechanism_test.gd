@@ -5,7 +5,7 @@ const BURST_DATA := preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA := preload("res://resources/mechanisms/splitter_node.tres")
 const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
 const STAGE := preload("res://resources/stages/first_descent.tres")
-const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
+const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 const TERRAIN_FIXTURE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
@@ -25,8 +25,35 @@ func _run_checks() -> void:
 	var terrain := TERRAIN_FIXTURE.instantiate() as TerrainSurface
 	test_root.add_child(terrain)
 	var layout := TerrainTestFixtureFactory.build_layout(TerrainTestFixtureFactory.Kind.FLAT)
-	layout.eligible_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
-	layout.eligible_mask.fill(255)
+	var target_mask := PackedByteArray()
+	target_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
+	target_mask.fill(255)
+	var target_checksum := TargetMaskRasterizer.byte_checksum(target_mask)
+	_assert_true(layout.install_target_mask(target_mask, target_checksum), "mechanism fixture target mask must install exactly once")
+	layout.checksum = 0x12345678
+	var target_witness_indices := PackedInt32Array()
+	target_witness_indices.resize(target_mask.size())
+	target_witness_indices.fill(0)
+	layout.reachability_certificate = DirectReachabilityCertificate.create(
+		&"terrain_test_fixture",
+		StageGenerationContract.CONTRACT_VERSION,
+		layout.terrain_seed,
+		layout.accepted_seed,
+		layout.checksum,
+		target_checksum,
+		layout.placement_checksum(),
+		layout.containment.checksum(),
+		layout.reachable_target_checksum(target_witness_indices),
+		0x30405060,
+		0x40506070,
+		PackedInt32Array([0, 380]),
+		PackedInt32Array([68]),
+		target_witness_indices,
+		PackedFloat32Array([0.25]),
+		PackedFloat32Array([1.0]),
+		0
+	)
+	_assert_true(layout.is_certified(), "mechanism fixture layout must satisfy the runtime certificate boundary")
 	terrain.configure(layout)
 	var manager := ProjectileManager.new()
 	test_root.add_child(manager)
@@ -34,7 +61,19 @@ func _run_checks() -> void:
 	manager.stage_bounds = AABB(Vector3(-24, -12, -24), Vector3(48, 48, 48))
 	var paint := PaintSystem.new()
 	test_root.add_child(paint)
-	paint.configure(Rect2(Vector2(-90, -60), Vector2(180, 120)), 0.0, null, Color(0.03, 0.38, 1.0), layout, PAINT_DEPOSIT_TUNING)
+	paint.configure(
+		layout.local_bounds, 0.0, null, Color(0.03, 0.38, 1.0), layout,
+		PAINT_SURFACE_TUNING
+	)
+	var top_body := terrain.get_node("TerrainTopBody") as StaticBody3D
+	paint.configure_top_surface_identity(
+		top_body.get_rid(),
+		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
+		TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID,
+		0
+	)
+	manager.radial_paint_mark_ready.connect(paint.queue_radial_paint_mark)
+	manager.surface_paint_sweep_ready.connect(paint.queue_surface_paint_sweep)
 
 	var burst := _add_mechanism(BURST_SCENE, BURST_DATA, Vector3(-8, 0, -6), manager, paint) as BurstNode
 	var splitter := _add_mechanism(SPLITTER_SCENE, SPLITTER_DATA, Vector3.ZERO, manager, paint) as SplitterNode
@@ -64,22 +103,30 @@ func _run_checks() -> void:
 	test_root.add_child(controller)
 	var cannon := CannonController.new()
 	cannon.projectile_data = PROJECTILE_DATA
-	controller.configure(STAGE, cannon, manager, paint, terrain, [burst, splitter, bumper])
+	controller.configure(STAGE, layout, cannon, manager, paint, terrain, [burst, splitter, bumper])
 	var observation := ShotObservation.new()
-	observation.configure(1, 0.0, 38.0, 68.0, 0.0, PROJECTILE_DATA.initial_payload)
+	observation.configure(1, 0.0, 38.0, 68.0, 0.0)
 	controller._shot_observation = observation
 
-	var burst_deposits := {"count": 0}
-	paint.deposit_applied.connect(func(request: PaintDepositRequest, _accepted: float, _written: int, _newly: int) -> void:
-		if request.source_kind == PaintDepositRequest.SourceKind.BURST:
-			burst_deposits.count += 1
+	var burst_marks := {"count": 0, "command": null}
+	paint.paint_command_applied.connect(func(command, _written: int, _newly: int) -> void:
+		if command is RadialPaintMark and command.kind == RadialPaintMark.Kind.BURST:
+			burst_marks.count += 1
+			burst_marks.command = command
 	)
 	var burst_hit := await _fire_for_contact(
 		manager, burst, Vector3(-8, 2.0, 4), Vector3(0, 0, -40), 1
 	)
+	await physics_frame
 	_assert_contact_matches_preview(burst_hit, burst)
 	_assert_true(burst_hit.contact != null and burst_hit.contact.collider_shape_index == 1, "Burst orb shot must identify its orb shape")
-	_assert_true(burst_deposits.count == 1 and paint.coverage_percent() > 0.0, "Burst must write exactly once through PaintSystem")
+	_assert_true(burst_hit.contact != null and burst_hit.contact.source_event_index >= 0, "Burst activation must retain the stable current-contact event index")
+	_assert_true(burst_marks.count == 1 and paint.coverage_percent() > 0.0, "Burst must write exactly one typed mark through PaintSystem")
+	var burst_command: RadialPaintMark = burst_marks.command
+	if burst_command != null:
+		_assert_true(is_equal_approx(burst_command.radius, 14.0), "Burst mark radius must remain exactly 14 m")
+		_assert_true(burst_command.spawn_ordinal == burst_hit.projectile.spawn_ordinal, "Burst mark must inherit the activating projectile ordinal")
+		_assert_true(burst_command.source_event_index == burst_hit.contact.source_event_index, "Burst mark must inherit the activating contact event index")
 	_assert_true(burst.is_spent(), "Burst must spend its single charge")
 	_assert_true(not burst.struck(burst_hit.projectile, burst_hit.contact), "one physical contact must not double-activate Burst")
 	manager.cleanup()
@@ -96,13 +143,13 @@ func _run_checks() -> void:
 	_assert_true(split_hit.contact != null and split_hit.contact.collider_shape_index == 1, "Splitter side shot must identify its center sphere")
 	var children := manager.active_projectiles()
 	_assert_true(children.size() == 3, "Splitter must remove one parent and emit exactly three children")
-	var child_payload_total := 0.0
+	var child_ordinals := PackedInt32Array()
 	for child in children:
-		child_payload_total += child.remaining_payload
+		child_ordinals.append(child.spawn_ordinal)
 		_assert_true(child.split_generation == 1, "Splitter children must stop at generation one")
 		_assert_true(absf(child.physical_radius() - PROJECTILE_DATA.radius * 0.78) <= 0.0001, "Splitter child physical radius must be 0.78x")
 		_assert_true(absf(child.paint_radius_multiplier() - 0.78) <= 0.0001, "Splitter child paint radius must be 0.78x")
-	_assert_true(absf(child_payload_total - PROJECTILE_DATA.initial_payload * 0.9) <= 0.001, "Splitter must conserve exactly 90% payload")
+	_assert_true(child_ordinals == PackedInt32Array([1, 2, 3]), "Splitter children must receive stable creation-order ordinals")
 	_assert_true(not splitter.struck(children[0], split_hit.contact), "generation-one child cannot split recursively")
 	await process_frame
 	_assert_true(split_settlements.count == 0, "Splitter replacement must not settle while its children remain active")
@@ -147,7 +194,11 @@ func _run_checks() -> void:
 	bumper.reset_state()
 	_assert_true(not burst.is_spent() and burst.remaining_charges == 1, "reset must restore Burst charge")
 	_assert_true(is_zero_approx(splitter.cooldown_remaining) and is_zero_approx(bumper.cooldown_remaining), "reset must clear mechanism cooldowns")
-	observation.seal(paint.coverage_percent())
+	observation.seal(
+		paint.coverage_percent(),
+		paint.last_drained_physics_tick(),
+		paint.paint_mask_checksum()
+	)
 	_assert_true(observation.is_sealed, "mechanism facts must remain in the sealed shot observation")
 	_assert_true(observation.mechanism_activation_kinds.size() == 4, "each real activation must appear exactly once in ShotObservation")
 	_assert_true(observation.spawned_child_count == 3, "ShotObservation must record exactly three spawned children")

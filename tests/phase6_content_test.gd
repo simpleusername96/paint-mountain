@@ -44,9 +44,11 @@ func _run_checks() -> void:
 	_assert_true(game_state.unlocked_stages.has(&"split_ridge"), "clearing stage two must unlock stage three")
 	_assert_true(game_state.select_stage(&"split_ridge"), "unlocked Split Ridge must be selectable")
 
-	var recorder := ReplayRecorder.new()
-	root.add_child(recorder)
-	recorder.start_attempt(stages[2], 3001)
+	var gameplay := GAMEPLAY_SCENE.instantiate()
+	root.add_child(gameplay)
+	await physics_frame
+	await physics_frame
+	var recorder: ReplayRecorder = gameplay.get_node("ReplayRecorder")
 	recorder.record_aim(-12.0, 39.0, 72.0)
 	recorder.record_fire()
 	recorder.record_aim(3.0, 44.0, 76.0)
@@ -68,10 +70,6 @@ func _run_checks() -> void:
 	restored.reset_playback()
 	_assert_true(restored.playback_index == 0 and restored.playback_speed == 1.0, "replay restart must restore index and speed")
 
-	var gameplay := GAMEPLAY_SCENE.instantiate()
-	root.add_child(gameplay)
-	await physics_frame
-	await physics_frame
 	var controller: StageController = gameplay.get_node("StageController")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")

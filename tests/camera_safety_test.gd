@@ -81,7 +81,12 @@ func _exercise_split_follow(
 	]
 	var projectiles: Array[PaintProjectile] = []
 	for index in range(3):
-		var projectile := manager.spawn_projectile(cannon.projectile_data, positions[index], Vector3(2.0 + index, 0.0, -2.0), 20.0, 1)
+		var projectile := manager.spawn_projectile(
+			cannon.projectile_data,
+			positions[index],
+			Vector3(2.0 + index, 0.0, -2.0),
+			1
+		)
 		projectile.freeze = true
 		projectile.global_position = positions[index]
 		projectiles.append(projectile)

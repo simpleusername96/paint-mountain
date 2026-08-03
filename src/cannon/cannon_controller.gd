@@ -7,10 +7,6 @@ signal prediction_changed(prediction: TrajectoryPrediction)
 signal fire_requested(origin: Vector3, velocity: Vector3)
 
 @export var projectile_data: ProjectileData
-@export_range(-35.0, 35.0, 0.5) var minimum_yaw: float = -28.0
-@export_range(-35.0, 35.0, 0.5) var maximum_yaw: float = 28.0
-@export_range(10.0, 80.0, 0.5) var minimum_elevation: float = 18.0
-@export_range(10.0, 80.0, 0.5) var maximum_elevation: float = 68.0
 @export_range(0.0, 100.0, 1.0) var default_power: float = 68.0
 
 var yaw_degrees: float = 0.0
@@ -30,22 +26,33 @@ func _ready() -> void:
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
 
-func set_aim(new_yaw: float, new_elevation: float, new_power: float) -> void:
-	var clamped_yaw := clampf(new_yaw, minimum_yaw, maximum_yaw)
-	var clamped_elevation := clampf(new_elevation, minimum_elevation, maximum_elevation)
-	var clamped_power := clampf(new_power, 0.0, 100.0)
-	if is_equal_approx(clamped_yaw, yaw_degrees) \
-			and is_equal_approx(clamped_elevation, elevation_degrees) \
-			and is_equal_approx(clamped_power, power_percent):
+func set_aim(
+		new_yaw: float,
+		new_elevation: float,
+		new_power: float,
+		publish_if_unchanged: bool = false
+) -> void:
+	var canonical := AimTuple.canonicalize(new_yaw, new_elevation, new_power)
+	if canonical == null:
 		return
-	yaw_degrees = clamped_yaw
-	elevation_degrees = clamped_elevation
-	power_percent = clamped_power
+	if is_equal_approx(canonical.yaw_degrees, yaw_degrees) \
+			and is_equal_approx(canonical.elevation_degrees, elevation_degrees) \
+			and is_equal_approx(float(canonical.power_percent), power_percent):
+		if publish_if_unchanged:
+			publish_current_aim()
+		return
+	yaw_degrees = canonical.yaw_degrees
+	elevation_degrees = canonical.elevation_degrees
+	power_percent = float(canonical.power_percent)
 	var was_valid := is_aim_valid()
 	_prediction = null
 	if was_valid:
 		aim_validity_changed.emit(false)
 	_apply_visuals()
+	publish_current_aim()
+
+
+func publish_current_aim() -> void:
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
 

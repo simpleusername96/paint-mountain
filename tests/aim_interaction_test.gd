@@ -8,7 +8,7 @@ const BURST_DATA := preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA := preload("res://resources/mechanisms/splitter_node.tres")
 const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
 const PROJECTILE_DATA := preload("res://resources/projectiles/basic_paintball.tres")
-const PAINT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
+const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 const TERRAIN_FIXTURE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
 
 const AIM_CASES := [
@@ -118,20 +118,20 @@ func _check_manual_input(game_state: Node) -> void:
 		await _push_key(KEY_ENTER, false)
 		_assert_close(cannon.power_percent, before_focus - 2.0, 0.0001, "focused power button must activate through keyboard")
 
-	cannon.set_aim(28.0, 68.0, 100.0)
+	cannon.set_aim(45.0, 68.0, 100.0)
 	await _push_key(KEY_D, true)
 	await _push_key(KEY_D, false)
 	await _push_key(KEY_W, true)
 	await _push_key(KEY_W, false)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
-	_assert_aim(cannon, Vector3(28, 68, 100), "manual inputs must clamp to the frozen maxima")
-	cannon.set_aim(-28.0, 18.0, 0.0)
+	_assert_aim(cannon, Vector3(45, 68, 100), "manual inputs must clamp to the frozen maxima")
+	cannon.set_aim(-45.0, 10.0, 0.0)
 	await _push_key(KEY_A, true)
 	await _push_key(KEY_A, false)
 	await _push_key(KEY_S, true)
 	await _push_key(KEY_S, false)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_DOWN, true)
-	_assert_aim(cannon, Vector3(-28, 18, 0), "manual inputs must clamp to the frozen minima")
+	_assert_aim(cannon, Vector3(-45, 10, 0), "manual inputs must clamp to the frozen minima")
 
 	await _push_key(KEY_TAB, true)
 	_assert_true(stage_controller.current_state == StageController.State.BRIEFING, "Tab must switch aiming to briefing")
@@ -251,9 +251,20 @@ func _check_isolated_prediction_fixtures() -> void:
 	var paint := PaintSystem.new()
 	fixture_root.add_child(paint)
 	var layout := TerrainTestFixtureFactory.build_layout(TerrainTestFixtureFactory.Kind.FLAT)
-	layout.eligible_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
-	layout.eligible_mask.fill(255)
-	paint.configure(Rect2(Vector2(-20, -20), Vector2(40, 40)), 0.0, null, Color.BLUE, layout, PAINT_TUNING)
+	var target_mask := PackedByteArray()
+	target_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
+	target_mask.fill(255)
+	_assert_true(layout.install_target_mask(target_mask, TargetMaskRasterizer.byte_checksum(target_mask)), "aim fixture target mask must install exactly once")
+	paint.configure(
+		layout.local_bounds, 0.0, null, Color.BLUE, layout, PAINT_SURFACE_TUNING
+	)
+	var top_body := terrain.get_node("TerrainTopBody") as StaticBody3D
+	paint.configure_top_surface_identity(
+		top_body.get_rid(),
+		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
+		TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID,
+		0
+	)
 	var fixtures := [
 		[BURST_SCENE, BURST_DATA, Vector3(-8, 0, -6), Vector3(-8, 2, 4), Vector3(0, 0, -40)],
 		[SPLITTER_SCENE, SPLITTER_DATA, Vector3.ZERO, Vector3(0, 8, 0), Vector3(0, -40, 0)],
@@ -290,7 +301,7 @@ func _check_isolated_prediction_fixtures() -> void:
 	)
 	_assert_true(exit_prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT, "empty fixture must classify a bounds exit")
 	_assert_close(exit_prediction.endpoint.x, 2.0, 0.001, "bounds exit must stop at the first boundary crossing")
-	_assert_true(exit_prediction.normal.is_zero_approx() and exit_prediction.is_fireable(), "bounds exit must have no normal and remain fireable")
+	_assert_true(exit_prediction.normal.is_zero_approx() and not exit_prediction.is_fireable(), "bounds exit must have no normal and remain non-fireable")
 	var timeout_prediction := TrajectoryPredictor.predict_motion(
 		root.get_world_3d().direct_space_state,
 		Vector3.ZERO, Vector3.ZERO, PROJECTILE_DATA.radius,

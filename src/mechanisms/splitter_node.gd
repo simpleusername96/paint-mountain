@@ -22,7 +22,6 @@ func _effect_can_activate(projectile: PaintProjectile, _contact: ProjectileConta
 func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	var incoming_velocity := contact.incoming_velocity
 	var speed := maxf(incoming_velocity.length() * data.child_speed_multiplier, data.child_minimum_route_speed)
-	var child_payload := projectile.remaining_payload * data.child_payload_ratio
 	var parent_radius := projectile.physical_radius()
 	var child_radius := parent_radius * 0.78
 	var fan_axis := contact.normal.cross(_owning_route_downhill_tangent).normalized()
@@ -41,6 +40,5 @@ func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> v
 			projectile.projectile_data,
 			origin,
 			direction * speed,
-			child_payload,
 			projectile.split_generation + 1
 		)

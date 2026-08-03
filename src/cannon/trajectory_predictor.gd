@@ -29,8 +29,11 @@ static func predict_motion(
 		projectile_radius: float,
 		linear_damp: float,
 		stage_bounds: AABB,
-		collision_mask: int = COLLISION_MASK
+		collision_mask: int = COLLISION_MASK,
+		capture_sampled_points: bool = true
 ) -> TrajectoryPrediction:
+	# Exhaustive offline certification needs collision identity and endpoint only;
+	# gameplay keeps the default so its visible trajectory preview is unchanged.
 	if space_state == null or projectile_radius <= 0.0:
 		return TrajectoryPrediction.new(
 			TrajectoryPrediction.Kind.TIMEOUT, origin, PackedVector3Array([origin]),
@@ -38,7 +41,8 @@ static func predict_motion(
 		)
 	var shape := SphereShape3D.new()
 	shape.radius = projectile_radius
-	var points := PackedVector3Array([origin])
+	var points := PackedVector3Array([origin]) if capture_sampled_points \
+			else PackedVector3Array()
 	var position := origin
 	var velocity := launch_velocity
 	var gravity := _gravity_vector()
@@ -67,7 +71,8 @@ static func predict_motion(
 			var rest_info := space_state.get_rest_info(query)
 			if rest_info.is_empty():
 				var failed_endpoint := position + motion * collision_fraction
-				points.append(failed_endpoint)
+				if capture_sampled_points:
+					points.append(failed_endpoint)
 				return TrajectoryPrediction.new(
 					TrajectoryPrediction.Kind.TIMEOUT,
 					failed_endpoint,
@@ -81,7 +86,14 @@ static func predict_motion(
 			var normal: Vector3 = rest_info.get("normal", Vector3.ZERO)
 			var collider_id := int(rest_info.get("collider_id", 0))
 			var collider := instance_from_id(collider_id) if collider_id != 0 else null
-			points.append(endpoint)
+			var hit_identity := _resolve_hit_identity(
+				rest_info,
+				collider,
+				endpoint,
+				normal
+			)
+			if capture_sampled_points:
+				points.append(endpoint)
 			return TrajectoryPrediction.new(
 				TrajectoryPrediction.Kind.COLLISION,
 				endpoint,
@@ -89,11 +101,13 @@ static func predict_motion(
 				(float(step_index) + collision_fraction) * PHYSICS_STEP,
 				collider,
 				normal,
-				&""
+				&"" if hit_identity != null else &"missing_or_invalid_hit_identity",
+				hit_identity
 			)
 		if bounds_fraction < 1.0:
 			var exit_position := position + motion * bounds_fraction
-			points.append(exit_position)
+			if capture_sampled_points:
+				points.append(exit_position)
 			return TrajectoryPrediction.new(
 				TrajectoryPrediction.Kind.BOUNDS_EXIT,
 				exit_position,
@@ -104,7 +118,8 @@ static func predict_motion(
 				&""
 			)
 		position = next_position
-		points.append(position)
+		if capture_sampled_points:
+			points.append(position)
 	return TrajectoryPrediction.new(
 		TrajectoryPrediction.Kind.TIMEOUT,
 		position,
@@ -138,3 +153,58 @@ static func _gravity_vector() -> Vector3:
 	var magnitude := float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 	var direction := Vector3(ProjectSettings.get_setting("physics/3d/default_gravity_vector", Vector3.DOWN))
 	return direction.normalized() * magnitude
+
+
+static func _resolve_hit_identity(
+		rest_info: Dictionary,
+		collider: Object,
+		world_point: Vector3,
+		world_normal: Vector3
+) -> TrajectoryHitIdentity:
+	var collision_object := collider as CollisionObject3D
+	if collision_object == null:
+		return null
+	var body_shape_index := int(rest_info.get("shape", -1))
+	if body_shape_index < 0:
+		return null
+	var owner_id := StringName(collision_object.get_meta(
+		ContainmentSpec.CONTACT_OWNER_META,
+		&""
+	))
+	var shape_id := _shape_contact_id(collision_object, body_shape_index)
+	if String(owner_id).is_empty() or String(shape_id).is_empty():
+		return null
+	if owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
+		var terrain_surface := _terrain_surface_for(collision_object)
+		if terrain_surface == null:
+			return null
+		return terrain_surface.classify_top_hit(
+			world_point,
+			world_normal,
+			shape_id,
+			body_shape_index
+		)
+	var identity := TrajectoryHitIdentity.new(owner_id, shape_id, body_shape_index)
+	return identity if identity.is_valid() else null
+
+
+static func _shape_contact_id(
+		collision_object: CollisionObject3D,
+		body_shape_index: int
+) -> StringName:
+	var shape_owner_id := collision_object.shape_find_owner(body_shape_index)
+	if shape_owner_id < 0:
+		return &""
+	var shape_owner := collision_object.shape_owner_get_owner(shape_owner_id)
+	if shape_owner == null or not shape_owner.has_meta(ContainmentSpec.CONTACT_SHAPE_META):
+		return &""
+	return StringName(shape_owner.get_meta(ContainmentSpec.CONTACT_SHAPE_META, &""))
+
+
+static func _terrain_surface_for(collision_object: CollisionObject3D) -> TerrainSurface:
+	var current := collision_object as Node
+	while current != null:
+		if current is TerrainSurface:
+			return current as TerrainSurface
+		current = current.get_parent()
+	return null

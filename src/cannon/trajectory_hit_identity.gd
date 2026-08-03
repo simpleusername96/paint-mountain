@@ -2,6 +2,7 @@ class_name TrajectoryHitIdentity
 extends RefCounted
 
 const TERRAIN_TOP_OWNER_ID := &"terrain/top"
+const TERRAIN_TOP_SHAPE_ID := &"TerrainTopShape"
 
 var contact_owner_id: StringName:
 	get:

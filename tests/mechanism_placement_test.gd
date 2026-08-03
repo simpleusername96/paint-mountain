@@ -149,7 +149,11 @@ func _assert_invalid_pad_rejected(stage: StageData, layout: GeneratedStageLayout
 	invalid_layout.cell_count = layout.cell_count
 	invalid_layout.local_bounds = layout.local_bounds
 	invalid_layout.heights = layout.heights.duplicate()
+	invalid_layout.top_topology = TerrainTopTopology.build(
+		invalid_layout.cell_count, invalid_layout.local_bounds, invalid_layout.heights
+	)
 	invalid_layout.route_graph = GeneratedRouteGraph.new(invalid_nodes, layout.route_graph.edges)
+	invalid_layout.containment = layout.containment
 	_assert_true(invalid_layout.is_valid(), "%s invalid-placement fixture must preserve the typed graph shape" % stage.stage_id)
 	var rejected := MechanismPlacementGenerator.generate(stage, invalid_layout)
 	_assert_true(rejected.is_empty(), "%s must reject the whole candidate when its exact pad is too small" % stage.stage_id)

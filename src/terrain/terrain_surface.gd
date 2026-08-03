@@ -1,6 +1,13 @@
 class_name TerrainSurface
 extends Node3D
 
+const TOP_SHAPE_ID := &"TerrainTopShape"
+const SHELL_OWNER_ID := &"terrain/shell"
+const SHELL_SHAPE_ID := &"TerrainShellShape"
+const NORMAL_TERRAIN_PHYSICS_MATERIAL := preload(
+	"res://resources/physics/normal_terrain_physics_material.tres"
+)
+
 var _layout: GeneratedStageLayout
 var _geometry: TerrainGeometry
 
@@ -18,12 +25,18 @@ func configure(layout: GeneratedStageLayout) -> void:
 	assert(shell_body != null and shell_collision != null, "TerrainSurface shell nodes are missing.")
 	terrain_mesh.mesh = _geometry.render_mesh
 	top_collision.shape = _geometry.top_shape
-	top_collision.scale = Vector3.ONE * _geometry.cell_size
+	top_collision.scale = Vector3.ONE
 	shell_collision.shape = _geometry.skirt_shape
+	top_body.set_meta(ContainmentSpec.CONTACT_OWNER_META, TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID)
+	top_collision.set_meta(ContainmentSpec.CONTACT_SHAPE_META, TOP_SHAPE_ID)
+	shell_body.set_meta(ContainmentSpec.CONTACT_OWNER_META, SHELL_OWNER_ID)
+	shell_collision.set_meta(ContainmentSpec.CONTACT_SHAPE_META, SHELL_SHAPE_ID)
 	top_body.collision_layer = 1
 	top_body.collision_mask = 0
+	top_body.physics_material_override = NORMAL_TERRAIN_PHYSICS_MATERIAL
 	shell_body.collision_layer = 1
 	shell_body.collision_mask = 0
+	shell_body.physics_material_override = NORMAL_TERRAIN_PHYSICS_MATERIAL
 
 
 func world_surface_point(world_xz: Vector2) -> Vector3:
@@ -41,7 +54,8 @@ func world_surface_normal(world_xz: Vector2) -> Vector3:
 	if _layout == null:
 		return Vector3.UP
 	var local_reference := to_local(Vector3(world_xz.x, global_position.y, world_xz.y))
-	return (global_transform.basis * _layout.normal_at_local(local_reference.x, local_reference.z)).normalized()
+	return (global_transform.basis.inverse().transposed() \
+			* _layout.normal_at_local(local_reference.x, local_reference.z)).normalized()
 
 
 func contains_world_xz(world_xz: Vector2, margin: float = 0.0) -> bool:
@@ -63,28 +77,43 @@ func layout_read_only() -> GeneratedStageLayout:
 	return _layout
 
 
+func classify_top_hit(
+		world_point: Vector3,
+		predicted_world_normal: Vector3,
+		shape_id: StringName = TOP_SHAPE_ID,
+		body_shape_index: int = 0
+) -> TrajectoryHitIdentity:
+	if _layout == null or _layout.top_topology == null:
+		return null
+	var local_point := to_local(world_point)
+	var local_normal := (global_transform.basis.transposed() * predicted_world_normal).normalized()
+	var sample := _layout.top_topology.classify_local_hit(local_point, local_normal)
+	if sample.is_empty():
+		return null
+	return TrajectoryHitIdentity.terrain_top(
+		shape_id,
+		body_shape_index,
+		sample.cell,
+		sample.triangle,
+		sample.barycentric
+	)
+
+
 static func classify_top_cell_uv(
 		shape_id: StringName,
 		body_shape_index: int,
 		cell: Vector2i,
 		local_uv: Vector2
 ) -> TrajectoryHitIdentity:
-	if cell.x < 0 or cell.y < 0 or not local_uv.is_finite() \
-			or local_uv.x < 0.0 or local_uv.x > 1.0 \
-			or local_uv.y < 0.0 or local_uv.y > 1.0:
+	if cell.x < 0 or cell.y < 0:
 		return null
-	if local_uv.x + local_uv.y <= 1.0:
-		return TrajectoryHitIdentity.terrain_top(
-			shape_id,
-			body_shape_index,
-			cell,
-			0,
-			Vector3(1.0 - local_uv.x - local_uv.y, local_uv.y, local_uv.x)
-		)
+	var address := TerrainTopTopology.triangle_barycentric_for_cell_uv(local_uv)
+	if address.x < 0.0:
+		return null
 	return TrajectoryHitIdentity.terrain_top(
 		shape_id,
 		body_shape_index,
 		cell,
-		1,
-		Vector3(1.0 - local_uv.y, 1.0 - local_uv.x, local_uv.x + local_uv.y - 1.0)
+		int(address.x),
+		Vector3(address.y, address.z, address.w)
 	)

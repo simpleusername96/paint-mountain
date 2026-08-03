@@ -25,17 +25,28 @@ func _run() -> void:
 	_assert_true(hud_root.get_node("FirstSessionHint").visible and is_equal_approx(hud_root.get_node("FirstSessionHint/HintTimer").wait_time, 4.0), "Stage 1 must show one four-second aiming hint")
 	hud.update_aim(-7.5, 41.0, 72.0)
 	_assert_true("왼쪽" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim panel must expose direction and elevation independently")
-	hud.update_payload(156.0, 520.0)
-	_assert_true("156 / 520" in hud_root.get_node("ObservationControls/Content/PayloadValue").text, "observation controls must show aggregate remaining payload")
+	var observation_controls := hud_root.get_node("ObservationControls/Content")
+	_assert_true(
+		observation_controls.get_child_count() == 6,
+		"observation controls must not expose a finite paint meter"
+	)
+	for control_name in ["Follow", "Wide", "Cannon", "Speed1", "Speed2", "Pause"]:
+		_assert_true(observation_controls.has_node(control_name), "%s control must remain available" % control_name)
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")
 	hud.update_coverage(2.0)
 	await process_frame
 	_assert_true(is_equal_approx(coverage.progress.max_value, 100.0) and coverage.target_marker.size.x == 2.0, "coverage must use an absolute 0..100 scale with a distinct target marker")
 	var observation := ShotObservation.new()
-	observation.configure(1, -7.5, 41.0, 72.0, 12.0, 520.0)
-	observation.record_mechanism_activation(MechanismData.Kind.SPLITTER)
-	observation.record_children_spawned(3, 3)
-	observation.seal(20.4)
+	observation.configure(1, -7.5, 41.0, 72.0, 12.0)
+	observation.record_mechanism_activation(
+		0,
+		&"Splitter",
+		MechanismData.Kind.SPLITTER,
+		Engine.get_physics_frames()
+	)
+	for ordinal in range(1, 4):
+		observation.record_child_spawn(ordinal, 1, Engine.get_physics_frames(), 3)
+	observation.seal(20.4, -1, 0x12345678)
 	hud.show_shot_observation(observation)
 	var summary: ShotSummary = hud_root.get_node("ShotSummary")
 	_assert_true(summary.visible and "분열 1회" in summary.summary.text and "공 3개" in summary.summary.text, "sealed shot summary must explain gain and observed causes")
@@ -54,7 +65,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shot feedback passed: direction, payload, target, causal summary, callout timing, and replay controls.")
+		print("Shot feedback passed: direction, compact observation controls, target, causal summary, callout timing, and replay controls.")
 	quit(1 if _failed else 0)
 
 

@@ -2,18 +2,23 @@ class_name PaintSystem
 extends Node
 
 signal coverage_changed(coverage_percent: float)
-signal deposit_applied(
-	request: PaintDepositRequest,
-	accepted_amount: float,
-	written_pixel_count: int,
-	newly_painted_pixel_count: int
+signal paint_command_applied(command, written_pixel_count: int, newly_painted_pixel_count: int)
+signal paint_command_rejected(command)
+signal paint_commands_drained(
+	last_drained_physics_tick: int,
+	command_count: int,
+	paint_mask_checksum: int
 )
-signal deposit_rejected(request: PaintDepositRequest)
-signal flow_settled
 
 const MASK_SIZE := 512
+const PAINT_DRAIN_PRIORITY := 1000
 const COVERAGE_PUBLISH_INTERVAL := 0.20
 const NORMAL_FACING_THRESHOLD := 0.2588190451 # cos(75 degrees)
+const CHECKSUM_OFFSET := 2166136261
+const CHECKSUM_PRIME := 16777619
+const DEFAULT_PAINT_SURFACE_TUNING := preload(
+	"res://resources/paint/default_paint_surface_tuning.tres"
+)
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 	Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
 	Vector2i(-1, 0), Vector2i(1, 0),
@@ -23,25 +28,52 @@ const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 var _generated_layout: GeneratedStageLayout
 var _world_bounds: Rect2
 var _terrain_origin_y: float = 0.0
-var _tuning: PaintDepositTuning
+var _surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING
+
+var _expected_top_collider_rid := RID()
+var _expected_top_owner_id: StringName = TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID
+var _expected_top_shape_id: StringName = TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID
+var _expected_top_shape_index: int = 0
+
 var _paint_bytes := PackedByteArray()
-var _eligible_bytes := PackedByteArray()
+var _target_bytes := PackedByteArray()
 var _recent_bytes := PackedByteArray()
+var _surface_positions := PackedVector3Array()
+var _surface_normals := PackedVector3Array()
+var _candidate_generation := PackedInt32Array()
+var _visited_generation := PackedInt32Array()
+var _candidate_generation_id: int = 0
+var _visited_generation_id: int = 0
+var _component_queue := PackedInt32Array()
+var _component_pixels := PackedInt32Array()
+
 var _paint_image: Image
-var _eligible_image: Image
+var _target_image: Image
 var _recent_image: Image
-var _excluded_image: Image
+var _nontarget_image: Image
 var _paint_texture: ImageTexture
-var _eligible_texture: ImageTexture
+var _target_texture: ImageTexture
 var _recent_texture: ImageTexture
-var _excluded_texture: ImageTexture
+var _nontarget_texture: ImageTexture
 var _terrain_material: ShaderMaterial
-var _painted_eligible_pixels: int = 0
-var _total_eligible_pixels: int = 0
-var _dirty: bool = false
+
+var _pending_commands: Array = []
+var _queued_command_keys: Dictionary = {}
+var _last_drained_physics_tick: int = -1
+var _paint_mask_checksum: int = 0
+var _painted_target_pixels: int = 0
+var _total_target_pixels: int = 0
+var _paint_dirty_rect := Rect2i()
+var _recent_dirty_rect := Rect2i()
+var _recent_live_rect := Rect2i()
+var _texture_upload_pending: bool = false
+var _texture_upload_batch_count: int = 0
 var _coverage_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
-var flow_simulation_enabled: bool = true
+
+
+func _init() -> void:
+	process_physics_priority = PAINT_DRAIN_PRIORITY
 
 
 func configure(
@@ -50,23 +82,64 @@ func configure(
 		terrain_material: ShaderMaterial,
 		paint_color: Color,
 		generated_layout: GeneratedStageLayout,
-		deposit_tuning: PaintDepositTuning
+		paint_surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING
 ) -> void:
 	assert(generated_layout != null and generated_layout.is_valid(), "PaintSystem requires the accepted generated layout.")
-	assert(deposit_tuning != null, "PaintSystem requires typed deposit tuning.")
+	assert(generated_layout.has_valid_target_mask(), "PaintSystem requires an authoritative target mask.")
+	assert(paint_surface_tuning != null and paint_surface_tuning.is_valid(), "PaintSystem requires typed surface tuning.")
+	assert(paint_surface_tuning.mask_size == MASK_SIZE, "PaintSystem mask size is fixed at 512 for version 4.")
+	assert(world_bounds.has_area(), "PaintSystem requires non-empty world bounds.")
+	assert(
+		world_bounds.size.is_equal_approx(generated_layout.local_bounds.size),
+		"PaintSystem world and generated-layout bounds must share one XZ scale."
+	)
 	_generated_layout = generated_layout
 	_world_bounds = world_bounds
 	_terrain_origin_y = terrain_origin_y
 	_terrain_material = terrain_material
-	_tuning = deposit_tuning
-	_create_masks()
+	_surface_tuning = paint_surface_tuning
+	_pending_commands.clear()
+	_queued_command_keys.clear()
+	_last_drained_physics_tick = -1
+	_create_masks_and_surface_cache()
+	_paint_mask_checksum = _compute_paint_mask_checksum()
 	if _terrain_material != null:
 		_terrain_material.set_shader_parameter(&"paint_mask", _paint_texture)
-		_terrain_material.set_shader_parameter(&"eligible_mask", _eligible_texture)
+		_terrain_material.set_shader_parameter(&"target_mask", _target_texture)
 		_terrain_material.set_shader_parameter(&"paint_color", paint_color)
 
 
+func configure_top_surface_identity(
+		top_collider_rid: RID,
+		owner_id: StringName = TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
+		shape_id: StringName = TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID,
+		shape_index: int = 0
+) -> void:
+	assert(top_collider_rid.is_valid(), "PaintSystem requires the real terrain-top body RID.")
+	assert(not String(owner_id).is_empty() and not String(shape_id).is_empty(), "PaintSystem requires stable terrain-top identity.")
+	assert(shape_index >= 0, "PaintSystem requires a nonnegative terrain-top shape index.")
+	_expected_top_collider_rid = top_collider_rid
+	_expected_top_owner_id = owner_id
+	_expected_top_shape_id = shape_id
+	_expected_top_shape_index = shape_index
+
+
+func authoritative_top_surface_identity() -> Dictionary:
+	return {
+		"collider_rid": _expected_top_collider_rid,
+		"contact_owner_id": _expected_top_owner_id,
+		"contact_shape_id": _expected_top_shape_id,
+		"collider_shape_index": _expected_top_shape_index,
+	}
+
+
+func _physics_process(_delta: float) -> void:
+	drain_pending_commands()
+
+
 func _process(delta: float) -> void:
+	# Rendering sees at most one texture update batch per rendered frame.
+	_upload_dirty_images()
 	_coverage_publish_elapsed += delta
 	if _coverage_publish_elapsed < COVERAGE_PUBLISH_INTERVAL:
 		return
@@ -76,102 +149,469 @@ func _process(delta: float) -> void:
 		coverage_changed.emit(coverage_percent())
 
 
-func apply_deposit(request: PaintDepositRequest) -> Dictionary:
-	var rejected := {
-		"accepted_amount": 0.0,
-		"written_pixel_count": 0,
-		"newly_painted_pixel_count": 0,
-	}
-	if request == null or not request.is_valid() or _paint_image == null:
-		if request != null:
-			deposit_rejected.emit(request)
-		return rejected
-	var component := _connected_component(request)
-	if component.is_empty():
-		deposit_rejected.emit(request)
-		return rejected
+func queue_radial_paint_mark(command: RadialPaintMark) -> bool:
+	return _queue_typed_command(command)
 
-	_recent_bytes.fill(0)
-	var counts := _write_component(request, component)
-	if request.allow_flow and flow_simulation_enabled and request.maximum_flow_steps > 0:
-		var flow_counts := _apply_steepest_descent_flow(request)
-		counts.written += int(flow_counts.written)
-		counts.newly_painted += int(flow_counts.newly_painted)
-	_upload_dirty_images()
-	_coverage_changed_since_publish = _coverage_changed_since_publish or int(counts.newly_painted) > 0
-	deposit_applied.emit(request, request.amount, int(counts.written), int(counts.newly_painted))
-	flow_settled.emit()
+
+func queue_surface_paint_sweep(command: SurfacePaintSweep) -> bool:
+	return _queue_typed_command(command)
+
+
+func _queue_typed_command(command) -> bool:
+	if not _command_matches_authoritative_surface(command):
+		paint_command_rejected.emit(command)
+		return false
+	var command_tick := int(command.physics_tick)
+	if command_tick <= _last_drained_physics_tick:
+		paint_command_rejected.emit(command)
+		return false
+	var key := _command_key(command)
+	if _queued_command_keys.has(key):
+		paint_command_rejected.emit(command)
+		return false
+	_queued_command_keys[key] = true
+	_pending_commands.append(command)
+	return true
+
+
+func drain_pending_commands() -> Dictionary:
+	if _pending_commands.is_empty():
+		return {
+			"last_drained_physics_tick": _last_drained_physics_tick,
+			"command_count": 0,
+			"written_pixel_count": 0,
+			"newly_painted_pixel_count": 0,
+			"paint_mask_checksum": _paint_mask_checksum,
+		}
+	_clear_recent_region()
+	_pending_commands.sort_custom(_typed_command_less)
+	var commands := _pending_commands
+	_pending_commands = []
+	var written := 0
+	var newly_painted := 0
+	var drained_tick := _last_drained_physics_tick
+	for command in commands:
+		_queued_command_keys.erase(_command_key(command))
+		var counts := {"written": 0, "newly_painted": 0}
+		if command is RadialPaintMark:
+			counts = _rasterize_radial_command(command as RadialPaintMark)
+		elif command is SurfacePaintSweep:
+			counts = _rasterize_sweep_command(command as SurfacePaintSweep)
+		written += int(counts.written)
+		newly_painted += int(counts.newly_painted)
+		drained_tick = maxi(drained_tick, int(command.physics_tick))
+		paint_command_applied.emit(command, int(counts.written), int(counts.newly_painted))
+	_last_drained_physics_tick = drained_tick
+	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
+	_paint_mask_checksum = _compute_paint_mask_checksum()
+	var checksum := _paint_mask_checksum
+	paint_commands_drained.emit(drained_tick, commands.size(), checksum)
 	return {
-		"accepted_amount": request.amount,
-		"written_pixel_count": int(counts.written),
-		"newly_painted_pixel_count": int(counts.newly_painted),
+		"last_drained_physics_tick": drained_tick,
+		"command_count": commands.size(),
+		"written_pixel_count": written,
+		"newly_painted_pixel_count": newly_painted,
+		"paint_mask_checksum": checksum,
 	}
+
+
+func _rasterize_radial_command(command: RadialPaintMark) -> Dictionary:
+	return _rasterize_radial(command.center, command.normal, command.radius)
+
+
+func _rasterize_sweep_command(command: SurfacePaintSweep) -> Dictionary:
+	var generation := _build_sweep_candidates(
+		command.from_point,
+		command.to_point,
+		command.from_normal,
+		command.to_normal,
+		command.footprint_radius
+	)
+	if generation <= 0:
+		return {"written": 0, "newly_painted": 0}
+	var from_seed := _snap_candidate(command.from_point, generation)
+	var to_seed := _snap_candidate(command.to_point, generation)
+	if from_seed >= 0 and to_seed >= 0:
+		_collect_candidate_component(from_seed, generation)
+		if _was_visited(to_seed):
+			return _write_sweep_component(
+				_component_pixels,
+				command.from_point,
+				command.to_point,
+				command.footprint_radius
+			)
+	# A disconnected chord is never persisted; independently valid endpoint
+	# discs preserve the two physically measured contacts.
+	var result := {"written": 0, "newly_painted": 0}
+	if from_seed >= 0:
+		var from_counts := _rasterize_radial(
+			command.from_point, command.from_normal, command.footprint_radius
+		)
+		result.written += int(from_counts.written)
+		result.newly_painted += int(from_counts.newly_painted)
+	if to_seed >= 0:
+		var to_counts := _rasterize_radial(
+			command.to_point, command.to_normal, command.footprint_radius
+		)
+		result.written += int(to_counts.written)
+		result.newly_painted += int(to_counts.newly_painted)
+	return result
+
+
+func _rasterize_radial(center: Vector3, normal: Vector3, radius: float) -> Dictionary:
+	var generation := _build_radial_candidates(center, normal, radius)
+	if generation <= 0:
+		return {"written": 0, "newly_painted": 0}
+	var seed := _snap_candidate(center, generation)
+	if seed < 0:
+		return {"written": 0, "newly_painted": 0}
+	_collect_candidate_component(seed, generation)
+	return _write_radial_component(_component_pixels, center, radius)
+
+
+func _build_radial_candidates(center: Vector3, normal: Vector3, radius: float) -> int:
+	var pixel_bounds := _candidate_pixel_bounds(
+		Vector2(center.x - radius, center.z - radius),
+		Vector2(center.x + radius, center.z + radius)
+	)
+	if not pixel_bounds.has_area():
+		return -1
+	var generation := _next_candidate_generation()
+	var radius_squared := radius * radius
+	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
+		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
+			var index := pixel_y * MASK_SIZE + pixel_x
+			if _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+				continue
+			if _surface_positions[index].distance_squared_to(center) > radius_squared:
+				continue
+			if _surface_normals[index].dot(normal) < NORMAL_FACING_THRESHOLD:
+				continue
+			_candidate_generation[index] = generation
+	return generation
+
+
+func _build_sweep_candidates(
+		from_point: Vector3,
+		to_point: Vector3,
+		from_normal: Vector3,
+		to_normal: Vector3,
+		radius: float
+) -> int:
+	var pixel_bounds := _candidate_pixel_bounds(
+		Vector2(minf(from_point.x, to_point.x) - radius, minf(from_point.z, to_point.z) - radius),
+		Vector2(maxf(from_point.x, to_point.x) + radius, maxf(from_point.z, to_point.z) + radius)
+	)
+	if not pixel_bounds.has_area():
+		return -1
+	var generation := _next_candidate_generation()
+	var delta := to_point - from_point
+	var length_squared := delta.length_squared()
+	var radius_squared := radius * radius
+	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
+		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
+			var index := pixel_y * MASK_SIZE + pixel_x
+			if _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+				continue
+			var surface_point := _surface_positions[index]
+			var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
+			var closest := from_point + delta * t
+			if surface_point.distance_squared_to(closest) > radius_squared:
+				continue
+			var expected_normal := from_normal.slerp(to_normal, t).normalized()
+			if _surface_normals[index].dot(expected_normal) < NORMAL_FACING_THRESHOLD:
+				continue
+			_candidate_generation[index] = generation
+	return generation
+
+
+func _snap_candidate(world_point: Vector3, generation: int) -> int:
+	var uv := (Vector2(world_point.x, world_point.z) - _world_bounds.position) / _world_bounds.size
+	var snapped := PaintMaskAddressing.snap_uv_to_pixel(uv, MASK_SIZE)
+	if snapped.x < 0:
+		return -1
+	var candidates: Array[Vector2i] = []
+	for offset_y in range(-2, 3):
+		for offset_x in range(-2, 3):
+			var candidate := snapped + Vector2i(offset_x, offset_y)
+			if candidate.x < 0 or candidate.x >= MASK_SIZE \
+					or candidate.y < 0 or candidate.y >= MASK_SIZE:
+				continue
+			if _candidate_generation[candidate.y * MASK_SIZE + candidate.x] == generation:
+				candidates.append(candidate)
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var a_delta := a - snapped
+		var b_delta := b - snapped
+		var a_distance := a_delta.length_squared()
+		var b_distance := b_delta.length_squared()
+		if a_distance != b_distance:
+			return a_distance < b_distance
+		if a.y != b.y:
+			return a.y < b.y
+		return a.x < b.x
+	)
+	if candidates.is_empty():
+		return -1
+	var result := candidates[0]
+	return result.y * MASK_SIZE + result.x
+
+
+func _collect_candidate_component(seed: int, candidate_generation: int) -> void:
+	_component_queue.clear()
+	_component_pixels.clear()
+	var visit_generation := _next_visited_generation()
+	_component_queue.append(seed)
+	_visited_generation[seed] = visit_generation
+	var cursor := 0
+	while cursor < _component_queue.size():
+		var current := _component_queue[cursor]
+		cursor += 1
+		_component_pixels.append(current)
+		var point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
+		for offset in NEIGHBOR_OFFSETS:
+			var neighbor := point + offset
+			if neighbor.x < 0 or neighbor.x >= MASK_SIZE \
+					or neighbor.y < 0 or neighbor.y >= MASK_SIZE:
+				continue
+			var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
+			if _candidate_generation[neighbor_index] != candidate_generation \
+					or _visited_generation[neighbor_index] == visit_generation:
+				continue
+			_visited_generation[neighbor_index] = visit_generation
+			_component_queue.append(neighbor_index)
+
+
+func _was_visited(index: int) -> bool:
+	return index >= 0 and _visited_generation[index] == _visited_generation_id
+
+
+func _write_radial_component(
+		component: PackedInt32Array,
+		center: Vector3,
+		radius: float
+) -> Dictionary:
+	var written := 0
+	var newly_painted := 0
+	for index in component:
+		var distance := _surface_positions[index].distance_to(center)
+		var counts := _write_paint_value(index, _alpha_for_distance(distance, radius))
+		written += int(counts.written)
+		newly_painted += int(counts.newly_painted)
+	return {"written": written, "newly_painted": newly_painted}
+
+
+func _write_sweep_component(
+		component: PackedInt32Array,
+		from_point: Vector3,
+		to_point: Vector3,
+		radius: float
+) -> Dictionary:
+	var written := 0
+	var newly_painted := 0
+	var delta := to_point - from_point
+	var length_squared := delta.length_squared()
+	for index in component:
+		var surface_point := _surface_positions[index]
+		var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
+		var distance := surface_point.distance_to(from_point + delta * t)
+		var counts := _write_paint_value(index, _alpha_for_distance(distance, radius))
+		written += int(counts.written)
+		newly_painted += int(counts.newly_painted)
+	return {"written": written, "newly_painted": newly_painted}
+
+
+func _alpha_for_distance(distance: float, radius: float) -> int:
+	var core_radius := radius * _surface_tuning.core_ratio
+	if distance <= core_radius or is_equal_approx(core_radius, radius):
+		return 255
+	var edge_weight := clampf((distance - core_radius) / (radius - core_radius), 0.0, 1.0)
+	return clampi(
+		roundi(lerpf(255.0, float(_surface_tuning.painted_threshold_byte), edge_weight)),
+		_surface_tuning.painted_threshold_byte,
+		255
+	)
+
+
+func _write_paint_value(index: int, value: int) -> Dictionary:
+	if index < 0 or index >= _paint_bytes.size() or _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+		return {"written": 0, "newly_painted": 0}
+	var existing := int(_paint_bytes[index])
+	var updated := maxi(existing, clampi(value, 0, 255))
+	if updated <= existing:
+		return {"written": 0, "newly_painted": 0}
+	var newly_painted := existing < _surface_tuning.painted_threshold_byte \
+			and updated >= _surface_tuning.painted_threshold_byte
+	_paint_bytes[index] = updated
+	_recent_bytes[index] = 255
+	if newly_painted:
+		_painted_target_pixels += 1
+	_mark_paint_dirty(index)
+	_mark_recent_dirty(index)
+	return {"written": 1, "newly_painted": 1 if newly_painted else 0}
+
+
+func _command_matches_authoritative_surface(command) -> bool:
+	if _generated_layout == null:
+		return false
+	if command is RadialPaintMark:
+		if not (command as RadialPaintMark).is_valid():
+			return false
+	elif command is SurfacePaintSweep:
+		if not (command as SurfacePaintSweep).is_valid():
+			return false
+	else:
+		return false
+	if command.contact_owner_id != _expected_top_owner_id \
+			or command.contact_shape_id != _expected_top_shape_id \
+			or int(command.collider_shape_index) != _expected_top_shape_index:
+		return false
+	return not _expected_top_collider_rid.is_valid() \
+			or command.top_collider_rid == _expected_top_collider_rid
+
+
+func _typed_command_less(a, b) -> bool:
+	var a_key: PackedInt64Array = a.drain_sort_key()
+	var b_key: PackedInt64Array = b.drain_sort_key()
+	for index in range(mini(a_key.size(), b_key.size())):
+		if a_key[index] != b_key[index]:
+			return a_key[index] < b_key[index]
+	return a_key.size() < b_key.size()
+
+
+func _command_key(command) -> String:
+	return "%d:%d:%d" % [command.physics_tick, command.spawn_ordinal, command.sequence]
+
+
+func _candidate_pixel_bounds(minimum_world: Vector2, maximum_world: Vector2) -> Rect2i:
+	if maximum_world.x < _world_bounds.position.x or minimum_world.x > _world_bounds.end.x \
+			or maximum_world.y < _world_bounds.position.y or minimum_world.y > _world_bounds.end.y:
+		return Rect2i()
+	var minimum_uv := (minimum_world - _world_bounds.position) / _world_bounds.size
+	var maximum_uv := (maximum_world - _world_bounds.position) / _world_bounds.size
+	var minimum := Vector2i(
+		clampi(floori(minimum_uv.x * MASK_SIZE) - 1, 0, MASK_SIZE - 1),
+		clampi(floori(minimum_uv.y * MASK_SIZE) - 1, 0, MASK_SIZE - 1)
+	)
+	var maximum := Vector2i(
+		clampi(ceili(maximum_uv.x * MASK_SIZE) + 1, 0, MASK_SIZE - 1),
+		clampi(ceili(maximum_uv.y * MASK_SIZE) + 1, 0, MASK_SIZE - 1)
+	)
+	return Rect2i(minimum, maximum - minimum + Vector2i.ONE)
+
+
+func _next_candidate_generation() -> int:
+	_candidate_generation_id += 1
+	if _candidate_generation_id >= 0x7fffffff:
+		_candidate_generation.fill(0)
+		_candidate_generation_id = 1
+	return _candidate_generation_id
+
+
+func _next_visited_generation() -> int:
+	_visited_generation_id += 1
+	if _visited_generation_id >= 0x7fffffff:
+		_visited_generation.fill(0)
+		_visited_generation_id = 1
+	return _visited_generation_id
 
 
 func flush_pending() -> void:
+	drain_pending_commands()
 	_upload_dirty_images()
 	_coverage_changed_since_publish = false
 	coverage_changed.emit(coverage_percent())
-	flow_settled.emit()
 
 
 func clear() -> void:
 	if _paint_image == null:
 		return
+	_pending_commands.clear()
+	_queued_command_keys.clear()
+	_last_drained_physics_tick = -1
 	_paint_bytes.fill(0)
 	_recent_bytes.fill(0)
-	_painted_eligible_pixels = 0
-	_dirty = true
-	_upload_dirty_images()
+	_paint_mask_checksum = _compute_paint_mask_checksum()
+	_painted_target_pixels = 0
+	_paint_dirty_rect = Rect2i(Vector2i.ZERO, Vector2i(MASK_SIZE, MASK_SIZE))
+	_recent_dirty_rect = _paint_dirty_rect
+	_recent_live_rect = Rect2i()
+	_texture_upload_pending = true
 	_coverage_changed_since_publish = false
 	coverage_changed.emit(0.0)
-	flow_settled.emit()
 
 
 func coverage_percent() -> float:
-	if _total_eligible_pixels <= 0:
+	if _total_target_pixels <= 0:
 		return 0.0
-	return 100.0 * float(_painted_eligible_pixels) / float(_total_eligible_pixels)
+	return 100.0 * float(_painted_target_pixels) / float(_total_target_pixels)
+
+
+func paint_mask_checksum() -> int:
+	return _paint_mask_checksum
+
+
+func _compute_paint_mask_checksum() -> int:
+	var hash := CHECKSUM_OFFSET
+	for byte in _paint_bytes:
+		hash = hash ^ int(byte)
+		hash = int((hash * CHECKSUM_PRIME) & 0xffffffff)
+	return hash
 
 
 func paint_texture() -> ImageTexture:
 	return _paint_texture
 
 
-func eligible_texture() -> ImageTexture:
-	return _eligible_texture
+func target_texture() -> ImageTexture:
+	return _target_texture
 
 
 func recent_texture() -> ImageTexture:
 	return _recent_texture
 
 
-func excluded_texture() -> ImageTexture:
-	return _excluded_texture
+func nontarget_texture() -> ImageTexture:
+	return _nontarget_texture
 
 
 func pending_work_count() -> int:
-	return 0
+	return _pending_commands.size()
 
 
-func total_eligible_pixels() -> int:
-	return _total_eligible_pixels
+func last_drained_physics_tick() -> int:
+	return _last_drained_physics_tick
 
 
-func painted_eligible_pixels() -> int:
-	return _painted_eligible_pixels
+func texture_upload_batch_count() -> int:
+	return _texture_upload_batch_count
 
 
-func persistent_noneligible_pixel_count() -> int:
+func dirty_region_read_only() -> Rect2i:
+	return _paint_dirty_rect
+
+
+func total_target_pixels() -> int:
+	return _total_target_pixels
+
+
+func painted_target_pixels() -> int:
+	return _painted_target_pixels
+
+
+func persistent_nontarget_pixel_count() -> int:
 	var count := 0
 	for index in range(_paint_bytes.size()):
-		if _paint_bytes[index] > 0 and _eligible_bytes[index] < 128:
+		if _paint_bytes[index] > 0 and _target_bytes[index] < _surface_tuning.painted_threshold_byte:
 			count += 1
 	return count
 
 
 func paint_bytes_read_only() -> PackedByteArray:
-	return _paint_bytes
+	return _paint_bytes.duplicate()
+
+
+func target_bytes_read_only() -> PackedByteArray:
+	return _target_bytes.duplicate()
 
 
 func generated_layout_read_only() -> GeneratedStageLayout:
@@ -179,214 +619,126 @@ func generated_layout_read_only() -> GeneratedStageLayout:
 
 
 func terrain_surface_position(world_xz: Vector2) -> Vector3:
-	var local := _world_to_local(world_xz)
-	return Vector3(
-		world_xz.x,
-		_terrain_origin_y + _generated_layout.height_at_local(local.x, local.y),
-		world_xz.y
-	)
+	var sample := _surface_sample_at_world(world_xz)
+	return Vector3(world_xz.x, _terrain_origin_y + float(sample.point.y), world_xz.y)
 
 
 func terrain_surface_normal(world_xz: Vector2) -> Vector3:
-	var local := _world_to_local(world_xz)
-	return _generated_layout.normal_at_local(local.x, local.y)
+	return _surface_sample_at_world(world_xz).normal
 
 
-func _create_masks() -> void:
-	_paint_bytes.resize(MASK_SIZE * MASK_SIZE)
+func _create_masks_and_surface_cache() -> void:
+	var pixel_count := MASK_SIZE * MASK_SIZE
+	_paint_bytes.resize(pixel_count)
 	_paint_bytes.fill(0)
-	_recent_bytes = _paint_bytes.duplicate()
-	assert(_generated_layout.eligible_mask.size() == MASK_SIZE * MASK_SIZE, "Generated layout must provide the authoritative eligible mask.")
-	_eligible_bytes = _generated_layout.eligible_mask.duplicate()
-	_total_eligible_pixels = 0
-	for byte in _eligible_bytes:
-		if byte >= 128:
-			_total_eligible_pixels += 1
+	_recent_bytes.resize(pixel_count)
+	_recent_bytes.fill(0)
+	_target_bytes = _generated_layout.target_mask
+	assert(_target_bytes.size() == pixel_count, "Generated layout target mask must be 512 square.")
+	assert(
+		TargetMaskRasterizer.byte_checksum(_target_bytes) == _generated_layout.target_mask_checksum,
+		"PaintSystem target-mask copy must match the accepted layout checksum."
+	)
+	_surface_positions.resize(pixel_count)
+	_surface_normals.resize(pixel_count)
+	_candidate_generation.resize(pixel_count)
+	_candidate_generation.fill(0)
+	_visited_generation.resize(pixel_count)
+	_visited_generation.fill(0)
+	_candidate_generation_id = 0
+	_visited_generation_id = 0
+	_total_target_pixels = 0
+	for pixel_y in range(MASK_SIZE):
+		for pixel_x in range(MASK_SIZE):
+			var index := pixel_y * MASK_SIZE + pixel_x
+			if _target_bytes[index] >= _surface_tuning.painted_threshold_byte:
+				_total_target_pixels += 1
+			var normalized := Vector2(
+				(float(pixel_x) + 0.5) / float(MASK_SIZE),
+				(float(pixel_y) + 0.5) / float(MASK_SIZE)
+			)
+			var local_xz := _generated_layout.local_bounds.position \
+					+ normalized * _generated_layout.local_bounds.size
+			var sample := _generated_layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
+			assert(not sample.is_empty(), "Every paint texel must reconstruct on the accepted top triangle.")
+			var world_xz := _world_bounds.position + normalized * _world_bounds.size
+			_surface_positions[index] = Vector3(
+				world_xz.x,
+				_terrain_origin_y + float(sample.point.y),
+				world_xz.y
+			)
+			_surface_normals[index] = sample.normal
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 	_recent_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
-	_eligible_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _eligible_bytes)
-	var excluded_bytes := PackedByteArray()
-	excluded_bytes.resize(MASK_SIZE * MASK_SIZE)
-	for index in range(_eligible_bytes.size()):
-		excluded_bytes[index] = 0 if _eligible_bytes[index] >= 128 else 255
-	_excluded_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, excluded_bytes)
+	_target_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes)
+	var nontarget_bytes := PackedByteArray()
+	nontarget_bytes.resize(pixel_count)
+	for index in range(pixel_count):
+		nontarget_bytes[index] = 0 \
+				if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
+	_nontarget_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
 	_recent_texture = ImageTexture.create_from_image(_recent_image)
-	_eligible_texture = ImageTexture.create_from_image(_eligible_image)
-	_excluded_texture = ImageTexture.create_from_image(_excluded_image)
-	_painted_eligible_pixels = 0
-	_dirty = false
+	_target_texture = ImageTexture.create_from_image(_target_image)
+	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
+	_painted_target_pixels = 0
+	_paint_dirty_rect = Rect2i()
+	_recent_dirty_rect = Rect2i()
+	_recent_live_rect = Rect2i()
+	_texture_upload_pending = false
+	_texture_upload_batch_count = 0
 
 
-func _connected_component(request: PaintDepositRequest) -> PackedInt32Array:
-	var center_xz := Vector2(request.world_position.x, request.world_position.z)
-	if not _world_bounds.has_point(center_xz):
-		return PackedInt32Array()
-	var seed := _world_to_pixel_index(center_xz)
-	if seed < 0 or _eligible_bytes[seed] < 128:
-		return PackedInt32Array()
-	var minimum := _world_to_pixel_coordinates(center_xz - Vector2.ONE * request.radius)
-	var maximum := _world_to_pixel_coordinates(center_xz + Vector2.ONE * request.radius)
-	minimum.x = clampi(minimum.x - 1, 0, MASK_SIZE - 1)
-	minimum.y = clampi(minimum.y - 1, 0, MASK_SIZE - 1)
-	maximum.x = clampi(maximum.x + 1, 0, MASK_SIZE - 1)
-	maximum.y = clampi(maximum.y + 1, 0, MASK_SIZE - 1)
-	var candidates := PackedByteArray()
-	candidates.resize(MASK_SIZE * MASK_SIZE)
-	candidates.fill(0)
-	var radius_squared := request.radius * request.radius
-	var needs_facing := request.source_kind in [PaintDepositRequest.SourceKind.IMPACT, PaintDepositRequest.SourceKind.BURST]
-	for pixel_y in range(minimum.y, maximum.y + 1):
-		for pixel_x in range(minimum.x, maximum.x + 1):
+func _mark_paint_dirty(index: int) -> void:
+	_paint_dirty_rect = _include_pixel(_paint_dirty_rect, Vector2i(index % MASK_SIZE, index / MASK_SIZE))
+	_texture_upload_pending = true
+
+
+func _mark_recent_dirty(index: int) -> void:
+	var pixel := Vector2i(index % MASK_SIZE, index / MASK_SIZE)
+	_recent_dirty_rect = _include_pixel(_recent_dirty_rect, pixel)
+	_recent_live_rect = _include_pixel(_recent_live_rect, pixel)
+	_texture_upload_pending = true
+
+
+func _clear_recent_region() -> void:
+	if not _recent_live_rect.has_area():
+		return
+	for pixel_y in range(_recent_live_rect.position.y, _recent_live_rect.end.y):
+		for pixel_x in range(_recent_live_rect.position.x, _recent_live_rect.end.x):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _eligible_bytes[index] < 128:
-				continue
-			var surface_position := _surface_position_at_pixel(pixel_x, pixel_y)
-			if surface_position.distance_squared_to(request.world_position) > radius_squared:
-				continue
-			if needs_facing and _surface_normal_at_pixel(pixel_x, pixel_y).dot(request.world_normal) < NORMAL_FACING_THRESHOLD:
-				continue
-			candidates[index] = 1
-	if candidates[seed] == 0:
-		return PackedInt32Array()
-	var component := PackedInt32Array()
-	var queue := PackedInt32Array([seed])
-	candidates[seed] = 0
-	var cursor := 0
-	while cursor < queue.size():
-		var current := queue[cursor]
-		cursor += 1
-		component.append(current)
-		var point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		for offset in NEIGHBOR_OFFSETS:
-			var neighbor := point + offset
-			if neighbor.x < minimum.x or neighbor.x > maximum.x or neighbor.y < minimum.y or neighbor.y > maximum.y:
-				continue
-			var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
-			if candidates[neighbor_index] != 0:
-				candidates[neighbor_index] = 0
-				queue.append(neighbor_index)
-	return component
+			if _recent_bytes[index] != 0:
+				_recent_bytes[index] = 0
+				_recent_dirty_rect = _include_pixel(_recent_dirty_rect, Vector2i(pixel_x, pixel_y))
+	_recent_live_rect = Rect2i()
+	_texture_upload_pending = _texture_upload_pending or _recent_dirty_rect.has_area()
 
 
-func _write_component(request: PaintDepositRequest, component: PackedInt32Array) -> Dictionary:
-	var written := 0
-	var newly_painted := 0
-	var amount_alpha := request.amount / _tuning.paint_units_per_full_alpha * _tuning.intensity_multiplier(request.source_kind)
-	var radius_squared := request.radius * request.radius
-	for index in component:
-		var pixel_x := index % MASK_SIZE
-		var pixel_y := index / MASK_SIZE
-		var surface_position := _surface_position_at_pixel(pixel_x, pixel_y)
-		var q: float = surface_position.distance_squared_to(request.world_position) / maxf(radius_squared, 0.000001)
-		var radial_weight := maxf(0.0, 1.0 - 0.7 * q)
-		var delta_alpha := clampf(amount_alpha * radial_weight, 0.0, 1.0)
-		var existing := float(_paint_bytes[index]) / 255.0
-		var updated := minf(1.0, existing + delta_alpha)
-		if updated <= existing + 0.000001:
-			continue
-		if existing < _tuning.painted_threshold and updated >= _tuning.painted_threshold:
-			_painted_eligible_pixels += 1
-			newly_painted += 1
-		_paint_bytes[index] = roundi(updated * 255.0)
-		_recent_bytes[index] = 255
-		written += 1
-		_dirty = true
-	return {"written": written, "newly_painted": newly_painted}
-
-
-func _apply_steepest_descent_flow(request: PaintDepositRequest) -> Dictionary:
-	var written := 0
-	var newly_painted := 0
-	var current := _world_to_pixel_index(Vector2(request.world_position.x, request.world_position.z))
-	var amount := request.amount * _tuning.flow_amount_ratio
-	var radius := maxf(0.8, request.radius * _tuning.flow_radius_ratio)
-	for step_index in range(mini(request.maximum_flow_steps, 12)):
-		var current_point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		var best := -1
-		var current_position := _surface_position_at_pixel(current_point.x, current_point.y)
-		var best_height: float = current_position.y
-		for offset in NEIGHBOR_OFFSETS:
-			var candidate := current_point + offset
-			if candidate.x < 0 or candidate.x >= MASK_SIZE or candidate.y < 0 or candidate.y >= MASK_SIZE:
-				continue
-			var candidate_index := candidate.y * MASK_SIZE + candidate.x
-			if _eligible_bytes[candidate_index] < 128:
-				continue
-			var candidate_position := _surface_position_at_pixel(candidate.x, candidate.y)
-			var candidate_height: float = candidate_position.y
-			if candidate_height < best_height - 0.0001:
-				best_height = candidate_height
-				best = candidate_index
-		if best < 0:
-			break
-		current = best
-		var best_point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		var best_position := _surface_position_at_pixel(best_point.x, best_point.y)
-		var best_normal := _surface_normal_at_pixel(best_point.x, best_point.y)
-		var center_alpha := amount / _tuning.paint_units_per_full_alpha * _tuning.intensity_multiplier(request.source_kind)
-		if center_alpha < _tuning.minimum_flow_alpha:
-			break
-		var flow_request := PaintDepositRequest.new(
-			request.source_kind, best_position, best_normal, radius, amount,
-			false, 0, request.source_instance_id, request.physics_tick,
-			request.sequence_number * 16 + step_index + 1
-		)
-		var component := _connected_component(flow_request)
-		if component.is_empty():
-			break
-		var counts := _write_component(flow_request, component)
-		written += int(counts.written)
-		newly_painted += int(counts.newly_painted)
-		amount *= _tuning.flow_decay
-	return {"written": written, "newly_painted": newly_painted}
-
-
-func _surface_position_at_pixel(pixel_x: int, pixel_y: int) -> Vector3:
-	var normalized := Vector2(
-		(float(pixel_x) + 0.5) / float(MASK_SIZE),
-		(float(pixel_y) + 0.5) / float(MASK_SIZE)
-	)
-	var world_xz := _world_bounds.position + normalized * _world_bounds.size
-	var local := _world_to_local(world_xz)
-	return Vector3(
-		world_xz.x,
-		_terrain_origin_y + _generated_layout.height_at_local(local.x, local.y),
-		world_xz.y
-	)
-
-
-func _surface_normal_at_pixel(pixel_x: int, pixel_y: int) -> Vector3:
-	var normalized := Vector2(
-		(float(pixel_x) + 0.5) / float(MASK_SIZE),
-		(float(pixel_y) + 0.5) / float(MASK_SIZE)
-	)
-	var world_xz := _world_bounds.position + normalized * _world_bounds.size
-	var local := _world_to_local(world_xz)
-	return _generated_layout.normal_at_local(local.x, local.y)
-
-
-func _world_to_pixel_coordinates(world_xz: Vector2) -> Vector2i:
-	var normalized := (world_xz - _world_bounds.position) / _world_bounds.size
-	return Vector2i(floori(normalized.x * MASK_SIZE), floori(normalized.y * MASK_SIZE))
-
-
-func _world_to_pixel_index(world_xz: Vector2) -> int:
-	var point := _world_to_pixel_coordinates(world_xz)
-	if point.x < 0 or point.x >= MASK_SIZE or point.y < 0 or point.y >= MASK_SIZE:
-		return -1
-	return point.y * MASK_SIZE + point.x
-
-
-func _world_to_local(world_xz: Vector2) -> Vector2:
-	return world_xz - (_world_bounds.position + _world_bounds.size * 0.5)
+func _include_pixel(rect: Rect2i, pixel: Vector2i) -> Rect2i:
+	if not rect.has_area():
+		return Rect2i(pixel, Vector2i.ONE)
+	var minimum := Vector2i(mini(rect.position.x, pixel.x), mini(rect.position.y, pixel.y))
+	var maximum := Vector2i(maxi(rect.end.x - 1, pixel.x), maxi(rect.end.y - 1, pixel.y))
+	return Rect2i(minimum, maximum - minimum + Vector2i.ONE)
 
 
 func _upload_dirty_images() -> void:
-	if not _dirty:
+	if not _texture_upload_pending:
 		return
 	_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 	_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 	_paint_texture.update(_paint_image)
 	_recent_texture.update(_recent_image)
-	_dirty = false
+	_texture_upload_batch_count += 1
+	_paint_dirty_rect = Rect2i()
+	_recent_dirty_rect = Rect2i()
+	_texture_upload_pending = false
+
+
+func _surface_sample_at_world(world_xz: Vector2) -> Dictionary:
+	var normalized := (world_xz - _world_bounds.position) / _world_bounds.size
+	var local := _generated_layout.local_bounds.position \
+			+ normalized * _generated_layout.local_bounds.size
+	var sample := _generated_layout.surface_sample_at_local(local.x, local.y, false)
+	assert(not sample.is_empty(), "PaintSystem surface query must resolve through accepted top topology.")
+	return sample

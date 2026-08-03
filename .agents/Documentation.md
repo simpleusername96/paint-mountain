@@ -38,44 +38,52 @@ aiming HUD or Settings. The liked concept board is useful for art, composition,
 material, depth, and readability comparison only; its exact HUD placement,
 literal geometry, and painted still states are not implementation authority.
 
-The present code already supplies useful foundations: one immutable generated
-layout, a heightfield top plus closed shell, one authoritative `PaintSystem`
-mask, real rigid-body contacts, physical mechanism bodies, manual aim, a first-
-collision predictor, camera safety, replay isolation, Korean localization/theme,
-component HUD scenes, headless tests, Windows export, and the fastrun command.
-Those foundations do not prove the intended game. The active plan replaces
-their lobe-first generation, `HeightMapShape3D`/bilinear surface mismatch,
-finite spaced paint and downhill flow, incomplete multi-contact reporting,
-slope/footprint target masking, obsolete HUD hierarchy, and weak visual
-composition before any completion claim is made.
+Phase 0 and Tasks 1.1 through 1.MVP now establish one truthful Stage 1 core
+loop. First Descent is generated from the version-4 route graph as one height
+per XZ sample. One indexed top-triangle topology now drives rendering, the real
+concave top collider, terrain queries, target rasterization, contact identity,
+and paint reconstruction; the apron, shell, visible rear backstop, and
+containment domain are derived alongside it. Production no longer uses a
+`HeightMapShape3D`, bilinear playable query, authored initial aim, or a second
+top-surface representation.
 
-Phase 0 aligned the protected project summary and active product, architecture,
-acceptance, prompt, implemented-status, and concept-authority documents with the
-dated later-user supersessions. It also introduced the isolated version-4 graph,
-aim, reachability, containment, hit-identity, continuous-paint-command, tuning,
-and generation-constant contracts. The original directive body and historical
-evidence remain unchanged.
+Projectile contact now reports measured points, normals, center positions,
+stable owner/shape/cell/triangle identities, and deterministic current-contact
+event indices. The production ball has low rebound, emits typed impact/sweep/
+settle paint intent only from verified target-top contact, permits only proven
+short contact gaps, and retires immediately without paint on the backstop.
+`ProjectileManager` owns spawn ordinals and late intent ordering;
+`PaintSystem` alone drains the commands into the authoritative 512x512 mask,
+renders that mask, and derives target coverage from the same threshold bytes.
 
-Task 1.1 now resolves First Descent as one immutable route graph and synthesizes
-one height for each of the `73 x 49` samples through the bounded version-4
-support/carve pipeline. All three production profiles use the explicit graph
-schema and shared generation contract; no lobe generator or parallel route-array
-consumer remains. Stage 1 base seed `845479992` accepts attempt `0` with height
-checksum `99613004` and graph-footprint ratio `0.243385`. Direct fallback request
-and an actual 32-rejection fallback test both resolve seed `1820876501`; the
-latter records attempt `-1` and reproduces the direct fallback checksums. Focused
-contract, generation, graph-owned placement/decoration, retained terrain/paint,
-headless import, and main-scene smoke checks pass.
+Finite paint quantity, depletion, shrinking footprints, autonomous downhill
+flow, and their projectile/resource/mechanism/state/replay/debug/HUD fields are
+absent. `ShotObservation` and replay format 4 record ordered contacts,
+mechanisms, children, settlements, paint-command drain, checksum, and coverage.
+`StageController` enters `PAINT_SETTLING` after the last projectile and seals a
+shot only after canonical intent and paint queues are empty and the final drain
+has remained inactive for two physics ticks.
 
-This is not yet accepted gameplay geometry. `HeightMapShape3D`, bilinear surface
-queries, the launch-only legacy `eligible_mask`, authored initial aim, and the
-old payload paint path still remain. In particular, the retained Phase-4 state
-test currently fails its obsolete positive-coverage assertion because the old
-yaw `16` default misses the new central route. That test is outside the Task-1.1
-gate and is intentionally left failing as a Task-1.2 migration guard; Task 1.2
-must replace the authored value with the certified target-centroid default
-instead of hand-tuning it. Stage 2/3 are schema-valid but intentionally fail
-closed until their Phase-2 acceptance work. Task 1.2 is next.
+Stage 1 is temporarily admitted by the persisted
+`StageMvpPermit` at `resources/stages/permits/first_descent_mvp_v4.tres`. It
+binds the Stage 1 identity, profile version, requested/accepted seeds, height,
+target, placement, and containment checksums to the canonical default aim. The
+predictor and production rigid body both first hit `terrain/top` near the
+target centroid. A present full certificate always supersedes this permit and
+fails closed when stale; the permit is not a release certificate.
+
+The integrated real-gameplay headless gate now passes from a clean Stage 1:
+default aim and Fire produce one physical ordinal-zero ball; first contact is
+the visible terrain top; the parent records `5.100 s` of target contact and
+`36.688 m` of surface path through `306` continuous sweeps; the authoritative
+coverage reaches `18.8140%`; the drain precedes observation sealing and result;
+and Restart restores the same layout identity, default aim, shots, and blank
+paint mask. No visible editor or game window was launched for this evidence.
+
+Remaining work is explicit: the exhaustive every-target direct-reachability
+certificate portion of Task 1.2, Stage 2/3 admission and balance, the
+user-coordinated Stage 1 visual gate, and the later presentation/UI phases are
+not complete. Stage 2/3 therefore remain fail-closed in production.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 
@@ -289,28 +297,56 @@ the static-audit correction above.
   console executable for Paint Mountain headless verification/export commands
   only; no visible editor or game launch is authorized outside the two
   explicitly coordinated evidence sessions.
-- Current production code still uses version-3 lobe-first terrain, a render mesh
-  paired with `HeightMapShape3D` and bilinear queries, finite payload/deposit/
-  flow behavior, replay format 3, and the superseded horizontal-coverage plus
-  bottom-right Restart/Fire HUD. These are implementation gaps, not accepted
-  variants of the active specification.
-- Generation remains bounded to 32 derived attempt seeds plus one pinned
-  fallback and must fail closed; new accepted checksums and solutions cannot be
-  copied from the superseded build.
-- Targets and shot counts remain fixed at 4%/4, 27%/5, and 70%/6. Prior
-  direct-target solution values are historical and cannot validate manual aim.
-- Every target texel still needs a direct first-hit certificate, exact shared-
-  triangle predictor/rigid-body parity, generated default aim, and full legal-
-  domain wall/apron containment before Stage 1 can pass the new visible gate.
-- Replay format 4, continuous contact sweeps, ordered paint drain, and the final
-  HUD/game-menu contract remain unimplemented until their active-plan tasks and
-  focused tests pass.
+- Stage 1 currently has an MVP permit, not the exhaustive all-target
+  `DirectReachabilityCertificate` required for release. Do not label the stage
+  fully certified or use the permit to satisfy export/final-delivery gates.
+- Stage 2 and Stage 3 have version-4 structural inputs but no accepted permit or
+  full certificate. Production generation intentionally rejects them until
+  Phase 2 supplies their exact target, reachability, balance, and containment
+  evidence.
+- The core loop is headlessly proven, but the current terrain composition, HUD,
+  camera framing, collision readability, and running paint appearance have not
+  passed the user-coordinated visual gate. Do not infer visual acceptance from
+  headless physics results or concept images.
+- The complete legacy `scripts/test.ps1` matrix is not yet a passing release
+  gate: its Stage 2/3 prediction/reliability assumptions predate fail-closed
+  admission, and the all-target Phase-5 fixture remains pathologically slow.
+  The focused Stage 1/contact/paint/state/schema tests and `scripts/verify.ps1`
+  pass; performance and broad test migration remain parked behind the MVP.
+- Targets and shot counts remain fixed at `4%/4`, `27%/5`, and `70%/6`.
+  Superseded direct-target solutions and old checksums are historical only.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
 - The imported low-poly models, UI icons, particles, and procedural audio are
   approved inputs, but neither they nor the concept board prove the active
   physical terrain, paint, HUD, or presentation contracts.
 
 ## Verification
+
+### Current Stage 1 MVP verification (2026-08-03)
+
+- `stage1_mvp_test.gd` passed against the real gameplay scene and owners: first
+  `terrain/top` contact, `5.100 s` target contact, `36.688 m` parent surface
+  path, `306` continuous sweeps, `18.8140%` coverage, drain-before-result, and
+  deterministic Restart.
+- `stage_mvp_permit_producer.gd --verify-only` reproduced accepted seed
+  `845487911`, default aim stable key `-6:591:67`, and predictor/rigid-body
+  local hits within one millimeter of each other near the target centroid. The
+  stored proof checksum binds the exact layout, aim, and both hit witnesses; an
+  aim-only substitution fails closed.
+- Focused contact and paint gates passed: `projectile_contact_test.gd`,
+  `projectile_settling_test.gd`, `containment_wall_test.gd`,
+  `paint_queue_determinism_test.gd`, `phase3_paint_test.gd`, and
+  `phase3_projectile_paint_test.gd`.
+- Focused state and consumer gates passed: `phase4_state_test.gd`,
+  `shot_observation_test.gd`, `replay_presentation_test.gd`,
+  `shot_feedback_test.gd`, `localization_ui_test.gd`, and
+  `phase8_debug_test.gd`. A rejected authoritative paint command is preserved in
+  the sealed observation and forces `STAGE_FAILED`.
+- `scripts/verify.ps1` passed headless project import/script parsing and
+  main-scene startup with Godot `4.7.1.stable.official.a13da4feb`. No visible
+  Godot window or retained Godot process was used.
+
+### Historical verification for superseded or pre-MVP builds
 
 - Active redesign Task 02: `stage_generation_test.gd` passed base and
   fallback-request determinism for all stages. Fallback requests accepted at

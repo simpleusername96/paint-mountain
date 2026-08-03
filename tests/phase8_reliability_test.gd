@@ -44,15 +44,11 @@ func _run_checks() -> void:
 		_assert_true(_projectile_child_count(projectiles) == 0, "retired projectile nodes must be freed")
 	var stop_reasons: Array[StringName] = []
 	projectiles.projectile_stopped.connect(func(_projectile: PaintProjectile, reason: StringName) -> void: stop_reasons.append(reason))
-	projectiles.spawn_projectile(cannon.projectile_data, cannon.get_launch_origin(), Vector3.ZERO, 0.0)
-	await physics_frame
-	await process_frame
 	var lifetime_data := cannon.projectile_data.duplicate(true) as ProjectileData
 	lifetime_data.maximum_lifetime = 0.01
 	projectiles.spawn_projectile(lifetime_data, cannon.get_launch_origin() + Vector3.UP * 12.0, Vector3.ZERO)
 	await physics_frame
 	await process_frame
-	_assert_true(stop_reasons.has(&"empty_payload"), "zero-payload projectile must use the empty-payload termination path")
 	_assert_true(stop_reasons.has(&"lifetime"), "expired projectile must use the lifetime termination path")
 	controller.restart(false)
 	await process_frame

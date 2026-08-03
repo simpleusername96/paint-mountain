@@ -5,6 +5,7 @@ signal replay_last_shot_requested
 signal mechanism_labels_toggled(visible: bool)
 
 var _stage_data: StageData
+var _generated_layout: GeneratedStageLayout
 var _controller: StageController
 var _cannon: CannonController
 var _projectiles: ProjectileManager
@@ -16,9 +17,9 @@ var _replay: ReplayRecorder
 var _root: Control
 var _metrics: Label
 var _paint_preview: TextureRect
-var _eligible_preview: TextureRect
+var _target_preview: TextureRect
 var _recent_preview: TextureRect
-var _excluded_preview: TextureRect
+var _nontarget_preview: TextureRect
 var _last_gain: float = 0.0
 var _last_restart_ms: float = 0.0
 var _slow_motion: bool = false
@@ -43,9 +44,11 @@ func configure(
 		trajectory: TrajectoryPreview,
 		camera: CameraDirector,
 		mechanisms: Array[GimmickBase],
-		replay: ReplayRecorder
+		replay: ReplayRecorder,
+		generated_layout: GeneratedStageLayout
 ) -> void:
 	_stage_data = stage_data
+	_generated_layout = generated_layout
 	_controller = controller
 	_cannon = cannon
 	_projectiles = projectiles
@@ -55,9 +58,9 @@ func configure(
 	_mechanisms = mechanisms
 	_replay = replay
 	_paint_preview.texture = _paint.paint_texture()
-	_eligible_preview.texture = _paint.eligible_texture()
+	_target_preview.texture = _paint.target_texture()
 	_recent_preview.texture = _paint.recent_texture()
-	_excluded_preview.texture = _paint.excluded_texture()
+	_nontarget_preview.texture = _paint.nontarget_texture()
 	_controller.shot_result.connect(func(gain: float, _total: float) -> void: _last_gain = gain)
 	_controller.restart_completed.connect(func(elapsed_ms: float) -> void: _last_restart_ms = elapsed_ms)
 
@@ -66,33 +69,39 @@ func _process(_delta: float) -> void:
 	if not visible or _controller == null:
 		return
 	var velocity := Vector3.ZERO
-	var payload := 0.0
 	var active := _projectiles.active_projectiles()
 	if not active.is_empty():
 		velocity = active[0].linear_velocity
-		payload = active[0].remaining_payload
+	var shot_observation := _controller.current_shot_observation()
+	if shot_observation == null:
+		shot_observation = _controller.last_sealed_shot_observation()
+	var shot_command_count := (
+		shot_observation.paint_command_count if shot_observation != null else 0
+	)
 	var mechanism_lines: Array[String] = []
 	for mechanism in _mechanisms:
 		var snapshot := mechanism.state_snapshot()
 		mechanism_lines.append("%s charge=%s cd=%.2f" % [snapshot.kind, snapshot.remaining_charges, snapshot.cooldown])
 	var seed := int(_replay.attempt.get("accepted_seed", 0)) if _replay != null else 0
-	_metrics.text = "STATE  %s\nFPS  %d\nPROJECTILES  %d / %d\nVELOCITY  %s\nPAYLOAD  %.2f\nCOVERAGE  %.3f%%\nSHOT GAIN  %.3f%%\nTRAJECTORY SAMPLES  %d\nFIRST COLLISION  %s\nMECHANISMS\n%s\nSEED  %d\nBOUNDS  %s\nCAMERA  %s\nRESTART  %.3f ms\nFLOW  %s" % [
+	_metrics.text = "STATE  %s\nFPS  %d\nPROJECTILES  %d / %d\nVELOCITY  %s\nPAINT COMMANDS  %d (PENDING %d)\nLAST DRAIN TICK  %d\nMASK CHECKSUM  %d\nCOVERAGE  %.3f%%\nSHOT GAIN  %.3f%%\nTRAJECTORY SAMPLES  %d\nFIRST COLLISION  %s\nMECHANISMS\n%s\nSEED  %d\nBOUNDS  %s\nCAMERA  %s\nRESTART  %.3f ms" % [
 		_controller.state_name(),
 		Engine.get_frames_per_second(),
 		active.size(),
 		ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES,
 		velocity,
-		payload,
+		shot_command_count,
+		_paint.pending_work_count(),
+		_paint.last_drained_physics_tick(),
+		_paint.paint_mask_checksum(),
 		_paint.coverage_percent(),
 		_last_gain,
 		_trajectory.visible_sample_count(),
 		str(_trajectory.first_collision_position) if _trajectory.has_first_collision else "NONE",
 		"\n".join(mechanism_lines) if not mechanism_lines.is_empty() else "NONE",
 		seed,
-		_stage_data.stage_bounds,
+		_generated_layout.containment.containment_bounds,
 		_camera.mode_name(),
 		_last_restart_ms,
-		"ON" if _paint.flow_simulation_enabled else "OFF",
 	]
 
 
@@ -162,9 +171,9 @@ func _build() -> void:
 	previews.add_theme_constant_override("v_separation", 8)
 	content.add_child(previews)
 	_paint_preview = _mask_preview("PAINT MASK", previews)
-	_eligible_preview = _mask_preview("ELIGIBLE MASK", previews)
+	_target_preview = _mask_preview("TARGET MASK", previews)
 	_recent_preview = _mask_preview("RECENT STAMPS", previews)
-	_excluded_preview = _mask_preview("EXCLUDED MASK", previews)
+	_nontarget_preview = _mask_preview("NON-TARGET MASK", previews)
 	var actions := GridContainer.new()
 	actions.columns = 2
 	actions.add_theme_constant_override("h_separation", 8)
@@ -175,7 +184,6 @@ func _build() -> void:
 	_add_action(actions, "FORCE CLEAR", func() -> void: _run_debug_action(func() -> void: _controller.force_stage_clear()))
 	_add_action(actions, "TEST PROJECTILE", func() -> void: _run_debug_action(_spawn_test_projectile))
 	_add_action(actions, "SLOW MOTION", func() -> void: _run_debug_action(_toggle_slow_motion))
-	_add_action(actions, "TOGGLE FLOW", func() -> void: _run_debug_action(func() -> void: _paint.flow_simulation_enabled = not _paint.flow_simulation_enabled))
 	_add_action(actions, "MECHANISM LABELS", func() -> void: _run_debug_action(_toggle_labels))
 	_add_action(actions, "SAVE AIM", func() -> void: _run_debug_action(_save_aim))
 	_add_action(actions, "REPLAY LAST SHOT", func() -> void: _run_debug_action(func() -> void: replay_last_shot_requested.emit()))

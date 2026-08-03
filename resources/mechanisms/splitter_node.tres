@@ -10,7 +10,6 @@ description_key = &"mechanism.splitter.description"
 maximum_charges = 0
 cooldown_seconds = 0.3
 child_count = 3
-child_payload_ratio = 0.3
 child_speed_multiplier = 0.78
 child_minimum_route_speed = 22.0
 child_target_lift = 5.0

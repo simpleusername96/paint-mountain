@@ -16,6 +16,77 @@ static func generate(
 	if profile == null or not profile.is_valid():
 		push_error("Stage generation profile is invalid.")
 		return null
+	var stage_id := stage_data.stage_id if stage_data != null else StringName(
+		String(profile.profile_id).trim_suffix("_v4")
+	)
+	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
+	if stage_data == null:
+		push_error("Production stage generation requires persisted admission proof.")
+		return null
+	var certificate := stage_data.reachability_certificate
+	var permit := stage_data.mvp_permit
+	if certificate == null and permit == null:
+		push_error("Production stage generation requires a certificate or MVP permit.")
+		return null
+	# A present full certificate always supersedes the temporary permit. A stale
+	# full proof fails closed instead of silently falling back to MVP admission.
+	var proof_stage_id: StringName
+	var proof_profile_version: int
+	var proof_requested_seed: int
+	var proof_accepted_seed: int
+	if certificate != null:
+		proof_stage_id = certificate.stage_id
+		proof_profile_version = certificate.profile_version
+		proof_requested_seed = certificate.requested_seed
+		proof_accepted_seed = certificate.accepted_seed
+	else:
+		proof_stage_id = permit.stage_id
+		proof_profile_version = permit.profile_version
+		proof_requested_seed = permit.requested_seed
+		proof_accepted_seed = permit.accepted_seed
+	if proof_stage_id != stage_id \
+			or proof_profile_version != profile.profile_version \
+			or proof_requested_seed != requested_seed:
+		push_error("Stage admission proof identity does not match its production request.")
+		return null
+	var attempt_index := _attempt_index_for_accepted_seed(
+		profile,
+		requested_seed,
+		proof_accepted_seed
+	)
+	if attempt_index < -1:
+		push_error("Certified accepted seed is outside the deterministic attempt sequence.")
+		return null
+	var layout := _build_attempt(
+		stage_id,
+		profile,
+		requested_seed,
+		proof_accepted_seed,
+		attempt_index
+	)
+	if not _validate(profile, layout) or not _finalize_layout(profile, stage_data, layout):
+		var rejection := layout.metrics if layout != null else {"rejection": "route_graph"}
+		push_error("Certified production layout failed structural rebuild: %s" % str(rejection))
+		return null
+	layout.reachability_certificate = certificate
+	layout.mvp_permit = permit
+	if not layout.is_mvp_playable():
+		push_error("Production layout identifiers do not match the persisted admission proof.")
+		return null
+	return layout
+
+
+## Offline structural helper for the certifier and deterministic generation
+## tests. Gameplay and presentation code must call generate(), which fails
+## closed unless it can rebuild the one persisted accepted seed.
+static func generate_structural_sequence(
+		profile: StageGenerationProfile,
+		terrain_seed: int = 0,
+		stage_data: StageData = null
+) -> GeneratedStageLayout:
+	if profile == null or not profile.is_valid():
+		push_error("Stage generation profile is invalid.")
+		return null
 	var contract := profile.generation_contract
 	var stage_id := stage_data.stage_id if stage_data != null else StringName(
 		String(profile.profile_id).trim_suffix("_v4")
@@ -33,6 +104,23 @@ static func generate(
 	var failure_metrics := fallback.metrics if fallback != null else {"rejection": "route_graph"}
 	push_error("Stage generation failed every deterministic attempt and fallback for %s: %s" % [profile.profile_id, str(failure_metrics)])
 	return null
+
+
+static func _attempt_index_for_accepted_seed(
+		profile: StageGenerationProfile,
+		requested_seed: int,
+		accepted_seed: int
+) -> int:
+	var contract := profile.generation_contract
+	for attempt_index in range(contract.attempt_count):
+		var derived_seed := int((
+			requested_seed + attempt_index * contract.attempt_seed_stride
+		) & 0x7fffffff)
+		if derived_seed == accepted_seed:
+			return attempt_index
+	if accepted_seed == profile.fallback_seed:
+		return -1
+	return -2
 
 
 static func _build_attempt(
@@ -58,7 +146,9 @@ static func _build_attempt(
 	layout.cell_count = contract.cell_count
 	layout.local_bounds = contract.local_bounds
 	layout.heights = heights
+	layout.top_topology = TerrainTopTopology.build(layout.cell_count, layout.local_bounds, heights)
 	layout.route_graph = graph
+	layout.containment = ContainmentSpec.new()
 	layout.checksum = _height_checksum(heights)
 	return layout
 
@@ -160,7 +250,7 @@ static func _validate_routes(profile: StageGenerationProfile, layout: GeneratedS
 static func _validate_pads(layout: GeneratedStageLayout) -> bool:
 	for pad in layout.route_graph.pad_nodes():
 		var center := pad.position
-		# Stay inside the fixed 65% flat core after temporary bilinear grid sampling.
+		# Stay inside the fixed 65% pad core on the exact shared triangles.
 		var radius := pad.pad_radius * 0.30
 		for sample_index in range(17):
 			var point := Vector2(center.x, center.z)
@@ -184,108 +274,30 @@ static func _finalize_layout(
 			if layout.mechanism_placements.size() != stage_data.mechanism_loadout.size():
 				layout.metrics["rejection"] = "mechanism_placement"
 				return false
+	var target_result := TargetMaskRasterizer.build(
+		layout.route_graph,
+		layout.top_topology,
+		profile.generation_contract,
+		profile
+	)
+	for key in target_result:
+		if key not in ["bytes", "checksum", "valid", "rejection"]:
+			layout.metrics[key] = target_result[key]
+	if not bool(target_result.get("valid", false)):
+		layout.metrics["rejection"] = target_result.get("rejection", "target_mask")
+		return false
+	if not layout.install_target_mask(
+		target_result.get("bytes", PackedByteArray()),
+		int(target_result.get("checksum", 0))
+	):
+		layout.metrics["rejection"] = "target_mask_install"
+		return false
+	if stage_data != null:
 		layout.decoration_placements = _generate_decorations(stage_data, layout)
 		if layout.decoration_placements.size() != _decoration_count(stage_data.stage_number):
 			layout.metrics["rejection"] = "decoration_placement"
 			return false
-	var contract := profile.generation_contract
-	var eligible_result := _build_eligible_mask(layout, contract)
-	layout.eligible_mask = eligible_result.bytes
-	layout.metrics["eligible_ratio"] = float(eligible_result.count) / float(contract.mask_size * contract.mask_size)
-	_exclude_footprints(layout, contract.mask_size)
-	var eligible_count := 0
-	for byte in layout.eligible_mask:
-		if byte >= 128:
-			eligible_count += 1
-	var eligible_ratio := float(eligible_count) / float(contract.mask_size * contract.mask_size)
-	layout.metrics["eligible_ratio_after_exclusions"] = eligible_ratio
-	layout.eligible_mask_checksum = _byte_checksum(layout.eligible_mask)
 	return true
-
-
-static func _build_eligible_mask(
-		layout: GeneratedStageLayout,
-		contract: StageGenerationContract
-) -> Dictionary:
-	var mask := PackedByteArray()
-	mask.resize(contract.mask_size * contract.mask_size)
-	var sample_size := layout.sample_size()
-	var normal_y := PackedFloat32Array()
-	normal_y.resize(layout.heights.size())
-	var step_x := layout.local_bounds.size.x / float(layout.cell_count.x)
-	var step_z := layout.local_bounds.size.y / float(layout.cell_count.y)
-	for z_index in range(sample_size.y):
-		var back := maxi(z_index - 1, 0)
-		var front := mini(z_index + 1, sample_size.y - 1)
-		for x_index in range(sample_size.x):
-			var left := maxi(x_index - 1, 0)
-			var right := mini(x_index + 1, sample_size.x - 1)
-			var dx := (layout.heights[z_index * sample_size.x + right] - layout.heights[z_index * sample_size.x + left]) \
-					/ maxf(float(right - left) * step_x, step_x)
-			var dz := (layout.heights[front * sample_size.x + x_index] - layout.heights[back * sample_size.x + x_index]) \
-					/ maxf(float(front - back) * step_z, step_z)
-			normal_y[z_index * sample_size.x + x_index] = Vector3(-dx, 1.0, -dz).normalized().y
-	var count := 0
-	for pixel_y in range(contract.mask_size):
-		var normalized_y := (float(pixel_y) + 0.5) / float(contract.mask_size)
-		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, normalized_y)
-		var grid_z := normalized_y * float(layout.cell_count.y)
-		var z0 := mini(floori(grid_z), layout.cell_count.y)
-		var z1 := mini(z0 + 1, layout.cell_count.y)
-		var tz := grid_z - float(z0)
-		for pixel_x in range(contract.mask_size):
-			var normalized_x := (float(pixel_x) + 0.5) / float(contract.mask_size)
-			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, normalized_x)
-			var edge_distance := minf(
-				minf(local_x - layout.local_bounds.position.x, layout.local_bounds.end.x - local_x),
-				minf(local_z - layout.local_bounds.position.y, layout.local_bounds.end.y - local_z)
-			)
-			if edge_distance < 2.5:
-				continue
-			var grid_x := normalized_x * float(layout.cell_count.x)
-			var x0 := mini(floori(grid_x), layout.cell_count.x)
-			var x1 := mini(x0 + 1, layout.cell_count.x)
-			var tx := grid_x - float(x0)
-			var top_height := lerpf(layout.heights[z0 * sample_size.x + x0], layout.heights[z0 * sample_size.x + x1], tx)
-			var bottom_height := lerpf(layout.heights[z1 * sample_size.x + x0], layout.heights[z1 * sample_size.x + x1], tx)
-			if lerpf(top_height, bottom_height, tz) < 4.0:
-				continue
-			var top_normal_y := lerpf(normal_y[z0 * sample_size.x + x0], normal_y[z0 * sample_size.x + x1], tx)
-			var bottom_normal_y := lerpf(normal_y[z1 * sample_size.x + x0], normal_y[z1 * sample_size.x + x1], tx)
-			if lerpf(top_normal_y, bottom_normal_y, tz) < cos(deg_to_rad(75.0)):
-				continue
-			mask[pixel_y * contract.mask_size + pixel_x] = 255
-			count += 1
-	return {"bytes": mask, "count": count}
-
-
-static func _exclude_footprints(layout: GeneratedStageLayout, mask_size: int) -> void:
-	for placement in layout.mechanism_placements:
-		_clear_mask_circle(layout, placement.local_xz, _mechanism_exclusion_radius(placement.mechanism_data.kind), mask_size)
-	for decoration in layout.decoration_placements:
-		_clear_mask_circle(layout, decoration.local_xz, _decoration_footprint_radius(decoration), mask_size)
-
-
-static func _clear_mask_circle(
-		layout: GeneratedStageLayout,
-		center: Vector2,
-		radius: float,
-		mask_size: int
-) -> void:
-	var minimum_u := (center.x - radius - layout.local_bounds.position.x) / layout.local_bounds.size.x
-	var maximum_u := (center.x + radius - layout.local_bounds.position.x) / layout.local_bounds.size.x
-	var minimum_v := (center.y - radius - layout.local_bounds.position.y) / layout.local_bounds.size.y
-	var maximum_v := (center.y + radius - layout.local_bounds.position.y) / layout.local_bounds.size.y
-	var minimum_x := clampi(floori(minimum_u * mask_size - 0.5), 0, mask_size - 1)
-	var maximum_x := clampi(ceili(maximum_u * mask_size - 0.5), 0, mask_size - 1)
-	var minimum_y := clampi(floori(minimum_v * mask_size - 0.5), 0, mask_size - 1)
-	var maximum_y := clampi(ceili(maximum_v * mask_size - 0.5), 0, mask_size - 1)
-	for pixel_y in range(minimum_y, maximum_y + 1):
-		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, (float(pixel_y) + 0.5) / float(mask_size))
-		for pixel_x in range(minimum_x, maximum_x + 1):
-			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, (float(pixel_x) + 0.5) / float(mask_size))
-			if center.distance_squared_to(Vector2(local_x, local_z)) <= radius * radius:
-				layout.eligible_mask[pixel_y * mask_size + pixel_x] = 0
 
 
 static func _generate_decorations(stage_data: StageData, layout: GeneratedStageLayout) -> Array[DecorationPlacement]:
@@ -295,22 +307,10 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, float(z_index) / float(layout.cell_count.y))
 		for x_index in range(2, sample_size.x - 2):
 			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, float(x_index) / float(layout.cell_count.x))
-			if layout.height_at_local(local_x, local_z) < 4.0:
-				continue
 			if layout.normal_at_local(local_x, local_z).y < cos(deg_to_rad(42.0)):
 				continue
-			var route_distance := layout.route_graph.nearest_edge(Vector2(local_x, local_z))
-			var route_edge := route_distance.edge as GeneratedRouteEdge
-			if route_edge != null and float(route_distance.distance) < 0.75 * route_edge.width + 1.0:
-				continue
 			var local_xz := Vector2(local_x, local_z)
-			var mechanism_clear := true
-			for mechanism in layout.mechanism_placements:
-				if local_xz.distance_to(mechanism.local_xz) < _mechanism_exclusion_radius(mechanism.mechanism_data.kind) + 5.0:
-					mechanism_clear = false
-					break
-			if mechanism_clear:
-				candidates.append(local_xz)
+			candidates.append(local_xz)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int((layout.accepted_seed ^ 0x5A17D3C1) & 0x7fffffff)
 	for index in range(candidates.size() - 1, 0, -1):
@@ -320,28 +320,34 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 		candidates[swap_index] = temporary
 	var result: Array[DecorationPlacement] = []
 	var requested_count := _decoration_count(stage_data.stage_number)
+	var support_distance := stage_data.generation_profile.generation_contract.support_distance
+	var target_mask := layout.target_mask
 	for candidate in candidates:
+		var model_id := DECORATION_MODEL_CYCLE[result.size() % DECORATION_MODEL_CYCLE.size()]
+		var is_tree := String(model_id).begins_with("tree_")
+		var scale_value := rng.randf_range(3.0, 4.5) if is_tree else rng.randf_range(2.0, 3.2)
+		var visual_radius := _decoration_visual_radius(model_id, scale_value)
+		if not _decoration_footprint_is_clear(
+			layout,
+			candidate,
+			visual_radius,
+			support_distance,
+			target_mask
+		):
+			continue
 		var separated := true
 		for existing in result:
-			if candidate.distance_to(existing.local_xz) < 4.0:
+			var required_separation := visual_radius \
+					+ _decoration_visual_radius(existing.model_id, existing.uniform_scale)
+			if candidate.distance_to(existing.local_xz) < required_separation:
 				separated = false
 				break
 		if not separated:
 			continue
-		var model_id := DECORATION_MODEL_CYCLE[result.size() % DECORATION_MODEL_CYCLE.size()]
-		var is_tree := String(model_id).begins_with("tree_")
-		var scale_value := rng.randf_range(3.0, 4.5) if is_tree else rng.randf_range(2.0, 3.2)
 		result.append(DecorationPlacement.new(model_id, candidate, rng.randf_range(0.0, 360.0), scale_value))
 		if result.size() >= requested_count:
 			break
 	return result
-
-
-static func _edge_distance(bounds: Rect2, point: Vector2) -> float:
-	return minf(
-		minf(point.x - bounds.position.x, bounds.end.x - point.x),
-		minf(point.y - bounds.position.y, bounds.end.y - point.y)
-	)
 
 
 static func _local_slope_degrees(layout: GeneratedStageLayout, point: Vector2, step: float) -> float:
@@ -363,15 +369,83 @@ static func _mechanism_exclusion_radius(kind: MechanismData.Kind) -> float:
 			return 2.9
 
 
-static func _decoration_footprint_radius(decoration: DecorationPlacement) -> float:
-	var base_radius := 0.35
-	if decoration.model_id == &"tree_pineTallA":
+static func _decoration_visual_radius(model_id: StringName, uniform_scale: float) -> float:
+	# Conservative XZ enclosing radii for the approved imported meshes. Keeping
+	# this geometry contract beside placement avoids loading visual assets in the
+	# deterministic generator.
+	var base_radius := 0.36
+	if model_id == &"tree_pineTallA":
 		base_radius = 0.45
-	elif decoration.model_id == &"rock_smallA":
+	elif model_id == &"rock_smallA":
 		base_radius = 0.40
-	elif decoration.model_id == &"rock_largeA":
+	elif model_id == &"rock_largeA":
 		base_radius = 0.80
-	return base_radius * decoration.uniform_scale + 0.5
+	return base_radius * uniform_scale + 0.5
+
+
+static func _decoration_footprint_is_clear(
+		layout: GeneratedStageLayout,
+		center: Vector2,
+		visual_radius: float,
+		support_distance: float,
+		target_mask: PackedByteArray
+) -> bool:
+	if not layout.local_bounds.grow(-visual_radius).has_point(center):
+		return false
+	var nearest := layout.route_graph.nearest_edge(center)
+	var nearest_edge := nearest.get("edge") as GeneratedRouteEdge
+	if nearest_edge != null and float(nearest.get("distance", INF)) \
+			<= nearest_edge.width * 0.5 \
+					+ support_distance + visual_radius:
+		return false
+	for pad in layout.route_graph.pad_nodes():
+		if center.distance_to(Vector2(pad.position.x, pad.position.z)) \
+				<= pad.pad_radius + 2.0 + visual_radius:
+			return false
+	for mechanism in layout.mechanism_placements:
+		if center.distance_to(mechanism.local_xz) \
+				<= _mechanism_exclusion_radius(mechanism.mechanism_data.kind) \
+						+ 2.0 + visual_radius:
+			return false
+	return _circle_is_outside_target_mask(
+		layout,
+		center,
+		visual_radius,
+		target_mask
+	)
+
+
+static func _circle_is_outside_target_mask(
+		layout: GeneratedStageLayout,
+		center: Vector2,
+		radius: float,
+		target_mask: PackedByteArray
+) -> bool:
+	if target_mask.is_empty():
+		return false
+	var mask_size := StageGenerationContract.REQUIRED_MASK_SIZE
+	var pixel_size := layout.local_bounds.size / float(mask_size)
+	var minimum := center - Vector2.ONE * radius
+	var maximum := center + Vector2.ONE * radius
+	var minimum_pixel := Vector2i(
+		clampi(floori((minimum.x - layout.local_bounds.position.x) / pixel_size.x), 0, mask_size - 1),
+		clampi(floori((minimum.y - layout.local_bounds.position.y) / pixel_size.y), 0, mask_size - 1)
+	)
+	var maximum_pixel := Vector2i(
+		clampi(floori((maximum.x - layout.local_bounds.position.x) / pixel_size.x), 0, mask_size - 1),
+		clampi(floori((maximum.y - layout.local_bounds.position.y) / pixel_size.y), 0, mask_size - 1)
+	)
+	var pixel_half_diagonal := pixel_size.length() * 0.5
+	for pixel_y in range(minimum_pixel.y, maximum_pixel.y + 1):
+		for pixel_x in range(minimum_pixel.x, maximum_pixel.x + 1):
+			var pixel_center := layout.local_bounds.position + Vector2(
+				(float(pixel_x) + 0.5) * pixel_size.x,
+				(float(pixel_y) + 0.5) * pixel_size.y
+			)
+			if center.distance_to(pixel_center) <= radius + pixel_half_diagonal \
+					and target_mask[pixel_y * mask_size + pixel_x] >= 128:
+				return false
+	return true
 
 
 static func _decoration_count(stage_number: int) -> int:
@@ -391,12 +465,4 @@ static func _height_checksum(heights: PackedFloat32Array) -> int:
 		for shift in [0, 8, 16, 24]:
 			hash = hash ^ ((quantized >> shift) & 0xff)
 			hash = int((hash * 16777619) & 0xffffffff)
-	return hash
-
-
-static func _byte_checksum(bytes: PackedByteArray) -> int:
-	var hash: int = 2166136261
-	for byte in bytes:
-		hash = hash ^ byte
-		hash = int((hash * 16777619) & 0xffffffff)
 	return hash

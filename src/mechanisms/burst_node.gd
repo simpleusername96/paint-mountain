@@ -2,21 +2,22 @@ class_name BurstNode
 extends GimmickBase
 
 
-var _deposit_sequence: int = 0
-
-
-func _apply_effect(_projectile: PaintProjectile, _contact: ProjectileContact) -> void:
-	_deposit_sequence += 1
+func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	var world_xz := Vector2(global_position.x, global_position.z)
-	_paint_system.apply_deposit(PaintDepositRequest.new(
-		PaintDepositRequest.SourceKind.BURST,
+	var top_identity := _paint_system.authoritative_top_surface_identity()
+	var intent := RadialPaintMark.new(
+		contact.physics_tick,
+		projectile.spawn_ordinal,
+		contact.source_event_index,
+		-1,
 		_paint_system.terrain_surface_position(world_xz),
 		_paint_system.terrain_surface_normal(world_xz),
 		data.burst_radius,
-		data.burst_paint_amount,
-		true,
-		data.burst_maximum_flow_steps,
-		get_instance_id(),
-		Engine.get_physics_frames(),
-		_deposit_sequence
-	))
+		top_identity.collider_rid,
+		top_identity.contact_owner_id,
+		top_identity.contact_shape_id,
+		int(top_identity.collider_shape_index),
+		RadialPaintMark.Kind.BURST
+	)
+	if not _projectile_manager.submit_radial_paint_intent(intent):
+		push_error("Burst rejected a radial paint intent without stable contact ordering.")

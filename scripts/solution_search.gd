@@ -135,7 +135,6 @@ func _evaluate_shot(shot: Vector3) -> Dictionary:
 		"paint": sparse,
 		"coverage": float(observation.get("coverage_gain", 0.0)),
 		"mechanisms": observation.get("mechanism_activation_kinds", []).duplicate(),
-		"remaining_payload": float(observation.get("current_payload", 0.0)),
 		"penetration_guards": int(observation.get("penetration_guard_count", 0)),
 	}
 	_controller.restart(false, StageController.ActionOrigin.DEBUG)
@@ -156,7 +155,6 @@ func _beam_search(candidates: Array[Dictionary]) -> Dictionary:
 		"coverage": 0.0,
 		"mechanisms": {},
 		"sequence": [],
-		"remaining_payload": 0.0,
 	}]
 	var retained_centers: Dictionary = {}
 	var winner: Dictionary = {}
@@ -176,10 +174,9 @@ func _beam_search(candidates: Array[Dictionary]) -> Dictionary:
 					"parent": state,
 					"candidate": candidate,
 					"painted": painted,
-					"coverage": 100.0 * float(painted) / float(_paint.total_eligible_pixels()),
+					"coverage": 100.0 * float(painted) / float(_paint.total_target_pixels()),
 					"mechanisms": mechanisms,
 					"sequence": sequence,
-					"remaining_payload": candidate.remaining_payload,
 				})
 		proposals.sort_custom(_state_precedes)
 		if proposals.size() > BEAM_WIDTH:
@@ -194,7 +191,6 @@ func _beam_search(candidates: Array[Dictionary]) -> Dictionary:
 				"coverage": proposal.coverage,
 				"mechanisms": proposal.mechanisms,
 				"sequence": proposal.sequence,
-				"remaining_payload": proposal.remaining_payload,
 			})
 			for shot in proposal.sequence:
 				retained_centers[_shot_key(shot)] = shot
@@ -257,8 +253,6 @@ func _state_precedes(a: Dictionary, b: Dictionary) -> bool:
 	var b_required := _required_activation_count(b.mechanisms)
 	if a_required != b_required:
 		return a_required > b_required
-	if not is_equal_approx(float(a.remaining_payload), float(b.remaining_payload)):
-		return float(a.remaining_payload) > float(b.remaining_payload)
 	return _sequence_precedes(a.sequence, b.sequence)
 
 

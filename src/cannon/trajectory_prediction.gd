@@ -63,4 +63,4 @@ func _init(
 
 
 func is_fireable() -> bool:
-	return kind == Kind.COLLISION or kind == Kind.BOUNDS_EXIT
+	return kind == Kind.COLLISION

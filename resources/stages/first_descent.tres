@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="StageData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="StageData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/stage/stage_data.gd" id="1_stage"]
 [ext_resource type="Resource" path="res://resources/stage_generation/first_descent_profile.tres" id="2_profile"]
+[ext_resource type="Resource" path="res://resources/stages/permits/first_descent_mvp_v4.tres" id="3_mvp_permit"]
 
 [resource]
 script = ExtResource("1_stage")
@@ -15,12 +16,11 @@ paint_color = Color(0.03, 0.38, 1, 1)
 star_thresholds = Vector3(4, 7, 10)
 objective_key = &"stage.first_descent.objective"
 generation_profile = ExtResource("2_profile")
+mvp_permit = ExtResource("3_mvp_permit")
 terrain_seed = 845479992
 terrain_center = Vector3(0, -2, -112)
 terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
-initial_aim = Vector3(16, 34, 60)
-stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
 reliable_solution = Array[Vector3]([Vector3(12, 26, 100)])
 briefing_camera_position = Vector3(92, 62, 24)
 briefing_camera_target = Vector3(0, 24, -112)

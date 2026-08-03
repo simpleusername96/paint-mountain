@@ -3,6 +3,7 @@ extends SceneTree
 const STAGE_GENERATION_CONTRACT := preload("res://src/stage_generation/stage_generation_contract.gd")
 const GENERATION_CONTRACT := preload("res://resources/stage_generation/version4_generation_contract.tres")
 const PAINT_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
+const DEFAULT_AIM_SOLVER := preload("res://src/stage_generation/default_aim_solver.gd")
 
 var _failed := false
 
@@ -136,24 +137,44 @@ func _assert_paint_command_contract() -> void:
 
 
 func _assert_certificate_contract() -> void:
-	var default_aim := AimTuple.new(0.0, 38.0, 68)
-	var alternate := AimTuple.new(1.0, 39.0, 70)
-	var certificate := DirectReachabilityCertificate.new(
-		&"first_descent", 4, 845479992, 845479992, [default_aim, alternate],
+	var certificate := DirectReachabilityCertificate.create(
+		&"first_descent", 4, 845479992, 845479992,
+		11, 12, 13, 14, 15, 16, 17,
+		PackedInt32Array([0, 380, 10, 390]), PackedInt32Array([68, 70]),
 		PackedInt32Array([0, 0, 1]), PackedFloat32Array([0.25, 0.20]),
-		PackedFloat32Array([2.0, 1.0]), default_aim, 12345
+		PackedFloat32Array([2.0, 1.0]), 0
 	)
 	_assert_true(certificate.is_valid(), "a complete version-4 reachability certificate must validate")
-	var invalid_index := DirectReachabilityCertificate.new(
-		&"first_descent", 4, 1, 1, [default_aim], PackedInt32Array([1]),
-		PackedFloat32Array([0.1]), PackedFloat32Array([0.1]), default_aim, 1
+	_assert_true(certificate is Resource, "the reachability certificate must be a serializable Resource")
+	_assert_true(certificate.default_aim.is_equal_to(AimTuple.new(0.0, 38.0, 68)), "the default aim must reconstruct from the primitive witness arrays")
+	var roundtrip_path := "user://version4_certificate_contract_test.tres"
+	_assert_true(ResourceSaver.save(certificate, roundtrip_path) == OK, "the primitive certificate must serialize as a tres resource")
+	var roundtrip := ResourceLoader.load(roundtrip_path, "DirectReachabilityCertificate", ResourceLoader.CACHE_MODE_REPLACE) as DirectReachabilityCertificate
+	_assert_true(roundtrip != null and roundtrip.is_valid(), "the serialized certificate must load and validate")
+	_assert_true(roundtrip != null and roundtrip.default_aim.is_equal_to(certificate.default_aim), "certificate round-trip must preserve the reconstructed default aim")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(roundtrip_path))
+	var witness_copy := certificate.witness_angle_tenths_read_only()
+	witness_copy[0] = 99
+	_assert_true(is_zero_approx(certificate.witnesses[0].yaw_degrees), "runtime witness array views must not mutate certificate state")
+	var invalid_index := DirectReachabilityCertificate.create(
+		&"first_descent", 4, 1, 1,
+		1, 2, 3, 4, 5, 6, 7,
+		PackedInt32Array([0, 380]), PackedInt32Array([68]), PackedInt32Array([1]),
+		PackedFloat32Array([0.1]), PackedFloat32Array([0.1]), 0
 	)
 	_assert_true(not invalid_index.is_valid(), "out-of-range witness indices must be rejected")
+	var selected: int = DEFAULT_AIM_SOLVER.select_witness_index(
+		[AimTuple.new(2.0, 40.0, 70), AimTuple.new(-1.0, 39.0, 60), AimTuple.new(1.0, 39.0, 60)],
+		PackedVector3Array([Vector3(4.0, 0.0, 0.0), Vector3(-2.0, 0.0, 0.0), Vector3(2.0, 0.0, 0.0)]),
+		Vector2.ZERO
+	)
+	_assert_true(selected == 1, "equal centroid distances must use absolute yaw, elevation, power, then signed yaw")
 
 
 func _assert_containment_contract() -> void:
 	var containment := ContainmentSpec.new()
 	_assert_true(containment.is_valid(), "the fixed v4 containment contract must validate")
+	_assert_true(containment.checksum() != 0 and containment.checksum() == ContainmentSpec.new().checksum(), "containment checksum must be nonzero and deterministic")
 	_assert_true(is_equal_approx(containment.backstop_front_z(), -172.25), "backstop front face must be the fixed rear terrain join")
 	_assert_true(ContainmentSpec.BACKSTOP_OWNER_ID == &"world/backstop" and ContainmentSpec.BACKSTOP_SHAPE_ID == &"BackstopWall", "backstop stable IDs must match the contact contract")
 	_assert_true(not ContainmentSpec.new(4, containment.containment_bounds, containment.apron_xz_bounds, -30.5, containment.backstop_center, containment.backstop_size, 0.25, 0.02).is_valid(), "containment gaps above 0.01 m must be rejected")

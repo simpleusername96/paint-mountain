@@ -406,6 +406,41 @@ Height synthesis is fixed as follows:
    triangle parity is exact before engine conversion; deterministic engine ray
    fixtures may differ from the source triangle point by at most `0.01 m`.
 
+Task-1.2 synthesis correction, locked on 2026-08-03 after exact-triangle
+measurement:
+
+- The original per-edge fold above is defective when a route envelope is wider
+  than the `12..14 m` graph-station spacing: non-adjacent parts of one chain
+  overlap and select incompatible heights, producing false `72..82 deg` walls
+  inside the target. For each route, geometric envelope distance therefore uses
+  the nearest projected segment, while route height uses the unique
+  monotonic-Z station interval at that sample. Only the resulting one sample
+  per route participates in cross-route smooth-min/smooth-max blending. This
+  preserves the frozen graph, footprint, branch behavior, and all numeric
+  profile gates while removing the unintended same-route wall.
+- Strong terracing, the `4 m` bank, support falloff, and noise are non-target
+  silhouette treatments. Through every route core plus its complete `12 m`
+  target shoulder, and for one fixed cell diagonal plus `0.01 m` beyond it,
+  the generated floor is the continuous cross-section route height (or the
+  stable cross-route smooth-min at a real branch). This guard is exactly
+  `length(local_bounds.size / cell_count) + 0.01 m` (`3.5455 m` for the locked
+  grid); it ensures that no triangle containing a target-mask pixel samples a
+  non-target terrace or support cliff. It does not add or remove target pixels.
+- The outer falloff reaches full terrain height at the same guard distance
+  before the target band begins: its effective blend width is
+  `outer_band_width - target_triangle_guard`. The boundary remains exactly
+  zero and the target footprint still excludes exactly the fixed outer `12 m`.
+- This is an algorithmic defect correction, not threshold tuning. The first
+  exact raster before correction had ratio `0.243385`, one connected component,
+  and reachable graph nodes, but slope mean/p95/max `28.436/72.057/78.782 deg`,
+  route-core p95 `70.030 deg`, and lip max `77.795 deg`. A Gaussian repair was
+  rejected because four passes still left p95/max `59.254/77.815 deg` and
+  blurred the intended route. With the correction, deterministic attempt `0`
+  is truthfully rejected only for lip `30.136 deg`; attempt `1` passes without
+  altered gates at ratio `0.245663`, mean/p95/max
+  `25.179/29.824/29.825 deg`, route-core p95 `29.824 deg`, and lip max
+  `29.824 deg`.
+
 The concrete shared-surface data model is fixed before Task 1.2:
 
 - `TerrainTopTopology` owns one canonical `PackedVector3Array` of the 73 x 49
@@ -615,8 +650,11 @@ below.
   `0.01 m`. Its collision layer/mask are `1/2`; it is non-target and
   non-paintable. Faceting may vary only above this fixed catch surface and may
   not create a hole or lower exit.
-- Every StageData resource uses containment bounds
-  `AABB((-245,-32,-178),(490,286,230))`, whose end is `(245,254,52)`. A
+- Every generated layout uses containment bounds
+  `AABB((-245,-32,-178),(490,286,230))`, whose end is `(245,254,52)`.
+  `ContainmentSpec` is the sole value owner and `GeneratedStageLayout` carries
+  it into trajectory, projectile, debug, and observation consumers;
+  `StageData` does not duplicate the AABB. A
   full-domain containment proof has two layers. First, a conservative
   no-damping envelope over the continuous aim domain uses all rotated muzzle
   extrema, maximum speed `72 m/s`, yaw `+/-45 deg`, elevation `10..68 deg`, and
@@ -630,7 +668,7 @@ below.
   retires at the end of that physics tick after emitting its contact; it cannot
   be used as a bank shot.
 - `tests/containment_wall_test.gd` runs predictor and real rigid-body launches at
-  canonical tuples `(0,68,100)`, `(-45,50,100)`, and `(45,50,100)`. Each must
+  canonical tuples `(0,46,100)`, `(-28,42,100)`, and `(28,42,100)`. Each must
   first identify `world/backstop/BackstopWall`, report exactly one begun wall
   contact whose normal is within `1 deg` of world `+Z`, emit no mechanism or paint
   command, leave coverage and paint checksum unchanged, set linear and angular
@@ -643,6 +681,22 @@ below.
   a mechanism with its semantic color, and shell/apron/backstop as a coral miss
   marker. The arc always ends at the measured first collider and never displays
   a fictitious post-impact route.
+
+Task-1.3 wall-fixture correction, locked on 2026-08-04 after production-physics
+measurement:
+
+- The original `(0,68,100)` fixture cannot reach the wall at `z=-172.25` with
+  the locked `0.18` linear damping: its horizontal asymptote is about `150 m`
+  from the production muzzle while the wall requires about `176 m`. The
+  original `+/-45,50,100` fixtures also meet non-wall containment first.
+- A bounded canonical predictor scan selected robust BACKSTOP-first replacements
+  without changing the cannon, wall, speed, damping, collision, or containment
+  contracts. Center `(0,46,100)` hits `(0,73.901,-172.25)` after `5.499 s` with
+  `104.381 m` minimum wall-edge clearance. Left/right `(-28,42,100)` and
+  `(28,42,100)` hit `(+/-91.511,50.302,-172.25)` after `6.089 s` with
+  `80.782 m` minimum wall-edge clearance. These three tuples are now the sole
+  locked wall-contact fixtures; the impossible tuples are retained here only
+  as correction rationale and must not appear in the executable test.
 
 ### Contact, paint commands, and rasterization
 
@@ -727,10 +781,12 @@ below.
   projectile ticks and a drain covering the last emitted command tick.
 - The production `ProjectileData` normal-terrain baseline is radius `0.52 m`,
   mass `2.4 kg`, bounce `0.08`, friction `0.78`, linear damping `0.18`, and
-  angular damping `0.35`. `TerrainTopBody`, `TerrainShellBody`, and the apron use
-  the same explicit normal-terrain `PhysicsMaterial` pairing as the projectile
-  fixture; no scene-local material may override bounce `0.08` or friction
-  `0.78`. Backstop termination bypasses restitution by zeroing velocity after
+  angular damping `0.35`. It is the sole owner of projectile restitution and
+  friction tuning. `TerrainTopBody`, `TerrainShellBody`, and the apron share one
+  explicit restitution-neutral `PhysicsMaterial` (`bounce=0`, `friction=1`) so
+  a second surface value cannot amplify the projectile's configured rebound;
+  no scene-local material may override it. Backstop termination bypasses
+  restitution by zeroing velocity after
   its first contact. On the fixed flat/ramp fixtures, the first post-impact
   normal speed is at most `10%` of incoming normal speed; on target slopes at or
   below `30 deg`, the ball returns to sustained contact, rolling, or settlement
@@ -1126,6 +1182,41 @@ types contain no amount/payload/hand-authored-initial-aim aliases; the focused
 Goal: First Descent visibly and mechanically demonstrates the corrected game
 before Stage 2/3 or broad presentation work continues.
 
+MVP priority amendment (2026-08-04, explicit user direction):
+
+- Basic playable behavior precedes release-grade per-texel precision and solver
+  performance. Stop the exhaustive Task-1.2 reachability/certificate loop after
+  preserving its fail-closed tooling and evidence. Do not widen its tolerance,
+  relabel a failed certificate, or keep optimizing it while the core loop is
+  absent.
+- The Stage 1 MVP contract is exactly: the stationary cannon accepts canonical
+  yaw/elevation/power and Fire; one real `PaintProjectile` collides with the
+  visible 3D target, has only a short normal rebound, then rolls/slides or
+  settles; every target-top contact interval emits continuous typed paint; one
+  authoritative `PaintSystem` mask drives both visible paint and coverage; the
+  shot resolves only after the last projectile and paint drain; Restart restores
+  the same deterministic stage. No payload/depletion/downhill-flow behavior may
+  remain in this slice.
+- Implement in this order: finish contact intent (1.3), continuous raster/drain
+  (1.4), payload/state removal (1.5), then install one honest Stage 1 MVP
+  admission permit and run the integrated core-loop proof. Only after that MVP
+  works does execution resume the all-target exact certificate portion of 1.2,
+  balance search, or reachability performance work.
+- `StageMvpPermit` is a typed, persisted, temporary proof boundary, not a partial
+  or mislabeled `DirectReachabilityCertificate`. It binds stage/profile/seed and
+  height/target/placement/containment checksums to one canonical default aim
+  whose predictor and production rigid body first hit `terrain/top` within
+  `8 m` of the target centroid. `GeneratedStageLayout.is_mvp_playable()` accepts
+  either a valid full certificate or this permit; `StageController` may enter
+  the MVP from that method. A full certificate supersedes the permit, and final
+  release/export acceptance rejects any stage that has only an MVP permit.
+- The integrated MVP gate is headless first and uses the real gameplay owners,
+  not a duplicate miniature game: deterministic Stage 1 construction, default
+  aim, Fire, physical contact, at least `0.75 s` target-top contact, at least
+  `25 m` surface path, continuous centerline paint, positive coverage, paint
+  drain, shot result, and Restart must all pass. A visible run occurs only in
+  the already user-coordinated Stage 1 session after this headless gate passes.
+
 Preconditions:
 
 - Phase 0 acceptance and batch gate pass.
@@ -1209,7 +1300,10 @@ for certified target/default-aim handoff, not a passing Task-1.1 result.
     `--stage=first_descent --write-certificate=res://resources/stages/certificates/first_descent_v4.tres`,
     rerun it three times with `--verify-only`, and commit the resource only with
     identical evidence.
-- [ ] **1.3** Produce complete contact events and contact-derived paint intent.
+  - MVP ordering: shared geometry, target, apron/backstop, containment, and
+    default-hit infrastructure remain prerequisites; the all-target witness
+    loop and persisted full certificate are parked until Task 1.MVP passes.
+- [x] **1.3** Produce complete contact events and contact-derived paint intent.
   - Change: emit every begun contact, maintain the current top-contact interval
     inside `_integrate_forces`, install the fixed low-rebound production tuning,
     implement the exact gap proof and backstop settlement, and create impact,
@@ -1220,20 +1314,51 @@ for certified target/default-aim handoff, not a passing Task-1.1 result.
     as a fabricated contact. The three locked wall launches satisfy the exact
     one-contact/zero-paint/zero-velocity/same-tick-retirement contract and cannot
     bank back into play.
-- [ ] **1.4** Rasterize and drain continuous surface paint.
+- [x] **1.4** Rasterize and drain continuous surface paint.
   - Change: add the late sorted queue, exact endpoint snapping/component rule,
     3D capsule/radial rasterization, threshold coverage, dirty batching, and
     drain/checksum signal.
   - Accept: flat/ramp widths meet contract, continuous contact has no unpainted
     centerline texel, a proven two-tick micro-gap paints continuously, a real hop
     stays blank, overlap counts once, and shader/coverage read identical bytes.
-- [ ] **1.5** Remove finite-payload semantics end to end.
+- [x] **1.5** Remove finite-payload semantics end to end.
   - Change: remove fields and branches from projectile/resources, manager,
     StageController, observation, replay, agent, debug, HUD, translation, and
     tests; make settlement wait for paint drain; install schema/replay format 4.
   - Accept: targeted state/observation/replay/UI tests contain no payload facts;
     one physical Stage 1 shot seals after drain with matching paint checksum and
     leaves the player in the correct aiming/result state.
+
+Task 1.5 evidence (2026-08-03): finite payload, depletion, shrinking-footprint,
+downhill-flow, split-conservation, and legacy deposit types/resources are absent
+from production code, resources, schemas, tests, and user-facing copy. Typed
+impact/sweep/Burst commands drain through one `PaintSystem`; observation schema
+and replay format 4 retain contact, settlement, drain, checksum, and coverage
+facts. Focused state, observation, replay, feedback, localization, and debug
+tests pass with no engine or script errors.
+
+- [x] **1.MVP** Admit and prove the basic Stage 1 game loop.
+  - Change: add the typed `StageMvpPermit`, its one-default-hit headless producer,
+    runtime checksum/default-aim validation, and `is_mvp_playable()` admission;
+    use the existing gameplay owners and final Task-1.3/1.4/1.5 behavior.
+  - Accept: the integrated headless MVP gate satisfies every behavior and metric
+    in the priority amendment above; production still fails closed on a stale
+    permit, and final release tests still require the full Task-1.2 certificate.
+
+Task 1.MVP evidence (2026-08-03): the persisted Stage 1 permit reproduces seed
+`845487911`, default-aim key `-6:591:67`, predictor local hit
+`(-1.203,49.526,-1.708)`, and rigid-body local hit
+`(-1.203,49.526,-1.707)`. Its serialized proof checksum binds that aim and both
+hit witnesses to the exact layout identity, so an aim-only substitution fails
+closed. `stage1_mvp_test.gd` uses the real gameplay scene and owners and passes
+first `terrain/top` contact, `5.100 s` target contact,
+`36.688 m` surface path, `306` parent sweeps, continuous sampled centerline,
+`18.8140%` authoritative coverage, final drain before sealing/result, and
+deterministic Restart. Rejected authoritative paint commands are recorded in the
+sealed observation and force `STAGE_FAILED`; they cannot disappear behind normal
+queue settlement. A stale full certificate cannot fall back to the permit. This
+is an MVP admission only; the exhaustive Task-1.2 certificate remains unchecked
+and parked.
 - [ ] **1.6** Pass the user-coordinated Stage 1 visual go/no-go gate.
   - Change: search the coarse lattice yaw `-45..45` step `5`, elevation `10..66`
     step `4`, power `40..100` step `5`, then the `+/-4 deg / +/-5%` neighbourhood
@@ -1786,15 +1911,16 @@ safety, persistence, or acceptance.
 - Canonical progress: the task checkboxes in this contract.
 - Current phase: Phase 1, headless implementation before the coordinated Stage 1
   visual gate.
-- Next task: 1.2, replace the legacy target/heightmap surface with one exact
-  indexed triangle surface, containment, reachability certificate, and generated
-  default aim for First Descent.
-- Last completed gate: Task 1.1. First Descent now resolves and synthesizes from
-  the immutable version-4 route graph; deterministic base, direct fallback-
-  request, and actual post-attempt fallback cases pass with pinned identities.
-  All stage profiles are schema-migrated, while Stage 2/3 acceptance and the
-  legacy target/surface/default-aim runtime paths remain explicitly unaccepted
-  work for Tasks 1.2 and Phase 2.
+- Next task: 1.6, prepare the Stage 1 user-coordinated visual go/no-go gate from
+  the now-proven core loop. Do not launch a visible session until the user
+  explicitly coordinates it. The exhaustive all-target portion of 1.2 remains
+  parked until that MVP follow-up is scheduled, and Stage 2/3 remain fail-closed.
+- Last completed gate: Tasks 1.5 and 1.MVP. Payload/flow behavior is absent,
+  schema/replay format 4 seals after authoritative drain, the persisted MVP
+  permit reproduces, and the real Stage 1 gameplay gate passes first top contact,
+  5.100 seconds of target contact, 36.688 meters of surface path, 306 continuous
+  sweeps, 18.8140% coverage, drain-before-result, and deterministic Restart.
+  `scripts/verify.ps1` also passes. No visible Godot session was used.
 - Carried-forward implementation foundations: immutable generated layout,
   heightfield/top+shell geometry owner, real rigid-body projectile, physical
   mechanism bodies, manual aim, first-collision predictor, camera safety,

@@ -25,74 +25,86 @@ func _run_checks() -> void:
 	var paint_system: PaintSystem = gameplay.get_node("PaintSystem")
 	var observed := {
 		"applied_count": 0,
-		"request_count": 0,
-		"requested_amount": 0.0,
-		"accepted_amount": 0.0,
+		"radial_count": 0,
+		"impact_count": 0,
+		"settle_count": 0,
+		"sweep_count": 0,
 		"written_pixels": 0,
-		"kinds": {},
+		"newly_painted_pixels": 0,
+		"impact_radii": PackedFloat32Array(),
+		"sweep_radii": PackedFloat32Array(),
 		"stop_reason": &"",
+		"last_drained_tick": -1,
+		"paint_checksum": 0,
 	}
 	manager.projectile_stopped.connect(
 		func(_projectile: PaintProjectile, reason: StringName) -> void:
 			observed.stop_reason = reason
 	)
-	manager.paint_deposit_requested.connect(
-		func(_projectile: PaintProjectile, request: PaintDepositRequest) -> void:
-			observed.request_count += 1
-			observed.requested_amount += request.amount
-			var kind := PaintDepositRequest.source_kind_name(request.source_kind)
-			observed.kinds[kind] = int(observed.kinds.get(kind, 0)) + 1
+	manager.radial_paint_mark_ready.connect(
+		func(command: RadialPaintMark) -> void:
+			observed.radial_count += 1
+			if command.kind == RadialPaintMark.Kind.IMPACT:
+				observed.impact_count += 1
+				observed.impact_radii.append(command.radius)
+			elif command.kind == RadialPaintMark.Kind.SETTLE:
+				observed.settle_count += 1
 	)
-	manager.paint_deposit_resolved.connect(
-		func(
-				_projectile: PaintProjectile,
-				_request: PaintDepositRequest,
-				accepted_amount: float,
-				written_pixel_count: int
-		) -> void:
-			observed.accepted_amount += accepted_amount
-			observed.written_pixels += written_pixel_count
+	manager.surface_paint_sweep_ready.connect(
+		func(command: SurfacePaintSweep) -> void:
+			observed.sweep_count += 1
+			observed.sweep_radii.append(command.footprint_radius)
 	)
-	paint_system.deposit_applied.connect(
-		func(_request: PaintDepositRequest, _accepted: float, _written: int, _newly_painted: int) -> void:
+	paint_system.paint_command_applied.connect(
+		func(_command, written_pixel_count: int, newly_painted_pixel_count: int) -> void:
 			observed.applied_count += 1
+			observed.written_pixels += written_pixel_count
+			observed.newly_painted_pixels += newly_painted_pixel_count
+	)
+	paint_system.paint_commands_drained.connect(
+		func(last_drained_physics_tick: int, _command_count: int, paint_mask_checksum: int) -> void:
+			observed.last_drained_tick = last_drained_physics_tick
+			observed.paint_checksum = paint_mask_checksum
 	)
 	_assert_true(controller.begin_aiming(), "production stage must enter aiming")
 	cannon.set_aim(0.0, 38.0, 68.0)
 	_assert_true(cannon.request_fire(), "production cannon must accept a predicted fire command")
 	var active := manager.active_projectiles()
 	_assert_true(active.size() == 1, "accepted fire must spawn exactly one projectile")
-	var projectile := active[0] if not active.is_empty() else null
-	var initial_payload := projectile.remaining_payload if projectile != null else cannon.projectile_data.initial_payload
-	for _airborne_frame in range(3):
-		await physics_frame
-	if projectile != null and is_instance_valid(projectile):
-		_assert_true(
-			is_equal_approx(projectile.remaining_payload, initial_payload),
-			"airborne travel must consume no paint payload"
-		)
+	if not active.is_empty():
+		_assert_true(active[0].spawn_ordinal == 0, "shot parent must receive stable spawn ordinal zero")
 	var frame_budget := 60 * 24
 	while manager.active_count() > 0 and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
+	await physics_frame
+	await physics_frame
 	paint_system.flush_pending()
 	_assert_true(manager.active_count() == 0, "painted projectile must terminate without an orphan")
-	_assert_true(observed.applied_count > 0, "physical projectile contacts must produce accepted paint deposits")
-	_assert_true(observed.kinds.has(&"impact"), "physical top contact must request an impact deposit")
-	_assert_true(observed.kinds.has(&"trail"), "surface travel must request repeated trail deposits")
+	_assert_true(manager.pending_intent_count() == 0, "projectile termination must leave no uncanonicalized paint intent")
+	_assert_true(observed.applied_count > 0, "physical target contacts must apply typed paint commands")
+	_assert_true(observed.impact_count > 0, "first target contact must emit an impact mark")
+	_assert_true(observed.sweep_count > 0, "sustained target contact must emit continuous surface sweeps")
 	_assert_true(observed.stop_reason != &"", "projectile termination must publish a bounded stop reason")
-	_assert_true(observed.accepted_amount <= initial_payload + 0.001, "accepted deposits must never exceed finite payload")
-	_assert_true(observed.written_pixels > 0, "accepted deposits must write the authoritative mask")
-	_assert_true(paint_system.coverage_percent() > 0.0, "projectile deposits must increase authoritative coverage")
-	_assert_true(paint_system.persistent_noneligible_pixel_count() == 0, "persistent paint must never enter score-ineligible pixels")
+	if observed.stop_reason == &"settled":
+		_assert_true(observed.settle_count == 1, "target-top settlement must emit exactly one settle mark")
+	for radius in observed.impact_radii:
+		_assert_true(is_equal_approx(radius, cannon.projectile_data.impact_paint_radius), "impact radius must remain fixed for the whole shot")
+	for radius in observed.sweep_radii:
+		_assert_true(is_equal_approx(radius, cannon.projectile_data.paint_footprint_radius), "parent sweep footprint must remain fixed for the whole shot")
+	_assert_true(observed.last_drained_tick >= 0, "paint commands must cross the late fixed-physics drain boundary")
+	_assert_true(observed.paint_checksum == paint_system.paint_mask_checksum(), "drained checksum must match PaintSystem authority")
+	_assert_true(observed.written_pixels > 0 and observed.newly_painted_pixels > 0, "typed commands must write and cross the authoritative threshold")
+	_assert_true(paint_system.coverage_percent() > 0.0, "projectile commands must increase authoritative coverage")
+	_assert_true(paint_system.persistent_nontarget_pixel_count() == 0, "persistent paint must never enter non-target pixels")
 	if not _failed:
 		print(
-			"Phase 3 projectile-paint integration passed: %d/%d accepted/requested, %.1f payload, %.4f%% coverage, kinds=%s." % [
+			"Phase 3 projectile-paint integration passed: %d applied, %d impact, %d sweep, %d settle, %.4f%% coverage." % [
 				observed.applied_count,
-				observed.request_count,
-				observed.accepted_amount,
+				observed.impact_count,
+				observed.sweep_count,
+				observed.settle_count,
 				paint_system.coverage_percent(),
-				observed.kinds,
 			]
 		)
 	Engine.time_scale = 1.0

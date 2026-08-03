@@ -123,6 +123,25 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
 - [x] Screenshots are not a collage, contact sheet, poster, or infographic.
 
+### Stage 1 core-loop MVP evidence (non-release, 2026-08-03)
+
+- [x] A persisted `StageMvpPermit` binds the exact Stage 1 layout identity,
+  canonical default aim, and matching predictor/production-rigid-body target-top
+  hit evidence in one validated proof checksum.
+- [x] The real gameplay scene completes default aim, Fire, `terrain/top`
+  contact, short rebound, sustained roll/slide contact, continuous surface paint,
+  authoritative coverage, final paint drain, shot result, and deterministic
+  Restart without a duplicate miniature implementation.
+- [x] The measured parent contact lasts `5.100 s`, follows `36.688 m` of target
+  surface, emits `306` continuous sweeps, and reaches `18.8140%` authoritative
+  coverage.
+- [x] Rejected authoritative paint commands are recorded in `ShotObservation`
+  and force `STAGE_FAILED`; they cannot be silently sealed as a normal result.
+- [ ] Stage 1 has the target-wide `DirectReachabilityCertificate` required for
+  release. The MVP permit intentionally does not satisfy this item.
+- [ ] The user-coordinated running-game visual gate has passed. No headless test
+  or concept image may satisfy this item.
+
 ### Gameplay and visual reset release gate (active 2026-08-03)
 
 Authority and deterministic target terrain:

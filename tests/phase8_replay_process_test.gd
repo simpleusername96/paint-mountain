@@ -49,8 +49,13 @@ func _run() -> void:
 		var fixture := {
 			"attempt": recorder.export_attempt(),
 			"coverage": observation.coverage_after,
+			"paint_checksum": observation.final_paint_mask_checksum,
+			"paint_command_count": observation.paint_command_count,
 			"impact": [observation.first_contact.world_position.x, observation.first_contact.world_position.y, observation.first_contact.world_position.z],
-			"mechanism_kinds": Array(observation.mechanism_activation_kinds),
+			"contacts": _stable_contact_facts(observation.contacts),
+			"mechanisms": _stable_mechanism_facts(observation.mechanism_activations),
+			"children": _stable_child_facts(observation.child_spawns),
+			"settlements": _stable_settlement_facts(observation.settlements),
 			"result_state": controller.current_state,
 		}
 		var file := FileAccess.open(FIXTURE_PATH, FileAccess.WRITE)
@@ -89,7 +94,12 @@ func _run() -> void:
 			var coverage_delta: float = absf(replay_observation.coverage_after - float(fixture.coverage))
 			_assert_true(first_impact.set and impact_delta <= 0.5, "fresh-process replay first impact must stay within 0.5m")
 			_assert_true(coverage_delta <= 0.1, "fresh-process replay coverage must stay within 0.1 percentage points")
-			_assert_true(Array(replay_observation.mechanism_activation_kinds) == fixture.mechanism_kinds, "fresh-process replay mechanism order must match exactly")
+			_assert_true(replay_observation.final_paint_mask_checksum == int(fixture.paint_checksum) and replay_observation.final_paint_mask_checksum == paint.paint_mask_checksum(), "fresh-process replay paint checksum must match exactly")
+			_assert_true(replay_observation.paint_command_count == int(fixture.paint_command_count), "fresh-process replay command count must match exactly")
+			_assert_true(_stable_contact_facts(replay_observation.contacts) == fixture.contacts, "fresh-process replay contact identities must match exactly")
+			_assert_true(_stable_mechanism_facts(replay_observation.mechanism_activations) == fixture.mechanisms, "fresh-process replay mechanism order must match exactly")
+			_assert_true(_stable_child_facts(replay_observation.child_spawns) == fixture.children, "fresh-process replay child ordinals must match exactly")
+			_assert_true(_stable_settlement_facts(replay_observation.settlements) == fixture.settlements, "fresh-process replay settlements must match exactly")
 			_assert_true(controller.current_state == int(fixture.result_state), "fresh-process replay final state must match")
 			_assert_true(presentation.active, "replay input lock must remain active until explicit exit")
 			print("Phase 8 replay passed across a fresh process: impact Δ %.5fm, coverage Δ %.5f%%." % [impact_delta, coverage_delta])
@@ -107,6 +117,52 @@ func _wait_for_settlement(controller: StageController) -> void:
 		await physics_frame
 		frame_budget -= 1
 	_assert_true(frame_budget > 0, "replay shot must settle inside its bounded lifetime")
+
+
+func _stable_contact_facts(events: Array[Dictionary]) -> Array[Dictionary]:
+	var facts: Array[Dictionary] = []
+	for event in events:
+		facts.append({
+			"spawn_ordinal": int(event.spawn_ordinal),
+			"source_event_index": int(event.source_event_index),
+			"owner": String(event.contact_owner_id),
+			"shape": String(event.contact_shape_id),
+			"local_shape_index": int(event.local_shape_index),
+			"collider_shape_index": int(event.collider_shape_index),
+			"impulse_was_measured": bool(event.impulse_was_measured),
+		})
+	return facts
+
+
+func _stable_mechanism_facts(events: Array[Dictionary]) -> Array[Dictionary]:
+	var facts: Array[Dictionary] = []
+	for event in events:
+		facts.append({
+			"spawn_ordinal": int(event.spawn_ordinal),
+			"mechanism_id": String(event.mechanism_id),
+			"kind": int(event.kind),
+		})
+	return facts
+
+
+func _stable_child_facts(events: Array[Dictionary]) -> Array[Dictionary]:
+	var facts: Array[Dictionary] = []
+	for event in events:
+		facts.append({
+			"spawn_ordinal": int(event.spawn_ordinal),
+			"split_generation": int(event.split_generation),
+		})
+	return facts
+
+
+func _stable_settlement_facts(events: Array[Dictionary]) -> Array[Dictionary]:
+	var facts: Array[Dictionary] = []
+	for event in events:
+		facts.append({
+			"spawn_ordinal": int(event.spawn_ordinal),
+			"reason": String(event.reason),
+		})
+	return facts
 
 
 func _assert_true(condition: bool, message: String) -> void:

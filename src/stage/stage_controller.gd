@@ -33,6 +33,8 @@ enum State {
 }
 
 const SHOT_RESULT_DURATION := 0.7
+const SETTLEMENT_OBSERVER_PRIORITY := 1100
+const CONTAINMENT_DOMAIN_PROOF := preload("res://src/terrain/containment_domain_proof.gd")
 
 var current_state: State = State.LOADING
 var stage_data: StageData
@@ -43,13 +45,21 @@ var _cannon: CannonController
 var _projectile_manager: ProjectileManager
 var _paint_system: PaintSystem
 var _terrain_surface: TerrainSurface
+var _generated_layout: GeneratedStageLayout
 var _mechanisms: Array[GimmickBase] = []
 var _state_before_pause: State = State.BRIEFING
 var _decision_generation: int = 0
 var _shot_observation: ShotObservation
 var _sealed_shot_observation: ShotObservation
-var _settled_unconsumed_payload: float = 0.0
+var _inactive_settlement_ticks: int = 0
+var _last_applied_paint_command_tick: int = -1
+var _last_drained_paint_command_tick: int = -1
+var _last_paint_mask_checksum: int = 0
 var _locked_action_origin: int = -1
+
+
+func _init() -> void:
+	process_physics_priority = SETTLEMENT_OBSERVER_PRIORITY
 
 
 func _ready() -> void:
@@ -58,33 +68,60 @@ func _ready() -> void:
 
 func configure(
 		data: StageData,
+		generated_layout: GeneratedStageLayout,
 		cannon: CannonController,
 		projectile_manager: ProjectileManager,
 		paint_system: PaintSystem,
 		terrain_surface: TerrainSurface,
 		mechanisms: Array[GimmickBase] = []
-) -> void:
+) -> bool:
+	if data == null or cannon == null or projectile_manager == null \
+			or paint_system == null or terrain_surface == null:
+		push_error("StageController requires complete stage runtime dependencies.")
+		return false
+	if generated_layout == null or not generated_layout.is_mvp_playable():
+		push_error("StageController requires a playable GeneratedStageLayout before briefing.")
+		return false
+	var containment_proof: Dictionary = CONTAINMENT_DOMAIN_PROOF.evaluate(
+		cannon,
+		generated_layout.containment
+	)
+	if not bool(containment_proof.get("valid", false)):
+		push_error(
+			"StageController rejected the generated layout's aim-domain containment: %s" \
+					% str(containment_proof)
+		)
+		return false
+	var default_aim := generated_layout.default_aim
+	if default_aim == null or not default_aim.is_valid():
+		push_error("StageController requires a valid generated default aim.")
+		return false
 	stage_data = data
+	_generated_layout = generated_layout
 	_cannon = cannon
 	_projectile_manager = projectile_manager
 	_paint_system = paint_system
 	_terrain_surface = terrain_surface
 	_mechanisms = mechanisms
-	_projectile_manager.stage_bounds = stage_data.stage_bounds
+	_projectile_manager.stage_bounds = _generated_layout.containment.containment_bounds
 	if not _projectile_manager.all_projectiles_settled.is_connected(_on_all_projectiles_settled):
 		_projectile_manager.all_projectiles_settled.connect(_on_all_projectiles_settled)
 	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
 		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
-	if not _projectile_manager.paint_deposit_resolved.is_connected(_on_paint_deposit_resolved):
-		_projectile_manager.paint_deposit_resolved.connect(_on_paint_deposit_resolved)
 	if not _projectile_manager.projectile_stopped.is_connected(_on_projectile_stopped):
 		_projectile_manager.projectile_stopped.connect(_on_projectile_stopped)
 	if not _projectile_manager.projectile_spawned.is_connected(_on_projectile_spawned):
 		_projectile_manager.projectile_spawned.connect(_on_projectile_spawned)
+	if not _paint_system.paint_command_applied.is_connected(_on_paint_command_applied):
+		_paint_system.paint_command_applied.connect(_on_paint_command_applied)
+	if not _paint_system.paint_command_rejected.is_connected(_on_paint_command_rejected):
+		_paint_system.paint_command_rejected.connect(_on_paint_command_rejected)
+	if not _paint_system.paint_commands_drained.is_connected(_on_paint_commands_drained):
+		_paint_system.paint_commands_drained.connect(_on_paint_commands_drained)
 	for mechanism in _mechanisms:
 		if not mechanism.mechanism_activated.is_connected(_on_mechanism_activated):
 			mechanism.mechanism_activated.connect(_on_mechanism_activated)
-	restart(true)
+	return restart(true)
 
 
 func lock_action_origin(origin: ActionOrigin) -> bool:
@@ -136,7 +173,9 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		return false
 	if current_state != State.AIMING or shots_remaining <= 0 or not _cannon.is_aim_valid():
 		return false
-	if _projectile_manager.active_count() > 0 or _paint_system.pending_work_count() > 0:
+	if _projectile_manager.active_count() > 0 \
+			or _projectile_manager.pending_intent_count() > 0 \
+			or _paint_system.pending_work_count() > 0:
 		return false
 	var launch_origin := _cannon.get_launch_origin()
 	var velocity := _cannon.get_launch_velocity()
@@ -147,11 +186,17 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		_cannon.yaw_degrees,
 		_cannon.elevation_degrees,
 		_cannon.power_percent,
-		coverage_before_shot,
-		_cannon.projectile_data.initial_payload
+		coverage_before_shot
 	)
 	_sealed_shot_observation = null
-	_settled_unconsumed_payload = 0.0
+	_inactive_settlement_ticks = 0
+	_last_applied_paint_command_tick = -1
+	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
+	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
+	_shot_observation.record_paint_drain(
+		_last_drained_paint_command_tick,
+		_last_paint_mask_checksum
+	)
 	var projectile := _projectile_manager.spawn_projectile(_cannon.projectile_data, launch_origin, velocity)
 	if projectile == null:
 		_shot_observation = null
@@ -176,7 +221,15 @@ func restart(
 ) -> bool:
 	if not _origin_allowed(origin):
 		return false
-	if stage_data == null or _cannon == null or _projectile_manager == null or _paint_system == null:
+	if stage_data == null or _generated_layout == null or _cannon == null \
+			or _projectile_manager == null or _paint_system == null:
+		return false
+	if not _generated_layout.is_mvp_playable():
+		push_error("Stage restart rejected because its generated layout admission is missing or stale.")
+		return false
+	var default_aim := _generated_layout.default_aim
+	if default_aim == null or not default_aim.is_valid():
+		push_error("Stage restart rejected because its generated default aim is invalid.")
 		return false
 	get_tree().paused = false
 	var started_at := Time.get_ticks_usec()
@@ -190,8 +243,16 @@ func restart(
 	coverage_before_shot = 0.0
 	_shot_observation = null
 	_sealed_shot_observation = null
-	_settled_unconsumed_payload = 0.0
-	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
+	_inactive_settlement_ticks = 0
+	_last_applied_paint_command_tick = -1
+	_last_drained_paint_command_tick = -1
+	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
+	_cannon.set_aim(
+		default_aim.yaw_degrees,
+		default_aim.elevation_degrees,
+		float(default_aim.power_percent),
+		true
+	)
 	_cannon.input_enabled = not return_to_briefing
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
 	_transition_to(State.BRIEFING if return_to_briefing else State.AIMING, true)
@@ -242,7 +303,14 @@ func last_sealed_shot_observation() -> ShotObservation:
 	return _sealed_shot_observation
 
 
-static func result_state_for(coverage: float, target: float, remaining_shots: int) -> State:
+static func result_state_for(
+		coverage: float,
+		target: float,
+		remaining_shots: int,
+		paint_command_rejection_count: int = 0
+) -> State:
+	if paint_command_rejection_count > 0:
+		return State.STAGE_FAILED
 	if coverage + 0.0001 >= target:
 		return State.STAGE_CLEAR
 	if remaining_shots <= 0:
@@ -254,37 +322,59 @@ func _on_all_projectiles_settled() -> void:
 	if current_state != State.PROJECTILE_IN_FLIGHT:
 		return
 	_transition_to(State.PAINT_SETTLING)
-	_paint_system.flush_pending()
+	_inactive_settlement_ticks = 0
 	_decision_generation += 1
-	var generation := _decision_generation
-	_finalize_shot.call_deferred(generation)
 
 
-func _finalize_shot(generation: int) -> void:
-	var stable_ticks := 0
-	while stable_ticks < 2:
-		await get_tree().physics_frame
-		if generation != _decision_generation or current_state != State.PAINT_SETTLING:
-			return
-		if _projectile_manager.active_count() == 0 and _paint_system.pending_work_count() == 0:
-			stable_ticks += 1
-		else:
-			stable_ticks = 0
+func _physics_process(_delta: float) -> void:
+	if current_state != State.PAINT_SETTLING:
+		return
+	var projectiles_inactive := _projectile_manager.active_count() == 0 \
+			and _projectile_manager.pending_intent_count() == 0
+	var paint_inactive := _paint_system.pending_work_count() == 0
+	var drain_covers_last_command := _last_drained_paint_command_tick \
+			>= _last_applied_paint_command_tick
+	if projectiles_inactive and paint_inactive and drain_covers_last_command:
+		_inactive_settlement_ticks += 1
+	else:
+		_inactive_settlement_ticks = 0
+	if _inactive_settlement_ticks < 2:
+		return
+	_inactive_settlement_ticks = 0
+	_seal_shot(_decision_generation)
+
+
+func _seal_shot(generation: int) -> void:
 	if generation != _decision_generation or current_state != State.PAINT_SETTLING:
 		return
 	var coverage := _paint_system.coverage_percent()
 	var gain := maxf(0.0, coverage - coverage_before_shot)
+	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
 	if _shot_observation != null:
-		_shot_observation.record_payload(_aggregate_remaining_payload())
-		_shot_observation.seal(coverage)
+		_shot_observation.seal(
+			coverage,
+			_last_drained_paint_command_tick,
+			_last_paint_mask_checksum
+		)
 		_sealed_shot_observation = _shot_observation
 		shot_observation_sealed.emit(_sealed_shot_observation)
 	_transition_to(State.SHOT_RESULT)
 	shot_result.emit(gain, coverage)
+	_finish_shot_result.call_deferred(generation, coverage)
+
+
+func _finish_shot_result(generation: int, coverage: float) -> void:
 	await get_tree().create_timer(SHOT_RESULT_DURATION, true, false, true).timeout
 	if generation != _decision_generation or current_state != State.SHOT_RESULT:
 		return
-	var result := result_state_for(coverage, stage_data.target_coverage, shots_remaining)
+	var rejection_count := _sealed_shot_observation.paint_command_rejection_count \
+			if _sealed_shot_observation != null else 0
+	var result := result_state_for(
+		coverage,
+		stage_data.target_coverage,
+		shots_remaining,
+		rejection_count
+	)
 	match result:
 		State.STAGE_CLEAR:
 			_transition_to(State.STAGE_CLEAR)
@@ -297,38 +387,81 @@ func _finalize_shot(generation: int) -> void:
 			_transition_to(State.AIMING)
 
 
-func _on_projectile_contact_reported(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
+func _on_projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	if _shot_observation == null or contact == null:
 		return
+	var category: StringName = &"world"
 	if _terrain_surface.is_top_collider(contact.collider):
-		_shot_observation.record_contact(contact, true)
+		category = &"terrain"
 	elif contact.collider is CollisionObject3D and (contact.collider.collision_layer & 4) != 0:
-		_shot_observation.record_contact(contact, false)
+		category = &"mechanism"
+	_shot_observation.record_contact(
+		projectile.spawn_ordinal if is_instance_valid(projectile) else -1,
+		contact,
+		category
+	)
 
 
-func _on_paint_deposit_resolved(
-		_projectile: PaintProjectile,
-		_request: PaintDepositRequest,
-		_accepted_amount: float,
-		_written_pixel_count: int
+func _on_paint_command_applied(
+		command,
+		_written_pixel_count: int,
+		_newly_painted_pixel_count: int
 ) -> void:
-	if _shot_observation == null:
+	if _shot_observation == null or command == null \
+			or current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
 		return
-	_shot_observation.record_payload(_aggregate_remaining_payload())
+	var command_tick := int(command.physics_tick)
+	_last_applied_paint_command_tick = maxi(_last_applied_paint_command_tick, command_tick)
+	_shot_observation.record_paint_command(command_tick)
+
+
+func _on_paint_command_rejected(command) -> void:
+	if _shot_observation == null \
+			or current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
+		return
+	_shot_observation.record_paint_command_rejection(command)
+	push_warning(
+		"Stage shot recorded a rejected authoritative paint command and will fail closed."
+	)
+
+
+func _on_paint_commands_drained(
+		last_drained_physics_tick: int,
+		_command_count: int,
+		paint_mask_checksum: int
+) -> void:
+	if _shot_observation == null \
+			or current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
+		return
+	_last_drained_paint_command_tick = maxi(
+		_last_drained_paint_command_tick,
+		last_drained_physics_tick
+	)
+	_last_paint_mask_checksum = paint_mask_checksum
+	_shot_observation.record_paint_drain(
+		_last_drained_paint_command_tick,
+		paint_mask_checksum
+	)
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
 	if _shot_observation != null:
-		if reason != &"split" and is_instance_valid(projectile):
-			_settled_unconsumed_payload += projectile.remaining_payload
-		_shot_observation.record_settlement(reason)
-		_shot_observation.record_payload(_aggregate_remaining_payload())
+		_shot_observation.record_settlement(
+			projectile.spawn_ordinal if is_instance_valid(projectile) else -1,
+			reason,
+			Engine.get_physics_frames()
+		)
 
 
 func _on_projectile_spawned(projectile: PaintProjectile) -> void:
 	if _shot_observation != null:
 		if projectile.split_generation > 0:
-			_shot_observation.record_children_spawned(1, _projectile_manager.active_count())
+			_shot_observation.record_child_spawn(
+				projectile.spawn_ordinal,
+				projectile.split_generation,
+				Engine.get_physics_frames(),
+				_projectile_manager.active_count()
+			)
 		else:
 			_shot_observation.peak_active_projectile_count = maxi(
 				_shot_observation.peak_active_projectile_count,
@@ -337,12 +470,17 @@ func _on_projectile_spawned(projectile: PaintProjectile) -> void:
 
 
 func _on_mechanism_activated(
-		_mechanism: GimmickBase,
-		_projectile: PaintProjectile,
+		mechanism: GimmickBase,
+		projectile: PaintProjectile,
 		kind: MechanismData.Kind
 ) -> void:
 	if _shot_observation != null:
-		_shot_observation.record_mechanism_activation(kind)
+		_shot_observation.record_mechanism_activation(
+			projectile.spawn_ordinal if is_instance_valid(projectile) else -1,
+			StringName(mechanism.name) if is_instance_valid(mechanism) else &"",
+			kind,
+			Engine.get_physics_frames()
+		)
 
 
 func _transition_to(next_state: State, force: bool = false) -> bool:
@@ -375,13 +513,6 @@ func _is_allowed_transition(from_state: State, to_state: State) -> bool:
 			return true
 		_:
 			return false
-
-
-func _aggregate_remaining_payload() -> float:
-	var remaining := _settled_unconsumed_payload
-	for projectile in _projectile_manager.active_projectiles():
-		remaining += projectile.remaining_payload
-	return remaining
 
 
 func _origin_allowed(origin: ActionOrigin) -> bool:

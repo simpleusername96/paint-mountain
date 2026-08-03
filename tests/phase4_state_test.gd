@@ -20,15 +20,21 @@ func _run_checks() -> void:
 	var cannon: CannonController = gameplay.get_node("Cannon")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var paint_system: PaintSystem = gameplay.get_node("PaintSystem")
+	var layout: GeneratedStageLayout = gameplay.generated_layout()
 	var restart_observation := {"elapsed_ms": -1.0}
 	var observed_states: Array[int] = []
 	controller.state_changed.connect(func(state: int, _previous: int) -> void: observed_states.append(state))
 	controller.restart_completed.connect(func(elapsed_ms: float) -> void: restart_observation.elapsed_ms = elapsed_ms)
 
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "gameplay must begin in briefing")
+	var default_aim := layout.default_aim
+	_assert_true(default_aim != null and default_aim.is_valid(), "First Descent must expose its admitted default aim")
 	_assert_true(
-		is_equal_approx(cannon.yaw_degrees, 16.0) and is_equal_approx(cannon.elevation_degrees, 34.0) and is_equal_approx(cannon.power_percent, 60.0),
-		"First Descent must apply its generated-layout-safe initial aim; got %.1f/%.1f/%.1f" % [cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent]
+		default_aim != null
+				and is_equal_approx(cannon.yaw_degrees, default_aim.yaw_degrees)
+				and is_equal_approx(cannon.elevation_degrees, default_aim.elevation_degrees)
+				and is_equal_approx(cannon.power_percent, float(default_aim.power_percent)),
+		"First Descent must apply its admitted generated default aim; got %.1f/%.1f/%.1f" % [cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent]
 	)
 	_assert_true(controller.begin_aiming(), "briefing must accept the start-aiming action")
 	_assert_true(controller.current_state == StageController.State.AIMING, "begin aiming must enter AIMING")
@@ -41,9 +47,14 @@ func _run_checks() -> void:
 		await physics_frame
 		frame_budget -= 1
 	_assert_true(frame_budget > 0, "shot loop must settle into a decision state")
+	var expected_result := StageController.result_state_for(
+		paint_system.coverage_percent(),
+		controller.stage_data.target_coverage,
+		controller.shots_remaining
+	)
 	_assert_true(
-		controller.current_state == StageController.State.AIMING,
-		"a below-target shot with remaining ammo must return to AIMING; got %s at %.3f%%" % [
+		controller.current_state == expected_result,
+		"the settled shot must enter the coverage-derived decision state; got %s at %.3f%%" % [
 			controller.state_name(), paint_system.coverage_percent()
 		]
 	)
@@ -77,6 +88,11 @@ func _run_checks() -> void:
 	_assert_true(
 		StageController.result_state_for(20.0, 70.0, 2) == StageController.State.AIMING,
 		"remaining shots below target must continue"
+	)
+	_assert_true(
+		StageController.result_state_for(100.0, 70.0, 2, 1) \
+				== StageController.State.STAGE_FAILED,
+		"a rejected authoritative paint command must fail closed even above target"
 	)
 
 	if not _failed:

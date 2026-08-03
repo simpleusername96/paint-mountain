@@ -95,7 +95,7 @@ func _assert_control_inside_viewport(control: Control, label: String) -> void:
 func _assert_translation_contract(locale: String) -> void:
 	var required := [
 		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
-		"hud.payload", "hud.coverage_format", "hud.summary_split", "hud.summary_balls",
+		"hud.coverage_format", "hud.summary_split", "hud.summary_balls",
 		"hud.summary_direct", "hud.first_hint", "mechanism.burst.description",
 		"mechanism.splitter.description", "mechanism.bumper.description", "mechanism.activated",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
@@ -104,8 +104,10 @@ func _assert_translation_contract(locale: String) -> void:
 	for key in required:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
 	if locale == "ko":
-		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 유효 경로에 페인트를 퍼뜨립니다.", "Burst Korean copy must match the frozen brief")
-		_assert_true(tr("mechanism.splitter.description") == "남은 페인트를 세 공으로 나눠 여러 경로로 보냅니다.", "Splitter Korean copy must match the frozen brief")
+		_assert_true(tr("stage.first_descent.objective") == "넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.", "First Descent Korean copy must describe rolling contact paint")
+		_assert_true(tr("stage.split_ridge.objective") == "범퍼와 분열 장치로 세 갈래 경로를 모두 공략하세요.", "Split Ridge Korean copy must avoid obsolete flow language")
+		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 목표 표면에 넓은 자국을 칠합니다.", "Burst Korean copy must match continuous-paint terminology")
+		_assert_true(tr("mechanism.splitter.description") == "각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.", "Splitter Korean copy must describe independent painters")
 		_assert_true(tr("mechanism.bumper.description") == "공을 화살표 방향의 다음 경사로 되돌려 보냅니다.", "Bumper Korean copy must match the frozen brief")
 
 

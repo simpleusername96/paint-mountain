@@ -39,7 +39,6 @@ var _replay_active := false
 var _hint_pending := false
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
-var _last_payload := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -56,8 +55,6 @@ func configure(stage_data: StageData) -> void:
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
 	%BriefingObjective.text = tr(String(stage_data.objective_key))
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
-	update_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
-	update_payload(0.0, 1.0)
 	if stage_data.stage_id == &"first_descent" and not _first_session_hint_seen:
 		_hint_pending = true
 		_first_hint.visible = false
@@ -83,11 +80,6 @@ func update_shots(remaining: int, _maximum: int) -> void:
 func update_coverage(value: float) -> void:
 	_last_coverage = value
 	_coverage.update_coverage(value)
-
-
-func update_payload(remaining: float, initial: float) -> void:
-	_last_payload = Vector2(remaining, initial)
-	_observation.update_payload(remaining, initial)
 
 
 func set_fire_enabled(enabled: bool) -> void:
@@ -187,7 +179,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
-		_observation.update_payload(_last_payload.x, _last_payload.y)
 		if _current_state == StageController.State.BRIEFING and not _stage_data.mechanism_loadout.is_empty():
 			_mechanism.show_brief(_stage_data.mechanism_loadout[0].kind)
 	show_state(_current_state)

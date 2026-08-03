@@ -2,26 +2,36 @@ class_name TerrainGeometryFactory
 extends RefCounted
 
 const DEFAULT_BASE_Y := -12.0
+const MINIMUM_SKIRT_HEIGHT := 8.0
 
 
 static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) -> TerrainGeometry:
 	assert(layout != null and layout.is_valid(), "Terrain geometry requires a valid generated layout.")
-	var cell_size_x := layout.local_bounds.size.x / float(layout.cell_count.x)
-	var cell_size_z := layout.local_bounds.size.y / float(layout.cell_count.y)
-	assert(is_equal_approx(cell_size_x, cell_size_z), "HeightMapShape3D requires square terrain cells.")
+	var topology := layout.top_topology
+	assert(topology != null and topology.is_valid(), "Terrain geometry requires canonical top topology.")
 
 	var top_vertices := PackedVector3Array()
 	var top_normals := PackedVector3Array()
 	var top_uvs := PackedVector2Array()
 	var top_colors := PackedColorArray()
-	_append_top(layout, top_vertices, top_normals, top_uvs, top_colors)
+	var top_source_vertices := PackedInt32Array()
+	var top_source_triangles := PackedInt32Array()
+	_append_top(
+		topology,
+		top_vertices,
+		top_normals,
+		top_uvs,
+		top_colors,
+		top_source_vertices,
+		top_source_triangles
+	)
 
 	var shell_vertices := PackedVector3Array()
 	var shell_normals := PackedVector3Array()
 	var shell_uvs := PackedVector2Array()
 	var shell_colors := PackedColorArray()
-	_append_skirts(layout, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
-	_append_bottom(layout.local_bounds, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
+	_append_skirts(topology, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
+	_append_bottom(topology, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
 
 	var render_vertices := top_vertices.duplicate()
 	render_vertices.append_array(shell_vertices)
@@ -40,16 +50,11 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	var render_mesh := ArrayMesh.new()
 	render_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
-	var scaled_heights := PackedFloat32Array()
-	scaled_heights.resize(layout.heights.size())
-	# The collision node applies one uniform cell-size scale on all axes.
-	for index in range(layout.heights.size()):
-		scaled_heights[index] = layout.heights[index] / cell_size_x
-	var top_shape := HeightMapShape3D.new()
-	top_shape.map_width = layout.sample_size().x
-	top_shape.map_depth = layout.sample_size().y
-	top_shape.map_data = scaled_heights
-
+	var top_shape := ConcavePolygonShape3D.new()
+	# Godot's concave face convention treats the frozen upward render winding as
+	# a back face for physics queries, so collision must explicitly accept it.
+	top_shape.backface_collision = true
+	top_shape.set_faces(topology.expanded_triangle_faces())
 	var skirt_shape := ConcavePolygonShape3D.new()
 	skirt_shape.backface_collision = true
 	skirt_shape.set_faces(shell_vertices)
@@ -58,85 +63,77 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	geometry.render_mesh = render_mesh
 	geometry.top_shape = top_shape
 	geometry.skirt_shape = skirt_shape
-	geometry.local_bounds = layout.local_bounds
-	geometry.cell_size = cell_size_x
+	geometry.top_topology = topology
+	geometry.local_bounds = topology.local_bounds
 	geometry.base_y = base_y
 	geometry.top_vertex_count = top_vertices.size()
 	geometry.shell_vertex_count = shell_vertices.size()
-	geometry.top_triangle_count = layout.cell_count.x * layout.cell_count.y * 2
-	geometry.skirt_triangle_count = (layout.cell_count.x + layout.cell_count.y) * 4
+	geometry.top_triangle_count = topology.triangle_count()
+	geometry.skirt_triangle_count = topology.boundary_vertex_indices_read_only().size() * 2
 	geometry.bottom_triangle_count = 2
+	geometry.top_render_source_vertex_indices = top_source_vertices
+	geometry.top_render_source_triangle_ids = top_source_triangles
 	return geometry
 
 
 static func _append_top(
-		layout: GeneratedStageLayout,
+		topology: TerrainTopTopology,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
 		uvs: PackedVector2Array,
-		colors: PackedColorArray
+		colors: PackedColorArray,
+		source_vertex_indices: PackedInt32Array,
+		source_triangle_ids: PackedInt32Array
 ) -> void:
-	var sample_size := layout.sample_size()
-	for z_index in range(layout.cell_count.y):
-		var z0_ratio := float(z_index) / float(layout.cell_count.y)
-		var z1_ratio := float(z_index + 1) / float(layout.cell_count.y)
-		var z0 := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, z0_ratio)
-		var z1 := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, z1_ratio)
-		for x_index in range(layout.cell_count.x):
-			var x0_ratio := float(x_index) / float(layout.cell_count.x)
-			var x1_ratio := float(x_index + 1) / float(layout.cell_count.x)
-			var x0 := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, x0_ratio)
-			var x1 := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, x1_ratio)
-			var p00 := Vector3(x0, layout.heights[z_index * sample_size.x + x_index], z0)
-			var p01 := Vector3(x0, layout.heights[(z_index + 1) * sample_size.x + x_index], z1)
-			var p10 := Vector3(x1, layout.heights[z_index * sample_size.x + x_index + 1], z0)
-			var p11 := Vector3(x1, layout.heights[(z_index + 1) * sample_size.x + x_index + 1], z1)
-			_append_triangle(
-				vertices, normals, uvs, colors, p00, p01, p10,
-				Vector2(x0_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z0_ratio)
-			)
-			_append_triangle(
-				vertices, normals, uvs, colors, p10, p01, p11,
-				Vector2(x1_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z1_ratio)
-			)
+	var canonical_vertices := topology.canonical_vertices_read_only()
+	var canonical_indices := topology.canonical_triangle_indices_read_only()
+	for source_triangle_id in range(topology.triangle_count()):
+		var corner_offset := source_triangle_id * 3
+		var index_a := canonical_indices[corner_offset]
+		var index_b := canonical_indices[corner_offset + 1]
+		var index_c := canonical_indices[corner_offset + 2]
+		var a := canonical_vertices[index_a]
+		var b := canonical_vertices[index_b]
+		var c := canonical_vertices[index_c]
+		_append_triangle(
+			vertices,
+			normals,
+			uvs,
+			colors,
+			a,
+			b,
+			c,
+			_uv_for(topology.local_bounds, a),
+			_uv_for(topology.local_bounds, b),
+			_uv_for(topology.local_bounds, c)
+		)
+		source_vertex_indices.append_array(PackedInt32Array([index_a, index_b, index_c]))
+		source_triangle_ids.append(source_triangle_id)
 
 
 static func _append_skirts(
-		layout: GeneratedStageLayout,
+		topology: TerrainTopTopology,
 		base_y: float,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
 		uvs: PackedVector2Array,
 		colors: PackedColorArray
 ) -> void:
-	var bounds := layout.local_bounds
-	var size := layout.sample_size()
-	for x_index in range(layout.cell_count.x):
-		var x0 := lerpf(bounds.position.x, bounds.end.x, float(x_index) / float(layout.cell_count.x))
-		var x1 := lerpf(bounds.position.x, bounds.end.x, float(x_index + 1) / float(layout.cell_count.x))
-		var north_a := Vector3(x0, layout.heights[x_index], bounds.position.y)
-		var north_b := Vector3(x1, layout.heights[x_index + 1], bounds.position.y)
-		_append_wall_quad(north_a, north_b, base_y, false, vertices, normals, uvs, colors)
-		var south_offset := (size.y - 1) * size.x
-		var south_a := Vector3(x0, layout.heights[south_offset + x_index], bounds.end.y)
-		var south_b := Vector3(x1, layout.heights[south_offset + x_index + 1], bounds.end.y)
-		_append_wall_quad(south_a, south_b, base_y, true, vertices, normals, uvs, colors)
-	for z_index in range(layout.cell_count.y):
-		var z0 := lerpf(bounds.position.y, bounds.end.y, float(z_index) / float(layout.cell_count.y))
-		var z1 := lerpf(bounds.position.y, bounds.end.y, float(z_index + 1) / float(layout.cell_count.y))
-		var west_a := Vector3(bounds.position.x, layout.heights[z_index * size.x], z0)
-		var west_b := Vector3(bounds.position.x, layout.heights[(z_index + 1) * size.x], z1)
-		_append_wall_quad(west_a, west_b, base_y, true, vertices, normals, uvs, colors)
-		var east_a := Vector3(bounds.end.x, layout.heights[z_index * size.x + size.x - 1], z0)
-		var east_b := Vector3(bounds.end.x, layout.heights[(z_index + 1) * size.x + size.x - 1], z1)
-		_append_wall_quad(east_a, east_b, base_y, false, vertices, normals, uvs, colors)
+	var boundary := topology.boundary_vertex_indices_read_only()
+	for edge_index in range(boundary.size()):
+		var top_a := topology.vertex_at(boundary[edge_index])
+		var top_b := topology.vertex_at(boundary[(edge_index + 1) % boundary.size()])
+		assert(
+			minf(top_a.y, top_b.y) - base_y >= MINIMUM_SKIRT_HEIGHT,
+			"Terrain boundary must retain the minimum visible skirt height."
+		)
+		_append_wall_quad(top_a, top_b, base_y, vertices, normals, uvs, colors)
 
 
 static func _append_wall_quad(
 		top_a: Vector3,
 		top_b: Vector3,
 		base_y: float,
-		reverse: bool,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
 		uvs: PackedVector2Array,
@@ -144,28 +141,41 @@ static func _append_wall_quad(
 ) -> void:
 	var bottom_a := Vector3(top_a.x, base_y, top_a.z)
 	var bottom_b := Vector3(top_b.x, base_y, top_b.z)
-	if reverse:
-		_append_triangle(vertices, normals, uvs, colors, top_a, bottom_a, top_b, Vector2.ZERO, Vector2.DOWN, Vector2.RIGHT, false)
-		_append_triangle(vertices, normals, uvs, colors, top_b, bottom_a, bottom_b, Vector2.RIGHT, Vector2.DOWN, Vector2.ONE, false)
-	else:
-		_append_triangle(vertices, normals, uvs, colors, top_a, top_b, bottom_a, Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN, false)
-		_append_triangle(vertices, normals, uvs, colors, top_b, bottom_b, bottom_a, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN, false)
+	_append_triangle(
+		vertices, normals, uvs, colors,
+		top_a, top_b, bottom_a, Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN, false
+	)
+	_append_triangle(
+		vertices, normals, uvs, colors,
+		top_b, bottom_b, bottom_a, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN, false
+	)
 
 
 static func _append_bottom(
-		bounds: Rect2,
+		topology: TerrainTopTopology,
 		base_y: float,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
 		uvs: PackedVector2Array,
 		colors: PackedColorArray
 ) -> void:
-	var north_west := Vector3(bounds.position.x, base_y, bounds.position.y)
-	var north_east := Vector3(bounds.end.x, base_y, bounds.position.y)
-	var south_east := Vector3(bounds.end.x, base_y, bounds.end.y)
-	var south_west := Vector3(bounds.position.x, base_y, bounds.end.y)
-	_append_triangle(vertices, normals, uvs, colors, north_west, north_east, south_east, Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, false)
-	_append_triangle(vertices, normals, uvs, colors, north_west, south_east, south_west, Vector2.ZERO, Vector2.ONE, Vector2.DOWN, false)
+	var corners := topology.boundary_corner_indices_read_only()
+	var north_west_source := topology.vertex_at(corners[0])
+	var north_east_source := topology.vertex_at(corners[1])
+	var south_east_source := topology.vertex_at(corners[2])
+	var south_west_source := topology.vertex_at(corners[3])
+	var north_west := Vector3(north_west_source.x, base_y, north_west_source.z)
+	var north_east := Vector3(north_east_source.x, base_y, north_east_source.z)
+	var south_east := Vector3(south_east_source.x, base_y, south_east_source.z)
+	var south_west := Vector3(south_west_source.x, base_y, south_west_source.z)
+	_append_triangle(
+		vertices, normals, uvs, colors,
+		north_west, north_east, south_east, Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, false
+	)
+	_append_triangle(
+		vertices, normals, uvs, colors,
+		north_west, south_east, south_west, Vector2.ZERO, Vector2.ONE, Vector2.DOWN, false
+	)
 
 
 static func _append_triangle(
@@ -187,3 +197,10 @@ static func _append_triangle(
 	uvs.append_array(PackedVector2Array([uv_a, uv_b, uv_c]))
 	var classification := Color.WHITE if paintable else Color.BLACK
 	colors.append_array(PackedColorArray([classification, classification, classification]))
+
+
+static func _uv_for(bounds: Rect2, vertex: Vector3) -> Vector2:
+	return Vector2(
+		(vertex.x - bounds.position.x) / bounds.size.x,
+		(vertex.z - bounds.position.y) / bounds.size.y
+	)

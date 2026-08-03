@@ -37,7 +37,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageData` | Typed stage configuration, translation keys, generation profile/seed, and content references | Mutable runtime or accepted generated layout state |
 | `SeededStageGenerator` | Pure deterministic route-graph/layout generation, cheap structural validation, and accepted identity verification | Physics-world solving, stage transitions, paint state, or hand-authored production repair |
 | `StageGenerationCertifier`, `DirectReachabilityValidator`, `DefaultAimSolver` | Headless candidate certification, exact first-hit target-wide reachability, generated default aim, and certificate emission | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
-| `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target mask, reachability certificate, default aim, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
+| `StageMvpPermitProducer` | Temporary headless proof that one persisted default shot completes the Stage 1 core loop against an exact layout identity | Target-wide reachability claims, release certification, runtime search, or authored repair coordinates |
+| `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target mask, full reachability certificate or temporary MVP permit, default aim, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
 | `MechanismPlacementGenerator` | Exact role-owned centerline shelf transform and candidate validation | Placement scoring, alternate cells, activation behavior, or stage outcomes |
 | `TerrainGeometryFactory` | One exact indexed top-triangle list plus closed shell render/collision resources from the accepted layout | Independent triangulation, height interpolation, stage generation, orchestration, or paint state |
 | `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/bounds queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
@@ -68,9 +69,11 @@ This architecture covers the single-process desktop game. It does not define a b
 ### Data contracts
 
 - Use typed `Resource` classes for StageData, ProjectileData, and each mechanism's configuration.
-- StageData owns targets, shots, colors, containment bounds, camera bookmarks,
-  generation profile/seed/certificate reference, mechanism loadout, thresholds,
-  and translation keys. Runtime construction consumes one accepted
+- StageData owns targets, shots, colors, camera bookmarks, generation
+  profile/seed/certificate reference, mechanism loadout, thresholds, and
+  translation keys. `ContainmentSpec` owns the fixed bounds and
+  `GeneratedStageLayout` carries them to runtime consumers. Runtime
+  construction consumes one accepted
   `GeneratedStageLayout`; stage scenes do not own terrain formulas, default aim,
   or production mechanism coordinates.
 - Runtime state is recreated from immutable configuration on restart. Mechanisms expose one physical `struck(projectile, contact)` entry plus shared eligibility and reset; their compound collision matches visible primitives.
@@ -100,6 +103,13 @@ This architecture covers the single-process desktop game. It does not define a b
   checksums, margins, and generated default aim for one accepted layout. Runtime
   validates its identity but never exposes witness tuples as player or agent aim
   assistance.
+- `StageMvpPermit` is a temporary, Stage-1-only admission proof. One serialized
+  proof checksum binds the contract and profile versions, stage and accepted
+  seeds, height/target/placement/containment checksums, canonical default aim,
+  target centroid, and predictor plus production-rigid-body hit identities and
+  local points. Runtime accepts it only when no full certificate is present; a
+  present but stale full certificate fails closed instead of falling back. The
+  permit never satisfies target-wide certification or final release/export.
 - Replay format 4 carries stage/profile versions, accepted seed, height/target/
   reachability/containment checksums, generated default aim, physics FPS, ordered
   canonical manual actions, expected sealed observations, and final paint-mask
@@ -159,6 +169,9 @@ Human / Replay / GameplayAgentApi actions
   three-dimensionally out-of-radius candidates before persistent writes. Every
   persistent visible pixel is scoreable target top. Airborne gaps, downhill
   flow, fabricated pools, decals, and alternative visual-paint state are absent.
+- `ShotObservation` records every rejected authoritative paint command. Any
+  rejection makes that shot fail closed as `STAGE_FAILED`; queue drain and idle
+  settlement cannot silently convert missing paint into a normal shot result.
 - Terrain material samples the same runtime texture. Concept images cannot
   authorize paint that was not produced by a verified surface command.
 
@@ -185,7 +198,8 @@ Human / Replay / GameplayAgentApi actions
 - Save a versioned dictionary to `user://` through a temporary file followed by replacement; invalid or newer incompatible data falls back safely while preserving the bad file for diagnosis.
 - Never let a save failure block gameplay; surface a restrained warning and keep results in memory.
 - Enforce projectile/split/effect and paint-command queue budgets at the request
-  boundary and log rejected debug detail only in development builds.
+  boundary. Record authoritative paint-command rejection in the sealed shot
+  observation, fail that shot closed, and add development-only diagnostic detail.
 - Out-of-bounds safeguards, lifetime, low-speed timeout, and backstop settlement
   converge on idempotent projectile deactivation paths. There is no empty-payload
   termination state.
@@ -198,6 +212,9 @@ Human / Replay / GameplayAgentApi actions
 - Certification rejects any layout unless every target-mask texel has an exact
   runtime-predictor and real-rigid-body first-hit witness on the same shared top
   triangle, and the default witness hits within 8 m of the target centroid.
+- The temporary Stage 1 MVP permit proves only its bound canonical default shot.
+  It is sufficient for headless core-loop development admission but does not
+  satisfy the full-certificate, export, or final-delivery validation gates.
 - Structural render/collider/query/target/paint triangle parity is exact before
   engine conversion; deterministic engine ray positions may differ by at most
   0.01 m.

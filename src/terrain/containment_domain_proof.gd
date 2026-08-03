@@ -1,0 +1,118 @@
+class_name ContainmentDomainProof
+extends RefCounted
+
+## Conservative first-flight containment proof for the complete continuous aim
+## domain. When this envelope passes, no canonical tuple can reach a bounds
+## face before the apron or backstop, so the exact at-risk lattice is empty.
+
+static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Dictionary:
+	if cannon == null or not cannon.is_node_ready() or cannon.projectile_data == null \
+			or spec == null or not spec.is_valid():
+		return {"valid": false, "rejection": &"invalid_input"}
+	var radius := cannon.projectile_data.radius
+	var muzzle_minimum := Vector3(INF, INF, INF)
+	var muzzle_maximum := Vector3(-INF, -INF, -INF)
+	for yaw in _muzzle_extrema_yaws():
+		for elevation in _muzzle_extrema_elevations():
+			var origin := cannon.get_launch_origin_for(yaw, elevation)
+			muzzle_minimum = muzzle_minimum.min(origin)
+			muzzle_maximum = muzzle_maximum.max(origin)
+
+	var gravity_magnitude := float(ProjectSettings.get_setting(
+		"physics/3d/default_gravity",
+		9.8
+	))
+	var gravity_direction := Vector3(ProjectSettings.get_setting(
+		"physics/3d/default_gravity_vector",
+		Vector3.DOWN
+	)).normalized()
+	if gravity_magnitude <= 0.0 or not gravity_direction.is_equal_approx(Vector3.DOWN):
+		return {"valid": false, "rejection": &"invalid_gravity"}
+	var maximum_vertical_speed := cannon.projectile_data.maximum_launch_speed \
+			* sin(deg_to_rad(AimTuple.MAXIMUM_ELEVATION_DEGREES))
+	var maximum_apex_y := muzzle_maximum.y \
+			+ maximum_vertical_speed * maximum_vertical_speed / (2.0 * gravity_magnitude)
+
+	var wall_bounds := spec.backstop_bounds()
+	var rear_contact_center_z := spec.backstop_front_z() + radius
+	var maximum_rear_travel := maxf(muzzle_maximum.z - rear_contact_center_z, 0.0)
+	var maximum_origin_abs_x := maxf(absf(muzzle_minimum.x), absf(muzzle_maximum.x))
+	var maximum_rear_abs_x := maximum_origin_abs_x + maximum_rear_travel \
+			* tan(deg_to_rad(maxf(
+				absf(AimTuple.MINIMUM_YAW_DEGREES),
+				absf(AimTuple.MAXIMUM_YAW_DEGREES)
+			)))
+
+	var wall_safe_half_width := minf(
+		wall_bounds.end.x - spec.backstop_center.x,
+		spec.backstop_center.x - wall_bounds.position.x
+	) - radius
+	var rear_lateral_clearance := wall_safe_half_width - maximum_rear_abs_x
+	var upper_clearance := wall_bounds.end.y - radius - maximum_apex_y
+	var apron_contact_center_y := spec.apron_minimum_y + radius
+	var wall_bottom_overlap := apron_contact_center_y - (wall_bounds.position.y + radius)
+	var lower_clearance := apron_contact_center_y \
+			- (spec.containment_bounds.position.y + radius)
+	var rear_clearance := rear_contact_center_z \
+			- (spec.containment_bounds.position.z + radius)
+	var front_clearance := spec.containment_bounds.end.z - radius - muzzle_maximum.z
+
+	var all_launches_move_rearward := true
+	for yaw in _muzzle_extrema_yaws():
+		for elevation in _muzzle_extrema_elevations():
+			if CannonBallistics.launch_direction(yaw, elevation).z >= 0.0:
+				all_launches_move_rearward = false
+
+	var apron_covers_side_and_front_bounds := is_equal_approx(
+		spec.apron_xz_bounds.position.x,
+		spec.containment_bounds.position.x
+	) and is_equal_approx(
+		spec.apron_xz_bounds.end.x,
+		spec.containment_bounds.end.x
+	) and is_equal_approx(
+		spec.apron_xz_bounds.end.y,
+		spec.containment_bounds.end.z
+	)
+	var valid := rear_lateral_clearance >= 0.0 \
+			and upper_clearance >= 0.0 \
+			and wall_bottom_overlap >= 0.0 \
+			and lower_clearance >= 0.0 \
+			and rear_clearance >= 0.0 \
+			and front_clearance >= 0.0 \
+			and all_launches_move_rearward \
+			and apron_covers_side_and_front_bounds
+	return {
+		"valid": valid,
+		"rejection": &"" if valid else &"continuous_envelope",
+		"muzzle_minimum": muzzle_minimum,
+		"muzzle_maximum": muzzle_maximum,
+		"maximum_apex_y": maximum_apex_y,
+		"maximum_rear_abs_x": maximum_rear_abs_x,
+		"rear_lateral_clearance": rear_lateral_clearance,
+		"upper_clearance": upper_clearance,
+		"wall_bottom_overlap": wall_bottom_overlap,
+		"lower_clearance": lower_clearance,
+		"rear_clearance": rear_clearance,
+		"front_clearance": front_clearance,
+		"all_launches_move_rearward": all_launches_move_rearward,
+		"apron_covers_side_and_front_bounds": apron_covers_side_and_front_bounds,
+		# The continuous envelope dominates every 0.1/0.1/1 canonical tuple.
+		# A passing proof therefore leaves no tuple requiring a bounds-face
+		# predictor exception check; any failed inequality rejects the proof.
+		"exact_lattice_candidate_count": 0 if valid else -1,
+	}
+
+
+static func _muzzle_extrema_yaws() -> PackedFloat32Array:
+	return PackedFloat32Array([
+		AimTuple.MINIMUM_YAW_DEGREES,
+		0.0,
+		AimTuple.MAXIMUM_YAW_DEGREES,
+	])
+
+
+static func _muzzle_extrema_elevations() -> PackedFloat32Array:
+	return PackedFloat32Array([
+		AimTuple.MINIMUM_ELEVATION_DEGREES,
+		AimTuple.MAXIMUM_ELEVATION_DEGREES,
+	])

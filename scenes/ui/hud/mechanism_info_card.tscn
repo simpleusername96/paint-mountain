@@ -30,7 +30,7 @@ text = "분열"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "남은 페인트를 세 공으로 나눠 여러 경로로 보냅니다."
+text = "각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다."
 autowrap_mode = 2
 
 [node name="Timer" type="Timer" parent="."]

@@ -20,7 +20,6 @@ func configure(stage_data: StageData, generated_layout: GeneratedStageLayout = n
 		child.queue_free()
 	for placement in _generated_layout.decoration_placements:
 		_add_decoration(placement)
-	_add_summit_flag()
 
 
 func _add_decoration(placement: DecorationPlacement) -> void:
@@ -46,42 +45,6 @@ func _apply_muted_material(node: Node, is_tree: bool) -> void:
 		if child is MeshInstance3D:
 			(child as MeshInstance3D).material_override = material
 		_apply_muted_material(child, is_tree)
-
-
-func _add_summit_flag() -> void:
-	var summit_xz := Vector2.ZERO
-	var summit_height := -INF
-	for z in range(-46, 47, 8):
-		for x in range(-76, 77, 8):
-			var height := _height_at(float(x), float(z))
-			if height > summit_height:
-				summit_height = height
-				summit_xz = Vector2(float(x), float(z))
-	var flag_root := Node3D.new()
-	flag_root.name = "SummitFlag"
-	flag_root.position = Vector3(
-		_stage_data.terrain_center.x + summit_xz.x,
-		_stage_data.terrain_center.y + summit_height,
-		_stage_data.terrain_center.z + summit_xz.y
-	)
-	add_child(flag_root)
-	var pole_mesh := CylinderMesh.new()
-	pole_mesh.top_radius = 0.09
-	pole_mesh.bottom_radius = 0.12
-	pole_mesh.height = 6.5
-	pole_mesh.radial_segments = 8
-	pole_mesh.material = _material(Color(0.84, 0.87, 0.9, 1.0), 0.55)
-	var pole := MeshInstance3D.new()
-	pole.mesh = pole_mesh
-	pole.position.y = 3.25
-	flag_root.add_child(pole)
-	var flag_mesh := BoxMesh.new()
-	flag_mesh.size = Vector3(3.2, 1.55, 0.1)
-	flag_mesh.material = _material(_stage_data.paint_color, 0.34)
-	var flag := MeshInstance3D.new()
-	flag.mesh = flag_mesh
-	flag.position = Vector3(1.6, 5.15, 0.0)
-	flag_root.add_child(flag)
 
 
 func _material(color: Color, roughness: float) -> StandardMaterial3D:

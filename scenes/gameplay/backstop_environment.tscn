@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/terrain/backstop_environment.gd" id="1_environment"]
+
+[sub_resource type="StandardMaterial3D" id="Material_backstop"]
+albedo_color = Color(0.968627, 0.952941, 0.92549, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="Material_apron"]
+albedo_color = Color(0.839216, 0.827451, 0.796078, 1)
+roughness = 0.88
+
+[node name="BackstopEnvironment" type="Node3D"]
+script = ExtResource("1_environment")
+
+[node name="BackstopWallMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("Material_backstop")
+cast_shadow = 1
+
+[node name="BackstopBody" type="StaticBody3D" parent="."]
+
+[node name="BackstopWall" type="CollisionShape3D" parent="BackstopBody"]
+
+[node name="ApronMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("Material_apron")
+cast_shadow = 1
+
+[node name="ApronBody" type="StaticBody3D" parent="."]
+
+[node name="ApronShape" type="CollisionShape3D" parent="ApronBody"]

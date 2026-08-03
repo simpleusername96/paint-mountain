@@ -36,11 +36,19 @@ func configure(
 	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
 	_stage_controller.stage_cleared.connect(func(coverage: float, _shots: int) -> void: gameplay_event.emit(&"stage_cleared", {"coverage": coverage}))
 	_stage_controller.stage_failed.connect(func(coverage: float, missing: float) -> void: gameplay_event.emit(&"stage_failed", {"coverage": coverage, "missing": missing}))
-	_projectile_manager.projectile_contact_reported.connect(func(_projectile: PaintProjectile, contact: ProjectileContact) -> void: gameplay_event.emit(&"projectile_impacted", {
+	_projectile_manager.projectile_contact_reported.connect(func(projectile: PaintProjectile, contact: ProjectileContact) -> void: gameplay_event.emit(&"projectile_impacted", {
+		"spawn_ordinal": projectile.spawn_ordinal,
 		"position": contact.world_position,
 		"normal": contact.normal,
 		"speed": contact.relative_normal_speed,
-		"collider_id": contact.collider_instance_id,
+		"impulse": contact.impulse,
+		"impulse_was_measured": contact.impulse_was_measured,
+		"contact_owner_id": String(contact.contact_owner_id),
+		"contact_shape_id": String(contact.contact_shape_id),
+		"local_shape_index": contact.local_shape_index,
+		"collider_shape_index": contact.collider_shape_index,
+		"physics_tick": contact.physics_tick,
+		"source_event_index": contact.source_event_index,
 	}))
 
 
@@ -49,19 +57,30 @@ func get_observation() -> Dictionary:
 	for mechanism in _mechanisms:
 		mechanism_states.append(mechanism.state_snapshot())
 	return {
+		"schema_version": ShotObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
 		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else _stage_data.stage_number * 1000 + _stage_data.stage_version,
 		"accepted_seed": _generated_layout.accepted_seed if _generated_layout != null else 0,
 		"height_grid_checksum": _generated_layout.checksum if _generated_layout != null else 0,
+		"layout": _layout_metadata(),
 		"target_coverage": _stage_data.target_coverage,
 		"current_coverage": _paint_system.coverage_percent(),
+		"paint": {
+			"pending_command_count": _paint_system.pending_work_count(),
+			"last_drained_tick": _paint_system.last_drained_physics_tick(),
+			"mask_checksum": _paint_system.paint_mask_checksum(),
+		},
 		"shots_remaining": _stage_controller.shots_remaining,
 		"cannon": {
 			"yaw": _cannon.yaw_degrees,
 			"elevation": _cannon.elevation_degrees,
 			"power": _cannon.power_percent,
 		},
-		"terrain_bounds": _stage_data.stage_bounds,
+		"terrain_bounds": (
+			_generated_layout.containment.containment_bounds
+			if _generated_layout != null and _generated_layout.containment != null
+			else AABB()
+		),
 		"terrain_height_grid": _height_grid(13, 9),
 		"mechanisms": mechanism_states,
 		"previous_shot": _previous_shot.duplicate(true),
@@ -130,3 +149,31 @@ func _height_grid(columns: int, rows: int) -> Array[PackedFloat32Array]:
 			)
 		grid.append(values)
 	return grid
+
+
+func _layout_metadata() -> Dictionary:
+	if _generated_layout == null:
+		return {}
+	var certificate := _generated_layout.reachability_certificate
+	var default_aim := _generated_layout.default_aim
+	return {
+		"profile_id": String(_generated_layout.profile_id),
+		"profile_version": _generated_layout.profile_version,
+		"target_mask_checksum": _generated_layout.target_mask_checksum,
+		"reachability_checksum": (
+			certificate.reachable_target_checksum
+			if certificate != null and certificate.is_valid()
+			else 0
+		),
+		"containment_checksum": (
+			_generated_layout.containment.checksum()
+			if _generated_layout.containment != null
+			else 0
+		),
+		"placement_checksum": _generated_layout.placement_checksum(),
+		"generated_default_aim": {
+			"yaw": default_aim.yaw_degrees,
+			"elevation": default_aim.elevation_degrees,
+			"power": default_aim.power_percent,
+		} if default_aim != null else {},
+	}

@@ -21,7 +21,6 @@ terrain_seed = 671499753
 terrain_center = Vector3(0, -2, -112)
 terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
-stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
 mechanism_loadout = Array[ExtResource("3_splitter")]([ExtResource("3_splitter"), ExtResource("4_bumper")])
 reliable_solution = Array[Vector3]([])
 briefing_camera_position = Vector3(96, 66, 18)

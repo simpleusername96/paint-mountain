@@ -5,13 +5,14 @@ signal navigation_requested(destination: StringName)
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
-const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
+const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 
 @export var stage_data: StageData
 
 @onready var _camera: Camera3D = %Camera
 @onready var _terrain_surface: TerrainSurface = %TerrainSurface
 @onready var _terrain_mesh: MeshInstance3D = %TerrainMesh
+@onready var _backstop_environment: BackstopEnvironment = %BackstopEnvironment
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
 @onready var _aim_input: AimInputController = %AimInputController
@@ -39,12 +40,23 @@ func _ready() -> void:
 	var selected_stage := StageCatalog.get_stage(game_state.selected_stage_id if game_state != null else stage_data.stage_id)
 	if selected_stage != null:
 		stage_data = selected_stage
-	_build_stage_world()
+	if not _build_stage_world():
+		return
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface)
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
-	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _terrain_surface, _mechanisms)
+	if not _stage_controller.configure(
+		stage_data,
+		_generated_layout,
+		_cannon,
+		_projectile_manager,
+		_paint_system,
+		_terrain_surface,
+		_mechanisms
+	):
+		push_error("GameplayScene cannot enter briefing without a certified generated default aim.")
+		return
 	_replay_presentation.configure(_replay_recorder, _stage_controller, _camera_director)
 	_aim_input.configure(_cannon, _stage_controller)
 	_recompute_prediction()
@@ -68,22 +80,13 @@ func _ready() -> void:
 		_trajectory_preview,
 		_camera_director,
 		_mechanisms,
-		_replay_recorder
+		_replay_recorder,
+		_generated_layout
 	)
 	_debug_overlay.replay_last_shot_requested.connect(_start_last_shot_replay)
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
-	_hud.update_payload(_cannon.projectile_data.initial_payload, _cannon.projectile_data.initial_payload)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
-
-
-func _process(_delta: float) -> void:
-	if _stage_controller.current_state not in [StageController.State.PROJECTILE_IN_FLIGHT, StageController.State.PAINT_SETTLING]:
-		return
-	var aggregate_payload := 0.0
-	for projectile in _projectile_manager.active_projectiles():
-		aggregate_payload += projectile.remaining_payload
-	_hud.update_payload(aggregate_payload, _cannon.projectile_data.initial_payload)
 
 
 func generated_layout() -> GeneratedStageLayout:
@@ -108,16 +111,21 @@ func _unhandled_input(event: InputEvent) -> void:
 				_stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN)
 
 
-func _build_stage_world() -> void:
+func _build_stage_world() -> bool:
 	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
 	_generated_layout = SeededStageGenerator.generate(stage_data.generation_profile, stage_data.terrain_seed, stage_data)
-	assert(_generated_layout != null, "Stage generation must produce a validated layout before briefing.")
+	if _generated_layout == null:
+		push_error("Stage generation must produce a validated layout before briefing.")
+		return false
 	_terrain_surface.configure(_generated_layout)
+	_backstop_environment.configure(
+		_generated_layout.containment,
+		stage_data.paint_world_bounds(),
+		stage_data.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+	)
 	_projectile_manager.configure_terrain(_terrain_surface)
 	_cannon.global_transform = stage_data.cannon_transform
-	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
-	_projectile_manager.stage_bounds = stage_data.stage_bounds
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	_paint_system.configure(
@@ -126,18 +134,27 @@ func _build_stage_world() -> void:
 		paint_material,
 		stage_data.paint_color,
 		_generated_layout,
-		PAINT_DEPOSIT_TUNING
+		PAINT_SURFACE_TUNING
+	)
+	var top_body := _terrain_surface.get_node("TerrainTopBody") as StaticBody3D
+	_paint_system.configure_top_surface_identity(
+		top_body.get_rid(),
+		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
+		TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID,
+		0
 	)
 	_terrain_mesh.material_override = paint_material
 	_environment_dressing.configure(stage_data, _generated_layout)
 	_spawn_mechanisms()
+	return true
 
 
 func _connect_systems() -> void:
 	_cannon.aim_changed.connect(_on_aim_changed)
 	_cannon.aim_validity_changed.connect(_hud.set_fire_enabled)
 	_cannon.fire_requested.connect(func(_origin: Vector3, _velocity: Vector3) -> void: _stage_controller.request_fire(StageController.ActionOrigin.HUMAN))
-	_projectile_manager.paint_deposit_requested.connect(_on_paint_deposit_requested)
+	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
+	_projectile_manager.surface_paint_sweep_ready.connect(_paint_system.queue_surface_paint_sweep)
 	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
 	_paint_system.coverage_changed.connect(_hud.update_coverage)
 	_stage_controller.state_changed.connect(_on_state_changed)
@@ -178,17 +195,9 @@ func _recompute_prediction() -> void:
 	var prediction := TrajectoryPredictor.predict(
 		get_world_3d().direct_space_state,
 		_cannon,
-		stage_data.stage_bounds
+		_generated_layout.containment.containment_bounds
 	)
 	_cannon.set_prediction(prediction)
-
-
-func _on_paint_deposit_requested(
-		_projectile: PaintProjectile,
-		request: PaintDepositRequest
-) -> void:
-	var result := _paint_system.apply_deposit(request)
-	_projectile_manager.resolve_paint_deposit(_projectile, request, result)
 
 
 func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:

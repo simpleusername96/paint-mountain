@@ -23,7 +23,6 @@ static func build(
 	noise.fractal_octaves = contract.noise_octaves
 	noise.fractal_lacunarity = contract.noise_lacunarity
 	noise.fractal_gain = contract.noise_gain
-	var ordered_edges := graph.edges
 	var ordered_pads := graph.pad_nodes()
 
 	var sample_size := contract.cell_count + Vector2i.ONE
@@ -42,7 +41,7 @@ static func build(
 				float(x_index) / float(contract.cell_count.x)
 			)
 			heights[z_index * sample_size.x + x_index] = _height_at(
-				Vector2(local_x, local_z), graph, ordered_edges, ordered_pads, contract, noise
+				Vector2(local_x, local_z), graph, ordered_pads, contract, noise
 			)
 	return heights
 
@@ -109,11 +108,35 @@ static func route_footprint_ratio(
 static func _height_at(
 		point: Vector2,
 		graph: GeneratedRouteGraph,
-		edges: Array[GeneratedRouteEdge],
 		pads: Array[GeneratedRouteNode],
 		contract: StageGenerationContract,
 		noise: FastNoiseLite
 ) -> float:
+	# Wide route envelopes overlap several consecutive graph segments. Distance
+	# follows the nearest segment, while height follows the route's monotonic-Z
+	# cross-section. Decoupling them prevents distant parts of the same chain
+	# from introducing a false wall without changing its geometric footprint.
+	var nearest_edge_by_route: Dictionary = {}
+	var nearest_sample_by_route: Dictionary = {}
+	for route_index in range(graph.route_count()):
+		var route_edges := graph.route_edges(route_index)
+		var closest_edge: GeneratedRouteEdge
+		var closest_sample: Dictionary = {}
+		for candidate_edge in route_edges:
+			var candidate_sample := _edge_sample(point, graph, candidate_edge)
+			if closest_sample.is_empty() \
+					or float(candidate_sample.distance) < float(closest_sample.distance) \
+					or (is_equal_approx(float(candidate_sample.distance), float(closest_sample.distance)) \
+							and candidate_edge.edge_index < closest_edge.edge_index):
+				closest_edge = candidate_edge
+				closest_sample = candidate_sample
+		var height_edge := _edge_for_route_z(point.y, graph, route_edges)
+		if closest_edge != null and height_edge != null:
+			var height_sample := _cross_section_sample(point, graph, height_edge)
+			closest_sample["height"] = height_sample.height
+			nearest_edge_by_route[route_index] = closest_edge
+			nearest_sample_by_route[route_index] = closest_sample
+
 	var raw_mass := 0.0
 	var has_mass := false
 	var folded_floor := 0.0
@@ -121,8 +144,13 @@ static func _height_at(
 	var carve_weight := 0.0
 	var nearest_distance := INF
 	var nearest_core_radius := 0.0
-	for edge in edges:
-		var sample := _edge_sample(point, graph, edge)
+	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
+	var target_triangle_guard := cell_size.length() + 0.01
+	for route_index in range(graph.route_count()):
+		var edge: GeneratedRouteEdge = nearest_edge_by_route.get(route_index)
+		if edge == null:
+			continue
+		var sample: Dictionary = nearest_sample_by_route[route_index]
 		var distance := float(sample.distance)
 		var core_radius := edge.width * 0.5
 		if distance >= core_radius + contract.support_distance:
@@ -142,14 +170,11 @@ static func _height_at(
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest_core_radius = core_radius
-		if distance < core_radius + contract.bank_blend_distance:
+		if distance <= core_radius + contract.target_shoulder_distance + target_triangle_guard:
 			folded_floor = _smooth_min(folded_floor, route_height, contract.smooth_min_k) \
 					if has_floor else route_height
 			has_floor = true
-			carve_weight = maxf(
-				carve_weight,
-				1.0 - _smoothstep01((distance - core_radius) / contract.bank_blend_distance)
-			)
+			carve_weight = 1.0
 	var terraced := lerpf(
 		raw_mass,
 		roundf(raw_mass / contract.terrace_step) * contract.terrace_step,
@@ -170,8 +195,14 @@ static func _height_at(
 		) * clampf(raw_mass / contract.terrace_step, 0.0, 1.0)
 		height += noise.get_noise_2d(point.x, point.y) * contract.noise_amplitude * noise_weight
 
+	# Finish the non-target edge falloff one triangle diagonal before the target
+	# band begins, so a target-classified triangle never straddles that cliff.
+	var edge_falloff_width := maxf(
+		contract.outer_band_width - target_triangle_guard,
+		0.001
+	)
 	var edge_blend := _smoothstep01(
-		_edge_distance(contract.local_bounds, point) / contract.outer_band_width
+		_edge_distance(contract.local_bounds, point) / edge_falloff_width
 	)
 	return maxf(0.0, height * edge_blend)
 
@@ -189,6 +220,35 @@ static func _edge_sample(
 	var t := clampf((point - from_xz).dot(delta) / maxf(delta.length_squared(), 0.000001), 0.0, 1.0)
 	return {
 		"distance": point.distance_to(from_xz.lerp(to_xz, t)),
+		"height": lerpf(from.y, to.y, t),
+	}
+
+
+static func _edge_for_route_z(
+		local_z: float,
+		graph: GeneratedRouteGraph,
+		route_edges: Array[GeneratedRouteEdge]
+) -> GeneratedRouteEdge:
+	if route_edges.is_empty():
+		return null
+	for edge in route_edges:
+		var finish := graph.node_by_id(edge.to_node_id).position
+		if local_z <= finish.z:
+			return edge
+	return route_edges[-1]
+
+
+static func _cross_section_sample(
+		point: Vector2,
+		graph: GeneratedRouteGraph,
+		edge: GeneratedRouteEdge
+) -> Dictionary:
+	var from := graph.node_by_id(edge.from_node_id).position
+	var to := graph.node_by_id(edge.to_node_id).position
+	var t := clampf((point.y - from.z) / maxf(to.z - from.z, 0.000001), 0.0, 1.0)
+	var center := Vector2(lerpf(from.x, to.x, t), lerpf(from.z, to.z, t))
+	return {
+		"distance": point.distance_to(center),
 		"height": lerpf(from.y, to.y, t),
 	}
 

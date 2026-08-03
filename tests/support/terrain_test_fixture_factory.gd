@@ -4,6 +4,7 @@ extends RefCounted
 enum Kind {
 	FLAT,
 	RAMP,
+	FACETED,
 }
 
 const CELL_COUNT := Vector2i(12, 12)
@@ -25,7 +26,14 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 	for z_index in range(CELL_COUNT.y + 1):
 		for x_index in range(CELL_COUNT.x + 1):
 			var x := lerpf(BOUNDS.position.x, BOUNDS.end.x, float(x_index) / float(CELL_COUNT.x))
-			layout.heights[z_index * (CELL_COUNT.x + 1) + x_index] = ramp_height(x) if kind == Kind.RAMP else 0.0
+			var z := lerpf(BOUNDS.position.y, BOUNDS.end.y, float(z_index) / float(CELL_COUNT.y))
+			var height := 0.0
+			if kind == Kind.RAMP:
+				height = ramp_height(x)
+			elif kind == Kind.FACETED:
+				height = facet_height(x_index, z_index, x, z)
+			layout.heights[z_index * (CELL_COUNT.x + 1) + x_index] = height
+	layout.top_topology = TerrainTopTopology.build(layout.cell_count, layout.local_bounds, layout.heights)
 	var summit_id := GeneratedRouteNode.summit_id(&"terrain_test_fixture")
 	var exit_id := GeneratedRouteNode.route_node_id(&"terrain_test_fixture", 0, 1)
 	var summit := GeneratedRouteNode.new(
@@ -52,8 +60,14 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 		10.0
 	)
 	layout.route_graph = GeneratedRouteGraph.new([summit, exit], [edge])
+	layout.containment = ContainmentSpec.new()
 	return layout
 
 
 static func ramp_height(x: float) -> float:
 	return tan(deg_to_rad(35.0)) * (x + 15.0)
+
+
+static func facet_height(sample_x: int, sample_z: int, local_x: float, local_z: float) -> float:
+	var keyed_offset := float((sample_x * 7 + sample_z * 11) % 5) * 0.35
+	return 0.12 * local_x + 0.08 * local_z + keyed_offset

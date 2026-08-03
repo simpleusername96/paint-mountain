@@ -33,8 +33,8 @@ func _run_capture() -> void:
 			await _start_stage(&"first_descent", false)
 		"aiming":
 			await _start_stage(&"first_descent", true)
-		"projectile_and_paint_flow":
-			await _capture_paint_flow()
+		"projectile_and_continuous_paint":
+			await _capture_continuous_paint()
 		"stage_clear":
 			await _capture_clear()
 		"stage_failed":
@@ -71,7 +71,7 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	return gameplay
 
 
-func _capture_paint_flow() -> void:
+func _capture_continuous_paint() -> void:
 	var gameplay := await _start_stage(&"burst_basin", true)
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
@@ -79,7 +79,7 @@ func _capture_paint_flow() -> void:
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var solution := StageCatalog.get_stage(&"burst_basin").reliable_solution
 	if solution.is_empty():
-		_fail_capture("Burst Basin has no reliable solution for paint-flow capture")
+		_fail_capture("Burst Basin has no reliable solution for continuous-paint capture")
 		return
 	var shot: Vector3 = solution[0]
 	cannon.set_aim(shot.x, shot.y, shot.z)
@@ -90,7 +90,7 @@ func _capture_paint_flow() -> void:
 		await get_tree().physics_frame
 		budget -= 1
 	if budget <= 0 or paint.coverage_percent() < 20.0 or manager.active_count() == 0:
-		_fail_capture("paint-flow state did not arrive inside the deterministic budget")
+		_fail_capture("continuous-paint state did not arrive inside the deterministic budget")
 		return
 	gameplay.get_node("CameraDirector").set_mode(CameraDirector.Mode.WIDE, true)
 	var camera: Camera3D = gameplay.get_node("Camera")

@@ -53,8 +53,8 @@ func _run_seed_case(
 		label: String
 ) -> GeneratedStageLayout:
 	var started := Time.get_ticks_msec()
-	var first := SeededStageGenerator.generate(stage.generation_profile, requested_seed, stage)
-	var repeated := SeededStageGenerator.generate(stage.generation_profile, requested_seed, stage)
+	var first := SeededStageGenerator.generate_structural_sequence(stage.generation_profile, requested_seed, stage)
+	var repeated := SeededStageGenerator.generate_structural_sequence(stage.generation_profile, requested_seed, stage)
 	var elapsed_ms := Time.get_ticks_msec() - started
 	_assert_true(first != null, "%s %s seed must generate" % [stage.stage_id, label])
 	_assert_true(repeated != null, "%s repeated %s seed must generate" % [stage.stage_id, label])
@@ -66,15 +66,15 @@ func _run_seed_case(
 	_assert_true(first.accepted_seed == repeated.accepted_seed, "%s accepted seed must repeat" % stage.stage_id)
 	_assert_true(first.generation_attempt == repeated.generation_attempt, "%s accepted attempt must repeat" % stage.stage_id)
 	_assert_true(first.checksum == repeated.checksum, "%s height checksum must repeat" % stage.stage_id)
-	_assert_true(first.eligible_mask_checksum == repeated.eligible_mask_checksum, "%s eligible-mask checksum must repeat" % stage.stage_id)
+	_assert_true(first.target_mask_checksum == repeated.target_mask_checksum, "%s target-mask checksum must repeat" % stage.stage_id)
 	_assert_graphs_repeat(stage, first.route_graph, repeated.route_graph)
 	_assert_placements_repeat(stage, first, repeated)
 	_assert_decorations_repeat(stage, first, repeated)
-	print("%s %s: requested=%d accepted=%d attempt=%d checksums=%d/%d footprint=%.6f legacy_eligible=%.6f elapsed_ms=%d" % [
+	print("%s %s: requested=%d accepted=%d attempt=%d checksums=%d/%d footprint=%.6f target=%.6f elapsed_ms=%d" % [
 		stage.stage_id, label, requested_seed, first.accepted_seed, first.generation_attempt,
-		first.checksum, first.eligible_mask_checksum,
+		first.checksum, first.target_mask_checksum,
 		float(first.metrics.get("route_footprint_ratio", -1.0)),
-		float(first.metrics.get("eligible_ratio_after_exclusions", -1.0)), elapsed_ms,
+		float(first.metrics.get("target_ratio", -1.0)), elapsed_ms,
 	])
 	return first
 
@@ -113,7 +113,7 @@ func _run_pinned_fallback_case(
 		)
 
 	var started := Time.get_ticks_msec()
-	var pinned := SeededStageGenerator.generate(
+	var pinned := SeededStageGenerator.generate_structural_sequence(
 		fallback_only_profile,
 		source_profile.base_seed,
 		stage
@@ -126,7 +126,7 @@ func _run_pinned_fallback_case(
 	_assert_true(pinned.accepted_seed == source_profile.fallback_seed, "%s pinned fallback must record the configured fallback seed" % stage.stage_id)
 	_assert_true(pinned.generation_attempt == -1, "%s pinned fallback must record attempt -1" % stage.stage_id)
 	_assert_true(pinned.checksum == fallback_request.checksum, "%s pinned fallback geometry must match the direct fallback-seed request" % stage.stage_id)
-	_assert_true(pinned.eligible_mask_checksum == fallback_request.eligible_mask_checksum, "%s pinned fallback mask must match the direct fallback-seed request" % stage.stage_id)
+	_assert_true(pinned.target_mask_checksum == fallback_request.target_mask_checksum, "%s pinned fallback mask must match the direct fallback-seed request" % stage.stage_id)
 	print("%s pinned-fallback: requested=%d accepted=%d attempt=%d footprint=%.6f elapsed_ms=%d" % [
 		stage.stage_id,
 		pinned.terrain_seed,
@@ -152,8 +152,22 @@ func _assert_layout_contract(stage: StageData, requested_seed: int, layout: Gene
 	_assert_true(maximum_height >= profile.accepted_height_range.x and maximum_height <= profile.accepted_height_range.y, "%s maximum height must stay in profile range" % stage.stage_id)
 	var footprint_ratio := float(layout.metrics.get("route_footprint_ratio", -1.0))
 	_assert_true(footprint_ratio >= profile.target_ratio_range.x and footprint_ratio <= profile.target_ratio_range.y, "%s route footprint ratio must stay in the frozen target band" % stage.stage_id)
-	_assert_true(layout.eligible_mask.size() == 512 * 512, "%s eligible mask must be 512 x 512" % stage.stage_id)
-	_assert_true(layout.eligible_mask_checksum != 0, "%s eligible mask checksum must be populated" % stage.stage_id)
+	_assert_true(layout.target_mask.size() == 512 * 512, "%s target mask must be 512 x 512" % stage.stage_id)
+	_assert_true(layout.target_mask_checksum != 0, "%s target mask checksum must be populated" % stage.stage_id)
+	_assert_true(layout.has_valid_target_mask(), "%s target mask bytes must match their immutable checksum" % stage.stage_id)
+	var target_copy := layout.target_mask
+	target_copy.fill(0)
+	_assert_true(layout.has_valid_target_mask(), "%s callers must not mutate the layout target mask through a returned copy" % stage.stage_id)
+	var target_ratio := float(layout.metrics.get("target_ratio", -1.0))
+	_assert_true(is_equal_approx(target_ratio, footprint_ratio), "%s target construction must not delete pixels by slope or decoration" % stage.stage_id)
+	var mean_slope := float(layout.metrics.get("target_mean_slope", INF))
+	_assert_true(mean_slope >= profile.target_mean_slope_range.x and mean_slope <= profile.target_mean_slope_range.y, "%s exact target mean slope must pass" % stage.stage_id)
+	_assert_true(float(layout.metrics.get("target_p95_slope", INF)) <= profile.target_p95_slope_max, "%s exact target p95 slope must pass" % stage.stage_id)
+	_assert_true(float(layout.metrics.get("target_maximum_slope", INF)) <= profile.target_maximum_slope, "%s exact target maximum slope must pass" % stage.stage_id)
+	_assert_true(float(layout.metrics.get("route_core_p95_slope", INF)) <= profile.route_core_p95_slope_max, "%s exact route-core p95 slope must pass" % stage.stage_id)
+	_assert_true(float(layout.metrics.get("corridor_lip_maximum_slope", INF)) <= profile.corridor_lip_maximum_slope, "%s exact corridor-lip slope must pass" % stage.stage_id)
+	_assert_true(int(layout.metrics.get("component_count", 0)) == 1, "%s target footprint must be one component" % stage.stage_id)
+	_assert_true(bool(layout.metrics.get("graph_nodes_reachable", false)), "%s summit and exit must share the target component" % stage.stage_id)
 	_assert_true(_accepted_seed_belongs_to_sequence(profile, requested_seed, layout), "%s accepted seed must belong to the 32 attempts or pinned fallback" % stage.stage_id)
 	_assert_graph_contract(stage, profile, layout.route_graph, layout.accepted_seed)
 	_assert_edges_are_zero(stage, layout)

@@ -33,7 +33,6 @@ hud.direction_right,RIGHT,오른쪽
 hud.direction_center,CENTER,중앙
 hud.power,POWER,파워
 hud.total,TOTAL,누적
-hud.payload,PAINT LEFT,남은 페인트
 hud.coverage_format,Current %.1f%% / Target %.1f%%,현재 %.1f%% / 목표 %.1f%%
 hud.summary_split,Split %d×,분열 %d회
 hud.summary_balls,%d balls,공 %d개
@@ -58,16 +57,16 @@ result.shots_used,SHOTS USED,사용한 탄
 result.previous_best,PREVIOUS BEST,이전 최고
 result.missing,MISSING,부족 면적
 stage.first_descent.name,FIRST DESCENT,첫 번째 하강
-stage.first_descent.objective,Aim high on the broad slope and let gravity carry the paint.,넓은 경사면의 높은 지점을 노리고 중력으로 페인트를 흘리세요.
+stage.first_descent.objective,Aim high on the broad slope and let the ball paint as it rolls.,넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.
 stage.burst_basin.name,BURST BASIN,폭발 분지
 stage.burst_basin.objective,Hit the high Burst to cover the basin below.,높은 폭발 장치를 맞혀 아래 분지를 넓게 칠하세요.
 stage.split_ridge.name,SPLIT RIDGE,분열 능선
-stage.split_ridge.objective,Use the Bumper and Splitter to reach all three downhill routes.,범퍼와 분열 장치로 세 개의 내리막 경로를 모두 공략하세요.
+stage.split_ridge.objective,Use the Bumper and Splitter to reach all three routes.,범퍼와 분열 장치로 세 갈래 경로를 모두 공략하세요.
 mechanism.burst,BURST,폭발
 mechanism.splitter,SPLITTER,분열
 mechanism.bumper,BUMPER,범퍼
-mechanism.burst.description,Spreads paint across nearby eligible routes when struck.,명중하면 주변 유효 경로에 페인트를 퍼뜨립니다.
-mechanism.splitter.description,"Divides the remaining paint among three balls and sends them along multiple routes.",남은 페인트를 세 공으로 나눠 여러 경로로 보냅니다.
+mechanism.burst.description,Paints a broad mark on the nearby target surface when struck.,명중하면 주변 목표 표면에 넓은 자국을 칠합니다.
+mechanism.splitter.description,Creates three balls that paint independently along multiple routes.,각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.
 mechanism.bumper.description,Redirects the ball toward the next slope in the arrow direction.,공을 화살표 방향의 다음 경사로 되돌려 보냅니다.
 mechanism.activated,ACTIVATED,장치 작동
 mechanism.none,NONE,없음
