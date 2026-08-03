@@ -6,15 +6,43 @@ last_reviewed: 2026-08-03
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
+  - execplans/2026-08-03-core-interaction-redesign.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
 ---
 
 # Project Record
 
+## Current Static-Audit Correction (2026-08-03)
+
+The active implementation authority is
+`execplans/2026-08-03-core-interaction-redesign.md`. A source-level audit after
+the prior remediation release found that several reported outcomes were not
+supported by the current implementation: the terrain render mesh has no closed
+visual shell, projectile contacts fabricate a world-up point, mechanisms use
+gameplay trigger areas instead of matching solid bodies, paint stamping is an
+X/Z approximation, aiming still solves clicked targets, replay input is not
+isolated, and the HUD remains code-built and compositionally inconsistent with
+the supplied reference.
+
+The previously recorded run metrics, screenshots, seeds, and solution results
+below are retained as historical evidence for the superseded build. They do
+not satisfy the active ExecPlan's unchecked acceptance gates. No redesign
+feature is considered implemented until its task-specific tests and final
+production evidence pass.
+
+Task 00 completed the documentation correction only. Static diff/lifecycle
+checks passed; no runtime behavior was changed or claimed. The next executable
+milestone is Task 01, which introduces the typed contracts and `TerrainSurface`
+owner without changing visible gameplay.
+
 ## Context
 
-The repository was created from a complete vertical-slice brief. The 2026-08-02 baseline established the projectile, authoritative paint, gameplay loop, exactly three mechanisms, progression/save, replay, UI-independent agent interface, application shell, debug tools, Windows export, and release evidence. The 2026-08-03 remediation replaced fixed terrain and indirect controls with the completed deterministic generated-stage, direct-target, Korean-first presentation described below.
+The repository was created from a complete vertical-slice brief. The
+2026-08-02 baseline established the broad application and gameplay systems.
+The first 2026-08-03 remediation produced a generated-stage,
+direct-target/Korean-first build, but its completion claims were superseded by
+the static-audit correction above.
 
 ## Decision
 
@@ -46,9 +74,10 @@ The repository was created from a complete vertical-slice brief. The 2026-08-02 
 - The complete menu-to-stage-to-result flow, all three stages and mechanisms, persistence/replay, agent actions, debug tooling, presentation, export, performance evidence, and seven release screenshots run and have focused checks.
 - Future feature completion claims must cite running-game checks and update this record.
 
-## Current Remediation Status (2026-08-03)
+## Superseded Remediation Claims (2026-08-03, Historical)
 
-- `.agents/Plan.md` completed all six phases and is lifecycle `done`. It remains a historical execution record; this document is the current implemented-state source.
+- `.agents/Plan.md` completed all six earlier phases and is lifecycle `done`.
+  Its entries below describe the superseded build and are not current proof.
 - `SeededStageGenerator` produces the exact three deterministic layouts from typed profiles. One accepted immutable `GeneratedStageLayout` supplies the 6,144-triangle mesh, collision, paint queries/mask inputs, dressing, mechanism placement, replay checksum, and agent height observations.
 - Stage profiles increase route count, reversals, shelves, and vertical complexity. Accepted seeds/checksums are First Descent `845487911/3476095321`, Burst Basin `1692123947/1568157987`, and Split Ridge `671737323/3215880357`.
 - Stage 1 has no mechanism, Stage 2 has one Burst, and Stage 3 has one Splitter plus one Bumper. Placement is deterministic and validated; distinct scene-authored 3D silhouettes, compact below-device labels, and validated camera bookmarks keep mechanisms readable.
@@ -71,13 +100,19 @@ The repository was created from a complete vertical-slice brief. The 2026-08-02 
 - Phase 7 application UI and presentation: complete.
 - Phase 8 debugging, delivery, and final QA: complete.
 
-## Known Risks
+## Current Redesign Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
-- Generation is intentionally bounded to 32 attempts and fails closed if both the sequence and validated fallback fail; profile changes must preserve that contract and update recorded checksums/solutions together.
-- The direct target solver includes projectile linear damping. Future ballistic changes must update launch, preview, physical-tolerance, replay, and aim-interaction checks together.
-- Final targets and recorded solutions are physically validated at 4%, 27%, and 70%; wider playtesting may still reveal alternative balance preferences.
-- Fresh-process replay is exact on the current Godot 4.7.1/Windows test machine, but engine or platform changes should rerun the documented tolerance probe.
+- The version-3 generator, physical contact/deposit path, manual aim predictor,
+  mechanism bodies, replay format 3, and scene-based UI are not implemented
+  until their active ExecPlan tasks pass.
+- Generation remains bounded to 32 derived attempt seeds plus one pinned
+  fallback and must fail closed; new accepted checksums and solutions cannot be
+  copied from the superseded build.
+- Targets and shot counts remain fixed at 4%/4, 27%/5, and 70%/6. Prior
+  direct-target solution values are historical and cannot validate manual aim.
+- Replay must be revalidated in fresh processes after format-3 action-origin
+  locking is implemented.
 - The generated Windows executable is unsigned and `builds/` is ignored; distribution signing and packaging are outside this vertical-slice scope.
 - The imported low-poly models, UI icons, particles, and procedural audio meet the scoped vertical-slice presentation contract but are not a substitute for a later bespoke production-art/audio pass.
 

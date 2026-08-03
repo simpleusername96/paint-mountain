@@ -1521,7 +1521,7 @@ unapproved visible application launch.
 
 This checklist is the single canonical progress source for the redesign:
 
-- [ ] Task 00 — Reset documentation to the audited baseline.
+- [x] Task 00 — Reset documentation to the audited baseline.
 - [ ] Task 01 — Introduce typed contracts and the terrain owner.
 - [ ] Task 02 — Replace authored topology with the frozen generator.
 - [ ] Task 03 — Replace terrain mesh and collision.
@@ -1535,5 +1535,5 @@ This checklist is the single canonical progress source for the redesign:
 
 ## Next Steps
 
-Begin Task 00 in a new implementation turn. Do not implement any later task
-until its predecessor's acceptance and regression guards pass.
+Begin Task 01. Do not implement any later task until its predecessor's
+acceptance and regression guards pass.

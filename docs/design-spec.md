@@ -10,13 +10,19 @@ related:
   - technical-architecture.md
   - test-checklist.md
   - ../.agents/Plan.md
+  - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
 ---
 
 # Paint Mountain Design Specification
 
 ## Purpose
 
-Define the compact working interpretation of `source-brief.md` and the user's 2026-08-02 remediation directive for a polished three-stage 3D gravity-driven paintball puzzle game. The verbatim source brief remains the baseline; the remediation directive adds generated terrain, direct targeting, Korean-first presentation, and reference-parity requirements.
+Define the compact working interpretation of `source-brief.md` and the user's
+2026-08-03 design correction for a polished three-stage 3D gravity-driven
+paintball puzzle game. The verbatim source brief remains the baseline; the
+correction requires generated terrain with real visual mass, measured physical
+contacts, manual yaw/elevation/power aiming, Korean-first presentation, and
+reference-parity requirements.
 
 ## Scope
 
@@ -42,9 +48,9 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 ### Controls and information
 
 - Briefing: left-drag orbit, wheel zoom, mechanism selection, Enter/Start to aim, Escape back.
-- Aiming: hover and left-click/drag to lock the intended first impact; wheel or explicit `−/+` controls adjust power; Space fires; R restarts; Escape pauses; Tab inspects. A/D yaw and W/S elevation remain an accessible angle fallback; Q/E power control is retired.
+- Aiming: drag empty 3D space to change yaw/elevation independently; wheel or explicit `−/+` controls adjust power; Space fires; R restarts; Escape pauses; Tab inspects. A/D change yaw and W/S change elevation through the same manual command path.
 - Show target, current coverage, shots, angle, power, a dotted initial ballistic arc, and an approximate first impact. Never preview post-impact solution paths or exact coverage.
-- The preview uses the same fixed-tick gravity and damping as launch, remains visible to the actual first collision, and marks invalid/unreachable targets explicitly while Fire is disabled.
+- Terrain clicks never solve or alter aim. The complete pre-impact preview uses the same radius, fixed-tick gravity, damping, launch origin, speed, and collision layers as the real ball. It ends at the first collision or playable-bounds exit; only predictor failure disables Fire.
 - During observation, reduce aiming controls and offer camera mode plus optional 1×/2× after landing.
 
 ### Stage state
@@ -60,12 +66,13 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - Projectile data owns radius, mass, payload, bounce, friction, damping, lifetime, stop thresholds, stamp/splash radii, deposit rate, and activation cap.
 - Airborne travel uses no paint; impact stamps a strength-scaled splash; surface travel stamps by fixed time/distance; stop may leave a finite puddle.
 - One 512×512 world X/Z paint mask is the visual and scoring source. A separate eligible mask excludes platform, background, underside, mechanisms, vegetation, rocks, and bounds.
+- Persistent paint is written only to connected eligible top-terrain pixels reconstructed in 3D from the accepted generated layout. Visual paint and scored paint cannot diverge.
 - Coverage is painted eligible pixels above threshold divided by all eligible pixels. Overlap counts once and the UI updates several times per second.
 - Optional downhill flow samples lower heightfield neighbors for a small fixed deterministic budget and never becomes a fluid simulation or the primary route.
 
 ### Mechanisms
 
-- All mechanisms share data-driven activation, state, cooldown/charges where applicable, feedback, and reset behavior.
+- All mechanisms share data-driven activation, state, cooldown/charges where applicable, feedback, and reset behavior. Their visible silhouettes have matching compound `StaticBody3D` collision; no gameplay `Area3D` trigger is used.
 - Burst Node: physical hit, normally one charge, direct circular/terrain-aware mask paint, strong splash, visibly spent state.
 - Splitter Node: consumes the incoming ball and emits three fan-distributed children at about 30% payload each with about 10% loss; one split generation maximum.
 - Bumper Node: applies a visible directional impulse without consuming the ball and uses a cooldown to prevent repeated instability.
@@ -73,11 +80,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 
 ### Stages
 
-- Generate one accepted immutable heightfield per stage from its stage ID/version, fixed seed, and typed generation profile. Retry and replay reuse the accepted seed and checksum; failed candidates are rejected by the bounded validator rather than hand-corrected.
-- First Descent: one broad 28 m route, 0–1 meaningful rise/fall reversals, no mechanisms, 4% target, four shots.
-- Burst Basin: two 18 m routes, 2–3 meaningful reversals, one high-value Burst, 27% target, five shots.
-- Split Ridge: three 10–14 m routes, 4–6 meaningful reversals, Splitter plus Bumper, safe inefficient low route, 70% target, six shots.
-- Mechanism placement is derived from accepted shelves/routes and must pass slope, spacing, bounds, aiming-camera line-of-sight, projected-size, and downstream-value checks. Production stage resources contain no authored X/Z fallback.
+- Generate one accepted immutable `73 × 49` height grid per stage from its stage ID/version, fixed seed, and typed generation profile. The same layout feeds the closed render shell, heightmap collider, paint mapping, eligibility, mechanisms, replay, and agent observations. Retry and replay reuse the accepted seed and checksum; failed candidates are rejected rather than hand-corrected.
+- The render mountain is a closed, lit top surface plus perimeter skirts and bottom cap. A separate heightmap top collider and skirt/bottom collider are derived from the same samples, so distant views never expose a flat 2D sheet.
+- First Descent: one broad 28 m `PRIMARY` route with zero reversals, no mechanisms, 4% target, four shots.
+- Burst Basin: two 18 m `PRIMARY` routes with two reversals each, one high-value Burst, 27% target, five shots.
+- Split Ridge: 16/12/12 m `SAFE`/`SPLITTER`/`BUMPER` routes with two/four/four reversals, Splitter plus Bumper, safe inefficient route, 70% target, six shots.
+- Mechanisms sit at the exact owning-route centerline shelf transform and must pass slope, spacing, bounds, visibility, projected-size, tangent, and clearance checks. A failed fixed placement rejects the candidate; production resources contain no authored X/Z fallback or placement scoring alternative.
 - Each StageData includes identity and translation keys, generation profile/seed, cannon transform, camera bookmarks, target/shots/color, mechanism loadout, bounds, star thresholds, best data, and tutorial keys. The generated layout owns height samples, route metrics, eligible-mask inputs, decorations, and resolved placements.
 - Every accepted stage passes the deterministic reliable-solution search defined in `.agents/Plan.md`; no manual balance choice is deferred to implementation.
 
@@ -86,7 +94,7 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - Clear uses coverage only; failure occurs after the last settled shot below target. Stars use stage data and remain understandable.
 - Results show stage, final/target coverage, shots used/remaining, previous best, new best, rank/stars, final mountain, retry, next/select, and replay. Failure emphasizes missing coverage and Retry.
 - Save version, unlocks, best coverage/stars, and settings locally.
-- Replay stores stage/version/seed and ordered yaw/elevation/power; only add low-frequency transform capture if deterministic resimulation proves insufficient.
+- Replay format 3 stores stage/profile versions, accepted seed/checksum, fixed-tick manual aim/fire actions, and expected shot observations. Replay presentation locks normal input and accepts only replay-origin actions; format 2 is rejected because terrain and aim semantics changed.
 
 ### UI, art, audio, and debug
 
@@ -114,10 +122,21 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
 - The final evidence includes seven separate full-resolution, debug-free screenshots with the exact required names.
 
-## Verified Legacy Baseline and Active Remediation
+## Historical Evidence and Active Redesign
 
-As verified on 2026-08-02 with Godot 4.7.1, the repository implements the original vertical-slice baseline: exactly three StageData-backed stages, the stationary planning cannon, finite-payload rigid bodies, one authoritative 512×512 paint mask, Burst/Splitter/Bumper behavior, progression/settings persistence, deterministic input replay, the application screens, generated audio, pooled effects, debug tools, and the in-process agent interface.
+The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
+superseded implementation. They do not establish conformance with the physical
+contact, closed-terrain, manual-aim, mechanism-body, replay-3, or rebuilt-UI
+contracts above.
 
-That baseline still uses three fixed analytic terrains, authored mechanism coordinates, small procedural mechanism visuals, embedded CannonController device input, hardcoded English/default font UI, and the prior layout. It therefore does not satisfy the generated-terrain, direct-targeting, Korean-first, asset, or reference-composition requirements above. `.agents/Plan.md` is the active decision-complete remediation plan; `.agents/Documentation.md` and the unchecked remediation section in `test-checklist.md` are the implemented-truth boundary.
+The static audit recorded in
+`.agents/execplans/2026-08-03-core-interaction-redesign.md` found that current
+code still exposes an open top-only terrain mesh, fabricated contact points,
+gameplay trigger volumes, X/Z paint stamping, target-solving input, code-built
+UI, and replay/input coupling. That ExecPlan is the only active implementation
+contract; `.agents/Documentation.md` and the unchecked redesign gate in
+`test-checklist.md` are the implemented-truth boundary.
 
-The prior Windows release and seven 1920×1080 screenshots remain historical baseline evidence only. They must be replaced with fresh production-build evidence before the remediated design is reported complete.
+The prior Windows release and screenshots remain historical evidence only.
+They must be replaced with fresh production-build evidence after all automated
+gates pass and after the user explicitly approves a desktop-occupation window.

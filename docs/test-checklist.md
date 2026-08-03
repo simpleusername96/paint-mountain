@@ -11,13 +11,17 @@ related:
   - design-spec.md
   - technical-architecture.md
   - ../.agents/Plan.md
+  - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
 ---
 
 # Test Checklist
 
 ## Purpose
 
-Define the observable checks required before the game may be reported complete. An unchecked item is not an implemented claim. Checks marked complete before the 2026-08-03 remediation remain historical baseline evidence; they do not satisfy the new unchecked remediation release gate.
+Define the observable checks required before the game may be reported complete.
+An unchecked item is not an implemented claim. All checked items above the
+active redesign gate and all dated observations below it are historical
+evidence for superseded builds; they do not satisfy the new unchecked gate.
 
 ## Scope
 
@@ -118,42 +122,66 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
 - [x] Screenshots are not a collage, contact sheet, poster, or infographic.
 
-### Remediation release gate (2026-08-03)
+### Core interaction redesign release gate (active 2026-08-03)
 
 Generated terrain and placement:
 
-- [x] Each stage generates from its frozen profile/base seed through the deterministic 32-attempt sequence or separately validated fallback, and repeated runs produce the same accepted seed and height-grid checksum.
-- [x] One immutable generated layout supplies mesh, collision, paint height queries, eligible-mask inputs, decorations, mechanisms, replay metadata, and agent height observations; no fixed stage height function or second terrain representation remains.
-- [x] First Descent, Burst Basin, and Split Ridge pass their exact route-count, width, meaningful-reversal, slope, edge-height, eligible-area, shelf, height, and 6,144-triangle checks.
-- [x] Deterministic mechanism placement passes slope, spacing, bounds, route clearance, camera line-of-sight, projected-size, downstream-value, orientation, and stable tie-break checks without authored production X/Z fallback.
-- [x] Stage 1 has no mechanism; Stage 2 has one Burst; Stage 3 has one Splitter and one Bumper, with all three distinct 3D silhouettes readable in both briefing and aiming captures.
-- [x] Approved sparse nature dressing uses only the five manifest GLBs, stays outside route/mechanism clearance, does not affect collision, and preserves route readability.
+- [ ] Every stage uses a version-3 path-first generator with the fixed draw order, 32 derived attempt seeds, one pinned fallback, and repeatable accepted layout/checksums.
+- [ ] One immutable `GeneratedStageLayout` supplies the height grid, routes, eligibility inputs, decoration/mechanism placement, replay metadata, and agent observations.
+- [ ] First Descent, Burst Basin, and Split Ridge prove route reversal progression `0`, `2/2`, and `2/4/4`, plus all fixed height, slope, spacing, shelf, edge, and eligibility metrics.
+- [ ] Mechanisms use exact role-owned centerline shelf transforms; an invalid fixed transform rejects the candidate and no scoring/authored X/Z fallback exists.
+- [ ] The mountain renders as a closed lit shell with exactly 6,912 top, 480 skirt, and 2 bottom triangles while a separate heightmap top collider and skirt/bottom collider match within 0.01 m.
+- [ ] Top, ramp, graze, and skirt fixture casts classify the correct collider body; every intended solution records zero penetration-guard events.
 
-Aiming and controls:
+Physical contact, paint, and mechanisms:
 
-- [x] Cursor hover, left-click lock, held drag retarget, and mechanism-center targeting work through `AimInputController`; `CannonController` contains no device polling.
-- [x] The target solver uses the real 60 Hz gravity/damping/radius/collision model, returns the lowest valid elevation, rejects unreachable/occluded first impacts, and actual collision lands within 1.25 m of the selected target.
-- [x] Invalid aim has red plus non-color feedback, retains the last valid cannon pose, disables Fire, and cannot consume a shot through mouse, keyboard, replay, debug, or agent paths.
-- [x] Power minus/plus click, 300 ms hold delay, 80 ms repeat, wheel 1%, keyboard 2%, Space fire, and accessible A/D/W/S angle fallback match the frozen steps and do not double-fire.
-- [x] At most 72 pooled trajectory dots and the distance-scaled impact marker remain legible through the actual first collision at 1280×720, 1600×900, and 1920×1080, with no post-impact route or coverage prediction.
+- [ ] `PaintProjectile` reports real direct-body contact point, normal, collider, shapes, impulse, incoming velocity, and deterministic first-contact ordering; it never fabricates world-up impact data.
+- [ ] All four high-speed terrain fixtures pass 20 real-projectile repetitions with the fixed point/normal/radius/collider tolerances and no tunneling.
+- [ ] Persistent paint is accepted only through `PaintDepositRequest` on connected eligible top terrain reconstructed in 3D; visible mask pixels and scored pixels are identical.
+- [ ] The fixed flat paint fixture stamps exactly 3,228 threshold pixels for one radius-4/amount-22 trail request and gains zero coverage on an identical second request.
+- [ ] Burst, Splitter, and Bumper use matching compound `StaticBody3D` primitives with no gameplay activation `Area3D`; preview and real ball strike the same body/shape.
+- [ ] Burst uses the authoritative deposit path, Splitter emits exactly three generation-1 children with 90% total remaining payload, and Bumper applies its queued corrective impulse along the displayed tangent.
+- [ ] Contact debounce prevents duplicate activation while permitting a separated later strike; reset restores all mechanism/projectile state and active balls never exceed eight.
+
+Manual aiming and prediction:
+
+- [ ] Terrain clicks never alter aim; empty-viewport drag, A/D, W/S, wheel, power buttons, Space, and Tab follow the fixed independent mappings, clamps, repeat timings, and UI-consumption boundary.
+- [ ] `ImpactTargetSolver` and every production/test reference to it are removed.
+- [ ] Every stage's ten frozen aim tuples plus mechanism/bounds fixtures produce a complete collision or bounds-exit prediction with at most 96 dots and no post-impact behavior.
+- [ ] Predicted and measured first contact differ by at most 2.0 m; collision markers use the measured normal, bounds exits use a red cross, and predictor timeout cannot fire.
+
+Shot causality, camera, and replay:
+
+- [ ] One sealed `ShotObservation` owns commanded aim, ordered contacts/mechanisms, child and payload facts, settlement reasons, coverage delta, and penetration-guard count.
+- [ ] A shot settles only after projectiles and paint flow are inactive for two consecutive physics ticks, and HUD/replay/agent consumers do not reconstruct outcomes.
+- [ ] Every named camera fixture maintains at least 1.5 m terrain clearance and avoids terrain occlusion except within the final 0.25 m of a terrain focus.
+- [ ] Replay format 3 records deterministic actions and expected observations, rejects format 2, and reproduces contact within 0.5 m, coverage within 0.1 percentage point, exact mechanism order, and final state in a fresh process.
+- [ ] Replay presentation disables all human/agent/debug gameplay mutation and accepts only replay-origin actions until a clean exit.
 
 Korean UI, visual direction, and approved assets:
 
-- [x] Fresh saves and migrated V1 saves open in Korean; `ko`/`en` switching is immediate, complete, glyph-safe, and persistent after a fresh process; StageData and mechanisms store translation keys rather than display strings.
-- [x] Pretendard 500/700/800 typography, frozen palette, card radii, minimum 40 px controls, focus outline, Korean wrapping, and disabled/invalid states apply coherently across menu, stage select, briefing, aiming, observation, results, pause, and settings.
-- [x] The aiming HUD matches the frozen edge regions at all three resolutions: top stage/target/shots, mode chip, bottom-left aim/power, bottom-center coverage, bottom-right restart/fire, with no clipping, overflow, unsupported text-symbol icon, or center modal.
-- [x] Terrain reads as a bright thick faceted/terraced mountain; paint reads as thick glossy blue routes; the cannon remains small; mechanisms remain visible; composition is compared directly with the supplied reference capture.
-- [x] Only the exact 16 approved runtime files are present, every pinned file hash passes, four license texts are included, and `docs/asset-licenses.md` records official URL/version/hash/destination/use. The release works fully offline.
+- [ ] The logical viewport is 1280×720 with canvas-items stretch; component scenes and one Theme own layout/style while HUD scripts only coordinate behavior.
+- [ ] Fresh saves default to Korean; Korean/English switching is complete, immediate, glyph-safe, and persistent, and mechanism/shot copy uses translation keys.
+- [ ] Pretendard, fixed color/type/radius tokens, visible focus, 40 px ordinary controls, Korean wrapping, and all reachable UI states pass at 1280×720, 1600×900, and 1920×1080.
+- [ ] Every aiming-HUD component matches its frozen edge rectangle within 2 px at 1280×720 and 3 px at the scaled resolutions; no clipping, overflow, offscreen action, center modal, or body text below 16 px exists.
+- [ ] Terrain is lit/faceted and physically thick, paint is glossy blue with dry/paint roughness 0.88/0.24 and no emission, the cannon remains small, and mechanisms remain readable without persistent gameplay labels.
+- [ ] Only the already approved committed Kenney/Pretendard assets are used; no new dependency, asset pack, or runtime network access exists.
 
 Regression, solutions, and delivery:
 
-- [x] The deterministic beam-search verification clears targets `4/27/70%` within `4/5/6` shots and the Stage 3 left-route-only path remains below 70%, without weakening projectile/mechanism/paint rules.
-- [x] Existing projectile, paint, state, mechanism, content, save, replay, UI, debug, reliability, and performance checks pass after migration; format-2 replay validates profile/seed/checksum and deterministic shot results.
-- [x] `scripts/verify.ps1` passes after the final scene/resource/project changes, and the Windows release export starts through the already registered fastrun command `& '.\builds\windows\PaintMountain.exe'`.
-- [x] Fresh release-build screenshots replace all seven named files, are individually inspected at 1920×1080 without debug overlay, and include Korean/default UI plus the required gameplay states.
-- [x] Final production evidence records generation attempts/time, load/restart time, average FPS, worst frame, memory, active-ball cap, persistence/replay results, console review, known limitations, and the exact tested Godot build.
+- [ ] `scripts/test.ps1` runs the active ordered tests and fresh-process persistence/replay matrices through one explicit Godot path with cleanup on failure.
+- [ ] The deterministic beam search clears targets `4/27/70%` within `4/5/6` manual-aim shots, activates required Stage 3 mechanisms, and proves six safe-route-only shots remain below 70%.
+- [ ] Obsolete sandbox, target solver, duplicate terrain factory, code-built `UIFactory`, and their references are removed after migration.
+- [ ] Complete tests, `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export pass without parser errors, invalid calls, orphan nodes, penetration guards, or replay divergence.
+- [ ] The 1920×1080 Iris Xe workload loads within 3 s, averages at least 60 FPS, has no frame over 33.3 ms, uses at most 128 MiB static memory, restarts within 50 ms, and never exceeds eight balls.
+- [ ] After explicit user coordination, the release executable is inspected at all three resolutions and every named briefing/aiming/impact/mechanism/follow/result/replay bookmark passes.
+- [ ] Seven fresh separate 1920×1080 running-release screenshots replace the historical images, and final docs record every measured metric, pass/fail, engine build, limitation, and remaining issue.
 
-## Observed Remediation Evidence (2026-08-03)
+## Superseded Remediation Evidence (2026-08-03, Historical)
+
+The observations below were produced by the prior direct-target/open-terrain
+build. They are retained for traceability and must not be used to check any
+active redesign item above.
 
 - Godot `4.7.1.stable.official.a13da4feb` passed import, parse, main-scene smoke, and Windows release export checks with the Compatibility renderer at a fixed 60 Hz physics tick.
 - Deterministic generation accepted First Descent on attempt 1 in 166 ms (`seed 845487911`, checksum `3476095321`), Burst Basin on attempt 2 in 236 ms (`seed 1692123947`, checksum `1568157987`), and Split Ridge on attempt 30 in 1,878 ms (`seed 671737323`, checksum `3215880357`). Repeated generation matched each checksum.
