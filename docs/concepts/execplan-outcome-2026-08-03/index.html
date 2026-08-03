@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain — ExecPlan 결과 시안</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f5f0ea;
+      --surface: #fffdf9;
+      --line: #ded9d1;
+      --navy: #10233d;
+      --muted: #5f6a79;
+      --blue: #1678f2;
+      --amber: #f2b84b;
+      --violet: #8a6bea;
+      --coral: #e86a5b;
+      --shadow: 0 18px 50px rgba(16, 35, 61, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--navy);
+      font-family: Pretendard, "Noto Sans KR", "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1480px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0 88px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(232, 106, 91, 0.35);
+      border-radius: 999px;
+      background: rgba(232, 106, 91, 0.08);
+      color: #a43d33;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 20px 0 14px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .contract {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 34px 0 54px;
+    }
+
+    .contract section {
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.8);
+    }
+
+    .contract h2 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .contract p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .gallery {
+      display: grid;
+      gap: 42px;
+    }
+
+    article {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    article img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #e6e4de;
+    }
+
+    .caption {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr);
+      gap: 18px;
+      padding: 24px 28px 28px;
+    }
+
+    .number {
+      color: var(--blue);
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    h3 {
+      margin: 0 0 7px;
+      font-size: 23px;
+      letter-spacing: -0.025em;
+    }
+
+    .caption p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tag {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef4fc;
+      color: #28558c;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .tag.amber { background: #fff4dc; color: #8a6112; }
+    .tag.violet { background: #f0ebff; color: #5e47af; }
+    .tag.coral { background: #fff0ed; color: #a43d33; }
+
+    .method {
+      margin-top: 54px;
+      padding: 26px 28px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 253, 249, 0.72);
+    }
+
+    .method h2 { margin: 0 0 10px; font-size: 20px; }
+    .method p { margin: 0; color: var(--muted); }
+    .method code { color: var(--navy); }
+
+    @media (max-width: 760px) {
+      main { width: min(100% - 24px, 1480px); padding-top: 28px; }
+      .contract { grid-template-columns: 1fr; }
+      .caption { grid-template-columns: 1fr; padding: 20px; }
+      .number { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="eyebrow">CONCEPT · 구현 완료 증거 아님</span>
+    <h1>ExecPlan 적용 후<br>Paint Mountain의 핵심 화면</h1>
+    <p class="lead">
+      아래 7장은 현재 실행 화면이 어떻게 바뀌어야 하는지를 시각적으로 번역한 목표 시안이다.
+      실제 구현의 권위와 수용 기준은 활성 ExecPlan에 있으며, 이 보드는 지형·물리·UI가 최종적으로
+      어떻게 함께 읽혀야 하는지 빠르게 검토하기 위한 자료다.
+    </p>
+
+    <div class="contract">
+      <section>
+        <h2>계획에서 확정된 것</h2>
+        <p>4/27/70% 목표, 4/5/6발, 밝은 실물 벽과 3D 산, 첫 충돌 궤적, 접촉 중 연속 도색, 세 장치의 색·역할, 한국어 기본 HUD.</p>
+      </section>
+      <section>
+        <h2>시안에서만 예시인 것</h2>
+        <p>정확한 랜덤 시드와 산 모양, 조준 숫자, 2/11/42% 같은 중간 진행률, 최종 페인트 무늬와 장식 배치.</p>
+      </section>
+    </div>
+
+    <section class="gallery" aria-label="핵심 화면 시안 7장">
+      <article>
+        <img src="01_stage_progression.png" alt="세 단계의 지형 난이도 증가를 보여주는 스테이지 선택 화면">
+        <div class="caption">
+          <div class="number">01</div>
+          <div>
+            <h3>스테이지 진행 구조</h3>
+            <p>단일 하강로에서 두 갈래, 세 갈래로 늘어나고 상승·하강 반전도 많아진다. 장치는 지형 위의 실제 3D 물체로 미리 읽힌다.</p>
+            <div class="tags"><span class="tag">절차 생성</span><span class="tag">난이도 증가</span><span class="tag">3D 미리보기</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="02_stage3_briefing.png" alt="세 갈래 지형과 분열 및 범퍼 장치를 보여주는 브리핑 화면">
+        <div class="caption">
+          <div class="number">02</div>
+          <div>
+            <h3>Stage 3 브리핑</h3>
+            <p>벽에서 튀어나온 두꺼운 산, 서로 다른 높낮이의 세 경로, 실제 충돌 크기로 배치된 Splitter와 Bumper를 발사 전에 확인한다.</p>
+            <div class="tags"><span class="tag">벽 접합부</span><span class="tag violet">분열</span><span class="tag coral">범퍼</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="03_stage1_default_aim.png" alt="산 중앙 부근에 실제 첫 탄착점을 표시하는 기본 조준 화면">
+        <div class="caption">
+          <div class="number">03</div>
+          <div>
+            <h3>기본 조준</h3>
+            <p>시작·재시작 때 실제 도달 가능한 지형 중앙 부근을 향한다. 점선은 실제 첫 충돌점에서 끝나며, 그 이후 구름·도색 결과는 예측하지 않는다.</p>
+            <div class="tags"><span class="tag">중앙 기본 탄착</span><span class="tag">첫 충돌만 표시</span><span class="tag">한국어 HUD</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="04_stage2_contact_roll.png" alt="공이 지형에 접촉해 굴러간 뒤 연속 페인트 흔적을 남기는 화면">
+        <div class="caption">
+          <div class="number">04</div>
+          <div>
+            <h3>접촉·굴림·연속 도색</h3>
+            <p>공은 완만한 타깃 상면에 실제로 닿아 굴러가며 공 뒤에만 끊김 없는 흔적을 남긴다. 공중, 수직 외피, 벽에는 페인트가 생기지 않는다.</p>
+            <div class="tags"><span class="tag">실제 접촉</span><span class="tag">연속 흔적</span><span class="tag amber">폭발</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="05_stage3_mechanism_chain.png" alt="분열 장치가 세 공을 만들고 한 공이 범퍼에 닿는 화면">
+        <div class="caption">
+          <div class="number">05</div>
+          <div>
+            <h3>장치 연쇄 작용</h3>
+            <p>Splitter는 정확히 세 공을 만들고, Bumper는 실제 접촉한 공 하나만 표시 화살표 방향으로 낮게 돌려보낸다. 각 공은 접촉 구간만 칠한다.</p>
+            <div class="tags"><span class="tag violet">공 3개</span><span class="tag coral">낮은 반사</span><span class="tag">공중 구간 무도색</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="06_backstop_collision.png" alt="높은 탄이 실물 후면 벽에 부딪혀 정지하는 화면">
+        <div class="caption">
+          <div class="number">06</div>
+          <div>
+            <h3>실물 후면 벽</h3>
+            <p>높게 쏜 탄은 배경을 통과하거나 산 너머로 사라지지 않는다. 벽에서 한 번 충돌하고 즉시 정지하며 도색·점수·뱅크샷을 만들지 않는다.</p>
+            <div class="tags"><span class="tag coral">비점수 충돌</span><span class="tag">통과 없음</span><span class="tag">반사 없음</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <img src="07_stage3_clear.png" alt="타깃 상면만 파랗게 칠해진 Stage 3 성공 화면">
+        <div class="caption">
+          <div class="number">07</div>
+          <div>
+            <h3>클리어 결과</h3>
+            <p>결과 화면에서도 산이 가려지지 않는다. 파란색은 타깃 상면의 누적 이동 흔적만 나타내며, 외피·앞마당·벽과 장치 색은 끝까지 분리된다.</p>
+            <div class="tags"><span class="tag">타깃 마스크</span><span class="tag">70% 목표</span><span class="tag">비점수 면 무도색</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="method">
+      <h2>생성 프롬프트 기준</h2>
+      <p>
+        공통 프롬프트는 원본 레퍼런스의 구도와 HUD 위계만 사용하고, <code>#F7F3EC</code> 벽,
+        <code>#E6E4DE</code> 타깃 상면, <code>#C6C9C7</code> 외피, <code>#1678F2</code> 페인트,
+        <code>#10233D</code> UI를 고정했다. 각 화면에는 활성 ExecPlan의 해당 상태—단계 증가, 브리핑,
+        기본 조준, 연속 접촉 도색, 장치 연쇄, 벽 충돌, 클리어—만 별도 프롬프트로 추가했다.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
