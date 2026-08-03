@@ -3,8 +3,8 @@ type: plan
 status: active
 created: 2026-08-03
 last_reviewed: 2026-08-03
-scope: route-graph terrain, target-surface scoring, continuous contact paint, collision truth, mechanisms, camera and trajectory presentation, Korean-first HUD, replay migration, balance, and production evidence
-source: explicit user corrections and the validated Claude gameplay/visual-reset review dated 2026-08-03
+scope: route-graph terrain, direct target reachability, solid rear containment, target-surface scoring, continuous contact paint, collision truth, mechanisms, camera and trajectory presentation, Korean-first HUD, replay migration, balance, and production evidence
+source: explicit user corrections through 2026-08-03 and the validated Claude gameplay/visual-reset review dated 2026-08-03
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -34,13 +34,14 @@ paint behavior or completion.
   cannon launches an unsteered physical ball and every scoreable target surface
   traversed while the ball is in contact is painted continuously.
 - Deliverable: a Godot 4.7.1 Windows desktop build with three deterministic
-  generated stages, truthful terrain and mechanism collision, continuous
-  surface paint, `4 / 27 / 70%` targets, Korean-default responsive HUD, and
-  controlled running-build evidence against the supplied reference.
+  generated stages, a directly reachable scoreable surface, a solid visible
+  rear backstop, truthful terrain and mechanism collision, continuous surface
+  paint, `4 / 27 / 70%` targets, Korean-default responsive HUD, and controlled
+  running-build evidence against the supplied reference.
 - Completion state: all phase checks, fixed-target solutions, fresh-process
   replay checks, production export, and user-coordinated visual gates pass; no
-  finite-payload, downhill-flow, lobe-first, ghost-obstacle, or false-completion
-  path remains active.
+  unreachable target unit, rear/upper escape, finite-payload, downhill-flow,
+  lobe-first, ghost-obstacle, or false-completion path remains active.
 
 The verified implementation baseline is commit
 `01e3e35f5ae219f92c878dd5ad177d30c5a120a7` on `master`; the worktree was clean,
@@ -57,6 +58,13 @@ In scope:
 - Replace lobe-first height synthesis with a deterministic route-graph-first
   target, one contiguous scoreable target footprint, a faceted top mesh, and a
   thick closed support shell derived from one immutable generated layout.
+- Reject any generated layout unless every scoreable target texel has a legal,
+  reproducible yaw/elevation/power witness whose first physical collision is on
+  its target-top neighbourhood; derive the default center aim from that same
+  certificate rather than from a hand-authored tuple.
+- Build a bright, screen-filling, non-paintable rear backstop as a real 3D mesh
+  and collider joined to the mountain/apron; contain the complete current aim
+  envelope without an invisible rear or upper kill boundary.
 - Report every begun physics contact and create gap-free surface paint sweeps
   from authoritative terrain-top contacts, with deterministic command ordering
   and one `PaintSystem` mask for visuals and coverage.
@@ -65,7 +73,11 @@ In scope:
   resources, schemas, tests, and user-facing copy.
 - Make mechanism placement, visible geometry, and physical collision agree;
   correct horizontal projection math; preserve Burst, Splitter, and Bumper's
-  intended roles without adding mechanisms.
+  intended roles, assign distinct semantic colors and tolerance/balance gates,
+  and do not add a second category of special terrain.
+- Calibrate the normal projectile/terrain interaction for a short first rebound
+  followed by readable rolling or sliding; Bumper remains the sole deliberate
+  strong-redirection exception.
 - Recompose terrain, foreground, camera, cannon, trajectory, lighting, and the
   Korean-first HUD to follow the supplied reference's hierarchy.
 - Migrate replay/agent/debug contracts, rebalance only through the locked
@@ -76,6 +88,12 @@ Out of scope:
 
 - New stages, mechanisms, steering after launch, online features, mobile/web
   delivery, multiplayer, narrative systems, shops, accounts, or analytics.
+- Ice, sticky, drain, booster, damage, or other new terrain-material effects.
+  The current milestone calls the existing Burst, Splitter, and Bumper pads
+  special gameplay features; it does not create a new surface-effect taxonomy.
+- Shooting over or around the visible rear mountain boundary, hidden terrain
+  beyond that boundary, bank shots off the rear backstop, or an open-world
+  continuation. Those are explicit future possibilities, not current behavior.
 - True geodesic surface-area scoring, per-triangle paint textures, decals as a
   second paint authority, fluid simulation, erosion, voxel terrain, or runtime
   terrain deformation.
@@ -94,10 +112,20 @@ Constraints and invariants:
   target-mask bytes, the paint texture, and coverage. `ProjectileManager` alone assigns stable projectile
   spawn ordinals and owns projectile lifecycle/caps.
 - One immutable `GeneratedStageLayout` feeds render geometry, top collision,
-  surface queries, target footprint, placement, replay metadata, and agent
+  surface queries, target footprint, direct-reachability certificate, default
+  aim, containment specification, placement, replay metadata, and agent
   observations. No consumer regenerates or edits layout data.
 - Human input, replay, tests, and the agent API invoke the same yaw, elevation,
   power, fire, and restart commands. A projectile is never steered in flight.
+- The user-addressable aim domain is yaw `-45..45 deg`, elevation `10..68 deg`,
+  and power `0..100%`; yaw/elevation are canonicalized to `0.1 deg` and power to
+  `1%`. Every direct-reachability witness lies on that exact input lattice.
+- Every scoreable target texel is within `0.50 m` on its own top triangle of a
+  certified first terrain-top collision. The generator rejects a layout when
+  this is false; scoring geometry is never hidden or deleted to make it pass.
+- Every legal aim has a visible physical first collision before a rear, side,
+  upper, or lower bounds exit. The backstop and apron are collision truth but
+  never target or paint authority.
 - Coverage means thresholded XZ-projected target texels, not true sloped surface
   area. That limitation is explicit in UI-neutral technical docs and replay.
 - The fixed stage targets and shot limits remain Stage 1 `4% / 4`, Stage 2
@@ -135,6 +163,8 @@ Exact actions requiring owner or user approval:
 | Correct game rule | Active source/docs still describe finite paint, but the latest user correction says the ball paints every target surface it traverses while rolling. | `docs/handoffs/gameplay-visual-reset-2026-08-03/current-state.md`, `external-review-validation.md`, current code | Later explicit user correction supersedes only the finite-payload/flow clauses; all other source-brief rules remain. | 0.1, 1.5 |
 | Terrain topology | `SeededStageGenerator` generates routes, then builds lobe mass and carves/blends them; the result reads as a wall. | `seeded_stage_generator.gd::_generate_lobes`, `_synthesize_height`; target/current images | Generate a typed route graph first; bounded route support envelopes create the whole mountain. Delete lobe fields and code. | 0.2, 1.1, 2.1 |
 | Target surface | `eligible_mask` uses height/normal tests and removes decoration/mechanism circles, which can hide reachable terrain from scoring. | `_build_eligible_mask`, `_exclude_footprints`, validated review | Rename the concept to `target_mask`; construct one filled graph-derived target footprint; never remove terrain by slope or route-distance at paint time. | 1.2, 2.2 |
+| Direct ballistic reachability | Target-mask connectivity is only a topology check; current generation never proves a legal unsteered first hit, and yaw `-28..28 deg` cannot address the Stage 3 front shoulders. | `cannon_controller.gd`, `trajectory_predictor.gd`, graph/target bounds; three independent code/design reviews | Expand the canonical aim domain to `-45..45 / 10..68 deg / 0..100%`; generate a fail-closed exact-predictor certificate covering every target texel on the human input lattice. | 0.2, 1.2, 2.1, 6.1 |
+| Rear containment and 3D read | The terrain shell closes the mountain but is not a rear wall; the flat Ground and open bounds permit a projectile to read as passing through or over a distant card. | `terrain_geometry_factory.gd`, `gameplay.tscn`, `StageData.stage_bounds`, current image | Add one bright `480x284x4 m` rear `BoxMesh`/`BoxShape3D`, a collidable faceted apron, fixed containment bounds, and render/collider/parallax gates. | 1.2, 2.4, 4.1-4.3, 6.2 |
 | Geometry/collision truth | One heightfield, closed shell, top body, shell body, and surface query owner already exist; interior-cell parity is not fully proved. | `terrain_geometry_factory.gd`, `terrain_surface.gd`, `terrain_geometry_test.gd` | Preserve owners and one height source; add deterministic interior triangle/ray parity and collider identity checks. | 1.2, 2.4 |
 | Contact completeness | The projectile groups contacts per key but emits one global primary begun contact, so simultaneous terrain/mechanism contacts can be lost. | `paint_projectile.gd::_integrate_forces`, `projectile_contact.gd` | Emit one typed event per begun collider/shape key in deterministic key order and retain measured/estimated impulse provenance. | 1.3, 3.1 |
 | Paint continuity | Paint is requested later from spaced, payload-gated point stamps and can flow downhill. | `paint_projectile.gd`, `paint_deposit_request.gd`, `paint_system.gd` | Contact begins with a disc; sustained terrain-top contact emits a 3D surface sweep every physics tick; verified micro-gaps may bridge; real airborne gaps stay blank. | 0.2, 1.3, 1.4 |
@@ -142,8 +172,10 @@ Exact actions requiring owner or user approval:
 | Paint performance | Component buffers, recent-mask clearing, and texture upload work can occur per deposit. | `paint_system.gd`, `phase8_performance_test.gd` | Precompute surface samples, reuse scratch/queue storage, clear only dirty regions, and upload at most once per rendered frame. | 3.5 |
 | Decorations | Solid-looking non-colliding dressing can be crossed and its current footprints alter scoring. | `environment_dressing.gd`, `decoration_placement.gd`, current image | Non-solid scale cues exist only outside the target footprint and every route/pad envelope. No collidable decorative obstacle is in this scope. | 2.2 |
 | Mechanisms | Physical bodies exist, but projection uses vertical FOV as horizontal FOV and simultaneous contacts can suppress activation; visible/body mapping needs per-part proof. | `mechanism_placement_generator.gd`, `gimmick_base.gd`, mechanism scenes | Correct horizontal FOV; every gameplay-relevant visible mass maps to collision; visual-only parts are explicitly named; all begun contacts reach mechanisms. | 2.3, 3.1-3.4, 4.4 |
-| Aim/preview | Independent manual yaw/elevation/power and first-collision prediction exist; preview markers ignore depth and Stage 2 framing is defective. | `aim_input_controller.gd`, `trajectory_preview.gd`, stage resources | Preserve manual controls and predictor boundary; depth-test the arc, use screen-consistent markers, and recalibrate bookmarks after geometry. | 4.2, 4.3 |
-| Presentation | Current flat foreground, high ambient ratio, oversized cannon, weak target silhouette, and absolute HUD layout diverge from the reference. | supplied images, `gameplay.tscn`, HUD scenes/theme | Use the exact composition, palette, lighting, scale, and container contract below. Numerical baselines are gates, not executor-selected suggestions. | 4.1-4.5, 5.1-5.3 |
+| Mechanism semantics and balance | No special-terrain class exists; Burst/Splitter/Bumper are the source-approved physical special features, but their current blue/white styling and placement do not prove readable tolerance or useful trade-offs. | source brief, mechanism resources/scenes, active plan scope | Do not invent surface effects. Give the three mechanisms fixed distinct colors plus silhouette cues, direct activation witnesses, tolerance neighbourhoods, and solution/ablation gates. | 2.3, 3.2-3.4, 4.4, 6.1 |
+| Aim/default/preview | Independent manual yaw/elevation/power and first-collision prediction exist; bounds exits are currently fireable, the Stage 1 resource overrides a hand-authored aim, and markers ignore depth. | `aim_input_controller.gd`, `trajectory_prediction.gd`, stage resources | Preserve manual controls, make only physical collisions fireable, derive the restart aim nearest the target centroid from the reachability certificate, classify non-target/backstop hits, and depth-test the arc. | 1.2, 4.2, 4.3 |
+| Projectile rebound | Production bounce/friction/damping are `0.24/0.50/0.12/0.22`, with no normal-rebound or settling acceptance fixture. | `basic_paintball.tres`, `paint_projectile.gd`, `projectile_contact_test.gd` | Lock normal terrain tuning to `0.08/0.78/0.18/0.35` and prove bounded rebound, continued surface motion, CCD, and Bumper exception. | 1.3, 3.4, 6.2 |
+| Presentation | Current flat foreground, high ambient ratio, oversized cannon, gray mountain, weak target silhouette, and absolute HUD layout diverge from the reference and later white-world direction. | supplied images, `gameplay.tscn`, HUD scenes/theme, latest user correction | Use the exact off-white composition, palette, lighting, scale, 3D depth, and container contract below. Numerical baselines are gates, not executor-selected suggestions. | 4.1-4.5, 5.1-5.3 |
 | State/observation/replay | Stage, observation, HUD, debug, agent, tests, and resources propagate payload; replay is format 3. | mapped files in `source-map.md` | Delete payload semantics coherently, bump replay/observation schema to 4, drain paint before sealing, and record the final mask checksum. | 1.5, 5.4 |
 | Balance | The previous finite-payload plan failed Stage 2/3 solutions; external `35/50/70` advice is unsupported. | superseded plan Task 09, validation | Keep `4/27/70` and `4/5/6`; prove physical solutions only after topology/paint are correct. Never lower targets or hide terrain to pass. | 6.1 |
 | Runtime tooling | Godot 4.7.1 console, headless verification/tests, export preset, release entry, and fastrun command exist. Headless rendering cannot make real viewport evidence; capture runner goes fullscreen. | `scripts/verify.ps1`, `scripts/test.ps1`, `export_presets.cfg`, `delivery_capture_runner.gd` | Use headless checks normally. Use the release executable only during the two approved visible sessions; store interim and final evidence separately. | all gates, 1.6, 7.2 |
@@ -173,6 +205,11 @@ Readiness statement:
 | Target terrain | The generated low-poly 3D mountain board: scoreable top surface plus visibly distinct non-target support/apron/shell. | `GeneratedStageLayout` and `TerrainSurface` |
 | Route graph | Deterministic nodes and directed edges that define intended traversable corridors, branches, reversals, pads, and difficulty before any height is synthesized. | `SeededStageGenerator` output |
 | Target footprint / `target_mask` | Immutable 512x512 XZ projection of every scoreable terrain-top texel. It is not painted state. | `GeneratedStageLayout`; copied once into `PaintSystem` |
+| Directly reachable target texel | A target texel for which a human-addressable aim tuple makes its first collision on `terrain/top`, on the same rendered/collision triangle and within `0.50 m` surface distance. It never relies on a mechanism, shell, apron, or backstop contact first. | `DirectReachabilityValidator`; certificate stored by `GeneratedStageLayout` |
+| Reachability certificate | Immutable per-layout witness tuples, coverage bits, checksum, minimum margin, and failure diagnostics produced in the headless certification scene with the runtime predictor. It is fairness evidence, not an aim hint or solver exposed to the player. | `StageGenerationCertifier` produces; `StageData` references; `GeneratedStageLayout` verifies/stores |
+| Default aim | The certificate witness whose first target-top hit is closest to the target-footprint XZ centroid under the fixed tie order. It is applied only at stage start/restart and does not steer a fired ball. | `DefaultAimSolver` derives during certification; `StageController` applies |
+| Rear backstop | The bright solid wall physically closing the far side of the current board. It is visible, collidable, non-paintable, non-scoreable, and not target terrain. | `BackstopEnvironment` from `GeneratedStageLayout.containment` |
+| Special gameplay feature | One of the three existing physical mechanism pads: Burst, Splitter, or Bumper. Ordinary slopes/reversals are geometry; no special-terrain material class exists in this milestone. | Generated placement plus `GimmickBase` subclasses |
 | Surface paint sweep | One continuous terrain-top contact interval from one real contact sample to the next. It has footprint radius but no amount or payload. | `PaintProjectile` produces; `PaintSystem` applies |
 | Radial paint mark | A one-point surface-aware mark for first impact, final rest, or Burst. It has radius/intensity but no amount or flow. | Projectile/mechanism produces; `PaintSystem` applies |
 | Paint mask | Mutable 512x512 byte mask used by both the terrain shader and coverage calculation. | `PaintSystem` only |
@@ -188,9 +225,10 @@ The Korean user-facing vocabulary remains `스테이지`, `목표 면적`, `칠�
 | Owner | Owns | Must not own |
 | --- | --- | --- |
 | `StageController` | State machine, shot count, shot lifecycle, settlement gate, clear/failure, sealed observation | Paint bytes, input devices, terrain generation, mechanism effects |
-| `SeededStageGenerator` | Deterministic graph/layout generation and fail-closed validators | Runtime paint, camera, stage outcomes, hand-authored repair coordinates |
-| `GeneratedStageLayout` | Immutable graph, heights, checksums, target mask, placement records, route/surface queries | Mutable coverage or scene nodes |
-| `TerrainGeometryFactory` / `TerrainSurface` | Mesh/collider derivation and narrow world surface queries | Independent height data or scoring policy |
+| `SeededStageGenerator` | Pure deterministic graph/layout generation, cheap structural validators, and accepted-seed/certificate identity verification | Physics-world solving, runtime paint, camera, stage outcomes, hand-authored repair coordinates |
+| `StageGenerationCertifier` / `DirectReachabilityValidator` / `DefaultAimSolver` | Headless candidate sequence, exact materialized-physics reachability, default aim, and certificate resource emission after a pass | Gameplay-frame work, UI hints, score mutation, or manual repair coordinates |
+| `GeneratedStageLayout` | Immutable graph, heights, checksums, target mask, reachability certificate, default aim, containment specification, placement records, route/surface queries | Mutable coverage or scene nodes |
+| `TerrainGeometryFactory` / `TerrainSurface` / `BackstopEnvironment` | Terrain mesh/collider derivation, narrow world surface queries, and matching apron/backstop render/collision construction | Independent height data, scoring policy, aim solving, or invisible containment |
 | `ProjectileManager` | Projectile cap/lifecycle, per-shot spawn ordinal, ordered command envelopes | Coverage calculation or stage results |
 | `PaintProjectile` | Real rigid-body contact extraction and typed contact/sweep intent | Persistent paint mutation or coverage |
 | `PaintSystem` | Paint command queue/drain, rasterization, masks, texture, coverage, dirty/upload lifecycle | Projectile physics, stage decisions, a second terrain model |
@@ -199,10 +237,15 @@ The Korean user-facing vocabulary remains `스테이지`, `목표 면적`, `칠�
 
 ### Deterministic route-graph terrain
 
-- Retain the current base/fallback seeds and 32-attempt sequence. Move
-  `StageGenerationProfile.profile_version` and every `StageData.stage_version`
-  to `4`; changed height/target checksums are recorded only after generation
-  tests pass. No authored fallback terrain is permitted.
+- Retain the current base/fallback seeds and 32-attempt sequence in the headless
+  `StageGenerationCertifier`. Move `StageGenerationProfile.profile_version` and
+  every `StageData.stage_version` to `4`; after the full structural and physical
+  gates pass, each StageData writes the accepted seed and references exactly one
+  certificate under `resources/stages/certificates/<stage_id>_v4.tres`.
+  Production runtime rebuilds that accepted seed once and fails closed unless
+  height, target, placement, containment, and reachability checksums match; it
+  never performs a physics search in `_ready()` and never falls through to an
+  uncertified attempt. No authored fallback terrain is permitted.
 - The grid is exactly `72 x 48` cells (`73 x 49` height samples) over local
   `x=[-90,90]`, `z=[-60,60]`; the top mesh is exactly 6,912 triangles before
   skirt/bottom triangles. The target/paint mask remains `512 x 512`.
@@ -310,6 +353,11 @@ Height synthesis is fixed as follows:
    skirt/bottom faces. `TerrainSurface` height/normal queries select that same
    diagonal and use triangle-plane/barycentric interpolation, not bilinear
    interpolation.
+8. In world space the terrain remains centered at `(0,-2,-112)` and spans
+   `x=[-90,90]`, `z=[-172,-52]`. Its far edge meets the front face of the rear
+   backstop at `z=-172`; all graph mass extends toward the cannon from that
+   wall. The containing apron is a faceted, collidable, non-target closed mesh
+   over the legal launch cone rather than the current infinite-looking plane.
 
 Fail-closed generation gates:
 
@@ -323,9 +371,10 @@ Fail-closed generation gates:
 | Components / branch reachability | one / exit reachable | one / both exits reachable | one / all three exits reachable |
 
 Slope is measured from the same triangle-plane surface used by paint, at
-512-mask pixel centers. Reachability is an 8-neighbour traversal through the
+512-mask pixel centers. Branch reachability is an 8-neighbour traversal through the
 target mask with adjacent 3D center distance at most `1.25 m`; it is a topology
-check, not a physics or solution claim.
+check. It is necessary but does not substitute for the direct ballistic gate
+below.
 
 ### Target footprint and decorations
 
@@ -342,20 +391,176 @@ check, not a physics or solution claim.
   camera visibility, or expected shot difficulty.
 - Every terrain-top contact whose snapped texel is inside `target_mask` paints
   and scores. Every reachable top texel inside the footprint is exposed by the
-  same target material; non-target support is at least 12% darker and 20% less
-  saturated so scoring boundaries are visible without an overlay.
+  same target material; adjacent non-target shell/buttress is at least 12%
+  darker and 20% less saturated, while the farther apron keeps its separately
+  locked value, so scoring boundaries remain visible without an overlay.
 - Decorations are sampled only where their entire visual AABB is outside the
   target footprint, route support radius, mechanism pad, and a `2 m` clearance
   ring. They remain non-colliding scale cues. No solid-looking decorative object
   may be placed on or above a reachable route. Trees/rocks failing this rule are
   omitted; the generator never cuts a scoring hole around them.
 
+### Direct reachability, default aim, and containment
+
+- `CannonController` canonicalizes all requested actions before signaling them:
+  yaw `-45.0..45.0 deg` and elevation `10.0..68.0 deg` round half away from zero
+  to `0.1 deg`; power `0..100%` rounds half up to `1%`. Launch speed remains the
+  existing linear `32..72 m/s` mapping. Human input, replay, tests, the agent
+  action, stored solutions, and generation witnesses all pass through this one
+  canonicalization function.
+- `StageGenerationCertifier` is a headless-only scene-tree tool. For each
+  candidate in the 32-attempt/fallback sequence it first runs graph, slope,
+  target, decoration, and placement checks; it then materializes that candidate's
+  exact terrain, apron, backstop, and mechanisms in an isolated certification
+  root, waits one physics frame for bodies to register, and invokes
+  `DirectReachabilityValidator`. It uses the production
+  `TrajectoryPredictor.predict_motion()` path: radius `0.52 m`, fixed `1/60 s`,
+  project gravity, production linear damping, stage bounds, and collision masks
+  `1|4`. A closed-form or collision-free arc may nominate candidates but can
+  never certify one. Rejected roots are freed before the next candidate and the
+  tool exits nonzero if none passes; no visible window is opened.
+- Extend `TrajectoryPrediction` with immutable `TrajectoryHitIdentity`: stable
+  owner/shape IDs, PhysicsServer body-shape index from `get_rest_info`, and, for
+  `terrain/top`, cell X/Z, triangle `0/1`, and barycentric coordinates.
+  `TerrainSurface.classify_top_hit()` is the only triangle classifier. Convert
+  measured world XZ to fractional cell coordinates, clamp the outer maximum to
+  the final cell, otherwise use `floor`; select triangle 0 for local
+  `u+v<=1` (the diagonal tie belongs to 0) and triangle 1 otherwise; then compute
+  barycentrics and reconstruct Y from the exact fixed triangle. Classification
+  fails unless reconstructed Y differs from the measured point by at most
+  `0.05 m`, barycentric components are at least `-0.0001`, and predicted normal
+  differs from the triangle normal by at most `1 deg`. Target texels use this
+  identical classifier. A same-body hit on a different cell/triangle is never a
+  reachability witness.
+- Visit target texels in `(y,x)` order. A texel may reuse an earlier witness only
+  when its reconstructed 3D point is on the same top triangle and at most
+  `0.50 m` surface distance from that witness's measured collision point.
+  `0.50 m` is the certificate tolerance, independent of the `0.52 m` projectile
+  radius: both texels must resolve through the same fixed XZ-to-triangle rule,
+  and sphere overlap alone never certifies reuse. Otherwise solve that exact
+  point. Begin with the nearest `0.1 deg` yaw bearing and its two adjacent
+  lattice values. For each yaw candidate, compute horizontal travel as the
+  positive scalar projection of `(texel_xz-muzzle_xz)` onto that yaw's
+  horizontal launch direction; reject a non-positive projection or perpendicular
+  miss greater than `1.02 m` (`0.50 m` tolerance plus projectile radius). For
+  each integer power from `0` through `100`, integrate collision-free motion at
+  the same fixed tick to that projected range, sample elevation from
+  `10..68 deg` in `1 deg` intervals, bracket every sign change in height,
+  bisect it for
+  12 iterations, then test the nearest `0.1 deg` elevation and its two adjacent
+  lattice values with the real predictor. Candidate order is endpoint error,
+  absolute yaw, elevation, power, then signed yaw. Duplicate canonical tuples
+  are tested once.
+- A witness passes only when the predictor reports `COLLISION`, stable owner and
+  shape are `terrain/top`, the measured point uses the same render/collider
+  triangle as the texel, and their reconstructed surface distance is at most
+  `0.50 m`. Mechanism-first, shell, apron, backstop, bounds-exit, and timeout
+  candidates fail. All target texels must be covered. Store the winning tuples,
+  per-texel witness indices, minimum distance/range margins, and an FNV-1a
+  `reachable_target_checksum` in the passing certificate. Rejected-attempt
+  uncovered coordinates go to certifier evidence, not production resources.
+  `GeneratedStageLayout` holds the verified certificate; no gameplay UI or
+  agent observation exposes tuples.
+- Predictor success is necessary but not sufficient. Before a certificate may
+  pass, `tests/target_reachability_test.gd` groups every distinct witness tuple
+  into stable witness-index batches of 128 and launches the production
+  `PaintProjectile` RigidBody with production radius, mass, damping, CCD,
+  collision layers, origin, and velocity in the same materialized scene.
+  Test projectiles ignore layer `2` so batches cannot affect one another and are
+  retired immediately after their first real contact; mechanisms retain normal
+  bodies but no test paint/effect command is applied. Every tuple must first
+  contact `terrain/top` within 720 fixed 60 Hz ticks. Its runtime
+  `TrajectoryHitIdentity` must equal the certificate owner, shape, cell, and
+  triangle, and the measured runtime point must be within `0.50 m` surface
+  distance of every target texel assigned to that witness. Missing, wrong-body,
+  wrong-triangle, mechanism-first, duplicate-first-contact, penetration, or
+  timeout results fail. Sort `(witness_index, identity, quantized_point,
+  first_contact_tick)`, where each point component rounds half away from zero to
+  `0.001 m`, and store its FNV-1a
+  `rigidbody_reachability_checksum`; three fresh certifier processes must match
+  it exactly. This batched exhaustive launch is the physical parity proof, not a
+  representative sample and not the gameplay projectile-cap path.
+- A failed certificate rejects that generation attempt without changing the
+  target mask. Run the existing 32 deterministic attempts, then the pinned
+  fallback once. If all fail, generation fails closed and the geometry/control
+  contract must be replanned; the executor may not delete target texels, widen
+  impact tolerance, or introduce target-specific authored shots.
+- Only the certifier's explicit `--write-certificate` mode may create
+  `resources/stages/certificates/<stage_id>_v4.tres`; that output is provisional
+  and cannot be committed or consumed as production content until three fresh
+  `--verify-only` processes reproduce the accepted seed, height/target/
+  placement/containment/predictor/rigid-body reachability checksums, witness
+  tuples, and default aim.
+  At runtime `SeededStageGenerator` rebuilds the stored accepted seed and
+  verifies those immutable identifiers before briefing; a missing or stale
+  certificate is a content error, not permission to generate an unchecked
+  replacement.
+- Compute the target centroid from all target-mask texel centers in world XZ.
+  `DefaultAimSolver` selects the certified witness with smallest XZ impact
+  distance to that centroid; ties use absolute yaw, elevation, power, then
+  signed yaw. `GeneratedStageLayout.default_aim` replaces `StageData.initial_aim`
+  and is applied by `StageController` at first entry and every restart. Its
+  prediction must first hit `terrain/top` within `8.0 m` of the centroid and be
+  byte-identical across fresh processes.
+- `GameplayScene` passes the immutable generated layout into
+  `StageController.configure()` before that controller performs its first
+  restart. `StageController` is the only owner that applies
+  `layout.default_aim` on first entry and restart; `GameplayScene`, HUD, and
+  StageData never call `CannonController.set_aim()` for stage initialization.
+  HUD values arrive from the accepted cannon aim signal. First entry and both
+  restart destinations (`BRIEFING` and `AIMING`) must reproduce the exact
+  certificate tuple and target-top prediction.
+- `BackstopEnvironment` constructs a front-visible six-face `BoxMesh` and an
+  exactly matching `BoxShape3D`, both `480 m` wide, `284 m` high, and `4 m`
+  thick, centered at world `(0,111,-174.25)`. Thus its front face is
+  `z=-172.25`, its bounds are `x=[-240,240]`, `y=[-31,253]`,
+  `z=[-176.25,-172.25]`, and it physically joins the far terrain edge through a
+  `0.25 m` faceted transition strip; no
+  render or collision faces are coplanar. It uses collision layer `1`, mask `2`,
+  stable IDs `world/backstop` and `BackstopWall`, and is neither selectable nor
+  included in target/paint masks.
+- `ContainmentSpec` defines the apron as one closed, collider-matched faceted
+  mesh whose top covers `x=[-245,245]`, `z=[-172.25,52]`, has no top-surface
+  point below `y=-30.5`, and joins the terrain shell, the `0.25 m` rear transition,
+  and the backstop bottom without any render or collision gap greater than
+  `0.01 m`. Its collision layer/mask are `1/2`; it is non-target and
+  non-paintable. Faceting may vary only above this fixed catch surface and may
+  not create a hole or lower exit.
+- Every StageData resource uses containment bounds
+  `AABB((-245,-32,-178),(490,286,230))`, whose end is `(245,254,52)`. A
+  full-domain containment proof has two layers. First, a conservative
+  no-damping envelope over the continuous aim domain uses all rotated muzzle
+  extrema, maximum speed `72 m/s`, yaw `+/-45 deg`, elevation `10..68 deg`, and
+  projectile radius `0.52 m`; it must fit the wall/apron with at least one
+  radius of clearance. Second, run the exact predictor for every canonical
+  `0.1 deg / 0.1 deg / 1%` tuple whose analytic envelope can reach a bounds face
+  before the apron/backstop; each must physically collide rather than return
+  `BOUNDS_EXIT` or `TIMEOUT`. The `5 deg / 2 deg / 5%` lattice remains a fast
+  regression sample only, never the proof. A backstop contact records settlement
+  reason `BACKSTOP`, creates no paint, zeros further projectile motion, and
+  retires at the end of that physics tick after emitting its contact; it cannot
+  be used as a bank shot.
+- `tests/containment_wall_test.gd` runs predictor and real rigid-body launches at
+  canonical tuples `(0,68,100)`, `(-45,50,100)`, and `(45,50,100)`. Each must
+  first identify `world/backstop/BackstopWall`, report exactly one begun wall
+  contact whose normal is within `1 deg` of world `+Z`, emit no mechanism or paint
+  command, leave coverage and paint checksum unchanged, set linear and angular
+  velocity to zero in that fixed tick, seal with `BACKSTOP`, and have no active
+  projectile on the next physics tick. Predictor/runtime point error is at most
+  `0.25 m`; any rebound, bank, duplicate contact, or bounds exit fails.
+- `TrajectoryPrediction.is_fireable()` returns true only for `COLLISION`.
+  Target, mechanism, and non-target collisions remain player-fireable choices;
+  a bounds exit or timeout never is. Preview/HUD classify target-top as blue,
+  a mechanism with its semantic color, and shell/apron/backstop as a coral miss
+  marker. The arc always ends at the measured first collider and never displays
+  a fictitious post-impact route.
+
 ### Contact, paint commands, and rasterization
 
 - Extend `ProjectileContact` with `impulse_was_measured: bool`. Emit every begun
   `(collider_rid, collider_shape, local_shape)` key once. Every gameplay collider
   also exposes stable `contact_owner_id` and `contact_shape_id`: `terrain/top`,
-  `terrain/shell`, `world/apron`, or
+  `terrain/shell`, `world/apron`, `world/backstop`, or
   `"mechanism/" + str(placement_index) + "/" + mechanism_kind_key`, followed by the named shape in the
   per-scene table. Emit in `(contact_owner_id, contact_shape_id, local_shape)`
   order. Preserve runtime RID/indices, world point/normal, projectile center,
@@ -431,6 +636,20 @@ check, not a physics or solution claim.
   spawn_ordinal, sequence)`. It emits a drained tick
   and FNV-1a checksum. `StageController` seals a shot only after two inactive
   projectile ticks and a drain covering the last emitted command tick.
+- The production `ProjectileData` normal-terrain baseline is radius `0.52 m`,
+  mass `2.4 kg`, bounce `0.08`, friction `0.78`, linear damping `0.18`, and
+  angular damping `0.35`. `TerrainTopBody`, `TerrainShellBody`, and the apron use
+  the same explicit normal-terrain `PhysicsMaterial` pairing as the projectile
+  fixture; no scene-local material may override bounce `0.08` or friction
+  `0.78`. Backstop termination bypasses restitution by zeroing velocity after
+  its first contact. On the fixed flat/ramp fixtures, the first post-impact
+  normal speed is at most `10%` of incoming normal speed; on target slopes at or
+  below `30 deg`, the ball returns to sustained contact, rolling, or settlement
+  within `0.75 s` and makes no second ballistic arc whose center rises more than
+  `1.5 m` above the reconstructed surface for longer than `0.25 s`. Maximum-
+  speed `46 deg` impact still uses CCD and never penetrates. These values govern
+  ordinary terrain, shell, and apron; a backstop terminates as specified above,
+  and Bumper's explicit redirect is the only strong-rebound exception.
 - Precompute 512-square surface points/normals/target bytes once per accepted
   layout. Reuse queue, component, visited-generation, and candidate buffers;
   clear `recent` only in accumulated dirty rectangles; update coverage on byte
@@ -463,6 +682,13 @@ owns this fixture; no smaller substitute workload is allowed.
   `0.85`, vertical lift `0.22`, infinite charges, and `0.8 s` cooldown. The
   displayed arrow and physical redirect use the same normalized downstream
   tangent.
+- Against the off-white world, fixed active semantic colors are Burst amber
+  `#F2B84B`, Splitter violet `#8A6BEA`, and Bumper coral `#E86A5B`. Burst and
+  Splitter use spent `#9B96A6`; Bumper uses cooldown `#A68F8B`. Each active color
+  is confined to the interactive core/band and matching preview/feedback;
+  silhouette, icon, outlet count, and Bumper arrow remain independent cues so
+  color is never the only distinction. Blue `#1678F2` remains reserved for
+  paint and confirmed target-top impact, not a generic mechanism material.
 - Burst, Splitter, and Bumper have world-space interactive diameters `6.0 m`,
   `7.0 m`, and `6.0 m`. At 1920x1080 they must project to at least 40 px in
   briefing and 26 px in aiming. Horizontal projection derives horizontal FOV as
@@ -472,6 +698,32 @@ owns this fixture; no smaller substitute workload is allowed.
   Labels, direction indicators, and particles are explicitly `visual_only` and
   cannot look like an impact face. Selection bodies stay on the briefing-only
   query layer and are absent from projectile/preview masks.
+- Every placed mechanism stores one direct activation witness whose first
+  collision is its real interactive body. Around that tuple, test the 27
+  canonical combinations from yaw `-0.5/0/+0.5 deg`, elevation
+  `-0.5/0/+0.5 deg`, and power `-2/0/+2%`; at least 9 must activate the same
+  mechanism, and none may report a ghost shape. No mechanism collider may
+  intersect the generated default-center trajectory.
+- Balance is locked by outcomes rather than executor taste: one shot or one
+  mechanism activation cannot clear Stage 2 or 3. The Phase 6 harness injects a
+  test-only `MechanismEffectPolicy`; production and exported builds assert all
+  three flags enabled. An ablation disables only the named effect after its real
+  body contact: Burst emits no radial mark, Splitter spawns no children, or
+  Bumper applies no velocity rewrite. Geometry, collision, cooldown/charge,
+  state color, contact, activation signal, all other mechanisms, shot tuples,
+  and ordering remain identical. The harness records the contact and activation
+  plus `effect_suppressed=true`, and asserts the named paint/child/redirect
+  output is absent.
+- Under that exact policy, the frozen Stage 2 solution activates Burst and its
+  Burst-off run stays below `27%`; the frozen Stage 3 solution activates both
+  Splitter and Bumper, its Splitter-off and Bumper-off runs each stay below
+  `70%`, and the safe-route-only sequence stays below `70%`. Full production
+  sequences clear within `5/6` shots. Separate scene-state assertions compare
+  the live material colors byte-for-byte with the active/spent/cooldown hex
+  values above before contact, after activation, after cooldown, and after reset.
+  Failed balance causes placement/effect verification and then replanning; it
+  never authorizes a target reduction, hidden target hole, extra shot, or new
+  special surface.
 
 Per-scene visual/collision construction is fixed:
 
@@ -479,7 +731,7 @@ Per-scene visual/collision construction is fixed:
 | --- | --- | --- | --- |
 | Burst | `Pedestal`: tapered 16-sided cylinder, bottom diameter `6.0 m`, top `5.0 m`, height `0.9 m`; `Lens`: solid sphere diameter `4.5 m`, center Y `2.15 m` | `BurstBase` cylinder radius `3.0 m`, height `0.9 m`; `BurstLens` sphere radius `2.25 m` | color bands painted on the Lens material, below-device label, particles; no free-standing torus |
 | Splitter | `Base`: triangular prism circumradius `3.0 m`, height `0.7 m`, one point toward local +Z; `Crest`: same orientation, radius `2.4 m`, height `0.8 m`; jewel sphere radius `0.75 m`, center `(0,2.0,0)`; three outlet axes use yaw `-35/0/+35 deg` from local +Z, horizontal direction `(sin(yaw),0,cos(yaw))`, total length `3.4 m`, radius `0.35 m`, and center `direction*1.45+(0,1.4,0)` | one `ConvexPolygonShape3D` from exact Base+Crest vertices; three capsules with local Y axis rotated onto the listed direction and the identical center/radius/total height; jewel sphere with identical center/radius | below-device label and activation particles only |
-| Bumper | `Base`: 16-sided cylinder radius `3.0 m`, height `0.8 m`; `Pad`: cylinder radius `2.4 m`, height `0.7 m`, center Y `1.15 m` | matching base/pad cylinders with the same centers and dimensions | thin blue arrow and below-device label; arrow is a direction indicator above the physical pad, never an apparent blocking face |
+| Bumper | `Base`: 16-sided cylinder radius `3.0 m`, height `0.8 m`; `Pad`: cylinder radius `2.4 m`, height `0.7 m`, center Y `1.15 m` | matching base/pad cylinders with the same centers and dimensions | thin navy direction arrow and below-device label; arrow sits above the physical pad and never looks like a blocking face |
 
 Collision-layer values are fixed: terrain `1`, projectile `2`, mechanism body
 `4`, briefing selection `8`, decoration `0`. Projectile and trajectory preview
@@ -500,9 +752,13 @@ lies inside it, so its declared diameter is exactly `7.0 m`.
   occupies 9%..15% of width and 20%..32% of height in the lower-left and never
   obscures the Stage 1 route entrance.
 - Replace the flat foreground plane with a faceted non-target apron derived from
-  the terrain edge. Expose `8..14 m` of shell thickness in aiming views. Use dry
-  top `#7E8795`, shell `#606B79`, apron `#99978E`, background `#F5F0EA`, paint
-  `#1678F2`, and navy `#10233D`; dry/paint roughness remains `0.88/0.24`.
+  the terrain edge and containment boundary. Expose `8..14 m` of shell thickness
+  in aiming views. Use scoreable dry top `#E6E4DE`, rear wall `#F7F3EC`,
+  non-target shell/buttress `#C6C9C7`, apron `#D6D3CB`, background `#F5F0EA`,
+  paint `#1678F2`, and navy `#10233D`; dry/paint roughness remains `0.88/0.24`.
+  Pure white and unlit flat shading are prohibited: fixed faceted normals,
+  directional light, self-shadow, and the listed off-white value separation
+  must preserve the low-poly form.
 - Use one world-space DirectionalLight3D with
   `rotation_degrees=(-38,-40,0)`, energy `1.15`, and
   `Color(1.0,0.95,0.84,1.0)`. The Environment uses solid background
@@ -510,6 +766,15 @@ lies inside it, so its declared diameter is exactly `7.0 m`.
   `0.34`.
   Compatibility shadows remain enabled. Terrain normals are faceted, not
   smoothed.
+- In every bookmark and supported resolution, the projected rear wall overscans
+  every viewport edge by at least `2%` except where physically occluded by the
+  mountain, apron, or cannon. The wall is the six-face box/collider specified
+  above, never a camera-facing quad. In aiming view the mountain exposes
+  `8..14 m` of shell/buttress depth; across the briefing-to-aiming transition,
+  foreground and far terrain landmarks must exhibit at least `8 px` relative
+  parallax at 1920x1080. The coordinated evidence must show multiple lit face
+  normals, ridge/valley occlusion, a wall join, and a cast/self-shadow so the
+  distant target reads as a thick 3D object protruding from the wall.
 
 Camera bookmark resources are exact:
 
@@ -525,17 +790,22 @@ for a plan revision rather than tuning it inside Phase 4.
 
 - Trajectory dots are depth-tested camera-facing markers with 6 px diameter and
   17 px projected center spacing at the 1280x720 logical baseline, scaled with
-  the UI stretch; maximum 60 dots. The final dot is the measured first collision
-  or bounds endpoint. The 30 px impact ring is offset `0.05 m` along the measured
-  normal and depth-tested. No post-impact path or coverage prediction is shown.
+  the UI stretch; maximum 60 dots. The final dot is always a measured first
+  physical collision; bounds-exit/timeout predictions are non-fireable errors,
+  not endpoints presented as hits. The 30 px impact ring is offset `0.05 m`
+  along the measured normal, depth-tested, and colored by the target/mechanism/
+  non-target classification above. No post-impact path or coverage prediction
+  is shown.
 - Mouse drag over the playfield changes yaw/elevation at `0.15/-0.12 deg` per
   physical X/Y pixel; A/D and W/S change their axis by `0.5 deg`, repeat after
-  `0.30 s`, then every `0.08 s`. Yaw is `-28..28 deg`, elevation `18..68 deg`,
-  and power `0..100%`. Wheel changes power by `1%`; focused minus/plus changes it
-  by `2%` with the same hold timing. Space and Fire invoke the same guarded
-  launch. Every stage begins and restarts at `(yaw,elevation,power)=(0,38,68)`;
-  its first-collision prediction must be valid. This plan does not restore a
-  target solver.
+  `0.30 s`, then every `0.08 s`. Yaw is `-45..45 deg`, elevation `10..68 deg`,
+  and power `0..100%`; the shared canonicalization lattice is `0.1 deg / 1%`.
+  Wheel and focused minus/plus change power by `1%` with the same hold timing.
+  Space and Fire invoke the same guarded launch. Every stage begins and restarts
+  at its generated `default_aim`, whose first collision is target top within
+  `8 m` of the target centroid. The reachability/default solver is generation
+  evidence and startup state only; it is never an aim hint, snap-to-target
+  control, post-launch steering system, or player-facing solver.
 - Set stretch aspect to `expand`. Use a full-rect CanvasLayer and Containers,
   never root absolute offsets. The logical baseline is 1280x720; safe margin is
   `max(16, round(24*viewport_width/1280))`. Baseline components are: stage card
@@ -570,11 +840,14 @@ for a plan revision rather than tuning it inside Phase 4.
   active tests.
 - `ShotObservation` schema 4 contains shot index, yaw/elevation/power, ordered
   contacts with impulse provenance, ordered mechanism activations, child spawn
-  ordinals, settlement reasons, coverage before/after/delta, paint command
-  count, last drained tick, and final paint-mask FNV-1a checksum.
+  ordinals, settlement reasons including `BACKSTOP`, coverage before/after/
+  delta, paint command count, last drained tick, and final paint-mask FNV-1a
+  checksum. Layout metadata contains the reachability checksum and generated
+  default aim but never the per-target witness tuple array.
 - Replay format 4 stores stage/profile versions, requested/accepted seed, height
-  checksum, target-mask checksum, ticked actions, and expected schema-4 sealed
-  observations. Format 3 is rejected rather than heuristically migrated.
+  checksum, target-mask/reachability/containment checksums, generated default
+  aim, ticked canonical actions, and expected schema-4 sealed observations.
+  Format 3 is rejected rather than heuristically migrated.
 - A fresh-process replay must produce the exact ordered contact/mechanism/child
   identity contract, final state, target checksum, and paint checksum. The
   existing positional tolerance may remain for reported floating-point contact
@@ -600,6 +873,29 @@ Rejected: `35/50/70` targets, route-proximity/slope masking of reachable target
 terrain, solid-looking ghost decorations, payload conservation, downhill flow,
 and an assumption that commutative writes alone prove replay determinism.
 
+### 2026-08-03 user-direction disposition
+
+Accepted as consistent with the planning/physics loop: every scoreable target
+unit must be directly first-hit reachable within the legal manual aim domain;
+the default shot lands near the target centroid; normal terrain uses low rebound;
+the distant mountain remains a thick collidable 3D mesh; a bright physical rear
+wall contains the current board; and the wall/terrain use a bright off-white
+palette with visible faceting and shadow.
+
+Interpreted to preserve the approved scope: “anywhere on the terrain” means the
+entire scoreable `target_mask`, not the deliberately non-target shell, apron, or
+backstop. “Special terrain” means the three already-approved physical mechanism
+pads for this milestone; their helpful/risk-bearing behavior gets readability,
+tolerance, and ablation gates, but no ice/sticky/booster/drain surface class is
+invented. The player still aims manually and may choose a visible non-target
+miss; the certificate never predicts post-impact paint coverage.
+
+Deferred explicitly rather than left to implementation judgment: trajectories
+that cross the cannon-visible rear silhouette into hidden terrain, an open rear
+edge, and new surface-effect types. Supporting those later requires a separate
+world/camera/physics design revision; the current wall is not a temporary
+invisible hack and may not be removed during this plan.
+
 ## Tasks
 
 ### Phase 0: Align authority and introduce replacement contracts
@@ -616,14 +912,16 @@ Preconditions:
 Source owners: `AGENTS.md`, `docs/source-brief.md`, `docs/design-spec.md`,
 `docs/technical-architecture.md`, `docs/test-checklist.md`, `.agents/Prompt.md`,
 typed Resources/value objects under `src/stage_generation`, `src/projectile`,
-and `src/paint`
+`src/cannon`, `src/terrain`, and `src/paint`
 
 - [ ] **0.1** Align active written authority without rewriting history.
   - Change: make the exact protected-line edit; add a clearly dated supersession
     note to `source-brief.md` without editing its verbatim original directive;
     replace finite-payload/flow language in active design, architecture,
-    checklist, prompt, and documentation sections; retain historical plans and
-    evidence as explicitly superseded records.
+    checklist, prompt, and documentation sections; add the target-wide direct
+    reachability, generated default aim, rear containment, low-rebound, and
+    mechanism-semantic decisions; retain historical plans and evidence as
+    explicitly superseded records.
   - Accept: active docs agree on continuous contact paint, target-mask coverage,
     `4/27/70`, one mask authority, and the ownership table; source-brief original
     text and raw Claude review remain byte-unchanged below/within their recorded
@@ -632,11 +930,14 @@ and `src/paint`
 - [ ] **0.2** Add the version-4 typed contract skeleton.
   - Change: add generated graph node/edge/graph types, replace deposit request
     with surface-sweep/radial-mark types, add impulse provenance, version profile
-    resources, introduce compile-safe narrow queue/observation interfaces, and
+    resources, add immutable `AimTuple`, `DirectReachabilityCertificate`, and
+    `ContainmentSpec` values plus `TrajectoryHitIdentity` and `BACKSTOP`
+    settlement, introduce compile-safe narrow queue/observation interfaces, and
     add `tests/version4_contract_test.gd`. Do not keep aliases for amount/payload
-    fields.
+    or hand-authored initial-aim fields.
   - Accept: class registration/import passes; deterministic value-object tests
-    cover validation, stable IDs, sort keys, snapping, and rejected invalid data.
+    cover validation, stable IDs, body-shape and terrain-triangle identity,
+    barycentric/tie mapping, sort keys, snapping, and rejected invalid data.
   - Guard: the production scene remains launchable headlessly even before new
     behavior is wired.
 
@@ -656,9 +957,12 @@ Preconditions:
 
 Source owners: `seeded_stage_generator.gd`, `generated_stage_layout.gd`,
 `first_descent_profile.tres`, `terrain_geometry_factory.gd`,
-`terrain_surface.gd`, `paint_projectile.gd`, `projectile_manager.gd`,
-`paint_system.gd`, `gameplay_scene.gd`, `StageController`, observation/replay/UI
-consumers required for payload removal
+`terrain_surface.gd`, `backstop_environment.gd`, `trajectory_predictor.gd`,
+`direct_reachability_validator.gd`, `default_aim_solver.gd`,
+`tools/stage_generation_certifier.gd`,
+`paint_projectile.gd`, `projectile_manager.gd`, `paint_system.gd`,
+`gameplay_scene.gd`, `StageController`, observation/replay/UI consumers required
+for payload removal
 
 - [ ] **1.1** Generate First Descent from the route graph.
   - Change: implement the fixed graph resolver and bounded support/carve pipeline;
@@ -669,18 +973,37 @@ consumers required for payload removal
     lobe field influences any sample.
 - [ ] **1.2** Make the Stage 1 target and solid geometry truthful.
   - Change: construct `target_mask`, derive top/skirt/bottom and top/shell bodies
-    from the same heights, expose target/non-target material inputs, and add
-    vertex plus cell-interior render/ray parity fixtures.
+    from the same heights, construct the exact apron/backstop render and
+    collision, install the containment bounds, build the direct-reachability
+    certificate and default aim, expose target/non-target material inputs,
+    remove GameplayScene/HUD/StageData initialization writes in favor of the
+    StageController layout handoff, and add vertex plus cell-interior render/ray
+    parity and wrong-triangle rejection fixtures.
   - Accept: one target component reaches summit and exit; no slope or decoration
-    exclusion exists; every deterministic interior sample agrees within `0.05 m`
-    and returns the expected top/shell body.
+    exclusion exists; every target texel has its exact predictor witness and
+    every distinct tuple reproduces the same real RigidBody first-contact
+    body/shape/cell/triangle within `0.50 m`; the
+    default first hit is within `8 m` of the target centroid on first entry and
+    both restart paths; the analytic full-domain envelope and every required
+    exact canonical-lattice check return no rear, side, upper, or lower bounds
+    exit and first contact terrain, apron, backstop, or mechanism; every
+    deterministic interior sample agrees within `0.05 m` and returns the
+    expected top/shell/backstop body/shape/triangle identity.
+  - Certify: after the non-writing test passes, run the certifier once with
+    `--stage=first_descent --write-certificate=res://resources/stages/certificates/first_descent_v4.tres`,
+    rerun it three times with `--verify-only`, and commit the resource only with
+    identical evidence.
 - [ ] **1.3** Produce complete contact events and contact-derived paint intent.
   - Change: emit every begun contact, maintain the current top-contact interval
-    inside `_integrate_forces`, implement the exact gap proof, and create impact,
+    inside `_integrate_forces`, install the fixed low-rebound production tuning,
+    implement the exact gap proof and backstop settlement, and create impact,
     sweep, and settle commands with stable ordinals/sequences.
   - Accept: flat, ramp, ridge, shell, airborne-hop, recontact, simultaneous-body,
-    high-speed CCD, and settle fixtures report the expected ordered contacts and
-    commands; no command uses `global_position` as a fabricated contact.
+    high-speed CCD, bounded-rebound, backstop, and settle fixtures report the
+    expected ordered contacts and commands; no command uses `global_position`
+    as a fabricated contact. The three locked wall launches satisfy the exact
+    one-contact/zero-paint/zero-velocity/same-tick-retirement contract and cannot
+    bank back into play.
 - [ ] **1.4** Rasterize and drain continuous surface paint.
   - Change: add the late sorted queue, exact endpoint snapping/component rule,
     3D capsule/radial rasterization, threshold coverage, dirty batching, and
@@ -696,7 +1019,7 @@ consumers required for payload removal
     one physical Stage 1 shot seals after drain with matching paint checksum and
     leaves the player in the correct aiming/result state.
 - [ ] **1.6** Pass the user-coordinated Stage 1 visual go/no-go gate.
-  - Change: search the coarse lattice yaw `-28..28` step `4`, elevation `18..66`
+  - Change: search the coarse lattice yaw `-45..45` step `5`, elevation `10..66`
     step `4`, power `40..100` step `5`, then the `+/-4 deg / +/-5%` neighbourhood
     of its best result at step `1`. A candidate must have a valid target-top
     contact, at least `25 m` of surface path, at least `0.75 s` total top contact,
@@ -712,8 +1035,9 @@ consumers required for payload removal
     `.agents/evidence/gameplay-visual-reset/stage1/`.
   - Accept: the mountain is a thick 3D target rather than a distant card; the
     ball visibly contacts and follows its surface; paint is continuous beneath
-    the traversed path; collision and first-impact location are visually
-    unambiguous. UI polish is not judged in this gate.
+    the traversed path; the rear wall visibly contains the board; the default
+    shot hits near center; rebound is short; collision and first-impact location
+    are visually unambiguous. UI polish is not judged in this gate.
   - Guard: if the user rejects the Stage 1 proof, stop and revise this plan before
     expanding the other stages.
 
@@ -734,15 +1058,22 @@ Preconditions:
 - Phase 1 batch gate and Stage 1 visual approval pass.
 
 Source owners: stage generation profiles/resources, `SeededStageGenerator`,
-`GeneratedStageLayout`, route-query consumers, `mechanism_placement_generator`,
-`environment_dressing`, generation/terrain/placement tests
+`GeneratedStageLayout`, reachability/default/containment owners, route-query
+consumers, `mechanism_placement_generator`, `environment_dressing`,
+generation/terrain/placement tests
 
 - [ ] **2.1** Implement the frozen Stage 2 and Stage 3 graphs.
   - Change: migrate both profiles, shared summit/branch topology, edge IDs,
-    pads, bounded support, target shoulders, and deterministic checksums.
+    pads, bounded support, target shoulders, reachability certificates, generated
+    default aims, and deterministic checksums.
   - Accept: every stage passes its exact route count, role, width, reversal,
     height, slope, lip, ratio, component, and branch-reachability gate for base,
-    repeat, attempt, and fallback paths.
+    repeat, attempt, and fallback paths; every accepted target texel also passes
+    direct ballistic reachability with identical predictor and rigid-body
+    certificate checksums.
+  - Certify: write exactly `burst_basin_v4.tres` and `split_ridge_v4.tres` under
+    `resources/stages/certificates/` with the same certifier arguments as Stage
+    1, then require three fresh `--verify-only` passes for each before commit.
 - [ ] **2.2** Enforce target and decoration policy for all layouts.
   - Change: eliminate decoration-based holes, place scale cues only outside all
     prohibited envelopes, and visually classify all non-target support.
@@ -751,24 +1082,30 @@ Source owners: stage generation profiles/resources, `SeededStageGenerator`,
     are independent of decoration seed/order.
 - [ ] **2.3** Place mechanisms by graph role and correct projection.
   - Change: bind Burst/Splitter/Bumper to their typed pad nodes, validate slope,
-    separation, line of sight, physical footprint, and corrected horizontal
-    projection at every supported resolution.
+    separation, line of sight, physical footprint, direct activation witness and
+    9-of-27 tolerance neighbourhood, and corrected horizontal projection at
+    every supported resolution.
   - Accept: required mechanism kind/role/pad is exact; projected-size and line-
-    of-sight gates pass; invalid layouts are rejected, never repaired with
-    authored X/Z coordinates.
+    of-sight/activation-tolerance gates pass; no default-center path is blocked;
+    invalid layouts are rejected, never repaired with authored X/Z coordinates.
 - [ ] **2.4** Prove all geometry/query consumers use one layout.
   - Change: migrate placement, paint, replay metadata, agent height/route
-    observations, camera queries, and tests; remove obsolete route compatibility
-    fields and every non-generator `StageRouteProfile` consumer after migration;
-    `SeededStageGenerator` remains its sole consumer as the typed graph input.
+    observations, camera queries, default aim, containment, and tests; remove
+    obsolete route compatibility and initial-aim fields and every non-generator
+    `StageRouteProfile` consumer after migration; make GameplayScene pass layout
+    to StageController before its first restart and remove every other stage-
+    initialization `set_aim`; `SeededStageGenerator` remains the sole consumer
+    of route profiles as typed graph input.
   - Accept: static search finds no lobe field, secondary height computation,
     old eligibility term in active code, or authored production mechanism
-    coordinate; interior parity passes all stages.
+    coordinate/initial aim; interior parity and physical containment pass all
+    stages.
 
 Batch gate:
 
-- Run stage-generation, terrain-geometry, decoration-placement, mechanism-
-  placement, camera-safety, and agent contract tests, then `scripts/verify.ps1`.
+- Run stage-generation, target-reachability, containment-wall, terrain-geometry,
+  decoration-placement, mechanism-placement, camera-safety, and agent contract
+  tests, then `scripts/verify.ps1`.
 
 ### Phase 3: Make mechanisms and multi-ball paint physically trustworthy
 
@@ -791,21 +1128,25 @@ contact, paint, reliability, and performance tests
     exactly once; preview hits the same physical body/shape as runtime.
 - [ ] **3.2** Convert Burst to amount-free radial paint.
   - Change: delete amount/flow tuning and emit one queued 14 m Burst mark through
-    the activating projectile's ordering identity.
+    the activating projectile's ordering identity; apply the fixed amber/spent
+    state materials without changing its real collision.
   - Accept: one charge, reset, cooldown, terrain connectivity, mask authority,
-    command order, and coverage union pass; Burst cannot paint shell/non-target.
+    command order, direct-hit tolerance, state color, and coverage union pass;
+    Burst cannot paint shell/non-target or clear Stage 2 by itself.
 - [ ] **3.3** Convert Splitter to three independent continuous painters.
   - Change: remove payload conservation, retain frozen motion/role targeting,
-    assign stable child ordinals, and apply the 3.12 m footprint.
+    assign stable child ordinals, apply the 3.12 m footprint, and apply the fixed
+    violet/spent state materials.
   - Accept: exactly three generation-1 children, no recursion, cap eight, stable
-    ordinal order, continuous independent contact sweeps, and exact parent/child
-    width fixtures pass.
+    ordinal order, direct-hit tolerance, state color, continuous independent
+    contact sweeps, and exact parent/child width fixtures pass.
 - [ ] **3.4** Make Bumper collision and displayed redirect agree.
   - Change: preserve fixed velocity rule but drive it from the same body contact
-    and downstream tangent shown by the arrow.
+    and downstream tangent shown by the navy arrow; apply the fixed coral/
+    cooldown materials while retaining the normal-terrain low-bounce baseline.
   - Accept: exact body strike redirects once per cooldown into the intended
-    route; glancing non-contact does not activate; arrow/tangent/velocity angular
-    error is at most `1 deg`.
+    route; direct-hit tolerance passes; glancing non-contact does not activate;
+    state color passes; arrow/tangent/velocity angular error is at most `1 deg`.
 - [ ] **3.5** Bound paint work under the worst multi-ball case.
   - Change: finish precomputation, scratch reuse, dirty-region clearing, one-
     upload batching, diagnostic timing/allocation counters, and
@@ -830,16 +1171,20 @@ Preconditions:
 
 - Phase 3 acceptance and batch gate pass.
 
-Source owners: `gameplay.tscn`, terrain material/shader, foreground/dressing,
+Source owners: `gameplay.tscn`, terrain/backstop material and geometry,
+foreground/dressing,
 `camera_director.gd`, stage camera resources, `cannon.tscn`,
 `trajectory_preview.gd`, mechanism scenes, approved committed art assets
 
 - [ ] **4.1** Apply the fixed low-poly material, light, shell, and apron contract.
-  - Change: replace the plane, expose shell, set fixed palette/roughness/light,
-    preserve faceted normals, and use approved assets only as off-route scale
+  - Change: replace the plane, expose shell, finish the six-face backstop and
+    mountain/wall join, set the fixed off-white palette/roughness/light, preserve
+    faceted normals and shadows, and use approved assets only as off-route scale
     cues or bounded effects.
-  - Accept: scene/resource inspection matches every fixed value; no plane hides
-    shell thickness; paint texture remains the authoritative visual input.
+  - Accept: scene/resource inspection matches every fixed value; wall projection
+    overscan, `8..14 m` depth, `8 px` parallax, lit-face/shadow evidence, and
+    render/collider identity pass; no plane hides shell thickness and the paint
+    texture remains the authoritative visual input.
 - [ ] **4.2** Recalibrate all camera bookmarks after terrain generation.
   - Change: replace every stage resource with the exact bookmark table and
     preserve only the existing clearance/line-of-sight correction.
@@ -850,18 +1195,20 @@ Source owners: `gameplay.tscn`, terrain material/shader, foreground/dressing,
     spheres with depth-tested screen-consistent markers and the fixed impact
     ring.
   - Accept: predictor/runtime first impact remains within `2.0 m`; arc ends at
-    the first collider, terrain occludes hidden markers, the impact point remains
-    legible, and cannon/route screen bounds pass.
+    the first collider, a bounds exit is not fireable, target/mechanism/miss
+    rings classify the real collider, terrain occludes hidden markers, the
+    impact point remains legible, and cannon/route screen bounds pass.
 - [ ] **4.4** Finish mechanism silhouettes and feedback.
   - Change: size the three scenes to fixed diameters, preserve distinct
-    Burst/Splitter/Bumper shapes, map collision per part, and keep effects pooled
-    and bounded.
+    Burst/Splitter/Bumper shapes, apply their exact amber/violet/coral state
+    colors, map collision per part, and keep effects pooled and bounded.
   - Accept: world size, projected pixels, body mapping, idle/active/spent or
     cooldown feedback, and Korean label placement pass structural tests.
 - [ ] **4.5** Add non-rendered composition evidence for the final visual gate.
   - Change: emit a revision-stamped JSON manifest of camera projections, screen
     rectangles, material/light values, target bounds, shell exposure, mechanism
-    pixels, trajectory spacing, and cannon occupancy from
+    pixels/colors, wall overscan/depth/parallax, trajectory spacing/collision
+    class, default-center hit, and cannon occupancy from
     `tests/composition_contract_test.gd`.
   - Accept: every fixed numerical contract passes for all stage/resolution
     fixtures; the manifest is stored under the current evidence revision.
@@ -929,20 +1276,31 @@ reliability/performance tests, evidence records
 - [ ] **6.1** Find and freeze one reliable physical solution per stage.
   - Change: run the existing resumable 60 Hz production-scene search against
     profile/stage version 4 and store exact yaw/elevation/power tuples in stage
-    resources only after three fresh-process confirmations.
+    resources only after three fresh-process confirmations; also run the fixed
+    Burst-off, Splitter-off, and Bumper-off `MechanismEffectPolicy` ablations
+    without changing any tuple, collider, state transition, or non-named effect.
   - Accept: Stage 1 reaches at least 4% in 4 shots, Stage 2 reaches at least 27%
     in 5 with Burst activation, Stage 3 reaches at least 70% in 6 with Splitter
     and Bumper activation; each sequence passes three fresh processes with the
-    same target/paint checksums and event order. Stage 3's safe route alone stays
-    below 70%.
+    same target/predictor-reachability/rigid-body-reachability/paint checksums
+    and event order. No single shot or
+    activation clears Stage 2/3; the Stage 2 Burst-off ablation stays below 27%;
+    the Stage 3 Splitter-off and Bumper-off ablations and its safe route alone
+    stay below 70%; every suppressed run contains the real activation but lacks
+    only the named effect output.
   - Guard: do not lower targets, add shots, enlarge hidden footprints, remove
     target texels, or hand-author terrain/placement to obtain a solution.
 - [ ] **6.2** Run full reliability and causality matrices.
-  - Change: cover fire/restart/out-of-bounds/lifetime/settlement, contact chatter,
-    simultaneous bodies, eight-ball cap, repeated mechanism activation, reset,
-    stage progression, and no-leaked-node cases.
+  - Change: cover default-center fire/restart, full aim-domain containment,
+    non-fireable bounds/timeouts, backstop settlement, bounded rebound,
+    lifetime/settlement, contact chatter, simultaneous bodies, eight-ball cap,
+    repeated mechanism activation, reset, stage progression, and no-leaked-node
+    cases.
   - Accept: 30-cycle reliability, all stage results/unlocks, no projectile leaks,
-    restart `<=50 ms`, and no result before final paint drain pass.
+    restart `<=50 ms`, no legal-domain rear/side/upper/lower escape or wall
+    paint, all three wall tuples produce the exact one-contact `BACKSTOP`
+    observation and same-tick zero/retirement behavior, and no result before
+    final paint drain pass.
 - [ ] **6.3** Pass final deterministic and performance matrices.
   - Change: run repeated base/fallback generation, replay record/read/cleanup,
     worst Burst/Splitter workload, and full ordered test runner. For the rendered
@@ -952,8 +1310,11 @@ reliability/performance tests, evidence records
     consecutive process frames with `Time.get_ticks_usec()`; record maximum
     active balls, memory after the final frame, and coverage.
   - Accept: exact graph/height/target/paint checksums repeat across fresh
-    processes; load `<=3 s`, average `>=60 FPS`, no measured frame `>33.3 ms`,
-    static memory `<=128 MiB`, paint drain gates pass, and active balls `<=8`.
+    processes together with predictor/rigid-body reachability, default, and
+    containment certificates; load
+    including certificate verification `<=3 s`, average `>=60 FPS`, no measured
+    frame `>33.3 ms`, static memory `<=128 MiB`, paint drain gates pass, and
+    active balls `<=8`.
 
 Batch gate:
 
@@ -986,9 +1347,11 @@ Source owners: export preset, delivery capture runner, `screenshots/`,
     engine, renderer, locale, resolution, seed, state, and shot tuple in
     `screenshots/capture-manifest.json`.
   - Accept: direct inspection confirms the supplied-reference hierarchy; thick
-    3D mountain, readable routes/items, small cannon, depth-correct preview,
-    unambiguous ball contact, continuous bright paint, target boundary, and HUD
-    all agree with this contract. No clipping or debug overlay appears.
+    off-white 3D mountain visibly protruding from its solid wall, readable
+    color-distinct mechanisms, small cannon, center-hitting default,
+    depth-correct preview, short rebound, unambiguous ball contact, continuous
+    bright paint, target boundary, and HUD all agree with this contract. No
+    clipping, rear escape, or debug overlay appears.
 - [ ] **7.3** Close records and remove obsolete active claims.
   - Change: update specs/checklist/documentation with measured results and known
     limitations, remove transient evidence not named by policy, verify fastrun
@@ -1005,10 +1368,27 @@ Batch gate:
 
 ## Validation and Rework Controls
 
-Use this locally verified executable for every Godot command:
+Resolve Godot through the repository contract rather than a path owned by
+another project. The executing shell must set `GODOT_BIN` or expose `godot4`/
+`godot` on PATH; resolution and the exact 4.7.1 version check are mandatory:
 
 ```powershell
-$paintMountainGodot = 'D:\npjt\cardborne-platformer\.codex-runtime\godot-4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe'
+$paintMountainGodot = $env:GODOT_BIN
+if ([string]::IsNullOrWhiteSpace($paintMountainGodot)) {
+    $paintMountainGodotCommand = Get-Command godot4 -ErrorAction SilentlyContinue
+    if ($null -eq $paintMountainGodotCommand) {
+        $paintMountainGodotCommand = Get-Command godot -ErrorAction SilentlyContinue
+    }
+    if ($null -eq $paintMountainGodotCommand) {
+        throw 'Set GODOT_BIN or add godot4/godot to PATH.'
+    }
+    $paintMountainGodot = $paintMountainGodotCommand.Source
+}
+$paintMountainGodot = (Resolve-Path -LiteralPath $paintMountainGodot -ErrorAction Stop).Path
+$paintMountainGodotVersion = (& $paintMountainGodot --version | Select-Object -First 1).Trim()
+if ($paintMountainGodotVersion -notmatch '^4\.7\.1\.stable') {
+    throw "Paint Mountain requires Godot 4.7.1 stable; resolved $paintMountainGodotVersion"
+}
 ```
 
 Focused commands are exact and are selected by the task's named owners:
@@ -1016,14 +1396,19 @@ Focused commands are exact and are selected by the task's named owners:
 ```powershell
 & $paintMountainGodot --headless --path . --script res://tests/version4_contract_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/stage_generation_test.gd
+& $paintMountainGodot --headless --path . --script res://tools/stage_generation_certifier.gd -- --stage=all --verify-only
+& $paintMountainGodot --headless --path . --script res://tests/target_reachability_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/containment_wall_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/terrain_geometry_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/projectile_contact_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/projectile_settling_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/phase3_paint_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/phase3_projectile_paint_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/paint_queue_determinism_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/decoration_placement_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/mechanism_placement_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/phase5_mechanism_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/phase6_solution_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/aim_interaction_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/camera_safety_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/composition_contract_test.gd
@@ -1101,12 +1486,18 @@ Validation rules:
 | User has not approved the exact protected instruction edit | Keep this plan active and stop before Phase 0; state the exact one-line change | Do not edit root `AGENTS.md` implicitly |
 | A verified material fact contradicts this contract | Stop the affected branch, record evidence, update this contract, and obtain required approval | Executor may not choose a new product, architecture, data, UX, or validation contract |
 | Base attempts fail generation | Run the pinned fallback once; if it fails, correct implementation against the fixed graph/support algorithm | No authored layout, lobe fallback, target-mask deletion, or threshold retuning |
+| Any target texel lacks a direct first-hit witness | Verify canonical input, shared predictor, triangle identity, and candidate ordering; reject the attempt, then run the pinned fallback | Never remove/hide the texel, enlarge `0.50 m`, expose witnesses as auto-aim, or accept mechanism-first reachability; replan if fallback fails |
+| Default aim misses target or lands more than `8 m` from its centroid | Trace target centroid, certificate ordering, and StageController restart application | Do not hand-author an initial tuple or silently choose a different target anchor |
+| A legal aim exits through any rear, side, upper, or lower bound or passes through the wall/apron | Verify conservative envelope, wall/apron dimensions, collision layers, stage bounds, and predictor/runtime parity in that order | No invisible kill plane, larger projectile, bounds-as-hit classification, or camera concealment; stop and replan if the fixed containment is insufficient |
 | Route graph passes metrics but reads as a wall in Stage 1 evidence | Reject the vertical slice and replan geometry/composition from evidence | Do not build Stage 2/3 or hide the issue with camera/UI |
+| Off-white mountain still reads as a flat card | Verify six-face backstop, mountain/wall join, shell exposure, faceted normals, light/shadow, camera projection, and parallax in that order | Do not substitute a billboard, dark gray palette, texture-only fake depth, or uncollidable visual mass; replan after defects are excluded |
 | Render, collider, or surface-query samples differ | Stop and make all three consume the same heights/triangle diagonal | No offsets, larger projectile, or paint compensation |
 | A gap paints without the full clearance/ray proof | Reject the bridge and trace contact identity/sample order | Never paint an unproved airborne chord |
 | A real continuous roll leaves a blank centerline | Fix contact interval, snapping, component, or queue implementation in that order | Do not enlarge radius or lower coverage threshold |
 | Fresh-process paint checksum differs | Compare seed/layout, spawn ordinals, emitted command tuples, sort/drain order, then raster bytes | Do not waive exact mask identity or claim commutativity is proof |
 | Mechanism preview/visual/body/runtime contact disagree | Remove query-only geometry from projectile masks and fix per-part mapping | Do not use a large union collider or ghost trigger |
+| A mechanism fails color, activation-tolerance, or ablation balance | Verify state material, real body mapping, pad placement, effect execution, and recorded solution in that order | Do not add a new special surface, lower targets, add shots, hide terrain, or tune an unlisted value; replan after defects are excluded |
+| Normal projectile rebound exceeds the locked gate | Verify resource wiring, material combination, contact normal, CCD, and fixture geometry | Keep Bumper isolated as the only redirect exception; if engine-correct behavior still fails, stop for a numeric plan revision rather than ad hoc tuning |
 | A fixed target has no reliable physical solution | Verify contact/paint first, graph/target surface second, mechanism behavior third, search fourth | After defects are excluded, stop and replan; do not lower target/add shots/hide terrain |
 | Paint performance misses its gate | Reuse arrays, reduce dirty work, batch uploads, and cache surface candidates in that order | Mask/grid/footprint/threshold/gameplay values remain fixed; dependency changes require approval |
 | UI clips or covers gameplay | Fix container flags, anchors, wrapping, and minimum sizes | Do not shrink body text below 14 px or remove required controls |
@@ -1126,7 +1517,9 @@ safety, persistence, or acceptance.
 - Current phase: approval gate before Phase 0.
 - Next task: 0.1 after the user instructs execution of this plan.
 - Last completed gate: Discovery Closure Gate; raw Claude guidance was validated
-  against current code and all five readiness decisions were locked here.
+  against current code, the later reachability/containment direction was
+  independently reviewed against the game loop, and all readiness decisions are
+  locked here.
 - Carried-forward implementation foundations: immutable generated layout,
   heightfield/top+shell geometry owner, real rigid-body projectile, physical
   mechanism bodies, manual aim, first-collision predictor, camera safety,
@@ -1144,15 +1537,21 @@ Complete when:
 - Every task acceptance, guard, phase gate, and final gate in this contract
   passes and the user has approved both visible checkpoints.
 - One generated graph/layout supplies all terrain, collision, target, paint,
-  placement, replay, and agent queries; no lobe or authored repair path remains.
+  direct-reachability/default-aim/containment, placement, replay, and agent
+  queries; no lobe or authored repair path remains.
+- Every target texel has a legal manual first-hit witness, every restart predicts
+  a target-top hit within `8 m` of center, and every legal aim ends at visible
+  collision rather than escaping the rear/upper containment.
 - A physical rolling/sliding ball paints a continuous 3D surface sweep for every
-  target-top contact interval and never paints an unproved airborne gap.
+  target-top contact interval, satisfies the low-rebound gate, and never paints
+  an unproved airborne gap or the backstop.
 - All begun contacts are reported, all visible gameplay masses have truthful
   collision, and Burst/Splitter/Bumper pass their fixed contracts.
 - Shader appearance and `4/27/70` coverage come from the same mask; all physical
   solution/replay/reliability/performance checks pass.
-- Korean-default HUD, camera, trajectory, cannon, terrain, and mechanisms pass
-  all structural and running-image gates against the supplied reference.
+- Korean-default HUD, camera, trajectory, cannon, off-white wall/terrain, and
+  color-distinct mechanisms pass all structural and running-image gates against
+  the supplied reference.
 - The Windows build exports, starts through the existing fastrun command, and
   final evidence/docs truthfully describe the delivered revision and limits.
 - No placeholder, unresolved material choice, obsolete active claim, or
@@ -1162,10 +1561,14 @@ Complete when:
 Replan when:
 
 - A material discovery invalidates a locked product, topology, paint, collision,
-  persistence, performance, or visual contract.
+  reachability, containment, persistence, performance, or visual contract.
 - Stage 1 or final coordinated visual evidence fails after implementation defects
   within the current contract are excluded.
 - A fixed target remains unsolved after the required ordered defect audit.
+- The exact direct-reachability solver cannot certify a fallback layout, the
+  containment envelope cannot prevent rear/upper escape, or the mechanism
+  tolerance/ablation contract cannot coexist with the fixed targets and shots
+  after implementation defects are excluded.
 
 Stop immediately and report rather than widening scope when completion would
 require a new dependency/asset, target reduction, shot increase, new content,

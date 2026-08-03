@@ -21,10 +21,12 @@ The sole active implementation authority is
 It incorporates the user's later correction that the physical ball continuously
 paints every scoreable target surface traversed while in contact. It fixes the
 remaining product decisions before execution: a graph-first mountain, one
-filled target footprint without slope masking, off-route non-solid decorations,
-fixed `4 / 27 / 70%` targets, and two user-coordinated visible validation
-sessions. The validated Claude response is supporting evidence, not executable
-authority.
+filled target footprint without slope masking, direct first-hit reachability for
+every scoreable target texel, a generated center-hitting default aim, a solid
+off-white rear backstop and collider-matched apron, low ordinary-terrain rebound,
+color-distinct/tolerance-tested Burst/Splitter/Bumper behavior, fixed
+`4 / 27 / 70%` targets, and two user-coordinated visible validation sessions.
+The validated Claude response is supporting evidence, not executable authority.
 
 The present code already supplies useful foundations: one immutable generated
 layout, a heightfield top plus closed shell, one authoritative `PaintSystem`
@@ -36,10 +38,10 @@ their lobe-first generation, finite spaced paint, incomplete multi-contact
 reporting, target masking, and weak visual composition before any completion
 claim is made.
 
-Creating the replacement plan changed documentation only. No gameplay behavior
-was modified or runtime window launched. Execution begins at Phase 0 only after
-the user instructs use of that plan, which also approves its exact one-line
-protected `AGENTS.md` alignment.
+Creating and amending the replacement plan changed documentation only. No
+gameplay behavior was modified or runtime window launched. Execution begins at
+Phase 0 only after the user instructs use of that plan, which also approves its
+exact one-line protected `AGENTS.md` alignment.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 
