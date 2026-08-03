@@ -30,6 +30,7 @@ func _run() -> void:
 	game_state.initialize_from_data(defaults)
 	_assert_true(TranslationServer.get_locale().begins_with("ko"), "the runtime locale must initialize in Korean")
 	_assert_true(tr("ui.play") == "플레이", "Korean translations must be available")
+	_assert_translation_contract("ko")
 
 	var app := APP_SCENE.instantiate()
 	root.add_child(app)
@@ -44,6 +45,7 @@ func _run() -> void:
 	game_state.update_setting(&"language", "en", false)
 	await process_frame
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
+	_assert_translation_contract("en")
 	_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
 	var language_option: OptionButton = settings._controls.get(&"language")
 	_assert_true(language_option.get_item_text(0) == "KOREAN" and language_option.get_item_text(1) == "ENGLISH", "language option labels must update immediately")
@@ -88,6 +90,23 @@ func _assert_control_inside_viewport(control: Control, label: String) -> void:
 	var rect := control.get_global_rect()
 	_assert_true(rect.position.x >= 0.0 and rect.position.y >= 0.0, "%s must not clip above or left: rect=%s viewport=%s" % [label, rect, viewport_size])
 	_assert_true(rect.end.x <= viewport_size.x and rect.end.y <= viewport_size.y, "%s must not clip below or right: rect=%s viewport=%s" % [label, rect, viewport_size])
+
+
+func _assert_translation_contract(locale: String) -> void:
+	var required := [
+		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
+		"hud.payload", "hud.coverage_format", "hud.summary_split", "hud.summary_balls",
+		"hud.summary_direct", "hud.first_hint", "mechanism.burst.description",
+		"mechanism.splitter.description", "mechanism.bumper.description", "mechanism.activated",
+		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
+		"replay.incompatible_format",
+	]
+	for key in required:
+		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
+	if locale == "ko":
+		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 유효 경로에 페인트를 퍼뜨립니다.", "Burst Korean copy must match the frozen brief")
+		_assert_true(tr("mechanism.splitter.description") == "남은 페인트를 세 공으로 나눠 여러 경로로 보냅니다.", "Splitter Korean copy must match the frozen brief")
+		_assert_true(tr("mechanism.bumper.description") == "공을 화살표 방향의 다음 경사로 되돌려 보냅니다.", "Bumper Korean copy must match the frozen brief")
 
 
 func _assert_true(condition: bool, message: String) -> void:

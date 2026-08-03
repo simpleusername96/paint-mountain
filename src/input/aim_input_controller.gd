@@ -93,9 +93,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		var motion := event as InputEventMouseMotion
 		if _drag_active and motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			var pointer_scale := _pointer_scale_to_physical_pixels()
 			_apply_axis_step(
-				motion.relative.x * DRAG_YAW_DEGREES_PER_PIXEL,
-				motion.relative.y * DRAG_ELEVATION_DEGREES_PER_PIXEL
+				motion.relative.x * pointer_scale.x * DRAG_YAW_DEGREES_PER_PIXEL,
+				motion.relative.y * pointer_scale.y * DRAG_ELEVATION_DEGREES_PER_PIXEL
 			)
 		elif not (motion.button_mask & MOUSE_BUTTON_MASK_LEFT):
 			_drag_active = false
@@ -158,3 +159,11 @@ func _can_adjust_aim() -> bool:
 			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
 			and _stage_controller.current_state == StageController.State.AIMING
+
+
+func _pointer_scale_to_physical_pixels() -> Vector2:
+	var logical := Vector2(
+		float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),
+		float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	)
+	return Vector2(get_viewport().size) / logical

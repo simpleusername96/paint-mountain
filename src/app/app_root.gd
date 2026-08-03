@@ -3,6 +3,9 @@ extends Node
 
 const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 const ENVIRONMENT_DRESSING_SCRIPT := preload("res://src/terrain/environment_dressing.gd")
+const MAIN_MENU_SCENE := preload("res://scenes/ui/screens/main_menu.tscn")
+const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
+const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
@@ -17,13 +20,13 @@ var _preview_layout_cache: Dictionary = {}
 
 func _ready() -> void:
 	_build_preview_world()
-	_main_menu = MainMenuScreen.new()
+	_main_menu = MAIN_MENU_SCENE.instantiate()
 	_main_menu.name = "MainMenu"
 	add_child(_main_menu)
-	_stage_select = StageSelectScreen.new()
+	_stage_select = STAGE_SELECT_SCENE.instantiate()
 	_stage_select.name = "StageSelect"
 	add_child(_stage_select)
-	_settings = SettingsScreen.new()
+	_settings = SETTINGS_SCENE.instantiate()
 	_settings.name = "Settings"
 	add_child(_settings)
 	_connect_screens()

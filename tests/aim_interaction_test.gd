@@ -27,7 +27,7 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.physics_ticks_per_second = 60
-	root.size = Vector2i(1920, 1080)
+	root.size = Vector2i(1280, 720)
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	var unlocked: Dictionary = root.get_node("/root/SaveSystem").default_data()
@@ -99,7 +99,7 @@ func _check_manual_input(game_state: Node) -> void:
 	_assert_true(decrease != null, "HUD must expose the power decrement button")
 	if decrease != null:
 		var before_ui := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
-		var center := decrease.get_global_rect().get_center()
+		var center := decrease.get_screen_transform() * (decrease.size * 0.5)
 		await _push_mouse_button(center, MOUSE_BUTTON_LEFT, true)
 		await _push_mouse_button(center, MOUSE_BUTTON_LEFT, false)
 		_assert_aim(cannon, before_ui + Vector3(0, 0, -2.0), "UI power click must change only power and never begin an aim drag")
@@ -148,7 +148,7 @@ func _check_manual_input(game_state: Node) -> void:
 	var fire_button := hud.find_child("FireButton", true, false) as Button
 	_assert_true(fire_button != null, "HUD must expose the Fire button")
 	if fire_button != null:
-		var fire_center := fire_button.get_global_rect().get_center()
+		var fire_center := fire_button.get_screen_transform() * (fire_button.size * 0.5)
 		await _push_mouse_button(fire_center, MOUSE_BUTTON_LEFT, true)
 		await _push_mouse_button(fire_center, MOUSE_BUTTON_LEFT, false)
 		_assert_true(fired.count == 1, "Fire button must request exactly one shot")

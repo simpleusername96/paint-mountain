@@ -8,7 +8,7 @@
 [ext_resource type="Script" path="res://src/paint/paint_system.gd" id="6_paint"]
 [ext_resource type="Script" path="res://src/stage/stage_controller.gd" id="7_stage_controller"]
 [ext_resource type="Script" path="res://src/camera/camera_director.gd" id="8_camera"]
-[ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="9_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/hud.tscn" id="9_hud"]
 [ext_resource type="Script" path="res://src/replay/replay_recorder.gd" id="10_replay"]
 [ext_resource type="Script" path="res://src/agent/gameplay_agent_api.gd" id="11_agent"]
 [ext_resource type="Script" path="res://src/effects/presentation_effects.gd" id="12_effects"]
@@ -163,9 +163,8 @@ script = ExtResource("11_agent")
 unique_name_in_owner = true
 script = ExtResource("12_effects")
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" parent="." instance=ExtResource("9_hud")]
 unique_name_in_owner = true
-script = ExtResource("9_hud")
 
 [node name="DebugOverlay" type="CanvasLayer" parent="."]
 unique_name_in_owner = true

@@ -27,8 +27,18 @@ hud.coverage,COVERAGE,칠한 면적
 hud.shots,SHOTS LEFT,남은 탄
 hud.aim,AIM,조준
 hud.angle,ANGLE,각도
+hud.direction,DIRECTION,방향
+hud.direction_left,LEFT,왼쪽
+hud.direction_right,RIGHT,오른쪽
+hud.direction_center,CENTER,중앙
 hud.power,POWER,파워
 hud.total,TOTAL,누적
+hud.payload,PAINT LEFT,남은 페인트
+hud.coverage_format,Current %.1f%% / Target %.1f%%,현재 %.1f%% / 목표 %.1f%%
+hud.summary_split,Split %d×,분열 %d회
+hud.summary_balls,%d balls,공 %d개
+hud.summary_direct,Direct route,직접 경로
+hud.first_hint,Drag or A·D·W·S to aim · Wheel or −·+ for power · Space to fire,드래그/A·D·W·S로 조준 · 휠/−·+로 파워 · Space로 발사
 hud.camera_hint,LEFT-DRAG ORBIT · WHEEL ZOOM,왼쪽 드래그 회전 · 휠 확대
 hud.camera_follow,FOLLOW,추적
 hud.camera_wide,WIDE,전체
@@ -56,9 +66,10 @@ stage.split_ridge.objective,Use the Bumper and Splitter to reach all three downh
 mechanism.burst,BURST,폭발
 mechanism.splitter,SPLITTER,분열
 mechanism.bumper,BUMPER,범퍼
-mechanism.burst.description,Paints a wide connected area once when struck.,한 번 맞으면 연결된 넓은 지형을 칠합니다.
-mechanism.splitter.description,Turns one ball into three smaller route-bound balls.,공 하나를 경로를 따르는 작은 공 세 개로 나눕니다.
-mechanism.bumper.description,Redirects the ball along the marked downhill route.,공을 표시된 내리막 경로로 튕겨 보냅니다.
+mechanism.burst.description,Spreads paint across nearby eligible routes when struck.,명중하면 주변 유효 경로에 페인트를 퍼뜨립니다.
+mechanism.splitter.description,"Divides the remaining paint among three balls and sends them along multiple routes.",남은 페인트를 세 공으로 나눠 여러 경로로 보냅니다.
+mechanism.bumper.description,Redirects the ball toward the next slope in the arrow direction.,공을 화살표 방향의 다음 경사로 되돌려 보냅니다.
+mechanism.activated,ACTIVATED,장치 작동
 mechanism.none,NONE,없음
 mechanism.no_mechanisms,NO MECHANISMS · FOLLOW THE NATURAL DESCENT,장치 없음 · 자연 경사를 따라가세요
 settings.title,SETTINGS,설정
@@ -85,3 +96,9 @@ stage.shots,SHOTS,탄 수
 stage.mechanisms,MECHANISMS,장치
 stage.best,BEST,최고 기록
 stage.locked,LOCKED,잠김
+replay.label,REPLAY,리플레이
+replay.pause,PAUSE,일시정지
+replay.play,PLAY,재생
+replay.restart,RESTART,처음부터
+replay.exit,EXIT,나가기
+replay.incompatible_format,This replay was made for an older terrain and aiming format.,이 리플레이는 이전 지형·조준 형식으로 만들어져 재생할 수 없습니다.

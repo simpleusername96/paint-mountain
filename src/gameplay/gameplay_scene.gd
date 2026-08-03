@@ -73,7 +73,17 @@ func _ready() -> void:
 	_debug_overlay.replay_last_shot_requested.connect(_start_last_shot_replay)
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
+	_hud.update_payload(_cannon.projectile_data.initial_payload, _cannon.projectile_data.initial_payload)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
+
+
+func _process(_delta: float) -> void:
+	if _stage_controller.current_state not in [StageController.State.PROJECTILE_IN_FLIGHT, StageController.State.PAINT_SETTLING]:
+		return
+	var aggregate_payload := 0.0
+	for projectile in _projectile_manager.active_projectiles():
+		aggregate_payload += projectile.remaining_payload
+	_hud.update_payload(aggregate_payload, _cannon.projectile_data.initial_payload)
 
 
 func generated_layout() -> GeneratedStageLayout:
@@ -152,7 +162,11 @@ func _connect_systems() -> void:
 	_hud.replay_requested.connect(_start_replay)
 	_hud.camera_mode_requested.connect(_on_camera_mode_requested)
 	_hud.simulation_speed_requested.connect(_on_simulation_speed_requested)
+	_hud.replay_pause_requested.connect(_replay_presentation.set_paused)
+	_hud.replay_restart_requested.connect(_replay_presentation.restart_playback)
+	_hud.replay_exit_requested.connect(_replay_presentation.exit)
 	_replay_presentation.presentation_exited.connect(_on_replay_exited)
+	_replay_presentation.active_changed.connect(_hud.set_replay_active)
 
 
 func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
@@ -196,6 +210,7 @@ func _on_shot_result(gain: float, total: float) -> void:
 
 
 func _on_shot_observation_sealed(observation: ShotObservation) -> void:
+	_hud.show_shot_observation(observation)
 	if not _replay_presentation.active:
 		_replay_recorder.record_observation(observation)
 
@@ -333,6 +348,7 @@ func _route_index_for_role(role: int) -> int:
 func _on_mechanism_selected(mechanism: GimmickBase) -> void:
 	if _stage_controller.current_state == StageController.State.BRIEFING:
 		_camera_director.focus_briefing_target(mechanism.global_position)
+		_hud.show_mechanism_brief(mechanism.data.kind)
 
 
 func _on_mechanism_activated(
@@ -345,6 +361,7 @@ func _on_mechanism_activated(
 		"position": mechanism.global_position,
 	}
 	_agent_api.notify_event(&"mechanism_activated", payload)
+	_hud.show_mechanism_activation(kind)
 	_presentation_effects.mechanism_burst(mechanism.global_position)
 	_audio_cue(&"mechanism")
 	_camera_director.add_impact_shake(0.32)

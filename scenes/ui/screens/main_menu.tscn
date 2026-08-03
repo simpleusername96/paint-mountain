@@ -1,0 +1,105 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/main_menu_screen.gd" id="1"]
+
+[node name="MainMenu" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.035, 0.055, 0.08, 0.2)
+
+[node name="BrandPanel" type="PanelContainer" parent="Root"]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 500.0
+offset_bottom = 672.0
+
+[node name="Margin" type="MarginContainer" parent="Root/BrandPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 36
+
+[node name="Content" type="VBoxContainer" parent="Root/BrandPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Eyebrow" type="Label" parent="Root/BrandPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "app.eyebrow"
+
+[node name="Title" type="Label" parent="Root/BrandPanel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 52
+text = "app.title"
+autowrap_mode = 2
+
+[node name="Subtitle" type="Label" parent="Root/BrandPanel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+theme_override_font_sizes/font_size = 18
+text = "app.subtitle"
+autowrap_mode = 2
+
+[node name="Play" type="Button" parent="Root/BrandPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "ui.play"
+
+[node name="StageSelect" type="Button" parent="Root/BrandPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "ui.stage_select"
+
+[node name="Settings" type="Button" parent="Root/BrandPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "ui.settings"
+
+[node name="Quit" type="Button" parent="Root/BrandPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "ui.quit"
+
+[node name="Version" type="Label" parent="Root"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -48.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 14
+text = "VERTICAL SLICE · GODOT 4"
+horizontal_alignment = 2

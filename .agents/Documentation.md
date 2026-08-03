@@ -123,6 +123,18 @@ record/replay matched first contact and coverage with zero measured delta, and
 the independent persistence matrix preserved locale, unlocks, results, and
 settings. Task 08 is next.
 
+Task 08 replaced code-built interface panels with scene-owned HUD and screen
+components on a 1280x720 logical canvas. One Theme now owns Pretendard,
+palette, typography, radii, progress, and keyboard-focus styling;
+`HudController` only coordinates typed state. The frozen aiming edge layout,
+aggregate payload, direction/elevation, target marker, sealed shot summary,
+first-session hint, mechanism callouts, replay controls, result width, and
+immediate persistent Korean/English switching passed their headless tests at
+all three supported 16:9 sizes. `UIFactory` and its UID were removed, and only
+the previously approved committed Kenney/Pretendard files are referenced.
+The dummy headless renderer could not provide a viewport texture, so no render
+capture was produced or treated as visual approval. Task 09 is next.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The
@@ -192,8 +204,9 @@ the static-audit correction above.
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
 - The version-3 generator, closed production terrain/collider wiring, and
   authoritative physical contact/deposit path are implemented and verified.
-  Manual aim prediction, physical mechanisms, and replay format 3 are now
-  implemented; the scene-based interface remains pending Task 08.
+  Manual aim prediction, physical mechanisms, replay format 3, and the
+  scene-based Korean-first interface are implemented; unified verification,
+  reliable solutions, and obsolete-fixture retirement remain pending Task 09.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.

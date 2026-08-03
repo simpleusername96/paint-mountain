@@ -160,12 +160,12 @@ Shot causality, camera, and replay:
 
 Korean UI, visual direction, and approved assets:
 
-- [ ] The logical viewport is 1280×720 with canvas-items stretch; component scenes and one Theme own layout/style while HUD scripts only coordinate behavior.
-- [ ] Fresh saves default to Korean; Korean/English switching is complete, immediate, glyph-safe, and persistent, and mechanism/shot copy uses translation keys.
-- [ ] Pretendard, fixed color/type/radius tokens, visible focus, 40 px ordinary controls, Korean wrapping, and all reachable UI states pass at 1280×720, 1600×900, and 1920×1080.
-- [ ] Every aiming-HUD component matches its frozen edge rectangle within 2 px at 1280×720 and 3 px at the scaled resolutions; no clipping, overflow, offscreen action, center modal, or body text below 16 px exists.
+- [x] The logical viewport is 1280×720 with canvas-items stretch; component scenes and one Theme own layout/style while HUD scripts only coordinate behavior.
+- [x] Fresh saves default to Korean; Korean/English switching is complete, immediate, glyph-safe, and persistent, and mechanism/shot copy uses translation keys.
+- [x] Pretendard, fixed color/type/radius tokens, visible focus, 40 px ordinary controls, Korean wrapping, and all reachable UI states pass at 1280×720, 1600×900, and 1920×1080.
+- [x] Every aiming-HUD component matches its frozen edge rectangle within 2 px at 1280×720 and 3 px at the scaled resolutions; no clipping, overflow, offscreen action, center modal, or body text below 16 px exists.
 - [ ] Terrain is lit/faceted and physically thick, paint is glossy blue with dry/paint roughness 0.88/0.24 and no emission, the cannon remains small, and mechanisms remain readable without persistent gameplay labels.
-- [ ] Only the already approved committed Kenney/Pretendard assets are used; no new dependency, asset pack, or runtime network access exists.
+- [x] Only the already approved committed Kenney/Pretendard assets are used; no new dependency, asset pack, or runtime network access exists.
 
 Regression, solutions, and delivery:
 
