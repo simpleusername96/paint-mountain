@@ -6,5 +6,5 @@ extends Resource
 @export var local_transform: Transform3D = Transform3D.IDENTITY
 @export var route_role: StageRouteProfile.Role = StageRouteProfile.Role.PRIMARY
 @export var route_index: int = -1
-@export var shelf_t: float = -1.0
+@export var route_t: float = -1.0
 @export var downstream_tangent: Vector3 = Vector3.ZERO

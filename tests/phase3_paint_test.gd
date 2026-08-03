@@ -82,7 +82,8 @@ func _configured_system(layout: GeneratedStageLayout) -> PaintSystem:
 func _build_layout(kind: StringName) -> GeneratedStageLayout:
 	var layout := GeneratedStageLayout.new()
 	layout.profile_id = &"paint_narrow_fixture"
-	layout.profile_version = 3
+	layout.profile_version = 4
+	layout.layout_version = 4
 	layout.terrain_seed = 1
 	layout.accepted_seed = 1
 	layout.generation_attempt = 0
@@ -99,12 +100,19 @@ func _build_layout(kind: StringName) -> GeneratedStageLayout:
 			elif kind == &"slope":
 				height = -0.08 * z + 3.0
 			layout.heights[z_index * 65 + x_index] = height
-	layout.route_spines = [PackedVector3Array([Vector3(0, 0, -20), Vector3(0, 0, 20)])]
-	layout.route_widths = PackedFloat32Array([16.0])
-	layout.route_roles = PackedInt32Array([StageRouteProfile.Role.PRIMARY])
-	layout.route_reversal_counts = PackedInt32Array([0])
-	layout.route_shelf_positions = PackedFloat32Array([-1.0])
-	layout.route_shelf_radii = PackedFloat32Array([0.0])
+	var summit_id := GeneratedRouteNode.summit_id(&"paint_narrow_fixture")
+	var exit_id := GeneratedRouteNode.route_node_id(&"paint_narrow_fixture", 0, 1)
+	var summit := GeneratedRouteNode.new(
+		summit_id, Vector3(0, 0, -20), -1, 0, GeneratedRouteNode.Kind.SUMMIT
+	)
+	var exit := GeneratedRouteNode.new(
+		exit_id, Vector3(0, 0, 20), 0, 1, GeneratedRouteNode.Kind.EXIT
+	)
+	var edge := GeneratedRouteEdge.new(
+		GeneratedRouteEdge.stable_id(&"paint_narrow_fixture", 0, 0),
+		summit_id, exit_id, 0, 0, StageRouteProfile.Role.PRIMARY, 16.0
+	)
+	layout.route_graph = GeneratedRouteGraph.new([summit, exit], [edge])
 	layout.eligible_mask.resize(512 * 512)
 	layout.eligible_mask.fill(255)
 	return layout

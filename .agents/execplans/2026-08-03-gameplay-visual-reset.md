@@ -334,11 +334,13 @@ Achievable visual-equivalence boundary:
   and `BUMPER` chain for Bumper. Route/edge/pad IDs are stable `StringName`s
   derived from stage id, route index, original edge index, and pad kind; split
   suffixes are `/a` then `/b`, never instance IDs.
-- `StageGenerationProfile` serializes the grid/bounds, stations, outer band,
-  terrace step/blend, bank/corridor/shoulder/support distances, smooth min/max,
-  noise fields, target-ratio band, and slope/lip gates listed here; every version
-  4 `.tres` writes the explicit values rather than relying on script defaults.
-  Remove all lobe count/radius/peak fields. `StageRouteProfile` adds
+- The canonical version-4 generation-contract `.tres` serializes the shared
+  grid/bounds, stations, outer band, terrace step/blend,
+  bank/corridor/shoulder/support distances, smooth min/max, and noise fields
+  listed here exactly once. Every version-4 stage profile explicitly references
+  that resource and writes all stage-specific identity, seed, peak/range,
+  route, target-ratio, and slope/lip values rather than relying on script
+  defaults. Remove all lobe count/radius/peak fields. `StageRouteProfile` adds
   `mechanism_kind`; Stage 2's left pad is `BURST`, Stage 3's center is
   `SPLITTER`, and Stage 3's right is `BUMPER`.
 
@@ -1137,7 +1139,7 @@ Source owners: `seeded_stage_generator.gd`, `generated_stage_layout.gd`,
 `gameplay_scene.gd`, `StageController`, observation/replay/UI consumers required
 for payload removal
 
-- [ ] **1.1** Generate First Descent from the route graph.
+- [x] **1.1** Generate First Descent from the route graph.
   - Change: implement the fixed graph resolver and bounded support/carve pipeline;
     produce exactly one height per XZ sample; delete lobe synthesis and every
     multi-height/overhang/detached-terrain path from production; expose derived
@@ -1149,10 +1151,34 @@ for payload removal
     their final ratio, placement, reachability, or containment gates until Phase
     2; such failures remain fail-closed and cannot be hidden by retuning the
     frozen profiles or reviving a version-3 generator.
-  - Accept: base/fallback/repeated generation is deterministic; Stage 1 has the
-    exact chain, 0 reversals, accepted height/slope/target-ratio gates, and no
-    lobe field, secondary height function, literal route stair, or second top
-    height influences any sample.
+  - Acceptance boundary: Task 1.1 measures the resolved graph-edge p95 slope and
+    the exact geometric route-footprint ratio before a target mask exists. The
+    target-surface mean/p95/maximum slope, corridor-lip, connectivity, and final
+    target-mask ratio gates require the shared triangles and rasterization owned
+    by Task 1.2; they are deferred intact, not approximated or waived. The
+    version-3 `eligible_mask` remains launch-only compatibility data through this
+    task and is not accepted as target truth.
+  - Accept: base/fallback-request/repeated generation is deterministic; Stage 1
+    has the exact chain, 0 reversals, accepted sampled-height, graph-edge-p95,
+    and route-footprint-proxy gates, and no lobe field, secondary height
+    function, literal route stair, or second top height influences any sample.
+
+Task 1.1 evidence (2026-08-03): all three production profiles now use the
+explicit version-4 route-graph schema and the one shared generation contract;
+the production lobe and parallel-route-array paths are gone. First Descent base
+generation accepts seed `845479992` at attempt `0` with height checksum
+`99613004`, graph-footprint ratio `0.243385`, and zero reversals. Directly
+requesting fallback seed `1820876501` accepts attempt `0` with height checksum
+`3870593939` and ratio `0.252052`; a controlled full 32-attempt rejection then
+selects that same pinned seed at attempt `-1` with matching height and launch-
+compatibility mask checksums. Focused version-4 contract, generation,
+mechanism-placement, decoration, retained terrain, and retained paint tests pass,
+as do headless import/main-scene verification and `git diff --check`. The
+legacy `phase4_state_test.gd` is not part of this task's gate and currently
+fails its positive-coverage assertion: the new central route is paired with the
+superseded authored yaw. This explicitly deferred failure is the Task-1.2 guard
+for certified target/default-aim handoff, not a passing Task-1.1 result.
+
 - [ ] **1.2** Make the Stage 1 target and solid geometry truthful.
   - Change: construct `target_mask`; emit one indexed top triangle list from the
     fixed heights/diagonal and use it for render, top
@@ -1165,7 +1191,9 @@ for payload removal
     StageController layout handoff, and add vertex plus cell-interior render/ray
     parity and wrong-triangle rejection fixtures.
   - Accept: one target component reaches summit and exit; no slope or decoration
-    exclusion exists; every target texel has its exact predictor witness and
+    exclusion exists; the exact triangle-plane target mean/p95/maximum slope,
+    route-core p95, corridor-lip, connectivity, and final target-mask ratio gates
+    pass; every target texel has its exact predictor witness and
     every distinct tuple reproduces the same real RigidBody first-contact
     body/shape/cell/triangle within `0.50 m`; the
     default first hit is within `8 m` of the target centroid on first entry and
@@ -1758,12 +1786,15 @@ safety, persistence, or acceptance.
 - Canonical progress: the task checkboxes in this contract.
 - Current phase: Phase 1, headless implementation before the coordinated Stage 1
   visual gate.
-- Next task: 1.1, generate First Descent from the version-4 route graph.
-- Last completed gate: Phase 0. Active authority is aligned without rewriting the
-  original directive or historical evidence; isolated version-4 typed contracts
-  and generation constants pass focused validation, import, and headless
-  main-scene startup. Legacy version-3 runtime paths remain explicitly
-  unaccepted migration work for Phase 1.
+- Next task: 1.2, replace the legacy target/heightmap surface with one exact
+  indexed triangle surface, containment, reachability certificate, and generated
+  default aim for First Descent.
+- Last completed gate: Task 1.1. First Descent now resolves and synthesizes from
+  the immutable version-4 route graph; deterministic base, direct fallback-
+  request, and actual post-attempt fallback cases pass with pinned identities.
+  All stage profiles are schema-migrated, while Stage 2/3 acceptance and the
+  legacy target/surface/default-aim runtime paths remain explicitly unaccepted
+  work for Tasks 1.2 and Phase 2.
 - Carried-forward implementation foundations: immutable generated layout,
   heightfield/top+shell geometry owner, real rigid-body projectile, physical
   mechanism bodies, manual aim, first-collision predictor, camera safety,

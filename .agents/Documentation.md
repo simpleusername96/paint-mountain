@@ -54,9 +54,28 @@ acceptance, prompt, implemented-status, and concept-authority documents with the
 dated later-user supersessions. It also introduced the isolated version-4 graph,
 aim, reachability, containment, hit-identity, continuous-paint-command, tuning,
 and generation-constant contracts. The original directive body and historical
-evidence remain unchanged. Headless import, contract, and main-scene smoke checks
-pass. Runtime gameplay is still the superseded version-3 implementation until
-Phase 1 rewires these contracts and removes its legacy fields; Task 1.1 is next.
+evidence remain unchanged.
+
+Task 1.1 now resolves First Descent as one immutable route graph and synthesizes
+one height for each of the `73 x 49` samples through the bounded version-4
+support/carve pipeline. All three production profiles use the explicit graph
+schema and shared generation contract; no lobe generator or parallel route-array
+consumer remains. Stage 1 base seed `845479992` accepts attempt `0` with height
+checksum `99613004` and graph-footprint ratio `0.243385`. Direct fallback request
+and an actual 32-rejection fallback test both resolve seed `1820876501`; the
+latter records attempt `-1` and reproduces the direct fallback checksums. Focused
+contract, generation, graph-owned placement/decoration, retained terrain/paint,
+headless import, and main-scene smoke checks pass.
+
+This is not yet accepted gameplay geometry. `HeightMapShape3D`, bilinear surface
+queries, the launch-only legacy `eligible_mask`, authored initial aim, and the
+old payload paint path still remain. In particular, the retained Phase-4 state
+test currently fails its obsolete positive-coverage assertion because the old
+yaw `16` default misses the new central route. That test is outside the Task-1.1
+gate and is intentionally left failing as a Task-1.2 migration guard; Task 1.2
+must replace the authored value with the certified target-centroid default
+instead of hand-tuning it. Stage 2/3 are schema-valid but intentionally fail
+closed until their Phase-2 acceptance work. Task 1.2 is next.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 

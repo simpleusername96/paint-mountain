@@ -2,8 +2,6 @@ extends SceneTree
 
 const STAGES: Array[StageData] = [
 	preload("res://resources/stages/first_descent.tres"),
-	preload("res://resources/stages/burst_basin.tres"),
-	preload("res://resources/stages/split_ridge.tres"),
 ]
 
 var _failed := false
@@ -30,6 +28,8 @@ func _run_checks() -> void:
 			_assert_true(layout.height_at_local(decoration.local_xz.x, decoration.local_xz.y) >= 1.1, "decoration must remain above the skirt")
 			_assert_true(layout.normal_at_local(decoration.local_xz.x, decoration.local_xz.y).y >= cos(deg_to_rad(42.0)), "decoration slope must pass")
 			_assert_true(decoration.model_id == repeated_decoration.model_id and decoration.local_xz.is_equal_approx(repeated_decoration.local_xz), "%s decorations must be deterministic" % stage.stage_id)
+			var nearest := layout.route_graph.nearest_edge(decoration.local_xz)
+			_assert_true(nearest.edge is GeneratedRouteEdge, "%s decoration query must resolve through the immutable graph" % stage.stage_id)
 			for prior_index in range(index):
 				_assert_true(decoration.local_xz.distance_to(decorations[prior_index].local_xz) >= 4.0, "decorations must preserve spacing")
 		print("%s decorations=%d accepted=%d attempt=%d" % [stage.stage_id, decorations.size(), layout.accepted_seed, layout.generation_attempt])

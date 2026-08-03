@@ -322,9 +322,11 @@ func _spawn_mechanisms() -> void:
 		if mechanism is SplitterNode:
 			var route_targets := PackedVector3Array()
 			for required_role in mechanism.data.child_target_route_roles:
-				var route_index := _route_index_for_role(required_role)
+				var route_index := _generated_layout.route_graph.route_index_for_role(required_role)
 				assert(route_index >= 0, "Splitter child target role must exist in the accepted layout.")
-				var route_target := _generated_layout.route_position(route_index, mechanism.data.child_target_t)
+				var route_target := _generated_layout.route_graph.route_position(
+					route_index, mechanism.data.child_target_t
+				)
 				route_targets.append(stage_data.terrain_center + Vector3(
 					route_target.x,
 					_generated_layout.height_at_local(route_target.x, route_target.z),
@@ -336,14 +338,6 @@ func _spawn_mechanisms() -> void:
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
 		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)
-
-
-func _route_index_for_role(role: int) -> int:
-	for route_index in range(_generated_layout.route_roles.size()):
-		if _generated_layout.route_roles[route_index] == role:
-			return route_index
-	return -1
-
 
 func _on_mechanism_selected(mechanism: GimmickBase) -> void:
 	if _stage_controller.current_state == StageController.State.BRIEFING:

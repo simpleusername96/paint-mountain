@@ -2,52 +2,47 @@ class_name StageGenerationProfile
 extends Resource
 
 @export_category("Identity")
-@export var profile_id: StringName = &"first_descent_v3"
-@export_range(1, 99, 1) var profile_version: int = 3
+@export var profile_id: StringName = &"first_descent_v4"
+@export_range(1, 99, 1) var profile_version: int = 4
 @export var base_seed: int = 845479992
 @export var fallback_seed: int = 1820876501
+@export var generation_contract: StageGenerationContract
 
-@export_category("Grid")
-@export var cell_count := Vector2i(72, 48)
-@export var local_bounds := Rect2(Vector2(-90.0, -60.0), Vector2(180.0, 120.0))
+@export_category("Stage shape")
 @export_range(1.0, 100.0, 0.5) var nominal_peak: float = 72.0
 @export var accepted_height_range := Vector2(68.0, 78.0)
 
-@export_category("Route difficulty")
+@export_category("Routes")
 @export var routes: Array[StageRouteProfile] = []
-@export_range(0.0, 20.0, 0.5) var bank_height: float = 5.0
-@export var eligible_ratio_range := Vector2(0.30, 0.68)
 
-@export_category("Mountain lobes")
-@export_range(1, 8, 1) var lobe_count: int = 3
-@export var lobe_x_radius_range := Vector2(48.0, 62.0)
-@export var lobe_z_radius_range := Vector2(34.0, 46.0)
-@export var lobe_peak_multiplier_range := Vector2(0.86, 1.0)
-@export_range(0.1, 20.0, 0.1) var smooth_max_k: float = 6.0
-@export_range(0.0, 5.0, 0.1) var noise_amplitude: float = 1.2
-@export var station_x_jitter_range := Vector2(-1.5, 1.5)
+@export_category("Acceptance gates")
+@export var target_ratio_range := Vector2(0.24, 0.42)
+@export var target_mean_slope_range := Vector2(16.0, 30.0)
+@export_range(0.0, 90.0, 0.5) var target_p95_slope_max: float = 34.0
+@export_range(0.0, 90.0, 0.5) var target_maximum_slope: float = 38.0
+@export_range(0.0, 90.0, 0.5) var route_core_p95_slope_max: float = 32.0
+@export_range(0.0, 90.0, 0.5) var corridor_lip_maximum_slope: float = 30.0
 
 
 func is_valid() -> bool:
-	if profile_version != 3 or cell_count != Vector2i(72, 48):
+	if profile_version != StageGenerationContract.CONTRACT_VERSION:
 		return false
-	if local_bounds.size != Vector2(180.0, 120.0) or routes.is_empty():
+	if generation_contract == null or not generation_contract.is_valid() or routes.is_empty():
 		return false
-	if accepted_height_range.x > accepted_height_range.y:
+	if String(profile_id).is_empty() or base_seed <= 0 or fallback_seed <= 0:
 		return false
-	if eligible_ratio_range.x > eligible_ratio_range.y:
+	if nominal_peak <= 0.0 or accepted_height_range.x > accepted_height_range.y:
 		return false
-	if lobe_count <= 0 or smooth_max_k <= 0.0 or bank_height < 0.0:
+	if target_ratio_range.x <= 0.0 or target_ratio_range.x > target_ratio_range.y or target_ratio_range.y > 1.0:
 		return false
-	if lobe_x_radius_range.x <= 0.0 or lobe_x_radius_range.x > lobe_x_radius_range.y:
+	if target_mean_slope_range.x < 0.0 or target_mean_slope_range.x > target_mean_slope_range.y:
 		return false
-	if lobe_z_radius_range.x <= 0.0 or lobe_z_radius_range.x > lobe_z_radius_range.y:
-		return false
-	if lobe_peak_multiplier_range.x <= 0.0 or lobe_peak_multiplier_range.x > lobe_peak_multiplier_range.y:
-		return false
-	if station_x_jitter_range.x > station_x_jitter_range.y:
+	if target_p95_slope_max < target_mean_slope_range.x \
+			or target_maximum_slope < target_p95_slope_max \
+			or route_core_p95_slope_max <= 0.0 \
+			or corridor_lip_maximum_slope <= 0.0:
 		return false
 	for route in routes:
-		if route == null or not route.is_valid():
+		if route == null or not route.is_valid(generation_contract.route_station_z.size() - 1):
 			return false
 	return true

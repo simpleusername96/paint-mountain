@@ -1,14 +1,8 @@
 class_name SeededStageGenerator
 extends RefCounted
 
-const ATTEMPT_COUNT := 32
-const ATTEMPT_STRIDE := 7919
-const MASK_SIZE := 512
-const MAX_ROUTE_SLOPE_DEGREES := 58.0
-const P95_ROUTE_SLOPE_DEGREES := 50.0
-const ROUTE_START_Z := -46.0
-const ROUTE_END_Z := 54.0
-const ROUTE_STATION_COUNT := 8
+const ROUTE_GRAPH_RESOLVER := preload("res://src/stage_generation/route_graph_resolver.gd")
+const ROUTE_GRAPH_HEIGHT_SYNTHESIZER := preload("res://src/stage_generation/route_graph_height_synthesizer.gd")
 const DECORATION_MODEL_CYCLE: Array[StringName] = [
 	&"tree_pineSmallA", &"tree_pineSmallB", &"rock_smallA", &"tree_pineTallA", &"rock_largeA",
 ]
@@ -22,189 +16,51 @@ static func generate(
 	if profile == null or not profile.is_valid():
 		push_error("Stage generation profile is invalid.")
 		return null
+	var contract := profile.generation_contract
+	var stage_id := stage_data.stage_id if stage_data != null else StringName(
+		String(profile.profile_id).trim_suffix("_v4")
+	)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
-	for attempt_index in range(ATTEMPT_COUNT):
-		var attempt_seed := int((requested_seed + attempt_index * ATTEMPT_STRIDE) & 0x7fffffff)
-		var layout := _build_attempt(profile, requested_seed, attempt_seed, attempt_index)
+	for attempt_index in range(contract.attempt_count):
+		var attempt_seed := int((requested_seed + attempt_index * contract.attempt_seed_stride) & 0x7fffffff)
+		var layout := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
 		if _validate(profile, layout) and _finalize_layout(profile, stage_data, layout):
 			return layout
-	var fallback := _build_attempt(profile, requested_seed, profile.fallback_seed, -1)
+	var fallback := _build_attempt(stage_id, profile, requested_seed, profile.fallback_seed, -1)
 	if _validate(profile, fallback) and _finalize_layout(profile, stage_data, fallback):
 		push_warning("Stage generation used validated fallback seed %d for %s." % [profile.fallback_seed, profile.profile_id])
 		return fallback
-	push_error("Stage generation failed every deterministic attempt and fallback for %s: %s" % [profile.profile_id, str(fallback.metrics)])
+	var failure_metrics := fallback.metrics if fallback != null else {"rejection": "route_graph"}
+	push_error("Stage generation failed every deterministic attempt and fallback for %s: %s" % [profile.profile_id, str(failure_metrics)])
 	return null
 
 
 static func _build_attempt(
+		stage_id: StringName,
 		profile: StageGenerationProfile,
 		requested_seed: int,
 		attempt_seed: int,
 		attempt_index: int
 ) -> GeneratedStageLayout:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = attempt_seed
-	var route_result := _generate_routes(profile, rng)
-	var routes: Array[PackedVector3Array] = route_result.routes
-	var lobes := _generate_lobes(profile, routes, rng)
-	var noise := FastNoiseLite.new()
-	noise.seed = int(rng.randi() & 0x7fffffff)
-	noise.noise_type = FastNoiseLite.TYPE_VALUE_CUBIC
-	noise.frequency = 0.035
-	noise.fractal_type = FastNoiseLite.FRACTAL_NONE
-
-	var sample_size := profile.cell_count + Vector2i.ONE
-	var heights := PackedFloat32Array()
-	heights.resize(sample_size.x * sample_size.y)
-	for z_index in range(sample_size.y):
-		var local_z := lerpf(profile.local_bounds.position.y, profile.local_bounds.end.y, float(z_index) / float(profile.cell_count.y))
-		for x_index in range(sample_size.x):
-			var local_x := lerpf(profile.local_bounds.position.x, profile.local_bounds.end.x, float(x_index) / float(profile.cell_count.x))
-			heights[z_index * sample_size.x + x_index] = _synthesize_height(
-				profile, routes, route_result.widths, lobes, noise, local_x, local_z
-			)
+	var graph: GeneratedRouteGraph = ROUTE_GRAPH_RESOLVER.resolve(stage_id, profile, attempt_seed)
+	if graph == null:
+		return null
+	var contract := profile.generation_contract
+	var heights: PackedFloat32Array = ROUTE_GRAPH_HEIGHT_SYNTHESIZER.build(stage_id, profile, graph, attempt_seed)
 
 	var layout := GeneratedStageLayout.new()
 	layout.profile_id = profile.profile_id
 	layout.profile_version = profile.profile_version
+	layout.layout_version = contract.layout_version
 	layout.terrain_seed = requested_seed
 	layout.accepted_seed = attempt_seed
 	layout.generation_attempt = attempt_index
-	layout.cell_count = profile.cell_count
-	layout.local_bounds = profile.local_bounds
+	layout.cell_count = contract.cell_count
+	layout.local_bounds = contract.local_bounds
 	layout.heights = heights
-	layout.route_spines = routes
-	layout.route_widths = route_result.widths
-	layout.route_roles = route_result.roles
-	layout.route_shelf_positions = route_result.shelf_positions
-	layout.route_shelf_radii = route_result.shelf_radii
+	layout.route_graph = graph
 	layout.checksum = _height_checksum(heights)
 	return layout
-
-
-static func _generate_routes(profile: StageGenerationProfile, rng: RandomNumberGenerator) -> Dictionary:
-	var routes: Array[PackedVector3Array] = []
-	var widths := PackedFloat32Array()
-	var roles := PackedInt32Array()
-	var shelf_positions := PackedFloat32Array()
-	var shelf_radii := PackedFloat32Array()
-	for route_profile in profile.routes:
-		var magnitudes := PackedFloat32Array()
-		for grade in route_profile.grade_pattern:
-			var draw_range := route_profile.downhill_drop_range if grade < 0 else route_profile.uphill_rise_range
-			magnitudes.append(rng.randf_range(draw_range.x, draw_range.y))
-		var lateral_bend := rng.randf_range(route_profile.lateral_bend_range.x, route_profile.lateral_bend_range.y)
-		var station_jitter := PackedFloat32Array()
-		for _station_index in range(1, ROUTE_STATION_COUNT - 1):
-			station_jitter.append(rng.randf_range(profile.station_x_jitter_range.x, profile.station_x_jitter_range.y))
-
-		var route := PackedVector3Array()
-		var height := profile.nominal_peak
-		for station_index in range(ROUTE_STATION_COUNT):
-			if station_index > 0:
-				height += float(route_profile.grade_pattern[station_index - 1]) * magnitudes[station_index - 1]
-			var t := float(station_index) / float(ROUTE_STATION_COUNT - 1)
-			var jitter := 0.0 if station_index == 0 or station_index == ROUTE_STATION_COUNT - 1 else station_jitter[station_index - 1]
-			var local_x := smoothstep(0.0, 1.0, t) * route_profile.endpoint_x \
-					+ sin(PI * t) * lateral_bend + jitter
-			route.append(Vector3(local_x, height, lerpf(ROUTE_START_Z, ROUTE_END_Z, t)))
-		routes.append(route)
-		widths.append(route_profile.width)
-		roles.append(route_profile.role)
-		shelf_positions.append(route_profile.mechanism_shelf_t)
-		shelf_radii.append(route_profile.mechanism_shelf_radius)
-	return {
-		"routes": routes,
-		"widths": widths,
-		"roles": roles,
-		"shelf_positions": shelf_positions,
-		"shelf_radii": shelf_radii,
-	}
-
-
-static func _generate_lobes(
-		profile: StageGenerationProfile,
-		routes: Array[PackedVector3Array],
-		rng: RandomNumberGenerator
-) -> Array[Dictionary]:
-	var lobes: Array[Dictionary] = []
-	for lobe_index in range(profile.lobe_count):
-		var center_x_offset := rng.randf_range(-12.0, 12.0)
-		var center_z_offset := rng.randf_range(-6.0, 6.0)
-		var radius_x := rng.randf_range(profile.lobe_x_radius_range.x, profile.lobe_x_radius_range.y)
-		var radius_z := rng.randf_range(profile.lobe_z_radius_range.x, profile.lobe_z_radius_range.y)
-		var peak_multiplier := rng.randf_range(profile.lobe_peak_multiplier_range.x, profile.lobe_peak_multiplier_range.y)
-		var t := (float(lobe_index) + 0.5) / float(profile.lobe_count)
-		var route_x_total := 0.0
-		for route in routes:
-			route_x_total += _route_point_at_t(route, t).x
-		lobes.append({
-			"center": Vector2(
-				route_x_total / float(routes.size()) + center_x_offset,
-				lerpf(ROUTE_START_Z, ROUTE_END_Z, t) + center_z_offset
-			),
-			"radii": Vector2(radius_x, radius_z),
-			"peak_multiplier": peak_multiplier,
-		})
-	return lobes
-
-
-static func _synthesize_height(
-		profile: StageGenerationProfile,
-		routes: Array[PackedVector3Array],
-		widths: PackedFloat32Array,
-		lobes: Array[Dictionary],
-		noise: FastNoiseLite,
-		x: float,
-		z: float
-) -> float:
-	var height := 0.0
-	for lobe_index in range(lobes.size()):
-		var lobe := lobes[lobe_index]
-		var center: Vector2 = lobe.center
-		var radii: Vector2 = lobe.radii
-		var q := pow((x - center.x) / radii.x, 2.0) + pow((z - center.y) / radii.y, 2.0)
-		var contribution := profile.nominal_peak * float(lobe.peak_multiplier) * pow(maxf(0.0, 1.0 - q), 2.0)
-		height = contribution if lobe_index == 0 else _smooth_max(height, contribution, profile.smooth_max_k)
-	height += noise.get_noise_2d(x, z) * profile.noise_amplitude
-	var terraced := roundf(height / 4.0) * 4.0
-	height = lerpf(height, terraced, 0.35)
-
-	var lowest_target := INF
-	var greatest_influence := 0.0
-	for route_index in range(routes.size()):
-		var route_sample := _route_sample(routes[route_index], z)
-		var distance := absf(x - route_sample.x)
-		var half_width := widths[route_index] * 0.5
-		var influence := 1.0 if distance <= half_width else 1.0 - smoothstep(half_width, widths[route_index], distance)
-		if influence <= 0.0:
-			continue
-		var route_target := route_sample.y + profile.bank_height * pow(distance / half_width, 2.0)
-		lowest_target = minf(lowest_target, route_target)
-		greatest_influence = maxf(greatest_influence, influence)
-	if greatest_influence > 0.0:
-		height = lerpf(height, lowest_target, greatest_influence)
-
-	for route_index in range(routes.size()):
-		var shelf_t := profile.routes[route_index].mechanism_shelf_t
-		if shelf_t < 0.0:
-			continue
-		var shelf_center := _route_point_at_t(routes[route_index], shelf_t)
-		var shelf_radius := profile.routes[route_index].mechanism_shelf_radius
-		var shelf_distance := Vector2(x, z).distance_to(Vector2(shelf_center.x, shelf_center.z))
-		var shelf_influence := 1.0 - smoothstep(0.92 * shelf_radius, shelf_radius, shelf_distance)
-		height = lerpf(height, shelf_center.y, shelf_influence)
-
-	height = clampf(height, 0.0, profile.accepted_height_range.y)
-	var edge_distance := minf(
-		minf(x - profile.local_bounds.position.x, profile.local_bounds.end.x - x),
-		minf(z - profile.local_bounds.position.y, profile.local_bounds.end.y - z)
-	)
-	return height * smoothstep(0.0, 12.0, edge_distance)
-
-
-static func _smooth_max(a: float, b: float, k: float) -> float:
-	return maxf(a, b) + pow(maxf(0.0, k - absf(a - b)), 2.0) / (4.0 * k)
 
 
 static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLayout) -> bool:
@@ -225,13 +81,17 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 		return false
 	if not _validate_routes(profile, layout):
 		return false
-	if not _validate_shelves(layout):
-		layout.metrics["rejection"] = "mechanism_shelf"
+	if not _validate_pads(layout):
+		layout.metrics["rejection"] = "mechanism_pad"
 		return false
-	if not _validate_branch_separation(layout):
-		layout.metrics["rejection"] = "branch_separation"
+	var footprint_ratio: float = ROUTE_GRAPH_HEIGHT_SYNTHESIZER.route_footprint_ratio(
+		layout.route_graph, profile.generation_contract
+	)
+	layout.metrics["route_footprint_ratio"] = footprint_ratio
+	if footprint_ratio < profile.target_ratio_range.x or footprint_ratio > profile.target_ratio_range.y:
+		layout.metrics["rejection"] = "route_footprint_ratio"
 		return false
-	layout.metrics["top_triangles"] = profile.cell_count.x * profile.cell_count.y * 2
+	layout.metrics["top_triangles"] = profile.generation_contract.top_triangle_count
 	return true
 
 
@@ -247,39 +107,38 @@ static func _validate_edges(layout: GeneratedStageLayout) -> bool:
 
 
 static func _validate_routes(profile: StageGenerationProfile, layout: GeneratedStageLayout) -> bool:
+	var graph := layout.route_graph
+	if graph.route_count() != profile.routes.size():
+		layout.metrics["rejection"] = "route_count"
+		return false
+	var maximum_node_height := -INF
+	for node in graph.nodes:
+		maximum_node_height = maxf(maximum_node_height, node.position.y)
+	if not is_equal_approx(maximum_node_height, profile.nominal_peak):
+		layout.metrics["rejection"] = "graph_peak"
+		return false
 	var all_slopes := PackedFloat32Array()
 	var reversal_counts := PackedInt32Array()
-	for route_index in range(layout.route_spines.size()):
-		var route := layout.route_spines[route_index]
-		var realized_route := PackedVector3Array()
-		for point in route:
-			realized_route.append(Vector3(point.x, layout.height_at_local(point.x, point.z), point.z))
-		if layout.route_roles[route_index] != profile.routes[route_index].role:
+	for route_index in range(graph.route_count()):
+		if graph.route_role(route_index) != profile.routes[route_index].role:
 			layout.metrics["rejection"] = "route_role"
 			return false
-		var reversals := _meaningful_reversals(route)
+		var reversals := graph.route_reversal_count(route_index)
 		reversal_counts.append(reversals)
-		if reversals != profile.routes[route_index].target_reversals:
+		if reversals != profile.routes[route_index].reversal_count():
 			layout.metrics["rejection"] = "route_reversals"
 			return false
-		if realized_route[0].y - realized_route[-1].y < 30.0:
-			layout.metrics["rejection"] = "route_net_descent"
-			return false
-		for point in route:
+		for point in graph.route_nodes(route_index):
 			var edge_distance := minf(
-				minf(point.x - layout.local_bounds.position.x, layout.local_bounds.end.x - point.x),
-				minf(point.z - layout.local_bounds.position.y, layout.local_bounds.end.y - point.z)
+				minf(point.position.x - layout.local_bounds.position.x, layout.local_bounds.end.x - point.position.x),
+				minf(point.position.z - layout.local_bounds.position.y, layout.local_bounds.end.y - point.position.z)
 			)
-			if edge_distance < 6.0:
+			if edge_distance < profile.generation_contract.outer_band_width:
 				layout.metrics["rejection"] = "route_edge_clearance"
 				return false
-		for segment_index in range(realized_route.size() - 1):
-			var start := realized_route[segment_index]
-			var finish := realized_route[segment_index + 1]
-			# The final station carries the route into the nonplayable 12 m shell transition.
-			if _edge_distance(layout.local_bounds, Vector2(start.x, start.z)) < 12.0 \
-					or _edge_distance(layout.local_bounds, Vector2(finish.x, finish.z)) < 12.0:
-				continue
+		for edge in graph.route_edges(route_index):
+			var start := graph.node_by_id(edge.from_node_id).position
+			var finish := graph.node_by_id(edge.to_node_id).position
 			var horizontal_distance := Vector2(start.x, start.z).distance_to(Vector2(finish.x, finish.z))
 			all_slopes.append(rad_to_deg(atan(absf(finish.y - start.y) / maxf(horizontal_distance, 0.001))))
 	if all_slopes.is_empty():
@@ -289,23 +148,20 @@ static func _validate_routes(profile: StageGenerationProfile, layout: GeneratedS
 	var p95_index := clampi(floori(float(all_slopes.size() - 1) * 0.95), 0, all_slopes.size() - 1)
 	var maximum_slope := all_slopes[-1]
 	var p95_slope := all_slopes[p95_index]
-	layout.route_reversal_counts = reversal_counts
 	layout.metrics["route_reversals"] = reversal_counts
 	layout.metrics["maximum_route_slope"] = maximum_slope
 	layout.metrics["p95_route_slope"] = p95_slope
-	if maximum_slope > MAX_ROUTE_SLOPE_DEGREES or p95_slope > P95_ROUTE_SLOPE_DEGREES:
-		layout.metrics["rejection"] = "route_slope"
+	if p95_slope > profile.route_core_p95_slope_max:
+		layout.metrics["rejection"] = "route_core_p95_slope"
 		return false
 	return true
 
 
-static func _validate_shelves(layout: GeneratedStageLayout) -> bool:
-	for route_index in range(layout.route_spines.size()):
-		var shelf_t := layout.route_shelf_positions[route_index]
-		if shelf_t < 0.0:
-			continue
-		var center := layout.route_position(route_index, shelf_t)
-		var radius := layout.route_shelf_radii[route_index] * 0.60
+static func _validate_pads(layout: GeneratedStageLayout) -> bool:
+	for pad in layout.route_graph.pad_nodes():
+		var center := pad.position
+		# Stay inside the fixed 65% flat core after temporary bilinear grid sampling.
+		var radius := pad.pad_radius * 0.30
 		for sample_index in range(17):
 			var point := Vector2(center.x, center.z)
 			if sample_index > 0:
@@ -313,27 +169,6 @@ static func _validate_shelves(layout: GeneratedStageLayout) -> bool:
 				point += Vector2(cos(angle), sin(angle)) * radius
 			var slope := _local_slope_degrees(layout, point, 0.25)
 			if slope > 8.0:
-				return false
-	return true
-
-
-static func _validate_branch_separation(layout: GeneratedStageLayout) -> bool:
-	if layout.route_spines.size() == 2:
-		for sample_index in range(12):
-			var t := lerpf(0.45, 1.0, float(sample_index) / 11.0)
-			var first := layout.route_position(0, t)
-			var second := layout.route_position(1, t)
-			if Vector2(first.x, first.z).distance_to(Vector2(second.x, second.z)) < 24.0:
-				return false
-	if layout.route_spines.size() == 3:
-		var splitter_index := _route_index_for_role(layout, StageRouteProfile.Role.SPLITTER)
-		var bumper_index := _route_index_for_role(layout, StageRouteProfile.Role.BUMPER)
-		if splitter_index < 0 or bumper_index < 0:
-			return false
-		for shelf_t in [layout.route_shelf_positions[splitter_index], layout.route_shelf_positions[bumper_index]]:
-			var splitter := layout.route_position(splitter_index, shelf_t)
-			var bumper := layout.route_position(bumper_index, shelf_t)
-			if Vector2(splitter.x, splitter.z).distance_to(Vector2(bumper.x, bumper.z)) < 20.0:
 				return false
 	return true
 
@@ -353,26 +188,27 @@ static func _finalize_layout(
 		if layout.decoration_placements.size() != _decoration_count(stage_data.stage_number):
 			layout.metrics["rejection"] = "decoration_placement"
 			return false
-	var eligible_result := _build_eligible_mask(layout)
+	var contract := profile.generation_contract
+	var eligible_result := _build_eligible_mask(layout, contract)
 	layout.eligible_mask = eligible_result.bytes
-	layout.metrics["eligible_ratio"] = float(eligible_result.count) / float(MASK_SIZE * MASK_SIZE)
-	_exclude_footprints(layout)
+	layout.metrics["eligible_ratio"] = float(eligible_result.count) / float(contract.mask_size * contract.mask_size)
+	_exclude_footprints(layout, contract.mask_size)
 	var eligible_count := 0
 	for byte in layout.eligible_mask:
 		if byte >= 128:
 			eligible_count += 1
-	var eligible_ratio := float(eligible_count) / float(MASK_SIZE * MASK_SIZE)
+	var eligible_ratio := float(eligible_count) / float(contract.mask_size * contract.mask_size)
 	layout.metrics["eligible_ratio_after_exclusions"] = eligible_ratio
-	if eligible_ratio < profile.eligible_ratio_range.x or eligible_ratio > profile.eligible_ratio_range.y:
-		layout.metrics["rejection"] = "eligible_ratio_after_exclusions"
-		return false
 	layout.eligible_mask_checksum = _byte_checksum(layout.eligible_mask)
 	return true
 
 
-static func _build_eligible_mask(layout: GeneratedStageLayout) -> Dictionary:
+static func _build_eligible_mask(
+		layout: GeneratedStageLayout,
+		contract: StageGenerationContract
+) -> Dictionary:
 	var mask := PackedByteArray()
-	mask.resize(MASK_SIZE * MASK_SIZE)
+	mask.resize(contract.mask_size * contract.mask_size)
 	var sample_size := layout.sample_size()
 	var normal_y := PackedFloat32Array()
 	normal_y.resize(layout.heights.size())
@@ -390,15 +226,15 @@ static func _build_eligible_mask(layout: GeneratedStageLayout) -> Dictionary:
 					/ maxf(float(front - back) * step_z, step_z)
 			normal_y[z_index * sample_size.x + x_index] = Vector3(-dx, 1.0, -dz).normalized().y
 	var count := 0
-	for pixel_y in range(MASK_SIZE):
-		var normalized_y := (float(pixel_y) + 0.5) / float(MASK_SIZE)
+	for pixel_y in range(contract.mask_size):
+		var normalized_y := (float(pixel_y) + 0.5) / float(contract.mask_size)
 		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, normalized_y)
 		var grid_z := normalized_y * float(layout.cell_count.y)
 		var z0 := mini(floori(grid_z), layout.cell_count.y)
 		var z1 := mini(z0 + 1, layout.cell_count.y)
 		var tz := grid_z - float(z0)
-		for pixel_x in range(MASK_SIZE):
-			var normalized_x := (float(pixel_x) + 0.5) / float(MASK_SIZE)
+		for pixel_x in range(contract.mask_size):
+			var normalized_x := (float(pixel_x) + 0.5) / float(contract.mask_size)
 			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, normalized_x)
 			var edge_distance := minf(
 				minf(local_x - layout.local_bounds.position.x, layout.local_bounds.end.x - local_x),
@@ -418,33 +254,38 @@ static func _build_eligible_mask(layout: GeneratedStageLayout) -> Dictionary:
 			var bottom_normal_y := lerpf(normal_y[z1 * sample_size.x + x0], normal_y[z1 * sample_size.x + x1], tx)
 			if lerpf(top_normal_y, bottom_normal_y, tz) < cos(deg_to_rad(75.0)):
 				continue
-			mask[pixel_y * MASK_SIZE + pixel_x] = 255
+			mask[pixel_y * contract.mask_size + pixel_x] = 255
 			count += 1
 	return {"bytes": mask, "count": count}
 
 
-static func _exclude_footprints(layout: GeneratedStageLayout) -> void:
+static func _exclude_footprints(layout: GeneratedStageLayout, mask_size: int) -> void:
 	for placement in layout.mechanism_placements:
-		_clear_mask_circle(layout, placement.local_xz, _mechanism_exclusion_radius(placement.mechanism_data.kind))
+		_clear_mask_circle(layout, placement.local_xz, _mechanism_exclusion_radius(placement.mechanism_data.kind), mask_size)
 	for decoration in layout.decoration_placements:
-		_clear_mask_circle(layout, decoration.local_xz, _decoration_footprint_radius(decoration))
+		_clear_mask_circle(layout, decoration.local_xz, _decoration_footprint_radius(decoration), mask_size)
 
 
-static func _clear_mask_circle(layout: GeneratedStageLayout, center: Vector2, radius: float) -> void:
+static func _clear_mask_circle(
+		layout: GeneratedStageLayout,
+		center: Vector2,
+		radius: float,
+		mask_size: int
+) -> void:
 	var minimum_u := (center.x - radius - layout.local_bounds.position.x) / layout.local_bounds.size.x
 	var maximum_u := (center.x + radius - layout.local_bounds.position.x) / layout.local_bounds.size.x
 	var minimum_v := (center.y - radius - layout.local_bounds.position.y) / layout.local_bounds.size.y
 	var maximum_v := (center.y + radius - layout.local_bounds.position.y) / layout.local_bounds.size.y
-	var minimum_x := clampi(floori(minimum_u * MASK_SIZE - 0.5), 0, MASK_SIZE - 1)
-	var maximum_x := clampi(ceili(maximum_u * MASK_SIZE - 0.5), 0, MASK_SIZE - 1)
-	var minimum_y := clampi(floori(minimum_v * MASK_SIZE - 0.5), 0, MASK_SIZE - 1)
-	var maximum_y := clampi(ceili(maximum_v * MASK_SIZE - 0.5), 0, MASK_SIZE - 1)
+	var minimum_x := clampi(floori(minimum_u * mask_size - 0.5), 0, mask_size - 1)
+	var maximum_x := clampi(ceili(maximum_u * mask_size - 0.5), 0, mask_size - 1)
+	var minimum_y := clampi(floori(minimum_v * mask_size - 0.5), 0, mask_size - 1)
+	var maximum_y := clampi(ceili(maximum_v * mask_size - 0.5), 0, mask_size - 1)
 	for pixel_y in range(minimum_y, maximum_y + 1):
-		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, (float(pixel_y) + 0.5) / float(MASK_SIZE))
+		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, (float(pixel_y) + 0.5) / float(mask_size))
 		for pixel_x in range(minimum_x, maximum_x + 1):
-			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, (float(pixel_x) + 0.5) / float(MASK_SIZE))
+			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, (float(pixel_x) + 0.5) / float(mask_size))
 			if center.distance_squared_to(Vector2(local_x, local_z)) <= radius * radius:
-				layout.eligible_mask[pixel_y * MASK_SIZE + pixel_x] = 0
+				layout.eligible_mask[pixel_y * mask_size + pixel_x] = 0
 
 
 static func _generate_decorations(stage_data: StageData, layout: GeneratedStageLayout) -> Array[DecorationPlacement]:
@@ -458,9 +299,9 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 				continue
 			if layout.normal_at_local(local_x, local_z).y < cos(deg_to_rad(42.0)):
 				continue
-			var route_distance := layout.route_distance(local_x, local_z)
-			var route_index := int(route_distance.route_index)
-			if route_index >= 0 and float(route_distance.distance) < 0.75 * layout.route_widths[route_index] + 1.0:
+			var route_distance := layout.route_graph.nearest_edge(Vector2(local_x, local_z))
+			var route_edge := route_distance.edge as GeneratedRouteEdge
+			if route_edge != null and float(route_distance.distance) < 0.75 * route_edge.width + 1.0:
 				continue
 			var local_xz := Vector2(local_x, local_z)
 			var mechanism_clear := true
@@ -496,30 +337,6 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 	return result
 
 
-static func _route_sample(route: PackedVector3Array, z: float) -> Vector2:
-	if z <= route[0].z:
-		return Vector2(route[0].x, route[0].y)
-	for index in range(route.size() - 1):
-		if z <= route[index + 1].z:
-			var t := inverse_lerp(route[index].z, route[index + 1].z, z)
-			return Vector2(lerpf(route[index].x, route[index + 1].x, t), lerpf(route[index].y, route[index + 1].y, t))
-	return Vector2(route[-1].x, route[-1].y)
-
-
-static func _route_point_at_t(route: PackedVector3Array, normalized_position: float) -> Vector3:
-	var scaled := clampf(normalized_position, 0.0, 1.0) * float(route.size() - 1)
-	var first := mini(floori(scaled), route.size() - 1)
-	var second := mini(first + 1, route.size() - 1)
-	return route[first].lerp(route[second], scaled - float(first))
-
-
-static func _route_index_for_role(layout: GeneratedStageLayout, role: StageRouteProfile.Role) -> int:
-	for index in range(layout.route_roles.size()):
-		if layout.route_roles[index] == role:
-			return index
-	return -1
-
-
 static func _edge_distance(bounds: Rect2, point: Vector2) -> float:
 	return minf(
 		minf(point.x - bounds.position.x, bounds.end.x - point.x),
@@ -534,20 +351,6 @@ static func _local_slope_degrees(layout: GeneratedStageLayout, point: Vector2, s
 	var front := layout.height_at_local(point.x, point.y + step)
 	var normal := Vector3(left - right, 2.0 * step, back - front).normalized()
 	return rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
-
-
-static func _meaningful_reversals(route: PackedVector3Array) -> int:
-	var previous_sign := 0
-	var reversals := 0
-	for index in range(route.size() - 1):
-		var delta := route[index + 1].y - route[index].y
-		if absf(delta) < 1.5:
-			continue
-		var current_sign := signi(delta)
-		if previous_sign != 0 and current_sign != previous_sign:
-			reversals += 1
-		previous_sign = current_sign
-	return reversals
 
 
 static func _mechanism_exclusion_radius(kind: MechanismData.Kind) -> float:

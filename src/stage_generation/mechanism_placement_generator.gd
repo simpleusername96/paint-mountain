@@ -25,14 +25,14 @@ static func _place_exact(
 		mechanism_data: MechanismData,
 		existing: Array[MechanismPlacement]
 ) -> MechanismPlacement:
-	var route_index := _route_index_for_mechanism(layout, mechanism_data.kind)
-	if route_index < 0:
+	var pad := layout.route_graph.pad_node_for_kind(mechanism_data.kind)
+	if pad == null:
 		return null
-	var shelf_t := layout.route_shelf_positions[route_index]
-	var shelf_radius := layout.route_shelf_radii[route_index]
-	if shelf_t < 0.0 or shelf_radius <= 0.0:
+	var route_index := pad.route_index
+	var route_t := layout.route_graph.route_normalized_t_for_node(route_index, pad.id)
+	if route_t < 0.0 or pad.pad_radius <= 0.0:
 		return null
-	var route_point := layout.route_position(route_index, shelf_t)
+	var route_point := pad.position
 	var local_xz := Vector2(route_point.x, route_point.z)
 	var surface_point := Vector3(
 		local_xz.x,
@@ -40,13 +40,11 @@ static func _place_exact(
 		local_xz.y
 	)
 	var surface_normal := layout.normal_at_local(local_xz.x, local_xz.y)
-	var before := layout.route_position(route_index, maxf(0.0, shelf_t - 0.02))
-	var after := layout.route_position(route_index, minf(1.0, shelf_t + 0.02))
-	var downhill_tangent := Vector3(after.x - before.x, 0.0, after.z - before.z).normalized()
+	var downhill_tangent := layout.route_graph.route_tangent(route_index, route_t)
 	if downhill_tangent.is_zero_approx():
 		return null
 	if not _placement_valid(
-		stage_data, layout, mechanism_data.kind, route_index, shelf_radius,
+		stage_data, layout, mechanism_data.kind, route_index, pad.pad_radius,
 		local_xz, surface_point, surface_normal, existing
 	):
 		return null
@@ -64,9 +62,9 @@ static func _place_exact(
 	placement.mechanism_data = mechanism_data
 	placement.local_xz = local_xz
 	placement.local_transform = transform
-	placement.route_role = layout.route_roles[route_index]
+	placement.route_role = layout.route_graph.route_role(route_index)
 	placement.route_index = route_index
-	placement.shelf_t = shelf_t
+	placement.route_t = route_t
 	placement.downstream_tangent = downhill_tangent
 	return placement
 
@@ -87,7 +85,7 @@ static func _placement_valid(
 		layout.metrics["placement_rejection"] = "slope"
 		return false
 	var physical_radius := _physical_radius(kind)
-	if layout.route_widths[route_index] * 0.5 - physical_radius < ROUTE_EDGE_CLEARANCE:
+	if layout.route_graph.route_width(route_index) * 0.5 - physical_radius < ROUTE_EDGE_CLEARANCE:
 		layout.metrics["placement_rejection"] = "route_edge_clearance"
 		return false
 	if shelf_radius * 0.60 < physical_radius:
@@ -171,18 +169,6 @@ static func _terrain_ray_clear(
 		if surface_y > point.y + 0.05:
 			return false
 	return true
-
-
-static func _route_index_for_mechanism(layout: GeneratedStageLayout, kind: MechanismData.Kind) -> int:
-	var required_role := StageRouteProfile.Role.PRIMARY
-	if kind == MechanismData.Kind.SPLITTER:
-		required_role = StageRouteProfile.Role.SPLITTER
-	elif kind == MechanismData.Kind.BUMPER:
-		required_role = StageRouteProfile.Role.BUMPER
-	for route_index in range(layout.route_roles.size()):
-		if layout.route_roles[route_index] == required_role and layout.route_shelf_positions[route_index] >= 0.0:
-			return route_index
-	return -1
 
 
 static func _physical_radius(kind: MechanismData.Kind) -> float:

@@ -61,6 +61,23 @@ func _assert_graph_contract() -> void:
 	_assert_true(not duplicate.is_valid(), "duplicate node IDs must be rejected")
 	var missing := GeneratedRouteEdge.new(&"missing", summit_id, &"unknown", 0, 0, 0, 12.0)
 	_assert_true(not GeneratedRouteGraph.new([summit], [missing]).is_valid(), "missing graph references must be rejected")
+	var corridor_id := GeneratedRouteNode.route_node_id(&"first_descent", 0, 1)
+	var corridor := GeneratedRouteNode.new(
+		corridor_id, Vector3(0.0, 48.0, 20.0), 0, 1, GeneratedRouteNode.Kind.CORRIDOR
+	)
+	var non_summit_edge := GeneratedRouteEdge.new(
+		&"non_summit", corridor_id, exit_id, 0, 0, StageRouteProfile.Role.PRIMARY, 28.0
+	)
+	_assert_true(not GeneratedRouteGraph.new([summit, corridor, exit], [non_summit_edge]).is_valid(), "every route must start at the shared summit")
+	var non_exit_edge := GeneratedRouteEdge.new(
+		&"non_exit", summit_id, corridor_id, 0, 0, StageRouteProfile.Role.PRIMARY, 28.0
+	)
+	_assert_true(not GeneratedRouteGraph.new([summit, corridor], [non_exit_edge]).is_valid(), "every route must end at a typed exit")
+	var orphan_pad := GeneratedRouteNode.new(
+		&"orphan_pad", Vector3(4.0, 54.0, 0.0), 0, 1,
+		GeneratedRouteNode.Kind.PAD, MechanismData.Kind.BURST, 8.0
+	)
+	_assert_true(not GeneratedRouteGraph.new([summit, exit, orphan_pad], [edge]).is_valid(), "unused pad nodes must invalidate the graph")
 
 
 func _assert_aim_contract() -> void:

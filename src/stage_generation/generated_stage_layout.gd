@@ -3,18 +3,14 @@ extends RefCounted
 
 var profile_id: StringName
 var profile_version: int
+var layout_version: int
 var terrain_seed: int
 var accepted_seed: int
 var generation_attempt: int
 var cell_count: Vector2i
 var local_bounds: Rect2
 var heights: PackedFloat32Array
-var route_spines: Array[PackedVector3Array] = []
-var route_widths: PackedFloat32Array
-var route_roles: PackedInt32Array
-var route_reversal_counts: PackedInt32Array
-var route_shelf_positions: PackedFloat32Array
-var route_shelf_radii: PackedFloat32Array
+var route_graph: GeneratedRouteGraph
 var metrics: Dictionary = {}
 var checksum: int = 0
 var eligible_mask: PackedByteArray
@@ -30,11 +26,9 @@ func sample_size() -> Vector2i:
 func is_valid() -> bool:
 	var size := sample_size()
 	return size.x > 1 and size.y > 1 and heights.size() == size.x * size.y \
-			and route_spines.size() == route_widths.size() \
-			and route_spines.size() == route_roles.size() \
-			and route_spines.size() == route_shelf_positions.size() \
-			and route_spines.size() == route_shelf_radii.size() \
-			and not route_spines.is_empty()
+			and profile_version == StageGenerationContract.CONTRACT_VERSION \
+			and layout_version == StageGenerationContract.CONTRACT_VERSION \
+			and route_graph != null and route_graph.is_valid()
 
 
 func height_at_local(local_x: float, local_z: float) -> float:
@@ -67,42 +61,5 @@ func normal_at_local(local_x: float, local_z: float) -> Vector3:
 	return Vector3(left - right, 2.0 * step_x, back - front).normalized()
 
 
-func route_position(route_index: int, normalized_position: float) -> Vector3:
-	if route_index < 0 or route_index >= route_spines.size():
-		return Vector3.ZERO
-	var route := route_spines[route_index]
-	if route.is_empty():
-		return Vector3.ZERO
-	if route.size() == 1:
-		return route[0]
-	var scaled := clampf(normalized_position, 0.0, 1.0) * float(route.size() - 1)
-	var first := mini(floori(scaled), route.size() - 1)
-	var second := mini(first + 1, route.size() - 1)
-	return route[first].lerp(route[second], scaled - float(first))
-
-
-func route_distance(local_x: float, local_z: float) -> Dictionary:
-	var best_distance := INF
-	var best_route := -1
-	for route_index in range(route_spines.size()):
-		var distance := absf(local_x - _route_x_at_z(route_spines[route_index], local_z))
-		if distance < best_distance:
-			best_distance = distance
-			best_route = route_index
-	return {"distance": best_distance, "route_index": best_route}
-
-
 func _height_sample(x: int, z: int) -> float:
 	return heights[z * sample_size().x + x]
-
-
-func _route_x_at_z(route: PackedVector3Array, local_z: float) -> float:
-	if local_z <= route[0].z:
-		return route[0].x
-	for index in range(route.size() - 1):
-		var start := route[index]
-		var finish := route[index + 1]
-		if local_z <= finish.z:
-			var t := smoothstep(0.0, 1.0, inverse_lerp(start.z, finish.z, local_z))
-			return lerpf(start.x, finish.x, t)
-	return route[route.size() - 1].x
