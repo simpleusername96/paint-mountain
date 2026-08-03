@@ -403,6 +403,22 @@ Height synthesis is fixed as follows:
    displacement, and query-only playable geometry are prohibited. Structural
    triangle parity is exact before engine conversion; deterministic engine ray
    fixtures may differ from the source triangle point by at most `0.01 m`.
+
+The concrete shared-surface data model is fixed before Task 1.2:
+
+- `TerrainTopTopology` owns one canonical `PackedVector3Array` of the 73 x 49
+  sample vertices and one canonical `PackedInt32Array` of the 6,912 triangle
+  indices in cell order, plus cell/triangle lookup helpers. Every surface
+  consumer receives this object or a read-only copy of its arrays; no consumer
+  regenerates cell triangles.
+- The collidable faces are expanded directly from those canonical indices for
+  `ConcavePolygonShape3D`. The faceted render surface may duplicate the same
+  indexed triangle corners solely to attach one flat normal per face, because a
+  shared vertex cannot carry multiple face normals in Godot's mesh arrays. That
+  expansion must preserve each canonical vertex value, triangle order, winding,
+  and source triangle ID exactly; it is a presentation encoding of the one
+  topology, not a second triangulation. Tests reconstruct its source IDs and
+  compare them exactly before the `0.01 m` engine-ray check.
 8. In world space the terrain remains centered at `(0,-2,-112)` and spans
    `x=[-90,90]`, `z=[-172,-52]`. Its far edge meets the front face of the rear
    backstop at `z=-172`; all graph mass extends toward the cannon from that
@@ -558,6 +574,14 @@ below.
   verifies those immutable identifiers before briefing; a missing or stale
   certificate is a content error, not permission to generate an unchecked
   replacement.
+- `DirectReachabilityCertificate` is the serializable Resource boundary. Its
+  `.tres` stores only canonical primitive arrays: interleaved witness yaw and
+  elevation tenths, witness power integers, target witness indices, distance and
+  range margins, the default witness index, seeds/versions, and checksums.
+  `AimTuple` remains an immutable runtime value; the certificate reconstructs
+  read-only `AimTuple` views after validating array lengths, lattice bounds,
+  uniqueness, and the default index. It never serializes mutable nested aim
+  Resources or duplicates a hand-authored initial-aim field.
 - Compute the target centroid from all target-mask texel centers in world XZ.
   `DefaultAimSolver` selects the certified witness with smallest XZ impact
   distance to that centroid; ties use absolute yaw, elevation, power, then
