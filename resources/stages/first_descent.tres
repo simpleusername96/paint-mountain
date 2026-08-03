@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"first_descent"
-stage_version = 2
+stage_version = 3
 display_name_key = &"stage.first_descent.name"
 stage_number = 1
 target_coverage = 4.0
@@ -21,7 +21,7 @@ terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
 initial_aim = Vector3(16, 34, 60)
 stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
-reliable_solution = Array[Vector3]([Vector3(0, 34, 60), Vector3(0, 42, 70), Vector3(0, 50, 80), Vector3(20, 34, 60)])
+reliable_solution = Array[Vector3]([])
 briefing_camera_position = Vector3(92, 62, 24)
 briefing_camera_target = Vector3(0, 24, -112)
 aiming_camera_position = Vector3(5, 3.2, 18)

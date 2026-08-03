@@ -11,9 +11,14 @@ var local_bounds: Rect2
 var heights: PackedFloat32Array
 var route_spines: Array[PackedVector3Array] = []
 var route_widths: PackedFloat32Array
+var route_roles: PackedInt32Array
+var route_reversal_counts: PackedInt32Array
+var route_shelf_positions: PackedFloat32Array
+var route_shelf_radii: PackedFloat32Array
 var metrics: Dictionary = {}
 var checksum: int = 0
 var eligible_mask: PackedByteArray
+var eligible_mask_checksum: int = 0
 var mechanism_placements: Array[MechanismPlacement] = []
 var decoration_placements: Array[DecorationPlacement] = []
 
@@ -25,7 +30,11 @@ func sample_size() -> Vector2i:
 func is_valid() -> bool:
 	var size := sample_size()
 	return size.x > 1 and size.y > 1 and heights.size() == size.x * size.y \
-			and route_spines.size() == route_widths.size() and not route_spines.is_empty()
+			and route_spines.size() == route_widths.size() \
+			and route_spines.size() == route_roles.size() \
+			and route_spines.size() == route_shelf_positions.size() \
+			and route_spines.size() == route_shelf_radii.size() \
+			and not route_spines.is_empty()
 
 
 func height_at_local(local_x: float, local_z: float) -> float:
@@ -81,15 +90,6 @@ func route_distance(local_x: float, local_z: float) -> Dictionary:
 			best_distance = distance
 			best_route = route_index
 	return {"distance": best_distance, "route_index": best_route}
-
-
-func is_eligible_local(local_x: float, local_z: float) -> bool:
-	if height_at_local(local_x, local_z) <= 1.0 or normal_at_local(local_x, local_z).y < 0.529919:
-		return false
-	for route_index in range(route_spines.size()):
-		if absf(local_x - _route_x_at_z(route_spines[route_index], local_z)) <= 0.75 * route_widths[route_index]:
-			return true
-	return false
 
 
 func _height_sample(x: int, z: int) -> float:

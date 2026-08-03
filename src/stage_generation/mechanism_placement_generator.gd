@@ -1,17 +1,17 @@
 class_name MechanismPlacementGenerator
 extends RefCounted
 
-const MAX_PLACEMENT_SLOPE_DEGREES := 18.0
-const MINIMUM_SEPARATION := 10.0
-const BOUNDS_CLEARANCE := 5.0
+const MAX_PLACEMENT_SLOPE_DEGREES := 8.0
+const ROUTE_EDGE_CLEARANCE := 3.0
+const TERRAIN_RAY_FINAL_ALLOWANCE := 0.5
 
 
 static func generate(stage_data: StageData, layout: GeneratedStageLayout) -> Array[MechanismPlacement]:
 	var placements: Array[MechanismPlacement] = []
-	if stage_data == null or layout == null:
+	if stage_data == null or layout == null or not layout.is_valid():
 		return placements
 	for mechanism_data in stage_data.mechanism_loadout:
-		var placement := _place_one(stage_data, layout, mechanism_data, placements)
+		var placement := _place_exact(stage_data, layout, mechanism_data, placements)
 		if placement == null:
 			layout.metrics["placement_failed_kind"] = MechanismData.Kind.keys()[mechanism_data.kind]
 			return []
@@ -19,226 +19,187 @@ static func generate(stage_data: StageData, layout: GeneratedStageLayout) -> Arr
 	return placements
 
 
-static func _place_one(
+static func _place_exact(
 		stage_data: StageData,
 		layout: GeneratedStageLayout,
 		mechanism_data: MechanismData,
 		existing: Array[MechanismPlacement]
 ) -> MechanismPlacement:
-	var route_index := _route_index_for(mechanism_data.kind, layout.route_spines.size())
-	var range := _route_range_for(mechanism_data.kind)
-	var route := layout.route_spines[route_index]
-	var candidates: Array[Dictionary] = []
-	var debug_counts := {"range": 0, "route": 0, "slope": 0, "projected": 0, "line_of_sight": 0, "visibility": 0, "branch": 0}
-	var size := layout.sample_size()
-	for z_index in range(2, size.y - 2, 2):
-		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, float(z_index) / float(layout.cell_count.y))
-		var route_t := _route_t_for_z(route, local_z)
-		if route_t < range.x or route_t > range.y:
-			continue
-		debug_counts.range += 1
-		var route_center := layout.route_position(route_index, route_t)
-		for x_index in range(2, size.x - 2, 2):
-			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, float(x_index) / float(layout.cell_count.x))
-			if absf(local_x - route_center.x) > 0.55 * layout.route_widths[route_index]:
-				continue
-			debug_counts.route += 1
-			var local_xz := Vector2(local_x, local_z)
-			if not _inside_clear_bounds(layout.local_bounds, local_xz):
-				continue
-			if not _separated_from(existing, local_xz):
-				continue
-			var normal := layout.normal_at_local(local_x, local_z)
-			var slope := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
-			if slope > MAX_PLACEMENT_SLOPE_DEGREES:
-				continue
-			debug_counts.slope += 1
-			var height := layout.height_at_local(local_x, local_z)
-			var diameter := _diameter_for(mechanism_data.kind)
-			var visibility := _visibility_score(stage_data, layout, Vector3(local_x, height + diameter * 0.5, local_z), diameter)
-			if visibility == -2.0:
-				debug_counts.projected += 1
-				continue
-			if visibility < 0.0:
-				debug_counts.line_of_sight += 1
-				continue
-			debug_counts.visibility += 1
-			if mechanism_data.kind == MechanismData.Kind.SPLITTER and _branch_separation(layout, route_t) < 18.0:
-				continue
-			debug_counts.branch += 1
-			var score := _score_candidate(stage_data, layout, mechanism_data.kind, route_index, route_t, local_xz, height, slope, visibility)
-			var grid_index := z_index * size.x + x_index
-			candidates.append({
-				"local_xz": local_xz,
-				"route_t": route_t,
-				"height": height,
-				"score": score,
-				"tie": (grid_index ^ layout.accepted_seed) & 0x7fffffff,
-				"grid_index": grid_index,
-			})
-	if candidates.is_empty():
-		layout.metrics["placement_debug_%s" % MechanismData.Kind.keys()[mechanism_data.kind]] = debug_counts
+	var route_index := _route_index_for_mechanism(layout, mechanism_data.kind)
+	if route_index < 0:
 		return null
-	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if not is_equal_approx(float(a.score), float(b.score)):
-			return float(a.score) > float(b.score)
-		if int(a.tie) != int(b.tie):
-			return int(a.tie) < int(b.tie)
-		return int(a.grid_index) < int(b.grid_index)
+	var shelf_t := layout.route_shelf_positions[route_index]
+	var shelf_radius := layout.route_shelf_radii[route_index]
+	if shelf_t < 0.0 or shelf_radius <= 0.0:
+		return null
+	var route_point := layout.route_position(route_index, shelf_t)
+	var local_xz := Vector2(route_point.x, route_point.z)
+	var surface_point := Vector3(
+		local_xz.x,
+		layout.height_at_local(local_xz.x, local_xz.y),
+		local_xz.y
 	)
-	var selected: Dictionary = candidates[0]
-	var result := MechanismPlacement.new()
-	result.mechanism_data = mechanism_data
-	result.local_xz = selected.local_xz
-	result.height_offset = _height_offset_for(mechanism_data.kind)
-	if mechanism_data.kind == MechanismData.Kind.BUMPER:
-		var downstream := layout.route_position(route_index, minf(float(selected.route_t) + 0.14, 1.0))
-		var direction := Vector2(downstream.x, downstream.z) - result.local_xz
-		# Godot's local -Z axis rotates toward world +X with a negative yaw.
-		result.yaw_degrees = rad_to_deg(atan2(-direction.x, -direction.y))
-	return result
+	var surface_normal := layout.normal_at_local(local_xz.x, local_xz.y)
+	var before := layout.route_position(route_index, maxf(0.0, shelf_t - 0.02))
+	var after := layout.route_position(route_index, minf(1.0, shelf_t + 0.02))
+	var downhill_tangent := Vector3(after.x - before.x, 0.0, after.z - before.z).normalized()
+	if downhill_tangent.is_zero_approx():
+		return null
+	if not _placement_valid(
+		stage_data, layout, mechanism_data.kind, route_index, shelf_radius,
+		local_xz, surface_point, surface_normal, existing
+	):
+		return null
+
+	var local_z_axis := -downhill_tangent
+	var local_x_axis := surface_normal.cross(local_z_axis).normalized()
+	if local_x_axis.is_zero_approx():
+		return null
+	local_z_axis = local_x_axis.cross(surface_normal).normalized()
+	var transform := Transform3D(
+		Basis(local_x_axis, surface_normal, local_z_axis),
+		surface_point + surface_normal * 0.05
+	)
+	var placement := MechanismPlacement.new()
+	placement.mechanism_data = mechanism_data
+	placement.local_xz = local_xz
+	placement.local_transform = transform
+	placement.route_role = layout.route_roles[route_index]
+	placement.route_index = route_index
+	placement.shelf_t = shelf_t
+	placement.downstream_tangent = downhill_tangent
+	return placement
 
 
-static func _route_index_for(kind: MechanismData.Kind, route_count: int) -> int:
-	match kind:
-		MechanismData.Kind.SPLITTER:
-			return mini(1, route_count - 1)
-		MechanismData.Kind.BUMPER:
-			return mini(2, route_count - 1)
-		_:
-			return 0
-
-
-static func _route_range_for(kind: MechanismData.Kind) -> Vector2:
-	match kind:
-		MechanismData.Kind.SPLITTER:
-			return Vector2(0.56, 0.64)
-		MechanismData.Kind.BUMPER:
-			return Vector2(0.68, 0.78)
-		_:
-			return Vector2(0.28, 0.44)
-
-
-static func _route_t_for_z(route: PackedVector3Array, local_z: float) -> float:
-	if local_z <= route[0].z:
-		return 0.0
-	for index in range(route.size() - 1):
-		if local_z <= route[index + 1].z:
-			var segment_t := inverse_lerp(route[index].z, route[index + 1].z, local_z)
-			return (float(index) + segment_t) / float(route.size() - 1)
-	return 1.0
-
-
-static func _score_candidate(
+static func _placement_valid(
 		stage_data: StageData,
 		layout: GeneratedStageLayout,
 		kind: MechanismData.Kind,
 		route_index: int,
-		route_t: float,
+		shelf_radius: float,
 		local_xz: Vector2,
-		height: float,
-		slope: float,
-		visibility: float
-) -> float:
-	var height_score := clampf(height / 90.0, 0.0, 1.0)
-	var downstream := clampf(1.0 - route_t, 0.0, 1.0)
-	var flatness := clampf(1.0 - slope / MAX_PLACEMENT_SLOPE_DEGREES, 0.0, 1.0)
-	var approach := _approach_alignment(stage_data, layout, route_index, route_t, local_xz)
-	match kind:
-		MechanismData.Kind.SPLITTER:
-			return 0.35 * clampf(_branch_separation(layout, route_t) / 90.0, 0.0, 1.0) \
-					+ 0.25 * height_score + 0.20 * approach + 0.20 * visibility
-		MechanismData.Kind.BUMPER:
-			return 0.35 * downstream + 0.25 * approach + 0.20 * height_score + 0.20 * visibility
-		_:
-			return 0.35 * height_score + 0.30 * downstream + 0.20 * visibility + 0.15 * flatness
+		local_point: Vector3,
+		normal: Vector3,
+		existing: Array[MechanismPlacement]
+) -> bool:
+	var slope := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
+	if slope > MAX_PLACEMENT_SLOPE_DEGREES:
+		layout.metrics["placement_rejection"] = "slope"
+		return false
+	var physical_radius := _physical_radius(kind)
+	if layout.route_widths[route_index] * 0.5 - physical_radius < ROUTE_EDGE_CLEARANCE:
+		layout.metrics["placement_rejection"] = "route_edge_clearance"
+		return false
+	if shelf_radius * 0.60 < physical_radius:
+		layout.metrics["placement_rejection"] = "shelf_radius"
+		return false
+	for placement in existing:
+		var required := physical_radius + _physical_radius(placement.mechanism_data.kind) + 1.0
+		if local_xz.distance_to(placement.local_xz) < required:
+			layout.metrics["placement_rejection"] = "mechanism_separation"
+			return false
+	var edge_distance := minf(
+		minf(local_xz.x - layout.local_bounds.position.x, layout.local_bounds.end.x - local_xz.x),
+		minf(local_xz.y - layout.local_bounds.position.y, layout.local_bounds.end.y - local_xz.y)
+	)
+	if edge_distance < physical_radius + ROUTE_EDGE_CLEARANCE:
+		layout.metrics["placement_rejection"] = "terrain_edge_clearance"
+		return false
+	if not _camera_visibility_passes(stage_data, layout, local_point, _visual_diameter(kind)):
+		layout.metrics["placement_rejection"] = "camera_visibility"
+		return false
+	return true
 
 
-static func _approach_alignment(
+static func _camera_visibility_passes(
 		stage_data: StageData,
 		layout: GeneratedStageLayout,
-		route_index: int,
-		route_t: float,
-		local_xz: Vector2
-) -> float:
-	var cannon_xz := Vector2(stage_data.cannon_transform.origin.x - stage_data.terrain_center.x, stage_data.cannon_transform.origin.z - stage_data.terrain_center.z)
-	var incoming := (local_xz - cannon_xz).normalized()
-	var downstream_point := layout.route_position(route_index, minf(route_t + 0.08, 1.0))
-	var downstream := (Vector2(downstream_point.x, downstream_point.z) - local_xz).normalized()
-	return clampf((incoming.dot(downstream) + 1.0) * 0.5, 0.0, 1.0)
+		local_point: Vector3,
+		diameter: float
+) -> bool:
+	var local_normal := layout.normal_at_local(local_point.x, local_point.z)
+	var world_point := stage_data.terrain_center + local_point + local_normal * diameter
+	if _projected_horizontal_pixels(stage_data.aiming_camera_position, stage_data.aiming_camera_target, world_point, diameter) < 18.0:
+		layout.metrics["visibility_rejection"] = "aiming_projected_size"
+		return false
+	if _projected_horizontal_pixels(stage_data.briefing_camera_position, stage_data.briefing_camera_target, world_point, diameter) < 24.0:
+		layout.metrics["visibility_rejection"] = "briefing_projected_size"
+		return false
+	if not _terrain_ray_clear(stage_data, layout, stage_data.aiming_camera_position, world_point):
+		layout.metrics["visibility_rejection"] = "aiming_occlusion"
+		return false
+	if not _terrain_ray_clear(stage_data, layout, stage_data.briefing_camera_position, world_point):
+		layout.metrics["visibility_rejection"] = "briefing_occlusion"
+		return false
+	return true
 
 
-static func _branch_separation(layout: GeneratedStageLayout, route_t: float) -> float:
-	if layout.route_spines.size() < 3:
-		return 0.0
-	var directions: Array[Vector2] = []
-	for route_index in range(3):
-		var start := layout.route_position(route_index, route_t)
-		var finish := layout.route_position(route_index, minf(route_t + 0.18, 1.0))
-		directions.append((Vector2(finish.x, finish.z) - Vector2(start.x, start.z)).normalized())
-	var minimum_angle := 180.0
-	for first in range(directions.size()):
-		for second in range(first + 1, directions.size()):
-			minimum_angle = minf(minimum_angle, rad_to_deg(acos(clampf(directions[first].dot(directions[second]), -1.0, 1.0))))
-	return minimum_angle
-
-
-static func _visibility_score(
-		stage_data: StageData,
-		layout: GeneratedStageLayout,
-		local_position: Vector3,
+static func _projected_horizontal_pixels(
+		camera_position: Vector3,
+		camera_target: Vector3,
+		world_point: Vector3,
 		diameter: float
 ) -> float:
-	var world_position := stage_data.terrain_center + local_position
-	var camera_position := stage_data.aiming_camera_position
-	var camera_forward := (stage_data.aiming_camera_target - camera_position).normalized()
-	var camera_depth := maxf((world_position - camera_position).dot(camera_forward), 0.01)
-	var projected_1080 := diameter / (2.0 * tan(deg_to_rad(25.0)) * camera_depth) * 1080.0
-	var projected_720 := diameter / (2.0 * tan(deg_to_rad(25.0)) * camera_depth) * 720.0
-	if projected_1080 < 32.0 or projected_720 < 22.0:
-		return -2.0
-	for step in range(1, 21):
-		var t := float(step) / 24.0
-		var point := camera_position.lerp(world_position, t)
-		var local_x := point.x - stage_data.terrain_center.x
-		var local_z := point.z - stage_data.terrain_center.z
-		if not layout.local_bounds.has_point(Vector2(local_x, local_z)):
+	var forward := (camera_target - camera_position).normalized()
+	var depth := (world_point - camera_position).dot(forward)
+	if depth <= 0.01:
+		return 0.0
+	return diameter / (2.0 * tan(deg_to_rad(25.0)) * depth) * 1280.0
+
+
+static func _terrain_ray_clear(
+		stage_data: StageData,
+		layout: GeneratedStageLayout,
+		camera_position: Vector3,
+		world_point: Vector3
+) -> bool:
+	var ray_length := camera_position.distance_to(world_point)
+	if ray_length <= TERRAIN_RAY_FINAL_ALLOWANCE:
+		return true
+	for sample_index in range(1, 65):
+		var t := float(sample_index) / 64.0
+		var point := camera_position.lerp(world_point, t)
+		if point.distance_to(world_point) <= TERRAIN_RAY_FINAL_ALLOWANCE:
 			continue
-		var surface_y := stage_data.terrain_center.y + layout.height_at_local(local_x, local_z)
-		if surface_y > point.y + 0.5:
-			return -1.0
-	return clampf(minf(projected_1080 / 64.0, projected_720 / 44.0), 0.0, 1.0)
-
-
-static func _inside_clear_bounds(bounds: Rect2, point: Vector2) -> bool:
-	return point.x >= bounds.position.x + BOUNDS_CLEARANCE \
-			and point.x <= bounds.end.x - BOUNDS_CLEARANCE \
-			and point.y >= bounds.position.y + BOUNDS_CLEARANCE \
-			and point.y <= bounds.end.y - BOUNDS_CLEARANCE
-
-
-static func _separated_from(existing: Array[MechanismPlacement], point: Vector2) -> bool:
-	for placement in existing:
-		if placement.local_xz.distance_to(point) < MINIMUM_SEPARATION:
+		var local_xz := Vector2(
+			point.x - stage_data.terrain_center.x,
+			point.z - stage_data.terrain_center.z
+		)
+		if not layout.local_bounds.has_point(local_xz):
+			continue
+		var surface_y := stage_data.terrain_center.y + layout.height_at_local(local_xz.x, local_xz.y)
+		if surface_y > point.y + 0.05:
 			return false
 	return true
 
 
-static func _diameter_for(kind: MechanismData.Kind) -> float:
+static func _route_index_for_mechanism(layout: GeneratedStageLayout, kind: MechanismData.Kind) -> int:
+	var required_role := StageRouteProfile.Role.PRIMARY
+	if kind == MechanismData.Kind.SPLITTER:
+		required_role = StageRouteProfile.Role.SPLITTER
+	elif kind == MechanismData.Kind.BUMPER:
+		required_role = StageRouteProfile.Role.BUMPER
+	for route_index in range(layout.route_roles.size()):
+		if layout.route_roles[route_index] == required_role and layout.route_shelf_positions[route_index] >= 0.0:
+			return route_index
+	return -1
+
+
+static func _physical_radius(kind: MechanismData.Kind) -> float:
 	match kind:
+		MechanismData.Kind.BURST:
+			return 1.8
 		MechanismData.Kind.SPLITTER:
-			return 4.5
-		MechanismData.Kind.BUMPER:
-			return 3.8
+			return 1.75
 		_:
+			return 1.9
+
+
+static func _visual_diameter(kind: MechanismData.Kind) -> float:
+	match kind:
+		MechanismData.Kind.BURST:
 			return 4.2
-
-
-static func _height_offset_for(kind: MechanismData.Kind) -> float:
-	match kind:
 		MechanismData.Kind.SPLITTER:
-			return 1.1
-		MechanismData.Kind.BUMPER:
-			return 0.9
+			return 5.0
 		_:
-			return 1.0
+			return 5.2

@@ -3,5 +3,8 @@ extends Resource
 
 @export var mechanism_data: MechanismData
 @export var local_xz: Vector2 = Vector2.ZERO
-@export var height_offset: float = 1.0
-@export_range(-180.0, 180.0, 1.0) var yaw_degrees: float = 0.0
+@export var local_transform: Transform3D = Transform3D.IDENTITY
+@export var route_role: StageRouteProfile.Role = StageRouteProfile.Role.PRIMARY
+@export var route_index: int = -1
+@export var shelf_t: float = -1.0
+@export var downstream_tangent: Vector3 = Vector3.ZERO

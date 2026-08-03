@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"burst_basin"
-stage_version = 2
+stage_version = 3
 display_name_key = &"stage.burst_basin.name"
 stage_number = 2
 target_coverage = 27.0
@@ -22,10 +22,10 @@ terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
 stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
 mechanism_loadout = Array[ExtResource("3_burst")]([ExtResource("3_burst")])
-reliable_solution = Array[Vector3]([Vector3(-5.392, 45.2, 84)])
-briefing_camera_position = Vector3(94, 66, 20)
+reliable_solution = Array[Vector3]([])
+briefing_camera_position = Vector3(-60, 110, -30)
 briefing_camera_target = Vector3(0, 27, -112)
-aiming_camera_position = Vector3(5, 3.2, 18)
+aiming_camera_position = Vector3(-50, 100, -30)
 aiming_camera_target = Vector3(0, 20, -102)
 wide_camera_position = Vector3(84, 56, 4)
 wide_camera_target = Vector3(0, 24, -112)

@@ -8,7 +8,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"split_ridge"
-stage_version = 2
+stage_version = 3
 display_name_key = &"stage.split_ridge.name"
 stage_number = 3
 target_coverage = 70.0
@@ -23,7 +23,7 @@ terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
 stage_bounds = AABB(-140, -30, -210, 280, 210, 260)
 mechanism_loadout = Array[ExtResource("3_splitter")]([ExtResource("3_splitter"), ExtResource("4_bumper")])
-reliable_solution = Array[Vector3]([Vector3(26.584177, 44.870117, 84), Vector3(-3.090535, 47.7, 84), Vector3(-3.090535, 63.617676, 92), Vector3(-3.090535, 49.913574, 76), Vector3(17.739, 56.806, 84), Vector3(2.123, 48.725, 84)])
+reliable_solution = Array[Vector3]([])
 briefing_camera_position = Vector3(96, 66, 18)
 briefing_camera_target = Vector3(0, 26, -112)
 aiming_camera_position = Vector3(5, 3.2, 18)
