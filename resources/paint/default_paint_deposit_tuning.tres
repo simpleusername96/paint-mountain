@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PaintDepositTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/paint/paint_deposit_tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+painted_threshold = 0.18
+paint_units_per_full_alpha = 22.0
+trail_intensity = 1.0
+impact_intensity = 1.15
+final_puddle_intensity = 0.90
+burst_intensity = 1.0
+flow_amount_ratio = 0.36
+flow_decay = 0.72
+flow_radius_ratio = 0.42
+minimum_flow_alpha = 0.02

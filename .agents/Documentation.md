@@ -67,6 +67,20 @@ The opaque lit shader now uses flat mesh facets, shadows, `0.88 / 0.24`
 dry/paint roughness, shell classification, and a restrained paint rim without
 emission. Task 04 is next.
 
+Task 04 replaced fabricated world-up impacts and X/Z paint circles with typed
+direct-body contacts and one authoritative deposit path. High-speed CCD
+manifolds are grouped before collider/shape debounce; the selected contact
+retains the measured terrain point, normal, collider identity, shape indices,
+incoming velocity, and measured/fallback physical impulse. `PaintSystem`
+reconstructs every candidate pixel in 3D, requires connected eligible terrain,
+binds its paint and eligibility textures to the terrain shader, applies bounded
+steepest-descent flow, and returns the accepted amount before projectile
+payload changes. The 80-shot contact matrix, exact 3,228-pixel narrow stamp,
+zero-overlap gain, cliff isolation, bounded flow, and live projectile payload
+integration passed headlessly. The obsolete Area-based mechanism collision now
+fails its historical Phase 5 assertion as expected; Task 05 replaces that path
+with matching solid bodies.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The
@@ -134,10 +148,10 @@ the static-audit correction above.
 ## Current Redesign Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
-- The version-3 generator and closed production terrain/collider wiring are
-  implemented and verified. Physical contact/deposit, manual aim prediction,
-  mechanism bodies, replay format 3, and scene-based UI remain pending their
-  later ExecPlan tasks.
+- The version-3 generator, closed production terrain/collider wiring, and
+  authoritative physical contact/deposit path are implemented and verified.
+  Manual aim prediction, mechanism bodies, replay format 3, and scene-based UI
+  remain pending their later ExecPlan tasks.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.
@@ -164,6 +178,16 @@ the static-audit correction above.
   `phase2_physics_test.gd`, `phase2_test.gd`, `phase3_paint_test.gd`, and
   `phase5_mechanism_test.gd` passed, followed by `scripts/verify.ps1` and a
   30-frame headless main-project startup.
+- Active redesign Task 04: `projectile_contact_test.gd` passed 20 repetitions
+  each of flat, 35-degree ramp, high-speed graze, and skirt impacts (80/80),
+  exact collider/shape identity, measured point/normal/radius tolerances, and
+  separated recontact debounce. `phase3_paint_test.gd` produced exactly 3,228
+  visible/scored pixels and 1.231384% coverage, zero second-stamp gain, no
+  opposite-cliff or ineligible writes, and bounded synchronous flow.
+  `phase3_projectile_paint_test.gd` accepted 112/112 physical requests, consumed
+  329.4 of 520 payload only after contact, and reached 4.2039% coverage with no
+  ineligible pixels. Phase 2 ballistics/fixture and Phase 4 state regressions
+  also passed headlessly.
 
 - Final tested engine: Godot `4.7.1.stable.official.a13da4feb`, Windows Compatibility renderer, Intel Iris Xe, fixed 60 Hz physics.
 - Final 2026-08-03 regression: every Phase 2–8 check plus `stage_generation_test.gd`, `mechanism_placement_test.gd`, `aim_interaction_test.gd`, and `localization_ui_test.gd` passed. `scripts/verify.ps1` passed after final scene/resource/script changes.

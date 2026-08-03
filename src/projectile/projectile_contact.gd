@@ -7,6 +7,9 @@ var world_position: Vector3:
 var normal: Vector3:
 	get:
 		return _normal
+var impact_center_position: Vector3:
+	get:
+		return _impact_center_position
 var incoming_velocity: Vector3:
 	get:
 		return _incoming_velocity
@@ -37,6 +40,7 @@ var is_first_contact: bool:
 
 var _world_position: Vector3
 var _normal: Vector3
+var _impact_center_position: Vector3
 var _incoming_velocity: Vector3
 var _relative_normal_speed: float
 var _impulse: Vector3
@@ -46,11 +50,14 @@ var _local_shape_index: int
 var _collider_shape_index: int
 var _physics_tick: int
 var _is_first_contact: bool
+var _selection_distance_error: float
 
 
 func _init(
 		contact_world_position: Vector3 = Vector3.ZERO,
 		contact_normal: Vector3 = Vector3.UP,
+		contact_impact_center_position: Vector3 = Vector3.ZERO,
+		contact_selection_distance_error: float = 0.0,
 		contact_incoming_velocity: Vector3 = Vector3.ZERO,
 		contact_relative_normal_speed: float = 0.0,
 		contact_impulse: Vector3 = Vector3.ZERO,
@@ -62,6 +69,8 @@ func _init(
 ) -> void:
 	_world_position = contact_world_position
 	_normal = contact_normal.normalized() if not contact_normal.is_zero_approx() else Vector3.UP
+	_impact_center_position = contact_impact_center_position
+	_selection_distance_error = maxf(contact_selection_distance_error, 0.0)
 	_incoming_velocity = contact_incoming_velocity
 	_relative_normal_speed = maxf(contact_relative_normal_speed, 0.0)
 	_impulse = contact_impulse

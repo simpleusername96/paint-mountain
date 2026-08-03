@@ -1,6 +1,7 @@
 extends Node3D
 
 const STAGE := preload("res://resources/stages/first_descent.tres")
+const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
 
 @onready var _camera: Camera3D = %Camera
 @onready var _terrain_surface: TerrainSurface = %TerrainSurface
@@ -24,9 +25,10 @@ func _ready() -> void:
 	assert(layout != null, "Projectile sandbox requires the validated First Descent layout.")
 	_terrain_surface.position = STAGE.terrain_center
 	_terrain_surface.configure(layout)
+	_projectile_manager.configure_terrain(_terrain_surface)
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
-	_paint_system.configure(STAGE.paint_world_bounds(), STAGE.terrain_center.y, paint_material, STAGE.paint_color, layout)
+	_paint_system.configure(STAGE.paint_world_bounds(), STAGE.terrain_center.y, paint_material, STAGE.paint_color, layout, PAINT_DEPOSIT_TUNING)
 	_terrain_mesh.material_override = paint_material
 	_camera.look_at(Vector3(0.0, 25.0, -102.0), Vector3.UP)
 	_cannon.aim_changed.connect(_on_aim_changed)
@@ -77,13 +79,10 @@ func _on_all_projectiles_settled() -> void:
 
 func _on_paint_deposit_requested(
 		_projectile: PaintProjectile,
-		kind: StringName,
-		world_position: Vector3,
-		radius: float,
-		amount: float,
-		allow_flow: bool
+		request: PaintDepositRequest
 ) -> void:
-	_paint_system.queue_stamp(kind, world_position, radius, amount, allow_flow)
+	var result := _paint_system.apply_deposit(request)
+	_projectile_manager.resolve_paint_deposit(_projectile, request, result)
 
 
 func _on_coverage_changed(coverage: float) -> void:

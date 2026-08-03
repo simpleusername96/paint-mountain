@@ -34,10 +34,10 @@ func _run() -> void:
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var recorder: ReplayRecorder = gameplay.get_node("ReplayRecorder")
 	var first_impact := {"set": false, "position": Vector3.ZERO}
-	projectiles.projectile_impact.connect(func(_projectile: PaintProjectile, position: Vector3, _speed: float) -> void:
+	projectiles.projectile_contact_reported.connect(func(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
 		if not first_impact.set:
 			first_impact.set = true
-			first_impact.position = position
+			first_impact.position = contact.world_position
 	)
 	if mode == "record":
 		controller.begin_aiming()

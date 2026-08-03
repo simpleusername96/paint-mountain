@@ -31,6 +31,7 @@ var coverage_before_shot: float = 0.0
 var _cannon: CannonController
 var _projectile_manager: ProjectileManager
 var _paint_system: PaintSystem
+var _terrain_surface: TerrainSurface
 var _mechanisms: Array[GimmickBase] = []
 var _state_before_pause: State = State.BRIEFING
 var _decision_generation: int = 0
@@ -46,16 +47,26 @@ func configure(
 		cannon: CannonController,
 		projectile_manager: ProjectileManager,
 		paint_system: PaintSystem,
+		terrain_surface: TerrainSurface,
 		mechanisms: Array[GimmickBase] = []
 ) -> void:
 	stage_data = data
 	_cannon = cannon
 	_projectile_manager = projectile_manager
 	_paint_system = paint_system
+	_terrain_surface = terrain_surface
 	_mechanisms = mechanisms
 	_projectile_manager.stage_bounds = stage_data.stage_bounds
 	if not _projectile_manager.all_projectiles_settled.is_connected(_on_all_projectiles_settled):
 		_projectile_manager.all_projectiles_settled.connect(_on_all_projectiles_settled)
+	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
+		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
+	if not _projectile_manager.paint_deposit_resolved.is_connected(_on_paint_deposit_resolved):
+		_projectile_manager.paint_deposit_resolved.connect(_on_paint_deposit_resolved)
+	if not _projectile_manager.projectile_stopped.is_connected(_on_projectile_stopped):
+		_projectile_manager.projectile_stopped.connect(_on_projectile_stopped)
+	if not _projectile_manager.projectile_spawned.is_connected(_on_projectile_spawned):
+		_projectile_manager.projectile_spawned.connect(_on_projectile_spawned)
 	restart(true)
 
 
@@ -93,6 +104,7 @@ func request_fire() -> bool:
 		coverage_before_shot,
 		_cannon.projectile_data.initial_payload
 	)
+	_shot_observation.peak_active_projectile_count = _projectile_manager.active_count()
 	shots_remaining -= 1
 	_cannon.input_enabled = false
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -179,10 +191,14 @@ func _on_all_projectiles_settled() -> void:
 
 
 func _finalize_shot(generation: int) -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	if generation != _decision_generation or current_state != State.PAINT_SETTLING:
 		return
 	var coverage := _paint_system.coverage_percent()
 	var gain := maxf(0.0, coverage - coverage_before_shot)
+	if _shot_observation != null:
+		_shot_observation.seal(coverage)
 	_transition_to(State.SHOT_RESULT)
 	shot_result.emit(gain, coverage)
 	await get_tree().create_timer(SHOT_RESULT_DURATION, true, false, true).timeout
@@ -199,6 +215,42 @@ func _finalize_shot(generation: int) -> void:
 		_:
 			_cannon.input_enabled = true
 			_transition_to(State.AIMING)
+
+
+func _on_projectile_contact_reported(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
+	if _shot_observation == null or contact == null:
+		return
+	if _terrain_surface.is_top_collider(contact.collider):
+		_shot_observation.record_contact(contact, true)
+	elif contact.collider is CollisionObject3D and (contact.collider.collision_layer & 4) != 0:
+		_shot_observation.record_contact(contact, false)
+
+
+func _on_paint_deposit_resolved(
+		_projectile: PaintProjectile,
+		_request: PaintDepositRequest,
+		_accepted_amount: float,
+		_written_pixel_count: int
+) -> void:
+	if _shot_observation == null:
+		return
+	var remaining := 0.0
+	for active_projectile in _projectile_manager.active_projectiles():
+		remaining += active_projectile.remaining_payload
+	_shot_observation.record_payload(remaining)
+
+
+func _on_projectile_stopped(_projectile: PaintProjectile, reason: StringName) -> void:
+	if _shot_observation != null:
+		_shot_observation.record_settlement(reason)
+
+
+func _on_projectile_spawned(_projectile: PaintProjectile) -> void:
+	if _shot_observation != null:
+		_shot_observation.peak_active_projectile_count = maxi(
+			_shot_observation.peak_active_projectile_count,
+			_projectile_manager.active_count()
+		)
 
 
 func _transition_to(next_state: State, force: bool = false) -> bool:

@@ -77,3 +77,15 @@ func _init(
 
 func is_valid() -> bool:
 	return radius > 0.0 and amount > 0.0 and physics_tick >= 0 and sequence_number >= 0
+
+
+static func source_kind_name(kind: SourceKind) -> StringName:
+	match kind:
+		SourceKind.IMPACT:
+			return &"impact"
+		SourceKind.FINAL_PUDDLE:
+			return &"final_puddle"
+		SourceKind.BURST:
+			return &"burst"
+		_:
+			return &"trail"

@@ -190,10 +190,16 @@ func _set_preview_stage(stage: StageData) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://src/paint/terrain_paint.gdshader")
 	material.set_shader_parameter(&"paint_mask", _preview_paint_texture(stage.stage_number))
+	material.set_shader_parameter(&"eligible_mask", _preview_eligible_texture(layout))
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
 	material.set_shader_parameter(&"rock_color", Color(0.63, 0.65, 0.68, 1.0))
 	_preview_mountain.material_override = material
 	_preview_dressing.configure(stage, layout)
+
+
+func _preview_eligible_texture(layout: GeneratedStageLayout) -> ImageTexture:
+	var image := Image.create_from_data(512, 512, false, Image.FORMAT_L8, layout.eligible_mask)
+	return ImageTexture.create_from_image(image)
 
 
 func _preview_paint_texture(stage_number: int) -> ImageTexture:

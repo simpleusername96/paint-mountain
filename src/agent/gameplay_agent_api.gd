@@ -36,7 +36,12 @@ func configure(
 	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.stage_cleared.connect(func(coverage: float, _shots: int) -> void: gameplay_event.emit(&"stage_cleared", {"coverage": coverage}))
 	_stage_controller.stage_failed.connect(func(coverage: float, missing: float) -> void: gameplay_event.emit(&"stage_failed", {"coverage": coverage, "missing": missing}))
-	_projectile_manager.projectile_impact.connect(func(_projectile: PaintProjectile, position: Vector3, speed: float) -> void: gameplay_event.emit(&"projectile_impacted", {"position": position, "speed": speed}))
+	_projectile_manager.projectile_contact_reported.connect(func(_projectile: PaintProjectile, contact: ProjectileContact) -> void: gameplay_event.emit(&"projectile_impacted", {
+		"position": contact.world_position,
+		"normal": contact.normal,
+		"speed": contact.relative_normal_speed,
+		"collider_id": contact.collider_instance_id,
+	}))
 
 
 func get_observation() -> Dictionary:

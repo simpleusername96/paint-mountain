@@ -18,36 +18,73 @@ func _run_checks() -> void:
 	var cannon: CannonController = sandbox.get_node("Cannon")
 	var manager: ProjectileManager = sandbox.get_node("ProjectileManager")
 	var paint_system: PaintSystem = sandbox.get_node("PaintSystem")
-	var observed := {"deposit_count": 0, "request_count": 0, "amount": 0.0, "kinds": {}}
+	var observed := {
+		"applied_count": 0,
+		"request_count": 0,
+		"requested_amount": 0.0,
+		"accepted_amount": 0.0,
+		"written_pixels": 0,
+		"kinds": {},
+		"stop_reason": &"",
+	}
+	manager.projectile_stopped.connect(
+		func(_projectile: PaintProjectile, reason: StringName) -> void:
+			observed.stop_reason = reason
+	)
 	manager.paint_deposit_requested.connect(
-		func(_projectile: PaintProjectile, kind: StringName, _position: Vector3, _radius: float, amount: float, _flow: bool) -> void:
+		func(_projectile: PaintProjectile, request: PaintDepositRequest) -> void:
 			observed.request_count += 1
-			observed.amount += amount
+			observed.requested_amount += request.amount
+			var kind := PaintDepositRequest.source_kind_name(request.source_kind)
 			observed.kinds[kind] = int(observed.kinds.get(kind, 0)) + 1
 	)
-	paint_system.paint_deposited.connect(
-		func(_kind: StringName, _position: Vector3, _radius: float) -> void:
-			observed.deposit_count += 1
+	manager.paint_deposit_resolved.connect(
+		func(
+				_projectile: PaintProjectile,
+				_request: PaintDepositRequest,
+				accepted_amount: float,
+				written_pixel_count: int
+		) -> void:
+			observed.accepted_amount += accepted_amount
+			observed.written_pixels += written_pixel_count
+	)
+	paint_system.deposit_applied.connect(
+		func(_request: PaintDepositRequest, _accepted: float, _written: int, _newly_painted: int) -> void:
+			observed.applied_count += 1
 	)
 	cannon.set_aim(0.0, 38.0, 68.0)
 	_assert_true(cannon.request_fire(), "sandbox cannon must accept a ready fire command")
+	var active := manager.active_projectiles()
+	_assert_true(active.size() == 1, "accepted fire must spawn exactly one projectile")
+	var projectile := active[0] if not active.is_empty() else null
+	var initial_payload := projectile.remaining_payload if projectile != null else cannon.projectile_data.initial_payload
+	for _airborne_frame in range(3):
+		await physics_frame
+	if projectile != null and is_instance_valid(projectile):
+		_assert_true(
+			is_equal_approx(projectile.remaining_payload, initial_payload),
+			"airborne travel must consume no paint payload"
+		)
 	var frame_budget := 60 * 24
 	while manager.active_count() > 0 and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
 	paint_system.flush_pending()
 	_assert_true(manager.active_count() == 0, "painted projectile must terminate without an orphan")
-	_assert_true(observed.deposit_count > 0, "physical projectile contacts must produce paint deposits")
-	_assert_true(observed.kinds.has(&"impact"), "physical contact must request an impact splash")
-	_assert_true(observed.kinds.has(&"trail"), "surface travel must request repeated trail stamps")
-	_assert_true(observed.kinds.has(&"puddle"), "settlement must request a final puddle")
-	_assert_true(observed.amount <= cannon.projectile_data.initial_payload + 0.001, "deposit requests must never exceed finite payload")
+	_assert_true(observed.applied_count > 0, "physical projectile contacts must produce accepted paint deposits")
+	_assert_true(observed.kinds.has(&"impact"), "physical top contact must request an impact deposit")
+	_assert_true(observed.kinds.has(&"trail"), "surface travel must request repeated trail deposits")
+	_assert_true(observed.stop_reason != &"", "projectile termination must publish a bounded stop reason")
+	_assert_true(observed.accepted_amount <= initial_payload + 0.001, "accepted deposits must never exceed finite payload")
+	_assert_true(observed.written_pixels > 0, "accepted deposits must write the authoritative mask")
 	_assert_true(paint_system.coverage_percent() > 0.0, "projectile deposits must increase authoritative coverage")
+	_assert_true(paint_system.persistent_noneligible_pixel_count() == 0, "persistent paint must never enter score-ineligible pixels")
 	if not _failed:
 		print(
-			"Phase 3 projectile-paint integration passed: %d/%d accepted/requested, %.4f%% coverage, kinds=%s." % [
-				observed.deposit_count,
+			"Phase 3 projectile-paint integration passed: %d/%d accepted/requested, %.1f payload, %.4f%% coverage, kinds=%s." % [
+				observed.applied_count,
 				observed.request_count,
+				observed.accepted_amount,
 				paint_system.coverage_percent(),
 				observed.kinds,
 			]

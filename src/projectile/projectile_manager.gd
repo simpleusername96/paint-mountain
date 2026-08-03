@@ -2,24 +2,28 @@ class_name ProjectileManager
 extends Node3D
 
 signal projectile_spawned(projectile: PaintProjectile)
-signal projectile_impact(projectile: PaintProjectile, world_position: Vector3, speed: float)
-signal paint_deposit_requested(
-	projectile: PaintProjectile,
-	kind: StringName,
-	world_position: Vector3,
-	radius: float,
-	amount: float,
-	allow_flow: bool
-)
-signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact)
-signal typed_paint_deposit_requested(projectile: PaintProjectile, request: PaintDepositRequest)
+signal paint_deposit_requested(projectile: PaintProjectile, request: PaintDepositRequest)
+signal paint_deposit_resolved(
+	projectile: PaintProjectile,
+	request: PaintDepositRequest,
+	accepted_amount: float,
+	written_pixel_count: int
+)
+signal transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal all_projectiles_settled
 
 const MAXIMUM_ACTIVE_PROJECTILES := 8
 
 var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
+var _terrain_surface: TerrainSurface
 var _active: Array[PaintProjectile] = []
+
+
+func configure_terrain(terrain_surface: TerrainSurface) -> void:
+	assert(terrain_surface != null, "ProjectileManager requires TerrainSurface.")
+	_terrain_surface = terrain_surface
 
 
 func spawn_projectile(
@@ -30,17 +34,18 @@ func spawn_projectile(
 		split_generation: int = 0
 ) -> PaintProjectile:
 	_prune_invalid()
-	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES:
+	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
 		return null
 	var projectile := PaintProjectile.new()
 	projectile.name = "PaintProjectile%02d" % (_active.size() + 1)
-	projectile.configure(projectile_data, stage_bounds, payload_override, split_generation)
-	add_child(projectile)
-	projectile.global_position = origin
-	projectile.linear_velocity = velocity
-	projectile.impacted.connect(_on_projectile_impacted)
+	projectile.configure(projectile_data, stage_bounds, _terrain_surface, velocity, payload_override, split_generation)
+	projectile.contact_reported.connect(_on_contact_reported)
 	projectile.paint_deposit_requested.connect(_on_paint_deposit_requested)
+	projectile.transient_splash_requested.connect(_on_transient_splash_requested)
 	projectile.stopped.connect(_on_projectile_stopped)
+	projectile.position = to_local(origin)
+	projectile.linear_velocity = velocity
+	add_child(projectile)
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
 	return projectile
@@ -64,31 +69,30 @@ func cleanup() -> void:
 	all_projectiles_settled.emit()
 
 
-func report_contact(projectile: PaintProjectile, contact: ProjectileContact) -> void:
-	if projectile == null or contact == null:
+func resolve_paint_deposit(
+		projectile: PaintProjectile,
+		request: PaintDepositRequest,
+		result: Dictionary
+) -> void:
+	if projectile == null or request == null:
 		return
+	var accepted_amount := float(result.get("accepted_amount", 0.0))
+	var written_pixels := int(result.get("written_pixel_count", 0))
+	if is_instance_valid(projectile):
+		projectile.accept_deposit_amount(accepted_amount)
+	paint_deposit_resolved.emit(projectile, request, accepted_amount, written_pixels)
+
+
+func _on_contact_reported(projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	projectile_contact_reported.emit(projectile, contact)
 
 
-func request_paint_deposit(projectile: PaintProjectile, request: PaintDepositRequest) -> void:
-	if projectile == null or request == null or not request.is_valid():
-		return
-	typed_paint_deposit_requested.emit(projectile, request)
+func _on_paint_deposit_requested(projectile: PaintProjectile, request: PaintDepositRequest) -> void:
+	paint_deposit_requested.emit(projectile, request)
 
 
-func _on_projectile_impacted(projectile: PaintProjectile, world_position: Vector3, speed: float) -> void:
-	projectile_impact.emit(projectile, world_position, speed)
-
-
-func _on_paint_deposit_requested(
-		projectile: PaintProjectile,
-		kind: StringName,
-		world_position: Vector3,
-		radius: float,
-		amount: float,
-		allow_flow: bool
-) -> void:
-	paint_deposit_requested.emit(projectile, kind, world_position, radius, amount, allow_flow)
+func _on_transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+	transient_splash_requested.emit(projectile, contact)
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:

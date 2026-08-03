@@ -135,10 +135,10 @@ Generated terrain and placement:
 
 Physical contact, paint, and mechanisms:
 
-- [ ] `PaintProjectile` reports real direct-body contact point, normal, collider, shapes, impulse, incoming velocity, and deterministic first-contact ordering; it never fabricates world-up impact data.
-- [ ] All four high-speed terrain fixtures pass 20 real-projectile repetitions with the fixed point/normal/radius/collider tolerances and no tunneling.
-- [ ] Persistent paint is accepted only through `PaintDepositRequest` on connected eligible top terrain reconstructed in 3D; visible mask pixels and scored pixels are identical.
-- [ ] The fixed flat paint fixture stamps exactly 3,228 threshold pixels for one radius-4/amount-22 trail request and gains zero coverage on an identical second request.
+- [x] `PaintProjectile` reports real direct-body contact point, normal, collider, shapes, impulse, incoming velocity, and deterministic first-contact ordering; it never fabricates world-up impact data.
+- [x] All four high-speed terrain fixtures pass 20 real-projectile repetitions with the fixed point/normal/radius/collider tolerances and no tunneling.
+- [x] Persistent paint is accepted only through `PaintDepositRequest` on connected eligible top terrain reconstructed in 3D; visible mask pixels and scored pixels are identical.
+- [x] The fixed flat paint fixture stamps exactly 3,228 threshold pixels for one radius-4/amount-22 trail request and gains zero coverage on an identical second request.
 - [ ] Burst, Splitter, and Bumper use matching compound `StaticBody3D` primitives with no gameplay activation `Area3D`; preview and real ball strike the same body/shape.
 - [ ] Burst uses the authoritative deposit path, Splitter emits exactly three generation-1 children with 90% total remaining payload, and Bumper applies its queued corrective impulse along the displayed tangent.
 - [ ] Contact debounce prevents duplicate activation while permitting a separated later strike; reset restores all mechanism/projectile state and active balls never exceed eight.

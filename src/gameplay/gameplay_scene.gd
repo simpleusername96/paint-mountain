@@ -5,6 +5,7 @@ signal navigation_requested(destination: StringName)
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
+const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
 
 @export var stage_data: StageData
 
@@ -43,7 +44,7 @@ func _ready() -> void:
 	_camera_director.configure(_camera, stage_data, _projectile_manager)
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
-	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _mechanisms)
+	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _terrain_surface, _mechanisms)
 	_aim_input.configure(_camera, _cannon, _stage_controller)
 	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
 	_agent_api.configure(
@@ -102,6 +103,7 @@ func _build_stage_world() -> void:
 	_generated_layout = SeededStageGenerator.generate(stage_data.generation_profile, stage_data.terrain_seed, stage_data)
 	assert(_generated_layout != null, "Stage generation must produce a validated layout before briefing.")
 	_terrain_surface.configure(_generated_layout)
+	_projectile_manager.configure_terrain(_terrain_surface)
 	_cannon.global_transform = stage_data.cannon_transform
 	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
 	_projectile_manager.stage_bounds = stage_data.stage_bounds
@@ -112,7 +114,8 @@ func _build_stage_world() -> void:
 		stage_data.terrain_center.y,
 		paint_material,
 		stage_data.paint_color,
-		_generated_layout
+		_generated_layout,
+		PAINT_DEPOSIT_TUNING
 	)
 	_terrain_mesh.material_override = paint_material
 	_environment_dressing.configure(stage_data, _generated_layout)
@@ -124,7 +127,7 @@ func _connect_systems() -> void:
 	_cannon.aim_validity_changed.connect(_hud.set_fire_enabled)
 	_cannon.fire_requested.connect(func(_origin: Vector3, _velocity: Vector3) -> void: _stage_controller.request_fire())
 	_projectile_manager.paint_deposit_requested.connect(_on_paint_deposit_requested)
-	_projectile_manager.projectile_impact.connect(_on_projectile_impact)
+	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
 	_paint_system.coverage_changed.connect(_hud.update_coverage)
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
@@ -149,19 +152,16 @@ func _connect_systems() -> void:
 
 func _on_paint_deposit_requested(
 		_projectile: PaintProjectile,
-		kind: StringName,
-		world_position: Vector3,
-		radius: float,
-		amount: float,
-		allow_flow: bool
+		request: PaintDepositRequest
 ) -> void:
-	_paint_system.queue_stamp(kind, world_position, radius, amount, allow_flow)
+	var result := _paint_system.apply_deposit(request)
+	_projectile_manager.resolve_paint_deposit(_projectile, request, result)
 
 
-func _on_projectile_impact(_projectile: PaintProjectile, _position: Vector3, _speed: float) -> void:
-	_presentation_effects.splash(_position, clampf(_speed / 32.0, 0.7, 1.5))
+func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
+	_presentation_effects.splash(contact.world_position, clampf(contact.relative_normal_speed / 32.0, 0.7, 1.5))
 	_audio_cue(&"impact")
-	_camera_director.add_impact_shake(clampf(_speed / 80.0, 0.12, 0.42))
+	_camera_director.add_impact_shake(clampf(contact.relative_normal_speed / 80.0, 0.12, 0.42))
 	_shot_has_impacted = true
 
 

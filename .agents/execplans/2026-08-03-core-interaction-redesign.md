@@ -456,6 +456,8 @@ authored geometry or an unvalidated partial result.
 
 - `world_position`;
 - normalized world `normal`;
+- `impact_center_position`, the swept sphere center reconstructed from the
+  measured collider point, normal, and projectile radius;
 - `incoming_velocity`;
 - `relative_normal_speed`;
 - `impulse`;
@@ -470,14 +472,25 @@ Before entering active simulation, `PaintProjectile` sets
 `max_contacts_reported = 8`. It also sets `linear_damp_mode =
 RigidBody3D.DAMP_MODE_REPLACE`, `linear_damp = 0.12`, and
 `gravity_scale = 1.0`, so preview damping does not depend on a project default
-or an Area override. In `_integrate_forces(state)` it converts
-`get_contact_local_normal()` through the body's current basis and reads the
-collider position/object/shape and impulse from the direct body state. If
-multiple contacts begin in one tick, the primary impact is the one with
-greatest impulse; ties use collider instance ID then collider shape index.
-`incoming_velocity` is the projectile velocity cached at the end of the
-immediately preceding physics tick, or launch velocity on its first tick.
-Relative normal speed subtracts the collider's velocity at the contact point.
+or an Area override. In `_integrate_forces(state)` it reads the collider-side
+position, reported contact normal, collider object/shape, and impulse from the
+direct body state. It does not rotate the reported normal through the
+post-solver sphere basis.
+
+Godot 4.7.1's high-speed CCD can report one speculative manifold containing
+several points with the same collider/shape key, can pre-resolve velocity one
+tick before that manifold becomes visible, and can report a zero or negligible
+first-tick impulse. The frozen handling is therefore: group all manifold points
+before applying debounce; prefer a meaningful direct impulse; for points in
+the same zero-impulse manifold choose the smallest absolute sphere-separation
+error and then contact-point X/Y/Z; reconstruct the swept sphere center as
+`collider_position + normal * radius`; select incoming velocity from the last
+three direct-state samples by greatest closing speed; and only when the direct
+impulse is negligible derive the normal impulse from the measured pre/post
+velocity delta times mass. Across different collider/shape keys, primary
+ordering remains greatest impulse, collider instance ID, then collider shape
+index. Relative normal speed subtracts the collider's velocity at the contact
+point.
 
 Contact debounce is keyed by collider instance ID plus collider shape index. A
 contact may begin again only after it is absent for two consecutive physics
@@ -1554,7 +1567,7 @@ This checklist is the single canonical progress source for the redesign:
 - [x] Task 01 — Introduce typed contracts and the terrain owner.
 - [x] Task 02 — Replace authored topology with the frozen generator.
 - [x] Task 03 — Replace terrain mesh and collision.
-- [ ] Task 04 — Make physics contact authoritative and unify paint.
+- [x] Task 04 — Make physics contact authoritative and unify paint.
 - [ ] Task 05 — Convert mechanisms to physical bodies.
 - [ ] Task 06 — Replace auto-targeting with manual aim and full preview.
 - [ ] Task 07 — Add shot causality, safe camera, and isolated replay.
@@ -1564,5 +1577,5 @@ This checklist is the single canonical progress source for the redesign:
 
 ## Next Steps
 
-Begin Task 04. Do not implement any later task until its predecessor's
+Begin Task 05. Do not implement any later task until its predecessor's
 acceptance and regression guards pass.

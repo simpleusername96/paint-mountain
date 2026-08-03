@@ -5,6 +5,8 @@ const BURST_DATA := preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA := preload("res://resources/mechanisms/splitter_node.tres")
 const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
 const STAGE := preload("res://resources/stages/first_descent.tres")
+const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
+const TERRAIN_FIXTURE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
 
 var _failed: bool = false
 
@@ -25,12 +27,18 @@ func _run_checks() -> void:
 	if layout == null:
 		quit(1)
 		return
+	var terrain_surface := TERRAIN_FIXTURE.instantiate() as TerrainSurface
+	terrain_surface.position = STAGE.terrain_center
+	test_root.add_child(terrain_surface)
+	terrain_surface.configure(layout)
+	manager.configure_terrain(terrain_surface)
 	paint_system.configure(
 		STAGE.paint_world_bounds(),
 		STAGE.terrain_center.y,
 		null,
 		STAGE.paint_color,
-		layout
+		layout,
+		PAINT_DEPOSIT_TUNING
 	)
 
 	var summit_y := STAGE.terrain_center.y + layout.height_at_local(0.0, 0.0)
