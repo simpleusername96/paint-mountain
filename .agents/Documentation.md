@@ -36,6 +36,14 @@ checks passed; no runtime behavior was changed or claimed. The next executable
 milestone is Task 01, which introduces the typed contracts and `TerrainSurface`
 owner without changing visible gameplay.
 
+Task 01 added the typed `TerrainGeometry`, `TerrainSurface`,
+`ProjectileContact`, `PaintDepositRequest`/tuning, `ShotObservation`, and
+`TrajectoryPrediction` contracts plus collision-layer names and narrow owner
+interfaces. Godot 4.7.1 registered every class, passed headless import/parse,
+and started the existing main scene. The new terrain owner/factory is not wired
+into production until Task 03, so this milestone makes no visual-completion
+claim. Next is Task 02's version-3 generated topology.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The

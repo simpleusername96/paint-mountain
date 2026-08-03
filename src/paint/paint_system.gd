@@ -77,6 +77,22 @@ func queue_stamp(
 	})
 
 
+func queue_deposit(request: PaintDepositRequest) -> void:
+	if request == null or not request.is_valid():
+		return
+	queue_stamp(
+		_source_kind_name(request.source_kind),
+		request.world_position,
+		request.radius,
+		request.amount,
+		request.allow_flow
+	)
+
+
+func generated_layout_read_only() -> GeneratedStageLayout:
+	return _generated_layout
+
+
 func flush_pending() -> void:
 	if _paint_image == null:
 		return
@@ -306,3 +322,15 @@ func _terrain_height_at(local_x: float, local_z: float) -> float:
 	if _generated_layout != null:
 		return _generated_layout.height_at_local(local_x, local_z)
 	return TerrainMeshFactory.height_at(_stage_index, local_x, local_z)
+
+
+func _source_kind_name(source_kind: PaintDepositRequest.SourceKind) -> StringName:
+	match source_kind:
+		PaintDepositRequest.SourceKind.IMPACT:
+			return &"impact"
+		PaintDepositRequest.SourceKind.FINAL_PUDDLE:
+			return &"puddle"
+		PaintDepositRequest.SourceKind.BURST:
+			return &"burst"
+		_:
+			return &"trail"

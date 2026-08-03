@@ -12,6 +12,8 @@ signal paint_deposit_requested(
 	allow_flow: bool
 )
 signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
+signal projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact)
+signal typed_paint_deposit_requested(projectile: PaintProjectile, request: PaintDepositRequest)
 signal all_projectiles_settled
 
 const MAXIMUM_ACTIVE_PROJECTILES := 8
@@ -60,6 +62,18 @@ func cleanup() -> void:
 			projectile.queue_free()
 	_active.clear()
 	all_projectiles_settled.emit()
+
+
+func report_contact(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+	if projectile == null or contact == null:
+		return
+	projectile_contact_reported.emit(projectile, contact)
+
+
+func request_paint_deposit(projectile: PaintProjectile, request: PaintDepositRequest) -> void:
+	if projectile == null or request == null or not request.is_valid():
+		return
+	typed_paint_deposit_requested.emit(projectile, request)
 
 
 func _on_projectile_impacted(projectile: PaintProjectile, world_position: Vector3, speed: float) -> void:

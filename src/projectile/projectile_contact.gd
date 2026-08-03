@@ -1,0 +1,73 @@
+class_name ProjectileContact
+extends RefCounted
+
+var world_position: Vector3:
+	get:
+		return _world_position
+var normal: Vector3:
+	get:
+		return _normal
+var incoming_velocity: Vector3:
+	get:
+		return _incoming_velocity
+var relative_normal_speed: float:
+	get:
+		return _relative_normal_speed
+var impulse: Vector3:
+	get:
+		return _impulse
+var collider: Object:
+	get:
+		return _collider
+var collider_instance_id: int:
+	get:
+		return _collider_instance_id
+var local_shape_index: int:
+	get:
+		return _local_shape_index
+var collider_shape_index: int:
+	get:
+		return _collider_shape_index
+var physics_tick: int:
+	get:
+		return _physics_tick
+var is_first_contact: bool:
+	get:
+		return _is_first_contact
+
+var _world_position: Vector3
+var _normal: Vector3
+var _incoming_velocity: Vector3
+var _relative_normal_speed: float
+var _impulse: Vector3
+var _collider: Object
+var _collider_instance_id: int
+var _local_shape_index: int
+var _collider_shape_index: int
+var _physics_tick: int
+var _is_first_contact: bool
+
+
+func _init(
+		contact_world_position: Vector3 = Vector3.ZERO,
+		contact_normal: Vector3 = Vector3.UP,
+		contact_incoming_velocity: Vector3 = Vector3.ZERO,
+		contact_relative_normal_speed: float = 0.0,
+		contact_impulse: Vector3 = Vector3.ZERO,
+		contact_collider: Object = null,
+		contact_local_shape_index: int = -1,
+		contact_collider_shape_index: int = -1,
+		contact_physics_tick: int = 0,
+		contact_is_first: bool = true
+) -> void:
+	_world_position = contact_world_position
+	_normal = contact_normal.normalized() if not contact_normal.is_zero_approx() else Vector3.UP
+	_incoming_velocity = contact_incoming_velocity
+	_relative_normal_speed = maxf(contact_relative_normal_speed, 0.0)
+	_impulse = contact_impulse
+	_collider = contact_collider
+	_collider_instance_id = contact_collider.get_instance_id() if is_instance_valid(contact_collider) else 0
+	_local_shape_index = contact_local_shape_index
+	_collider_shape_index = contact_collider_shape_index
+	_physics_tick = contact_physics_tick
+	_is_first_contact = contact_is_first

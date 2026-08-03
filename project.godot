@@ -31,6 +31,13 @@ theme/custom="res://resources/ui/paint_mountain_theme.tres"
 
 locale/translations=PackedStringArray("res://translations/ui.en.translation", "res://translations/ui.ko.translation")
 
+[layer_names]
+
+3d_physics/layer_1="terrain"
+3d_physics/layer_2="projectile"
+3d_physics/layer_3="mechanism"
+3d_physics/layer_4="selection"
+
 [physics]
 
 common/physics_ticks_per_second=60

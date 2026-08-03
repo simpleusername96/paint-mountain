@@ -78,6 +78,10 @@ func generated_layout() -> GeneratedStageLayout:
 	return _generated_layout
 
 
+func terrain_layout_read_only() -> GeneratedStageLayout:
+	return _generated_layout
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return

@@ -34,6 +34,7 @@ var _paint_system: PaintSystem
 var _mechanisms: Array[GimmickBase] = []
 var _state_before_pause: State = State.BRIEFING
 var _decision_generation: int = 0
+var _shot_observation: ShotObservation
 
 
 func _ready() -> void:
@@ -83,6 +84,15 @@ func request_fire() -> bool:
 	if projectile == null:
 		return false
 	coverage_before_shot = _paint_system.coverage_percent()
+	_shot_observation = ShotObservation.new()
+	_shot_observation.configure(
+		stage_data.maximum_shots - shots_remaining + 1,
+		_cannon.yaw_degrees,
+		_cannon.elevation_degrees,
+		_cannon.power_percent,
+		coverage_before_shot,
+		_cannon.projectile_data.initial_payload
+	)
 	shots_remaining -= 1
 	_cannon.input_enabled = false
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -108,6 +118,7 @@ func restart(return_to_briefing: bool = true) -> void:
 		mechanism.reset_state()
 	shots_remaining = stage_data.maximum_shots
 	coverage_before_shot = 0.0
+	_shot_observation = null
 	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
 	_cannon.input_enabled = not return_to_briefing
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -143,6 +154,10 @@ func debug_refill_shots() -> void:
 
 func state_name() -> String:
 	return State.keys()[current_state]
+
+
+func current_shot_observation() -> ShotObservation:
+	return _shot_observation
 
 
 static func result_state_for(coverage: float, target: float, remaining_shots: int) -> State:
