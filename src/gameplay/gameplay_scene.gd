@@ -45,7 +45,8 @@ func _ready() -> void:
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
 	_stage_controller.configure(stage_data, _cannon, _projectile_manager, _paint_system, _terrain_surface, _mechanisms)
-	_aim_input.configure(_camera, _cannon, _stage_controller)
+	_aim_input.configure(_cannon, _stage_controller)
+	_recompute_prediction()
 	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
 	_agent_api.configure(
 		stage_data,
@@ -88,11 +89,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	match event.physical_keycode:
 		KEY_R:
 			_stage_controller.restart(false)
-		KEY_TAB:
-			if _stage_controller.current_state == StageController.State.AIMING:
-				_stage_controller.enter_briefing()
-			elif _stage_controller.current_state == StageController.State.BRIEFING:
-				_stage_controller.begin_aiming()
 		KEY_ESCAPE:
 			_stage_controller.toggle_pause()
 
@@ -123,7 +119,7 @@ func _build_stage_world() -> void:
 
 
 func _connect_systems() -> void:
-	_cannon.aim_changed.connect(func(_yaw: float, elevation: float, power: float) -> void: _hud.update_aim(elevation, power))
+	_cannon.aim_changed.connect(_on_aim_changed)
 	_cannon.aim_validity_changed.connect(_hud.set_fire_enabled)
 	_cannon.fire_requested.connect(func(_origin: Vector3, _velocity: Vector3) -> void: _stage_controller.request_fire())
 	_projectile_manager.paint_deposit_requested.connect(_on_paint_deposit_requested)
@@ -136,8 +132,8 @@ func _connect_systems() -> void:
 	_stage_controller.stage_cleared.connect(_on_stage_cleared)
 	_stage_controller.stage_failed.connect(_on_stage_failed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming())
-	_hud.fire_requested.connect(func() -> void: _stage_controller.request_fire())
-	_hud.power_adjust_requested.connect(_aim_input.adjust_power)
+	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
+	_hud.power_step_requested.connect(_aim_input.adjust_power_button)
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause())
 	_hud.settings_requested.connect(func() -> void: navigation_requested.emit(&"settings"))
@@ -148,6 +144,20 @@ func _connect_systems() -> void:
 	_hud.camera_mode_requested.connect(_on_camera_mode_requested)
 	_hud.simulation_speed_requested.connect(_on_simulation_speed_requested)
 	_replay_recorder.replay_action_ready.connect(_on_replay_action_ready)
+
+
+func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
+	_hud.update_aim(yaw, elevation, power)
+	_recompute_prediction()
+
+
+func _recompute_prediction() -> void:
+	var prediction := TrajectoryPredictor.predict(
+		get_world_3d().direct_space_state,
+		_cannon,
+		stage_data.stage_bounds
+	)
+	_cannon.set_prediction(prediction)
 
 
 func _on_paint_deposit_requested(

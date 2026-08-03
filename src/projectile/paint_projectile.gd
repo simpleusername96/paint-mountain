@@ -79,7 +79,7 @@ func _physics_process(delta: float) -> void:
 	if _deactivated:
 		return
 	_elapsed += delta
-	if not stage_bounds.grow(4.0).has_point(global_position):
+	if not stage_bounds.has_point(global_position):
 		deactivate(&"out_of_bounds")
 		return
 	if _terrain_surface.contains_world_xz(Vector2(global_position.x, global_position.z)):

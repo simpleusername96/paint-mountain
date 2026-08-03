@@ -91,8 +91,20 @@ direct-body integration tick. Real rigid-body fixtures matched preview body,
 shape, and impact center, rejected duplicate contacts, accepted a later
 separated Bumper strike, restored state on reset, and enforced the eight-ball
 cap. The sealed observation recorded four activations and three children.
-Task 06 is next and will replace the retained direct-target solver with manual
-yaw/elevation/power input and the shared full-path predictor.
+
+Task 06 removed `ImpactTargetSolver` and its UID. Empty-viewport drag now maps
+directly to yaw/elevation, A/D/W/S apply fixed independent steps with owned
+hold timing, wheel and focused `−/+` controls change power only, and Space,
+Fire, and Tab enter the same guarded stage actions. `TrajectoryPredictor`
+integrates the frozen 60 Hz damping/gravity order, sphere-casts the real ball
+radius against terrain/mechanism bodies, stops at the first measured collision
+or exact bounds crossing, and leaves timeout non-fireable. The preview
+arc-length samples the complete result into at most 96 dots, always preserves
+launch/end points, aligns the collision ring to its measured normal, and uses
+a camera-facing red cross for bounds exit. Actual UI events, all 30 frozen
+stage/aim cases through the Godot physics backend, three isolated mechanism
+casts, bounds exit, timeout, and the prior projectile/mechanism/state
+regressions passed. Task 07 is next.
 
 ## Context
 

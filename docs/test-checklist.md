@@ -145,10 +145,10 @@ Physical contact, paint, and mechanisms:
 
 Manual aiming and prediction:
 
-- [ ] Terrain clicks never alter aim; empty-viewport drag, A/D, W/S, wheel, power buttons, Space, and Tab follow the fixed independent mappings, clamps, repeat timings, and UI-consumption boundary.
-- [ ] `ImpactTargetSolver` and every production/test reference to it are removed.
-- [ ] Every stage's ten frozen aim tuples plus mechanism/bounds fixtures produce a complete collision or bounds-exit prediction with at most 96 dots and no post-impact behavior.
-- [ ] Predicted and measured first contact differ by at most 2.0 m; collision markers use the measured normal, bounds exits use a red cross, and predictor timeout cannot fire.
+- [x] Terrain clicks never alter aim; empty-viewport drag, A/D, W/S, wheel, power buttons, Space, and Tab follow the fixed independent mappings, clamps, repeat timings, and UI-consumption boundary.
+- [x] `ImpactTargetSolver` and every production/test reference to it are removed.
+- [x] Every stage's ten frozen aim tuples plus mechanism/bounds fixtures produce a complete collision or bounds-exit prediction with at most 96 dots and no post-impact behavior.
+- [x] Predicted and measured first contact differ by at most 2.0 m; collision markers use the measured normal, bounds exits use a red cross, and predictor timeout cannot fire.
 
 Shot causality, camera, and replay:
 

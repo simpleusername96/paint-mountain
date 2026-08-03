@@ -1,32 +1,48 @@
 class_name TrajectoryPreview
 extends Node3D
 
-const SAMPLE_STEP_SECONDS := 1.0 / 60.0
-const MAXIMUM_PREVIEW_SECONDS := 7.2
-const MAXIMUM_DOTS := 72
-const DOT_SPACING := 2.2
+const MAXIMUM_DOTS := 96
+const MINIMUM_DOT_SPACING := 2.2
 
-@export_flags_3d_physics var collision_mask: int = 1 | 4
-
-var first_collision_position: Vector3 = Vector3.ZERO
-var has_first_collision: bool = false
+var first_collision_position := Vector3.ZERO
+var has_first_collision := false
 var _cannon: CannonController
+var _prediction: TrajectoryPrediction
 var _dots: Array[MeshInstance3D] = []
 var _impact_marker: MeshInstance3D
-var _projectile_shape: SphereShape3D
+var _exit_marker: Node3D
 
 
 func _ready() -> void:
 	_build_visuals()
 
 
+func _process(_delta: float) -> void:
+	if _prediction == null:
+		return
+	if _impact_marker.visible:
+		_set_marker_scale(_impact_marker, _prediction.endpoint)
+	elif _exit_marker.visible:
+		var active_camera := get_viewport().get_camera_3d()
+		if active_camera != null:
+			_exit_marker.look_at(active_camera.global_position, Vector3.UP, true)
+		_set_marker_scale(_exit_marker, _prediction.endpoint)
+
+
 func configure(cannon: CannonController) -> void:
 	_cannon = cannon
-	_projectile_shape = SphereShape3D.new()
-	_projectile_shape.radius = _cannon.projectile_data.radius
-	if not _cannon.aim_changed.is_connected(_on_aim_changed):
-		_cannon.aim_changed.connect(_on_aim_changed)
-	call_deferred("refresh")
+	if not _cannon.prediction_changed.is_connected(set_prediction):
+		_cannon.prediction_changed.connect(set_prediction)
+	set_prediction(_cannon.current_prediction())
+
+
+func set_prediction(prediction: TrajectoryPrediction) -> void:
+	_prediction = prediction
+	refresh()
+
+
+func current_prediction() -> TrajectoryPrediction:
+	return _prediction
 
 
 func visible_sample_count() -> int:
@@ -38,77 +54,75 @@ func visible_sample_count() -> int:
 
 
 func refresh() -> void:
-	if _cannon == null or not is_inside_tree():
+	if not is_inside_tree():
 		return
-	var gravity := _gravity_vector()
-	var samples := CannonBallistics.sample_unobstructed(
-		_cannon.get_launch_origin(),
-		_cannon.get_launch_velocity(),
-		gravity,
-		SAMPLE_STEP_SECONDS,
-		MAXIMUM_PREVIEW_SECONDS,
-		_cannon.projectile_data.linear_damp + float(ProjectSettings.get_setting("physics/3d/default_linear_damp", 0.1))
-	)
-	var visible_count := 0
-	var distance_since_dot := 0.0
-	has_first_collision = false
-	var space_state := get_world_3d().direct_space_state
-	for sample_index in range(1, samples.size()):
-		var previous := samples[sample_index - 1]
-		var current := samples[sample_index]
-		distance_since_dot += previous.distance_to(current)
-		var query := PhysicsShapeQueryParameters3D.new()
-		query.shape = _projectile_shape
-		query.transform = Transform3D(Basis.IDENTITY, previous)
-		query.motion = current - previous
-		query.collision_mask = collision_mask
-		query.collide_with_areas = false
-		var collision := space_state.cast_motion(query)
-		var display_position := current
-		if not collision.is_empty() and collision[0] < 1.0:
-			display_position = previous + query.motion * float(collision[0])
-			first_collision_position = display_position
-			has_first_collision = true
-		if distance_since_dot >= DOT_SPACING or has_first_collision:
-			if visible_count < MAXIMUM_DOTS:
-				_set_dot(visible_count, display_position)
-				visible_count += 1
-			distance_since_dot = 0.0
-		if has_first_collision:
-			break
-	for dot_index in range(visible_count, _dots.size()):
-		_dots[dot_index].visible = false
+	var display_points := PackedVector3Array()
+	if _prediction != null:
+		display_points = _display_points(_prediction.sampled_points)
+	for index in range(_dots.size()):
+		var visible_dot := index < display_points.size()
+		_dots[index].visible = visible_dot
+		if visible_dot:
+			_dots[index].global_position = display_points[index]
+	has_first_collision = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.COLLISION
+	first_collision_position = _prediction.endpoint if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
-	if has_first_collision:
-		_impact_marker.global_position = first_collision_position
-		var active_camera := get_viewport().get_camera_3d()
-		var marker_scale := clampf(active_camera.global_position.distance_to(first_collision_position) / 60.0, 1.0, 4.0) if active_camera != null else 1.0
-		_impact_marker.scale = Vector3.ONE * marker_scale
-
-
-func _on_aim_changed(_yaw: float, _elevation: float, _power: float) -> void:
-	refresh()
-
-
-func _set_dot(index: int, world_position: Vector3) -> void:
-	if index >= _dots.size():
+	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
+	if _prediction == null:
 		return
-	var dot := _dots[index]
-	dot.visible = true
-	dot.global_position = world_position
+	if has_first_collision:
+		_impact_marker.global_position = _prediction.endpoint
+		_impact_marker.global_basis = Basis(Quaternion(Vector3.UP, _prediction.normal))
+		_set_marker_scale(_impact_marker, _prediction.endpoint)
+	elif _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT:
+		_exit_marker.global_position = _prediction.endpoint
+		var active_camera := get_viewport().get_camera_3d()
+		if active_camera != null:
+			_exit_marker.look_at(active_camera.global_position, Vector3.UP, true)
+		_set_marker_scale(_exit_marker, _prediction.endpoint)
+
+
+func _display_points(source: PackedVector3Array) -> PackedVector3Array:
+	if source.is_empty():
+		return PackedVector3Array()
+	if source.size() == 1:
+		return source.duplicate()
+	var total_length := 0.0
+	for index in range(1, source.size()):
+		total_length += source[index - 1].distance_to(source[index])
+	var spacing := maxf(MINIMUM_DOT_SPACING, total_length / float(MAXIMUM_DOTS - 1))
+	var result := PackedVector3Array([source[0]])
+	var distance_since_sample := 0.0
+	for index in range(1, source.size()):
+		var segment_start := source[index - 1]
+		var segment_end := source[index]
+		var segment_length := segment_start.distance_to(segment_end)
+		if segment_length <= 0.000001:
+			continue
+		var consumed := 0.0
+		while distance_since_sample + segment_length - consumed >= spacing \
+				and result.size() < MAXIMUM_DOTS - 1:
+			var needed := spacing - distance_since_sample
+			consumed += needed
+			result.append(segment_start.lerp(segment_end, consumed / segment_length))
+			distance_since_sample = 0.0
+		distance_since_sample += segment_length - consumed
+	var endpoint := source[source.size() - 1]
+	if result[result.size() - 1].distance_to(endpoint) > 0.0001:
+		if result.size() >= MAXIMUM_DOTS:
+			result[result.size() - 1] = endpoint
+		else:
+			result.append(endpoint)
+	return result
 
 
 func _build_visuals() -> void:
+	var dot_material := _unshaded_material(Color(0.08, 0.46, 1.0, 0.9))
 	var dot_mesh := SphereMesh.new()
 	dot_mesh.radius = 0.26
 	dot_mesh.height = 0.52
 	dot_mesh.radial_segments = 8
 	dot_mesh.rings = 4
-	var dot_material := StandardMaterial3D.new()
-	dot_material.albedo_color = Color(0.08, 0.46, 1.0, 0.86)
-	dot_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	dot_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	dot_material.no_depth_test = true
 	dot_mesh.material = dot_material
 	for index in range(MAXIMUM_DOTS):
 		var dot := MeshInstance3D.new()
@@ -121,19 +135,42 @@ func _build_visuals() -> void:
 	var marker_mesh := TorusMesh.new()
 	marker_mesh.inner_radius = 0.82
 	marker_mesh.outer_radius = 1.2
-	marker_mesh.rings = 12
-	marker_mesh.ring_segments = 8
-	marker_mesh.material = dot_material
+	marker_mesh.rings = 16
+	marker_mesh.ring_segments = 10
+	marker_mesh.material = _unshaded_material(Color(0.78, 0.90, 1.0, 0.96))
 	_impact_marker = MeshInstance3D.new()
 	_impact_marker.name = "ImpactMarker"
 	_impact_marker.mesh = marker_mesh
-	_impact_marker.rotation.x = PI * 0.5
 	_impact_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_impact_marker.visible = false
 	add_child(_impact_marker)
+	_exit_marker = Node3D.new()
+	_exit_marker.name = "BoundsExitMarker"
+	_exit_marker.visible = false
+	add_child(_exit_marker)
+	var exit_material := _unshaded_material(Color(0.92, 0.16, 0.16, 0.96))
+	for rotation_degrees in [-45.0, 45.0]:
+		var bar_mesh := BoxMesh.new()
+		bar_mesh.size = Vector3(2.4, 0.28, 0.06)
+		bar_mesh.material = exit_material
+		var bar := MeshInstance3D.new()
+		bar.mesh = bar_mesh
+		bar.rotation_degrees.z = rotation_degrees
+		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_exit_marker.add_child(bar)
 
 
-func _gravity_vector() -> Vector3:
-	var magnitude := float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
-	var direction := Vector3(ProjectSettings.get_setting("physics/3d/default_gravity_vector", Vector3.DOWN))
-	return direction.normalized() * magnitude
+func _set_marker_scale(marker: Node3D, endpoint: Vector3) -> void:
+	var active_camera := get_viewport().get_camera_3d()
+	var marker_scale := clampf(active_camera.global_position.distance_to(endpoint) / 60.0, 1.0, 4.0) \
+			if active_camera != null else 1.0
+	marker.scale = Vector3.ONE * marker_scale
+
+
+func _unshaded_material(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.no_depth_test = true
+	return material

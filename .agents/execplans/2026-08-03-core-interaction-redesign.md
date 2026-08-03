@@ -1569,7 +1569,7 @@ This checklist is the single canonical progress source for the redesign:
 - [x] Task 03 — Replace terrain mesh and collision.
 - [x] Task 04 — Make physics contact authoritative and unify paint.
 - [x] Task 05 — Convert mechanisms to physical bodies.
-- [ ] Task 06 — Replace auto-targeting with manual aim and full preview.
+- [x] Task 06 — Replace auto-targeting with manual aim and full preview.
 - [ ] Task 07 — Add shot causality, safe camera, and isolated replay.
 - [ ] Task 08 — Rebuild the Korean-first interface.
 - [ ] Task 09 — Retire false fixtures and build one truthful verification path.
@@ -1577,5 +1577,5 @@ This checklist is the single canonical progress source for the redesign:
 
 ## Next Steps
 
-Begin Task 06. Do not implement any later task until its predecessor's
+Begin Task 07. Do not implement any later task until its predecessor's
 acceptance and regression guards pass.

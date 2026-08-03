@@ -57,6 +57,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_aim_changed(_yaw: float, elevation: float, power: float) -> void:
 	_angle_value.text = "%d°" % roundi(elevation)
 	_power_value.text = "%d%%" % roundi(power)
+	_cannon.set_prediction(TrajectoryPredictor.predict(
+		get_world_3d().direct_space_state,
+		_cannon,
+		STAGE.stage_bounds
+	))
 
 
 func _on_fire_requested(origin: Vector3, velocity: Vector3) -> void:

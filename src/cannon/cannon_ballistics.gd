@@ -55,8 +55,8 @@ static func _sample_damped(
 	var next_sample := sample_step
 	while elapsed < maximum_seconds - 0.0001:
 		var delta := minf(PHYSICS_STEP, maximum_seconds - elapsed)
-		velocity += gravity * delta
 		velocity *= maxf(0.0, 1.0 - linear_damp * delta)
+		velocity += gravity * delta
 		position += velocity * delta
 		elapsed += delta
 		if elapsed + 0.0001 >= next_sample:

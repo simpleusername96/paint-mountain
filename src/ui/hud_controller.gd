@@ -12,7 +12,7 @@ signal next_stage_requested
 signal replay_requested
 signal camera_mode_requested(mode: int)
 signal simulation_speed_requested(speed: float)
-signal power_adjust_requested(delta_percent: float)
+signal power_step_requested(direction: float)
 
 const NAVY := Color(0.055, 0.095, 0.16, 1.0)
 const CHARCOAL := Color(0.16, 0.18, 0.22, 1.0)
@@ -69,7 +69,7 @@ func _process(delta: float) -> void:
 		return
 	_power_hold_elapsed += delta
 	while _power_hold_elapsed >= _power_next_repeat:
-		power_adjust_requested.emit(_power_hold_direction * 2.0)
+		power_step_requested.emit(_power_hold_direction)
 		_power_next_repeat += 0.08
 
 
@@ -83,11 +83,11 @@ func configure(stage_data: StageData) -> void:
 	_next_button.disabled = StageCatalog.next_stage_id(stage_data.stage_id).is_empty()
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
 	update_coverage(0.0)
-	update_aim(38.0, 68.0)
+	update_aim(0.0, 38.0, 68.0)
 
 
-func update_aim(elevation: float, power: float) -> void:
-	_angle_value.text = "%d°" % roundi(elevation)
+func update_aim(yaw: float, elevation: float, power: float) -> void:
+	_angle_value.text = "%+.1f° / %.1f°" % [yaw, elevation]
 	_power_value.text = "%d%%" % roundi(power)
 	var active_segments := ceili(clampf(power, 0.0, 100.0) / 10.0)
 	for index in range(_power_segments.size()):
@@ -169,6 +169,7 @@ func show_failure(final_coverage: float, missing: float, previous_best: float = 
 func _build_interface() -> void:
 	_root = Control.new()
 	_root.name = "HUDRoot"
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_root)
 	_build_top_information()
@@ -290,11 +291,13 @@ func _metric_column(caption: String, value: String, is_angle: bool) -> VBoxConta
 		var power_row := HBoxContainer.new()
 		power_row.add_theme_constant_override("separation", 6)
 		var decrease := _power_button(-1.0, preload("res://assets/ui/icons/minus.png"))
+		decrease.name = "PowerDecrease"
 		power_row.add_child(decrease)
 		value_label.custom_minimum_size.x = 64.0
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		power_row.add_child(value_label)
 		var increase := _power_button(1.0, preload("res://assets/ui/icons/plus.png"))
+		increase.name = "PowerIncrease"
 		power_row.add_child(increase)
 		column.add_child(power_row)
 		var segments := HBoxContainer.new()
@@ -318,7 +321,7 @@ func _power_button(direction: float, icon_texture: Texture2D) -> Button:
 	button.icon = icon_texture
 	button.expand_icon = true
 	button.button_down.connect(func() -> void:
-		power_adjust_requested.emit(direction * 2.0)
+		power_step_requested.emit(direction)
 		_power_hold_direction = direction
 		_power_hold_elapsed = 0.0
 		_power_next_repeat = 0.3
@@ -377,6 +380,7 @@ func _build_actions() -> void:
 	restart.pressed.connect(func() -> void: restart_requested.emit())
 	_action_panel.add_child(restart)
 	_fire_button = _make_button("●\n%s" % tr("ui.fire"), true, Vector2(180.0, 124.0))
+	_fire_button.name = "FireButton"
 	_fire_button.add_theme_font_size_override("font_size", 24)
 	_fire_button.pressed.connect(func() -> void: fire_requested.emit())
 	_action_panel.add_child(_fire_button)
