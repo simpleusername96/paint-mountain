@@ -1,25 +1,36 @@
 shader_type spatial;
-render_mode unshaded;
+render_mode depth_draw_opaque, cull_back;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
-uniform vec4 rock_color : source_color = vec4(0.5, 0.52, 0.56, 1.0);
+uniform vec4 rock_color : source_color = vec4(0.788235, 0.803922, 0.827451, 1.0);
+uniform vec4 shadow_tint : source_color = vec4(0.556863, 0.584314, 0.623529, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
 
-varying float terrain_height;
+varying float paintable_surface;
+varying float upwardness;
 
 void vertex() {
-	terrain_height = VERTEX.y;
+	paintable_surface = COLOR.r;
+	upwardness = clamp(NORMAL.y, 0.0, 1.0);
 }
 
 void fragment() {
-	float paint_amount = texture(paint_mask, UV).r;
-	float paint_mix = smoothstep(0.08, 0.32, paint_amount);
-	vec2 facet_cell = floor(UV * vec2(56.0, 38.0));
-	float facet_noise = fract(sin(dot(facet_cell, vec2(12.9898, 78.233))) * 43758.5453);
-	float height_light = clamp(terrain_height / 85.0, 0.0, 1.0);
-	float rock_shade = 0.88 + height_light * 0.1 + (facet_noise - 0.5) * 0.07;
-	vec3 rock = rock_color.rgb * rock_shade;
-	ALBEDO = mix(rock, paint_color.rgb, paint_mix);
-	ROUGHNESS = mix(0.92, 0.27, paint_mix);
-	METALLIC = mix(0.0, 0.12, paint_mix);
+	vec2 texel = vec2(1.0 / 512.0);
+	float center = texture(paint_mask, UV).r * paintable_surface;
+	float neighbor = max(
+		max(texture(paint_mask, UV + vec2(texel.x * 1.5, 0.0)).r, texture(paint_mask, UV - vec2(texel.x * 1.5, 0.0)).r),
+		max(texture(paint_mask, UV + vec2(0.0, texel.y * 1.5)).r, texture(paint_mask, UV - vec2(0.0, texel.y * 1.5)).r)
+	) * paintable_surface;
+	float painted = smoothstep(0.08, 0.32, center);
+	float dark_rim = clamp(smoothstep(0.06, 0.24, neighbor) - painted, 0.0, 1.0);
+	float wet_core = smoothstep(0.34, 0.72, center);
+	float rock_luma = dot(rock_color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	vec3 excluded_rock = mix(rock_color.rgb, vec3(rock_luma), 0.12) * 0.92;
+	vec3 classified_rock = mix(excluded_rock, rock_color.rgb, paintable_surface);
+	vec3 dry_rock = mix(shadow_tint.rgb, classified_rock, 0.35 + 0.65 * upwardness);
+	vec3 painted_color = mix(paint_color.rgb * 0.58, paint_color.rgb, painted);
+	ALBEDO = mix(dry_rock, painted_color, max(painted, dark_rim));
+	ROUGHNESS = mix(0.88, 0.24, painted);
+	SPECULAR = mix(0.32, 0.72, wet_core);
+	METALLIC = 0.0;
 }

@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://src/stage/projectile_sandbox.gd" id="1_root"]
 [ext_resource type="Script" path="res://src/cannon/cannon_controller.gd" id="2_cannon"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://src/cannon/trajectory_preview.gd" id="4_preview"]
 [ext_resource type="Script" path="res://src/projectile/projectile_manager.gd" id="5_manager"]
 [ext_resource type="Script" path="res://src/paint/paint_system.gd" id="6_paint"]
+[ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="7_terrain_surface"]
 
 [sub_resource type="Environment" id="Environment_sandbox"]
 background_mode = 1
@@ -110,17 +111,26 @@ position = Vector3(0, -3.05, -90)
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GroundBody"]
 shape = SubResource("Shape_ground")
 
-[node name="Mountain" type="Node3D" parent="."]
+[node name="TerrainSurface" type="Node3D" parent="."]
+unique_name_in_owner = true
 position = Vector3(0, -2, -112)
+script = ExtResource("7_terrain_surface")
 
-[node name="MountainMesh" type="MeshInstance3D" parent="Mountain"]
+[node name="TerrainMesh" type="MeshInstance3D" parent="TerrainSurface"]
 unique_name_in_owner = true
 material_override = SubResource("Material_mountain")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Mountain"]
+[node name="TerrainTopBody" type="StaticBody3D" parent="TerrainSurface"]
+collision_layer = 1
+collision_mask = 0
 
-[node name="MountainCollision" type="CollisionShape3D" parent="Mountain/StaticBody3D"]
-unique_name_in_owner = true
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TerrainSurface/TerrainTopBody"]
+
+[node name="TerrainShellBody" type="StaticBody3D" parent="TerrainSurface"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TerrainSurface/TerrainShellBody"]
 
 [node name="CannonPlatform" type="MeshInstance3D" parent="."]
 position = Vector3(0, -0.55, 6)

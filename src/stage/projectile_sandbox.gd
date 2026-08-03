@@ -1,8 +1,10 @@
 extends Node3D
 
+const STAGE := preload("res://resources/stages/first_descent.tres")
+
 @onready var _camera: Camera3D = %Camera
-@onready var _mountain_mesh: MeshInstance3D = %MountainMesh
-@onready var _mountain_collision: CollisionShape3D = %MountainCollision
+@onready var _terrain_surface: TerrainSurface = %TerrainSurface
+@onready var _terrain_mesh: MeshInstance3D = %TerrainMesh
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
@@ -18,17 +20,14 @@ extends Node3D
 
 
 func _ready() -> void:
-	var mountain := TerrainMeshFactory.build(0)
-	_mountain_mesh.mesh = mountain
-	_mountain_collision.shape = mountain.create_trimesh_shape()
+	var layout := SeededStageGenerator.generate(STAGE.generation_profile, STAGE.terrain_seed, STAGE)
+	assert(layout != null, "Projectile sandbox requires the validated First Descent layout.")
+	_terrain_surface.position = STAGE.terrain_center
+	_terrain_surface.configure(layout)
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
-	var terrain_bounds := Rect2(
-		Vector2(-TerrainMeshFactory.WIDTH * 0.5, -112.0 - TerrainMeshFactory.DEPTH * 0.5),
-		Vector2(TerrainMeshFactory.WIDTH, TerrainMeshFactory.DEPTH)
-	)
-	_paint_system.configure(0, terrain_bounds, -2.0, paint_material)
-	_mountain_mesh.material_override = paint_material
+	_paint_system.configure(STAGE.paint_world_bounds(), STAGE.terrain_center.y, paint_material, STAGE.paint_color, layout)
+	_terrain_mesh.material_override = paint_material
 	_camera.look_at(Vector3(0.0, 25.0, -102.0), Vector3.UP)
 	_cannon.aim_changed.connect(_on_aim_changed)
 	_cannon.fire_requested.connect(_on_fire_requested)

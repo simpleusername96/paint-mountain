@@ -130,7 +130,7 @@ Generated terrain and placement:
 - [ ] One immutable `GeneratedStageLayout` supplies the height grid, routes, eligibility inputs, decoration/mechanism placement, replay metadata, and agent observations.
 - [ ] First Descent, Burst Basin, and Split Ridge prove route reversal progression `0`, `2/2`, and `2/4/4`, plus all fixed height, slope, spacing, shelf, edge, and eligibility metrics.
 - [ ] Mechanisms use exact role-owned centerline shelf transforms; an invalid fixed transform rejects the candidate and no scoring/authored X/Z fallback exists.
-- [ ] The mountain renders as a closed lit shell with exactly 6,912 top, 480 skirt, and 2 bottom triangles while a separate heightmap top collider and skirt/bottom collider match within 0.01 m.
+- [x] The mountain renders as a closed lit shell with exactly 6,912 top, 480 skirt, and 2 bottom triangles while a separate heightmap top collider and skirt/bottom collider match within 0.01 m.
 - [ ] Top, ramp, graze, and skirt fixture casts classify the correct collider body; every intended solution records zero penetration-guard events.
 
 Physical contact, paint, and mechanisms:

@@ -9,9 +9,8 @@ const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
 @export var stage_data: StageData
 
 @onready var _camera: Camera3D = %Camera
-@onready var _mountain: Node3D = %Mountain
-@onready var _mountain_mesh: MeshInstance3D = %MountainMesh
-@onready var _mountain_collision: CollisionShape3D = %MountainCollision
+@onready var _terrain_surface: TerrainSurface = %TerrainSurface
+@onready var _terrain_mesh: MeshInstance3D = %TerrainMesh
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
 @onready var _aim_input: AimInputController = %AimInputController
@@ -98,27 +97,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _build_stage_world() -> void:
-	_mountain.position = stage_data.terrain_center
+	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
 	_generated_layout = SeededStageGenerator.generate(stage_data.generation_profile, stage_data.terrain_seed, stage_data)
 	assert(_generated_layout != null, "Stage generation must produce a validated layout before briefing.")
-	var mountain_mesh := TerrainMeshFactory.build_from_layout(_generated_layout)
-	_mountain_mesh.mesh = mountain_mesh
-	_mountain_collision.shape = mountain_mesh.create_trimesh_shape()
+	_terrain_surface.configure(_generated_layout)
 	_cannon.global_transform = stage_data.cannon_transform
 	_cannon.set_aim(stage_data.initial_aim.x, stage_data.initial_aim.y, stage_data.initial_aim.z)
 	_projectile_manager.stage_bounds = stage_data.stage_bounds
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	_paint_system.configure(
-		stage_data.stage_number - 1,
 		stage_data.paint_world_bounds(),
 		stage_data.terrain_center.y,
 		paint_material,
 		stage_data.paint_color,
 		_generated_layout
 	)
-	_mountain_mesh.material_override = paint_material
+	_terrain_mesh.material_override = paint_material
 	_environment_dressing.configure(stage_data, _generated_layout)
 	_spawn_mechanisms()
 
@@ -268,13 +264,9 @@ func _spawn_mechanisms() -> void:
 		var mechanism := mechanism_scene.instantiate() as GimmickBase
 		mechanism.name = placement.mechanism_data.display_name.capitalize().replace(" ", "")
 		mechanism.data = placement.mechanism_data
-		var terrain_height := _generated_layout.height_at_local(placement.local_xz.x, placement.local_xz.y)
-		mechanism.position = Vector3(
-			stage_data.terrain_center.x + placement.local_xz.x,
-			stage_data.terrain_center.y + terrain_height + placement.height_offset,
-			stage_data.terrain_center.z + placement.local_xz.y
-		)
-		mechanism.rotation.y = deg_to_rad(placement.yaw_degrees)
+		var world_transform := placement.local_transform
+		world_transform.origin += stage_data.terrain_center
+		mechanism.transform = world_transform
 		mechanism.configure(_projectile_manager, _paint_system)
 		_mechanism_root.add_child(mechanism)
 		if mechanism is SplitterNode:

@@ -4,6 +4,7 @@ const PROJECTILE_DATA := preload("res://resources/projectiles/basic_paintball.tr
 const BURST_DATA := preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA := preload("res://resources/mechanisms/splitter_node.tres")
 const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
+const STAGE := preload("res://resources/stages/first_descent.tres")
 
 var _failed: bool = false
 
@@ -19,14 +20,20 @@ func _run_checks() -> void:
 	test_root.add_child(manager)
 	var paint_system := PaintSystem.new()
 	test_root.add_child(paint_system)
+	var layout := SeededStageGenerator.generate(STAGE.generation_profile, STAGE.terrain_seed, STAGE)
+	_assert_true(layout != null, "mechanism test requires a validated generated layout")
+	if layout == null:
+		quit(1)
+		return
 	paint_system.configure(
-		0,
-		Rect2(Vector2(-90.0, -172.0), Vector2(180.0, 120.0)),
-		-2.0,
-		null
+		STAGE.paint_world_bounds(),
+		STAGE.terrain_center.y,
+		null,
+		STAGE.paint_color,
+		layout
 	)
 
-	var summit_y := -2.0 + TerrainMeshFactory.height_at(0, 0.0, 0.0)
+	var summit_y := STAGE.terrain_center.y + layout.height_at_local(0.0, 0.0)
 	var burst := BurstNode.new()
 	burst.data = BURST_DATA
 	burst.position = Vector3(0.0, summit_y + 0.8, -112.0)

@@ -9,7 +9,6 @@ const MASK_SIZE := 512
 const PAINTED_THRESHOLD := 0.18
 const COVERAGE_PUBLISH_INTERVAL := 0.18
 
-var _stage_index: int = 0
 var _generated_layout: GeneratedStageLayout
 var _world_bounds := Rect2(Vector2(-90.0, -172.0), Vector2(180.0, 120.0))
 var _terrain_origin_y: float = -2.0
@@ -34,14 +33,13 @@ var flow_simulation_enabled: bool = true
 
 
 func configure(
-		stage_index: int,
 		world_bounds: Rect2,
 	terrain_origin_y: float,
 	terrain_material: ShaderMaterial,
-	paint_color: Color = Color(0.03, 0.38, 1.0, 1.0),
-	generated_layout: GeneratedStageLayout = null
+	paint_color: Color,
+	generated_layout: GeneratedStageLayout
 ) -> void:
-	_stage_index = stage_index
+	assert(generated_layout != null and generated_layout.is_valid(), "PaintSystem requires the accepted generated layout.")
 	_generated_layout = generated_layout
 	_world_bounds = world_bounds
 	_terrain_origin_y = terrain_origin_y
@@ -170,44 +168,16 @@ func _create_masks() -> void:
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 	_recent_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 
-	# The terrain owns the full X/Z rectangle; a narrow inset excludes stage bounds.
-	const INSET := 14
 	_eligible_bytes = PackedByteArray()
 	_eligible_bytes.resize(MASK_SIZE * MASK_SIZE)
 	_eligible_bytes.fill(0)
 	_total_eligible_pixels = 0
-	if _generated_layout != null and _generated_layout.eligible_mask.size() == MASK_SIZE * MASK_SIZE:
-		_eligible_bytes = _generated_layout.eligible_mask.duplicate()
-		for byte in _eligible_bytes:
-			if byte >= 128:
-				_total_eligible_pixels += 1
-	else:
-		_fill_eligible_mask_legacy(INSET)
+	assert(_generated_layout.eligible_mask.size() == MASK_SIZE * MASK_SIZE, "Generated layout must provide the authoritative eligible mask.")
+	_eligible_bytes = _generated_layout.eligible_mask.duplicate()
+	for byte in _eligible_bytes:
+		if byte >= 128:
+			_total_eligible_pixels += 1
 	_finish_eligible_images()
-
-
-func _fill_eligible_mask_legacy(inset: int) -> void:
-	for y in range(MASK_SIZE):
-		if y < inset or y >= MASK_SIZE - inset:
-			continue
-		var row_start := y * MASK_SIZE
-		var normalized_y := (float(y) / float(MASK_SIZE - 1) - 0.5) * 2.0
-		for x in range(inset, MASK_SIZE - inset):
-			var normalized_x := (float(x) / float(MASK_SIZE - 1) - 0.5) * 2.0
-			var eligible := false
-			match _stage_index:
-				2:
-					var in_channel := absf(normalized_x + 0.267) <= 0.025 \
-							or absf(normalized_x - 0.033) <= 0.025 \
-							or absf(normalized_x - 0.289) <= 0.025
-					eligible = in_channel and normalized_y >= -0.78 and normalized_y <= 0.72
-				1:
-					eligible = pow(normalized_x / 0.82, 2.0) + pow(normalized_y / 0.9, 2.0) <= 1.0
-				_:
-					eligible = pow(normalized_x / 0.86, 2.0) + pow(normalized_y / 0.92, 2.0) <= 1.0
-			if eligible:
-				_eligible_bytes[row_start + x] = 255
-				_total_eligible_pixels += 1
 
 
 func _finish_eligible_images() -> void:
@@ -319,9 +289,8 @@ func _world_to_local(world_xz: Vector2) -> Vector2:
 
 
 func _terrain_height_at(local_x: float, local_z: float) -> float:
-	if _generated_layout != null:
-		return _generated_layout.height_at_local(local_x, local_z)
-	return TerrainMeshFactory.height_at(_stage_index, local_x, local_z)
+	assert(_generated_layout != null, "PaintSystem terrain queries require configuration.")
+	return _generated_layout.height_at_local(local_x, local_z)
 
 
 func _source_kind_name(source_kind: PaintDepositRequest.SourceKind) -> StringName:

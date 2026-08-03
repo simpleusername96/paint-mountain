@@ -13,13 +13,15 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	var top_vertices := PackedVector3Array()
 	var top_normals := PackedVector3Array()
 	var top_uvs := PackedVector2Array()
-	_append_top(layout, top_vertices, top_normals, top_uvs)
+	var top_colors := PackedColorArray()
+	_append_top(layout, top_vertices, top_normals, top_uvs, top_colors)
 
 	var shell_vertices := PackedVector3Array()
 	var shell_normals := PackedVector3Array()
 	var shell_uvs := PackedVector2Array()
-	_append_skirts(layout, base_y, shell_vertices, shell_normals, shell_uvs)
-	_append_bottom(layout.local_bounds, base_y, shell_vertices, shell_normals, shell_uvs)
+	var shell_colors := PackedColorArray()
+	_append_skirts(layout, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
+	_append_bottom(layout.local_bounds, base_y, shell_vertices, shell_normals, shell_uvs, shell_colors)
 
 	var render_vertices := top_vertices.duplicate()
 	render_vertices.append_array(shell_vertices)
@@ -27,11 +29,14 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	render_normals.append_array(shell_normals)
 	var render_uvs := top_uvs.duplicate()
 	render_uvs.append_array(shell_uvs)
+	var render_colors := top_colors.duplicate()
+	render_colors.append_array(shell_colors)
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = render_vertices
 	arrays[Mesh.ARRAY_NORMAL] = render_normals
 	arrays[Mesh.ARRAY_TEX_UV] = render_uvs
+	arrays[Mesh.ARRAY_COLOR] = render_colors
 	var render_mesh := ArrayMesh.new()
 	render_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
@@ -46,7 +51,8 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	top_shape.map_data = scaled_heights
 
 	var skirt_shape := ConcavePolygonShape3D.new()
-	skirt_shape.set_faces(shell_vertices, true)
+	skirt_shape.backface_collision = true
+	skirt_shape.set_faces(shell_vertices)
 
 	var geometry := TerrainGeometry.new()
 	geometry.render_mesh = render_mesh
@@ -67,7 +73,8 @@ static func _append_top(
 		layout: GeneratedStageLayout,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
-		uvs: PackedVector2Array
+		uvs: PackedVector2Array,
+		colors: PackedColorArray
 ) -> void:
 	var sample_size := layout.sample_size()
 	for z_index in range(layout.cell_count.y):
@@ -85,11 +92,11 @@ static func _append_top(
 			var p10 := Vector3(x1, layout.heights[z_index * sample_size.x + x_index + 1], z0)
 			var p11 := Vector3(x1, layout.heights[(z_index + 1) * sample_size.x + x_index + 1], z1)
 			_append_triangle(
-				vertices, normals, uvs, p00, p01, p10,
+				vertices, normals, uvs, colors, p00, p01, p10,
 				Vector2(x0_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z0_ratio)
 			)
 			_append_triangle(
-				vertices, normals, uvs, p10, p01, p11,
+				vertices, normals, uvs, colors, p10, p01, p11,
 				Vector2(x1_ratio, z0_ratio), Vector2(x0_ratio, z1_ratio), Vector2(x1_ratio, z1_ratio)
 			)
 
@@ -99,7 +106,8 @@ static func _append_skirts(
 		base_y: float,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
-		uvs: PackedVector2Array
+		uvs: PackedVector2Array,
+		colors: PackedColorArray
 ) -> void:
 	var bounds := layout.local_bounds
 	var size := layout.sample_size()
@@ -108,20 +116,20 @@ static func _append_skirts(
 		var x1 := lerpf(bounds.position.x, bounds.end.x, float(x_index + 1) / float(layout.cell_count.x))
 		var north_a := Vector3(x0, layout.heights[x_index], bounds.position.y)
 		var north_b := Vector3(x1, layout.heights[x_index + 1], bounds.position.y)
-		_append_wall_quad(north_a, north_b, base_y, false, vertices, normals, uvs)
+		_append_wall_quad(north_a, north_b, base_y, false, vertices, normals, uvs, colors)
 		var south_offset := (size.y - 1) * size.x
 		var south_a := Vector3(x0, layout.heights[south_offset + x_index], bounds.end.y)
 		var south_b := Vector3(x1, layout.heights[south_offset + x_index + 1], bounds.end.y)
-		_append_wall_quad(south_a, south_b, base_y, true, vertices, normals, uvs)
+		_append_wall_quad(south_a, south_b, base_y, true, vertices, normals, uvs, colors)
 	for z_index in range(layout.cell_count.y):
 		var z0 := lerpf(bounds.position.y, bounds.end.y, float(z_index) / float(layout.cell_count.y))
 		var z1 := lerpf(bounds.position.y, bounds.end.y, float(z_index + 1) / float(layout.cell_count.y))
 		var west_a := Vector3(bounds.position.x, layout.heights[z_index * size.x], z0)
 		var west_b := Vector3(bounds.position.x, layout.heights[(z_index + 1) * size.x], z1)
-		_append_wall_quad(west_a, west_b, base_y, true, vertices, normals, uvs)
+		_append_wall_quad(west_a, west_b, base_y, true, vertices, normals, uvs, colors)
 		var east_a := Vector3(bounds.end.x, layout.heights[z_index * size.x + size.x - 1], z0)
 		var east_b := Vector3(bounds.end.x, layout.heights[(z_index + 1) * size.x + size.x - 1], z1)
-		_append_wall_quad(east_a, east_b, base_y, false, vertices, normals, uvs)
+		_append_wall_quad(east_a, east_b, base_y, false, vertices, normals, uvs, colors)
 
 
 static func _append_wall_quad(
@@ -131,16 +139,17 @@ static func _append_wall_quad(
 		reverse: bool,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
-		uvs: PackedVector2Array
+		uvs: PackedVector2Array,
+		colors: PackedColorArray
 ) -> void:
 	var bottom_a := Vector3(top_a.x, base_y, top_a.z)
 	var bottom_b := Vector3(top_b.x, base_y, top_b.z)
 	if reverse:
-		_append_triangle(vertices, normals, uvs, top_a, bottom_a, top_b, Vector2.ZERO, Vector2.DOWN, Vector2.RIGHT)
-		_append_triangle(vertices, normals, uvs, top_b, bottom_a, bottom_b, Vector2.RIGHT, Vector2.DOWN, Vector2.ONE)
+		_append_triangle(vertices, normals, uvs, colors, top_a, bottom_a, top_b, Vector2.ZERO, Vector2.DOWN, Vector2.RIGHT, false)
+		_append_triangle(vertices, normals, uvs, colors, top_b, bottom_a, bottom_b, Vector2.RIGHT, Vector2.DOWN, Vector2.ONE, false)
 	else:
-		_append_triangle(vertices, normals, uvs, top_a, top_b, bottom_a, Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN)
-		_append_triangle(vertices, normals, uvs, top_b, bottom_b, bottom_a, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN)
+		_append_triangle(vertices, normals, uvs, colors, top_a, top_b, bottom_a, Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN, false)
+		_append_triangle(vertices, normals, uvs, colors, top_b, bottom_b, bottom_a, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN, false)
 
 
 static func _append_bottom(
@@ -148,28 +157,33 @@ static func _append_bottom(
 		base_y: float,
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
-		uvs: PackedVector2Array
+		uvs: PackedVector2Array,
+		colors: PackedColorArray
 ) -> void:
 	var north_west := Vector3(bounds.position.x, base_y, bounds.position.y)
 	var north_east := Vector3(bounds.end.x, base_y, bounds.position.y)
 	var south_east := Vector3(bounds.end.x, base_y, bounds.end.y)
 	var south_west := Vector3(bounds.position.x, base_y, bounds.end.y)
-	_append_triangle(vertices, normals, uvs, north_west, north_east, south_east, Vector2.ZERO, Vector2.RIGHT, Vector2.ONE)
-	_append_triangle(vertices, normals, uvs, north_west, south_east, south_west, Vector2.ZERO, Vector2.ONE, Vector2.DOWN)
+	_append_triangle(vertices, normals, uvs, colors, north_west, north_east, south_east, Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, false)
+	_append_triangle(vertices, normals, uvs, colors, north_west, south_east, south_west, Vector2.ZERO, Vector2.ONE, Vector2.DOWN, false)
 
 
 static func _append_triangle(
 		vertices: PackedVector3Array,
 		normals: PackedVector3Array,
 		uvs: PackedVector2Array,
+		colors: PackedColorArray,
 		a: Vector3,
 		b: Vector3,
 		c: Vector3,
 		uv_a: Vector2,
 		uv_b: Vector2,
-		uv_c: Vector2
+		uv_c: Vector2,
+		paintable: bool = true
 ) -> void:
 	var normal := (b - a).cross(c - a).normalized()
 	vertices.append_array(PackedVector3Array([a, b, c]))
 	normals.append_array(PackedVector3Array([normal, normal, normal]))
 	uvs.append_array(PackedVector2Array([uv_a, uv_b, uv_c]))
+	var classification := Color.WHITE if paintable else Color.BLACK
+	colors.append_array(PackedColorArray([classification, classification, classification]))

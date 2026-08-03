@@ -42,7 +42,30 @@ Task 01 added the typed `TerrainGeometry`, `TerrainSurface`,
 interfaces. Godot 4.7.1 registered every class, passed headless import/parse,
 and started the existing main scene. The new terrain owner/factory is not wired
 into production until Task 03, so this milestone makes no visual-completion
-claim. Next is Task 02's version-3 generated topology.
+claim.
+
+Task 02 replaced authored route control points with deterministic version-3
+route rules, path-first mountain lobes, realized-grid validation, role-owned
+mechanism shelves, deterministic decoration placement, and one finalized
+eligible mask. Base requests accept First Descent attempt 0
+(`845479992`, height checksum `3976121806`, eligible checksum `91346562`),
+Burst Basin attempt 1 (`1692116028`, `1331063294`, `2859517061`), and Split
+Ridge attempt 6 (`671547267`, `2783769031`, `2129835509`). Repeated base and
+fallback-request runs matched seed, attempt, height/mask checksums, route roles,
+reversals, mechanism transforms, and decorations. Task 03 is next and will wire
+the already-added closed `TerrainGeometry` into production rendering/collision.
+
+Task 03 wired `TerrainSurface` into gameplay and the retained projectile
+sandbox. `TerrainGeometryFactory` is now the sole production terrain builder:
+it emits `6,912` top, `480` skirt, and `2` bottom triangles, a scaled
+`HeightMapShape3D` top collider, and a separate backface-enabled shell collider.
+The obsolete `TerrainMeshFactory`, its stage-specific height formulas, and the
+legacy PaintSystem eligibility fallback were removed. Headless fixture casts
+classified flat, 35-degree ramp, graze, and skirt contacts by distinct body
+identity; normalized shell-edge ownership and render/collision parity passed.
+The opaque lit shader now uses flat mesh facets, shadows, `0.88 / 0.24`
+dry/paint roughness, shell classification, and a restrained paint rim without
+emission. Task 04 is next.
 
 ## Context
 
@@ -111,9 +134,10 @@ the static-audit correction above.
 ## Current Redesign Risks
 
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
-- The version-3 generator, physical contact/deposit path, manual aim predictor,
-  mechanism bodies, replay format 3, and scene-based UI are not implemented
-  until their active ExecPlan tasks pass.
+- The version-3 generator and closed production terrain/collider wiring are
+  implemented and verified. Physical contact/deposit, manual aim prediction,
+  mechanism bodies, replay format 3, and scene-based UI remain pending their
+  later ExecPlan tasks.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.
@@ -125,6 +149,21 @@ the static-audit correction above.
 - The imported low-poly models, UI icons, particles, and procedural audio meet the scoped vertical-slice presentation contract but are not a substitute for a later bespoke production-art/audio pass.
 
 ## Verification
+
+- Active redesign Task 02: `stage_generation_test.gd` passed base and
+  fallback-request determinism for all stages. Fallback requests accepted at
+  attempts `0 / 5 / 28`; eligible ratios remained `0.423386 / 0.446671 /
+  0.414547`. `mechanism_placement_test.gd` passed exact role/centerline/shelf,
+  transform, tangent, physical-clearance, visibility, and fixed-point rejection
+  gates. `decoration_placement_test.gd` passed deterministic `10 / 14 / 18`
+  placements. All checks used Godot 4.7.1 headlessly.
+- Active redesign Task 03: `terrain_geometry_test.gd` proved the exact
+  `7,394`-triangle production shell, flat winding, normalized watertight edge
+  ownership, `≤0.01 m` heightmap parity, stable gameplay nodes, shader
+  constraints, and all four direct fixture casts. The migrated
+  `phase2_physics_test.gd`, `phase2_test.gd`, `phase3_paint_test.gd`, and
+  `phase5_mechanism_test.gd` passed, followed by `scripts/verify.ps1` and a
+  30-frame headless main-project startup.
 
 - Final tested engine: Godot `4.7.1.stable.official.a13da4feb`, Windows Compatibility renderer, Intel Iris Xe, fixed 60 Hz physics.
 - Final 2026-08-03 regression: every Phase 2–8 check plus `stage_generation_test.gd`, `mechanism_placement_test.gd`, `aim_interaction_test.gd`, and `localization_ui_test.gd` passed. `scripts/verify.ps1` passed after final scene/resource/script changes.

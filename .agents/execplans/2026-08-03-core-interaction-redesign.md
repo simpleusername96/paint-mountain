@@ -213,6 +213,12 @@ profiles move to schema version 3 and use `Vector2i(72, 48)` cells, yielding
 This produces exactly `6,912` top triangles, `480` skirt triangles, and `2`
 bottom triangles: `7,394` total, below the `50,000`-triangle requirement.
 Render and collision heights must match within `0.01 m` at every sample.
+For the watertight edge gate, quantize positions to `0.001 m` and normalize
+each of the bottom cap's four long boundary edges into the same `2.5 m`
+segments used by the skirts before counting face ownership. This normalization
+is required because the frozen two-triangle cap and segmented skirts describe
+the same collinear boundary with different primitive subdivision; after
+normalization every edge must be owned by exactly two faces.
 
 `TerrainTopBody` and `TerrainShellBody` are distinct `StaticBody3D` children.
 Object identity therefore classifies top versus shell contact without inferring
@@ -329,7 +335,12 @@ The mountain is path-first:
    keeps each centerline deterministic while producing raised shoulders.
 8. For every mechanism shelf, sample route height at shelf `t`; inside shelf
    radius set `height = lerp(height, shelf_height,
-   1 - smoothstep(0.65*radius, radius, distance))`. This provides a flat inner
+   1 - smoothstep(0.92*radius, radius, distance))`. At the frozen 2.5 m cell
+   size, the earlier `0.65` transition caused triangles inside the required
+   `0.60 × radius` flat region to share transition vertices and reach
+   38–76°. A `0.85` plateau still produced an out-of-contract shelf on the
+   smallest frozen radius; `0.92` is the measured common plateau that preserves
+   the required connected `≤ 8°` region across all three profiles. This provides a flat inner
    placement region and a fixed transition ring.
 9. Clamp height to `0..accepted_height_range.y`, then multiply by edge falloff
    `smoothstep(0, 12, edge_distance)`, where
@@ -359,6 +370,15 @@ The frozen profiles are:
 | uphill draw | unused | `3.5–6.5 m` | safe `3.5–6.5 m`; high `5–9 m` |
 | mechanism shelf | none | Burst: route 0, `t=.36`, `r=8 m` | Splitter: route 1, `t=.60`, `r=10 m`; Bumper: route 2, `t=.72`, `r=9 m` |
 | eligible ratio | `0.30–0.68` | `0.35–0.75` | `0.40–0.82` |
+
+Burst Basin's pre-redesign camera bookmarks are incompatible with its frozen
+path-first terrain: the Burst shelf is occluded from both of them for every
+otherwise-valid deterministic candidate. Freeze the corrected positions at
+`aiming=(-50,100,-30)` and `briefing=(-60,110,-30)` while retaining the existing
+targets. On accepted candidate 1, the shelf-top ray is clear and the projected
+Burst diameter is respectively `60.14 px` and `53.21 px`, leaving deliberate
+margin over the `18 px / 24 px` gates. These are stage data, not generator
+special cases; Task 07 still owns dynamic follow-camera safety.
 
 The eligible mask represents all playable top terrain, not intended routes.
 For each of the 512×512 mask pixels, bilinearly sample the final layout and mark
@@ -394,8 +414,16 @@ separation, or tangent validation, the whole candidate layout is rejected.
 `MechanismPlacementGenerator` validates and constructs this transform; it does
 not score or choose an alternate grid cell.
 
-Each generation attempt validates the realized height grid, not the source
-spine:
+Each generation attempt validates topology against the generated spine and
+surface constraints against the realized height grid. The `12 m` edge-falloff
+band is a nonplayable shell transition: it still participates in edge and net
+descent checks, but route-slope percentile/max samples include only segments
+whose two endpoints are at least `12 m` inside the bounds. Without this frozen
+scope, the required last station at `z=54` (only `6 m` from the boundary) is
+halved by the required edge falloff and creates an artificial `62–64°` final
+segment unrelated to playable route difficulty.
+
+The checks are:
 
 - exact route count and role;
 - each route's reversal count equals its configured target after ignoring
@@ -1018,8 +1046,9 @@ Add tests:
 
 Accept:
 
-- Render/collision sample error is `≤ 0.01 m`, every quantized render-shell
-  edge is shared by exactly two faces, and all four direct fixture casts
+- Render/collision sample error is `≤ 0.01 m`, every quantized and
+  bottom-boundary-normalized render-shell edge is shared by exactly two faces,
+  and all four direct fixture casts
   classify the expected top/shell body.
 - Headless geometry gates prove closure; the named camera-bookmark visual check
   remains in Task 10.
@@ -1523,8 +1552,8 @@ This checklist is the single canonical progress source for the redesign:
 
 - [x] Task 00 — Reset documentation to the audited baseline.
 - [x] Task 01 — Introduce typed contracts and the terrain owner.
-- [ ] Task 02 — Replace authored topology with the frozen generator.
-- [ ] Task 03 — Replace terrain mesh and collision.
+- [x] Task 02 — Replace authored topology with the frozen generator.
+- [x] Task 03 — Replace terrain mesh and collision.
 - [ ] Task 04 — Make physics contact authoritative and unify paint.
 - [ ] Task 05 — Convert mechanisms to physical bodies.
 - [ ] Task 06 — Replace auto-targeting with manual aim and full preview.
@@ -1535,5 +1564,5 @@ This checklist is the single canonical progress source for the redesign:
 
 ## Next Steps
 
-Begin Task 02. Do not implement any later task until its predecessor's
+Begin Task 04. Do not implement any later task until its predecessor's
 acceptance and regression guards pass.

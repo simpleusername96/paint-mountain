@@ -157,7 +157,7 @@ func _build_preview_world() -> void:
 	_preview_mountain = MeshInstance3D.new()
 	_preview_mountain.name = "PreviewMountain"
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
-	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	_preview_world.add_child(_preview_mountain)
 	_preview_dressing = ENVIRONMENT_DRESSING_SCRIPT.new()
 	_preview_dressing.name = "PreviewDressing"
@@ -186,7 +186,7 @@ func _set_preview_stage(stage: StageData) -> void:
 	if layout == null:
 		push_error("Could not build preview layout for %s." % stage.stage_id)
 		return
-	_preview_mountain.mesh = TerrainMeshFactory.build_from_layout(layout)
+	_preview_mountain.mesh = TerrainGeometryFactory.build(layout).render_mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://src/paint/terrain_paint.gdshader")
 	material.set_shader_parameter(&"paint_mask", _preview_paint_texture(stage.stage_number))

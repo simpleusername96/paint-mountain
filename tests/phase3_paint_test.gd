@@ -1,6 +1,7 @@
 extends SceneTree
 
 const PAINT_SHADER := preload("res://src/paint/terrain_paint.gdshader")
+const STAGE := preload("res://resources/stages/first_descent.tres")
 
 var _failed: bool = false
 
@@ -14,15 +15,19 @@ func _run_checks() -> void:
 	root.add_child(paint_system)
 	var material := ShaderMaterial.new()
 	material.shader = PAINT_SHADER
-	var bounds := Rect2(Vector2(-90.0, -172.0), Vector2(180.0, 120.0))
-	paint_system.configure(0, bounds, -2.0, material)
+	var layout := SeededStageGenerator.generate(STAGE.generation_profile, STAGE.terrain_seed, STAGE)
+	_assert_true(layout != null, "paint test requires a validated generated layout")
+	if layout == null:
+		quit(1)
+		return
+	paint_system.configure(STAGE.paint_world_bounds(), STAGE.terrain_center.y, material, STAGE.paint_color, layout)
 	_assert_true(paint_system.total_eligible_pixels() > 0, "eligible mask must contain countable terrain")
 	_assert_true(paint_system.paint_texture().get_width() == 512, "paint mask must remain 512 pixels wide")
 	_assert_true(paint_system.recent_texture().get_width() == 512, "recent-stamp debug view must match mask resolution")
 	_assert_true(paint_system.excluded_texture().get_width() == 512, "excluded-mask debug view must match mask resolution")
 	_assert_true(material.get_shader_parameter(&"paint_mask") == paint_system.paint_texture(), "terrain shader must use the authoritative mask texture")
 
-	var summit := Vector3(0.0, -2.0 + TerrainMeshFactory.height_at(0, 0.0, 0.0), -112.0)
+	var summit := STAGE.terrain_center + Vector3(0.0, layout.height_at_local(0.0, 0.0), 0.0)
 	paint_system.queue_stamp(&"impact", summit, 4.0, 22.0, false)
 	paint_system.flush_pending()
 	var first_coverage := paint_system.coverage_percent()
@@ -37,7 +42,7 @@ func _run_checks() -> void:
 	_assert_true(is_equal_approx(first_coverage, paint_system.coverage_percent()), "off-surface paint must be excluded")
 
 	paint_system.clear()
-	var flow_start := Vector3(20.0, -2.0 + TerrainMeshFactory.height_at(0, 20.0, 0.0), -112.0)
+	var flow_start := STAGE.terrain_center + Vector3(20.0, layout.height_at_local(20.0, 0.0), 0.0)
 	paint_system.queue_stamp(&"direct", flow_start, 0.8, 18.0, false)
 	paint_system.flush_pending()
 	var direct_coverage := paint_system.coverage_percent()

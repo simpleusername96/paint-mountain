@@ -13,8 +13,8 @@ func _initialize() -> void:
 	_assert_true(samples_a.size() == samples_b.size(), "trajectory sample counts must match")
 	for index in range(samples_a.size()):
 		_assert_vector_close(samples_a[index], samples_b[index], 0.000001, "trajectory samples must be deterministic")
-	var terrain := TerrainMeshFactory.build(0)
-	_assert_true(terrain.get_surface_count() == 1, "sandbox terrain must contain one surface")
+	var terrain := TerrainGeometryFactory.build(TerrainTestFixtureFactory.build_layout(TerrainTestFixtureFactory.Kind.FLAT))
+	_assert_true(terrain.is_valid() and terrain.render_mesh.get_surface_count() == 1, "terrain geometry must contain one closed render surface")
 	_assert_true(projectile_data.launch_speed(100.0) > projectile_data.launch_speed(0.0), "power must increase launch speed")
 	print("Phase 2 deterministic ballistics checks passed: %d samples." % samples_a.size())
 	quit(0)
