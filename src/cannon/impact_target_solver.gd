@@ -7,7 +7,7 @@ const MINIMUM_ELEVATION := 18.0
 const MAXIMUM_ELEVATION := 68.0
 const ELEVATION_STEP := 0.5
 const TARGET_TOLERANCE := 1.25
-const COLLISION_MASK := 1 | 2
+const COLLISION_MASK := 1 | 4
 
 
 static func solve(
@@ -93,7 +93,7 @@ static func _simulate(
 		query.transform = Transform3D(Basis.IDENTITY, position)
 		query.motion = next_position - position
 		query.collision_mask = COLLISION_MASK
-		query.collide_with_areas = true
+		query.collide_with_areas = false
 		query.collide_with_bodies = true
 		var cast := space_state.cast_motion(query)
 		if not cast.is_empty() and float(cast[0]) < 1.0:
@@ -134,7 +134,7 @@ static func _colliders_at(
 	query.transform = Transform3D(Basis.IDENTITY, position)
 	query.margin = 0.08
 	query.collision_mask = COLLISION_MASK
-	query.collide_with_areas = true
+	query.collide_with_areas = false
 	query.collide_with_bodies = true
 	var result: Array[CollisionObject3D] = []
 	for hit in space_state.intersect_shape(query, 8):

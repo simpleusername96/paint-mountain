@@ -108,33 +108,6 @@ func apply_deposit(request: PaintDepositRequest) -> Dictionary:
 	}
 
 
-func queue_deposit(request: PaintDepositRequest) -> Dictionary:
-	return apply_deposit(request)
-
-
-# Transitional mechanism adapter; every write still enters the typed deposit path.
-func queue_stamp(
-		kind: StringName,
-		world_position: Vector3,
-		radius: float,
-		amount: float,
-		allow_flow: bool = false
-) -> Dictionary:
-	var source_kind := PaintDepositRequest.SourceKind.TRAIL
-	if kind == &"impact":
-		source_kind = PaintDepositRequest.SourceKind.IMPACT
-	elif kind == &"puddle":
-		source_kind = PaintDepositRequest.SourceKind.FINAL_PUDDLE
-	elif kind == &"burst":
-		source_kind = PaintDepositRequest.SourceKind.BURST
-	var local := _world_to_local(Vector2(world_position.x, world_position.z))
-	var normal := _generated_layout.normal_at_local(local.x, local.y)
-	return apply_deposit(PaintDepositRequest.new(
-		source_kind, world_position, normal, radius, amount, allow_flow,
-		12 if allow_flow else 0, 0, Engine.get_physics_frames(), 0
-	))
-
-
 func flush_pending() -> void:
 	_upload_dirty_images()
 	_coverage_changed_since_publish = false
@@ -205,6 +178,20 @@ func generated_layout_read_only() -> GeneratedStageLayout:
 	return _generated_layout
 
 
+func terrain_surface_position(world_xz: Vector2) -> Vector3:
+	var local := _world_to_local(world_xz)
+	return Vector3(
+		world_xz.x,
+		_terrain_origin_y + _generated_layout.height_at_local(local.x, local.y),
+		world_xz.y
+	)
+
+
+func terrain_surface_normal(world_xz: Vector2) -> Vector3:
+	var local := _world_to_local(world_xz)
+	return _generated_layout.normal_at_local(local.x, local.y)
+
+
 func _create_masks() -> void:
 	_paint_bytes.resize(MASK_SIZE * MASK_SIZE)
 	_paint_bytes.fill(0)
@@ -244,7 +231,9 @@ func _connected_component(request: PaintDepositRequest) -> PackedInt32Array:
 	minimum.y = clampi(minimum.y - 1, 0, MASK_SIZE - 1)
 	maximum.x = clampi(maximum.x + 1, 0, MASK_SIZE - 1)
 	maximum.y = clampi(maximum.y + 1, 0, MASK_SIZE - 1)
-	var candidates: Dictionary = {}
+	var candidates := PackedByteArray()
+	candidates.resize(MASK_SIZE * MASK_SIZE)
+	candidates.fill(0)
 	var radius_squared := request.radius * request.radius
 	var needs_facing := request.source_kind in [PaintDepositRequest.SourceKind.IMPACT, PaintDepositRequest.SourceKind.BURST]
 	for pixel_y in range(minimum.y, maximum.y + 1):
@@ -252,17 +241,17 @@ func _connected_component(request: PaintDepositRequest) -> PackedInt32Array:
 			var index := pixel_y * MASK_SIZE + pixel_x
 			if _eligible_bytes[index] < 128:
 				continue
-			var surface := _surface_at_pixel(pixel_x, pixel_y)
-			if surface.position.distance_squared_to(request.world_position) > radius_squared:
+			var surface_position := _surface_position_at_pixel(pixel_x, pixel_y)
+			if surface_position.distance_squared_to(request.world_position) > radius_squared:
 				continue
-			if needs_facing and surface.normal.dot(request.world_normal) < NORMAL_FACING_THRESHOLD:
+			if needs_facing and _surface_normal_at_pixel(pixel_x, pixel_y).dot(request.world_normal) < NORMAL_FACING_THRESHOLD:
 				continue
-			candidates[index] = true
-	if not candidates.has(seed):
+			candidates[index] = 1
+	if candidates[seed] == 0:
 		return PackedInt32Array()
 	var component := PackedInt32Array()
 	var queue := PackedInt32Array([seed])
-	var visited := {seed: true}
+	candidates[seed] = 0
 	var cursor := 0
 	while cursor < queue.size():
 		var current := queue[cursor]
@@ -274,8 +263,8 @@ func _connected_component(request: PaintDepositRequest) -> PackedInt32Array:
 			if neighbor.x < minimum.x or neighbor.x > maximum.x or neighbor.y < minimum.y or neighbor.y > maximum.y:
 				continue
 			var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
-			if candidates.has(neighbor_index) and not visited.has(neighbor_index):
-				visited[neighbor_index] = true
+			if candidates[neighbor_index] != 0:
+				candidates[neighbor_index] = 0
 				queue.append(neighbor_index)
 	return component
 
@@ -288,8 +277,7 @@ func _write_component(request: PaintDepositRequest, component: PackedInt32Array)
 	for index in component:
 		var pixel_x := index % MASK_SIZE
 		var pixel_y := index / MASK_SIZE
-		var surface := _surface_at_pixel(pixel_x, pixel_y)
-		var surface_position: Vector3 = surface.position
+		var surface_position := _surface_position_at_pixel(pixel_x, pixel_y)
 		var q: float = surface_position.distance_squared_to(request.world_position) / maxf(radius_squared, 0.000001)
 		var radial_weight := maxf(0.0, 1.0 - 0.7 * q)
 		var delta_alpha := clampf(amount_alpha * radial_weight, 0.0, 1.0)
@@ -315,9 +303,8 @@ func _apply_steepest_descent_flow(request: PaintDepositRequest) -> Dictionary:
 	var radius := maxf(0.8, request.radius * _tuning.flow_radius_ratio)
 	for step_index in range(mini(request.maximum_flow_steps, 12)):
 		var current_point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		var current_surface := _surface_at_pixel(current_point.x, current_point.y)
 		var best := -1
-		var current_position: Vector3 = current_surface.position
+		var current_position := _surface_position_at_pixel(current_point.x, current_point.y)
 		var best_height: float = current_position.y
 		for offset in NEIGHBOR_OFFSETS:
 			var candidate := current_point + offset
@@ -326,8 +313,7 @@ func _apply_steepest_descent_flow(request: PaintDepositRequest) -> Dictionary:
 			var candidate_index := candidate.y * MASK_SIZE + candidate.x
 			if _eligible_bytes[candidate_index] < 128:
 				continue
-			var candidate_surface := _surface_at_pixel(candidate.x, candidate.y)
-			var candidate_position: Vector3 = candidate_surface.position
+			var candidate_position := _surface_position_at_pixel(candidate.x, candidate.y)
 			var candidate_height: float = candidate_position.y
 			if candidate_height < best_height - 0.0001:
 				best_height = candidate_height
@@ -336,12 +322,13 @@ func _apply_steepest_descent_flow(request: PaintDepositRequest) -> Dictionary:
 			break
 		current = best
 		var best_point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		var best_surface := _surface_at_pixel(best_point.x, best_point.y)
+		var best_position := _surface_position_at_pixel(best_point.x, best_point.y)
+		var best_normal := _surface_normal_at_pixel(best_point.x, best_point.y)
 		var center_alpha := amount / _tuning.paint_units_per_full_alpha * _tuning.intensity_multiplier(request.source_kind)
 		if center_alpha < _tuning.minimum_flow_alpha:
 			break
 		var flow_request := PaintDepositRequest.new(
-			request.source_kind, best_surface.position, best_surface.normal, radius, amount,
+			request.source_kind, best_position, best_normal, radius, amount,
 			false, 0, request.source_instance_id, request.physics_tick,
 			request.sequence_number * 16 + step_index + 1
 		)
@@ -355,17 +342,28 @@ func _apply_steepest_descent_flow(request: PaintDepositRequest) -> Dictionary:
 	return {"written": written, "newly_painted": newly_painted}
 
 
-func _surface_at_pixel(pixel_x: int, pixel_y: int) -> Dictionary:
+func _surface_position_at_pixel(pixel_x: int, pixel_y: int) -> Vector3:
 	var normalized := Vector2(
 		(float(pixel_x) + 0.5) / float(MASK_SIZE),
 		(float(pixel_y) + 0.5) / float(MASK_SIZE)
 	)
 	var world_xz := _world_bounds.position + normalized * _world_bounds.size
 	var local := _world_to_local(world_xz)
-	return {
-		"position": Vector3(world_xz.x, _terrain_origin_y + _generated_layout.height_at_local(local.x, local.y), world_xz.y),
-		"normal": _generated_layout.normal_at_local(local.x, local.y),
-	}
+	return Vector3(
+		world_xz.x,
+		_terrain_origin_y + _generated_layout.height_at_local(local.x, local.y),
+		world_xz.y
+	)
+
+
+func _surface_normal_at_pixel(pixel_x: int, pixel_y: int) -> Vector3:
+	var normalized := Vector2(
+		(float(pixel_x) + 0.5) / float(MASK_SIZE),
+		(float(pixel_y) + 0.5) / float(MASK_SIZE)
+	)
+	var world_xz := _world_bounds.position + normalized * _world_bounds.size
+	var local := _world_to_local(world_xz)
+	return _generated_layout.normal_at_local(local.x, local.y)
 
 
 func _world_to_pixel_coordinates(world_xz: Vector2) -> Vector2i:

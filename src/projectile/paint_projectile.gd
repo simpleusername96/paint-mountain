@@ -29,10 +29,16 @@ var _has_reported_contact: bool = false
 var _deposit_sequence: int = 0
 var _penetration_ticks: int = 0
 var _velocity_history: Array[Vector3] = []
+var _queued_desired_velocity := Vector3.INF
+var _queued_desired_velocity_tick: int = -1
 
 
 func paint_radius_multiplier() -> float:
 	return 0.78 if split_generation > 0 else 1.0
+
+
+func physical_radius() -> float:
+	return projectile_data.radius * (0.78 if split_generation > 0 else 1.0)
 
 
 func configure(
@@ -127,8 +133,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if impulse.length_squared() < 0.0001:
 			impulse = Vector3.ZERO
 		var contact := ProjectileContact.new(
-			world_position, world_normal, world_position + world_normal * projectile_data.radius,
-			absf(state.transform.origin.distance_to(world_position) - projectile_data.radius),
+			world_position, world_normal, world_position + world_normal * physical_radius(),
+			absf(state.transform.origin.distance_to(world_position) - physical_radius()),
 			incoming_velocity, relative_normal_speed, impulse, collider,
 			state.get_contact_local_shape(index), collider_shape, physics_tick, false
 		)
@@ -165,6 +171,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			transient_splash_requested.emit(self, primary)
 		if _terrain_surface.is_top_collider(primary.collider) and primary.relative_normal_speed >= IMPACT_SPEED_THRESHOLD:
 			_request_impact(primary)
+	if _queued_desired_velocity != Vector3.INF and physics_tick > _queued_desired_velocity_tick:
+		state.apply_central_impulse(mass * (_queued_desired_velocity - state.linear_velocity))
+		_queued_desired_velocity = Vector3.INF
+		_queued_desired_velocity_tick = -1
 	_cached_incoming_velocity = state.linear_velocity
 	_velocity_history.append(state.linear_velocity)
 	if _velocity_history.size() > 3:
@@ -173,6 +183,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 func accept_deposit_amount(amount: float) -> void:
 	remaining_payload = maxf(0.0, remaining_payload - clampf(amount, 0.0, remaining_payload))
+
+
+func queue_desired_velocity(desired_velocity: Vector3, contact_tick: int) -> void:
+	if desired_velocity.is_finite() and not desired_velocity.is_zero_approx():
+		_queued_desired_velocity = desired_velocity
+		_queued_desired_velocity_tick = contact_tick
 
 
 func deactivate(reason: StringName) -> void:
@@ -281,14 +297,14 @@ func _build_body() -> void:
 	material.friction = projectile_data.friction
 	physics_material_override = material
 	var sphere_shape := SphereShape3D.new()
-	sphere_shape.radius = projectile_data.radius
+	sphere_shape.radius = physical_radius()
 	var collision := CollisionShape3D.new()
 	collision.name = "CollisionShape3D"
 	collision.shape = sphere_shape
 	add_child(collision)
 	var sphere_mesh := SphereMesh.new()
-	sphere_mesh.radius = projectile_data.radius
-	sphere_mesh.height = projectile_data.radius * 2.0
+	sphere_mesh.radius = physical_radius()
+	sphere_mesh.height = physical_radius() * 2.0
 	sphere_mesh.radial_segments = 16
 	sphere_mesh.rings = 8
 	var paint_material := StandardMaterial3D.new()

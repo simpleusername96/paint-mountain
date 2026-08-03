@@ -5,16 +5,14 @@
 [resource]
 script = ExtResource("1_data")
 kind = 1
-display_name = "SPLITTER"
-description = "Consumes one ball and sends three controlled children downhill."
+display_name_key = &"mechanism.splitter"
+description_key = &"mechanism.splitter.description"
 maximum_charges = 0
 cooldown_seconds = 0.3
-trigger_radius = 2.3
 child_count = 3
 child_payload_ratio = 0.3
-fan_angle_degrees = 75.0
 child_speed_multiplier = 0.78
 child_minimum_route_speed = 22.0
 child_target_lift = 5.0
-route_target_positions = Vector3(0.5, 0.82, 0.96)
-route_band_velocity_y_thresholds = Vector2(-10, -2)
+child_target_t = 0.82
+child_target_route_roles = PackedInt32Array(1, 2, 3)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/mechanisms/burst_node.gd" id="1_script"]
 
@@ -38,7 +38,14 @@ outer_radius = 1.83
 rings = 20
 ring_segments = 10
 
-[node name="BurstNode" type="Area3D"]
+[sub_resource type="CylinderShape3D" id="BaseShape"]
+radius = 1.8
+height = 0.7
+
+[sub_resource type="SphereShape3D" id="OrbShape"]
+radius = 1.05
+
+[node name="BurstNode" type="Node3D"]
 script = ExtResource("1_script")
 
 [node name="Visual" type="Node3D" parent="."]
@@ -59,3 +66,27 @@ mesh = SubResource("Ring")
 position = Vector3(0, 1.25, 0)
 rotation_degrees = Vector3(90, 0, 0)
 mesh = SubResource("Ring")
+
+[node name="MechanismBody" type="StaticBody3D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="BurstBase" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0, 0.35, 0)
+shape = SubResource("BaseShape")
+
+[node name="BurstOrb" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0, 1.35, 0)
+shape = SubResource("OrbShape")
+
+[node name="SelectionBody" type="StaticBody3D" parent="."]
+collision_layer = 8
+collision_mask = 0
+
+[node name="BurstBase" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0, 0.35, 0)
+shape = SubResource("BaseShape")
+
+[node name="BurstOrb" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0, 1.35, 0)
+shape = SubResource("OrbShape")

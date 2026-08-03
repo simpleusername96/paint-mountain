@@ -56,6 +56,9 @@ stage.split_ridge.objective,Use the Bumper and Splitter to reach all three downh
 mechanism.burst,BURST,폭발
 mechanism.splitter,SPLITTER,분열
 mechanism.bumper,BUMPER,범퍼
+mechanism.burst.description,Paints a wide connected area once when struck.,한 번 맞으면 연결된 넓은 지형을 칠합니다.
+mechanism.splitter.description,Turns one ball into three smaller route-bound balls.,공 하나를 경로를 따르는 작은 공 세 개로 나눕니다.
+mechanism.bumper.description,Redirects the ball along the marked downhill route.,공을 표시된 내리막 경로로 튕겨 보냅니다.
 mechanism.none,NONE,없음
 mechanism.no_mechanisms,NO MECHANISMS · FOLLOW THE NATURAL DESCENT,장치 없음 · 자연 경사를 따라가세요
 settings.title,SETTINGS,설정

@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1_data")
 kind = 0
-display_name = "BURST"
-description = "Paints a wide area once when struck."
+display_name_key = &"mechanism.burst"
+description_key = &"mechanism.burst.description"
 maximum_charges = 1
 cooldown_seconds = 0.35
-trigger_radius = 2.2
-burst_radius = 28.0
-burst_paint_amount = 320.0
+burst_radius = 14.0
+burst_paint_amount = 140.0
+burst_maximum_flow_steps = 12

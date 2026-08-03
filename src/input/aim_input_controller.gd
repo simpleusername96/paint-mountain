@@ -2,7 +2,7 @@ class_name AimInputController
 extends Node3D
 
 const RAY_LENGTH := 500.0
-const COLLISION_MASK := 1 | 2
+const COLLISION_MASK := 1 | 4
 const KEYBOARD_ANGLE_STEP := 0.5
 const KEYBOARD_POWER_STEP := 2.0
 const WHEEL_POWER_STEP := 1.0
@@ -45,9 +45,10 @@ func commit_screen_position(screen_position: Vector2) -> bool:
 		return false
 	var collider := hit.get("collider") as CollisionObject3D
 	var hit_position: Vector3 = hit.position
-	var target := collider.global_position if collider is GimmickBase else hit_position + Vector3(hit.normal) * _cannon.projectile_data.radius
+	var mechanism := collider.get_parent() as GimmickBase if collider != null else null
+	var target := mechanism.global_position if mechanism != null else hit_position + Vector3(hit.normal) * _cannon.projectile_data.radius
 	_committed_target = target
-	_committed_collider = collider if collider is GimmickBase else null
+	_committed_collider = mechanism.mechanism_body() if mechanism != null else null
 	_target_marker.global_position = hit_position
 	_target_marker.visible = true
 	return _resolve_committed_target()
@@ -135,9 +136,9 @@ func _raycast(screen_position: Vector2) -> Dictionary:
 	var direction := _camera.project_ray_normal(screen_position)
 	var end := origin + direction * RAY_LENGTH
 	# Selection gives a visible mechanism priority over the terrain shelf beneath it.
-	var mechanism_query := PhysicsRayQueryParameters3D.create(origin, end, 2)
-	mechanism_query.collide_with_areas = true
-	mechanism_query.collide_with_bodies = false
+	var mechanism_query := PhysicsRayQueryParameters3D.create(origin, end, 8)
+	mechanism_query.collide_with_areas = false
+	mechanism_query.collide_with_bodies = true
 	var mechanism_hit := get_world_3d().direct_space_state.intersect_ray(mechanism_query)
 	if not mechanism_hit.is_empty():
 		return mechanism_hit

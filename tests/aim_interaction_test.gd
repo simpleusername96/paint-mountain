@@ -32,6 +32,7 @@ func _run_checks() -> void:
 		for _frame in range(45):
 			await process_frame
 		for mechanism: GimmickBase in mechanisms:
+			var mechanism_name := tr(String(mechanism.data.display_name_key))
 			var solved := {}
 			for power in POWERS:
 				var candidate := ImpactTargetSolver.solve(
@@ -40,23 +41,24 @@ func _run_checks() -> void:
 					mechanism.global_position,
 					cannon.projectile_data,
 					power,
-					mechanism,
+					mechanism.mechanism_body(),
 					cannon
 				)
 				if candidate.valid:
-					print("%s %s power %.0f solution: yaw=%.6f elevation=%.6f" % [stage_id, mechanism.data.display_name, power, candidate.yaw, candidate.elevation])
+					print("%s %s power %.0f solution: yaw=%.6f elevation=%.6f" % [stage_id, mechanism_name, power, candidate.yaw, candidate.elevation])
 					if solved.is_empty():
 						solved = candidate
-			_assert_true(bool(solved.get("valid", false)), "%s must have a valid first-impact solution for %s" % [stage_id, mechanism.data.display_name])
+			_assert_true(bool(solved.get("valid", false)), "%s must have a valid first-impact solution for %s" % [stage_id, mechanism_name])
 			if bool(solved.get("valid", false)):
 				_assert_true(float(solved.elevation) >= 18.0 and float(solved.elevation) <= 68.0, "solver elevation must stay within cannon limits")
 				_assert_true(float(solved.yaw) >= -28.0 and float(solved.yaw) <= 28.0, "solver yaw must stay within cannon limits")
 				print("%s %s solution: yaw=%.3f elevation=%.3f power=%.0f collision=%s time=%.3f" % [
-					stage_id, mechanism.data.display_name, solved.yaw, solved.elevation, solved.power, solved.collision_position, solved.flight_time
+					stage_id, mechanism_name, solved.yaw, solved.elevation, solved.power, solved.collision_position, solved.flight_time
 				])
 				cannon.set_aim(cannon.yaw_degrees, cannon.elevation_degrees, float(solved.power))
-				var screen_target := camera.unproject_position(mechanism.global_position + Vector3.UP * mechanism.data.trigger_radius * 0.6)
-				_assert_true(input_controller.commit_screen_position(screen_target), "%s pointer targeting must commit visible %s" % [stage_id, mechanism.data.display_name])
+				var selection_height := float([1.35, 1.65, 0.86][mechanism.data.kind])
+				var screen_target := camera.unproject_position(mechanism.global_position + Vector3.UP * selection_height)
+				_assert_true(input_controller.commit_screen_position(screen_target), "%s pointer targeting must commit visible %s" % [stage_id, mechanism_name])
 				_assert_true(cannon.is_aim_valid(), "committed mechanism target must enable the shared fire guard")
 				var shots_before_invalid := stage_controller.shots_remaining
 				_assert_true(not input_controller.commit_screen_position(Vector2(-1000.0, -1000.0)), "offscreen pointer target must be invalid")

@@ -262,7 +262,7 @@ func _spawn_mechanisms() -> void:
 			MechanismData.Kind.BUMPER:
 				mechanism_scene = BUMPER_SCENE
 		var mechanism := mechanism_scene.instantiate() as GimmickBase
-		mechanism.name = placement.mechanism_data.display_name.capitalize().replace(" ", "")
+		mechanism.name = MechanismData.Kind.keys()[placement.mechanism_data.kind].capitalize()
 		mechanism.data = placement.mechanism_data
 		var world_transform := placement.local_transform
 		world_transform.origin += stage_data.terrain_center
@@ -270,25 +270,29 @@ func _spawn_mechanisms() -> void:
 		mechanism.configure(_projectile_manager, _paint_system)
 		_mechanism_root.add_child(mechanism)
 		if mechanism is SplitterNode:
-			var route_target_bands: Array[PackedVector3Array] = []
-			for route_t in [
-				mechanism.data.route_target_positions.x,
-				mechanism.data.route_target_positions.y,
-				mechanism.data.route_target_positions.z,
-			]:
-				var route_targets := PackedVector3Array()
-				for route_index in range(_generated_layout.route_spines.size()):
-					var route_target := _generated_layout.route_position(route_index, route_t)
-					route_targets.append(stage_data.terrain_center + Vector3(
-						route_target.x,
-						_generated_layout.height_at_local(route_target.x, route_target.z),
-						route_target.z
-					))
-				route_target_bands.append(route_targets)
-			mechanism.configure_route_target_bands(route_target_bands)
+			var route_targets := PackedVector3Array()
+			for required_role in mechanism.data.child_target_route_roles:
+				var route_index := _route_index_for_role(required_role)
+				assert(route_index >= 0, "Splitter child target role must exist in the accepted layout.")
+				var route_target := _generated_layout.route_position(route_index, mechanism.data.child_target_t)
+				route_targets.append(stage_data.terrain_center + Vector3(
+					route_target.x,
+					_generated_layout.height_at_local(route_target.x, route_target.z),
+					route_target.z
+				))
+			mechanism.configure_route_targets(route_targets, placement.downstream_tangent)
+		elif mechanism is BumperNode:
+			mechanism.configure_downstream_tangent(placement.downstream_tangent)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
 		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)
+
+
+func _route_index_for_role(role: int) -> int:
+	for route_index in range(_generated_layout.route_roles.size()):
+		if _generated_layout.route_roles[route_index] == role:
+			return route_index
+	return -1
 
 
 func _on_mechanism_selected(mechanism: GimmickBase) -> void:

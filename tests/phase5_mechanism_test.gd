@@ -7,8 +7,11 @@ const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
 const STAGE := preload("res://resources/stages/first_descent.tres")
 const PAINT_DEPOSIT_TUNING := preload("res://resources/paint/default_paint_deposit_tuning.tres")
 const TERRAIN_FIXTURE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
+const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
+const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
+const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
 
-var _failed: bool = false
+var _failed := false
 
 
 func _initialize() -> void:
@@ -16,110 +19,265 @@ func _initialize() -> void:
 
 
 func _run_checks() -> void:
+	Engine.physics_ticks_per_second = 60
 	var test_root := Node3D.new()
 	root.add_child(test_root)
+	var terrain := TERRAIN_FIXTURE.instantiate() as TerrainSurface
+	test_root.add_child(terrain)
+	var layout := TerrainTestFixtureFactory.build_layout(TerrainTestFixtureFactory.Kind.FLAT)
+	layout.eligible_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
+	layout.eligible_mask.fill(255)
+	terrain.configure(layout)
 	var manager := ProjectileManager.new()
 	test_root.add_child(manager)
-	var paint_system := PaintSystem.new()
-	test_root.add_child(paint_system)
-	var layout := SeededStageGenerator.generate(STAGE.generation_profile, STAGE.terrain_seed, STAGE)
-	_assert_true(layout != null, "mechanism test requires a validated generated layout")
-	if layout == null:
-		quit(1)
-		return
-	var terrain_surface := TERRAIN_FIXTURE.instantiate() as TerrainSurface
-	terrain_surface.position = STAGE.terrain_center
-	test_root.add_child(terrain_surface)
-	terrain_surface.configure(layout)
-	manager.configure_terrain(terrain_surface)
-	paint_system.configure(
-		STAGE.paint_world_bounds(),
-		STAGE.terrain_center.y,
-		null,
-		STAGE.paint_color,
-		layout,
-		PAINT_DEPOSIT_TUNING
+	manager.configure_terrain(terrain)
+	manager.stage_bounds = AABB(Vector3(-24, -12, -24), Vector3(48, 48, 48))
+	var paint := PaintSystem.new()
+	test_root.add_child(paint)
+	paint.configure(Rect2(Vector2(-90, -60), Vector2(180, 120)), 0.0, null, Color(0.03, 0.38, 1.0), layout, PAINT_DEPOSIT_TUNING)
+
+	var burst := _add_mechanism(BURST_SCENE, BURST_DATA, Vector3(-8, 0, -6), manager, paint) as BurstNode
+	var splitter := _add_mechanism(SPLITTER_SCENE, SPLITTER_DATA, Vector3.ZERO, manager, paint) as SplitterNode
+	splitter.configure_route_targets(PackedVector3Array([
+		Vector3(-7, 0, -12), Vector3(0, 0, -13), Vector3(7, 0, -12),
+	]), Vector3(0, 0, -1))
+	var bumper := _add_mechanism(BUMPER_SCENE, BUMPER_DATA, Vector3(8, 0, -6), manager, paint) as BumperNode
+	bumper.configure_downstream_tangent(Vector3(0, 0, -1))
+
+	_assert_scene_contract(burst, {
+		"BurstBase": ["CylinderShape3D", 1.8, 0.7, "Pedestal"],
+		"BurstOrb": ["SphereShape3D", 1.05, 0.0, "Core"],
+	})
+	_assert_scene_contract(splitter, {
+		"SplitterBase": ["CylinderShape3D", 1.75, 0.65, "Base"],
+		"SplitterCenter": ["SphereShape3D", 0.58, 0.0, "Jewel"],
+		"SplitterOutletLeft": ["CapsuleShape3D", 0.24, 2.5, "LeftOutlet"],
+		"SplitterOutletCenter": ["CapsuleShape3D", 0.24, 2.5, "CenterOutlet"],
+		"SplitterOutletRight": ["CapsuleShape3D", 0.24, 2.5, "RightOutlet"],
+	})
+	_assert_scene_contract(bumper, {
+		"BumperBase": ["CylinderShape3D", 1.9, 0.65, "Base"],
+		"BumperUpper": ["CylinderShape3D", 1.3, 0.5, "Pad"],
+	})
+
+	var controller := StageController.new()
+	test_root.add_child(controller)
+	var cannon := CannonController.new()
+	cannon.projectile_data = PROJECTILE_DATA
+	controller.configure(STAGE, cannon, manager, paint, terrain, [burst, splitter, bumper])
+	var observation := ShotObservation.new()
+	observation.configure(1, 0.0, 38.0, 68.0, 0.0, PROJECTILE_DATA.initial_payload)
+	controller._shot_observation = observation
+
+	var burst_deposits := {"count": 0}
+	paint.deposit_applied.connect(func(request: PaintDepositRequest, _accepted: float, _written: int, _newly: int) -> void:
+		if request.source_kind == PaintDepositRequest.SourceKind.BURST:
+			burst_deposits.count += 1
 	)
-
-	var summit_y := STAGE.terrain_center.y + layout.height_at_local(0.0, 0.0)
-	var burst := BurstNode.new()
-	burst.data = BURST_DATA
-	burst.position = Vector3(0.0, summit_y + 0.8, -112.0)
-	burst.configure(manager, paint_system)
-	test_root.add_child(burst)
-	var selected := {"count": 0}
-	burst.mechanism_selected.connect(func(_mechanism: GimmickBase) -> void: selected.count += 1)
-	var click := InputEventMouseButton.new()
-	click.button_index = MOUSE_BUTTON_LEFT
-	click.pressed = true
-	burst._on_input_event(null, click, burst.position, Vector3.UP, 0)
-	_assert_true(selected.count == 1, "briefing mechanism hit areas must emit physical selection intent")
-	var burst_projectile := manager.spawn_projectile(PROJECTILE_DATA, burst.position, Vector3.ZERO)
-	_assert_true(burst.activate(burst_projectile), "charged Burst must accept its first physical projectile")
-	var burst_coverage := paint_system.coverage_percent()
-	_assert_true(burst_coverage > 0.0, "Burst must paint the authoritative mask")
-	_assert_true(not burst.activate(burst_projectile), "one projectile must not duplicate a Burst activation")
-	_assert_true(burst.is_spent(), "one-charge Burst must expose its spent state")
-	burst.reset_state()
-	_assert_true(not burst.is_spent() and burst.remaining_charges == 1, "restart contract must restore Burst charge")
+	var burst_hit := await _fire_for_contact(
+		manager, burst, Vector3(-8, 2.0, 4), Vector3(0, 0, -40), 1
+	)
+	_assert_contact_matches_preview(burst_hit, burst)
+	_assert_true(burst_hit.contact != null and burst_hit.contact.collider_shape_index == 1, "Burst orb shot must identify its orb shape")
+	_assert_true(burst_deposits.count == 1 and paint.coverage_percent() > 0.0, "Burst must write exactly once through PaintSystem")
+	_assert_true(burst.is_spent(), "Burst must spend its single charge")
+	_assert_true(not burst.struck(burst_hit.projectile, burst_hit.contact), "one physical contact must not double-activate Burst")
 	manager.cleanup()
-	paint_system.clear()
-	manager.spawn_projectile(PROJECTILE_DATA, burst.position + Vector3(0.0, 0.0, 6.0), Vector3(0.0, 0.0, -24.0))
-	for _frame in range(40):
-		if burst.is_spent():
-			break
-		await physics_frame
-	_assert_true(burst.is_spent(), "Burst must activate from a physical Area collision")
-	_assert_true(paint_system.coverage_percent() > 0.0, "physical Burst collision must paint the authoritative mask")
-	manager.cleanup()
-
-	var splitter := SplitterNode.new()
-	splitter.data = SPLITTER_DATA
-	splitter.configure(manager, paint_system)
-	test_root.add_child(splitter)
-	var parent := manager.spawn_projectile(PROJECTILE_DATA, Vector3(0.0, 8.0, 0.0), Vector3(0.0, 4.0, -28.0))
-	var parent_payload := parent.remaining_payload
-	_assert_true(splitter.activate(parent), "eligible parent must activate Splitter")
-	var children := manager.active_projectiles()
-	_assert_true(children.size() == 3, "Splitter must consume one parent and create exactly three children")
-	var total_child_payload := 0.0
-	for child in children:
-		total_child_payload += child.remaining_payload
-		_assert_true(child.split_generation == 1, "every Splitter child must be marked generation one")
-		_assert_true(not splitter.can_activate(child), "generation-one children must not split recursively")
-	_assert_true(total_child_payload <= parent_payload * 0.9 + 0.001, "Splitter must preserve the ten-percent payload loss")
-	_assert_true(manager.active_count() <= ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES, "Splitter must obey the eight-ball cap")
-	manager.cleanup()
-
-	var bumper := BumperNode.new()
-	bumper.data = BUMPER_DATA
-	bumper.configure(manager, paint_system)
-	test_root.add_child(bumper)
-	var bumper_projectile := manager.spawn_projectile(PROJECTILE_DATA, Vector3(0.0, 8.0, 0.0), Vector3(0.0, 0.0, -4.0))
-	var velocity_before := bumper_projectile.linear_velocity
-	_assert_true(bumper.activate(bumper_projectile), "ready Bumper must accept a projectile")
 	await physics_frame
-	_assert_true(bumper_projectile.linear_velocity.distance_to(velocity_before) > 0.1, "Bumper must redirect without consuming the projectile")
-	_assert_true(manager.active_count() == 1, "Bumper must not consume or duplicate the ball")
-	_assert_true(not bumper.activate(bumper_projectile), "Bumper cooldown and projectile guard must reject immediate duplicates")
+
+	var split_settlements := {"count": 0}
+	manager.all_projectiles_settled.connect(func() -> void:
+		split_settlements.count += 1
+	)
+	var split_hit := await _fire_for_contact(
+		manager, splitter, Vector3(0, 8, 0), Vector3(0, -40, 0), 1
+	)
+	_assert_contact_matches_preview(split_hit, splitter)
+	_assert_true(split_hit.contact != null and split_hit.contact.collider_shape_index == 1, "Splitter side shot must identify its center sphere")
+	var children := manager.active_projectiles()
+	_assert_true(children.size() == 3, "Splitter must remove one parent and emit exactly three children")
+	var child_payload_total := 0.0
+	for child in children:
+		child_payload_total += child.remaining_payload
+		_assert_true(child.split_generation == 1, "Splitter children must stop at generation one")
+		_assert_true(absf(child.physical_radius() - PROJECTILE_DATA.radius * 0.78) <= 0.0001, "Splitter child physical radius must be 0.78x")
+		_assert_true(absf(child.paint_radius_multiplier() - 0.78) <= 0.0001, "Splitter child paint radius must be 0.78x")
+	_assert_true(absf(child_payload_total - PROJECTILE_DATA.initial_payload * 0.9) <= 0.001, "Splitter must conserve exactly 90% payload")
+	_assert_true(not splitter.struck(children[0], split_hit.contact), "generation-one child cannot split recursively")
+	await process_frame
+	_assert_true(split_settlements.count == 0, "Splitter replacement must not settle while its children remain active")
+	manager.cleanup()
+	_assert_true(split_settlements.count == 1, "cleanup must settle the active Splitter children exactly once")
+	await physics_frame
+
+	var bumper_activations := {"count": 0}
+	bumper.mechanism_activated.connect(func(_mechanism: GimmickBase, _projectile: PaintProjectile, _kind: MechanismData.Kind) -> void:
+		bumper_activations.count += 1
+	)
+	var bumper_hit := await _fire_for_contact(
+		manager, bumper, Vector3(8, 8, -6), Vector3(0, -30, 0), 1
+	)
+	_assert_contact_matches_preview(bumper_hit, bumper)
+	_assert_true(bumper_hit.contact != null and bumper_hit.contact.collider_shape_index == 1, "Bumper shot must identify its upper cylinder")
+	var expected_speed := clampf(maxf(bumper_hit.contact.incoming_velocity.length() * 0.85, 18.0), 18.0, 32.0)
+	var expected_velocity := (bumper.displayed_downstream_tangent() + Vector3.UP * 0.22).normalized() * expected_speed
+	await physics_frame
+	await physics_frame
+	if is_instance_valid(bumper_hit.projectile):
+		_assert_true(bumper_hit.projectile.linear_velocity.distance_to(expected_velocity) <= 1.0, "Bumper queued impulse must match its displayed tangent")
+	_assert_true(not bumper.struck(bumper_hit.projectile, bumper_hit.contact), "one Bumper contact must not double-activate")
+	manager.cleanup()
+	for _cooldown_frame in range(55):
+		await physics_frame
+	var second_bumper_hit := await _fire_for_contact(
+		manager, bumper, Vector3(8, 8, -6), Vector3(0, -30, 0), 1
+	)
+	_assert_true(second_bumper_hit.contact != null and bumper_activations.count == 2, "a separated later Bumper strike must activate again")
+	manager.cleanup()
+	await physics_frame
+
+	for dummy_index in range(ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES):
+		var dummy := manager.spawn_projectile(PROJECTILE_DATA, Vector3(-14 + dummy_index * 0.5, 12, 12), Vector3.ZERO)
+		_assert_true(dummy != null, "manager must fill each slot through the eighth projectile")
+	_assert_true(manager.active_count() == 8, "active projectile count must reach but never exceed eight")
+	_assert_true(manager.spawn_projectile(PROJECTILE_DATA, Vector3.ZERO, Vector3.ZERO) == null, "ninth projectile must be rejected")
+
+	burst.reset_state()
+	splitter.reset_state()
 	bumper.reset_state()
-	_assert_true(is_zero_approx(bumper.cooldown_remaining), "reset must clear Bumper cooldown")
+	_assert_true(not burst.is_spent() and burst.remaining_charges == 1, "reset must restore Burst charge")
+	_assert_true(is_zero_approx(splitter.cooldown_remaining) and is_zero_approx(bumper.cooldown_remaining), "reset must clear mechanism cooldowns")
+	observation.seal(paint.coverage_percent())
+	_assert_true(observation.is_sealed, "mechanism facts must remain in the sealed shot observation")
+	_assert_true(observation.mechanism_activation_kinds.size() == 4, "each real activation must appear exactly once in ShotObservation")
+	_assert_true(observation.spawned_child_count == 3, "ShotObservation must record exactly three spawned children")
+	_assert_true(observation.peak_active_projectile_count <= 8, "ShotObservation must retain the global active-ball cap")
 
 	if not _failed:
-		print(
-			"Phase 5 mechanism checks passed: Burst %.4f%%, Splitter payload %.1f/%.1f, Bumper retained one ball." % [
-				burst_coverage,
-				total_child_payload,
-				parent_payload,
-			]
-		)
+		print("Phase 5 physical mechanisms passed: exact compound shapes, preview/contact parity, Burst 1, Splitter 3, Bumper 2, cap 8.")
 	manager.cleanup()
 	test_root.queue_free()
+	await process_frame
+	cannon.free()
 	quit(1 if _failed else 0)
+
+
+func _add_mechanism(
+		scene: PackedScene,
+		data: MechanismData,
+		position: Vector3,
+		manager: ProjectileManager,
+		paint: PaintSystem
+) -> GimmickBase:
+	var mechanism := scene.instantiate() as GimmickBase
+	mechanism.data = data
+	mechanism.position = position
+	mechanism.configure(manager, paint)
+	manager.get_parent().add_child(mechanism)
+	return mechanism
+
+
+func _fire_for_contact(
+		manager: ProjectileManager,
+		mechanism: GimmickBase,
+		start: Vector3,
+		velocity: Vector3,
+		expected_shape_index: int
+) -> Dictionary:
+	var preview := await _preview_cast(start, velocity)
+	_assert_true(preview.get("collider") == mechanism.mechanism_body(), "preview must hit the mechanism gameplay body")
+	_assert_true(int(preview.get("shape", -1)) == expected_shape_index, "preview must identify the intended mechanism shape")
+	var observed := {"contact": null, "projectile": null, "preview": preview}
+	var callback := func(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+		if contact.collider == mechanism.mechanism_body() and observed.contact == null:
+			observed.contact = contact
+			observed.projectile = projectile
+	manager.projectile_contact_reported.connect(callback)
+	var projectile := manager.spawn_projectile(PROJECTILE_DATA, start, velocity)
+	_assert_true(projectile != null, "mechanism fixture must spawn a projectile")
+	var frame_budget := 120
+	while observed.contact == null and frame_budget > 0:
+		await physics_frame
+		frame_budget -= 1
+	if manager.projectile_contact_reported.is_connected(callback):
+		manager.projectile_contact_reported.disconnect(callback)
+	_assert_true(observed.contact != null, "real projectile must report a mechanism contact")
+	return observed
+
+
+func _preview_cast(start: Vector3, velocity: Vector3) -> Dictionary:
+	var sphere := SphereShape3D.new()
+	sphere.radius = PROJECTILE_DATA.radius
+	var space := root.get_world_3d().direct_space_state
+	var samples := CannonBallistics.sample_unobstructed(
+		start, velocity, Vector3.DOWN * 9.8, 1.0 / 60.0, 1.0, PROJECTILE_DATA.linear_damp
+	)
+	for sample_index in range(1, samples.size()):
+		var previous := samples[sample_index - 1]
+		var motion := samples[sample_index] - previous
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = sphere
+		query.transform = Transform3D(Basis.IDENTITY, previous)
+		query.motion = motion
+		query.collision_mask = 4
+		query.collide_with_bodies = true
+		query.collide_with_areas = false
+		var fractions := space.cast_motion(query)
+		if fractions.is_empty() or float(fractions[0]) >= 1.0:
+			continue
+		var safe_fraction := minf(float(fractions[1]) + 0.002, 1.0)
+		query.transform.origin = previous + motion * safe_fraction
+		var hits := space.intersect_shape(query, 8)
+		if hits.is_empty():
+			return {}
+		var hit: Dictionary = hits[0]
+		hit["center"] = previous + motion * float(fractions[0])
+		return hit
+	return {}
+
+
+func _assert_contact_matches_preview(result: Dictionary, mechanism: GimmickBase) -> void:
+	var contact: ProjectileContact = result.contact
+	var preview: Dictionary = result.preview
+	_assert_true(contact != null and contact.collider == mechanism.mechanism_body(), "ball and preview must report the same mechanism body")
+	if contact != null and not preview.is_empty():
+		_assert_true(contact.collider_shape_index == int(preview.shape), "ball and preview must report the same mechanism shape")
+		_assert_true(contact.impact_center_position.distance_to(Vector3(preview.center)) <= 0.25, "ball and preview centers must agree within 0.25 m")
+
+
+func _assert_scene_contract(mechanism: GimmickBase, expected: Dictionary) -> void:
+	_assert_true(mechanism.get_class() == "Node3D", "%s root must be Node3D, never Area3D" % mechanism.name)
+	var body := mechanism.mechanism_body()
+	var selection := mechanism.selection_body()
+	_assert_true(body.collision_layer == 4 and body.collision_mask == 2, "%s gameplay body must use only layer 3 against projectiles" % mechanism.name)
+	_assert_true(selection.collision_layer == 8 and selection.collision_mask == 0, "%s selection body must use only layer 4" % mechanism.name)
+	_assert_true(body.get_child_count() == expected.size(), "%s must contain every frozen gameplay shape" % mechanism.name)
+	_assert_true(selection.get_child_count() == expected.size(), "%s selection geometry must mirror its visible physical silhouette" % mechanism.name)
+	for shape_name in expected:
+		var values: Array = expected[shape_name]
+		var collision := body.get_node(String(shape_name)) as CollisionShape3D
+		var visual := mechanism.get_node("Visual/%s" % values[3]) as MeshInstance3D
+		_assert_true(collision != null and visual != null, "%s must map collision %s to its named visual" % [mechanism.name, shape_name])
+		if collision == null or visual == null:
+			continue
+		_assert_true(collision.shape.is_class(String(values[0])), "%s must use its frozen primitive type" % shape_name)
+		if collision.shape is SphereShape3D:
+			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001, "%s radius must match" % shape_name)
+		elif collision.shape is CylinderShape3D:
+			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001 and absf(collision.shape.height - float(values[2])) <= 0.0001, "%s cylinder dimensions must match" % shape_name)
+		elif collision.shape is CapsuleShape3D:
+			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001 and absf(collision.shape.height - float(values[2])) <= 0.0001, "%s capsule dimensions must match" % shape_name)
+		var collision_aabb := collision.transform * collision.shape.get_debug_mesh().get_aabb()
+		var visual_aabb := (visual.transform * visual.mesh.get_aabb()).grow(0.10)
+		_assert_true(_aabb_contains(visual_aabb, collision_aabb), "%s collision AABB must remain inside its visual AABB + 0.10 m" % shape_name)
+
+
+func _aabb_contains(outer: AABB, inner: AABB) -> bool:
+	return outer.has_point(inner.position) and outer.has_point(inner.end)
 
 
 func _assert_true(condition: bool, message: String) -> void:
 	if condition:
 		return
-	push_error(message)
 	_failed = true
+	push_error("Phase 5 mechanism check failed: %s" % message)

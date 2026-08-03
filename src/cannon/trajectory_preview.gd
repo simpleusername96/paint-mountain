@@ -6,7 +6,7 @@ const MAXIMUM_PREVIEW_SECONDS := 7.2
 const MAXIMUM_DOTS := 72
 const DOT_SPACING := 2.2
 
-@export_flags_3d_physics var collision_mask: int = 1 | 2
+@export_flags_3d_physics var collision_mask: int = 1 | 4
 
 var first_collision_position: Vector3 = Vector3.ZERO
 var has_first_collision: bool = false
@@ -62,7 +62,7 @@ func refresh() -> void:
 		query.transform = Transform3D(Basis.IDENTITY, previous)
 		query.motion = current - previous
 		query.collision_mask = collision_mask
-		query.collide_with_areas = true
+		query.collide_with_areas = false
 		var collision := space_state.cast_motion(query)
 		var display_position := current
 		if not collision.is_empty() and collision[0] < 1.0:

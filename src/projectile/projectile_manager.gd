@@ -19,6 +19,7 @@ const MAXIMUM_ACTIVE_PROJECTILES := 8
 var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
 var _terrain_surface: TerrainSurface
 var _active: Array[PaintProjectile] = []
+var _settlement_check_queued := false
 
 
 func configure_terrain(terrain_surface: TerrainSurface) -> void:
@@ -62,6 +63,7 @@ func active_projectiles() -> Array[PaintProjectile]:
 
 
 func cleanup() -> void:
+	_settlement_check_queued = false
 	for projectile in _active:
 		if is_instance_valid(projectile):
 			projectile.queue_free()
@@ -98,6 +100,16 @@ func _on_transient_splash_requested(projectile: PaintProjectile, contact: Projec
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
 	_active.erase(projectile)
 	projectile_stopped.emit(projectile, reason)
+	if _active.is_empty() and not _settlement_check_queued:
+		_settlement_check_queued = true
+		_emit_settled_if_still_empty.call_deferred()
+
+
+func _emit_settled_if_still_empty() -> void:
+	if not _settlement_check_queued:
+		return
+	_settlement_check_queued = false
+	_prune_invalid()
 	if _active.is_empty():
 		all_projectiles_settled.emit()
 

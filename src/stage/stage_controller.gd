@@ -67,6 +67,9 @@ func configure(
 		_projectile_manager.projectile_stopped.connect(_on_projectile_stopped)
 	if not _projectile_manager.projectile_spawned.is_connected(_on_projectile_spawned):
 		_projectile_manager.projectile_spawned.connect(_on_projectile_spawned)
+	for mechanism in _mechanisms:
+		if not mechanism.mechanism_activated.is_connected(_on_mechanism_activated):
+			mechanism.mechanism_activated.connect(_on_mechanism_activated)
 	restart(true)
 
 
@@ -245,12 +248,24 @@ func _on_projectile_stopped(_projectile: PaintProjectile, reason: StringName) ->
 		_shot_observation.record_settlement(reason)
 
 
-func _on_projectile_spawned(_projectile: PaintProjectile) -> void:
+func _on_projectile_spawned(projectile: PaintProjectile) -> void:
 	if _shot_observation != null:
-		_shot_observation.peak_active_projectile_count = maxi(
-			_shot_observation.peak_active_projectile_count,
-			_projectile_manager.active_count()
-		)
+		if projectile.split_generation > 0:
+			_shot_observation.record_children_spawned(1, _projectile_manager.active_count())
+		else:
+			_shot_observation.peak_active_projectile_count = maxi(
+				_shot_observation.peak_active_projectile_count,
+				_projectile_manager.active_count()
+			)
+
+
+func _on_mechanism_activated(
+		_mechanism: GimmickBase,
+		_projectile: PaintProjectile,
+		kind: MechanismData.Kind
+) -> void:
+	if _shot_observation != null:
+		_shot_observation.record_mechanism_activation(kind)
 
 
 func _transition_to(next_state: State, force: bool = false) -> bool:

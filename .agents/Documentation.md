@@ -81,6 +81,19 @@ integration passed headlessly. The obsolete Area-based mechanism collision now
 fails its historical Phase 5 assertion as expected; Task 05 replaces that path
 with matching solid bodies.
 
+Task 05 replaced all gameplay trigger areas with scene-owned compound
+`StaticBody3D` mechanisms and a separate selection-only query layer. Burst now
+submits one terrain-aware `14 m / 140` deposit through `PaintSystem`; Splitter
+removes its parent and emits exactly three route-role children with 90% total
+payload, generation-1 radius multipliers, and the frozen contact-normal spawn
+formula; Bumper queues the frozen downstream corrective impulse for the next
+direct-body integration tick. Real rigid-body fixtures matched preview body,
+shape, and impact center, rejected duplicate contacts, accepted a later
+separated Bumper strike, restored state on reset, and enforced the eight-ball
+cap. The sealed observation recorded four activations and three children.
+Task 06 is next and will replace the retained direct-target solver with manual
+yaw/elevation/power input and the shared full-path predictor.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/mechanisms/splitter_node.gd" id="1_script"]
 
@@ -45,7 +45,18 @@ height = 1.16
 radial_segments = 12
 rings = 6
 
-[node name="SplitterNode" type="Area3D"]
+[sub_resource type="CylinderShape3D" id="BaseShape"]
+radius = 1.75
+height = 0.65
+
+[sub_resource type="SphereShape3D" id="CenterShape"]
+radius = 0.58
+
+[sub_resource type="CapsuleShape3D" id="OutletShape"]
+radius = 0.24
+height = 2.5
+
+[node name="SplitterNode" type="Node3D"]
 script = ExtResource("1_script")
 
 [node name="Visual" type="Node3D" parent="."]
@@ -65,7 +76,7 @@ position = Vector3(0, 1.65, 0)
 mesh = SubResource("Jewel")
 
 [node name="LeftOutlet" type="MeshInstance3D" parent="Visual"]
-position = Vector3(-0.8, 0.95, 1.0)
+position = Vector3(-0.8, 0.95, 1)
 rotation_degrees = Vector3(90, 0, -28)
 mesh = SubResource("Outlet")
 
@@ -75,6 +86,60 @@ rotation_degrees = Vector3(90, 0, 0)
 mesh = SubResource("Outlet")
 
 [node name="RightOutlet" type="MeshInstance3D" parent="Visual"]
-position = Vector3(0.8, 0.95, 1.0)
+position = Vector3(0.8, 0.95, 1)
 rotation_degrees = Vector3(90, 0, 28)
 mesh = SubResource("Outlet")
+
+[node name="MechanismBody" type="StaticBody3D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="SplitterBase" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0, 0.325, 0)
+shape = SubResource("BaseShape")
+
+[node name="SplitterCenter" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0, 1.65, 0)
+shape = SubResource("CenterShape")
+
+[node name="SplitterOutletLeft" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(-0.8, 0.95, 1)
+rotation_degrees = Vector3(90, 0, -28)
+shape = SubResource("OutletShape")
+
+[node name="SplitterOutletCenter" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0, 0.95, 1.15)
+rotation_degrees = Vector3(90, 0, 0)
+shape = SubResource("OutletShape")
+
+[node name="SplitterOutletRight" type="CollisionShape3D" parent="MechanismBody"]
+position = Vector3(0.8, 0.95, 1)
+rotation_degrees = Vector3(90, 0, 28)
+shape = SubResource("OutletShape")
+
+[node name="SelectionBody" type="StaticBody3D" parent="."]
+collision_layer = 8
+collision_mask = 0
+
+[node name="SplitterBase" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0, 0.325, 0)
+shape = SubResource("BaseShape")
+
+[node name="SplitterCenter" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0, 1.65, 0)
+shape = SubResource("CenterShape")
+
+[node name="SplitterOutletLeft" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(-0.8, 0.95, 1)
+rotation_degrees = Vector3(90, 0, -28)
+shape = SubResource("OutletShape")
+
+[node name="SplitterOutletCenter" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0, 0.95, 1.15)
+rotation_degrees = Vector3(90, 0, 0)
+shape = SubResource("OutletShape")
+
+[node name="SplitterOutletRight" type="CollisionShape3D" parent="SelectionBody"]
+position = Vector3(0.8, 0.95, 1)
+rotation_degrees = Vector3(90, 0, 28)
+shape = SubResource("OutletShape")
