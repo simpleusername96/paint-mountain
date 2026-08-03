@@ -8,6 +8,7 @@ source: user remediation directive dated 2026-08-02
 related:
   - Prompt.md
   - Documentation.md
+  - execplans/2026-08-03-core-interaction-redesign.md
   - ../docs/source-brief.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -16,6 +17,12 @@ related:
 ---
 
 # Paint Mountain Core Experience Remediation Plan
+
+> Historical plan: this document records the remediation that was marked done
+> on 2026-08-03. A later static code audit found that several claimed outcomes
+> are not supported by the current implementation. The only active successor is
+> [`execplans/2026-08-03-core-interaction-redesign.md`](execplans/2026-08-03-core-interaction-redesign.md);
+> use its progress checklist and acceptance gates for all further work.
 
 At plan creation, the baseline contained the original three-stage rules, paint mask, projectile physics, mechanisms, replay, and export path but lacked procedural progression, readable placement, Korean-first UI, direct targeting, and the target composition. The six phases below were executed to preserve the working gameplay owners while rebuilding the visible core experience; all completion gates passed on 2026-08-03.
 
