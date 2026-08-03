@@ -6,6 +6,7 @@ last_reviewed: 2026-08-03
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
+  - execplans/2026-08-03-gameplay-visual-reset.md
   - execplans/2026-08-03-core-interaction-redesign.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -13,9 +14,36 @@ related:
 
 # Project Record
 
-## Current Static-Audit Correction (2026-08-03)
+## Current Gameplay and Visual Reset (2026-08-03)
 
-The active implementation authority is
+The sole active implementation authority is
+[`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
+It incorporates the user's later correction that the physical ball continuously
+paints every scoreable target surface traversed while in contact. It fixes the
+remaining product decisions before execution: a graph-first mountain, one
+filled target footprint without slope masking, off-route non-solid decorations,
+fixed `4 / 27 / 70%` targets, and two user-coordinated visible validation
+sessions. The validated Claude response is supporting evidence, not executable
+authority.
+
+The present code already supplies useful foundations: one immutable generated
+layout, a heightfield top plus closed shell, one authoritative `PaintSystem`
+mask, real rigid-body contacts, physical mechanism bodies, manual aim, a first-
+collision predictor, camera safety, replay isolation, Korean localization/theme,
+component HUD scenes, headless tests, Windows export, and the fastrun command.
+Those foundations do not prove the intended game. The active plan replaces
+their lobe-first generation, finite spaced paint, incomplete multi-contact
+reporting, target masking, and weak visual composition before any completion
+claim is made.
+
+Creating the replacement plan changed documentation only. No gameplay behavior
+was modified or runtime window launched. Execution begins at Phase 0 only after
+the user instructs use of that plan, which also approves its exact one-line
+protected `AGENTS.md` alignment.
+
+## Superseded Core-Interaction Implementation Record (2026-08-03)
+
+The superseded implementation authority was
 `execplans/2026-08-03-core-interaction-redesign.md`. A source-level audit after
 the prior remediation release found that several reported outcomes were not
 supported by the current implementation: the terrain render mesh has no closed

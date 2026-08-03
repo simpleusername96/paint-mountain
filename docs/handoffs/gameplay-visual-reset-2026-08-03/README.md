@@ -7,6 +7,7 @@ topic: Paint Mountain gameplay and visual reset
 scope: read-only external design and architecture review
 related:
   - ../../../AGENTS.md
+  - ../../../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../../source-brief.md
   - ../../design-spec.md
   - ../../technical-architecture.md
@@ -117,12 +118,13 @@ why, where it belongs, and how a reviewer can tell that it works.
 
 ## Next Steps
 
-1. Use `external-review-validation.md`, not the raw response alone, when deciding
-   what enters a replacement ExecPlan.
-2. Resolve the five plan-readiness decisions listed in that validation.
-3. Align the stale protected/product documents and install one replacement
-   ExecPlan together after approval.
-4. Preserve `raw/claude-review.md` unchanged as external evidence.
+1. Use
+   [`.agents/execplans/2026-08-03-gameplay-visual-reset.md`](../../../.agents/execplans/2026-08-03-gameplay-visual-reset.md)
+   as the sole active execution contract.
+2. Begin its Phase 0 only after the user instructs execution; that instruction
+   is the exact protected-line approval defined by the plan.
+3. Keep this package and `raw/claude-review.md` unchanged as supporting evidence
+   except for lifecycle/reference corrections such as this one.
 
 ## Risks
 

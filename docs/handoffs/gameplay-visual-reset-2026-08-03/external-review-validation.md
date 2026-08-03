@@ -11,6 +11,7 @@ related:
   - external-review-raw.md
   - current-state.md
   - constraints-and-decisions.md
+  - ../../../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../../../.agents/execplans/2026-08-03-core-interaction-redesign.md
 ---
 
@@ -127,31 +128,32 @@ The following direction is sufficiently supported for a future replacement plan:
 
 ### Plan readiness
 
-No new Codex execution plan was created. `.agents/PLANS.md` requires one active
-plan, and `.agents/execplans/2026-08-03-core-interaction-redesign.md` is still
-active. It also encodes the obsolete finite-payload model. Creating another
-active plan or marking the current one superseded during this evidence-ingestion
-task would create conflicting authority without the required approval.
+The user subsequently requested a plan based on this validated analysis.
+`.agents/execplans/2026-08-03-gameplay-visual-reset.md` is now the sole active
+ExecPlan and the prior core-interaction plan is preserved with `status:
+superseded`. The replacement closes the five readiness decisions as follows:
 
-A replacement ExecPlan becomes appropriate only after these product decisions
-are explicitly locked:
+1. its Phase 0 names the exact protected `AGENTS.md` line edit and treats a
+   later instruction to execute the plan as approval for that edit only;
+2. `target_mask` is one filled graph-derived target footprint, and every top
+   texel inside it is paintable/scored without a slope cutoff;
+3. non-solid decoration is outside target/route/pad envelopes and no decorative
+   gameplay obstacle is added;
+4. stage targets remain `4 / 27 / 70%` with `4 / 5 / 6` shots; and
+5. normal work is headless, with only a coordinated Stage 1 proof and final
+   release session writing separate interim/final evidence.
 
-1. the protected `AGENTS.md` finite-payload statement is aligned with the newer
-   user correction;
-2. paintable/scored target-surface eligibility is defined without hiding
-   reachable terrain;
-3. the collision policy for solid-looking decorations is fixed;
-4. stage targets remain `4 / 27 / 70%` or are explicitly revised;
-5. the non-disruptive running-capture workflow and evidence location are fixed.
+The numerical baselines in the plan are locked implementation contracts rather
+than facts proven by this evidence document. A failed gate requires defect
+correction or plan revision; it does not authorize executor-owned retuning.
 
 ## Recommendations
 
 1. Use Claude's accepted core as the design direction, not its entire correction
    guide as an implementation contract.
-2. Resolve the five plan-readiness decisions above before replacing the active
-   ExecPlan.
-3. In the replacement plan, make continuous paint, multi-contact reporting, and
-   one readable Stage 1 route the first vertical proof.
+2. Execute only the replacement plan after its exact Phase 0 approval gate.
+3. Keep continuous paint, multi-contact reporting, and one readable Stage 1
+   route as the first vertical proof.
 4. Keep numerical terrain, paint, camera, mechanism, and UI values tied to named
    controlled evidence rather than treating screenshot arithmetic as product
    authority.

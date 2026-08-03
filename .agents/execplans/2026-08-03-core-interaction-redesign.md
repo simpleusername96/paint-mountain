@@ -1,8 +1,9 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-03
 last_reviewed: 2026-08-03
+superseded_by: 2026-08-03-gameplay-visual-reset.md
 scope: terrain generation and geometry, projectile contact, paint deposition and coverage, physical mechanisms, manual aiming, trajectory preview, camera safety, replay isolation, Korean-first UI, test migration, and release evidence
 source: user-directed static code and design audit dated 2026-08-03
 related:
@@ -17,12 +18,20 @@ related:
 
 # Paint Mountain Core Interaction Redesign — Execution Contract
 
-This is the only active execution plan for the redesign. The completed
+> Supersession record (2026-08-03):
+> [`2026-08-03-gameplay-visual-reset.md`](2026-08-03-gameplay-visual-reset.md)
+> is the sole active ExecPlan. Tasks 00-09 and their measurements below remain
+> historical implementation evidence, but this plan's finite-payload, downhill-
+> flow, lobe-first terrain, and completion contracts were superseded by the
+> user's corrected continuous-contact paint rule and the validated external
+> review. Do not resume Task 09 or execute Task 10 from this document.
+
+This was the active execution plan for the prior redesign. The completed
 `.agents/Plan.md` remains historical evidence of the prior remediation, but its
 claims are not proof that the current implementation satisfies them. The code
 audit summarized below found structural contradictions in terrain, collision,
-aiming, paint, mechanism, UI, replay, and test design. An executor must follow
-this document without reopening product or architecture choices.
+aiming, paint, mechanism, UI, replay, and test design. The decisions below were
+binding only while this plan was active and must not be resumed now.
 
 ## Purpose
 

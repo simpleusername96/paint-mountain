@@ -55,7 +55,8 @@ paths.
 | `docs/design-spec.md` | Current compact mechanics and presentation interpretation | Describes finite payload, shrinking stamps, and old stage balance |
 | `docs/technical-architecture.md` | Current runtime owners and data flow | Deposit and observation contracts assume consumable amount |
 | `.agents/Plan.md` | Prior remediation decisions and visual diagnosis | Completed historical plan; its success claims are not current acceptance evidence |
-| `.agents/execplans/2026-08-03-core-interaction-redesign.md` | Detailed prior implementation contract | Active label does not make its obsolete paint assumptions correct |
+| `.agents/execplans/2026-08-03-core-interaction-redesign.md` | Detailed prior implementation contract | Superseded historical evidence; its obsolete paint assumptions are not executable authority |
+| `.agents/execplans/2026-08-03-gameplay-visual-reset.md` | Decision-complete replacement created after validation | Sole active execution authority; numerical gates are contracts to verify, not prior measured facts |
 | `.agents/Documentation.md` | Implemented-state record and known verification blocker | Useful inventory, not visual proof |
 | `docs/test-checklist.md` | Existing acceptance and test record | Checks finite payload and includes unchecked solution gates |
 
