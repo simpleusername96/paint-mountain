@@ -106,6 +106,23 @@ stage/aim cases through the Godot physics backend, three isolated mechanism
 casts, bounds exit, timeout, and the prior projectile/mechanism/state
 regressions passed. Task 07 is next.
 
+Task 07 made `ShotObservation` the single sealed shot summary and corrected
+fire-time ordering so spawn/contact signals cannot precede its creation. The
+controller now waits for two consecutive inactive physics ticks, conserves
+aggregate payload across split and settled balls, and gives replay and the
+agent API the same sealed object. Every aim, fire, restart, and debug mutation
+now carries or respects an action origin; replay presentation holds an
+exclusive `REPLAY` lock until its clean briefing exit. Replay format 3 stores
+only ticked actions plus stage/profile/seed/checksum metadata and expected shot
+outcomes, rejects format 2, and validates contact, coverage, mechanism order,
+settlement reasons, and result state. `CameraDirector` now applies 1.5 m terrain
+clearance and line-of-sight correction to all bookmarks, briefing orbit,
+mechanism focus, and speed-weighted split framing with a 96 m wide-view latch.
+All named camera fixtures passed across the three stages. A fresh-process
+record/replay matched first contact and coverage with zero measured delta, and
+the independent persistence matrix preserved locale, unlocks, results, and
+settings. Task 08 is next.
+
 ## Context
 
 The repository was created from a complete vertical-slice brief. The
@@ -123,7 +140,7 @@ the static-audit correction above.
 - `StageController` is the sole stage-state authority. Human buttons and cannon input call the same validated fire/restart methods; `CameraDirector` and `HUDController` only react to emitted state.
 - `GimmickBase` owns common physical activation, duplicate-projectile rejection, cooldown/charges, state snapshots, and reset. Burst delegates to `PaintSystem`, Splitter delegates bounded child creation to `ProjectileManager`, and Bumper applies one directional rigid-body impulse.
 - `StageCatalog` owns the exact three-stage resource list, while `GameState` and `SaveSystem` own selection/unlocks/results/settings and atomic versioned local persistence. Stage scripts contain no stage-specific rule branches.
-- `ReplayRecorder` stores ordered aim inputs and gameplay events with play/pause/restart and 1×/2× controls. `GameplayAgentApi` exposes the same validated aim/fire/restart/camera actions and structured observations without HUD or mouse coupling.
+- `ReplayRecorder` stores format-3 deterministic actions and expected sealed observations. `ReplayPresentationController` exclusively locks gameplay mutations to replay-origin actions until clean exit; `GameplayAgentApi` uses the same validated action and observation boundaries without HUD or mouse coupling.
 - Split children are redirected toward the visible downhill face and disperse divided payload over wider lanes. This gives Split Ridge a difficult, high-value route while retaining the one-generation and eight-projectile limits.
 - `AppRoot` owns navigation among separate main-menu, stage-select, settings, and active-gameplay interfaces. Gameplay emits narrow navigation signals instead of knowing the application shell.
 - Presentation uses approved Kenney low-poly dressing and particle textures, bright faceted terrain, an eight-emitter paint-particle pool, bounded camera shake, and runtime-generated PCM music/SFX routed through Master/Music/SFX buses.
@@ -175,8 +192,8 @@ the static-audit correction above.
 - Godot is not currently on PATH; local verification needs `-GodotPath` or a `GODOT_BIN` environment variable.
 - The version-3 generator, closed production terrain/collider wiring, and
   authoritative physical contact/deposit path are implemented and verified.
-  Manual aim prediction, mechanism bodies, replay format 3, and scene-based UI
-  remain pending their later ExecPlan tasks.
+  Manual aim prediction, physical mechanisms, and replay format 3 are now
+  implemented; the scene-based interface remains pending Task 08.
 - Generation remains bounded to 32 derived attempt seeds plus one pinned
   fallback and must fail closed; new accepted checksums and solutions cannot be
   copied from the superseded build.

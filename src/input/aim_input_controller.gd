@@ -37,12 +37,12 @@ func _process(delta: float) -> void:
 func adjust_power(delta_percent: float) -> bool:
 	if not _can_adjust_aim():
 		return false
-	_cannon.set_aim(
+	return _stage_controller.set_aim(
 		_cannon.yaw_degrees,
 		_cannon.elevation_degrees,
-		_cannon.power_percent + delta_percent
+		_cannon.power_percent + delta_percent,
+		StageController.ActionOrigin.HUMAN
 	)
-	return true
 
 
 func adjust_power_button(direction: float) -> bool:
@@ -66,7 +66,7 @@ func adjust_elevation(delta_degrees: float) -> bool:
 func request_fire() -> bool:
 	if not _can_adjust_aim():
 		return false
-	return _stage_controller.request_fire()
+	return _stage_controller.request_fire(StageController.ActionOrigin.HUMAN)
 
 
 func _input(event: InputEvent) -> void:
@@ -105,9 +105,9 @@ func _handle_key(event: InputEventKey) -> void:
 	var keycode := event.physical_keycode if event.physical_keycode != 0 else event.keycode
 	if keycode == KEY_TAB and event.pressed and not event.echo:
 		if _stage_controller.current_state == StageController.State.AIMING:
-			_stage_controller.enter_briefing()
+			_stage_controller.enter_briefing(StageController.ActionOrigin.HUMAN)
 		elif _stage_controller.current_state == StageController.State.BRIEFING:
-			_stage_controller.begin_aiming()
+			_stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN)
 		return
 	if keycode == KEY_SPACE:
 		if event.pressed and not event.echo:
@@ -131,10 +131,11 @@ func _handle_key(event: InputEventKey) -> void:
 
 
 func _apply_axis_step(yaw_delta: float, elevation_delta: float) -> void:
-	_cannon.set_aim(
+	_stage_controller.set_aim(
 		_cannon.yaw_degrees + yaw_delta,
 		_cannon.elevation_degrees + elevation_delta,
-		_cannon.power_percent
+		_cannon.power_percent,
+		StageController.ActionOrigin.HUMAN
 	)
 
 
@@ -154,5 +155,6 @@ func _axis_for_key(keycode: Key) -> Vector2:
 
 func _can_adjust_aim() -> bool:
 	return _cannon != null and _stage_controller != null \
+			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
 			and _stage_controller.current_state == StageController.State.AIMING

@@ -34,6 +34,7 @@ extends Resource
 @export var wide_camera_target := Vector3(0.0, 22.0, -112.0)
 @export var result_camera_position := Vector3(-78.0, 50.0, 4.0)
 @export var result_camera_target := Vector3(0.0, 22.0, -112.0)
+@export_range(24.0, 160.0, 1.0) var follow_camera_max_distance: float = 96.0
 
 
 func paint_world_bounds() -> Rect2:

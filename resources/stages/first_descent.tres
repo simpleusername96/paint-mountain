@@ -30,3 +30,4 @@ wide_camera_position = Vector3(82, 52, 8)
 wide_camera_target = Vector3(0, 22, -112)
 result_camera_position = Vector3(-78, 50, 4)
 result_camera_target = Vector3(0, 22, -112)
+follow_camera_max_distance = 96.0

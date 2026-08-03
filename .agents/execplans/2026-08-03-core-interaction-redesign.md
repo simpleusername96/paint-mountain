@@ -1570,12 +1570,12 @@ This checklist is the single canonical progress source for the redesign:
 - [x] Task 04 — Make physics contact authoritative and unify paint.
 - [x] Task 05 — Convert mechanisms to physical bodies.
 - [x] Task 06 — Replace auto-targeting with manual aim and full preview.
-- [ ] Task 07 — Add shot causality, safe camera, and isolated replay.
+- [x] Task 07 — Add shot causality, safe camera, and isolated replay.
 - [ ] Task 08 — Rebuild the Korean-first interface.
 - [ ] Task 09 — Retire false fixtures and build one truthful verification path.
 - [ ] Task 10 — Complete production evidence and documentation closeout.
 
 ## Next Steps
 
-Begin Task 07. Do not implement any later task until its predecessor's
+Begin Task 08. Do not implement any later task until its predecessor's
 acceptance and regression guards pass.

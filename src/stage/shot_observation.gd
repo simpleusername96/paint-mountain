@@ -7,6 +7,7 @@ var commanded_elevation: float = 0.0
 var commanded_power: float = 0.0
 var first_terrain_contact: ProjectileContact
 var first_mechanism_contact: ProjectileContact
+var first_contact: ProjectileContact
 var mechanism_activation_kinds := PackedInt32Array()
 var spawned_child_count: int = 0
 var peak_active_projectile_count: int = 0
@@ -42,6 +43,8 @@ func configure(
 func record_contact(contact: ProjectileContact, is_terrain: bool) -> void:
 	if is_sealed or contact == null:
 		return
+	if first_contact == null:
+		first_contact = contact
 	if is_terrain and first_terrain_contact == null:
 		first_terrain_contact = contact
 	elif not is_terrain and first_mechanism_contact == null:
@@ -81,3 +84,40 @@ func seal(final_coverage: float) -> void:
 	coverage_after = maxf(final_coverage, 0.0)
 	coverage_gain = maxf(coverage_after - coverage_before, 0.0)
 	is_sealed = true
+
+
+func to_dictionary() -> Dictionary:
+	return {
+		"shot_number": shot_number,
+		"commanded_aim": {
+			"yaw": commanded_yaw,
+			"elevation": commanded_elevation,
+			"power": commanded_power,
+		},
+		"first_terrain_contact": _contact_dictionary(first_terrain_contact),
+		"first_mechanism_contact": _contact_dictionary(first_mechanism_contact),
+		"first_contact": _contact_dictionary(first_contact),
+		"mechanism_activation_kinds": Array(mechanism_activation_kinds),
+		"spawned_child_count": spawned_child_count,
+		"peak_active_projectile_count": peak_active_projectile_count,
+		"initial_payload": initial_payload,
+		"current_payload": current_payload,
+		"consumed_payload": consumed_payload,
+		"settlement_reason_counts": settlement_reason_counts.duplicate(true),
+		"coverage_before": coverage_before,
+		"coverage_after": coverage_after,
+		"coverage_gain": coverage_gain,
+		"penetration_guard_count": penetration_guard_count,
+		"is_sealed": is_sealed,
+	}
+
+
+func _contact_dictionary(contact: ProjectileContact) -> Dictionary:
+	if contact == null:
+		return {}
+	return {
+		"point": contact.world_position,
+		"normal": contact.normal,
+		"collider_id": contact.collider_instance_id,
+		"physics_tick": contact.physics_tick,
+	}

@@ -75,7 +75,7 @@ func _process(_delta: float) -> void:
 	for mechanism in _mechanisms:
 		var snapshot := mechanism.state_snapshot()
 		mechanism_lines.append("%s charge=%s cd=%.2f" % [snapshot.kind, snapshot.remaining_charges, snapshot.cooldown])
-	var seed := int(_replay.attempt.get("physics_seed", 0)) if _replay != null else 0
+	var seed := int(_replay.attempt.get("accepted_seed", 0)) if _replay != null else 0
 	_metrics.text = "STATE  %s\nFPS  %d\nPROJECTILES  %d / %d\nVELOCITY  %s\nPAYLOAD  %.2f\nCOVERAGE  %.3f%%\nSHOT GAIN  %.3f%%\nTRAJECTORY SAMPLES  %d\nFIRST COLLISION  %s\nMECHANISMS\n%s\nSEED  %d\nBOUNDS  %s\nCAMERA  %s\nRESTART  %.3f ms\nFLOW  %s" % [
 		_controller.state_name(),
 		Engine.get_frames_per_second(),
@@ -176,15 +176,15 @@ func _build() -> void:
 	actions.add_theme_constant_override("h_separation", 8)
 	actions.add_theme_constant_override("v_separation", 8)
 	content.add_child(actions)
-	_add_action(actions, "REFILL SHOTS", func() -> void: _controller.debug_refill_shots())
-	_add_action(actions, "CLEAR PAINT", func() -> void: _paint.clear())
-	_add_action(actions, "FORCE CLEAR", func() -> void: _controller.force_stage_clear())
-	_add_action(actions, "TEST PROJECTILE", _spawn_test_projectile)
-	_add_action(actions, "SLOW MOTION", _toggle_slow_motion)
-	_add_action(actions, "TOGGLE FLOW", func() -> void: _paint.flow_simulation_enabled = not _paint.flow_simulation_enabled)
-	_add_action(actions, "MECHANISM LABELS", _toggle_labels)
-	_add_action(actions, "SAVE AIM", _save_aim)
-	_add_action(actions, "REPLAY LAST SHOT", func() -> void: replay_last_shot_requested.emit())
+	_add_action(actions, "REFILL SHOTS", func() -> void: _run_debug_action(func() -> void: _controller.debug_refill_shots()))
+	_add_action(actions, "CLEAR PAINT", func() -> void: _run_debug_action(func() -> void: _paint.clear()))
+	_add_action(actions, "FORCE CLEAR", func() -> void: _run_debug_action(func() -> void: _controller.force_stage_clear()))
+	_add_action(actions, "TEST PROJECTILE", func() -> void: _run_debug_action(_spawn_test_projectile))
+	_add_action(actions, "SLOW MOTION", func() -> void: _run_debug_action(_toggle_slow_motion))
+	_add_action(actions, "TOGGLE FLOW", func() -> void: _run_debug_action(func() -> void: _paint.flow_simulation_enabled = not _paint.flow_simulation_enabled))
+	_add_action(actions, "MECHANISM LABELS", func() -> void: _run_debug_action(_toggle_labels))
+	_add_action(actions, "SAVE AIM", func() -> void: _run_debug_action(_save_aim))
+	_add_action(actions, "REPLAY LAST SHOT", func() -> void: _run_debug_action(func() -> void: replay_last_shot_requested.emit()))
 	_add_action(actions, "EXPORT SHOT LOG", func() -> void: export_shot_log())
 
 
@@ -211,6 +211,12 @@ func _add_action(parent: GridContainer, caption: String, action: Callable) -> vo
 	button.add_theme_font_size_override("font_size", 12)
 	button.pressed.connect(action)
 	parent.add_child(button)
+
+
+func _run_debug_action(action: Callable) -> void:
+	if _controller == null or _controller.action_origin_is_locked():
+		return
+	action.call()
 
 
 func _spawn_test_projectile() -> void:

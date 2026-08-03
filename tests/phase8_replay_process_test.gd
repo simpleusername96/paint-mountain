@@ -33,6 +33,7 @@ func _run() -> void:
 	var projectiles: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var recorder: ReplayRecorder = gameplay.get_node("ReplayRecorder")
+	var presentation: ReplayPresentationController = gameplay.get_node("ReplayPresentationController")
 	var first_impact := {"set": false, "position": Vector3.ZERO}
 	projectiles.projectile_contact_reported.connect(func(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
 		if not first_impact.set:
@@ -41,14 +42,16 @@ func _run() -> void:
 	)
 	if mode == "record":
 		controller.begin_aiming()
-		cannon.set_aim(0.0, 38.0, 68.0)
+		controller.set_aim(0.0, 38.0, 68.0)
 		controller.request_fire()
-		Engine.time_scale = 3.0
 		await _wait_for_settlement(controller)
+		var observation := controller.last_sealed_shot_observation()
 		var fixture := {
 			"attempt": recorder.export_attempt(),
-			"coverage": paint.coverage_percent(),
-			"impact": [first_impact.position.x, first_impact.position.y, first_impact.position.z],
+			"coverage": observation.coverage_after,
+			"impact": [observation.first_contact.world_position.x, observation.first_contact.world_position.y, observation.first_contact.world_position.z],
+			"mechanism_kinds": Array(observation.mechanism_activation_kinds),
+			"result_state": controller.current_state,
 		}
 		var file := FileAccess.open(FIXTURE_PATH, FileAccess.WRITE)
 		if file == null:
@@ -66,14 +69,29 @@ func _run() -> void:
 			_failed = true
 		else:
 			gameplay._start_replay()
-			await process_frame
-			Engine.time_scale = 3.0
+			var start_budget := 120
+			while controller.current_state == StageController.State.AIMING and start_budget > 0:
+				await physics_frame
+				start_budget -= 1
+			_assert_true(start_budget > 0, "replay must dispatch its recorded fire action")
 			await _wait_for_settlement(controller)
+			var replay_observation := controller.last_sealed_shot_observation()
+			if replay_observation == null:
+				_failed = true
+				push_error("fresh-process replay must produce a sealed observation")
+				Engine.time_scale = 1.0
+				gameplay.queue_free()
+				await process_frame
+				quit(1)
+				return
 			var expected_impact := Vector3(float(fixture.impact[0]), float(fixture.impact[1]), float(fixture.impact[2]))
-			var impact_delta: float = first_impact.position.distance_to(expected_impact)
-			var coverage_delta: float = absf(paint.coverage_percent() - float(fixture.coverage))
+			var impact_delta: float = replay_observation.first_contact.world_position.distance_to(expected_impact)
+			var coverage_delta: float = absf(replay_observation.coverage_after - float(fixture.coverage))
 			_assert_true(first_impact.set and impact_delta <= 0.5, "fresh-process replay first impact must stay within 0.5m")
 			_assert_true(coverage_delta <= 0.1, "fresh-process replay coverage must stay within 0.1 percentage points")
+			_assert_true(Array(replay_observation.mechanism_activation_kinds) == fixture.mechanism_kinds, "fresh-process replay mechanism order must match exactly")
+			_assert_true(controller.current_state == int(fixture.result_state), "fresh-process replay final state must match")
+			_assert_true(presentation.active, "replay input lock must remain active until explicit exit")
 			print("Phase 8 replay passed across a fresh process: impact Δ %.5fm, coverage Δ %.5f%%." % [impact_delta, coverage_delta])
 	Engine.time_scale = 1.0
 	root.get_node("/root/GameState").persistence_enabled = true

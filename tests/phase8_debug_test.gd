@@ -42,9 +42,9 @@ func _run_checks() -> void:
 		file.close()
 	_assert_true(parsed is Dictionary, "shot log must be valid JSON")
 	if parsed is Dictionary:
-		_assert_true(parsed.stage_id == "first_descent" and int(parsed.physics_seed) > 0, "shot log must contain stage and seed")
-		_assert_true(parsed.shots.size() == 1 and parsed.shots[0].has("yaw") and parsed.shots[0].has("elevation") and parsed.shots[0].has("power"), "shot log must contain ordered aim inputs")
-		_assert_true(_has_event(parsed.events, "shot_settled"), "shot log must contain coverage gain and settlement")
+		_assert_true(parsed.stage_id == "first_descent" and int(parsed.accepted_seed) > 0, "shot log must contain stage and accepted seed")
+		_assert_true(_has_aim_and_fire(parsed.actions), "shot log must contain ordered aim/fire actions")
+		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
 		_assert_true(parsed.has("mechanisms") and parsed.has("exported_state"), "shot log must contain activations snapshot and outcome state")
 	var flow_before := paint.flow_simulation_enabled
 	paint.flow_simulation_enabled = not flow_before
@@ -75,11 +75,13 @@ func _count_texture_rects(node: Node) -> int:
 	return result
 
 
-func _has_event(events: Array, event_name: String) -> bool:
-	for event in events:
-		if event.get("name", "") == event_name:
-			return event.payload.has("gain") and event.payload.has("total")
-	return false
+func _has_aim_and_fire(actions: Array) -> bool:
+	var has_aim := false
+	var has_fire := false
+	for action in actions:
+		has_aim = has_aim or String(action.get("kind", "")) == "aim"
+		has_fire = has_fire or String(action.get("kind", "")) == "fire"
+	return has_aim and has_fire
 
 
 func _assert_true(condition: bool, message: String) -> void:

@@ -152,11 +152,11 @@ Manual aiming and prediction:
 
 Shot causality, camera, and replay:
 
-- [ ] One sealed `ShotObservation` owns commanded aim, ordered contacts/mechanisms, child and payload facts, settlement reasons, coverage delta, and penetration-guard count.
-- [ ] A shot settles only after projectiles and paint flow are inactive for two consecutive physics ticks, and HUD/replay/agent consumers do not reconstruct outcomes.
-- [ ] Every named camera fixture maintains at least 1.5 m terrain clearance and avoids terrain occlusion except within the final 0.25 m of a terrain focus.
-- [ ] Replay format 3 records deterministic actions and expected observations, rejects format 2, and reproduces contact within 0.5 m, coverage within 0.1 percentage point, exact mechanism order, and final state in a fresh process.
-- [ ] Replay presentation disables all human/agent/debug gameplay mutation and accepts only replay-origin actions until a clean exit.
+- [x] One sealed `ShotObservation` owns commanded aim, ordered contacts/mechanisms, child and payload facts, settlement reasons, coverage delta, and penetration-guard count.
+- [x] A shot settles only after projectiles and paint flow are inactive for two consecutive physics ticks, and HUD/replay/agent consumers do not reconstruct outcomes.
+- [x] Every named camera fixture maintains at least 1.5 m terrain clearance and avoids terrain occlusion except within the final 0.25 m of a terrain focus.
+- [x] Replay format 3 records deterministic actions and expected observations, rejects format 2, and reproduces contact within 0.5 m, coverage within 0.1 percentage point, exact mechanism order, and final state in a fresh process.
+- [x] Replay presentation disables all human/agent/debug gameplay mutation and accepts only replay-origin actions until a clean exit.
 
 Korean UI, visual direction, and approved assets:
 

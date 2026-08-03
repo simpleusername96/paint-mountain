@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://src/debug/debug_overlay.gd" id="14_debug"]
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
+[ext_resource type="Script" path="res://src/replay/replay_presentation_controller.gd" id="17_replay_presentation"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.63, 0.75, 0.88, 1)
@@ -149,6 +150,10 @@ script = ExtResource("13_dressing")
 [node name="ReplayRecorder" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("10_replay")
+
+[node name="ReplayPresentationController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("17_replay_presentation")
 
 [node name="GameplayAgentApi" type="Node" parent="."]
 unique_name_in_owner = true

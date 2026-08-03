@@ -33,7 +33,7 @@ func configure(
 	_camera_director = camera_director
 	_mechanisms = mechanisms
 	_stage_controller.shot_fired.connect(_on_shot_fired)
-	_stage_controller.shot_result.connect(_on_shot_result)
+	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
 	_stage_controller.stage_cleared.connect(func(coverage: float, _shots: int) -> void: gameplay_event.emit(&"stage_cleared", {"coverage": coverage}))
 	_stage_controller.stage_failed.connect(func(coverage: float, missing: float) -> void: gameplay_event.emit(&"stage_failed", {"coverage": coverage, "missing": missing}))
 	_projectile_manager.projectile_contact_reported.connect(func(_projectile: PaintProjectile, contact: ProjectileContact) -> void: gameplay_event.emit(&"projectile_impacted", {
@@ -71,21 +71,20 @@ func get_observation() -> Dictionary:
 
 
 func set_aim(yaw: float, elevation: float, power: float) -> bool:
-	if _stage_controller.current_state != StageController.State.AIMING:
-		return false
-	_cannon.set_aim(yaw, elevation, power)
-	return true
+	return _stage_controller.set_aim(yaw, elevation, power, StageController.ActionOrigin.AGENT)
 
 
 func fire() -> bool:
-	return _stage_controller.request_fire()
+	return _stage_controller.request_fire(StageController.ActionOrigin.AGENT)
 
 
 func restart() -> void:
-	_stage_controller.restart(false)
+	_stage_controller.restart(false, StageController.ActionOrigin.AGENT)
 
 
 func change_camera(mode: CameraDirector.Mode) -> bool:
+	if _stage_controller.action_origin_is_locked():
+		return false
 	if _stage_controller.current_state not in [StageController.State.BRIEFING, StageController.State.AIMING, StageController.State.PROJECTILE_IN_FLIGHT]:
 		return false
 	_camera_director.set_mode(mode)
@@ -93,6 +92,8 @@ func change_camera(mode: CameraDirector.Mode) -> bool:
 
 
 func start_next_stage() -> bool:
+	if _stage_controller.action_origin_is_locked():
+		return false
 	var next_id := StageCatalog.next_stage_id(_stage_data.stage_id)
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state == null or next_id.is_empty() or not game_state.select_stage(next_id):
@@ -110,9 +111,8 @@ func _on_shot_fired(order: int, yaw: float, elevation: float, power: float) -> v
 	gameplay_event.emit(&"shot_started", _previous_shot.duplicate(true))
 
 
-func _on_shot_result(gain: float, total: float) -> void:
-	_previous_shot["coverage_gain"] = gain
-	_previous_shot["total_coverage"] = total
+func _on_shot_observation_sealed(observation: ShotObservation) -> void:
+	_previous_shot = observation.to_dictionary()
 	gameplay_event.emit(&"shot_settled", _previous_shot.duplicate(true))
 
 
