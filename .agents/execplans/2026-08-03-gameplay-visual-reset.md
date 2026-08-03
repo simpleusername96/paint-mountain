@@ -1142,6 +1142,13 @@ for payload removal
     produce exactly one height per XZ sample; delete lobe synthesis and every
     multi-height/overhang/detached-terrain path from production; expose derived
     route queries from the graph while migrating consumers.
+  - Migration boundary: because all stages share the typed profile and generator,
+    convert all three `.tres` files to the explicit version-4 graph-input schema
+    in this task so import remains coherent and no lobe production path survives.
+    Task 1.1 accepts and runs only First Descent. Stage 2/3 graph inputs may fail
+    their final ratio, placement, reachability, or containment gates until Phase
+    2; such failures remain fail-closed and cannot be hidden by retuning the
+    frozen profiles or reviving a version-3 generator.
   - Accept: base/fallback/repeated generation is deterministic; Stage 1 has the
     exact chain, 0 reversals, accepted height/slope/target-ratio gates, and no
     lobe field, secondary height function, literal route stair, or second top
@@ -1249,9 +1256,10 @@ consumers, `mechanism_placement_generator`, `environment_dressing`,
 generation/terrain/placement tests
 
 - [ ] **2.1** Implement the frozen Stage 2 and Stage 3 graphs.
-  - Change: migrate both profiles, shared summit/branch topology, edge IDs,
-    pads, bounded support, target shoulders, reachability certificates, generated
-    default aims, and deterministic checksums.
+  - Change: complete and accept both already schema-migrated profiles, shared
+    summit/branch topology, edge IDs, pads, bounded support, target shoulders,
+    reachability certificates, generated default aims, and deterministic
+    checksums.
   - Accept: every stage passes its exact route count, role, width, reversal,
     height, slope, lip, ratio, component, and branch-reachability gate for base,
     repeat, attempt, and fallback paths; every accepted target texel also passes
