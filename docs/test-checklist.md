@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-05
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -13,6 +13,9 @@ related:
   - ../.agents/Plan.md
   - ../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
+  - ../.agents/execplans/2026-08-05-physical-gameplay-mvp.md
+  - ../.agents/execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
+  - ../.agents/execplans/2026-08-05-runtime-grounded-interface.md
 ---
 
 # Test Checklist
@@ -20,13 +23,38 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-An unchecked item is not an implemented claim. All checked items above the
-active redesign gate and all dated observations below it are historical
-evidence for superseded builds; they do not satisfy the new unchecked gate.
+The dated execution gate below is the current authority for the user-approved
+2026-08-05 ExecPlan pass. Older sections are retained as historical records and
+must not be read as current failures or current proof.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
+
+## Current ExecPlan execution gate (2026-08-05)
+
+- [x] Closed 3D mountain shell, top topology, apron/backstop containment, and
+  measured rigid-body contact pass focused fixtures.
+- [x] Predictor and real projectile share stable terrain/mechanism identities;
+  projectile CCD contact, low rebound, settlement, and continuous target-top
+  paint pass.
+- [x] PaintSystem remains the sole authoritative mask/coverage owner; the
+  dirty-region GPU publication path preserves the mask and passes the rendered
+  responsiveness probe.
+- [x] Two root families can be admitted immediately, third admission is a
+  side-effect-free capacity rejection, Splitter children inherit shot IDs, and
+  observation/replay/agent schemas preserve family identity.
+- [x] Stage 01–30 are deterministic catalog entries, all-open in fresh and
+  migrated saves, and stage-select paging does not generate terrain.
+- [x] Korean-first menu, stage select, briefing, aiming, observation, pause,
+  settings, clear, failure, and replay states render through real owners with
+  one left coverage owner, lower-left aim/power, centered Fire, and upper-right
+  settings/shots.
+- [x] Focused test suite, `scripts/verify.ps1`, Windows release export, and
+  exported off-screen aiming capture pass. See
+  `.agents/evidence/2026-08-05-execution-evidence.md`.
+- [ ] Foreground play review by the user. The agent intentionally does not open
+  a desktop-blocking Godot window.
 
 ## Requirements and Acceptance Criteria
 

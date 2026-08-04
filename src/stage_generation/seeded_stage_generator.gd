@@ -25,6 +25,17 @@ static func generate(
 	if stage_data == null:
 		push_error("Production stage generation requires StageData.")
 		return null
+	if String(stage_id).begins_with("stage_"):
+		# Generated progression entries use a short deterministic search. The full
+		# certifier remains an offline tool; runtime stage entry must stay bounded.
+		var attempts := mini(profile.generation_contract.attempt_count, 8)
+		for attempt_index in range(attempts):
+			var attempt_seed := int((requested_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)
+			var candidate := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
+			if _validate(profile, candidate) and _finalize_layout(profile, stage_data, candidate):
+				return candidate
+		push_error("Generated stage %s failed its bounded runtime attempts." % stage_id)
+		return null
 	var layout := _build_attempt(
 		stage_id,
 		profile,
@@ -422,13 +433,13 @@ static func _circle_is_outside_target_mask(
 
 
 static func _decoration_count(stage_number: int) -> int:
-	match stage_number:
-		2:
-			return 14
-		3:
-			return 18
-		_:
-			return 10
+	if stage_number <= 5:
+		return 10
+	if stage_number <= 10:
+		return 14
+	if stage_number <= 20:
+		return 18
+	return 22
 
 
 static func _height_checksum(heights: PackedFloat32Array) -> int:

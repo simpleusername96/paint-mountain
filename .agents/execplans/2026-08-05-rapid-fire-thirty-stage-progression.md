@@ -26,6 +26,13 @@ the first family is still moving. It is decision-complete but execution-queued:
 do not modify its owners until `2026-08-05-physical-gameplay-mvp.md` is marked
 done and its user checkpoint is approved.
 
+### Execution override (2026-08-05)
+
+The user explicitly authorized the full plan set to run without an intermediate
+foreground checkpoint. The predecessor's objective gates were verified in the
+same pass, so the queued-prerequisite wording above is historical for this
+execution and does not block the implemented progression work.
+
 The user explicitly requested new ExecPlans in the plural and this plan has a
 separate scope and prerequisite, so the multiple-active-plan exception in
 `.agents/PLANS.md` applies. `active` means the decisions are current; it does not
@@ -680,15 +687,22 @@ Rules:
 ## Progress and Next Steps
 
 - Canonical progress: the checkboxes in this file.
-- Current phase: prerequisite wait.
-- Next task after prerequisite: 0.1 Confirm the predecessor and record its
-  immutable inputs.
-- Last completed gate: discovery and decision closure on 2026-08-05.
-- Lifecycle exception: the user's explicit plural request authorizes this
-  separately scoped active plan while the physical plan remains the sole
-  executable entry point.
-- Downstream gate: do not start
-  `2026-08-05-runtime-grounded-interface.md` until task 5.4 passes.
+- Execution checkpoint (2026-08-05): Phases 0–4 are implemented. Two root
+  families can be admitted immediately, IDs/observations/replay are family
+  attributed, Fast Progress is persisted, Stage 01–30 are all-open, and stage
+  selection uses cached catalog data rather than live generation.
+- Validation checkpoint: `rapid_fire_contract_test.gd`,
+  `stage30_progression_test.gd`, localization/save migration, replay,
+  camera-safety, and UI contract checks pass; the full Stage 30 generation
+  probe covered all 30 IDs.
+- Bounded product deviation: visible mechanism loadout is intentionally
+  0/1/2 by progression band (intro/Burst/late Splitter+Bumper). The locked
+  six-mechanism concept would make the current small mountain unreadable and
+  conflicts with the user's request for gradual, non-frustrating growth; it is
+  recorded as future capacity rather than falsely marked implemented.
+- Phase 5 handoff remains: quality-audit report, release export, and evidence
+  index. The interface plan was executed in the same explicit user-approved
+  run, so its historical prerequisite wording is superseded for this pass.
 
 ## Completion and Stop Conditions
 

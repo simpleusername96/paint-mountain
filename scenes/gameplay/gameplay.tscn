@@ -33,7 +33,7 @@ background_mode = 2
 sky = SubResource("Sky")
 ambient_light_source = 3
 ambient_light_color = Color(0.78, 0.81, 0.86, 1)
-ambient_light_energy = 0.40
+ambient_light_energy = 0.36
 reflected_light_source = 2
 tonemap_mode = 2
 
@@ -55,7 +55,7 @@ environment = SubResource("Environment_gameplay")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-48, -58, 0)
 light_color = Color(1, 0.95, 0.84, 1)
-light_energy = 1.25
+light_energy = 1.05
 shadow_enabled = true
 directional_shadow_max_distance = 260.0
 
@@ -63,7 +63,7 @@ directional_shadow_max_distance = 260.0
 unique_name_in_owner = true
 position = Vector3(0, 7.2, 17)
 current = true
-fov = 55.0
+fov = 48.0
 far = 460.0
 
 [node name="BackstopEnvironment" parent="." instance=ExtResource("18_containment")]

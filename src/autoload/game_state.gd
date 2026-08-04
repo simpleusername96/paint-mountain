@@ -4,7 +4,7 @@ signal progression_changed
 signal settings_changed(settings: Dictionary)
 
 var selected_stage_id: StringName = &"first_descent"
-var unlocked_stages: Array[StringName] = [&"first_descent"]
+var unlocked_stages: Array[StringName] = StageCatalog.all_stage_ids()
 var best_results: Dictionary = {}
 var settings: Dictionary = {}
 var persistence_enabled: bool = true
@@ -15,20 +15,18 @@ func _ready() -> void:
 
 
 func initialize_from_data(data: Dictionary) -> void:
-	unlocked_stages.clear()
-	for stage_id in data.get("unlocked_stages", ["first_descent"]):
-		unlocked_stages.append(StringName(stage_id))
-	if not unlocked_stages.has(&"first_descent"):
-		unlocked_stages.push_front(&"first_descent")
+	unlocked_stages = StageCatalog.all_stage_ids()
+	var persisted_selected := StringName(data.get("selected_stage_id", "first_descent"))
+	if persisted_selected == &"stage_01":
+		persisted_selected = &"first_descent"
+	selected_stage_id = persisted_selected if StageCatalog.get_stage(persisted_selected) != null else &"first_descent"
 	best_results = Dictionary(data.get("best_results", {})).duplicate(true)
 	settings = Dictionary(data.get("settings", _save_system().default_data().settings)).duplicate(true)
 	TranslationServer.set_locale(String(settings.get("language", "ko")))
-	if not unlocked_stages.has(selected_stage_id):
-		selected_stage_id = &"first_descent"
 
 
 func select_stage(stage_id: StringName) -> bool:
-	if not unlocked_stages.has(stage_id) or StageCatalog.get_stage(stage_id) == null:
+	if StageCatalog.get_stage(stage_id) == null:
 		return false
 	selected_stage_id = stage_id
 	return true
@@ -42,8 +40,6 @@ func complete_stage(stage_id: StringName, coverage: float, stars: int, persist: 
 		"stars": maxi(stars, int(previous.get("stars", 0))),
 	}
 	var next_id := StageCatalog.next_stage_id(stage_id)
-	if not next_id.is_empty() and not unlocked_stages.has(next_id):
-		unlocked_stages.append(next_id)
 	progression_changed.emit()
 	if persist and persistence_enabled:
 		save_now()
@@ -70,12 +66,9 @@ func save_now() -> Error:
 
 
 func export_data() -> Dictionary:
-	var unlocked: Array[String] = []
-	for stage_id in unlocked_stages:
-		unlocked.append(String(stage_id))
 	return {
-		"version": 2,
-		"unlocked_stages": unlocked,
+		"version": 3,
+		"selected_stage_id": String(selected_stage_id),
 		"best_results": best_results.duplicate(true),
 		"settings": settings.duplicate(true),
 	}

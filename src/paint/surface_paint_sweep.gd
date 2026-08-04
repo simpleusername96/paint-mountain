@@ -45,6 +45,9 @@ var collider_shape_index: int:
 var bridged_gap: bool:
 	get:
 		return _bridged_gap
+var shot_id: int:
+	get:
+		return _shot_id
 
 var _physics_tick: int
 var _spawn_ordinal: int
@@ -60,6 +63,7 @@ var _contact_owner_id: StringName
 var _contact_shape_id: StringName
 var _collider_shape_index: int
 var _bridged_gap: bool
+var _shot_id: int
 
 
 func _init(
@@ -76,7 +80,8 @@ func _init(
 		command_contact_owner_id: StringName = &"",
 		command_contact_shape_id: StringName = &"",
 		command_collider_shape_index: int = -1,
-		command_bridged_gap: bool = false
+		command_bridged_gap: bool = false,
+		command_shot_id: int = 1
 ) -> void:
 	_physics_tick = command_physics_tick
 	_spawn_ordinal = command_spawn_ordinal
@@ -92,10 +97,12 @@ func _init(
 	_contact_shape_id = command_contact_shape_id
 	_collider_shape_index = command_collider_shape_index
 	_bridged_gap = command_bridged_gap
+	_shot_id = command_shot_id
 
 
 func is_intent_valid() -> bool:
 	return _physics_tick >= 0 and _spawn_ordinal >= 0 and _source_event_index >= 0 \
+			and _shot_id > 0 \
 			and _from_point.is_finite() and _to_point.is_finite() \
 			and _from_normal.is_finite() and not _from_normal.is_zero_approx() \
 			and _to_normal.is_finite() and not _to_normal.is_zero_approx() \
@@ -126,5 +133,5 @@ func with_sequence(assigned_sequence: int) -> SurfacePaintSweep:
 		_physics_tick, _spawn_ordinal, _source_event_index, assigned_sequence,
 		_from_point, _to_point, _from_normal, _to_normal, _footprint_radius,
 		_top_collider_rid, _contact_owner_id, _contact_shape_id,
-		_collider_shape_index, _bridged_gap
+			_collider_shape_index, _bridged_gap, _shot_id
 	)

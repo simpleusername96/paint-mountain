@@ -18,9 +18,17 @@ func _run() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
 			requested_stage = argument.trim_prefix("--stage=")
-	for stage in StageCatalog.all_stages():
-		if not requested_stage.is_empty() and String(stage.stage_id) != requested_stage:
+	var catalog := StageCatalog.all_stages()
+	var probe_indices := [0, 9, 19, 29]
+	if not requested_stage.is_empty():
+		probe_indices = []
+		for index in range(catalog.size()):
+			if String(catalog[index].stage_id) == requested_stage:
+				probe_indices.append(index)
+	for stage_index in probe_indices:
+		if stage_index < 0 or stage_index >= catalog.size():
 			continue
+		var stage := catalog[stage_index]
 		print("Camera safety fixture started for %s." % stage.stage_id)
 		game_state.selected_stage_id = stage.stage_id
 		var gameplay := GAMEPLAY_SCENE.instantiate()
@@ -85,6 +93,7 @@ func _exercise_split_follow(
 			cannon.projectile_data,
 			positions[index],
 			Vector3(2.0 + index, 0.0, -2.0),
+			1,
 			1
 		)
 		projectile.freeze = true

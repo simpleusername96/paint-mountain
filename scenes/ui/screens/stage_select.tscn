@@ -56,9 +56,10 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="Cards" type="VBoxContainer" parent="Root/CardsPanel/Margin"]
+[node name="Cards" type="GridContainer" parent="Root/CardsPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 14
+columns = 2
 
 [node name="Card1" type="Button" parent="Root/CardsPanel/Margin/Cards"]
 unique_name_in_owner = true

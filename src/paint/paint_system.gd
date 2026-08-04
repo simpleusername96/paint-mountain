@@ -12,7 +12,11 @@ signal paint_commands_drained(
 
 const MASK_SIZE := 512
 const PAINT_DRAIN_PRIORITY := 1000
-const PAINT_TEXTURE_PUBLISH_INTERVAL := 1.0 / 15.0
+# The mask remains authoritative in CPU memory; the material only needs a
+# bounded presentation cadence. Ten uploads per second keeps the blue trail
+# visibly continuous while avoiding a texture update on every sixth rendered
+# frame during a long rolling contact.
+const PAINT_TEXTURE_PUBLISH_INTERVAL := 1.0 / 10.0
 const COVERAGE_PUBLISH_INTERVAL := 0.20
 const NORMAL_FACING_THRESHOLD := 0.2588190451 # cos(75 degrees)
 const WRITE_RESULT_NONE := 0
@@ -528,7 +532,7 @@ func _typed_command_less(a, b) -> bool:
 
 
 func _command_key(command) -> String:
-	return "%d:%d:%d" % [command.physics_tick, command.spawn_ordinal, command.sequence]
+	return "%d:%d:%d:%d" % [command.shot_id, command.physics_tick, command.spawn_ordinal, command.sequence]
 
 
 func _candidate_pixel_bounds(minimum_world: Vector2, maximum_world: Vector2) -> Rect2i:
@@ -970,14 +974,29 @@ func _upload_dirty_images() -> void:
 		return
 	if _paint_dirty_rect.has_area():
 		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
-		_paint_texture.update(_paint_image)
+		_update_texture_region(_paint_texture, _paint_image, _paint_dirty_rect)
 	if _recent_diagnostics_enabled and _recent_dirty_rect.has_area():
 		_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
-		_recent_texture.update(_recent_image)
+		_update_texture_region(_recent_texture, _recent_image, _recent_dirty_rect)
 	_texture_upload_batch_count += 1
 	_paint_dirty_rect = Rect2i()
 	_recent_dirty_rect = Rect2i()
 	_texture_upload_pending = false
+
+
+func _update_texture_region(
+		texture: ImageTexture,
+		image: Image,
+		dirty_rect: Rect2i
+) -> void:
+	# The CPU mask is authoritative, but the GPU only needs the changed region.
+	# Compatibility's partial upload avoids stalling the render thread with a
+	# full 512x512 texture update for every rolling paint sweep.
+	if texture.has_method(&"set_data_partial"):
+		texture.call(&"set_data_partial", image, dirty_rect, dirty_rect.position)
+	else:
+		# Keep a safe fallback for renderers/builds that expose only update().
+		texture.update(image)
 
 
 func _surface_sample_at_world(world_xz: Vector2) -> Dictionary:

@@ -19,7 +19,7 @@ const FOLLOW_RELEASE_RATIO := 0.85
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
-const FOLLOW_DIRECTION := Vector3(18.0, 12.0, 24.0)
+const FOLLOW_DIRECTION := Vector3(52.0, 34.0, 74.0)
 
 var current_mode: Mode = Mode.AIMING
 var _camera: Camera3D
@@ -194,6 +194,13 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 			return [_stage_data.aiming_camera_position + Vector3(7.0, 2.0, 2.0), _stage_data.aiming_camera_target]
 		_:
 			return [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
+	# The aiming composition is deliberately authored. Framing the entire closed
+	# terrain AABB here pushes the cannon too far into the foreground and turns the
+	# target into a flat white wall at the 1280px delivery viewport. Wide/follow
+	# modes still use the safety framer below; planning always keeps the cannon and
+	# the complete mountain silhouette in one readable shot.
+	if mode in [Mode.AIMING, Mode.CANNON]:
+		return authored
 	if _terrain_surface == null or _camera == null:
 		return authored
 	var bounds := _terrain_surface.render_world_aabb()
@@ -298,7 +305,20 @@ func _update_rendered_camera(delta: float) -> void:
 				+ (_safe_position - _safe_source_position)
 		target_focus = _computed_follow_focus \
 				+ (_safe_cached_focus - _safe_source_focus)
+		# Render interpolation can move the projectile a few centimetres past the
+		# last 15 Hz safety solve. Re-check only this follow path and lift the
+		# target pose when the interpolated line would cut through the mountain.
+		if not view_ray_is_clear(target_position, target_focus, _focus_is_terrain(target_focus)):
+			target_position = safe_position_for(
+				target_position,
+				target_focus,
+				_focus_is_terrain(target_focus)
+			)
 	var corrected := _smooth_damp(_camera.global_position, target_position, delta)
+	if current_mode == Mode.FOLLOW and not view_ray_is_clear(
+			corrected, target_focus, _focus_is_terrain(target_focus)
+	):
+		corrected = safe_position_for(corrected, target_focus, _focus_is_terrain(target_focus))
 	_camera.global_position = corrected
 	if not corrected.is_equal_approx(target_focus):
 		_look_at_focus(target_focus)

@@ -40,5 +40,6 @@ func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> v
 			projectile.projectile_data,
 			origin,
 			direction * speed,
-			projectile.split_generation + 1
+			projectile.split_generation + 1,
+			projectile.shot_id
 		)

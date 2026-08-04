@@ -56,6 +56,13 @@ func get_observation() -> Dictionary:
 	var mechanism_states: Array[Dictionary] = []
 	for mechanism in _mechanisms:
 		mechanism_states.append(mechanism.state_snapshot())
+	var activity := _stage_controller.activity_snapshot()
+	var active_shot_ids: PackedInt64Array = activity.get("active_shot_ids", PackedInt64Array())
+	var aim_ready := _stage_controller.current_state in [
+		StageController.State.AIMING,
+		StageController.State.PROJECTILE_IN_FLIGHT,
+		StageController.State.PAINT_SETTLING,
+	] and _cannon.input_enabled
 	return {
 		"schema_version": ShotObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
@@ -84,9 +91,26 @@ func get_observation() -> Dictionary:
 		"terrain_height_grid": _height_grid(13, 9),
 		"mechanisms": mechanism_states,
 		"previous_shot": _previous_shot.duplicate(true),
+		"sealed_shots": _sealed_shot_dictionaries(),
 		"active_projectiles": _projectile_manager.active_count(),
-		"ready_for_action": _stage_controller.current_state == StageController.State.AIMING,
-	}
+		"active_shot_families": active_shot_ids.size(),
+		"active_shot_ids": active_shot_ids,
+		"aim_ready": aim_ready,
+		"fire_capacity": int(activity.get("fire_capacity", 2)),
+		"terminal_pending": bool(activity.get("terminal_pending", false)),
+		# Compatibility alias retained for one schema cycle; it now describes aim
+		# readiness rather than implying that Fire has available capacity.
+		"ready_for_action": aim_ready,
+}
+
+
+func _sealed_shot_dictionaries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if _stage_controller == null:
+		return result
+	for observation in _stage_controller.sealed_shot_observations():
+		result.append(observation.to_dictionary())
+	return result
 
 
 func set_aim(yaw: float, elevation: float, power: float) -> bool:

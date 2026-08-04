@@ -90,13 +90,23 @@ func set_fire_enabled(enabled: bool) -> void:
 
 func show_state(state: StageController.State) -> void:
 	_current_state = state
+	if state != StageController.State.AIMING:
+		# The first-session input hint belongs only to the aiming surface; leaving
+		# it over the live observation controls hides the ball and Fire affordance.
+		_first_hint.visible = false
+		_hint_timer.stop()
 	_replay.visible = _replay_active
 	_top.update_mode(state)
 	_briefing.visible = state == StageController.State.BRIEFING and not _replay_active
-	if state in [StageController.State.AIMING, StageController.State.PROJECTILE_IN_FLIGHT]:
+	var aiming_surface := state in [
+		StageController.State.AIMING,
+		StageController.State.PROJECTILE_IN_FLIGHT,
+		StageController.State.PAINT_SETTLING,
+	]
+	if aiming_surface:
 		_mechanism.hide_card()
-	_aim.visible = state == StageController.State.AIMING and not _replay_active
-	_actions.visible = state == StageController.State.AIMING and not _replay_active
+	_aim.visible = aiming_surface and not _replay_active
+	_actions.visible = aiming_surface and not _replay_active
 	_observation.visible = state in [StageController.State.PROJECTILE_IN_FLIGHT, StageController.State.PAINT_SETTLING, StageController.State.SHOT_RESULT] and not _replay_active
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and not _replay_active

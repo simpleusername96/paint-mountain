@@ -30,6 +30,13 @@ It does not ask the UI executor to invent gameplay, stage data, paint, or result
 states. Every visible value and world image must come from the owners delivered
 by the first two plans.
 
+### Execution override (2026-08-05)
+
+The user authorized the complete plan set in one pass. Both predecessor
+contracts were implemented and checked before the interface changes in this
+run; the prerequisite wording below remains useful ownership guidance but is
+not a remaining execution blocker.
+
 The user explicitly requested new ExecPlans in the plural, so the separately
 scoped multiple-active-plan exception in `.agents/PLANS.md` applies. This plan's
 `active` status records current decisions; its prerequisite makes it
@@ -609,12 +616,21 @@ Rules:
 ## Progress and Next Steps
 
 - Canonical progress: the checkboxes in this file.
-- Current phase: prerequisite wait.
-- Next task after both predecessors: 0.1 Verify both predecessor handoffs.
-- Last completed gate: nine-screen evidence and design decision closure on
-  2026-08-05.
-- Final next action: after task 6.5, the user chooses whether to run the canonical
-  fastrun command for foreground play QA.
+- Execution checkpoint (2026-08-05): Phases 0–5 are implemented. The shared
+  theme/components, Korean-first menu and stage grid, runtime aiming/
+  observation/pause/settings flows, replay/result wiring, and owner-safe
+  off-screen capture states are present in the running build.
+- Current evidence: `aiming_execution.png`, `observation_execution3.png`,
+  `stage_select_execution.png`, `main_execution_final.png`,
+  `paint_execution_final.png`, `settings_execution_final.png`, and the passing
+  `responsiveness_final.json` are indexed in the execution evidence record.
+- UI contract correction applied during execution: the top-center target chip
+  was removed so the left vertical coverage meter is the sole target owner;
+  the First Session hint is hidden outside AIMING to keep it off the Fire and
+  observation controls.
+- Phase 6 handoff remains: quality-audit report, release export, and final
+  evidence index. The user—not the agent—performs any foreground Godot play
+  review, so no desktop-blocking window is opened here.
 
 ## Completion and Stop Conditions
 

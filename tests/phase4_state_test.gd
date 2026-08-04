@@ -38,11 +38,13 @@ func _run_checks() -> void:
 	)
 	_assert_true(controller.begin_aiming(), "briefing must accept the start-aiming action")
 	_assert_true(controller.current_state == StageController.State.AIMING, "begin aiming must enter AIMING")
-	_assert_true(controller.request_fire(), "ready aiming state must accept exactly one fire action")
-	_assert_true(not controller.request_fire(), "a second fire action must be rejected while a shot is active")
-	_assert_true(controller.shots_remaining == 3, "one accepted fire action must consume exactly one shot")
+	_assert_true(controller.request_fire(), "ready aiming state must accept the first fire action")
+	_assert_true(controller.request_fire(), "a second fire action must be accepted while the first family is active")
+	_assert_true(controller.shots_remaining == 2, "two accepted fire actions must consume exactly two shots")
+	_assert_true(manager.active_root_count() == 2, "two immediate fires must expose two active root families")
+	_assert_true(not controller.request_fire(), "a third fire must be rejected at the two-family capacity")
 
-	var frame_budget := 60 * 26
+	var frame_budget := 60 * 60
 	while controller.current_state not in [StageController.State.AIMING, StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1

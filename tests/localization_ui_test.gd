@@ -13,14 +13,14 @@ func _initialize() -> void:
 func _run() -> void:
 	var save_system := root.get_node("/root/SaveSystem")
 	var defaults: Dictionary = save_system.default_data()
-	_assert_true(defaults.version == 2, "current saves must use format 2")
+	_assert_true(defaults.version == 3, "current saves must use format 3")
 	_assert_true(defaults.settings.language == "ko", "new installs must default to Korean")
 	_assert_true(not defaults.settings.language_user_selected, "new installs must not claim an explicit language choice")
 
 	_write_v1_fixture()
 	var migrated: Dictionary = save_system.load_data(MIGRATION_PATH)
-	_assert_true(migrated.version == 2, "format 1 saves must migrate to format 2")
-	_assert_true(migrated.unlocked_stages.size() == 2, "migration must preserve unlocked stages")
+	_assert_true(migrated.version == 3, "format 1 saves must migrate to format 3")
+	_assert_true(not migrated.has("unlocked_stages"), "all-open migration must discard the obsolete lock list")
 	_assert_true(is_equal_approx(float(migrated.best_results.first_descent.coverage), 14.25), "migration must preserve best results")
 	_assert_true(is_equal_approx(float(migrated.settings.master_volume), 0.37), "migration must preserve settings")
 	_assert_true(migrated.settings.language == "ko" and not migrated.settings.language_user_selected, "migration must add the Korean default without fabricating a choice")

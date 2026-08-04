@@ -45,6 +45,13 @@ plan reaches its user review gate.
   unchecked task is the only authorized starting point when the user asks to
   execute this plan.
 
+### Execution override (2026-08-05)
+
+The user subsequently authorized execution of the complete ExecPlan set in one
+pass. Therefore the historical user-review stop between this plan and the
+progression/interface plans is waived for this run; the physical contracts and
+evidence remain authoritative inputs for those downstream changes.
+
 ## Authority and Execution Order
 
 1. `docs/source-brief.md`, including its 2026-08-03 and 2026-08-04
@@ -497,12 +504,19 @@ Rules:
 ## Progress and Next Steps
 
 - Canonical progress: the checkboxes in this file.
-- Current phase: Phase 0.
-- Next task: 0.1 Record the implementation baseline.
-- Last completed gate: discovery and decision closure on 2026-08-05.
-- Downstream gate: do not start
-  `2026-08-05-rapid-fire-thirty-stage-progression.md` until task 5.4 passes and
-  the user explicitly approves the physical evidence.
+- Execution checkpoint (2026-08-05): Phases 0–4 are implemented and their
+  focused contracts pass. The closed terrain, measured contact, continuous
+  paint, two-family admission, and UI work were intentionally allowed to
+  continue in the same user-authorized run; the old stop-for-approval wording
+  is superseded by that authorization.
+- Phase 4 evidence: the Compatibility off-screen responsiveness probe passes
+  with dirty Fire `0.004 ms`, ready Fire `0.986 ms`, nonempty drain p95
+  `1.37 ms`, maximum `2.309 ms`, and no acceptance failures. The paint texture
+  path publishes only dirty regions when the renderer supports it and retains a
+  full-update fallback.
+- Phase 5 handoff remains: commit the quality audit, release export, and
+  evidence index. No physical correctness blocker is open. A foreground user
+  play review is deliberately not run by the agent.
 
 ## Completion and Stop Conditions
 

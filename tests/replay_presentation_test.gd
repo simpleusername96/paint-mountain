@@ -22,16 +22,19 @@ func _run() -> void:
 	var recorder: ReplayRecorder = gameplay.get_node("ReplayRecorder")
 	var presentation: ReplayPresentationController = gameplay.get_node("ReplayPresentationController")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
-	recorder.record_aim(4.0, 42.0, 71.0)
+	var recorded_aim := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
+	# Keep this synthetic pair on the already-admitted default aim. A real UI
+	# fire action can only be recorded after its refreshed prediction is ready.
+	recorder.record_aim(recorded_aim.x, recorded_aim.y, recorded_aim.z)
 	recorder.record_fire()
 	var attempt := recorder.export_attempt()
-	_assert_true(int(attempt.format_version) == 6 and int(attempt.physics_fps) == 60, "replay must use format 6 at 60 physics FPS")
+	_assert_true(int(attempt.format_version) == 7 and int(attempt.physics_fps) == 60, "replay must use format 7 at 60 physics FPS")
 	_assert_true(
 		int(attempt.target_mask_checksum) != 0 \
 				and int(attempt.containment_checksum) != 0 \
 				and int(attempt.placement_checksum) != 0 \
 				and not attempt.generated_default_aim.is_empty(),
-		"format-6 replay must retain layout checksums and the generated default aim"
+		"format-7 replay must retain layout checksums, shot IDs, and the generated default aim"
 	)
 	_assert_true(
 		(String(attempt.layout_admission) == "certificate" and int(attempt.reachability_checksum) != 0) \
@@ -39,7 +42,8 @@ func _run() -> void:
 		"reachability may be zero only for the structural runtime admission"
 	)
 	_assert_true(not recorder.load_attempt({"format_version": 5, "stage_id": "first_descent", "shots": []}), "format 5 must be rejected after the checksum contract changed")
-	_assert_true(presentation.start(attempt), "valid format-6 presentation must start")
+	_assert_true(int(attempt.actions[1].shot_id) == 1, "format-7 fire actions must retain the first shot-family ID")
+	_assert_true(presentation.start(attempt), "valid format-7 presentation must start")
 	var locked_aim := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	_assert_true(not controller.set_aim(-20.0, 18.0, 0.0, StageController.ActionOrigin.HUMAN), "human aim must be rejected during replay")
 	_assert_true(not agent.set_aim(-20.0, 18.0, 0.0), "agent aim must be rejected during replay")
@@ -57,7 +61,7 @@ func _run() -> void:
 	await physics_frame
 	await physics_frame
 	_assert_true(controller.current_state == StageController.State.PROJECTILE_IN_FLIGHT, "replay-origin aim and fire must use the normal stage path")
-	_assert_true(is_equal_approx(cannon.yaw_degrees, 4.0) and is_equal_approx(cannon.elevation_degrees, 42.0), "replay aim must be applied")
+	_assert_true(Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent).is_equal_approx(recorded_aim), "replay aim must be applied")
 	_assert_true(presentation.set_paused(true) and presentation.set_speed(2.0), "presentation controls must remain active")
 	_assert_true(presentation.restart_playback(), "restart playback must be available while locked")
 	_assert_true(presentation.exit(), "exit must cleanly end presentation")
@@ -67,7 +71,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Replay presentation checks passed: format 6 metadata, format 5 rejection, and exclusive replay-origin mutation.")
+		print("Replay presentation checks passed: format 7 metadata, legacy rejection, and exclusive replay-origin mutation.")
 	quit(1 if _failed else 0)
 
 

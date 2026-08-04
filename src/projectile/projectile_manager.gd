@@ -8,6 +8,9 @@ signal surface_paint_sweep_ready(command: SurfacePaintSweep)
 signal transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact)
 signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal all_projectiles_settled
+signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
+signal shot_family_finished(shot_id: int)
+signal activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int)
 
 const MAXIMUM_ACTIVE_PROJECTILES := 8
 const COMMAND_CANONICALIZATION_PRIORITY := 900
@@ -20,6 +23,7 @@ var _active: Array[PaintProjectile] = []
 var _settlement_check_queued := false
 var _pending_intents: Array[Dictionary] = []
 var _next_spawn_ordinal: int = 0
+var _next_shot_id: int = 1
 var _next_sequence_by_ordinal: Dictionary = {}
 
 
@@ -41,19 +45,25 @@ func spawn_projectile(
 		projectile_data: ProjectileData,
 		origin: Vector3,
 		velocity: Vector3,
-		split_generation: int = 0
+		split_generation: int = 0,
+		requested_shot_id: int = 0
 ) -> PaintProjectile:
 	_prune_invalid()
 	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
 		return null
-	if _active.is_empty() and split_generation == 0:
-		if not _pending_intents.is_empty():
-			_canonicalize_completed_ticks(Engine.get_physics_frames() + 1)
-		if not _pending_intents.is_empty():
-			return null
-		_begin_shot_ordering()
+	# Spawn ordinals stay monotonic for the complete attempt. This is important
+	# when a new root is fired while the previous family's paint commands are
+	# still queued: command identity must never collide across families.
 	var assigned_ordinal := _next_spawn_ordinal
 	_next_spawn_ordinal += 1
+	var assigned_shot_id := requested_shot_id
+	if split_generation == 0:
+		if assigned_shot_id <= 0:
+			assigned_shot_id = _next_shot_id
+			_next_shot_id += 1
+	else:
+		if assigned_shot_id <= 0:
+			return null
 	var projectile := PaintProjectile.new()
 	projectile.name = "PaintProjectile%02d" % (assigned_ordinal + 1)
 	projectile.configure(
@@ -63,7 +73,8 @@ func spawn_projectile(
 		velocity,
 		split_generation,
 		_paint_surface_tuning,
-		assigned_ordinal
+		assigned_ordinal,
+		assigned_shot_id
 	)
 	projectile.contact_reported.connect(_on_contact_reported)
 	projectile.radial_paint_mark_intent_requested.connect(_on_radial_paint_mark_intent)
@@ -75,6 +86,9 @@ func spawn_projectile(
 	add_child(projectile)
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
+	if split_generation == 0:
+		shot_family_started.emit(assigned_shot_id, projectile)
+	_emit_activity_changed()
 	return projectile
 
 
@@ -90,6 +104,24 @@ func active_projectiles() -> Array[PaintProjectile]:
 
 func pending_intent_count() -> int:
 	return _pending_intents.size()
+
+
+func active_shot_ids() -> PackedInt64Array:
+	_prune_invalid()
+	var ids := PackedInt64Array()
+	for projectile in _active:
+		if projectile.shot_id > 0 and not ids.has(projectile.shot_id):
+			ids.append(projectile.shot_id)
+	ids.sort()
+	return ids
+
+
+func active_root_count() -> int:
+	return active_shot_ids().size()
+
+
+func root_capacity_available(maximum_roots: int = 2) -> bool:
+	return active_root_count() < maxi(1, maximum_roots)
 
 
 func submit_radial_paint_intent(intent: RadialPaintMark) -> bool:
@@ -110,10 +142,12 @@ func cleanup() -> void:
 	_settlement_check_queued = false
 	_pending_intents.clear()
 	_begin_shot_ordering()
+	_next_shot_id = 1
 	for projectile in _active:
 		if is_instance_valid(projectile):
 			projectile.queue_free()
 	_active.clear()
+	_emit_activity_changed()
 	all_projectiles_settled.emit()
 
 
@@ -189,6 +223,10 @@ func _on_transient_splash_requested(projectile: PaintProjectile, contact: Projec
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
 	_active.erase(projectile)
 	projectile_stopped.emit(projectile, reason)
+	var shot_id := projectile.shot_id
+	if shot_id > 0 and not _has_active_shot_id(shot_id):
+		shot_family_finished.emit(shot_id)
+	_emit_activity_changed()
 	if _active.is_empty() and not _settlement_check_queued:
 		_settlement_check_queued = true
 		_emit_settled_if_still_empty.call_deferred()
@@ -201,9 +239,21 @@ func _emit_settled_if_still_empty() -> void:
 	_prune_invalid()
 	if _active.is_empty():
 		all_projectiles_settled.emit()
+	_emit_activity_changed()
 
 
 func _prune_invalid() -> void:
 	for index in range(_active.size() - 1, -1, -1):
 		if not is_instance_valid(_active[index]):
 			_active.remove_at(index)
+
+
+func _has_active_shot_id(shot_id: int) -> bool:
+	for projectile in _active:
+		if is_instance_valid(projectile) and projectile.shot_id == shot_id:
+			return true
+	return false
+
+
+func _emit_activity_changed() -> void:
+	activity_changed.emit(active_shot_ids(), _active.size())

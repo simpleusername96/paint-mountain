@@ -176,6 +176,8 @@ func _build_stage_world() -> bool:
 	_cannon.global_transform = stage_data.cannon_transform
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
+	paint_material.set_shader_parameter("rock_color", Color("8E9AAA"))
+	paint_material.set_shader_parameter("shadow_tint", Color("596574"))
 	paint_material.set_shader_parameter("support_floor_y", stage_data.terrain_center.y)
 	paint_material.set_shader_parameter(
 		"support_rear_z",
@@ -273,6 +275,8 @@ func _on_transient_splash_requested(_projectile: PaintProjectile, contact: Proje
 	_audio_cue(&"impact")
 	_camera_director.add_impact_shake(clampf(contact.relative_normal_speed / 80.0, 0.12, 0.42))
 	_shot_has_impacted = true
+	if _setting_bool("fast_progress", true):
+		Engine.time_scale = 2.0
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
@@ -300,7 +304,8 @@ func _on_aim_action_accepted(yaw: float, elevation: float, power: float, origin:
 func _on_fire_action_accepted(origin: int) -> void:
 	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
 		_replay_recorder.record_aim(_cannon.yaw_degrees, _cannon.elevation_degrees, _cannon.power_percent)
-		_replay_recorder.record_fire()
+		var observation := _stage_controller.current_shot_observation()
+		_replay_recorder.record_fire(observation.shot_id if observation != null else 0)
 
 
 func _on_restart_action_accepted(origin: int) -> void:
@@ -372,7 +377,8 @@ func _on_simulation_speed_requested(speed: float) -> void:
 	if _replay_presentation.active:
 		_replay_presentation.set_speed(speed)
 		return
-	if _stage_controller.current_state == StageController.State.PROJECTILE_IN_FLIGHT and _shot_has_impacted:
+	if _stage_controller.current_state == StageController.State.PROJECTILE_IN_FLIGHT \
+			and _shot_has_impacted and _setting_bool("fast_progress", true):
 		Engine.time_scale = clampf(speed, 1.0, 2.0)
 
 

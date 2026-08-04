@@ -109,7 +109,7 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var coverage_value := coverage.get_node_or_null("Content/CoverageValue") as Label
 	var target_value := coverage.get_node_or_null("Content/TargetValue") as Label
 	var progress := coverage.get_node_or_null("Content/Progress") as ProgressBar
-	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the top bar must not duplicate target coverage")
+	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left coverage meter must be the sole target owner")
 	_assert_true(coverage_value != null and target_value != null, "the left coverage meter must own both current and target values")
 	_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the coverage rail must fill from bottom to top")
 	_assert_true(coverage.is_visible_in_tree() and coverage.get_global_rect().get_center().x < hud_center.x, "the coverage meter must remain on the left during aiming")
@@ -119,7 +119,7 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var fire_rect := fire.get_global_rect()
 	_assert_true(actions.find_children("*", "Button", true, false).size() == 1, "Fire must be the sole aiming action")
 	_assert_true(actions.find_child("Restart", true, false) == null, "Restart must be absent from the aiming actions")
-	_assert_true(fire.is_visible_in_tree() and fire_rect.position.x <= hud_center.x and fire_rect.end.x >= hud_center.x and fire_rect.position.y > hud_center.y, "Fire must remain centered in the lower HUD")
+	_assert_true(fire.is_visible_in_tree() and absf(fire_rect.get_center().x - 640.0) <= 2.0 and fire_rect.position.y >= 560.0, "Fire must remain centered in the lower HUD")
 	_assert_true(not (hud_root.get_node("PauseOverlay") as Control).visible, "the paused-menu Restart must stay hidden during aiming")
 
 	var shots := hud_root.get_node("TopStatusBar/ShotsChip") as Control

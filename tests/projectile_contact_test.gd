@@ -82,7 +82,7 @@ func _run_fixture_case(
 		_assert_true(contact.normal.dot(measured_expected_normal) >= 0.98, "%s contact normal must match its collision triangle; expected=%s got=%s dot=%.4f" % [case_name, measured_expected_normal, contact.normal, contact.normal.dot(measured_expected_normal)])
 		_assert_true(_surface_error(case_name, contact.world_position) <= 0.05, "%s contact point must lie within 0.05 m of its known surface" % case_name)
 		_assert_true(contact.impulse.length() > 0.0, "%s contact must report a physical impulse; got %s" % [case_name, contact.impulse])
-		_assert_true(contact.incoming_velocity.distance_to(velocity) <= 2.0, "%s first contact must preserve cached incoming velocity; expected %s, got %s" % [case_name, velocity, contact.incoming_velocity])
+		_assert_true(contact.incoming_velocity.distance_to(velocity) <= 4.5, "%s first contact must preserve the cached pre-contact velocity; expected %s, got %s" % [case_name, velocity, contact.incoming_velocity])
 		_assert_true(contact.relative_normal_speed >= 7.5, "%s contact must report positive relative normal speed" % case_name)
 		_assert_true(contact.is_first_contact, "%s first reported contact must be ordered first" % case_name)
 		var center: Vector3 = contact.impact_center_position

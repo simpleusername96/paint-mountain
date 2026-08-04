@@ -76,7 +76,8 @@ func _run() -> void:
 		source.sealed_tick = Engine.get_physics_frames()
 	)
 	_assert_true(controller.begin_aiming(), "shot fixture must enter aiming")
-	_assert_true(controller.set_aim(0.0, 38.0, 68.0), "shot fixture aim must be accepted")
+	# Use the generated, already-admitted default aim so this contract test does
+	# not bypass the asynchronous trajectory refresh required by live input.
 	_assert_true(controller.request_fire(), "shot fixture must fire")
 	_assert_true(
 		manager.process_physics_priority == 900 \
@@ -95,7 +96,7 @@ func _run() -> void:
 	if source.sealed.size() == 1:
 		var observation: ShotObservation = source.sealed[0]
 		_assert_true(observation.is_sealed, "consumer must receive only a sealed observation")
-		_assert_true(observation.schema_version == 4, "sealed observation must use schema 4")
+		_assert_true(observation.schema_version == 5, "sealed observation must use schema 5")
 		_assert_true(observation.shot_number == 1, "observation must retain shot order")
 		_assert_true(observation.first_contact == source.first_contact, "first contact must come from the manager signal")
 		_assert_true(observation.contacts.size() == source.contacts.size(), "every ordered manager contact must be retained")
@@ -121,7 +122,7 @@ func _run() -> void:
 		_assert_true(source.sealed_tick >= source.last_drain_event_tick, "sealing must not precede the final paint drain")
 		_assert_true(controller.last_sealed_shot_observation() == observation, "StageController must expose the same sealed object")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
-	_assert_true(bool(agent.get_observation().previous_shot.get("is_sealed", false)) and int(agent.get_observation().previous_shot.get("schema_version", 0)) == 4, "agent observation must consume the sealed schema-4 object")
+	_assert_true(bool(agent.get_observation().previous_shot.get("is_sealed", false)) and int(agent.get_observation().previous_shot.get("schema_version", 0)) == 5, "agent observation must consume the sealed schema-5 object")
 	gameplay.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true

@@ -1,0 +1,112 @@
+{
+	"acceptance": {
+		"failures": [
+			"paint-drain frame p95 exceeded the non-drain delta budget"
+		],
+		"passed": false
+	},
+	"engine": {
+		"build": "official",
+		"hash": "a13da4feb8d8aefc283c3763d33a2f170a18d541",
+		"hex": 263937,
+		"major": 4,
+		"minor": 7,
+		"patch": 1,
+		"status": "stable",
+		"string": "4.7.1-stable (official)",
+		"timestamp": 0
+	},
+	"fire": {
+		"dirty_aim_rejected": true,
+		"dirty_fire_ms": 0.006,
+		"dirty_fire_shots_unchanged": true,
+		"ready_fire_ms": 1.198,
+		"ready_fire_succeeded": true
+	},
+	"flight": {
+		"camera_changed_frames": 188,
+		"camera_movement_ratio": 1.0,
+		"frames": {
+			"average_ms": 34.3955502645503,
+			"count": 189,
+			"maximum_ms": 49.143,
+			"over_16_7_ms": 189,
+			"over_33_3_ms": 107,
+			"p95_ms": 37.817
+		},
+		"maximum_unchanged_camera_run": 0,
+		"moving_projectile_frames": 188,
+		"new_surface_samples": 2123,
+		"newly_painted_pixels": 1286,
+		"non_drain_frames": {
+			"average_ms": 33.2961538461539,
+			"count": 130,
+			"maximum_ms": 49.143,
+			"over_16_7_ms": 130,
+			"over_33_3_ms": 48,
+			"p95_ms": 35.282
+		},
+		"nonempty_drain_duration_ms": {
+			"average_ms": 1.17915447154472,
+			"count": 123,
+			"maximum_ms": 4.797,
+			"over_16_7_ms": 0,
+			"over_33_3_ms": 0,
+			"p95_ms": 1.773
+		},
+		"paint_commands": 123,
+		"paint_drain_frames": {
+			"average_ms": 36.8179491525424,
+			"count": 59,
+			"maximum_ms": 44.597,
+			"over_16_7_ms": 59,
+			"over_33_3_ms": 59,
+			"p95_ms": 40.881
+		},
+		"paint_drains": 123,
+		"projectile_active_at_stop": 1,
+		"surface_sample_cache_miss_delta": 2123,
+		"surface_sweeps": 121,
+		"texture_upload_batches": 28,
+		"written_pixels": 3584
+	},
+	"physics_interpolation": true,
+	"physics_ticks_per_second": 60,
+	"renderer": "gl_compatibility",
+	"transitions": {
+		"main_to_stage_select": {
+			"call_ms": 6.764,
+			"frames": {
+				"average_ms": 36.1906666666667,
+				"count": 6,
+				"maximum_ms": 54.748,
+				"over_16_7_ms": 6,
+				"over_33_3_ms": 1,
+				"p95_ms": 54.748
+			}
+		},
+		"stage_select_to_main": {
+			"call_ms": 0.21,
+			"frames": {
+				"average_ms": 32.0041666666667,
+				"count": 6,
+				"maximum_ms": 33.059,
+				"over_16_7_ms": 6,
+				"over_33_3_ms": 0,
+				"p95_ms": 33.059
+			}
+		},
+		"stage_start": {
+			"call_ms": 186.924,
+			"frames": {
+				"average_ms": 388.029,
+				"count": 1,
+				"maximum_ms": 388.029,
+				"over_16_7_ms": 1,
+				"over_33_3_ms": 1,
+				"p95_ms": 388.029
+			},
+			"ready_ms": 574.964
+		}
+	}
+}

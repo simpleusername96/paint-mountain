@@ -83,6 +83,7 @@ settings.sfx,SOUND EFFECTS,효과음
 settings.camera_shake,CAMERA SHAKE,카메라 흔들림
 settings.follow_camera,FOLLOW CAMERA,추적 카메라
 settings.trajectory,TRAJECTORY PREVIEW,궤적 미리 보기
+settings.fast_progress,FAST SETTLEMENT,빠른 진행
 settings.fullscreen,FULLSCREEN,전체 화면
 settings.resolution,RESOLUTION,해상도
 settings.quality,GRAPHICS QUALITY,그래픽 품질
@@ -95,6 +96,61 @@ stage.shots,SHOTS,탄 수
 stage.mechanisms,MECHANISMS,장치
 stage.best,BEST,최고 기록
 stage.locked,LOCKED,잠김
+stage.generated.objective,Paint the connected mountain range with two rolling shot families.,연결된 산맥을 두 번의 연속 발사로 칠하세요.
+stage.generated_04.name,FOURTH RANGE,네 번째 산맥
+stage.generated_04.objective,Paint the next connected mountain range.,다음 연결 산맥을 칠하세요.
+stage.generated_05.name,FIFTH RANGE,다섯 번째 산맥
+stage.generated_05.objective,Paint the next connected mountain range.,다음 연결 산맥을 칠하세요.
+stage.generated_06.name,SIXTH RANGE,여섯 번째 산맥
+stage.generated_06.objective,Use the Burst to widen your rolling paint path.,폭발 장치로 굴러가는 페인트 길을 넓히세요.
+stage.generated_07.name,SEVENTH RANGE,일곱 번째 산맥
+stage.generated_07.objective,Use the Burst to widen your rolling paint path.,폭발 장치로 굴러가는 페인트 길을 넓히세요.
+stage.generated_08.name,EIGHTH RANGE,여덟 번째 산맥
+stage.generated_08.objective,Use the Burst to widen your rolling paint path.,폭발 장치로 굴러가는 페인트 길을 넓히세요.
+stage.generated_09.name,NINTH RANGE,아홉 번째 산맥
+stage.generated_09.objective,Use the Burst to widen your rolling paint path.,폭발 장치로 굴러가는 페인트 길을 넓히세요.
+stage.generated_10.name,TENTH RANGE,열 번째 산맥
+stage.generated_10.objective,Use the Burst to widen your rolling paint path.,폭발 장치로 굴러가는 페인트 길을 넓히세요.
+stage.generated_11.name,ELEVENTH RANGE,열한 번째 산맥
+stage.generated_11.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_12.name,TWELFTH RANGE,열두 번째 산맥
+stage.generated_12.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_13.name,THIRTEENTH RANGE,열세 번째 산맥
+stage.generated_13.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_14.name,FOURTEENTH RANGE,열네 번째 산맥
+stage.generated_14.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_15.name,FIFTEENTH RANGE,열다섯 번째 산맥
+stage.generated_15.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_16.name,SIXTEENTH RANGE,열여섯 번째 산맥
+stage.generated_16.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_17.name,SEVENTEENTH RANGE,열일곱 번째 산맥
+stage.generated_17.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_18.name,EIGHTEENTH RANGE,열여덟 번째 산맥
+stage.generated_18.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_19.name,NINETEENTH RANGE,열아홉 번째 산맥
+stage.generated_19.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_20.name,TWENTIETH RANGE,스무 번째 산맥
+stage.generated_20.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
+stage.generated_21.name,TWENTY-FIRST RANGE,스물한 번째 산맥
+stage.generated_21.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_22.name,TWENTY-SECOND RANGE,스물두 번째 산맥
+stage.generated_22.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_23.name,TWENTY-THIRD RANGE,스물세 번째 산맥
+stage.generated_23.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_24.name,TWENTY-FOURTH RANGE,스물네 번째 산맥
+stage.generated_24.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_25.name,TWENTY-FIFTH RANGE,스물다섯 번째 산맥
+stage.generated_25.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_26.name,TWENTY-SIXTH RANGE,스물여섯 번째 산맥
+stage.generated_26.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_27.name,TWENTY-SEVENTH RANGE,스물일곱 번째 산맥
+stage.generated_27.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_28.name,TWENTY-EIGHTH RANGE,스물여덟 번째 산맥
+stage.generated_28.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_29.name,TWENTY-NINTH RANGE,스물아홉 번째 산맥
+stage.generated_29.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_30.name,THIRTIETH RANGE,서른 번째 산맥
+stage.generated_30.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
 replay.label,REPLAY,리플레이
 replay.pause,PAUSE,일시정지
 replay.play,PLAY,재생

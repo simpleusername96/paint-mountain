@@ -1,13 +1,13 @@
 extends Node
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 
 
 func default_data() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
-		"unlocked_stages": ["first_descent"],
+		"selected_stage_id": "first_descent",
 		"best_results": {},
 		"settings": {
 			"master_volume": 0.8,
@@ -16,6 +16,7 @@ func default_data() -> Dictionary:
 			"camera_shake": true,
 			"follow_camera": true,
 			"trajectory_preview": true,
+			"fast_progress": true,
 			"fullscreen": false,
 			"resolution": "1920x1080",
 			"quality": "medium",
@@ -38,7 +39,7 @@ func load_data(path: String = DEFAULT_SAVE_PATH) -> Dictionary:
 	if parse_error != OK or not parsed is Dictionary:
 		_preserve_invalid(path)
 		return default_data()
-	if int(parsed.get("version", -1)) == 1:
+	if int(parsed.get("version", -1)) == 1 or int(parsed.get("version", -1)) == 2:
 		parsed = _migrate_v1(parsed)
 	elif int(parsed.get("version", -1)) != SAVE_VERSION:
 		_preserve_invalid(path)
@@ -76,7 +77,7 @@ func save_data(data: Dictionary, path: String = DEFAULT_SAVE_PATH) -> Error:
 
 func _merge_with_defaults(data: Dictionary) -> Dictionary:
 	var merged := default_data()
-	merged["unlocked_stages"] = data.get("unlocked_stages", merged.unlocked_stages)
+	merged["selected_stage_id"] = data.get("selected_stage_id", merged.selected_stage_id)
 	merged["best_results"] = data.get("best_results", merged.best_results)
 	var incoming_settings: Dictionary = data.get("settings", {})
 	var settings: Dictionary = merged.settings
@@ -93,6 +94,10 @@ func _migrate_v1(data: Dictionary) -> Dictionary:
 	migrated_settings["language"] = "ko"
 	migrated_settings["language_user_selected"] = false
 	migrated["settings"] = migrated_settings
+	var selected := String(migrated.get("selected_stage_id", "first_descent"))
+	if selected == "stage_01":
+		selected = "first_descent"
+	migrated["selected_stage_id"] = selected
 	migrated["version"] = SAVE_VERSION
 	return migrated
 

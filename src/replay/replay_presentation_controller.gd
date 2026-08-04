@@ -131,6 +131,11 @@ func _on_replay_action_ready(action: Dictionary) -> void:
 			)
 		"fire":
 			accepted = _stage_controller.request_fire(StageController.ActionOrigin.REPLAY)
+			if accepted and int(action.get("shot_id", 0)) > 0:
+				var observation := _stage_controller.current_shot_observation()
+				if observation == null or observation.shot_id != int(action.shot_id):
+					_fail_playback("Replay shot family identity changed at tick %d." % action.get("physics_tick", -1))
+					accepted = false
 		"restart":
 			accepted = _stage_controller.restart(false, StageController.ActionOrigin.REPLAY)
 		"camera":

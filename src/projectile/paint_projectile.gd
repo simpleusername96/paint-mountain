@@ -13,6 +13,7 @@ const CONTACT_CONFIGURATION_ERROR := &"contact_configuration_error"
 
 var projectile_data: ProjectileData
 var split_generation: int = 0
+var shot_id: int = 0
 var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
 var spawn_ordinal: int:
 	get:
@@ -54,13 +55,15 @@ func configure(
 		launch_velocity: Vector3,
 		generation: int = 0,
 		paint_surface_tuning: PaintSurfaceTuning = null,
-		assigned_spawn_ordinal: int = -1
+		assigned_spawn_ordinal: int = -1,
+		assigned_shot_id: int = 0
 ) -> void:
 	projectile_data = data
 	stage_bounds = bounds
 	_terrain_surface = terrain_surface
 	_paint_surface_tuning = paint_surface_tuning
 	_spawn_ordinal = assigned_spawn_ordinal
+	shot_id = assigned_shot_id
 	_cached_incoming_velocity = launch_velocity
 	_velocity_history.assign([launch_velocity])
 	split_generation = generation
@@ -319,7 +322,8 @@ func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) ->
 		contact.contact_owner_id,
 		contact.contact_shape_id,
 		contact.collider_shape_index,
-		RadialPaintMark.Kind.IMPACT
+			RadialPaintMark.Kind.IMPACT,
+			shot_id
 	)
 	if intent.is_intent_valid():
 		radial_paint_mark_intent_requested.emit(self, intent)
@@ -345,7 +349,8 @@ func _emit_sweep_intent(
 		to_contact.contact_owner_id,
 		to_contact.contact_shape_id,
 		to_contact.collider_shape_index,
-		bridged_gap
+			bridged_gap,
+			shot_id
 	)
 	if intent.is_intent_valid():
 		surface_paint_sweep_intent_requested.emit(self, intent)
@@ -364,7 +369,8 @@ func _emit_settle_intent(contact: ProjectileContact, source_event_index: int) ->
 		contact.contact_owner_id,
 		contact.contact_shape_id,
 		contact.collider_shape_index,
-		RadialPaintMark.Kind.SETTLE
+			RadialPaintMark.Kind.SETTLE,
+			shot_id
 	)
 	if intent.is_intent_valid():
 		radial_paint_mark_intent_requested.emit(self, intent)

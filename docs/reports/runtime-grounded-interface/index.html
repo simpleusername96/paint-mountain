@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain — Runtime-grounded execution report</title>
+  <style>
+    :root { color-scheme: light; --ink:#172538; --muted:#617086; --blue:#2d83f7; --paper:#f6f3ed; --card:#fffdf9; --line:#d8dfe8; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 "Pretendard", "Segoe UI", sans-serif; }
+    main { width:min(1180px, calc(100% - 40px)); margin:40px auto 80px; }
+    header { display:flex; justify-content:space-between; align-items:end; gap:24px; margin-bottom:30px; }
+    h1 { margin:0; font-size:clamp(32px,5vw,56px); letter-spacing:-.045em; line-height:1; }
+    h2 { margin:0 0 12px; font-size:24px; letter-spacing:-.025em; }
+    h3 { margin:0 0 8px; font-size:18px; }
+    p { margin:8px 0; color:var(--muted); }
+    .eyebrow { color:var(--blue); font-weight:800; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    .meta { text-align:right; color:var(--muted); font-size:13px; }
+    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0 36px; }
+    .stat, article { background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:0 12px 30px #17253812; }
+    .stat { padding:18px; }
+    .stat strong { display:block; font-size:26px; color:var(--ink); }
+    .grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
+    article { overflow:hidden; }
+    article .copy { padding:16px 18px 18px; }
+    figure { margin:0; background:#e9e6de; }
+    figure img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+    .compare { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); }
+    .compare figure { min-width:0; }
+    .compare figcaption, figcaption { padding:7px 12px; color:var(--muted); font-size:12px; background:var(--card); }
+    section { margin-top:38px; }
+    .note { border-left:4px solid var(--blue); padding:10px 16px; background:#eaf3ff; border-radius:0 12px 12px 0; }
+    code { color:var(--ink); background:#e9eef6; padding:2px 5px; border-radius:5px; }
+    @media (max-width:760px) { main { width:min(100% - 24px, 600px); margin-top:24px; } header { display:block; } .meta { text-align:left; margin-top:12px; } .summary,.grid { grid-template-columns:1fr; } .compare { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><div class="eyebrow">Paint Mountain · 2026-08-05</div><h1>Runtime-grounded<br>execution report</h1></div>
+    <div class="meta">Godot 4.7.1 · Compatibility · 1280×720<br>All runtime images are off-screen captures.</div>
+  </header>
+  <p class="note">This report separates the selected visual direction from the actual running build. Gameplay truth wins when a concept image is illustrative: the mountain, contact, paint mask, coverage, shots, and terminal result are always runtime-owned.</p>
+
+  <div class="summary">
+    <div class="stat"><span class="eyebrow">Physical core</span><strong>Closed 3D mass</strong><p>Shared top topology drives render, collision, target rasterization, and paint.</p></div>
+    <div class="stat"><span class="eyebrow">Fire contract</span><strong>2 families</strong><p>Immediate repeat fire with monotonic shot IDs and family-local observations.</p></div>
+    <div class="stat"><span class="eyebrow">Performance</span><strong>Telemetry passed</strong><p>Paint-drain p95 1.37 ms; no responsiveness acceptance failures.</p></div>
+  </div>
+
+  <section><h2>Navigation surfaces</h2><div class="grid">
+    <article><figure><img src="../../../.agents/evidence/current/main_execution_final.png" alt="Korean main menu with mountain hero"></figure><div class="copy"><h3>Main menu</h3><p>The hero is generated from the real Stage 01 world; Play, Stage Select, Settings, and Quit remain simple, high-contrast actions.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/stage_select_execution.png" alt="Stage select page 11 through 20"></figure><div class="copy"><h3>Stage select</h3><p>All thirty catalog entries are enabled. Paging and selection read cached catalog data; they do not generate a 3D stage.</p></div></article>
+  </div></section>
+
+  <section><h2>Gameplay states</h2><div class="grid">
+    <article><figure><img src="../../../.agents/evidence/current/aiming_exported_final.png" alt="Exported aiming screen"></figure><div class="copy"><h3>Aiming</h3><p>Coverage is the single left-side vertical owner. Aim and power stay lower-left, Fire is centered, and settings/shots stay upper-right.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/observation_execution3.png" alt="Observation screen with projectile and controls"></figure><div class="copy"><h3>Observation / repeat fire</h3><p>The active ball remains visible while aim and Fire remain available for the next family. Camera, speed, and pause controls are grouped at the top.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/paint_execution_final.png" alt="Blue paint on the mountain after projectile contact"></figure><div class="copy"><h3>Contact and paint</h3><p>The ball physically reaches the closed mountain and paints the traversed top surface through the authoritative mask.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/briefing_execution_final.png" alt="Briefing state"></figure><div class="copy"><h3>Briefing</h3><p>The real world remains visible behind the concise stage briefing rather than a flat preview panel.</p></div></article>
+  </div></section>
+
+  <section><h2>Pause, settings, and terminal truth</h2><div class="grid">
+    <article><figure><img src="../../../.agents/evidence/current/pause_execution_final.png" alt="Pause overlay"></figure><div class="copy"><h3>Pause</h3><p>Simulation is paused through the StageController owner; Restart lives here rather than in the normal aiming HUD.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/settings_execution_final.png" alt="Korean settings panel"></figure><div class="copy"><h3>Settings</h3><p>Korean is default, language switching is persistent, and Fast Progress is an explicit gameplay setting.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/stage_clear_execution_final.png" alt="Stage clear result"></figure><div class="copy"><h3>Clear</h3><p>The result is reached by real shots and paint drain. Coverage, target, used shots, and actions come from the terminal owner.</p></div></article>
+    <article><figure><img src="../../../.agents/evidence/current/stage_failed_execution_final.png" alt="Stage failure result"></figure><div class="copy"><h3>Failure</h3><p>Failure is reached by legal contained non-target shots after the shot budget is exhausted; no HUD state is forced.</p></div></article>
+  </div></section>
+
+  <section><h2>Implementation notes</h2><p>Dirty-region texture publication fixed the confirmed paint-render hot path without changing the 512² CPU authority. The late-stage mechanism band intentionally uses 0/1/2 visible mechanisms (intro, Burst, Splitter+Bumper) so the current mountain remains readable and difficulty grows gradually; the six-object concept is recorded as future capacity.</p><p>Source evidence: <code>.agents/evidence/2026-08-05-execution-evidence.md</code> · quality audit: <code>.agents/evidence/2026-08-05-quality-audit.md</code>.</p></section>
+</main>
+</body>
+</html>

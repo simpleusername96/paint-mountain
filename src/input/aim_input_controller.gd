@@ -171,7 +171,11 @@ func _can_adjust_aim() -> bool:
 	return _cannon != null and _stage_controller != null \
 			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
-			and _stage_controller.current_state == StageController.State.AIMING
+			and _stage_controller.current_state in [
+				StageController.State.AIMING,
+				StageController.State.PROJECTILE_IN_FLIGHT,
+				StageController.State.PAINT_SETTLING,
+			]
 
 
 func _pointer_scale_to_physical_pixels() -> Vector2:

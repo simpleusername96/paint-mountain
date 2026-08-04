@@ -19,6 +19,7 @@ var _screen: String = ""
 var _output_path: String = ""
 var _responsiveness_output_path: String = ""
 var _background_capture := false
+var _capture_size := BACKGROUND_CAPTURE_SIZE
 var _failed: bool = false
 
 
@@ -30,6 +31,8 @@ func _ready() -> void:
 			_output_path = argument.trim_prefix("--capture-output=")
 		elif argument.begins_with("--responsiveness-output="):
 			_responsiveness_output_path = argument.trim_prefix("--responsiveness-output=")
+		elif argument.begins_with("--capture-size="):
+			_capture_size = _parse_capture_size(argument.trim_prefix("--capture-size="))
 		elif argument == "--capture-background":
 			_background_capture = true
 	if _responsiveness_output_path.is_empty() and (_screen.is_empty() or _output_path.is_empty()):
@@ -53,6 +56,12 @@ func _run_capture() -> void:
 			_app._show_main_menu()
 		"stage_select":
 			_app._show_stage_select()
+		"stage_select_page_2":
+			_app._show_stage_select()
+			await get_tree().process_frame
+			_app.get_node("StageSelect").set_page_for_capture(1)
+		"briefing":
+			await _start_stage(&"first_descent", false)
 		"stage_briefing":
 			await _start_stage(&"first_descent", false)
 		"aiming":
@@ -70,6 +79,19 @@ func _run_capture() -> void:
 			await _capture_airborne_follow()
 		"projectile_and_continuous_paint":
 			await _capture_continuous_paint()
+		"observation":
+			await _capture_airborne_follow()
+		"pause":
+			var paused_gameplay := await _start_stage(&"first_descent", true)
+			(paused_gameplay.get_node("StageController") as StageController).toggle_pause()
+			await get_tree().process_frame
+		"settings":
+			var settings_gameplay := await _start_stage(&"first_descent", true)
+			(settings_gameplay.get_node("StageController") as StageController).toggle_pause()
+			_app._show_settings(&"gameplay")
+			await get_tree().process_frame
+		"ancillary_replay":
+			await _capture_airborne_follow()
 		"stage_clear":
 			await _capture_clear()
 		"stage_failed":
@@ -106,7 +128,7 @@ func _configure_capture_window() -> void:
 	# actual runtime image without taking over the user's screen.
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-	DisplayServer.window_set_size(BACKGROUND_CAPTURE_SIZE)
+	DisplayServer.window_set_size(_capture_size)
 	DisplayServer.window_set_position(BACKGROUND_CAPTURE_POSITION)
 
 
@@ -121,7 +143,6 @@ func _run_responsiveness_probe() -> void:
 	var game_state := get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	var data: Dictionary = get_node("/root/SaveSystem").default_data()
-	data.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
 	game_state.initialize_from_data(data)
 	for _frame in range(RESPONSIVENESS_WARMUP_FRAMES):
 		await get_tree().process_frame
@@ -416,7 +437,7 @@ func _frame_stats(samples: PackedFloat64Array) -> Dictionary:
 func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	var game_state := get_node("/root/GameState")
 	var data: Dictionary = get_node("/root/SaveSystem").default_data()
-	data.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
+	data.selected_stage_id = stage_id
 	game_state.initialize_from_data(data)
 	_app._start_stage(stage_id)
 	await get_tree().process_frame
@@ -488,15 +509,20 @@ func _capture_continuous_paint() -> void:
 
 
 func _capture_clear() -> void:
-	var gameplay := await _start_stage(&"burst_basin", true)
-	await _play_solution(gameplay, StageCatalog.get_stage(&"burst_basin").reliable_solution)
+	# Stage 01 is the committed deterministic clear fixture. The legacy Burst
+	# resource intentionally has no solution because its procedural target is a
+	# progression preview, not a terminal capture fixture.
+	var gameplay := await _start_stage(&"first_descent", true)
+	await _play_solution(gameplay, StageCatalog.get_stage(&"first_descent").reliable_solution)
 	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_CLEAR:
 		_fail_capture("clear solution did not reach STAGE_CLEAR")
 
 
 func _capture_failure() -> void:
 	var gameplay := await _start_stage(&"first_descent", true)
-	var miss := Vector3(28, 18, 0)
+	# This legal low-power edge aim terminates on the contained apron/backstop,
+	# consumes a shot, and paints no eligible mountain surface.
+	var miss := Vector3(45, 10, 40)
 	var repeated: Array[Vector3] = [miss, miss, miss, miss]
 	await _play_solution(gameplay, repeated)
 	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_FAILED:
@@ -510,7 +536,16 @@ func _play_solution(gameplay: Node3D, shots: Array[Vector3]) -> void:
 		if controller.current_state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED]:
 			break
 		cannon.set_aim(shot.x, shot.y, shot.z)
-		controller.request_fire()
+		var prediction_budget := 120
+		while not cannon.is_aim_valid() and prediction_budget > 0:
+			await get_tree().process_frame
+			prediction_budget -= 1
+		if prediction_budget <= 0 or not cannon.is_aim_valid():
+			_fail_capture("solution aim did not produce a valid prediction: %s" % shot)
+			break
+		if not controller.request_fire():
+			_fail_capture("solution shot was not admitted: %s" % shot)
+			break
 		Engine.time_scale = 3.0
 		var budget := 60 * 24
 		while controller.current_state not in [StageController.State.AIMING, StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and budget > 0:
@@ -525,3 +560,12 @@ func _play_solution(gameplay: Node3D, shots: Array[Vector3]) -> void:
 func _fail_capture(message: String) -> void:
 	push_error("Delivery capture failed: %s" % message)
 	_failed = true
+
+
+func _parse_capture_size(value: String) -> Vector2i:
+	var pieces := value.to_lower().split("x")
+	if pieces.size() != 2:
+		return BACKGROUND_CAPTURE_SIZE
+	var width := maxi(320, pieces[0].to_int())
+	var height := maxi(240, pieces[1].to_int())
+	return Vector2i(width, height)

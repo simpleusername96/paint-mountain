@@ -26,7 +26,8 @@ func _run_checks() -> void:
 	_assert_true(_count_buttons(overlay) == 9, "debug overlay must expose the nine current actions")
 	_assert_true(_count_texture_rects(overlay) == 4, "debug overlay must expose paint, target, recent, and non-target masks")
 	_assert_true(controller.begin_aiming(), "debug log shot must enter aiming")
-	cannon.set_aim(0.0, 38.0, 68.0)
+	# The generated default aim is already admitted by the refreshed trajectory;
+	# changing it here would intentionally invalidate Fire until the next frame.
 	_assert_true(controller.request_fire(), "debug log shot must use the normal fire path")
 	Engine.time_scale = 3.0
 	var frame_budget := 60 * 24
@@ -51,7 +52,7 @@ func _run_checks() -> void:
 		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
 		if parsed.expected_observations.size() == 1:
 			var sealed: Dictionary = parsed.expected_observations[0]
-			_assert_true(int(sealed.schema_version) == 4, "debug export must contain schema-4 observations")
+			_assert_true(int(sealed.schema_version) == 5, "debug export must contain schema-5 observations")
 			_assert_true(int(sealed.final_paint_mask_checksum) == paint.paint_mask_checksum(), "debug export checksum must match PaintSystem")
 		_assert_true(parsed.has("mechanisms") and parsed.has("exported_state"), "shot log must contain activations snapshot and outcome state")
 	await process_frame

@@ -24,7 +24,7 @@ func _run() -> void:
 	var actions := hud_root.get_node("ActionButtons") as ActionButtons
 	_assert_true(not replay.visible, "HUD initialization must keep replay controls hidden")
 	_assert_true(
-		hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
+		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
 		"Target coverage must have one owner in the left coverage meter"
 	)
 

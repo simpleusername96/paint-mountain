@@ -3,13 +3,14 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 6
+const FORMAT_VERSION := 7
 
 var attempt: Dictionary = {}
 var playback_index: int = 0
 var playback_paused: bool = false
 var playback_speed: float = 1.0
 var _recording_start_tick: int = 0
+var _recorded_fire_count: int = 0
 
 
 func start_attempt(
@@ -32,6 +33,7 @@ func start_attempt(
 	var certificate := generated_layout.reachability_certificate
 	var has_full_certificate := certificate != null and certificate.is_valid()
 	_recording_start_tick = Engine.get_physics_frames()
+	_recorded_fire_count = 0
 	attempt = {
 		"format_version": FORMAT_VERSION,
 		"stage_id": String(stage_data.stage_id),
@@ -70,8 +72,13 @@ func record_aim(yaw: float, elevation: float, power: float) -> void:
 	})
 
 
-func record_fire() -> void:
-	_append_action({"kind": "fire"})
+func record_fire(shot_id: int = 0) -> void:
+	# Runtime callers pass the authoritative root-family ID. Small isolated
+	# recorder tests may omit it, so assign the same deterministic sequence they
+	# would receive from a fresh ProjectileManager attempt.
+	var resolved_shot_id := shot_id if shot_id > 0 else _recorded_fire_count + 1
+	_recorded_fire_count = maxi(_recorded_fire_count, resolved_shot_id)
+	_append_action({"kind": "fire", "shot_id": resolved_shot_id})
 
 
 func record_restart() -> void:
@@ -104,8 +111,9 @@ func update_latest_result_state(result_state: int) -> void:
 	if attempt.is_empty():
 		return
 	var expected: Array = attempt.expected_observations
-	if not expected.is_empty():
-		expected.back()["result_state"] = result_state
+	for observation in expected:
+		if observation is Dictionary:
+			observation["result_state"] = result_state
 
 
 func load_attempt(data: Dictionary) -> bool:
@@ -233,8 +241,10 @@ func _action_is_valid(action: Dictionary) -> bool:
 			return action.size() == 5 and action.has("yaw") and action.has("elevation") and action.has("power")
 		"camera":
 			return action.size() == 3 and action.has("mode")
-		"fire", "restart":
+		"restart":
 			return action.size() == 2
+		"fire":
+			return action.size() == 3 and action.has("shot_id") and int(action.shot_id) > 0
 		_:
 			return false
 
@@ -281,21 +291,22 @@ func _layout_metadata_is_valid(data: Dictionary) -> bool:
 
 func _sealed_observation_is_valid(observation: Dictionary) -> bool:
 	if int(observation.get("schema_version", -1)) != ShotObservation.SCHEMA_VERSION \
-			or not bool(observation.get("is_sealed", false)) \
-			or int(observation.get("shot_number", 0)) <= 0 \
-			or not observation.get("commanded_aim", {}) is Dictionary \
-			or not observation.has("coverage_before") \
-			or not observation.has("coverage_after") \
-			or not observation.has("coverage_gain") \
-			or not observation.get("contacts", []) is Array \
-			or not observation.get("mechanism_activations", []) is Array \
-			or not observation.get("child_spawns", []) is Array \
-			or not observation.get("settlements", []) is Array \
-			or int(observation.get("paint_command_count", -1)) < 0 \
-			or not observation.get("paint_command_rejections", []) is Array \
-			or int(observation.get("paint_command_rejection_count", -1)) < 0 \
-			or not observation.has("final_drain_tick") \
-			or int(observation.get("final_paint_mask_checksum", 0)) == 0:
+		or not bool(observation.get("is_sealed", false)) \
+		or int(observation.get("shot_number", 0)) <= 0 \
+		or int(observation.get("shot_id", 0)) <= 0 \
+		or not observation.get("commanded_aim", {}) is Dictionary \
+		or not observation.has("coverage_before") \
+		or not observation.has("coverage_after") \
+		or not observation.has("coverage_gain") \
+		or not observation.get("contacts", []) is Array \
+		or not observation.get("mechanism_activations", []) is Array \
+		or not observation.get("child_spawns", []) is Array \
+		or not observation.get("settlements", []) is Array \
+		or int(observation.get("paint_command_count", -1)) < 0 \
+		or not observation.get("paint_command_rejections", []) is Array \
+		or int(observation.get("paint_command_rejection_count", -1)) < 0 \
+		or not observation.has("final_drain_tick") \
+		or int(observation.get("final_paint_mask_checksum", 0)) == 0:
 		return false
 	var aim: Dictionary = observation.commanded_aim
 	if not aim.has("yaw") or not aim.has("elevation") or not aim.has("power"):

@@ -128,12 +128,15 @@ corner_radius_bottom_left = 16
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 16
+Label/font_sizes/font_size = 17
+Label/colors/font_outline_color = Color(1, 1, 1, 0.18)
+Label/constants/outline_size = 1
 Button/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_disabled_color = Color(0.407843, 0.45098, 0.517647, 0.9)
-Button/font_sizes/font_size = 16
+Button/font_sizes/font_size = 17
 Button/styles/normal = SubResource("ButtonNormal")
 Button/styles/hover = SubResource("ButtonHover")
 Button/styles/pressed = SubResource("ButtonPressed")

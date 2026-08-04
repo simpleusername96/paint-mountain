@@ -3,8 +3,8 @@ render_mode depth_draw_opaque, cull_back;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
 uniform sampler2D target_mask : filter_nearest, repeat_disable;
-uniform vec4 rock_color : source_color = vec4(0.42, 0.44, 0.48, 1.0);
-uniform vec4 shadow_tint : source_color = vec4(0.32, 0.35, 0.40, 1.0);
+uniform vec4 rock_color : source_color = vec4(0.66, 0.70, 0.76, 1.0);
+uniform vec4 shadow_tint : source_color = vec4(0.48, 0.53, 0.61, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
 uniform float support_floor_y = -2.0;
 uniform float support_rear_z = -172.0;

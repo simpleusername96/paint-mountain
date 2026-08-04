@@ -139,7 +139,9 @@ func _check_manual_input(game_state: Node) -> void:
 	await _push_key(KEY_TAB, true)
 	_assert_true(stage_controller.current_state == StageController.State.AIMING, "Tab must switch briefing to aiming")
 	await _push_key(KEY_TAB, false)
-	cannon.set_aim(0.0, 38.0, 68.0)
+	var admitted_aim: AimTuple = gameplay.generated_layout().default_aim
+	cannon.set_aim(admitted_aim.yaw_degrees, admitted_aim.elevation_degrees, float(admitted_aim.power_percent))
+	await create_timer(0.12).timeout
 	var fired := {"count": 0}
 	stage_controller.shot_fired.connect(func(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 		fired.count += 1

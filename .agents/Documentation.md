@@ -19,25 +19,63 @@ related:
 
 ## Active Execution Sequence (2026-08-05)
 
-The user selected the nine-screen runtime-grounded concept set as the basis for
-new planning. Three separately scoped active ExecPlans now govern future work in
-strict order:
+The user authorized execution of the three decision-complete ExecPlans in one
+continuous pass. The implementation checkpoint is recorded in
+[`evidence/2026-08-05-execution-evidence.md`](evidence/2026-08-05-execution-evidence.md)
+and the current rendered captures are under `evidence/current/`.
 
 1. [`execplans/2026-08-05-physical-gameplay-mvp.md`](execplans/2026-08-05-physical-gameplay-mvp.md)
-   first proves the visible closed mountain, real contact, continuous paint, and
-   responsiveness and then stops for user approval.
+   now has a closed row-solid mountain, shared render/collision topology,
+   measured rigid-body contact, continuous authoritative paint, containment,
+   and a passing off-screen responsiveness probe.
 2. [`execplans/2026-08-05-rapid-fire-thirty-stage-progression.md`](execplans/2026-08-05-rapid-fire-thirty-stage-progression.md)
-   adds deterministic two-family repeat fire, faster grounded cadence, thirty
-   generated stages, and all-open progression after that approval.
+   now has two admitted root families with monotonic shot IDs, family-local
+   observations, replay/agent schema updates, thirty all-open deterministic
+   stage entries, progressive generation, and cached stage navigation.
 3. [`execplans/2026-08-05-runtime-grounded-interface.md`](execplans/2026-08-05-runtime-grounded-interface.md)
-   implements the nine real screens only after both functional predecessors are
-   done.
+   now has the Korean-first runtime HUD/menu/settings/stage-select flows,
+   left-side coverage ownership, lower-left aim controls, centered Fire,
+   observation controls, and off-screen Compatibility captures.
 
-No implementation task in these three plans has been completed yet. The record
-below describes the current pre-plan baseline and must not be interpreted as
-proof of the new outcomes.
+The plans remain `active` until the evidence/report and release-build audit are
+committed. That lifecycle status is not a claim that implementation is absent;
+it marks the final documentation and handoff work still being completed in this
+run.
 
-## Current Gameplay and Visual Reset (2026-08-04)
+## Current Execution Checkpoint (2026-08-05)
+
+- Physical contract: closed terrain shell and apron/backstop containment are
+  real 3D bodies; prediction and projectile contact publish the same stable
+  terrain/mechanism identities. PaintSystem is the sole authoritative mask and
+  shader source; the visible brush footprint is now between the original ball
+  and oversized brush behavior.
+- Fire contract: the next aim can be edited while a family is airborne; two
+  root families may be admitted immediately, a third is rejected without side
+  effects, and Splitter children inherit the parent `shot_id`.
+- Progression contract: Stage 01–30 are catalog members and selectable in a
+  fresh save; generation is deterministic and progressive, and stage-select
+  paging does not construct gameplay terrain. Mechanism bands intentionally use
+  0/1/2 visible objects (intro/Burst/late Splitter+Bumper) to preserve the
+  user's requested readability and gradual difficulty; the six-object concept
+  note is retained as a future expansion, not silently represented as done.
+- Interface contract: Korean is the default locale. A single left vertical
+  coverage meter owns current/target values; aim/power is lower-left, Fire is
+  centered at the bottom, and settings/gear is upper-right. Observation keeps
+  camera, speed, and pause controls without hiding aim or Fire.
+- Performance contract: Compatibility off-screen responsiveness telemetry now
+  passes all thresholds after dirty-region GPU texture publication. The latest
+  run recorded direct paint-drain p95 `1.37 ms`, maximum `2.309 ms`, and an
+  empty acceptance-failure list.
+- Validation: focused contact, paint, replay, rapid-fire, generation,
+  localization, UI, camera-safety, and shot-feedback checks pass; the project
+  verifier passed after the final edits, the Windows release export produced
+  `builds/windows/PaintMountain.exe`, and exported off-screen aiming also
+  passed. Only foreground play review remains user-owned.
+
+Historical sections below describe earlier builds and are retained for
+traceability only. They must not be used as current implementation evidence.
+
+## Historical Gameplay and Visual Reset Baseline (2026-08-04)
 
 The preceding implementation record was governed by
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).

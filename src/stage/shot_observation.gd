@@ -1,10 +1,11 @@
 class_name ShotObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 4
+const SCHEMA_VERSION := 5
 
 var schema_version: int = SCHEMA_VERSION
 var shot_number: int = 0
+var shot_id: int = 0
 var commanded_yaw: float = 0.0
 var commanded_elevation: float = 0.0
 var commanded_power: float = 0.0
@@ -36,10 +37,12 @@ func configure(
 		yaw: float,
 		elevation: float,
 		power: float,
-		before_coverage: float
+		before_coverage: float,
+		new_shot_id: int = 0
 ) -> void:
 	assert(not is_sealed, "A sealed shot observation cannot be configured.")
 	shot_number = new_shot_number
+	shot_id = new_shot_id
 	commanded_yaw = yaw
 	commanded_elevation = elevation
 	commanded_power = power
@@ -177,6 +180,7 @@ func to_dictionary() -> Dictionary:
 	return {
 		"schema_version": schema_version,
 		"shot_number": shot_number,
+		"shot_id": shot_id,
 		"commanded_aim": {
 			"yaw": commanded_yaw,
 			"elevation": commanded_elevation,

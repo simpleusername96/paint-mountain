@@ -41,7 +41,9 @@ func _connect_screens() -> void:
 	_main_menu.quit_requested.connect(func() -> void: get_tree().quit())
 	_stage_select.back_requested.connect(_show_main_menu)
 	_stage_select.start_requested.connect(_start_stage)
-	_stage_select.selection_changed.connect(_set_preview_stage)
+	# Stage Select is intentionally a cheap catalog surface. Selecting a card
+	# updates only its typed detail panel; it never regenerates a terrain mesh on
+	# the navigation path. Gameplay owns generation when Start is pressed.
 	_settings.close_requested.connect(_on_settings_closed)
 
 
@@ -121,6 +123,10 @@ func _show_settings(return_to: StringName) -> void:
 		_main_menu.visible = false
 	elif return_to == &"stage_select":
 		_stage_select.visible = false
+	elif return_to == &"gameplay":
+		# Gameplay owns the paused scrim; the full settings screen is only entered
+		# from the explicit pause panel, so keep the parent hidden while it opens.
+		pass
 	_settings.open()
 
 
@@ -223,7 +229,8 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	material.set_shader_parameter(&"paint_mask", paint_texture)
 	material.set_shader_parameter(&"target_mask", target_texture)
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
-	material.set_shader_parameter(&"rock_color", Color(0.63, 0.65, 0.68, 1.0))
+	material.set_shader_parameter(&"rock_color", Color("8E9AAA"))
+	material.set_shader_parameter(&"shadow_tint", Color("596574"))
 	var dressing: Node3D = ENVIRONMENT_DRESSING_SCRIPT.new()
 	dressing.name = "PreviewDressing_%s" % stage.stage_id
 	dressing.visible = false
