@@ -23,7 +23,11 @@ active only because visible gameplay QA and the deferred formal checks still
 require explicit user authorization.
 
 `RouteGraphMountainSynthesizer` now produces both a sampled height field and a
-connected, irregular cell footprint for all three stages. `TerrainTopTopology`
+connected, irregular cell footprint for all three stages. Its seeded noise is
+restricted to the exterior contour: each occupied depth row is filled between
+its left and right edges, empty interior rows are bridged, and adjacent rows
+overlap. Branching route bands therefore cannot carve a visible or physical
+hole through the target. `TerrainTopTopology`
 emits top triangles only for those cells and supplies the same indexed faces to
 rendering, concave collision, surface queries, target rasterization, and paint
 addressing. `TerrainGeometryFactory` closes every exposed contour with thick

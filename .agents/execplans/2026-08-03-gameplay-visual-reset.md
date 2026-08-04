@@ -138,6 +138,9 @@ from an irregular connected footprint around the route graph:
 
 - its rear boundary joins the wall;
 - it extends toward the cannon with irregular front and side contours;
+- its horizontal footprint is simply connected: contour noise may shape only
+  the exterior and must never cut an internal hole, tunnel, or route-shaped
+  void through the target;
 - playable upper faces exist only inside the footprint;
 - every exposed boundary closes into real front, side, rear-support, and bottom
   faces, producing one watertight volume;
@@ -310,7 +313,8 @@ src/terrain/backstop_environment.gd, scenes/gameplay/gameplay.tscn
     route features; retire the rectangle-wide path after migration.
   - Accept by inspection: outside-footprint cells create no playable top faces;
     front and side contours are irregular; no whole-bounds top rectangle or
-    straight full-width front skirt remains.
+    straight full-width front skirt remains; every occupied depth row is one
+    continuous span, adjacent spans overlap, and no internal cell void exists.
 
 - [x] **1.3 Build one closed render/collision/paint mass.**
   - Change: emit upper triangles only inside the footprint, close every exposed
