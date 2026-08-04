@@ -5,13 +5,13 @@ created: 2026-08-04
 last_reviewed: 2026-08-04
 canonical_for: Paint Mountain world art style, visual composition, and gameplay-object legibility
 scope: procedural mountain, wall, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
-source: ../source-brief.md
+source: ../../docs/source-brief.md
 related:
-  - README.md
+  - DESIGN.md
   - UIUX_GUIDELINES.md
   - VISUAL_REFERENCES.md
-  - ../handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
-  - ../../.agents/execplans/2026-08-03-gameplay-visual-reset.md
+  - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
+  - ../execplans/2026-08-03-gameplay-visual-reset.md
 ---
 
 # Paint Mountain Art Direction
@@ -152,4 +152,4 @@ stage.
 
 - `VISUAL_REFERENCES.md` classifies target, concept, and rejected images.
 - `UIUX_GUIDELINES.md` owns player-facing interface hierarchy.
-- `../asset-licenses.md` owns asset provenance and licensing.
+- `../../docs/asset-licenses.md` owns asset provenance and licensing.

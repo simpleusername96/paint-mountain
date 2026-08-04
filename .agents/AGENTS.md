@@ -9,7 +9,7 @@
 
 ## Boundaries
 - The effective `../docs/source-brief.md` owns product requirements; `../docs/design-spec.md` is its working interpretation, and `../docs/technical-architecture.md` owns technical ownership.
-- `design/DESIGN.md` maps approved design authority to production owners for agents; detailed visual specifications and runtime design resources remain in their existing project-owned locations.
+- `design/DESIGN.md` is the single agent-facing design entry; its sibling documents hold detailed visual guidance, while runtime design resources remain in their production-owned locations.
 - `Prompt.md` is a compact interpretation of the originating brief, not a second competing product specification.
 - `Documentation.md` records implemented reality and known risks; it must not claim planned work as complete.
 - Repo-local skills belong under `.agents/skills/` only after a workflow has repeated and needs its own trigger or artifact contract.

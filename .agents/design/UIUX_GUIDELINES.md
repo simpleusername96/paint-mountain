@@ -5,13 +5,13 @@ created: 2026-08-04
 last_reviewed: 2026-08-04
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
-source: ../source-brief.md
+source: ../../docs/source-brief.md
 related:
-  - README.md
+  - DESIGN.md
   - ART_DIRECTION.md
   - VISUAL_REFERENCES.md
-  - ../design-spec.md
-  - ../../.agents/execplans/2026-08-03-gameplay-visual-reset.md
+  - ../../docs/design-spec.md
+  - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -157,4 +157,4 @@ gate.
 - `ART_DIRECTION.md` owns world composition and gameplay-object visual language.
 - `VISUAL_REFERENCES.md` explains which image details are current and which are
   superseded.
-- `../design-spec.md` contains broader interaction and game-state requirements.
+- `../../docs/design-spec.md` contains broader interaction and game-state requirements.

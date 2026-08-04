@@ -5,9 +5,9 @@ created: 2026-08-04
 last_reviewed: 2026-08-04
 topic: Paint Mountain visual references and anti-references
 scope: provenance, authority, and permitted interpretation of project visual evidence
-source: ../handoffs/gameplay-visual-reset-2026-08-03/source-map.md
+source: ../../docs/handoffs/gameplay-visual-reset-2026-08-03/source-map.md
 related:
-  - README.md
+  - DESIGN.md
   - ART_DIRECTION.md
   - UIUX_GUIDELINES.md
 ---
@@ -24,9 +24,9 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Primary target comparator
 
-![Primary user-supplied target comparator](../handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png)
+![Primary user-supplied target comparator](../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png)
 
-- Image: [primary target comparator](../handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png)
+- Image: [primary target comparator](../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png)
 - Provenance: original user-supplied design reference.
 - SHA-256:
   `1E32C82DF16DBE0809458DC7A7D9385C7EB3A61D0240BD8551B40F02190E4538`
@@ -39,10 +39,10 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Secondary concept board
 
-![Representative generated Stage 1 concept](../concepts/execplan-outcome-2026-08-03/03_stage1_default_aim.png)
+![Representative generated Stage 1 concept](../../docs/concepts/execplan-outcome-2026-08-03/03_stage1_default_aim.png)
 
-- Gallery: [generated outcome concept board](../concepts/execplan-outcome-2026-08-03/index.html)
-- Images: `../concepts/execplan-outcome-2026-08-03/01_stage_progression.png`
+- Gallery: [generated outcome concept board](../../docs/concepts/execplan-outcome-2026-08-03/index.html)
+- Images: `../../docs/concepts/execplan-outcome-2026-08-03/01_stage_progression.png`
   through `07_stage3_clear.png`.
 - Use for: warm off-white palette, faceting, apparent thickness, wall join,
   composition options, camera depth, Korean UI tone, and state readability.
@@ -51,9 +51,9 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Historical anti-reference
 
-![Rejected historical build capture](../handoffs/gameplay-visual-reset-2026-08-03/visuals/02-current-build.png)
+![Rejected historical build capture](../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/02-current-build.png)
 
-- Image: [rejected historical build](../handoffs/gameplay-visual-reset-2026-08-03/visuals/02-current-build.png)
+- Image: [rejected historical build](../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/02-current-build.png)
 - Provenance: user-supplied capture of the rejected build.
 - SHA-256:
   `AEDE8587A122B1977AE4C87FA551E8CE6383AC94B0A9D3EE39024E29F184E173`
@@ -64,18 +64,18 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Historical remediation report
 
-- Report: [historical remediation report](../remediation-report.html)
+- Report: [historical remediation report](../../docs/remediation-report.html)
 - Use for: prior diagnosis and approved-asset research context.
 - Do not use as: current visual authority. Candidate previews and generated
   images remain procurement or exploration evidence.
 
 ### Textual sources
 
-- `../source-brief.md`: baseline product and presentation requirements.
-- `../design-spec.md`: working UI, art, camera, and interaction interpretation.
-- `../../.agents/execplans/2026-08-03-gameplay-visual-reset.md`: active
+- `../../docs/source-brief.md`: baseline product and presentation requirements.
+- `../../docs/design-spec.md`: working UI, art, camera, and interaction interpretation.
+- `../execplans/2026-08-03-gameplay-visual-reset.md`: active
   implementation sequence and currently accepted composition details.
-- `../asset-licenses.md`: approved local asset and license record.
+- `../../docs/asset-licenses.md`: approved local asset and license record.
 - `../../resources/ui/paint_mountain_theme.tres`: current implemented UI token
   owner, not independent design authority.
 

@@ -5,7 +5,7 @@
 - Preserve the planning puzzle: the player chooses yaw, elevation, and power before firing and never steers a projectile in flight.
 - Treat the verbatim directive in `docs/source-brief.md` as the baseline product requirement. Explicit later user revisions recorded in that document supersede only the clauses they name; `docs/design-spec.md` and `docs/technical-architecture.md` remain working interpretations, and the effective source brief wins any conflict.
 - Check `.agents/Documentation.md` for implemented status before claiming that a planned feature exists.
-- Before visual or substantial player-facing work, load `$uiux-gate` and read `.agents/design/DESIGN.md`; use its task map to consult the relevant `docs/visual-direction/*` specifications and production owners.
+- Before visual or substantial player-facing work, load `$uiux-gate` and read `.agents/design/DESIGN.md`; use its task map to consult the relevant sibling design documents and production owners.
 
 ## Operating Model
 - Use Godot 4.x, typed GDScript where practical, the Compatibility renderer, a fixed 60 Hz physics tick, and Windows desktop as the first delivery target.

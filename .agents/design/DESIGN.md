@@ -3,11 +3,13 @@ type: spec
 status: active
 created: 2026-08-04
 last_reviewed: 2026-08-04
-canonical_for: Agent-facing map of approved Paint Mountain design direction, preserved experience contracts, and production design owners
+canonical_for: Agent-facing entry and map for approved Paint Mountain design direction, preserved experience contracts, and production design owners
 scope: visual world and player-facing surfaces in this repository
-source: ../../docs/visual-direction/README.md
+source: ../../docs/source-brief.md
 related:
-  - ../../docs/source-brief.md
+  - ART_DIRECTION.md
+  - UIUX_GUIDELINES.md
+  - VISUAL_REFERENCES.md
   - ../../docs/design-spec.md
   - ../../docs/technical-architecture.md
   - ../Documentation.md
@@ -25,14 +27,18 @@ linked design authorities.
 
 ## Scope
 
-Read this before work that can change terrain appearance, camera composition,
-materials, paint, mechanisms, effects, HUD, menus, typography, icons,
-localization fit, or another player-facing state.
+Every design task starts here. Continue according to scope:
 
-Every visual task first reads `docs/visual-direction/README.md`; its task table
-then routes world work to `ART_DIRECTION.md`, interface work to
-`UIUX_GUIDELINES.md`, and reference-led work to `VISUAL_REFERENCES.md`. Work
-spanning world and interface reads all documents that README marks required.
+| Task scope | Required next reading |
+| --- | --- |
+| World, terrain, camera, materials, lighting, cannon, paint, mechanisms, dressing, or effects | `ART_DIRECTION.md` and `VISUAL_REFERENCES.md` |
+| HUD, menu, typography, icon, localization fit, or player-facing interaction layout | `UIUX_GUIDELINES.md` and `VISUAL_REFERENCES.md` |
+| Work spanning world and interface | All three sibling documents in this folder |
+| Work based on a screenshot, mockup, generated image, or external visual | All three sibling documents in this folder |
+
+Purely non-visual domain, persistence, tooling, or test work does not need the
+supplemental design documents unless it changes a player-facing state or
+message.
 
 ## Authority
 
@@ -40,20 +46,36 @@ Use this order without silently blending conflicts:
 
 1. The effective `docs/source-brief.md`, including recorded later user
    revisions, owns product requirements.
-2. `docs/visual-direction/ART_DIRECTION.md` and
-   `docs/visual-direction/UIUX_GUIDELINES.md` own their distinct visual and UI
+2. `ART_DIRECTION.md` and `UIUX_GUIDELINES.md` own their distinct visual and UI
    product scopes.
 3. `docs/design-spec.md` is the broader working product interpretation.
 4. `docs/technical-architecture.md` maps technical ownership, while
    `.agents/Documentation.md` records implemented reality and known gaps.
 5. The relevant active ExecPlan under `.agents/execplans/` controls work order;
    it is neither design authority nor proof of implementation.
-6. `docs/visual-direction/VISUAL_REFERENCES.md` classifies comparative evidence;
-   images are not literal geometry, behavior, layout, or acceptance proof.
+6. `VISUAL_REFERENCES.md` classifies comparative evidence; images are not
+   literal geometry, behavior, layout, or acceptance proof.
 
 When these sources disagree materially, surface the conflict and correct the
 appropriate authority. Do not resolve it by inventing a compromise in code or
 in this map.
+
+A later explicit user direction overrides only the scope it names. Record any
+approved durable change in the relevant sibling spec; an unaccepted experiment
+remains non-canonical and must not silently alter this context.
+
+## Reference Interpretation
+
+- Use references to compare composition, hierarchy, mass, depth, faceting,
+  palette, paint readability, and restraint.
+- Do not copy literal terrain topology, mechanism placement, HUD coordinates,
+  language, painted state, or apparent physics unless an active spec requires
+  it.
+- Generated concepts remain exploratory until the user explicitly approves a
+  demonstrated rule and the relevant spec records it.
+- A still image cannot prove 3D depth, collision, paint continuity,
+  interaction, performance, responsive layout, or acceptance.
+- Rejected captures are anti-references, never implementation to preserve.
 
 ## Product and Surface Intent
 
@@ -89,10 +111,9 @@ in this map.
 
 World palette and material values are currently distributed across gameplay,
 backstop, cannon, mechanism, dressing, trajectory, and effect owners. No shared
-world-material Resource is canonical yet. Use
-`docs/visual-direction/ART_DIRECTION.md` for intended roles and change only the
-responsible production owner; do not create a second palette registry in this
-folder.
+world-material Resource is canonical yet. Use `ART_DIRECTION.md` for intended
+roles and change only the responsible production owner; do not create a second
+palette registry in this folder.
 
 `AppRoot` also builds a noninteractive menu preview world. Treat it as a menu
 preview owner, not a gameplay-world owner, and review intentional parity when a
@@ -121,11 +142,14 @@ gameplay visual change affects what the preview communicates.
   its existing responsibility boundary.
 - Reuse Theme, component, font, icon, material, and asset owners where they
   already exist; do not create agent-context copies.
-- Update the relevant `docs/visual-direction/*` spec after an approved durable
-  direction change. Update this map only when authority, ownership, preserved
+- Update the relevant sibling design spec after an approved durable direction
+  change. Update this map only when authority, ownership, preserved
   flow, reachable states, or responsive behavior changes.
 - Keep active work, alternatives, QA logs, captures, and implementation claims
   in the active ExecPlan or evidence location, not in `.agents/design/`.
+- Follow the active ExecPlan and root instructions for visible-process
+  authorization. Design context never authorizes a visible launch or approval
+  claim by itself.
 
 ## Repeated Failures to Prevent
 
@@ -170,9 +194,8 @@ This context is healthy when a new agent can identify, without session history:
 
 ## Related
 
-- `../../docs/visual-direction/README.md`: product-design documentation router.
-- `../../docs/visual-direction/ART_DIRECTION.md`: world-art contract.
-- `../../docs/visual-direction/UIUX_GUIDELINES.md`: interface contract.
-- `../../docs/visual-direction/VISUAL_REFERENCES.md`: evidence classification.
+- `ART_DIRECTION.md`: world-art contract.
+- `UIUX_GUIDELINES.md`: interface contract.
+- `VISUAL_REFERENCES.md`: evidence classification.
 - `../Documentation.md`: implemented-truth record.
 - `../execplans/2026-08-03-gameplay-visual-reset.md`: current execution sequence.
