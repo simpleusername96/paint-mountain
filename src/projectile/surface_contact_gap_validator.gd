@@ -7,7 +7,6 @@ const TERRAIN_COLLISION_MASK := 1
 static func can_bridge(
 		terrain_surface: TerrainSurface,
 		tuning: PaintSurfaceTuning,
-		_eligible_mask: PackedByteArray,
 		from_contact: ProjectileContact,
 		to_contact: ProjectileContact,
 		missing_ticks: int,
@@ -60,7 +59,6 @@ static func can_bridge(
 static func is_paintable_contact(
 		terrain_surface: TerrainSurface,
 		tuning: PaintSurfaceTuning,
-		_eligible_mask: PackedByteArray,
 		contact: ProjectileContact
 ) -> bool:
 	return terrain_surface != null and tuning != null and contact != null \

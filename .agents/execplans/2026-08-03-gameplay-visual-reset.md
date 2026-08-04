@@ -3,8 +3,8 @@ type: plan
 status: active
 created: 2026-08-03
 last_reviewed: 2026-08-04
-scope: implementation-first completion of the visible 3D mountain, physical paintball loop, mechanisms, three stages, Korean-first HUD, world presentation, and the user-authorized transition/flight responsiveness recovery
-source: explicit user corrections through 2026-08-04, including rejection of the current running screen, later approval of bounded visual checks, and the report of severe transition and projectile-flight stutter
+scope: implementation-first completion of the visible 3D mountain, physical paintball loop, mechanisms, three stages, Korean-first HUD, world presentation, and the user-authorized fire-to-flight responsiveness recovery
+source: explicit user corrections through 2026-08-04, including rejection of the current running screen, later approval of bounded visual checks, and repeated reports of severe transition and projectile-flight stutter after the Phase 9 export
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -46,10 +46,11 @@ flat apron, tiny mechanisms, black cannon, and legacy HUD are not a visual MVP.
   production contains no competing legacy terrain or HUD path, and the mandatory
   headless launch smoke reaches the main scene.
 - Testing state: implementation includes the bounded Phase 8 invalidation checks
-  and non-obstructive real-render inspection. The user's 2026-08-04 report of
-  severe page-transition and projectile-flight stutter authorizes only the
-  bounded Phase 9 performance work below. Broad regression matrices, balance,
-  replay, stress, and tolerance work remain deferred.
+  and non-obstructive real-render inspection. The user's 2026-08-04 running-build
+  review rejected the Phase 9 result because Fire and projectile observation
+  still stutter severely. That report authorizes only the bounded Phase 10
+  fire-to-flight correction below. Broad regression matrices, balance, replay,
+  stress, and tolerance work remain deferred.
 - Final state: keep this plan active until the later user-authorized QA pass is
   added and completed. Implementation alone does not make the plan done.
 
@@ -83,8 +84,8 @@ Out of scope until the user explicitly requests testing:
 - Updating obsolete tests solely to keep them passing after production APIs
   change.
 - Replay, persistence, agent, localization-matrix, reliability, and broad stress
-  validation. Phase 9 permits only debug-overlay cost removal and the named
-  transition/flight responsiveness checks.
+  validation. Phases 9 and 10 permit only the named transition, Fire, camera,
+  and verified-contact responsiveness checks.
 - Visible Godot/editor/game launches, screenshot capture, release export, and
   production evidence manifests.
 - Treating an implemented checkbox as proof of user testing or approval.
@@ -1000,6 +1001,223 @@ Phase 9 outcome on 2026-08-04:
   quality audit's replay-version, shot-seal texture, and telemetry-partition
   findings were corrected before this outcome was recorded.
 
+### Phase 10: Fire-to-flight main-thread and rendered-motion correction
+
+Goal: remove the remaining launch hitch and continuous visual stepping reported
+against the Phase 9 Windows export, while preserving fixed-tick projectile
+physics, first-impact aiming, authoritative contact paint, camera safety, and
+the accepted screen composition.
+
+#### Root-agent diagnosis and evidence
+
+This diagnosis was completed before delegation. The implementation executor may
+not substitute another architecture or reopen the decisions below.
+
+| Evidence inspected on 2026-08-04 | Established cause | Consequence |
+| --- | --- | --- |
+| `StageController.request_fire()` synchronously emits `fire_prediction_refresh_requested`; `GameplayScene` handles it by calling `TrajectoryPredictor.predict()`, whose loop permits 720 shape casts | A Fire request made in the same render interval as the latest mouse/power change performs collision prediction inside the button/Space call stack | The launch frame can block even though `CannonController` already invalidates Fire until a fresh prediction exists |
+| `PaintProjectile.configure()` calls `GeneratedStageLayout.has_valid_target_mask()` and then the duplicating `target_mask` getter; `SurfaceContactGapValidator` names but never reads that mask | Every parent and split child scans and copies 262,144 bytes for data that does not participate in contact validity | Fire and Splitter spawn pay avoidable main-thread work with no gameplay effect |
+| `AudioDirector.play_cue()` calls `_tone_stream()` for every cue and fills thousands of PCM samples in GDScript | Fire and first impact synthesize new sound resources synchronously | Discrete launch/impact hitches are added to the physics and scene work |
+| `CameraDirector._physics_process()` both reads raw `projectile.global_position` and writes `Camera3D.global_position`; `_process()` only applies shake | Enabling project-wide physics interpolation did not make the manually driven camera consume rendered projectile transforms | On displays rendering above or out of phase with 60 Hz physics, the ball/camera relationship advances in visible steps even when CPU frame time is acceptable |
+| Godot 4.7 advanced interpolation guidance states that a manual follow camera should move during rendered `_process()`, read its target with `Node3D.get_global_transform_interpolated()`, and disable automatic interpolation on that Camera3D | The Phase 9 camera implementation used the opposite boundary | The correction below follows the engine's documented camera case rather than adding smoothing constants blindly |
+| `.agents/evidence/phase9/responsiveness.json` starts timing only after `request_fire()` returns and partitions frames only by paint-drain signal delivery | The previous probe excluded the launch call and could not detect physics-only camera stepping | Its 32.435 ms non-drain and 36.301 ms drain averages cannot validate the user-visible complaint |
+| `PaintSystem` resolves new 512-mask surface samples inside paint drains, allocates result dictionaries, sorts a temporary 25-element snap list, and calls `Vector3.slerp()` for each sweep candidate | Verified contact frames retain avoidable script and allocation cost after Phase 9 | This is a secondary post-impact contributor; it must be reduced without restoring the former eager 512-square scene-entry walk |
+| `C:\Users\BK\.config\fastrun\commands.tsv` points this repository to `& '.\builds\windows\PaintMountain.exe'`; the executable was rebuilt after the Phase 9 sources | The user reviewed the intended production path, not a known stale development command | The fix must replace that same executable; changing fastrun is not part of this phase |
+
+Primary official references:
+
+- `https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/advanced_physics_interpolation.html`
+- `https://docs.godotengine.org/en/4.7/classes/class_node3d.html#class-node3d-method-get-global-transform-interpolated`
+
+#### Locked implementation decisions
+
+- Fire never performs trajectory prediction. Aim changes continue to clear the
+  cannon's prediction and disable Fire. `GameplayScene._process()` computes the
+  latest prediction at its existing bounded cadence; a Fire action arriving
+  before that result exists is rejected without consuming a shot. Remove the
+  synchronous refresh signal and handler rather than moving the same work to a
+  different Fire callback. Human, replay, and agent callers use the same
+  readiness rule.
+- Remove `_target_mask` from `PaintProjectile` and remove the unused eligible-
+  mask parameters from `SurfaceContactGapValidator`. Contact validity continues
+  to use stable terrain-top identity plus the canonical topology query. Do not
+  weaken `GeneratedStageLayout` or `PaintSystem` target-mask validation; the
+  mask remains the immutable scoring input and the runtime coverage authority's
+  configured copy, just not projectile state.
+- Generate the six procedural cue streams once in `AudioDirector._ready()` and
+  reuse them through the existing six-player pool. Store cue volume beside or
+  in one narrow cue definition map. Do not add audio files, dependencies, buses,
+  or change cue frequencies, durations, envelopes, or volumes.
+- Keep fixed 60 Hz projectile physics in physics callbacks. `CameraDirector`'s
+  physics callback computes the physics follow pose and the existing 15 Hz
+  collision-safe correction only; it never writes the Camera3D transform.
+  Record the desired position/focus used by each safety solve. Its rendered
+  callback computes the current follow pose from every live projectile's
+  `get_global_transform_interpolated().origin`, applies the last solved safety
+  position/focus offsets, smooths with rendered `delta`, aims the camera, and
+  then applies shake. Static modes use the current safe pose. Set the managed
+  Camera3D's `physics_interpolation_mode` to OFF so engine interpolation does not
+  compete with this manual rendered camera. Immediate bookmarks still snap and
+  reset camera velocity exactly once.
+- Do not precompute the entire 512-square paint surface, start a worker thread,
+  lower mask resolution, reduce contact cadence, or skip paint commands. Keep
+  lazy exact-topology samples, but precompute the 512 column/row mappings from
+  mask coordinates to topology cell coordinate/local fraction/world XZ once in
+  `PaintSystem.configure()`. At the same boundary, iterate only the accepted
+  `64 x 48` topology cells and cache each cell's two canonical triangle vertex
+  triples and normals; individual 512-square mask samples remain lazy and must
+  interpolate exclusively from those canonical cached triangle values.
+  Internally return raster counts as `Vector2i`, pick the nearest 5x5 snap
+  candidate in one deterministic scalar pass instead of allocating and sorting,
+  and use normalized linear interpolation for sweep normals. The latter is valid
+  within the existing 30-degree contact-normal bridge bound and preserves the
+  same 75-degree facing threshold.
+- Add delivery-only measurements, not a general profiler: immediate dirty-aim
+  Fire rejection duration, ready Fire duration, rendered projectile/camera pose
+  changes, nonempty paint-drain duration, new surface-sample count, and the
+  existing frame partitions. Production owners may expose read-only counters
+  needed by this runner; they must not log every frame or change rules.
+- UI scope is Level 2 under `$uiux-gate`: no layout, label, control, theme, or
+  camera-bookmark redesign. The existing invalid-prediction disabled Fire state
+  is the only user-visible control state used while prediction catches up.
+- No visible Godot/editor/game process may open. All engine checks use headless
+  import/startup or the established 1280x720 off-desktop, no-focus Windows
+  Compatibility-renderer path. No broad test suite is authorized.
+
+#### Delegated implementation contract
+
+The root agent owns this diagnosis, the decisions above, acceptance, final
+review, and commit. One Luna Max executor implements the checked tasks below
+literally, does not spawn another agent, does not modify this phase's decisions,
+and stops with evidence if current code makes a locked decision impossible.
+
+- [x] **10.1 Make Fire a constant-work state transition.**
+  - Owners: `src/stage/stage_controller.gd`,
+    `src/gameplay/gameplay_scene.gd`, `src/projectile/paint_projectile.gd`,
+    `src/projectile/surface_contact_gap_validator.gd`, and
+    `src/stage_generation/direct_reachability_validator.gd` only where its
+    direct projectile construction must follow the production signature.
+  - Change: remove Fire-time prediction refresh, remove projectile target-mask
+    acquisition/storage, and update narrow call sites. Preserve shot admission,
+    launch tuple, contact identity, Splitter limits, and all stage-state owners.
+  - Accept: after one aim change, an immediate direct Fire attempt returns false
+    in at most 2.0 ms without consuming a shot or spawning a projectile; after
+    the next valid rendered prediction, ready Fire succeeds in at most 8.0 ms
+    in the hidden release probe.
+  - Guard: no prediction approximation, stale-prediction launch, background
+    physics query, authored aim, test-only bypass, or second Fire path.
+
+- [x] **10.2 Remove cue synthesis from event hot paths.**
+  - Owner: `src/audio/audio_director.gd`.
+  - Change: build and retain exactly `ui`, `fire`, `impact`, `mechanism`, `clear`,
+    and `fail` streams during audio initialization; `play_cue()` only selects a
+    cached stream/player and volume.
+  - Accept: source inspection finds no `_tone_stream()` call reachable from
+    `play_cue()` and the off-desktop release run reaches Fire and impact without
+    an audio error.
+  - Guard: headless audio remains disabled; music, buses, pool size, waveform
+    parameters, and saved volume behavior are unchanged.
+
+- [x] **10.3 Move the follow camera to rendered interpolation.**
+  - Owner: `src/camera/camera_director.gd`.
+  - Change: implement the locked physics-safe/rendered-pose split, including
+    stored safety-source pose and manual Camera3D interpolation mode.
+  - Accept: source inspection finds no camera transform write in
+    `_physics_process()` and does find rendered projectile transforms in
+    `_process()`. During the hidden default shot, at least 95% of rendered
+    frames in which the interpolated projectile moves also change the follow
+    camera pose, and no unchanged camera-pose run exceeds one rendered frame
+    while the projectile is moving and FOLLOW remains active.
+  - Guard: retain bookmarks, FOV, follow/wide latch, 15 Hz safety solve, terrain
+    clearance, occlusion fallback, shake limits, and player camera choices.
+
+- [ ] **10.4 Reduce verified-contact paint drain cost without changing paint authority.**
+  - Owner: `src/paint/paint_system.gd`.
+  - Change: add the locked axis mapping and accepted-topology-cell triangle
+    tables, allocation-free internal counts and snap selection, bounded normal
+    interpolation, and read-only drain/cache-miss counters. The cell table is
+    only `cell_count.x * cell_count.y * 2` triangles and is populated from
+    `TerrainTopTopology` once during configure; it is not a second topology or
+    an eager mask-sample cache. Keep command sorting, candidate connectivity,
+    overlap-by-maximum, authoritative byte writes, incremental checksum, and
+    coalesced texture publication.
+  - Accept: the hidden release probe observes at least 120 continuous sweeps,
+    positive written and newly painted pixels, an active projectile, and texture
+    publication. Nonempty drain duration is at most 4.0 ms p95 and 8.0 ms max;
+    rendered paint-drain p95 exceeds non-drain p95 by no more than 4.0 ms.
+  - Guard: no eager full-mask sample walk, thread, GPU-compute dependency,
+    reduced 512 resolution, dropped tick, widened target, or second visual mask.
+
+  Root-owned gate refinement recorded before its post-change probe: the first
+  uncontended canonical run after the initial 10.4 implementation measured
+  nonempty drain p95 `3.030 ms` but one `8.462 ms` maximum, exceeding the locked
+  `8.0 ms` maximum by `0.462 ms`. This triggers only the small accepted-cell
+  triangle table named above. After that one correction, rerun verify/export and
+  the canonical hidden probe once. If the internal p95 or maximum still fails,
+  stop Phase 10 with the evidence; do not add another optimization or change a
+  threshold without another root-authored plan revision.
+
+- [ ] **10.5 Produce one bounded production-style proof and replace the registered build.**
+  - Owners: `src/delivery/delivery_capture_runner.gd`,
+    `.agents/evidence/phase10/`, `.agents/Documentation.md`, and the existing
+    Windows export output.
+  - Change: extend the established responsiveness runner with Phase 10 fields,
+    capture one airborne FOLLOW frame and one verified continuous-paint frame at
+    1280x720 off-desktop/no-focus, run `scripts/verify.ps1`, export release to
+    `builds/windows/PaintMountain.exe`, run the hidden release probe once, and
+    inspect both actual images.
+  - Accept: all thresholds in 10.1, 10.3, and 10.4 pass; both images are nonempty
+    actual Compatibility-renderer output and show the projectile/terrain chain
+    without UI overlap; the executable timestamp postdates every production
+    source changed in this phase; the existing fastrun registry entry remains
+    byte-for-byte unchanged.
+  - Guard: do not run `scripts/test.ps1`, legacy/focused suites unrelated to
+    these reported failures, a visible desktop process, or claim the hidden
+    timing is the user's foreground acceptance.
+
+Executor outcome on 2026-08-04:
+
+- Tasks 10.1 through 10.3 are implemented and meet their source and hidden-
+  release gates. Dirty Fire measured `0.002 ms`, ready Fire `1.255 ms`, and the
+  rendered FOLLOW camera changed on `195/195` moving-projectile frames with no
+  unchanged run.
+- Task 10.4's implementation is present and its direct drain budget passes at
+  `1.922 ms` p95 and `6.357 ms` maximum while retaining 121 continuous sweeps,
+  3,949 writes, 1,049 newly painted pixels, 21 texture publications, and an
+  active projectile. Its checkbox remains open because rendered drain p95
+  `38.723 ms` minus non-drain p95 `34.266 ms` is `4.457 ms`, exceeding the locked
+  `4.0 ms` gate by `0.457 ms` in the off-desktop window.
+- Task 10.5's smoke, export, two 1280x720 captures, direct image inspection,
+  artifact timestamp, and unchanged-fastrun checks are complete. Its checkbox
+  remains open because it requires every 10.4 threshold to pass. Evidence is
+  stored under `.agents/evidence/phase10/`; no threshold was relaxed and no
+  foreground acceptance is claimed.
+
+Root review on 2026-08-04:
+
+- Source review found no task-scoped production contract blocker. Fire no
+  longer predicts in its call stack, every production gap-validator caller uses
+  the reduced signature, the camera has one rendered transform writer, cue
+  playback selects cached streams, and paint retains one mask, deterministic
+  ordering, incremental checksum, and persistent texture ownership.
+- The direct causal gates for the reported launch hitch pass, while the raw
+  off-desktop frame comparison remains `0.457 ms` above its locked limit. The
+  hidden window runs near 30 fps and groups roughly two 60 Hz drains into each
+  draining render frame. This explains why the comparative result is retained
+  as an unresolved delivery warning rather than used to authorize another
+  speculative production rewrite.
+- The Phase 10 executable is ready for the user's separate foreground check.
+  Tasks 10.4 and 10.5 remain unchecked until that check or stronger causal
+  evidence resolves the rendered-frame gate; the threshold is not redefined
+  after measurement.
+
+Phase gate: after the executor finishes, the root agent reviews every task-owned
+diff, opens both rendered captures, runs `$codebase-quality-auditor`, corrects
+only task-scoped blockers, performs the final hidden smoke/probe if needed, and
+commits the plan, production changes, evidence, and documentation as one scoped
+commit. The user performs the separate foreground acceptance through the
+unchanged fastrun command.
+
 ## Mandatory Launch Smoke Only
 
 Repository policy requires launchability after coherent production changes.
@@ -1031,8 +1249,8 @@ This work has no active checkboxes and may not start automatically:
 - exhaustive reachability and certificate generation;
 - predictor/rigid-body tolerance and repeated-process determinism;
 - solution search and target/shot balance confirmation;
-- load, memory, and broad stress measurement beyond the bounded Phase 9
-  transition/flight telemetry;
+- load, memory, and broad stress measurement beyond the bounded Phase 10
+  Fire/follow/paint telemetry;
 - migration/deletion of obsolete test fixtures and runner registrations;
 - broad resolution/locale QA, screenshot matrices, manifests, and reference
   comparison beyond the two Phase 8 runtime captures;
@@ -1091,18 +1309,28 @@ behavior, or release claim.
 - The user's 2026-08-04 aiming capture rejected Phase 7: the high front shell,
   low authored Aiming camera, and uninitialized ReplayBar produced an unusable
   screen despite passing headless contracts.
-- Current phase: Phase 9 responsiveness recovery is active after the user's
-  running-build report of transition and projectile-flight stutter.
-- Next task: 9.1, reuse immutable stage presentation work across navigation.
+- Phase 9 is implemented but rejected by the user's foreground review: its probe
+  omitted the synchronous Fire call and could not detect a physics-tick-driven
+  camera. Its checked tasks remain historical implementation facts, not an
+  accepted responsiveness outcome.
+- Current phase: Phase 10 implementation and bounded evidence are complete
+  except for the rendered paint/non-paint p95 delta gate in Task 10.4.
+- Next task: the user performs foreground Fire/flight acceptance through the
+  unchanged fastrun command. A further production optimization requires new
+  foreground evidence or a root-authored causal measurement plan; the existing
+  `4.457 ms` hidden-window delta alone does not authorize speculative changes.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
   the existing slab.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
-- Run only the bounded Phase 7 checks that directly prove the reported failures.
+- Run only the Phase 10 smoke, hidden release probe, and two off-desktop captures
+  that directly prove the reported failures.
 - Earlier release/export evidence is historical. The registered fastrun
-  executable now contains the Phase 7 recovery and passed hidden headless startup.
+  executable now contains the Phase 10 Fire, camera, audio, projectile, and
+  paint hot-path changes; it has not yet received the user's foreground
+  acceptance.
 - `scripts/verify.ps1` now treats Godot `SCRIPT ERROR:` and `ERROR:` output as
   failure because this engine can return exit code zero after such errors.
 

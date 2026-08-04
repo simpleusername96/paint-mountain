@@ -19,9 +19,11 @@ related:
 The active execution plan is
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
 Production implementation tasks 1.1 through 5.4 and the bounded headless MVP QA
-tasks 6.1 through 7.4 are complete. The plan remains active only because the
-rebuilt result still requires the user's visible composition/play review and
-the broader deferred checks still require explicit authorization.
+tasks 6.1 through 7.4 are complete. Phase 10's Fire, audio, and rendered follow-
+camera corrections are also complete; its paint refinement passes the direct
+drain budget but the hidden rendered-frame comparison remains 0.457 ms over its
+locked gate. The plan therefore remains active for root review, the user's
+foreground play review, and any separately authorized deferred checks.
 
 The user accepted the standalone `Closed Mountain Lab` result as the intended
 terrain MVP and instructed that algorithm to be applied directly to the game.
@@ -91,9 +93,11 @@ The user's QA of the previous generation-v5 build rejected terrain visibility,
 paint feedback, and camera/aim responsiveness. Phase 7 now frames the final
 post-safety Briefing, Wide, and Result camera poses against every generated
 render AABB on all three stages. Static camera safety is cached at 15 Hz only
-while the desired pose changes. Mouse drag is applied once per rendered frame;
-trajectory prediction is coalesced to 20 Hz and synchronously refreshed from the
-latest canonical aim before every Human, Replay, Agent, or Debug fire request.
+while the desired pose changes. Mouse drag is applied once per rendered frame
+and trajectory prediction is coalesced to 20 Hz. Phase 10 removed the
+synchronous Fire-time refresh: changing aim now invalidates Fire until the next
+rendered prediction is ready, and every Human, Replay, Agent, or Debug caller
+uses that same admission rule.
 
 `PaintSystem` still owns one 512-square authoritative mask. Production texture
 publication is coalesced to 15 Hz and updates one persistent L8 texture in
@@ -119,6 +123,28 @@ pass, as do `scripts/verify.ps1` and release export. The legacy
 closed irregular mass and foreground-transition contracts. No broad performance,
 replay, balance, exhaustive reliability, or Stage 2/3 playthrough pass was run,
 and the screens are implementation evidence rather than user approval.
+
+Phase 10 removes remaining work from the launch and contact hot paths without
+changing the gameplay contract. `StageController.request_fire()` no longer asks
+the scene to recompute a trajectory, projectiles no longer copy the immutable
+target mask, and the contact-gap validator no longer accepts unused eligible-
+mask arguments. `AudioDirector` builds the exact six procedural cue streams once
+during initialization. `CameraDirector` retains its 15 Hz physics safety solve
+but writes the managed camera only from the rendered callback, using each live
+projectile's interpolated transform and disabling automatic interpolation on the
+camera itself.
+
+`PaintSystem` keeps all 512-square surface samples lazy while caching the two
+mask axes and the canonical triangle vertices/normals for only the accepted
+64x48 topology cells. Raster counts and nearest-snap selection no longer allocate
+temporary dictionaries or sort lists, and the incremental checksum is published
+once per complete command. The final canonical hidden probe measured direct
+paint drains at 1.922 ms p95 and 6.357 ms maximum, but its off-desktop rendered
+paint/non-paint p95 delta was 4.457 ms against the locked 4.0 ms limit. This is an
+open delivery gate, not a claim that foreground stutter is resolved. Root source
+review found no task-scoped production contract blocker, and the canonical
+fastrun executable now contains these Phase 10 changes. Foreground Fire/flight
+acceptance remains with the user because no visible process was opened.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 
@@ -415,6 +441,28 @@ the static-audit correction above.
   paint, `scripts/verify.ps1`, and Windows release export passed. No visible
   Godot window was opened; the runner used a hidden, non-focusable, off-desktop
   production window.
+
+### Phase 10 Fire-to-flight correction (2026-08-04)
+
+- The canonical Windows probe rejected a dirty-aim Fire in `0.002 ms` with no
+  shot or projectile side effect, then accepted ready Fire in `1.255 ms`.
+- FOLLOW changed the rendered camera on all `195/195` sampled frames in which
+  the interpolated projectile moved; the maximum unchanged-camera run was zero.
+- The verified-contact run retained one command per contact interval and fixed
+  60 Hz physics. It applied 121 sweeps, wrote 3,949 pixels including 1,049 new
+  scoreable pixels, published 21 texture batches, and still had an active
+  projectile at the stop point.
+- Direct nonempty paint-drain timing passes at `1.922 ms` p95 and `6.357 ms`
+  maximum. The hidden window's rendered drain p95 was `38.723 ms` versus
+  `34.266 ms` for non-drain frames, leaving a `4.457 ms` delta and therefore one
+  unresolved locked acceptance gate.
+- `scripts/verify.ps1` passed after the final production change, the canonical
+  release executable postdates every changed production source, and the fastrun
+  registry entry remains unchanged. Both 1280x720 Compatibility-renderer images
+  under `.agents/evidence/phase10/` were opened and inspected; they show the
+  airborne projectile and the continuous physical paint trail without UI
+  obscuring the projectile/terrain chain. They are implementation evidence, not
+  foreground user acceptance.
 
 ### Historical verification for superseded or pre-MVP builds
 

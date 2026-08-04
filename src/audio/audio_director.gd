@@ -2,9 +2,19 @@ extends Node
 
 const MIX_RATE := 22050
 const SFX_POOL_SIZE := 6
+const CUE_DEFINITIONS := {
+	&"ui": [Vector2(520.0, 660.0), 0.075, -15.0],
+	&"fire": [Vector2(150.0, 72.0), 0.24, -6.0],
+	&"impact": [Vector2(110.0, 58.0), 0.2, -8.0],
+	&"mechanism": [Vector2(420.0, 820.0), 0.28, -7.0],
+	&"clear": [Vector2(440.0, 880.0), 0.5, -6.0],
+	&"fail": [Vector2(240.0, 120.0), 0.42, -9.0],
+}
 
 var _music: AudioStreamPlayer
 var _sfx_players: Array[AudioStreamPlayer] = []
+var _cue_streams: Dictionary = {}
+var _cue_volumes: Dictionary = {}
 var _next_sfx: int = 0
 var _audio_enabled: bool = true
 
@@ -14,6 +24,7 @@ func _ready() -> void:
 	_audio_enabled = DisplayServer.get_name() != "headless"
 	if not _audio_enabled:
 		return
+	_build_cue_cache()
 	_music = AudioStreamPlayer.new()
 	_music.name = "Music"
 	_music.bus = &"Music"
@@ -38,45 +49,33 @@ func _exit_tree() -> void:
 		player.stop()
 		player.stream = null
 	_sfx_players.clear()
+	_cue_streams.clear()
+	_cue_volumes.clear()
 
 
 func play_cue(cue: StringName) -> void:
-	if not _audio_enabled or _sfx_players.is_empty():
+	if not _audio_enabled or _sfx_players.is_empty() or not _cue_streams.has(cue):
 		return
-	var frequencies := Vector2(360.0, 480.0)
-	var duration := 0.12
-	var volume := -10.0
-	match cue:
-		&"ui":
-			frequencies = Vector2(520.0, 660.0)
-			duration = 0.075
-			volume = -15.0
-		&"fire":
-			frequencies = Vector2(150.0, 72.0)
-			duration = 0.24
-			volume = -6.0
-		&"impact":
-			frequencies = Vector2(110.0, 58.0)
-			duration = 0.2
-			volume = -8.0
-		&"mechanism":
-			frequencies = Vector2(420.0, 820.0)
-			duration = 0.28
-			volume = -7.0
-		&"clear":
-			frequencies = Vector2(440.0, 880.0)
-			duration = 0.5
-			volume = -6.0
-		&"fail":
-			frequencies = Vector2(240.0, 120.0)
-			duration = 0.42
-			volume = -9.0
 	var player := _sfx_players[_next_sfx]
 	_next_sfx = (_next_sfx + 1) % _sfx_players.size()
 	player.stop()
-	player.stream = _tone_stream(frequencies.x, frequencies.y, duration)
-	player.volume_db = volume
+	player.stream = _cue_streams[cue] as AudioStreamWAV
+	player.volume_db = float(_cue_volumes[cue])
 	player.play()
+
+
+func _build_cue_cache() -> void:
+	_cue_streams.clear()
+	_cue_volumes.clear()
+	for cue: StringName in CUE_DEFINITIONS:
+		var definition: Array = CUE_DEFINITIONS[cue]
+		var frequencies: Vector2 = definition[0]
+		_cue_streams[cue] = _tone_stream(
+			frequencies.x,
+			frequencies.y,
+			float(definition[1])
+		)
+		_cue_volumes[cue] = float(definition[2])
 
 
 func _apply_saved_volumes() -> void:

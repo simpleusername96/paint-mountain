@@ -10,7 +10,6 @@ signal stage_cleared(final_coverage: float, shots_used: int)
 signal stage_failed(final_coverage: float, missing_coverage: float)
 signal restart_completed(elapsed_milliseconds: float)
 signal aim_action_accepted(yaw: float, elevation: float, power: float, origin: int)
-signal fire_prediction_refresh_requested(origin: int)
 signal fire_action_accepted(origin: int)
 signal restart_action_accepted(origin: int)
 
@@ -174,9 +173,6 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		return false
 	if current_state != State.AIMING or shots_remaining <= 0:
 		return false
-	# Signal delivery is synchronous, so the latest dirty aim is predicted before
-	# StageController evaluates the cannon's authoritative fireability contract.
-	fire_prediction_refresh_requested.emit(origin)
 	if not _cannon.is_aim_valid():
 		return false
 	if _projectile_manager.active_count() > 0 \

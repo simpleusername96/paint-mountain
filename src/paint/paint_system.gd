@@ -54,6 +54,16 @@ var _surface_sample_states := PackedByteArray()
 var _recent_bytes := PackedByteArray()
 var _surface_positions := PackedVector3Array()
 var _surface_normals := PackedVector3Array()
+var _surface_column_cells := PackedInt32Array()
+var _surface_row_cells := PackedInt32Array()
+var _surface_column_fractions := PackedFloat32Array()
+var _surface_row_fractions := PackedFloat32Array()
+var _surface_world_x := PackedFloat32Array()
+var _surface_world_z := PackedFloat32Array()
+var _topology_cell_cache_states := PackedByteArray()
+var _topology_cell_triangle_vertices := PackedVector3Array()
+var _topology_cell_triangle_normals := PackedVector3Array()
+var _topology_cell_count := Vector2i.ZERO
 var _candidate_generation := PackedInt32Array()
 var _visited_generation := PackedInt32Array()
 var _candidate_generation_id: int = 0
@@ -88,6 +98,9 @@ var _paint_texture_publish_elapsed: float = 0.0
 var _coverage_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
 var _recent_diagnostics_enabled: bool = false
+var _surface_sample_cache_miss_count: int = 0
+var _last_nonempty_drain_duration_usec: int = 0
+var _last_nonempty_drain_new_surface_sample_count: int = 0
 
 
 func _init() -> void:
@@ -203,8 +216,11 @@ func drain_pending_commands() -> Dictionary:
 			"newly_painted_pixel_count": 0,
 			"paint_mask_checksum": _paint_mask_checksum,
 		}
+	var drain_started_at := Time.get_ticks_usec()
+	var cache_misses_before := _surface_sample_cache_miss_count
 	_clear_recent_region()
-	_pending_commands.sort_custom(_typed_command_less)
+	if _pending_commands.size() > 1:
+		_pending_commands.sort_custom(_typed_command_less)
 	var commands := _pending_commands
 	_pending_commands = []
 	var written := 0
@@ -212,18 +228,25 @@ func drain_pending_commands() -> Dictionary:
 	var drained_tick := _last_drained_physics_tick
 	for command in commands:
 		_queued_command_keys.erase(_command_key(command))
-		var counts := {"written": 0, "newly_painted": 0}
+		var counts := Vector2i.ZERO
 		if command is RadialPaintMark:
 			counts = _rasterize_radial_command(command as RadialPaintMark)
 		elif command is SurfacePaintSweep:
 			counts = _rasterize_sweep_command(command as SurfacePaintSweep)
-		written += int(counts.written)
-		newly_painted += int(counts.newly_painted)
+		if counts.x > 0:
+			# Publish once per authoritative command so observers see its complete
+			# incremental checksum without paying a second combine per painted pixel.
+			_publish_paint_mask_checksum()
+		written += counts.x
+		newly_painted += counts.y
 		drained_tick = maxi(drained_tick, int(command.physics_tick))
-		paint_command_applied.emit(command, int(counts.written), int(counts.newly_painted))
+		paint_command_applied.emit(command, counts.x, counts.y)
 	_last_drained_physics_tick = drained_tick
 	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
 	var checksum := _paint_mask_checksum
+	_last_nonempty_drain_new_surface_sample_count = \
+			_surface_sample_cache_miss_count - cache_misses_before
+	_last_nonempty_drain_duration_usec = Time.get_ticks_usec() - drain_started_at
 	paint_commands_drained.emit(drained_tick, commands.size(), checksum)
 	return {
 		"last_drained_physics_tick": drained_tick,
@@ -234,11 +257,11 @@ func drain_pending_commands() -> Dictionary:
 	}
 
 
-func _rasterize_radial_command(command: RadialPaintMark) -> Dictionary:
+func _rasterize_radial_command(command: RadialPaintMark) -> Vector2i:
 	return _rasterize_radial(command.center, command.normal, command.radius)
 
 
-func _rasterize_sweep_command(command: SurfacePaintSweep) -> Dictionary:
+func _rasterize_sweep_command(command: SurfacePaintSweep) -> Vector2i:
 	var generation := _build_sweep_candidates(
 		command.from_point,
 		command.to_point,
@@ -247,7 +270,7 @@ func _rasterize_sweep_command(command: SurfacePaintSweep) -> Dictionary:
 		command.footprint_radius
 	)
 	if generation <= 0:
-		return {"written": 0, "newly_painted": 0}
+		return Vector2i.ZERO
 	var from_seed := _snap_candidate(command.from_point, generation)
 	var to_seed := _snap_candidate(command.to_point, generation)
 	if from_seed >= 0 and to_seed >= 0:
@@ -261,29 +284,27 @@ func _rasterize_sweep_command(command: SurfacePaintSweep) -> Dictionary:
 			)
 	# A disconnected chord is never persisted; independently valid endpoint
 	# discs preserve the two physically measured contacts.
-	var result := {"written": 0, "newly_painted": 0}
+	var result := Vector2i.ZERO
 	if from_seed >= 0:
 		var from_counts := _rasterize_radial(
 			command.from_point, command.from_normal, command.footprint_radius
 		)
-		result.written += int(from_counts.written)
-		result.newly_painted += int(from_counts.newly_painted)
+		result += from_counts
 	if to_seed >= 0:
 		var to_counts := _rasterize_radial(
 			command.to_point, command.to_normal, command.footprint_radius
 		)
-		result.written += int(to_counts.written)
-		result.newly_painted += int(to_counts.newly_painted)
+		result += to_counts
 	return result
 
 
-func _rasterize_radial(center: Vector3, normal: Vector3, radius: float) -> Dictionary:
+func _rasterize_radial(center: Vector3, normal: Vector3, radius: float) -> Vector2i:
 	var generation := _build_radial_candidates(center, normal, radius)
 	if generation <= 0:
-		return {"written": 0, "newly_painted": 0}
+		return Vector2i.ZERO
 	var seed := _snap_candidate(center, generation)
 	if seed < 0:
-		return {"written": 0, "newly_painted": 0}
+		return Vector2i.ZERO
 	_collect_candidate_component(seed, generation)
 	return _write_radial_component(_component_pixels, center, radius)
 
@@ -337,7 +358,7 @@ func _build_sweep_candidates(
 			var closest := from_point + delta * t
 			if surface_point.distance_squared_to(closest) > radius_squared:
 				continue
-			var expected_normal := from_normal.slerp(to_normal, t).normalized()
+			var expected_normal := from_normal.lerp(to_normal, t).normalized()
 			if _surface_normals[index].dot(expected_normal) < NORMAL_FACING_THRESHOLD:
 				continue
 			_candidate_generation[index] = generation
@@ -349,30 +370,29 @@ func _snap_candidate(world_point: Vector3, generation: int) -> int:
 	var snapped := PaintMaskAddressing.snap_uv_to_pixel(uv, MASK_SIZE)
 	if snapped.x < 0:
 		return -1
-	var candidates: Array[Vector2i] = []
+	var best_index := -1
+	var best_distance_squared := 0x7fffffff
+	var best_y := 0x7fffffff
+	var best_x := 0x7fffffff
 	for offset_y in range(-2, 3):
 		for offset_x in range(-2, 3):
 			var candidate := snapped + Vector2i(offset_x, offset_y)
 			if candidate.x < 0 or candidate.x >= MASK_SIZE \
 					or candidate.y < 0 or candidate.y >= MASK_SIZE:
 				continue
-			if _candidate_generation[candidate.y * MASK_SIZE + candidate.x] == generation:
-				candidates.append(candidate)
-	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-		var a_delta := a - snapped
-		var b_delta := b - snapped
-		var a_distance := a_delta.length_squared()
-		var b_distance := b_delta.length_squared()
-		if a_distance != b_distance:
-			return a_distance < b_distance
-		if a.y != b.y:
-			return a.y < b.y
-		return a.x < b.x
-	)
-	if candidates.is_empty():
-		return -1
-	var result := candidates[0]
-	return result.y * MASK_SIZE + result.x
+			var candidate_index := candidate.y * MASK_SIZE + candidate.x
+			if _candidate_generation[candidate_index] != generation:
+				continue
+			var distance_squared := offset_x * offset_x + offset_y * offset_y
+			if distance_squared < best_distance_squared \
+					or (distance_squared == best_distance_squared and candidate.y < best_y) \
+					or (distance_squared == best_distance_squared and candidate.y == best_y \
+							and candidate.x < best_x):
+				best_index = candidate_index
+				best_distance_squared = distance_squared
+				best_y = candidate.y
+				best_x = candidate.x
+	return best_index
 
 
 func _collect_candidate_component(seed: int, candidate_generation: int) -> void:
@@ -408,7 +428,7 @@ func _write_radial_component(
 		component: PackedInt32Array,
 		center: Vector3,
 		radius: float
-) -> Dictionary:
+) -> Vector2i:
 	var written := 0
 	var newly_painted := 0
 	for index in component:
@@ -418,7 +438,7 @@ func _write_radial_component(
 			written += 1
 		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
 			newly_painted += 1
-	return {"written": written, "newly_painted": newly_painted}
+	return Vector2i(written, newly_painted)
 
 
 func _write_sweep_component(
@@ -426,7 +446,7 @@ func _write_sweep_component(
 		from_point: Vector3,
 		to_point: Vector3,
 		radius: float
-) -> Dictionary:
+) -> Vector2i:
 	var written := 0
 	var newly_painted := 0
 	var delta := to_point - from_point
@@ -440,7 +460,7 @@ func _write_sweep_component(
 			written += 1
 		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
 			newly_painted += 1
-	return {"written": written, "newly_painted": newly_painted}
+	return Vector2i(written, newly_painted)
 
 
 func _alpha_for_distance(distance: float, radius: float) -> int:
@@ -456,7 +476,8 @@ func _alpha_for_distance(distance: float, radius: float) -> int:
 
 
 func _write_paint_value(index: int, value: int) -> int:
-	if index < 0 or index >= _paint_bytes.size() or not _ensure_surface_sample(index):
+	if index < 0 or index >= _paint_bytes.size() \
+			or _surface_sample_states[index] != SURFACE_SAMPLE_ACTIVE:
 		return WRITE_RESULT_NONE
 	var existing := int(_paint_bytes[index])
 	var updated := maxi(existing, clampi(value, 0, 255))
@@ -562,6 +583,8 @@ func clear() -> void:
 	_pending_commands.clear()
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
+	_last_nonempty_drain_duration_usec = 0
+	_last_nonempty_drain_new_surface_sample_count = 0
 	_paint_bytes.fill(0)
 	if _recent_diagnostics_enabled:
 		_recent_bytes.fill(0)
@@ -604,7 +627,6 @@ func _update_paint_mask_checksum(index: int, previous_value: int, next_value: in
 	_paint_checksum_sum_component = (
 		_paint_checksum_sum_component - previous_sum_token + next_sum_token
 	) & CHECKSUM_COMPONENT_MASK
-	_publish_paint_mask_checksum()
 
 
 func _paint_checksum_token(index: int, value: int, salt: int) -> int:
@@ -672,6 +694,18 @@ func texture_upload_batch_count() -> int:
 	return _texture_upload_batch_count
 
 
+func last_nonempty_drain_duration_milliseconds() -> float:
+	return float(_last_nonempty_drain_duration_usec) / 1000.0
+
+
+func last_nonempty_drain_new_surface_sample_count() -> int:
+	return _last_nonempty_drain_new_surface_sample_count
+
+
+func surface_sample_cache_miss_count() -> int:
+	return _surface_sample_cache_miss_count
+
+
 func dirty_region_read_only() -> Rect2i:
 	return _paint_dirty_rect
 
@@ -730,6 +764,7 @@ func _create_masks_and_surface_cache() -> void:
 	)
 	_surface_positions.resize(pixel_count)
 	_surface_normals.resize(pixel_count)
+	_build_surface_axis_mappings()
 	_candidate_generation.resize(pixel_count)
 	_candidate_generation.fill(0)
 	_visited_generation.resize(pixel_count)
@@ -762,6 +797,57 @@ func _create_masks_and_surface_cache() -> void:
 	_paint_texture_publish_elapsed = 0.0
 	_coverage_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
+	_surface_sample_cache_miss_count = 0
+	_last_nonempty_drain_duration_usec = 0
+	_last_nonempty_drain_new_surface_sample_count = 0
+
+
+## Caches the two independent mask-to-topology axes and the much smaller accepted
+## topology-cell triangle table. Individual 512-square mask samples stay lazy.
+func _build_surface_axis_mappings() -> void:
+	var topology := _generated_layout.top_topology
+	var topology_bounds := topology.local_bounds
+	var topology_cells := topology.cell_count
+	_topology_cell_count = topology_cells
+	var topology_cell_total := topology_cells.x * topology_cells.y
+	_topology_cell_cache_states.resize(topology_cell_total)
+	_topology_cell_cache_states.fill(SURFACE_SAMPLE_UNKNOWN)
+	_topology_cell_triangle_vertices.resize(
+		topology_cell_total * TerrainTopTopology.TRIANGLES_PER_CELL \
+				* TerrainTopTopology.CORNERS_PER_TRIANGLE
+	)
+	_topology_cell_triangle_normals.resize(
+		topology_cell_total * TerrainTopTopology.TRIANGLES_PER_CELL
+	)
+	for cell_y in range(topology_cells.y):
+		for cell_x in range(topology_cells.x):
+			_ensure_topology_cell_cache(Vector2i(cell_x, cell_y))
+	_surface_column_cells.resize(MASK_SIZE)
+	_surface_row_cells.resize(MASK_SIZE)
+	_surface_column_fractions.resize(MASK_SIZE)
+	_surface_row_fractions.resize(MASK_SIZE)
+	_surface_world_x.resize(MASK_SIZE)
+	_surface_world_z.resize(MASK_SIZE)
+	for pixel_x in range(MASK_SIZE):
+		var normalized_x := (float(pixel_x) + 0.5) / float(MASK_SIZE)
+		var local_x := topology_bounds.position.x + normalized_x * topology_bounds.size.x
+		var grid_x := (local_x - topology_bounds.position.x) \
+				/ topology_bounds.size.x * float(topology_cells.x)
+		var cell_x := clampi(floori(grid_x), 0, topology_cells.x - 1)
+		_surface_column_cells[pixel_x] = cell_x
+		_surface_column_fractions[pixel_x] = grid_x - float(cell_x)
+		_surface_world_x[pixel_x] = _world_bounds.position.x \
+				+ normalized_x * _world_bounds.size.x
+	for pixel_y in range(MASK_SIZE):
+		var normalized_y := (float(pixel_y) + 0.5) / float(MASK_SIZE)
+		var local_z := topology_bounds.position.y + normalized_y * topology_bounds.size.y
+		var grid_y := (local_z - topology_bounds.position.y) \
+				/ topology_bounds.size.y * float(topology_cells.y)
+		var cell_y := clampi(floori(grid_y), 0, topology_cells.y - 1)
+		_surface_row_cells[pixel_y] = cell_y
+		_surface_row_fractions[pixel_y] = grid_y - float(cell_y)
+		_surface_world_z[pixel_y] = _world_bounds.position.y \
+				+ normalized_y * _world_bounds.size.y
 
 
 ## Resolves only pixels reached by a paint footprint. The former eager 512-square
@@ -772,45 +858,66 @@ func _ensure_surface_sample(index: int) -> bool:
 	var state := int(_surface_sample_states[index])
 	if state != SURFACE_SAMPLE_UNKNOWN:
 		return state == SURFACE_SAMPLE_ACTIVE
+	_surface_sample_cache_miss_count += 1
 	var pixel := Vector2i(index % MASK_SIZE, index / MASK_SIZE)
-	var normalized := Vector2(
-		(float(pixel.x) + 0.5) / float(MASK_SIZE),
-		(float(pixel.y) + 0.5) / float(MASK_SIZE)
-	)
-	var topology := _generated_layout.top_topology
-	var topology_bounds := topology.local_bounds
-	var topology_cells := topology.cell_count
-	var local_xz := topology_bounds.position + normalized * topology_bounds.size
-	var grid := (local_xz - topology_bounds.position) / topology_bounds.size \
-			* Vector2(topology_cells)
 	var cell := Vector2i(
-		clampi(floori(grid.x), 0, topology_cells.x - 1),
-		clampi(floori(grid.y), 0, topology_cells.y - 1)
+		_surface_column_cells[pixel.x],
+		_surface_row_cells[pixel.y]
 	)
-	if not topology.is_cell_active(cell):
+	if not _ensure_topology_cell_cache(cell):
 		assert(
 			_target_bytes[index] < _surface_tuning.painted_threshold_byte,
 			"Eligible coverage pixels must belong to a real mountain top triangle."
 		)
 		_surface_sample_states[index] = SURFACE_SAMPLE_INACTIVE
 		return false
-	var local_uv := Vector2(grid.x - float(cell.x), grid.y - float(cell.y))
+	var local_uv := Vector2(
+		_surface_column_fractions[pixel.x],
+		_surface_row_fractions[pixel.y]
+	)
 	var address := TerrainTopTopology.triangle_barycentric_for_cell_uv(local_uv)
 	var triangle_in_cell := int(address.x)
-	var source_indices := topology.triangle_vertex_indices(cell, triangle_in_cell)
-	assert(source_indices.x >= 0, "Active paint pixels require an emitted top triangle.")
-	var local_point := topology.vertex_at(source_indices.x) * address.y \
-			+ topology.vertex_at(source_indices.y) * address.z \
-			+ topology.vertex_at(source_indices.z) * address.w
-	var world_xz := _world_bounds.position + normalized * _world_bounds.size
+	var cell_index := cell.y * _topology_cell_count.x + cell.x
+	var triangle_index := cell_index * TerrainTopTopology.TRIANGLES_PER_CELL \
+			+ triangle_in_cell
+	var vertex_offset := triangle_index * TerrainTopTopology.CORNERS_PER_TRIANGLE
+	var local_point := _topology_cell_triangle_vertices[vertex_offset] * address.y \
+			+ _topology_cell_triangle_vertices[vertex_offset + 1] * address.z \
+			+ _topology_cell_triangle_vertices[vertex_offset + 2] * address.w
 	_surface_positions[index] = Vector3(
-		world_xz.x,
+		_surface_world_x[pixel.x],
 		_terrain_origin_y + local_point.y,
-		world_xz.y
+		_surface_world_z[pixel.y]
 	)
-	_surface_normals[index] = topology.triangle_normal(cell, triangle_in_cell)
+	_surface_normals[index] = _topology_cell_triangle_normals[triangle_index]
 	_paintable_surface_bytes[index] = 255
 	_surface_sample_states[index] = SURFACE_SAMPLE_ACTIVE
+	return true
+
+
+func _ensure_topology_cell_cache(cell: Vector2i) -> bool:
+	var cell_index := cell.y * _topology_cell_count.x + cell.x
+	var state := int(_topology_cell_cache_states[cell_index])
+	if state != SURFACE_SAMPLE_UNKNOWN:
+		return state == SURFACE_SAMPLE_ACTIVE
+	var topology := _generated_layout.top_topology
+	if not topology.is_cell_active(cell):
+		_topology_cell_cache_states[cell_index] = SURFACE_SAMPLE_INACTIVE
+		return false
+	for triangle_in_cell in range(TerrainTopTopology.TRIANGLES_PER_CELL):
+		var triangle_index := cell_index * TerrainTopTopology.TRIANGLES_PER_CELL \
+				+ triangle_in_cell
+		var vertex_offset := triangle_index * TerrainTopTopology.CORNERS_PER_TRIANGLE
+		var source_indices := topology.triangle_vertex_indices(cell, triangle_in_cell)
+		assert(source_indices.x >= 0, "Active paint cells require emitted top triangles.")
+		_topology_cell_triangle_vertices[vertex_offset] = topology.vertex_at(source_indices.x)
+		_topology_cell_triangle_vertices[vertex_offset + 1] = topology.vertex_at(source_indices.y)
+		_topology_cell_triangle_vertices[vertex_offset + 2] = topology.vertex_at(source_indices.z)
+		_topology_cell_triangle_normals[triangle_index] = topology.triangle_normal(
+			cell,
+			triangle_in_cell
+		)
+	_topology_cell_cache_states[cell_index] = SURFACE_SAMPLE_ACTIVE
 	return true
 
 

@@ -20,7 +20,6 @@ var spawn_ordinal: int:
 
 var _terrain_surface: TerrainSurface
 var _paint_surface_tuning: PaintSurfaceTuning
-var _target_mask := PackedByteArray()
 var _spawn_ordinal: int = -1
 var _elapsed: float = 0.0
 var _slow_elapsed: float = 0.0
@@ -65,9 +64,6 @@ func configure(
 	_cached_incoming_velocity = launch_velocity
 	_velocity_history.assign([launch_velocity])
 	split_generation = generation
-	var layout := _terrain_surface.layout_read_only() if _terrain_surface != null else null
-	if layout != null and layout.has_valid_target_mask():
-		_target_mask = layout.target_mask
 
 
 func _ready() -> void:
@@ -265,7 +261,6 @@ func _update_target_contact_interval(
 		if SurfaceContactGapValidator.is_paintable_contact(
 			_terrain_surface,
 			_paint_surface_tuning,
-			_target_mask,
 			contact
 		):
 			_current_target_top_contact = contact
@@ -294,7 +289,6 @@ func _update_target_contact_interval(
 		elif SurfaceContactGapValidator.can_bridge(
 			_terrain_surface,
 			_paint_surface_tuning,
-			_target_mask,
 			_interval_last_contact,
 			current,
 			missing_ticks,

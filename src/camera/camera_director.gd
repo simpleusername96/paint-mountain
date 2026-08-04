@@ -30,6 +30,8 @@ var _desired_position := Vector3.ZERO
 var _desired_focus := Vector3.ZERO
 var _safe_position := Vector3.ZERO
 var _safe_cached_focus := Vector3.ZERO
+var _safe_source_position := Vector3.ZERO
+var _safe_source_focus := Vector3.ZERO
 var _safe_pose_valid := false
 var _safe_pose_dirty := true
 var _safety_solve_elapsed := SAFETY_SOLVE_INTERVAL
@@ -41,6 +43,8 @@ var _follow_wide_latched: bool = false
 var _shake_remaining: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_phase: float = 0.0
+var _computed_follow_position := Vector3.ZERO
+var _computed_follow_focus := Vector3.ZERO
 
 
 func configure(
@@ -53,6 +57,7 @@ func configure(
 	_stage_data = stage_data
 	_projectile_manager = projectile_manager
 	_terrain_surface = terrain_surface
+	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	set_mode(Mode.BRIEFING, true)
 
 
@@ -64,15 +69,12 @@ func _physics_process(delta: float) -> void:
 	_safety_solve_elapsed += delta
 	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= SAFETY_SOLVE_INTERVAL):
 		_resolve_safe_pose()
-	if not _safe_pose_valid:
-		return
-	var corrected := _smooth_damp(_camera.global_position, _safe_position, delta)
-	_camera.global_position = corrected
-	if not corrected.is_equal_approx(_safe_cached_focus):
-		_look_at_focus(_safe_cached_focus)
 
 
 func _process(delta: float) -> void:
+	if _camera == null or _stage_data == null:
+		return
+	_update_rendered_camera(delta)
 	_update_shake(delta)
 
 
@@ -99,7 +101,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func set_mode(mode: Mode, immediate: bool = false) -> void:
 	if _camera == null or _stage_data == null:
 		return
+	var changed_mode := current_mode != mode
 	current_mode = mode
+	if changed_mode:
+		_safe_pose_valid = false
+		_safe_pose_dirty = true
+		_safety_solve_elapsed = SAFETY_SOLVE_INTERVAL
 	if mode == Mode.FOLLOW:
 		_follow_wide_latched = false
 		_update_follow_target()
@@ -229,45 +236,72 @@ func _apply_briefing_orbit() -> void:
 
 
 func _update_follow_target() -> void:
-	if _projectile_manager == null:
+	if not _compute_follow_pose(false, true):
 		return
+	_set_desired_pose(_computed_follow_position, _computed_follow_focus)
+
+
+func _compute_follow_pose(use_interpolated_transform: bool, update_latch: bool) -> bool:
+	if _projectile_manager == null:
+		return false
 	var active := _projectile_manager.active_projectiles()
 	if active.is_empty():
-		return
+		return false
 	var average := Vector3.ZERO
-	var fastest: PaintProjectile
+	var fastest_position := Vector3.ZERO
 	var fastest_speed := -1.0
 	var total_speed := 0.0
 	for projectile in active:
-		average += projectile.global_position
+		var projectile_position := projectile.get_global_transform_interpolated().origin \
+				if use_interpolated_transform else projectile.global_position
+		average += projectile_position
 		var speed := projectile.linear_velocity.length()
 		total_speed += speed
 		if speed > fastest_speed:
-			fastest = projectile
+			fastest_position = projectile_position
 			fastest_speed = speed
 	average /= float(active.size())
 	var fastest_weight := minf(0.35, fastest_speed / maxf(total_speed, 0.001))
-	var focus := average.lerp(fastest.global_position, fastest_weight)
+	var focus := average.lerp(fastest_position, fastest_weight)
 	var bounding_radius := 0.0
 	for projectile in active:
-		bounding_radius = maxf(bounding_radius, projectile.global_position.distance_to(focus))
+		var radius_position := projectile.get_global_transform_interpolated().origin \
+				if use_interpolated_transform else projectile.global_position
+		bounding_radius = maxf(bounding_radius, radius_position.distance_to(focus))
 	var framed_radius := bounding_radius * SPLIT_FRAME_MARGIN
 	var required_distance := maxf(FOLLOW_DIRECTION.length(), framed_radius / tan(deg_to_rad(_camera.fov * 0.5)))
-	if required_distance > _stage_data.follow_camera_max_distance:
-		_follow_wide_latched = true
-	elif _follow_wide_latched and bounding_radius * 2.0 < _stage_data.follow_camera_max_distance * FOLLOW_RELEASE_RATIO:
-		_follow_wide_latched = false
+	if update_latch:
+		if required_distance > _stage_data.follow_camera_max_distance:
+			_follow_wide_latched = true
+		elif _follow_wide_latched and bounding_radius * 2.0 < _stage_data.follow_camera_max_distance * FOLLOW_RELEASE_RATIO:
+			_follow_wide_latched = false
 	if _follow_wide_latched:
 		var wide_bookmark := _bookmark_for(Mode.WIDE)
-		_set_desired_pose(wide_bookmark[0], focus)
+		_computed_follow_position = wide_bookmark[0]
+		_computed_follow_focus = focus
 	else:
-		_set_desired_pose(
-			focus + FOLLOW_DIRECTION.normalized() * minf(
-				required_distance,
-				_stage_data.follow_camera_max_distance
-			),
-			focus
+		_computed_follow_position = focus + FOLLOW_DIRECTION.normalized() * minf(
+			required_distance,
+			_stage_data.follow_camera_max_distance
 		)
+		_computed_follow_focus = focus
+	return true
+
+
+func _update_rendered_camera(delta: float) -> void:
+	if not _safe_pose_valid:
+		return
+	var target_position := _safe_position
+	var target_focus := _safe_cached_focus
+	if current_mode == Mode.FOLLOW and _compute_follow_pose(true, false):
+		target_position = _computed_follow_position \
+				+ (_safe_position - _safe_source_position)
+		target_focus = _computed_follow_focus \
+				+ (_safe_cached_focus - _safe_source_focus)
+	var corrected := _smooth_damp(_camera.global_position, target_position, delta)
+	_camera.global_position = corrected
+	if not corrected.is_equal_approx(target_focus):
+		_look_at_focus(target_focus)
 
 
 func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
@@ -282,6 +316,8 @@ func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
 
 
 func _resolve_safe_pose() -> void:
+	_safe_source_position = _desired_position
+	_safe_source_focus = _desired_focus
 	_safe_cached_focus = _safe_focus(_desired_focus)
 	_safe_position = safe_position_for(
 		_desired_position,

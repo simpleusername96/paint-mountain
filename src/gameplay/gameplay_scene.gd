@@ -228,7 +228,6 @@ func _connect_systems() -> void:
 	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
 	_stage_controller.aim_action_accepted.connect(_on_aim_action_accepted)
-	_stage_controller.fire_prediction_refresh_requested.connect(_on_fire_prediction_refresh_requested)
 	_stage_controller.fire_action_accepted.connect(_on_fire_action_accepted)
 	_stage_controller.restart_action_accepted.connect(_on_restart_action_accepted)
 	_stage_controller.stage_cleared.connect(_on_stage_cleared)
@@ -267,11 +266,6 @@ func _recompute_prediction() -> void:
 	_cannon.set_prediction(prediction)
 	_prediction_dirty = false
 	_prediction_refresh_cooldown_seconds = PREDICTION_REFRESH_INTERVAL_SECONDS
-
-
-func _on_fire_prediction_refresh_requested(_origin: int) -> void:
-	if _prediction_dirty:
-		_recompute_prediction()
 
 
 func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
