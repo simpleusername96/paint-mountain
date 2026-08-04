@@ -19,9 +19,9 @@ related:
 The active execution plan is
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
 Production implementation tasks 1.1 through 5.4 and the bounded headless MVP QA
-tasks 6.1 through 6.4 are complete. The plan remains active only because visible
-composition/play review and the broader deferred checks still require explicit
-user authorization.
+tasks 6.1 through 7.4 are complete. The plan remains active only because the
+rebuilt result still requires the user's visible composition/play review and
+the broader deferred checks still require explicit authorization.
 
 The user accepted the standalone `Closed Mountain Lab` result as the intended
 terrain MVP and instructed that algorithm to be applied directly to the game.
@@ -68,34 +68,45 @@ solid collision silhouettes remain color-separated as amber, violet, and coral.
 Approved trees and rocks remain non-gameplay dressing outside route and
 mechanism clearance.
 
-World presentation now uses a bright warm rear wall, warm off-white faceted
-mountain, lower support/apron plane, white-and-navy cannon, restrained blue
-trajectory dots, a depth-tested impact ring, and aiming cameras behind the
-cannon. The Korean-first Pretendard HUD now has a left vertical goal-relative
-coverage rail with an absolute percentage, lower-left aim/power, one centered
+World presentation now separates the warm rear wall from a light cool-gray
+faceted mountain, darker support/apron plane, lower ambient fill, and stronger
+daylight key. Briefing, Wide, and Result calculate their composition from the
+generated render AABB and camera FOV; Aiming retains its authored cannon-relative
+view. The white-and-navy cannon, restrained blue trajectory, and saturated
+non-emissive paint remain unchanged. The Korean-first Pretendard HUD keeps its
+left vertical goal-relative coverage rail, lower-left aim/power, one centered
 Fire button, and top-right shots plus gear. Gear/Escape opens the full paused
 menu; Restart exists there and in result/replay flows, not in the aiming HUD.
-Closing the application-level Settings overlay returns to the still-paused menu.
 
-No visible Godot process, screenshot capture, performance pass, replay matrix,
-balance check, or user review of the in-game v5 terrain was run. The bounded
-headless MVP checks proved all three persisted stages generate connected,
-row-solid, tapered, closed mountain masses from their production seeds with all
-configured mechanisms placed. They also caught and fixed sub-unit route-grade
-sign handling. Stage 1's real default paintball contacted the canonical terrain
-top, remained there for 4.400 seconds, traversed 34.045 m through 264 continuous
-sweeps, produced 15.2824% scoreable coverage without penetration, settled in
-the required order, and restarted deterministically. Valid paint outside the
-score mask is now retained visually, while only eligible target texels increase
-coverage.
+The user's QA of the previous generation-v5 build rejected terrain visibility,
+paint feedback, and camera/aim responsiveness. Phase 7 now frames the final
+post-safety Briefing, Wide, and Result camera poses against every generated
+render AABB on all three stages. Static camera safety is cached at 15 Hz only
+while the desired pose changes. Mouse drag is applied once per rendered frame;
+trajectory prediction is coalesced to 20 Hz and synchronously refreshed from the
+latest canonical aim before every Human, Replay, Agent, or Debug fire request.
 
-Godot 4.7.1 passed headless import/script parsing and main-scene startup. The
-generation-v5 Windows release was rebuilt, passed a hidden headless startup, and
-remains connected to the exact fastrun command
+`PaintSystem` still owns one 512-square authoritative mask. Production texture
+publication is coalesced to 15 Hz, recreates and rebinds the current L8 texture,
+forces the final dirty state before result sealing, and omits the unused recent
+mask in release builds. The per-drain GDScript FNV loop was replaced by native
+`hash(PackedByteArray)` and replay format 5 rejects format 4. Stage 1's real
+default paintball still remained on the canonical terrain top for 4.400 seconds,
+traversed 34.045 m through 264 continuous sweeps, produced 15.2824% scoreable
+coverage without penetration, and published texture bytes identical to the
+authoritative final mask.
+
+No visible Godot process, screenshot capture, broad performance pass, replay
+matrix, balance check, or user review of the rebuilt Phase 7 result was run.
+Godot 4.7.1 passed the focused Phase 7 contract, closed-mountain and Stage 1
+physical-paint checks, headless import/script parsing, and main-scene startup.
+The Windows release was rebuilt, passed a hidden headless startup, and remains
+connected to the exact fastrun command
 `& '.\builds\windows\PaintMountain.exe'`. These checks establish structural
-terrain construction, the Stage 1 physical paint path, importability, startup,
-and delivery wiring; they do not establish visible composition, Stage 2/3
-playthroughs, balance, performance, or user approval.
+terrain construction, final camera framing, the Stage 1 physical paint and
+texture-publication path, bounded update cadence, importability, startup, and
+delivery wiring. They do not establish visible composition, Stage 2/3
+playthroughs, broad performance, balance, or user approval.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 

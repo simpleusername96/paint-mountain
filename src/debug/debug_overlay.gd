@@ -68,6 +68,7 @@ func configure(
 func _process(_delta: float) -> void:
 	if not visible or _controller == null:
 		return
+	_paint_preview.texture = _paint.paint_texture()
 	var velocity := Vector3.ZERO
 	var active := _projectiles.active_projectiles()
 	if not active.is_empty():

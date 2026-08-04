@@ -12,10 +12,9 @@ signal paint_commands_drained(
 
 const MASK_SIZE := 512
 const PAINT_DRAIN_PRIORITY := 1000
+const PAINT_TEXTURE_PUBLISH_INTERVAL := 1.0 / 15.0
 const COVERAGE_PUBLISH_INTERVAL := 0.20
 const NORMAL_FACING_THRESHOLD := 0.2588190451 # cos(75 degrees)
-const CHECKSUM_OFFSET := 2166136261
-const CHECKSUM_PRIME := 16777619
 const DEFAULT_PAINT_SURFACE_TUNING := preload(
 	"res://resources/paint/default_paint_surface_tuning.tres"
 )
@@ -69,12 +68,15 @@ var _recent_dirty_rect := Rect2i()
 var _recent_live_rect := Rect2i()
 var _texture_upload_pending: bool = false
 var _texture_upload_batch_count: int = 0
+var _paint_texture_publish_elapsed: float = 0.0
 var _coverage_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
+var _recent_diagnostics_enabled: bool = false
 
 
 func _init() -> void:
 	process_physics_priority = PAINT_DRAIN_PRIORITY
+	_recent_diagnostics_enabled = OS.is_debug_build()
 
 
 func configure(
@@ -139,8 +141,10 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(delta: float) -> void:
-	# Rendering sees at most one texture update batch per rendered frame.
-	_upload_dirty_images()
+	_paint_texture_publish_elapsed += delta
+	if _paint_texture_publish_elapsed >= PAINT_TEXTURE_PUBLISH_INTERVAL:
+		_paint_texture_publish_elapsed = 0.0
+		_upload_dirty_images()
 	_coverage_publish_elapsed += delta
 	if _coverage_publish_elapsed < COVERAGE_PUBLISH_INTERVAL:
 		return
@@ -446,11 +450,13 @@ func _write_paint_value(index: int, value: int) -> Dictionary:
 	var newly_painted := crossed_paint_threshold \
 			and _target_bytes[index] >= _surface_tuning.painted_threshold_byte
 	_paint_bytes[index] = updated
-	_recent_bytes[index] = 255
+	if _recent_diagnostics_enabled:
+		_recent_bytes[index] = 255
 	if newly_painted:
 		_painted_target_pixels += 1
 	_mark_paint_dirty(index)
-	_mark_recent_dirty(index)
+	if _recent_diagnostics_enabled:
+		_mark_recent_dirty(index)
 	return {"written": 1, "newly_painted": 1 if newly_painted else 0}
 
 
@@ -519,11 +525,17 @@ func _next_visited_generation() -> int:
 	return _visited_generation_id
 
 
-func flush_pending() -> void:
+func force_flush_paint_texture() -> void:
 	drain_pending_commands()
 	_upload_dirty_images()
+	_paint_texture_publish_elapsed = 0.0
+	_coverage_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
 	coverage_changed.emit(coverage_percent())
+
+
+func flush_pending() -> void:
+	force_flush_paint_texture()
 
 
 func clear() -> void:
@@ -533,13 +545,16 @@ func clear() -> void:
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
 	_paint_bytes.fill(0)
-	_recent_bytes.fill(0)
+	if _recent_diagnostics_enabled:
+		_recent_bytes.fill(0)
 	_paint_mask_checksum = _compute_paint_mask_checksum()
 	_painted_target_pixels = 0
 	_paint_dirty_rect = Rect2i(Vector2i.ZERO, Vector2i(MASK_SIZE, MASK_SIZE))
-	_recent_dirty_rect = _paint_dirty_rect
+	_recent_dirty_rect = _paint_dirty_rect if _recent_diagnostics_enabled else Rect2i()
 	_recent_live_rect = Rect2i()
 	_texture_upload_pending = true
+	_paint_texture_publish_elapsed = 0.0
+	_coverage_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
 	coverage_changed.emit(0.0)
 
@@ -555,11 +570,7 @@ func paint_mask_checksum() -> int:
 
 
 func _compute_paint_mask_checksum() -> int:
-	var hash := CHECKSUM_OFFSET
-	for byte in _paint_bytes:
-		hash = hash ^ int(byte)
-		hash = int((hash * CHECKSUM_PRIME) & 0xffffffff)
-	return hash
+	return hash(_paint_bytes)
 
 
 func paint_texture() -> ImageTexture:
@@ -637,8 +648,10 @@ func _create_masks_and_surface_cache() -> void:
 	_paint_bytes.fill(0)
 	_paintable_surface_bytes.resize(pixel_count)
 	_paintable_surface_bytes.fill(0)
-	_recent_bytes.resize(pixel_count)
-	_recent_bytes.fill(0)
+	_recent_bytes = PackedByteArray()
+	if _recent_diagnostics_enabled:
+		_recent_bytes.resize(pixel_count)
+		_recent_bytes.fill(0)
 	_target_bytes = _generated_layout.target_mask
 	assert(_target_bytes.size() == pixel_count, "Generated layout target mask must be 512 square.")
 	assert(
@@ -683,7 +696,6 @@ func _create_masks_and_surface_cache() -> void:
 			)
 			_surface_normals[index] = sample.normal
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
-	_recent_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 	_target_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes)
 	var nontarget_bytes := PackedByteArray()
 	nontarget_bytes.resize(pixel_count)
@@ -692,7 +704,13 @@ func _create_masks_and_surface_cache() -> void:
 				if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
 	_nontarget_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
-	_recent_texture = ImageTexture.create_from_image(_recent_image)
+	_recent_image = null
+	_recent_texture = null
+	if _recent_diagnostics_enabled:
+		_recent_image = Image.create_from_data(
+			MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes
+		)
+		_recent_texture = ImageTexture.create_from_image(_recent_image)
 	_target_texture = ImageTexture.create_from_image(_target_image)
 	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
 	_painted_target_pixels = 0
@@ -701,6 +719,9 @@ func _create_masks_and_surface_cache() -> void:
 	_recent_live_rect = Rect2i()
 	_texture_upload_pending = false
 	_texture_upload_batch_count = 0
+	_paint_texture_publish_elapsed = 0.0
+	_coverage_publish_elapsed = 0.0
+	_coverage_changed_since_publish = false
 
 
 func _mark_paint_dirty(index: int) -> void:
@@ -716,7 +737,7 @@ func _mark_recent_dirty(index: int) -> void:
 
 
 func _clear_recent_region() -> void:
-	if not _recent_live_rect.has_area():
+	if not _recent_diagnostics_enabled or not _recent_live_rect.has_area():
 		return
 	for pixel_y in range(_recent_live_rect.position.y, _recent_live_rect.end.y):
 		for pixel_x in range(_recent_live_rect.position.x, _recent_live_rect.end.x):
@@ -739,10 +760,16 @@ func _include_pixel(rect: Rect2i, pixel: Vector2i) -> Rect2i:
 func _upload_dirty_images() -> void:
 	if not _texture_upload_pending:
 		return
-	_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
-	_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
-	_paint_texture.update(_paint_image)
-	_recent_texture.update(_recent_image)
+	if _paint_dirty_rect.has_area():
+		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
+		# Rebinding a freshly created L8 texture is reliable on the Compatibility
+		# renderer and remains bounded by the 15 Hz publication cadence.
+		_paint_texture = ImageTexture.create_from_image(_paint_image)
+		if _terrain_material != null:
+			_terrain_material.set_shader_parameter(&"paint_mask", _paint_texture)
+	if _recent_diagnostics_enabled and _recent_dirty_rect.has_area():
+		_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
+		_recent_texture.update(_recent_image)
 	_texture_upload_batch_count += 1
 	_paint_dirty_rect = Rect2i()
 	_recent_dirty_rect = Rect2i()

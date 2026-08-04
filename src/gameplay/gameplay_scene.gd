@@ -6,6 +6,7 @@ const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
 const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
+const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 
 @export var stage_data: StageData
 
@@ -32,6 +33,9 @@ const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surfa
 var _shot_has_impacted: bool = false
 var _mechanisms: Array[GimmickBase] = []
 var _generated_layout: GeneratedStageLayout
+var _prediction_dirty := false
+var _prediction_refresh_cooldown_seconds := 0.0
+var _prediction_compute_count := 0
 
 
 func _ready() -> void:
@@ -110,6 +114,19 @@ func terrain_layout_read_only() -> GeneratedStageLayout:
 	return _generated_layout
 
 
+func prediction_compute_count() -> int:
+	return _prediction_compute_count
+
+
+func _process(delta: float) -> void:
+	_prediction_refresh_cooldown_seconds = maxf(
+		0.0,
+		_prediction_refresh_cooldown_seconds - delta
+	)
+	if _prediction_dirty and _prediction_refresh_cooldown_seconds <= 0.0:
+		_recompute_prediction()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
@@ -176,6 +193,7 @@ func _connect_systems() -> void:
 	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
 	_stage_controller.aim_action_accepted.connect(_on_aim_action_accepted)
+	_stage_controller.fire_prediction_refresh_requested.connect(_on_fire_prediction_refresh_requested)
 	_stage_controller.fire_action_accepted.connect(_on_fire_action_accepted)
 	_stage_controller.restart_action_accepted.connect(_on_restart_action_accepted)
 	_stage_controller.stage_cleared.connect(_on_stage_cleared)
@@ -201,16 +219,24 @@ func _connect_systems() -> void:
 
 func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
 	_hud.update_aim(yaw, elevation, power)
-	_recompute_prediction()
+	_prediction_dirty = true
 
 
 func _recompute_prediction() -> void:
+	_prediction_compute_count += 1
 	var prediction := TrajectoryPredictor.predict(
 		get_world_3d().direct_space_state,
 		_cannon,
 		_generated_layout.containment.containment_bounds
 	)
 	_cannon.set_prediction(prediction)
+	_prediction_dirty = false
+	_prediction_refresh_cooldown_seconds = PREDICTION_REFRESH_INTERVAL_SECONDS
+
+
+func _on_fire_prediction_refresh_requested(_origin: int) -> void:
+	if _prediction_dirty:
+		_recompute_prediction()
 
 
 func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:

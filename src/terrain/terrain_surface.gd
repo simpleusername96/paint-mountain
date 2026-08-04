@@ -80,6 +80,12 @@ func layout_read_only() -> GeneratedStageLayout:
 	return _layout
 
 
+func render_world_aabb() -> AABB:
+	if _geometry == null or _geometry.render_mesh == null:
+		return AABB()
+	return global_transform * _geometry.render_mesh.get_aabb()
+
+
 func classify_top_hit(
 		world_point: Vector3,
 		predicted_world_normal: Vector3,

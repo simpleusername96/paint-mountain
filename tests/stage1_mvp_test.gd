@@ -149,6 +149,23 @@ func _run_checks() -> void:
 		"every sampled target centerline texel must cross the authoritative paint threshold"
 	)
 	_assert_true(paint.coverage_percent() > 0.0, "the physical surface path must increase authoritative coverage")
+	paint.force_flush_paint_texture()
+	var published_image := paint.paint_texture().get_image()
+	_assert_true(published_image != null, "the authoritative paint texture must remain readable after final publication")
+	if published_image != null:
+		var published_bytes := published_image.get_data()
+		var authoritative_bytes := paint.paint_bytes_read_only()
+		_assert_true(
+			published_bytes == authoritative_bytes,
+			"the texture published to the terrain shader must match the authoritative painted bytes (format=%s size=%d/%d hash=%d/%d first_mismatch=%d)" % [
+				str(published_image.get_format()),
+				published_bytes.size(),
+				authoritative_bytes.size(),
+				hash(published_bytes),
+				hash(authoritative_bytes),
+				_first_byte_mismatch(published_bytes, authoritative_bytes),
+			]
+		)
 	var shader_source := FileAccess.get_file_as_string("res://src/paint/terrain_paint.gdshader")
 	_assert_true(
 		shader_source.contains("texture(paint_mask, UV).r * paintable_surface"),
@@ -273,6 +290,13 @@ func _layout_identity(layout: GeneratedStageLayout) -> Dictionary:
 func _next_event_sequence() -> int:
 	_event_sequence += 1
 	return _event_sequence
+
+
+func _first_byte_mismatch(first: PackedByteArray, second: PackedByteArray) -> int:
+	for index in range(mini(first.size(), second.size())):
+		if first[index] != second[index]:
+			return index
+	return mini(first.size(), second.size()) if first.size() != second.size() else -1
 
 
 func _assert_true(condition: bool, message: String) -> void:

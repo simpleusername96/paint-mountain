@@ -176,6 +176,7 @@ func _check_stage_predictions(game_state: Node) -> void:
 		var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 		for aim in AIM_CASES:
 			cannon.set_aim(aim.x, aim.y, aim.z)
+			await create_timer(0.06).timeout
 			var prediction := cannon.current_prediction()
 			_assert_true(prediction != null, "%s %s must produce a prediction" % [stage_id, aim])
 			if prediction == null:

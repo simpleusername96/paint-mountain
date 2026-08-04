@@ -50,7 +50,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `PaintProjectile` | Rigid-body behavior, every begun measured contact, target-top sweep/radial-mark intent, stop/lifetime/bounds | Persistent mask mutation, coverage totals, or stage transitions |
 | `ProjectileManager` | Parent/child registry, eight-ball cap, per-shot spawn ordinals, paint-command canonicalization, shot-settled signal, cleanup | Projectile physics tuning or mask writes |
 | `SurfacePaintSweep`, `RadialPaintMark` | Immutable physically justified paint commands with stable source identity and deterministic order | Mask writes, coverage, payload, or flow |
-| `PaintSystem` | Ordered command drain, target-only rasterization, one authoritative paint mask/coverage, texture upload, clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
+| `PaintSystem` | Ordered command drain, mountain-top paint rasterization, immutable target-only scoring, one authoritative paint mask/coverage, texture publication, clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
 | `GimmickBase` | Shared solid-body strike eligibility, contact debounce, state, reset, and data contract | Subclass-specific effect or invisible gameplay triggers |
 | `BurstNode` | Direct paint-mask burst and charge/spent feedback | Projectile spawning |
 | `SplitterNode` | Consume input and request bounded child fan | Stage settlement decisions |
@@ -59,7 +59,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `HUDController` and screen controllers | Display state and emit typed aim, fire, and game-menu intents | Authoritative state mutation, direct pause/settings mutation, or alternate coverage |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, and navigation/return layering | Stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
-| `ReplayRecorder` | Format-4 layout identities, deterministic action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
+| `ReplayRecorder` | Format-5 layout identities, deterministic action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
 | `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
 | `GameplayAgentApi` | UI-independent observations, actions, and event stream | Duplicate simulation rules |
 | `AppRoot` | Main-menu, stage-select, settings, and gameplay navigation/lifetime | Stage outcomes or paint state |
@@ -110,10 +110,11 @@ This architecture covers the single-process desktop game. It does not define a b
   local points. Runtime accepts it only when no full certificate is present; a
   present but stale full certificate fails closed instead of falling back. The
   permit never satisfies target-wide certification or final release/export.
-- Replay format 4 carries stage/profile versions, accepted seed, height/target/
+- Replay format 5 carries stage/profile versions, accepted seed, height/target/
   reachability/containment checksums, generated default aim, physics FPS, ordered
   canonical manual actions, expected sealed observations, and final paint-mask
-  checksum. It contains no transform samples and rejects format 3.
+  checksum. It contains no transform samples and rejects format 4 because the
+  authoritative paint-mask checksum algorithm changed.
 - Agent observations are immutable snapshots; actions enter through the same validated cannon/stage command layer used by human UI.
 
 ### State and event flow

@@ -12,19 +12,23 @@ const HOLD_REPEAT_SECONDS := 0.08
 var _cannon: CannonController
 var _stage_controller: StageController
 var _drag_active := false
+var _pending_drag_degrees := Vector2.ZERO
 var _held_keys: Dictionary = {}
 
 
 func configure(cannon: CannonController, stage_controller: StageController) -> void:
 	_cannon = cannon
 	_stage_controller = stage_controller
+	_pending_drag_degrees = Vector2.ZERO
 
 
 func _process(delta: float) -> void:
 	if not _can_adjust_aim():
 		_held_keys.clear()
 		_drag_active = false
+		_pending_drag_degrees = Vector2.ZERO
 		return
+	_flush_pending_drag()
 	for keycode in _held_keys.keys():
 		var held: Dictionary = _held_keys[keycode]
 		held.elapsed = float(held.elapsed) + delta
@@ -66,6 +70,7 @@ func adjust_elevation(delta_degrees: float) -> bool:
 func request_fire() -> bool:
 	if not _can_adjust_aim():
 		return false
+	_flush_pending_drag()
 	return _stage_controller.request_fire(StageController.ActionOrigin.HUMAN)
 
 
@@ -94,7 +99,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		if _drag_active and motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
 			var pointer_scale := _pointer_scale_to_physical_pixels()
-			_apply_axis_step(
+			_pending_drag_degrees += Vector2(
 				motion.relative.x * pointer_scale.x * DRAG_YAW_DEGREES_PER_PIXEL,
 				motion.relative.y * pointer_scale.y * DRAG_ELEVATION_DEGREES_PER_PIXEL
 			)
@@ -138,6 +143,14 @@ func _apply_axis_step(yaw_delta: float, elevation_delta: float) -> void:
 		_cannon.power_percent,
 		StageController.ActionOrigin.HUMAN
 	)
+
+
+func _flush_pending_drag() -> void:
+	if _pending_drag_degrees.is_zero_approx():
+		return
+	var pending := _pending_drag_degrees
+	_pending_drag_degrees = Vector2.ZERO
+	_apply_axis_step(pending.x, pending.y)
 
 
 func _axis_for_key(keycode: Key) -> Vector2:

@@ -553,6 +553,95 @@ and the exact paint-mountain entry in the fastrun registry.
 Phase gate: record the four results once, update `Documentation.md`, and stop.
 Visible composition remains a user-owned manual gate.
 
+### Phase 7: User-QA visibility and responsiveness recovery
+
+Goal: correct the three failures reported from the generation-v5 Windows build:
+the mountain merges into the background, physically written paint is not
+readable in motion, and mouse/camera movement stalls the game.
+
+Verified starting point:
+
+- The user ran the exported build and rejected its terrain visibility, paint
+  feedback, and interaction performance. Phase 6 structural and mask evidence
+  remains factual but did not prove rendered usability.
+- The terrain is a closed shared mesh; no clipping or missing-mesh path was
+  found. The mountain, wall, and horizon instead occupy nearly the same light
+  value, while camera bookmarks clear only one focus ray rather than framing
+  the generated mass.
+- Every mouse aim event currently triggers up to 720 concave-shape casts and a
+  96-node preview rebuild. During contact, every physics drain hashes all
+  262,144 mask bytes in GDScript and every rendered frame uploads both full
+  paint textures; the second texture is unused by the production shader.
+
+Locked decisions:
+
+- Keep generation v5 and the one shared terrain topology. Fix composition and
+  update cadence; do not replace geometry with a visual duplicate.
+- Frame Briefing, Wide, and Result from the generated render-mesh AABB at a
+  1.08 margin. Preserve the authored view direction and keep Aiming anchored to
+  the foreground cannon.
+- Separate the dry mountain from the warm wall with a light cool-gray top,
+  darker support value, lower ambient fill, and stronger daylight key. Paint
+  remains saturated blue and does not depend on emission.
+- Coalesce mouse drag to one canonical aim update per rendered frame. Coalesce
+  trajectory prediction to 20 Hz, preserve the complete 60 Hz sphere-cast path
+  to first collision, and synchronously refresh a dirty prediction before any
+  Human, Replay, Agent, or Debug fire validation.
+- Resolve camera safety at most 15 Hz while a target pose changes and reuse the
+  result when settled; do not repeat the current two full correction passes on
+  a static camera.
+- Retain the authoritative 512-square paint mask. Publish its texture at 15 Hz,
+  force the final dirty paint before result sealing, omit the unused recent-mask
+  upload in release builds, and replace the per-drain GDScript FNV byte loop
+  with Godot's deterministic native `hash(PackedByteArray)`. Historical format-4
+  replay payloads are rejected by bumping the in-process replay format to 5.
+
+Source owners: `src/camera`, `src/input/aim_input_controller.gd`,
+`src/gameplay/gameplay_scene.gd`, `src/stage/stage_controller.gd`,
+`src/terrain/terrain_surface.gd`, `src/paint`, `src/replay/replay_recorder.gd`,
+`scenes/gameplay`, and focused Phase 7 checks under `tests`.
+
+- [x] **7.1 Make the generated mountain the readable dominant mass.**
+  - Change: add an AABB/FOV camera framer for Briefing, Wide, and Result;
+    expose the terrain render bounds; separate mountain, support, apron, wall,
+    sky, ambient, and key-light values without changing collision or topology.
+  - Accept: a headless framing contract proves every generated terrain AABB
+    corner fits inside the three framed camera frusta with the 1.08 margin, and
+    source inspection proves the dry mountain and rear wall no longer share the
+    same near-white value.
+  - Guard: Aiming retains the cannon-relative bookmark and every stage still
+    generates the same height, footprint, target, and placement checksums.
+
+- [x] **7.2 Make physically traversed paint publish promptly without stalls.**
+  - Change: use a 15 Hz coalesced production paint upload, skip unused recent
+    uploads in release, force final upload before sealing, and use the native
+    deterministic byte-array checksum with replay format 5.
+  - Accept: the real Stage 1 default shot still paints every sampled sweep
+    centerline, the uploaded paint texture bytes match the authoritative mask
+    after forced flush, coverage remains positive, and no paint command is
+    rejected.
+  - Guard: target classification affects scoring only; it cannot erase valid
+    mountain-top paint in the shader.
+
+- [x] **7.3 Remove per-event prediction and repeated static-camera work.**
+  - Change: accumulate drag motion once per rendered frame, schedule dirty
+    prediction at 20 Hz, synchronously flush it before every fire origin, and
+    cache camera safety at 15 Hz until its desired pose changes.
+  - Accept: a focused headless interaction check submits multiple aim changes
+    in one refresh interval, observes one scheduled prediction, then proves an
+    immediate fire uses the latest canonical aim and a fireable first-impact
+    prediction. Static Aiming performs no repeated safety solve after settling.
+  - Guard: predictor physics step, maximum duration, collision radius, and
+    first-hit identity remain unchanged.
+
+- [x] **7.4 Rebuild the user-run path.**
+  - Accept: `scripts/verify.ps1`, the Phase 7 focused checks, release export,
+    hidden exported startup, and the unchanged exact fastrun entry all pass.
+
+Phase gate: update `Documentation.md`, commit the task-owned change, and stop
+without a visible Godot process. The next acceptance evidence is the user's
+manual run of the rebuilt fastrun executable.
+
 ## Mandatory Launch Smoke Only
 
 Repository policy requires launchability after coherent production changes.
@@ -578,7 +667,7 @@ Cadence:
 
 This work has no active checkboxes and may not start automatically:
 
-- scripts/test.ps1 and all focused checks except Phase 6.1-6.3;
+- scripts/test.ps1 and all focused checks except the Phase 6 and Phase 7 checks;
 - containment, UI, localization, replay, persistence, agent, debug, reliability,
   and broad mechanism/state suites;
 - exhaustive reachability and certificate generation;
@@ -624,21 +713,32 @@ behavior, or release claim.
   and retains structural target-area, connectivity, and graph-node gates. This
   follows the locked rule that formal quality certification cannot block the
   implemented MVP from loading.
-- Godot 4.7.1 headless import, script parsing, and main-scene startup passed for
-  generation v5. No visible in-game inspection, Stage 2/3 gameplay run, physics
-  validation, screenshot, export, or balance claim was made.
-- Phase 6.1 through 6.4 passed headlessly; no visible process was opened. The
-  bounded MVP QA and headless delivery phase is complete.
-- Next task: stop at the user-owned visible composition/play gate.
+- Before Phase 7, Godot 4.7.1 headless import, script parsing, and main-scene
+  startup passed for generation v5, but no visible approval or current release
+  evidence existed.
+- Phase 6.1 through 6.4 passed headlessly, but the user's running-build QA then
+  invalidated the visible-terrain, paint-feedback, and responsiveness outcome.
+- Phase 7 implementation and bounded headless delivery are complete. The final
+  safe Briefing/Wide/Result poses frame every generated render AABB on all three
+  stages; static Aiming reuses its solved pose; same-interval aim changes perform
+  one latest-value prediction at Fire.
+- The Stage 1 default physical shot still records 4.400 seconds of real top
+  contact, 34.045 m of surface travel, 264 continuous sweeps, and 15.2824%
+  coverage. Its final shader-bound texture bytes match the authoritative mask.
+- Godot import/startup, `scripts/verify.ps1`, the focused Phase 7 contract,
+  generation-v5 closed-mountain check, Windows release export, and hidden
+  exported startup passed without opening a visible process.
+- Current phase: user-owned manual review of the rebuilt fastrun executable.
+- Next task: wait for the user's visible terrain, paint, and responsiveness QA.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
   the existing slab.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
-- Run only the Phase 6 checks activated by the user's continuation instruction.
-- Earlier v4 release/export evidence is historical. The registered fastrun
-  executable was rebuilt from generation v5 and passed hidden headless startup.
+- Run only the bounded Phase 7 checks that directly prove the reported failures.
+- Earlier release/export evidence is historical. The registered fastrun
+  executable now contains the Phase 7 recovery and passed hidden headless startup.
 - `scripts/verify.ps1` now treats Godot `SCRIPT ERROR:` and `ERROR:` output as
   failure because this engine can return exit code zero after such errors.
 
@@ -656,8 +756,9 @@ Implementation-ready when:
 - latest mandatory headless launch smoke passes;
 - implementation record lists every untested behavior.
 
-Then stop. Do not run formal tests, launch visibly, export, capture screenshots,
-claim approval, or mark this plan done.
+Phase 7 satisfies the bounded implementation and delivery gate. Stop without a
+visible launch, screenshots, broad deferred suites, or an approval claim; wait
+for the user's manual run of the rebuilt fastrun executable.
 
 Replan only when user feedback changes the visible object, gameplay rule, UI
 hierarchy, asset boundary, or testing boundary, or when the locked closed-mass

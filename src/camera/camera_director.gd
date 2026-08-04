@@ -17,7 +17,9 @@ const CORRECTION_SMOOTH_TIME := 0.20
 const SPLIT_FRAME_MARGIN := 1.15
 const FOLLOW_RELEASE_RATIO := 0.85
 const OCCLUSION_END_TOLERANCE := 0.25
-const FOLLOW_DIRECTION := Vector3(10.0, 7.0, 14.0)
+const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
+const DESIRED_POSE_EPSILON_SQUARED := 0.0025
+const FOLLOW_DIRECTION := Vector3(18.0, 12.0, 24.0)
 
 var current_mode: Mode = Mode.AIMING
 var _camera: Camera3D
@@ -26,6 +28,12 @@ var _projectile_manager: ProjectileManager
 var _terrain_surface: TerrainSurface
 var _desired_position := Vector3.ZERO
 var _desired_focus := Vector3.ZERO
+var _safe_position := Vector3.ZERO
+var _safe_cached_focus := Vector3.ZERO
+var _safe_pose_valid := false
+var _safe_pose_dirty := true
+var _safety_solve_elapsed := SAFETY_SOLVE_INTERVAL
+var _safety_solve_count := 0
 var _camera_velocity := Vector3.ZERO
 var _briefing_yaw_offset: float = 0.0
 var _briefing_zoom_offset: float = 0.0
@@ -53,13 +61,15 @@ func _physics_process(delta: float) -> void:
 		return
 	if current_mode == Mode.FOLLOW:
 		_update_follow_target()
-	var safe_focus := _safe_focus(_desired_focus)
-	var safe_target := safe_position_for(_desired_position, safe_focus, _focus_is_terrain(_desired_focus))
-	var corrected := _smooth_damp(_camera.global_position, safe_target, delta)
-	corrected = safe_position_for(corrected, safe_focus, _focus_is_terrain(_desired_focus))
+	_safety_solve_elapsed += delta
+	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= SAFETY_SOLVE_INTERVAL):
+		_resolve_safe_pose()
+	if not _safe_pose_valid:
+		return
+	var corrected := _smooth_damp(_camera.global_position, _safe_position, delta)
 	_camera.global_position = corrected
-	if not corrected.is_equal_approx(safe_focus):
-		_look_at_focus(safe_focus)
+	if not corrected.is_equal_approx(_safe_cached_focus):
+		_look_at_focus(_safe_cached_focus)
 
 
 func _process(delta: float) -> void:
@@ -118,11 +128,15 @@ func set_briefing_offsets(yaw_degrees: float, zoom_distance: float) -> void:
 
 
 func camera_focus_position() -> Vector3:
-	return _safe_focus(_desired_focus)
+	return _safe_cached_focus if _safe_pose_valid else _safe_focus(_desired_focus)
 
 
 func follow_wide_is_latched() -> bool:
 	return _follow_wide_latched
+
+
+func safety_solve_count() -> int:
+	return _safety_solve_count
 
 
 func safe_position_for(desired: Vector3, focus: Vector3, terrain_focus: bool = false) -> Vector3:
@@ -145,7 +159,9 @@ func safe_position_for(desired: Vector3, focus: Vector3, terrain_focus: bool = f
 			candidate.y = maxf(candidate.y, raised_surface.y + CAMERA_CLEARANCE)
 	if not view_ray_is_clear(candidate, focus, terrain_focus):
 		# A direct overhead fallback is deterministic and cannot hide the focus behind another ridge.
-		var vertical_distance := clampf(desired.distance_to(focus), 24.0, _stage_data.follow_camera_max_distance)
+		var vertical_distance := maxf(desired.distance_to(focus), 24.0)
+		if current_mode == Mode.FOLLOW:
+			vertical_distance = minf(vertical_distance, _stage_data.follow_camera_max_distance)
 		candidate = focus + Vector3.UP * vertical_distance
 		if _terrain_surface.contains_world_xz(Vector2(candidate.x, candidate.z)):
 			var focus_surface := _terrain_surface.world_surface_point(Vector2(candidate.x, candidate.z))
@@ -159,37 +175,57 @@ func view_ray_is_clear(position: Vector3, focus: Vector3, terrain_focus: bool = 
 
 
 func _bookmark_for(mode: Mode) -> Array[Vector3]:
+	var authored: Array[Vector3]
 	match mode:
 		Mode.BRIEFING:
-			return [_stage_data.briefing_camera_position, _stage_data.briefing_camera_target]
+			authored = [_stage_data.briefing_camera_position, _stage_data.briefing_camera_target]
 		Mode.WIDE:
-			return [_stage_data.wide_camera_position, _stage_data.wide_camera_target]
+			authored = [_stage_data.wide_camera_position, _stage_data.wide_camera_target]
 		Mode.RESULT:
-			return [_stage_data.result_camera_position, _stage_data.result_camera_target]
+			authored = [_stage_data.result_camera_position, _stage_data.result_camera_target]
 		Mode.CANNON:
 			return [_stage_data.aiming_camera_position + Vector3(7.0, 2.0, 2.0), _stage_data.aiming_camera_target]
 		_:
 			return [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
+	if _terrain_surface == null or _camera == null:
+		return authored
+	var bounds := _terrain_surface.render_world_aabb()
+	if not bounds.has_volume():
+		return authored
+	var viewport_size := _camera.get_viewport().get_visible_rect().size
+	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
+	var frame_focus := bounds.get_center()
+	if _terrain_surface.contains_world_xz(Vector2(frame_focus.x, frame_focus.z)):
+		frame_focus = _terrain_surface.world_surface_point(Vector2(frame_focus.x, frame_focus.z)) \
+				+ Vector3.UP * OCCLUSION_END_TOLERANCE
+	return TerrainCameraFramer.framed_pose_around(
+		bounds,
+		frame_focus,
+		authored[0],
+		authored[1],
+		_camera.fov,
+		aspect_ratio
+	)
 
 
 func _move_to(position: Vector3, target: Vector3, immediate: bool) -> void:
-	_desired_position = position
-	_desired_focus = target
+	_set_desired_pose(position, target)
 	if not immediate:
 		return
-	var safe_focus := _safe_focus(target)
-	_camera.global_position = safe_position_for(position, safe_focus, _focus_is_terrain(target))
+	_resolve_safe_pose()
+	_camera.global_position = _safe_position
 	_camera_velocity = Vector3.ZERO
-	if not _camera.global_position.is_equal_approx(safe_focus):
-		_look_at_focus(safe_focus)
+	if not _camera.global_position.is_equal_approx(_safe_cached_focus):
+		_look_at_focus(_safe_cached_focus)
 
 
 func _apply_briefing_orbit() -> void:
-	var base_offset := _stage_data.briefing_camera_position - _stage_data.briefing_camera_target
+	var bookmark := _bookmark_for(Mode.BRIEFING)
+	var base_offset := bookmark[0] - bookmark[1]
 	var rotated := base_offset.rotated(Vector3.UP, deg_to_rad(_briefing_yaw_offset))
 	var direction := rotated.normalized()
 	var distance := clampf(rotated.length() + _briefing_zoom_offset, 82.0, 152.0)
-	_move_to(_stage_data.briefing_camera_target + direction * distance, _stage_data.briefing_camera_target, false)
+	_move_to(bookmark[1] + direction * distance, bookmark[1], false)
 
 
 func _update_follow_target() -> void:
@@ -222,14 +258,40 @@ func _update_follow_target() -> void:
 	elif _follow_wide_latched and bounding_radius * 2.0 < _stage_data.follow_camera_max_distance * FOLLOW_RELEASE_RATIO:
 		_follow_wide_latched = false
 	if _follow_wide_latched:
-		_desired_position = _stage_data.wide_camera_position
-		_desired_focus = focus
+		var wide_bookmark := _bookmark_for(Mode.WIDE)
+		_set_desired_pose(wide_bookmark[0], focus)
 	else:
-		_desired_position = focus + FOLLOW_DIRECTION.normalized() * minf(
-			required_distance,
-			_stage_data.follow_camera_max_distance
+		_set_desired_pose(
+			focus + FOLLOW_DIRECTION.normalized() * minf(
+				required_distance,
+				_stage_data.follow_camera_max_distance
+			),
+			focus
 		)
-		_desired_focus = focus
+
+
+func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
+	if _desired_position.distance_squared_to(position) <= DESIRED_POSE_EPSILON_SQUARED \
+			and _desired_focus.distance_squared_to(focus) <= DESIRED_POSE_EPSILON_SQUARED:
+		return
+	_desired_position = position
+	_desired_focus = focus
+	_safe_pose_dirty = true
+	if not _safe_pose_valid:
+		_safety_solve_elapsed = SAFETY_SOLVE_INTERVAL
+
+
+func _resolve_safe_pose() -> void:
+	_safe_cached_focus = _safe_focus(_desired_focus)
+	_safe_position = safe_position_for(
+		_desired_position,
+		_safe_cached_focus,
+		_focus_is_terrain(_desired_focus)
+	)
+	_safe_pose_valid = true
+	_safe_pose_dirty = false
+	_safety_solve_elapsed = 0.0
+	_safety_solve_count += 1
 
 
 func _safe_focus(focus: Vector3) -> Vector3:

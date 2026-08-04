@@ -25,21 +25,21 @@ func _run() -> void:
 	recorder.record_aim(4.0, 42.0, 71.0)
 	recorder.record_fire()
 	var attempt := recorder.export_attempt()
-	_assert_true(int(attempt.format_version) == 4 and int(attempt.physics_fps) == 60, "replay must use format 4 at 60 physics FPS")
+	_assert_true(int(attempt.format_version) == 5 and int(attempt.physics_fps) == 60, "replay must use format 5 at 60 physics FPS")
 	_assert_true(
 		int(attempt.target_mask_checksum) != 0 \
 				and int(attempt.containment_checksum) != 0 \
 				and int(attempt.placement_checksum) != 0 \
 				and not attempt.generated_default_aim.is_empty(),
-		"format-4 replay must retain layout checksums and the generated default aim"
+		"format-5 replay must retain layout checksums and the generated default aim"
 	)
 	_assert_true(
 		(String(attempt.layout_admission) == "certificate" and int(attempt.reachability_checksum) != 0) \
 				or (String(attempt.layout_admission) == "mvp_permit" and int(attempt.reachability_checksum) == 0),
 		"reachability may be zero only for the typed MVP admission"
 	)
-	_assert_true(not recorder.load_attempt({"format_version": 3, "stage_id": "first_descent", "shots": []}), "format 3 must be rejected explicitly")
-	_assert_true(presentation.start(attempt), "valid format-4 presentation must start")
+	_assert_true(not recorder.load_attempt({"format_version": 4, "stage_id": "first_descent", "shots": []}), "format 4 must be rejected explicitly")
+	_assert_true(presentation.start(attempt), "valid format-5 presentation must start")
 	var locked_aim := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	_assert_true(not controller.set_aim(-20.0, 18.0, 0.0, StageController.ActionOrigin.HUMAN), "human aim must be rejected during replay")
 	_assert_true(not agent.set_aim(-20.0, 18.0, 0.0), "agent aim must be rejected during replay")
@@ -67,7 +67,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Replay presentation checks passed: format 4 metadata, format 3 rejection, and exclusive replay-origin mutation.")
+		print("Replay presentation checks passed: format 5 metadata, format 4 rejection, and exclusive replay-origin mutation.")
 	quit(1 if _failed else 0)
 
 

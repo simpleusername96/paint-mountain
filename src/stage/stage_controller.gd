@@ -10,6 +10,7 @@ signal stage_cleared(final_coverage: float, shots_used: int)
 signal stage_failed(final_coverage: float, missing_coverage: float)
 signal restart_completed(elapsed_milliseconds: float)
 signal aim_action_accepted(yaw: float, elevation: float, power: float, origin: int)
+signal fire_prediction_refresh_requested(origin: int)
 signal fire_action_accepted(origin: int)
 signal restart_action_accepted(origin: int)
 
@@ -171,7 +172,12 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin):
 		return false
-	if current_state != State.AIMING or shots_remaining <= 0 or not _cannon.is_aim_valid():
+	if current_state != State.AIMING or shots_remaining <= 0:
+		return false
+	# Signal delivery is synchronous, so the latest dirty aim is predicted before
+	# StageController evaluates the cannon's authoritative fireability contract.
+	fire_prediction_refresh_requested.emit(origin)
+	if not _cannon.is_aim_valid():
 		return false
 	if _projectile_manager.active_count() > 0 \
 			or _projectile_manager.pending_intent_count() > 0 \
@@ -347,6 +353,7 @@ func _physics_process(_delta: float) -> void:
 func _seal_shot(generation: int) -> void:
 	if generation != _decision_generation or current_state != State.PAINT_SETTLING:
 		return
+	_paint_system.force_flush_paint_texture()
 	var coverage := _paint_system.coverage_percent()
 	var gain := maxf(0.0, coverage - coverage_before_shot)
 	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
