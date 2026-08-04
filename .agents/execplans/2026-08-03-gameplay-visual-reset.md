@@ -3,8 +3,8 @@ type: plan
 status: active
 created: 2026-08-03
 last_reviewed: 2026-08-04
-scope: implementation-first completion of the visible 3D mountain, physical paintball loop, mechanisms, three stages, Korean-first HUD, and world presentation before user-authorized QA
-source: explicit user corrections through 2026-08-04, including rejection of the current running screen and direction to defer testing until functionality and visuals are implemented
+scope: implementation-first completion of the visible 3D mountain, physical paintball loop, mechanisms, three stages, Korean-first HUD, world presentation, and the user-authorized transition/flight responsiveness recovery
+source: explicit user corrections through 2026-08-04, including rejection of the current running screen, later approval of bounded visual checks, and the report of severe transition and projectile-flight stutter
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -45,10 +45,11 @@ flat apron, tiny mechanisms, black cannon, and legacy HUD are not a visual MVP.
 - Implementation-ready state: every task in Phases 1 through 5 is implemented,
   production contains no competing legacy terrain or HUD path, and the mandatory
   headless launch smoke reaches the main scene.
-- Testing state: implementation now includes the bounded Phase 8 invalidation
-  checks and non-obstructive real-render inspection requested by the user.
-  Performance, broad regression matrices, balance, replay, and tolerance work
-  remain deferred until separately requested.
+- Testing state: implementation includes the bounded Phase 8 invalidation checks
+  and non-obstructive real-render inspection. The user's 2026-08-04 report of
+  severe page-transition and projectile-flight stutter authorizes only the
+  bounded Phase 9 performance work below. Broad regression matrices, balance,
+  replay, stress, and tolerance work remain deferred.
 - Final state: keep this plan active until the later user-authorized QA pass is
   added and completed. Implementation alone does not make the plan done.
 
@@ -81,8 +82,9 @@ Out of scope until the user explicitly requests testing:
   matrices, solution searches, and candidate-seed sweeps.
 - Updating obsolete tests solely to keep them passing after production APIs
   change.
-- Replay, persistence, agent, debug, localization-matrix, reliability, stress,
-  and performance validation.
+- Replay, persistence, agent, localization-matrix, reliability, and broad stress
+  validation. Phase 9 permits only debug-overlay cost removal and the named
+  transition/flight responsiveness checks.
 - Visible Godot/editor/game launches, screenshot capture, release export, and
   production evidence manifests.
 - Treating an implemented checkbox as proof of user testing or approval.
@@ -108,6 +110,10 @@ Constraints and invariants:
 - Do not launch a visible Godot process.
 - Existing tests are historical QA assets, not product authorities. Never retain
   bad production behavior merely because an old test expects it.
+- Preserve one paint command per real contact interval and the fixed 60 Hz
+  physics contract. Performance work may remove repeated computation,
+  allocations, and diagnostic work; it may not skip contact ticks, decimate the
+  visible trail, reduce mask resolution, or change physical shot semantics.
 
 ## Session-Derived Validation Removal
 
@@ -616,7 +622,8 @@ Source owners: `src/camera`, `src/input/aim_input_controller.gd`,
 - [x] **7.2 Make physically traversed paint publish promptly without stalls.**
   - Change: use a 15 Hz coalesced production paint upload, skip unused recent
     uploads in release, force final upload before sealing, and use the native
-    deterministic byte-array checksum with replay format 5.
+    deterministic byte-array checksum with replay format 5. Phase 9 subsequently
+    replaces that full-mask checksum with an incremental format-6 contract.
   - Accept: the real Stage 1 default shot still paints every sampled sweep
     centerline, the uploaded paint texture bytes match the authoritative mask
     after forced flush, coverage remains positive, and no paint command is
@@ -851,6 +858,148 @@ contact. The focused physical mechanism run now completes with matching preview
 and contact bodies/shapes, one Burst activation, three Splitter children, two
 Bumper activations, and the eight-projectile cap.
 
+### Phase 9: Transition and projectile-flight responsiveness recovery
+
+Goal: remove the synchronous duplicate work that freezes navigation and the
+per-contact allocation/upload spikes that make a real paintball visibly stutter,
+without changing the accepted mountain, collision, paint, or shot contracts.
+
+Authorization and measured starting point:
+
+- The user explicitly reported severe lag on every page transition and extreme
+  visible stutter after pressing Fire on 2026-08-04. This activates only the
+  performance work in this phase.
+- `AppRoot` currently rebuilds preview geometry, textures, material, and dressing
+  when the same stage is shown again. Gameplay then regenerates the same layout
+  instead of consuming the preview-owned immutable result.
+- `GameplayScene._ready()` runs `DefaultAimSolver.find_runtime_aim()` before the
+  scene becomes usable. Its 7 yaw x 7 elevation x 6 power grid executes 294 real
+  trajectory predictions, each allowing up to 720 shape casts. The approved
+  three-stage headless composition check took 17,116 ms before this phase.
+- During sustained contact, `PaintSystem` hashes all 262,144 mask bytes after
+  each non-empty physics drain and creates/rebinds a new 512 x 512 texture at
+  15 Hz. A representative shot has more than 300 continuous sweeps.
+- Debug builds allocate, clear, and upload a second recent-paint mask even while
+  the F3 overlay is hidden. Physics interpolation is not enabled in
+  `project.godot`, so a healthy 60 Hz rigid body can still step visibly between
+  render frames.
+
+Locked decisions:
+
+- `AppRoot` owns an immutable per-stage presentation cache for the process
+  lifetime. A cached `GeneratedStageLayout` is passed into gameplay before it
+  enters the tree; gameplay validates its stage/seed/profile identity and only
+  regenerates when no valid matching cache entry exists. Paint and stage state
+  are never cached.
+- The default aim remains a physically validated first hit near a real target
+  center sample. Replace the 294-trajectory coarse grid with the existing
+  deterministic one-target ballistic nomination path and real first-hit
+  validation. Do not add authored fallback coordinates or expose solver tuples
+  as player assistance.
+- `PaintSystem` remains the sole 512 x 512 mutable authority. Replace recurring
+  full-mask checksum scans with a deterministic incremental checksum updated on
+  each changed byte, and keep one persistent `ImageTexture` updated in place.
+  Preserve command order, every contact-tick sweep, overlap-by-maximum writes,
+  target-only coverage, and final replay/observation checksum equality.
+- Recent-paint diagnostics are allocated and updated only while the debug
+  overlay is actually visible. They remain derived debug data and never affect
+  paint, coverage, or replay authority.
+- Enable Godot physics interpolation and retain the fixed 60 Hz physics tick.
+  Do not hide workload by reducing contact cadence, mask size, terrain detail,
+  or projectile count.
+- All runtime checks remain headless or off-desktop/non-focusable. Never open a
+  visible Godot window on the user's desktop.
+
+Source owners: `src/app/app_root.gd`, `src/gameplay/gameplay_scene.gd`,
+`src/stage_generation/default_aim_solver.gd`,
+`src/stage_generation/generated_stage_layout.gd`, `src/paint/paint_system.gd`,
+`src/debug/debug_overlay.gd`, and `project.godot`.
+
+- [x] **9.1 Reuse immutable stage presentation work across navigation.**
+  - Change: cache the accepted layout, preview mesh/material/textures, and
+    dressing root by stage identity; make repeated selection of the active
+    preview a no-op; inject the matching cached layout into gameplay before
+    `_ready()`.
+  - Accept: source inspection shows one preview artifact per stage/process,
+    main-menu to stage-select does not rebuild the same stage, and gameplay uses
+    the exact cached layout object while creating fresh paint/state owners.
+  - Guard: a missing or identity-mismatched cache entry regenerates through
+    `SeededStageGenerator`; no mutable attempt state survives navigation.
+
+- [x] **9.2 Replace the transition-blocking default-aim grid.**
+  - Change: resolve an actual target pixel nearest the target-mask centroid,
+    nominate damped ballistic tuples with the existing bounded single-target
+    solver, and return only a real predictor-confirmed first hit on that target
+    sample.
+  - Accept: the same three-stage headless composition check returns a valid
+    fireable first impact for every stage; its separately reported default-aim
+    component completes in no more than 250 ms per stage on the same
+    engine/machine that recorded the 17,116 ms aggregate baseline. The test's
+    structural-sequence generation time is reported separately because it
+    intentionally evaluates multiple candidate seeds that runtime does not.
+  - Guard: no stage-authored tuple, target deletion, collision bypass, or
+    all-target certification loop enters runtime.
+
+- [x] **9.3 Remove recurring paint hot-path scans and texture allocation.**
+  - Change: maintain the authoritative checksum incrementally as bytes increase,
+    update the existing paint texture in place at the current coalesced cadence,
+    remove per-pixel result dictionaries from the write loop, and make recent
+    diagnostics opt-in with the F3 overlay.
+  - Accept: a focused deterministic paint check proves identical ordered drains,
+    overlap idempotence, positive target coverage, persistent texture identity
+    through forced flush, and a stable nonzero checksum. The off-desktop rendered
+    capture, rather than unreliable headless GPU readback, proves publication.
+  - Guard: 512 x 512 resolution, command cadence/order, continuous footprint,
+    target scoring, and PaintSystem authority remain unchanged.
+
+- [x] **9.4 Interpolate visible physics without changing simulation.**
+  - Change: enable project physics interpolation so the rigid ball and physics-
+    driven follow camera render smoothly between fixed ticks.
+  - Accept: project import recognizes the setting, physics remains fixed at
+    60 Hz, and the focused real-render flight probe records the projectile in
+    flight with no repeated texture allocation path.
+  - Guard: do not move projectile physics to `_process`, change time scale, or
+    alter launch/contact tuning.
+
+- [x] **9.5 Deliver one bounded non-obstructive responsiveness gate.**
+  - Change: relabel the old headless Phase 8 performance check as CPU smoke only;
+    use the established off-desktop Compatibility-renderer runner to collect
+    transition and verified-contact flight frame deltas from the production-style
+    build, partitioned by phase and paint-drain events.
+  - Accept: `scripts/verify.ps1` passes; the exported hidden run reaches gameplay,
+    applies continuous paint, and records p95/max plus counts over 16.7/33.3 ms
+    for transition and flight. Actual paint remains visible in a captured frame.
+  - Guard: no broad legacy suite, visible desktop window, dummy renderer, or
+    claim that headless timing proves rendered smoothness.
+
+Phase gate: record the before/after three-stage initialization time and the
+off-desktop rendered frame telemetry once, inspect the captured paint frame,
+update `Documentation.md`, run `$codebase-quality-auditor`, commit only the
+task-owned change, and leave this plan active for the user's running-build review.
+
+Phase 9 outcome on 2026-08-04:
+
+- Repeated main-menu/stage-select calls measured 1.199 ms and 0.841 ms. Starting
+  cached Stage 1 fell from 739.678 ms before the final surface-cache correction
+  to 77.013 ms; aim-ready time fell from 1007.062 ms to 273.611 ms in the same
+  off-desktop Compatibility-renderer runner.
+- Default-aim derivation measured 103.13 ms, 129.93 ms, and 100.21 ms for the
+  three stages. Structural-sequence generation remained separate at 1739.71 ms,
+  2620.24 ms, and 3744.53 ms because that check intentionally tried 1, 2, and 30
+  candidate seeds rather than the cached accepted runtime seed.
+- The final hidden release probe recorded 195 flight frames. The Windows
+  off-desktop window was throttled near 30 fps: non-drain frames averaged
+  32.435 ms (p95 34.060 ms), while paint-drain frames averaged 36.301 ms
+  (p95 39.738 ms, max 42.381 ms). This is comparative rendered evidence, not a
+  foreground 60-fps claim.
+- The same production build applied 121 surface sweeps, wrote 4,374 pixels in
+  23 coalesced texture uploads, and the directly inspected capture shows the
+  blue continuous path and 9.2% coverage without a forced texture replacement.
+- Focused paint ordering, replay format-6/version rejection, Stage 1 physical
+  paint, headless import/startup, and Windows release export passed. The
+  quality audit's replay-version, shot-seal texture, and telemetry-partition
+  findings were corrected before this outcome was recorded.
+
 ## Mandatory Launch Smoke Only
 
 Repository policy requires launchability after coherent production changes.
@@ -882,7 +1031,8 @@ This work has no active checkboxes and may not start automatically:
 - exhaustive reachability and certificate generation;
 - predictor/rigid-body tolerance and repeated-process determinism;
 - solution search and target/shot balance confirmation;
-- load, memory, frame-time, allocation, and stress measurement;
+- load, memory, and broad stress measurement beyond the bounded Phase 9
+  transition/flight telemetry;
 - migration/deletion of obsolete test fixtures and runner registrations;
 - broad resolution/locale QA, screenshot matrices, manifests, and reference
   comparison beyond the two Phase 8 runtime captures;
@@ -941,10 +1091,9 @@ behavior, or release claim.
 - The user's 2026-08-04 aiming capture rejected Phase 7: the high front shell,
   low authored Aiming camera, and uninitialized ReplayBar produced an unusable
   screen despite passing headless contracts.
-- Current phase: Phase 8 implementation and background release evidence are
-  complete; the plan remains active for the user's running-build review.
-- Next task: respond to that review or, only when explicitly authorized, define
-  a bounded QA phase from the deferred backlog.
+- Current phase: Phase 9 responsiveness recovery is active after the user's
+  running-build report of transition and projectile-flight stutter.
+- Next task: 9.1, reuse immutable stage presentation work across navigation.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand

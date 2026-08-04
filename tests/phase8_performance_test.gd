@@ -1,5 +1,7 @@
 extends SceneTree
 
+## Historical headless CPU smoke only. This script does not create a rendered
+## 1920x1080 workload and must not be cited as visible frame-time evidence.
 const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 
 var _failed: bool = false
@@ -43,16 +45,16 @@ func _run_probe() -> void:
 		previous_tick = now
 		maximum_active = maxi(maximum_active, projectiles.active_count())
 	var elapsed_seconds := float(Time.get_ticks_usec() - measured_started) / 1000000.0
-	var average_fps := float(MEASURED_FRAMES) / maxf(elapsed_seconds, 0.001)
+	var average_process_hz := float(MEASURED_FRAMES) / maxf(elapsed_seconds, 0.001)
 	var memory_mb := Performance.get_monitor(Performance.MEMORY_STATIC) / (1024.0 * 1024.0)
 	_assert_true(load_ms < 3000.0, "stage load must remain under three seconds")
-	_assert_true(average_fps >= 60.0, "1920x1080 average frame rate must remain at least 60 FPS")
-	_assert_true(maximum_frame_ms <= 33.3, "no measured frame may exceed 33.3 ms")
+	_assert_true(average_process_hz >= 60.0, "headless process loop must remain at least 60 Hz")
+	_assert_true(maximum_frame_ms <= 33.3, "no measured headless process interval may exceed 33.3 ms")
 	_assert_true(memory_mb <= 128.0, "static memory must remain at or below 128 MiB")
 	_assert_true(maximum_active <= ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES, "performance run must preserve the eight-ball limit")
-	print("Phase 8 performance: load %.2f ms, avg %.2f FPS, worst %.2f ms, max balls %d, static memory %.2f MiB, coverage %.3f%%." % [
+	print("Phase 8 headless CPU smoke: load %.2f ms, avg %.2f process Hz, worst %.2f ms, max balls %d, static memory %.2f MiB, coverage %.3f%%." % [
 		load_ms,
-		average_fps,
+		average_process_hz,
 		maximum_frame_ms,
 		maximum_active,
 		memory_mb,

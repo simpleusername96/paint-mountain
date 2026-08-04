@@ -80,10 +80,15 @@ func _assert_queue_order_and_dirty_batch(paint: PaintSystem) -> void:
 	_assert_true(applied == [Vector3i(8, 0, 0), Vector3i(9, 0, 1)], "drain must sort by physics tick, spawn ordinal, then sequence")
 	_assert_true(int(result.command_count) == 2 and int(result.last_drained_physics_tick) == 9, "one drain must cover both sorted commands through tick 9")
 	_assert_true(int(drained.tick) == 9 and int(drained.count) == 2, "drain signal must expose its covered tick and command count")
-	_assert_true(int(drained.checksum) == paint.paint_mask_checksum(), "drain signal checksum must match the authoritative native byte-array checksum")
+	_assert_true(int(drained.checksum) == paint.paint_mask_checksum(), "drain signal checksum must match the authoritative incremental mask checksum")
 	_assert_true(paint.texture_upload_batch_count() == 0 and paint.dirty_region_read_only().has_area(), "drain must batch dirty bytes without an immediate texture upload")
+	var persistent_texture := paint.paint_texture()
 	paint.flush_pending()
 	_assert_true(paint.texture_upload_batch_count() == 1, "flush must upload all dirty commands in one batch")
+	_assert_true(
+		paint.paint_texture() == persistent_texture,
+		"forced flush must update the persistent runtime texture without allocation or rebinding"
+	)
 	_assert_coverage_matches_threshold_bytes(paint)
 
 

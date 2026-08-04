@@ -59,7 +59,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `HUDController` and screen controllers | Display state and emit typed aim, fire, and game-menu intents | Authoritative state mutation, direct pause/settings mutation, or alternate coverage |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, and navigation/return layering | Stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
-| `ReplayRecorder` | Format-5 layout identities, deterministic action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
+| `ReplayRecorder` | Format-6 layout identities, deterministic action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
 | `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
 | `GameplayAgentApi` | UI-independent observations, actions, and event stream | Duplicate simulation rules |
 | `AppRoot` | Main-menu, stage-select, settings, and gameplay navigation/lifetime | Stage outcomes or paint state |
@@ -110,11 +110,11 @@ This architecture covers the single-process desktop game. It does not define a b
   local points. Runtime accepts it only when no full certificate is present; a
   present but stale full certificate fails closed instead of falling back. The
   permit never satisfies target-wide certification or final release/export.
-- Replay format 5 carries stage/profile versions, accepted seed, height/target/
+- Replay format 6 carries stage/profile versions, accepted seed, height/target/
   reachability/containment checksums, generated default aim, physics FPS, ordered
   canonical manual actions, expected sealed observations, and final paint-mask
-  checksum. It contains no transform samples and rejects format 4 because the
-  authoritative paint-mask checksum algorithm changed.
+  checksum. It contains no transform samples and rejects format 5 because the
+  authoritative paint-mask checksum changed to the incremental runtime contract.
 - Agent observations are immutable snapshots; actions enter through the same validated cannon/stage command layer used by human UI.
 
 ### State and event flow

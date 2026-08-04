@@ -1,0 +1,84 @@
+{
+	"engine": {
+		"build": "official",
+		"hash": "a13da4feb8d8aefc283c3763d33a2f170a18d541",
+		"hex": 263937,
+		"major": 4,
+		"minor": 7,
+		"patch": 1,
+		"status": "stable",
+		"string": "4.7.1-stable (official)",
+		"timestamp": 0
+	},
+	"flight": {
+		"frames": {
+			"average_ms": 33.5651897435897,
+			"count": 195,
+			"maximum_ms": 46.089,
+			"over_16_7_ms": 195,
+			"over_33_3_ms": 79,
+			"p95_ms": 38.045
+		},
+		"non_drain_frames": {
+			"average_ms": 32.4350217391304,
+			"count": 138,
+			"maximum_ms": 46.089,
+			"over_16_7_ms": 138,
+			"over_33_3_ms": 22,
+			"p95_ms": 34.06
+		},
+		"paint_commands": 123,
+		"paint_drain_frames": {
+			"average_ms": 36.3013859649123,
+			"count": 57,
+			"maximum_ms": 42.381,
+			"over_16_7_ms": 57,
+			"over_33_3_ms": 57,
+			"p95_ms": 39.738
+		},
+		"paint_drains": 123,
+		"projectile_active_at_stop": 1,
+		"surface_sweeps": 121,
+		"texture_upload_batches": 23,
+		"written_pixels": 4374
+	},
+	"physics_interpolation": true,
+	"physics_ticks_per_second": 60,
+	"renderer": "gl_compatibility",
+	"transitions": {
+		"main_to_stage_select": {
+			"call_ms": 1.199,
+			"frames": {
+				"average_ms": 33.4255,
+				"count": 6,
+				"maximum_ms": 41.995,
+				"over_16_7_ms": 6,
+				"over_33_3_ms": 1,
+				"p95_ms": 41.995
+			}
+		},
+		"stage_select_to_main": {
+			"call_ms": 0.841,
+			"frames": {
+				"average_ms": 31.8186666666667,
+				"count": 6,
+				"maximum_ms": 34.141,
+				"over_16_7_ms": 6,
+				"over_33_3_ms": 1,
+				"p95_ms": 34.141
+			}
+		},
+		"stage_start": {
+			"call_ms": 77.013,
+			"frames": {
+				"average_ms": 196.592,
+				"count": 1,
+				"maximum_ms": 196.592,
+				"over_16_7_ms": 1,
+				"over_33_3_ms": 1,
+				"p95_ms": 196.592
+			},
+			"ready_ms": 273.611
+		}
+	}
+}

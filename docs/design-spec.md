@@ -151,12 +151,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - Clear uses coverage only; failure occurs after the last settled shot below target. Stars use stage data and remain understandable.
 - Results show stage, final/target coverage, shots used/remaining, previous best, new best, rank/stars, final mountain, retry, next/select, and replay. Failure emphasizes missing coverage and Retry.
 - Save version, unlocks, best coverage/stars, and settings locally.
-- Replay format 5 stores stage/profile versions, accepted seed plus height,
+- Replay format 6 stores stage/profile versions, accepted seed plus height,
   target/reachability/containment checksums, the generated default aim,
   fixed-tick canonical manual actions, expected ordered contacts/effects, and the
   final paint-mask checksum. Replay presentation locks normal input and accepts
-  only replay-origin actions; format 4 is rejected because the authoritative
-  paint-mask checksum algorithm changed.
+  only replay-origin actions; format 5 is rejected because the authoritative
+  paint-mask checksum changed to the incremental runtime contract.
 
 ### UI, art, audio, and debug
 
@@ -209,7 +209,7 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the physical
-contact, closed-terrain, manual-aim, mechanism-body, replay-format-5, or rebuilt-UI
+contact, closed-terrain, manual-aim, mechanism-body, replay-format-6, or rebuilt-UI
 contracts above.
 
 The sole active implementation contract is

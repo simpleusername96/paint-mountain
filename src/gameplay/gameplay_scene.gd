@@ -33,6 +33,9 @@ const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 var _shot_has_impacted: bool = false
 var _mechanisms: Array[GimmickBase] = []
 var _generated_layout: GeneratedStageLayout
+var _prepared_layout: GeneratedStageLayout
+var _prepared_stage_id: StringName = &""
+var _prepared_layout_checksum: int = 0
 var _prediction_dirty := false
 var _prediction_refresh_cooldown_seconds := 0.0
 var _prediction_compute_count := 0
@@ -46,16 +49,17 @@ func _ready() -> void:
 		stage_data = selected_stage
 	if not _build_stage_world():
 		return
-	# Newly assigned concave shapes enter the physics space at the next fixed
-	# boundary. Default aim is then chosen from real first-hit queries, never from
-	# a stage-authored tuple or an exhaustive runtime certificate.
-	await get_tree().physics_frame
-	_generated_layout.generated_default_aim = DefaultAimSolver.find_runtime_aim(
-		get_world_3d().direct_space_state,
-		_cannon,
-		_terrain_surface,
-		_generated_layout
-	)
+	if _generated_layout.default_aim == null:
+		# Newly assigned concave shapes enter the physics space at the next fixed
+		# boundary. The one derived aim is stable runtime metadata on the cached
+		# layout, so repeat entries do not repeat the bounded physics search.
+		await get_tree().physics_frame
+		_generated_layout.generated_default_aim = DefaultAimSolver.find_runtime_aim(
+			get_world_3d().direct_space_state,
+			_cannon,
+			_terrain_surface,
+			_generated_layout
+		)
 	if not _generated_layout.is_runtime_ready():
 		push_error("GameplayScene could not derive a bounded center-target default aim.")
 		return
@@ -110,6 +114,14 @@ func generated_layout() -> GeneratedStageLayout:
 	return _generated_layout
 
 
+func prepare_stage(selected_stage: StageData, cached_layout: GeneratedStageLayout) -> void:
+	assert(not is_inside_tree(), "Gameplay stage preparation must finish before entering the tree.")
+	stage_data = selected_stage
+	_prepared_layout = cached_layout
+	_prepared_stage_id = selected_stage.stage_id if selected_stage != null else &""
+	_prepared_layout_checksum = cached_layout.checksum if cached_layout != null else 0
+
+
 func terrain_layout_read_only() -> GeneratedStageLayout:
 	return _generated_layout
 
@@ -144,8 +156,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_stage_world() -> bool:
 	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
-	_generated_layout = SeededStageGenerator.generate(stage_data.generation_profile, stage_data.terrain_seed, stage_data)
+	_generated_layout = _prepared_layout if _prepared_layout_matches_stage() else null
 	if _generated_layout == null:
+		_generated_layout = SeededStageGenerator.generate(
+			stage_data.generation_profile,
+			stage_data.terrain_seed,
+			stage_data
+		)
+	if not _layout_matches_stage(_generated_layout, stage_data):
 		push_error("Stage generation must produce a validated layout before briefing.")
 		return false
 	_terrain_surface.configure(_generated_layout)
@@ -182,6 +200,18 @@ func _build_stage_world() -> bool:
 	_environment_dressing.configure(stage_data, _generated_layout)
 	_spawn_mechanisms()
 	return true
+
+
+func _prepared_layout_matches_stage() -> bool:
+	return _prepared_stage_id == stage_data.stage_id \
+			and _prepared_layout != null \
+			and _prepared_layout_checksum != 0 \
+			and _prepared_layout.checksum == _prepared_layout_checksum \
+			and _layout_matches_stage(_prepared_layout, stage_data)
+
+
+func _layout_matches_stage(layout: GeneratedStageLayout, selected_stage: StageData) -> bool:
+	return layout != null and layout.matches_stage_identity(selected_stage)
 
 
 func _connect_systems() -> void:

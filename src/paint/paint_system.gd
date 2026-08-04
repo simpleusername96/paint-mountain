@@ -15,6 +15,19 @@ const PAINT_DRAIN_PRIORITY := 1000
 const PAINT_TEXTURE_PUBLISH_INTERVAL := 1.0 / 15.0
 const COVERAGE_PUBLISH_INTERVAL := 0.20
 const NORMAL_FACING_THRESHOLD := 0.2588190451 # cos(75 degrees)
+const WRITE_RESULT_NONE := 0
+const WRITE_RESULT_WRITTEN := 1
+const WRITE_RESULT_NEW_TARGET := 2
+const SURFACE_SAMPLE_UNKNOWN := 0
+const SURFACE_SAMPLE_INACTIVE := 1
+const SURFACE_SAMPLE_ACTIVE := 2
+# Two 26-bit components keep replay JSON round-trips exact while avoiding scans.
+const CHECKSUM_COMPONENT_MASK := 0x03ffffff
+const CHECKSUM_XOR_SEED := 0x02d95df4
+const CHECKSUM_SUM_SEED := 0x01873593
+const CHECKSUM_TOKEN_SALT_A := 0x165667b1
+const CHECKSUM_TOKEN_SALT_B := 0x27d4eb2d
+const CHECKSUM_TOKEN_MULTIPLIER := 0x45d9f3b
 const DEFAULT_PAINT_SURFACE_TUNING := preload(
 	"res://resources/paint/default_paint_surface_tuning.tres"
 )
@@ -37,6 +50,7 @@ var _expected_top_shape_index: int = 0
 var _paint_bytes := PackedByteArray()
 var _target_bytes := PackedByteArray()
 var _paintable_surface_bytes := PackedByteArray()
+var _surface_sample_states := PackedByteArray()
 var _recent_bytes := PackedByteArray()
 var _surface_positions := PackedVector3Array()
 var _surface_normals := PackedVector3Array()
@@ -61,6 +75,8 @@ var _pending_commands: Array = []
 var _queued_command_keys: Dictionary = {}
 var _last_drained_physics_tick: int = -1
 var _paint_mask_checksum: int = 0
+var _paint_checksum_xor_component: int = CHECKSUM_XOR_SEED
+var _paint_checksum_sum_component: int = CHECKSUM_SUM_SEED
 var _painted_target_pixels: int = 0
 var _total_target_pixels: int = 0
 var _paint_dirty_rect := Rect2i()
@@ -76,7 +92,6 @@ var _recent_diagnostics_enabled: bool = false
 
 func _init() -> void:
 	process_physics_priority = PAINT_DRAIN_PRIORITY
-	_recent_diagnostics_enabled = OS.is_debug_build()
 
 
 func configure(
@@ -105,7 +120,7 @@ func configure(
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
 	_create_masks_and_surface_cache()
-	_paint_mask_checksum = _compute_paint_mask_checksum()
+	_reset_paint_mask_checksum()
 	if _terrain_material != null:
 		_terrain_material.set_shader_parameter(&"paint_mask", _paint_texture)
 		_terrain_material.set_shader_parameter(&"target_mask", _target_texture)
@@ -208,7 +223,6 @@ func drain_pending_commands() -> Dictionary:
 		paint_command_applied.emit(command, int(counts.written), int(counts.newly_painted))
 	_last_drained_physics_tick = drained_tick
 	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
-	_paint_mask_checksum = _compute_paint_mask_checksum()
 	var checksum := _paint_mask_checksum
 	paint_commands_drained.emit(drained_tick, commands.size(), checksum)
 	return {
@@ -286,7 +300,7 @@ func _build_radial_candidates(center: Vector3, normal: Vector3, radius: float) -
 	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
 		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
+			if not _ensure_surface_sample(index):
 				continue
 			if _surface_positions[index].distance_squared_to(center) > radius_squared:
 				continue
@@ -316,7 +330,7 @@ func _build_sweep_candidates(
 	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
 		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
+			if not _ensure_surface_sample(index):
 				continue
 			var surface_point := _surface_positions[index]
 			var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
@@ -399,9 +413,11 @@ func _write_radial_component(
 	var newly_painted := 0
 	for index in component:
 		var distance := _surface_positions[index].distance_to(center)
-		var counts := _write_paint_value(index, _alpha_for_distance(distance, radius))
-		written += int(counts.written)
-		newly_painted += int(counts.newly_painted)
+		var write_result := _write_paint_value(index, _alpha_for_distance(distance, radius))
+		if write_result != WRITE_RESULT_NONE:
+			written += 1
+		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
+			newly_painted += 1
 	return {"written": written, "newly_painted": newly_painted}
 
 
@@ -419,9 +435,11 @@ func _write_sweep_component(
 		var surface_point := _surface_positions[index]
 		var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
 		var distance := surface_point.distance_to(from_point + delta * t)
-		var counts := _write_paint_value(index, _alpha_for_distance(distance, radius))
-		written += int(counts.written)
-		newly_painted += int(counts.newly_painted)
+		var write_result := _write_paint_value(index, _alpha_for_distance(distance, radius))
+		if write_result != WRITE_RESULT_NONE:
+			written += 1
+		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
+			newly_painted += 1
 	return {"written": written, "newly_painted": newly_painted}
 
 
@@ -437,19 +455,19 @@ func _alpha_for_distance(distance: float, radius: float) -> int:
 	)
 
 
-func _write_paint_value(index: int, value: int) -> Dictionary:
-	if index < 0 or index >= _paint_bytes.size() \
-			or _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
-		return {"written": 0, "newly_painted": 0}
+func _write_paint_value(index: int, value: int) -> int:
+	if index < 0 or index >= _paint_bytes.size() or not _ensure_surface_sample(index):
+		return WRITE_RESULT_NONE
 	var existing := int(_paint_bytes[index])
 	var updated := maxi(existing, clampi(value, 0, 255))
 	if updated <= existing:
-		return {"written": 0, "newly_painted": 0}
+		return WRITE_RESULT_NONE
 	var crossed_paint_threshold := existing < _surface_tuning.painted_threshold_byte \
 			and updated >= _surface_tuning.painted_threshold_byte
 	var newly_painted := crossed_paint_threshold \
 			and _target_bytes[index] >= _surface_tuning.painted_threshold_byte
 	_paint_bytes[index] = updated
+	_update_paint_mask_checksum(index, existing, updated)
 	if _recent_diagnostics_enabled:
 		_recent_bytes[index] = 255
 	if newly_painted:
@@ -457,7 +475,7 @@ func _write_paint_value(index: int, value: int) -> Dictionary:
 	_mark_paint_dirty(index)
 	if _recent_diagnostics_enabled:
 		_mark_recent_dirty(index)
-	return {"written": 1, "newly_painted": 1 if newly_painted else 0}
+	return WRITE_RESULT_WRITTEN | (WRITE_RESULT_NEW_TARGET if newly_painted else 0)
 
 
 func _command_matches_authoritative_surface(command) -> bool:
@@ -547,7 +565,7 @@ func clear() -> void:
 	_paint_bytes.fill(0)
 	if _recent_diagnostics_enabled:
 		_recent_bytes.fill(0)
-	_paint_mask_checksum = _compute_paint_mask_checksum()
+	_reset_paint_mask_checksum()
 	_painted_target_pixels = 0
 	_paint_dirty_rect = Rect2i(Vector2i.ZERO, Vector2i(MASK_SIZE, MASK_SIZE))
 	_recent_dirty_rect = _paint_dirty_rect if _recent_diagnostics_enabled else Rect2i()
@@ -569,8 +587,45 @@ func paint_mask_checksum() -> int:
 	return _paint_mask_checksum
 
 
-func _compute_paint_mask_checksum() -> int:
-	return hash(_paint_bytes)
+func _reset_paint_mask_checksum() -> void:
+	_paint_checksum_xor_component = CHECKSUM_XOR_SEED
+	_paint_checksum_sum_component = CHECKSUM_SUM_SEED
+	_publish_paint_mask_checksum()
+
+
+func _update_paint_mask_checksum(index: int, previous_value: int, next_value: int) -> void:
+	var previous_xor_token := _paint_checksum_token(index, previous_value, CHECKSUM_TOKEN_SALT_A)
+	var next_xor_token := _paint_checksum_token(index, next_value, CHECKSUM_TOKEN_SALT_A)
+	var previous_sum_token := _paint_checksum_token(index, previous_value, CHECKSUM_TOKEN_SALT_B)
+	var next_sum_token := _paint_checksum_token(index, next_value, CHECKSUM_TOKEN_SALT_B)
+	_paint_checksum_xor_component = (
+		_paint_checksum_xor_component ^ previous_xor_token ^ next_xor_token
+	) & CHECKSUM_COMPONENT_MASK
+	_paint_checksum_sum_component = (
+		_paint_checksum_sum_component - previous_sum_token + next_sum_token
+	) & CHECKSUM_COMPONENT_MASK
+	_publish_paint_mask_checksum()
+
+
+func _paint_checksum_token(index: int, value: int, salt: int) -> int:
+	if value <= 0:
+		return 0
+	var mixed := (
+		(index + 1) * 1103515245 + value * 12345 + salt
+	) & CHECKSUM_COMPONENT_MASK
+	mixed = ((mixed ^ (mixed >> 16)) * CHECKSUM_TOKEN_MULTIPLIER) \
+			& CHECKSUM_COMPONENT_MASK
+	mixed = ((mixed ^ (mixed >> 16)) * CHECKSUM_TOKEN_MULTIPLIER) \
+			& CHECKSUM_COMPONENT_MASK
+	return (mixed ^ (mixed >> 16)) & CHECKSUM_COMPONENT_MASK
+
+
+func _publish_paint_mask_checksum() -> void:
+	_paint_mask_checksum = (
+		(_paint_checksum_xor_component << 26) | _paint_checksum_sum_component
+	)
+	if _paint_mask_checksum == 0:
+		_paint_mask_checksum = 1
 
 
 func paint_texture() -> ImageTexture:
@@ -583,6 +638,22 @@ func target_texture() -> ImageTexture:
 
 func recent_texture() -> ImageTexture:
 	return _recent_texture
+
+
+func set_recent_diagnostics_enabled(value: bool) -> void:
+	var should_enable := value and OS.is_debug_build()
+	if _recent_diagnostics_enabled == should_enable:
+		return
+	_recent_diagnostics_enabled = should_enable
+	_recent_dirty_rect = Rect2i()
+	_recent_live_rect = Rect2i()
+	if should_enable:
+		_allocate_recent_diagnostics()
+		return
+	_recent_bytes = PackedByteArray()
+	_recent_image = null
+	_recent_texture = null
+	_texture_upload_pending = _paint_dirty_rect.has_area()
 
 
 func nontarget_texture() -> ImageTexture:
@@ -648,10 +719,9 @@ func _create_masks_and_surface_cache() -> void:
 	_paint_bytes.fill(0)
 	_paintable_surface_bytes.resize(pixel_count)
 	_paintable_surface_bytes.fill(0)
+	_surface_sample_states.resize(pixel_count)
+	_surface_sample_states.fill(SURFACE_SAMPLE_UNKNOWN)
 	_recent_bytes = PackedByteArray()
-	if _recent_diagnostics_enabled:
-		_recent_bytes.resize(pixel_count)
-		_recent_bytes.fill(0)
 	_target_bytes = _generated_layout.target_mask
 	assert(_target_bytes.size() == pixel_count, "Generated layout target mask must be 512 square.")
 	assert(
@@ -666,35 +736,8 @@ func _create_masks_and_surface_cache() -> void:
 	_visited_generation.fill(0)
 	_candidate_generation_id = 0
 	_visited_generation_id = 0
-	_total_target_pixels = 0
-	for pixel_y in range(MASK_SIZE):
-		for pixel_x in range(MASK_SIZE):
-			var index := pixel_y * MASK_SIZE + pixel_x
-			var normalized := Vector2(
-				(float(pixel_x) + 0.5) / float(MASK_SIZE),
-				(float(pixel_y) + 0.5) / float(MASK_SIZE)
-			)
-			var local_xz := _generated_layout.local_bounds.position \
-					+ normalized * _generated_layout.local_bounds.size
-			var sample := _generated_layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
-			if sample.is_empty():
-				assert(
-					_target_bytes[index] < _surface_tuning.painted_threshold_byte,
-					"Eligible coverage pixels must belong to a real mountain top triangle."
-				)
-				_surface_positions[index] = Vector3.ZERO
-				_surface_normals[index] = Vector3.UP
-				continue
-			_paintable_surface_bytes[index] = 255
-			if _target_bytes[index] >= _surface_tuning.painted_threshold_byte:
-				_total_target_pixels += 1
-			var world_xz := _world_bounds.position + normalized * _world_bounds.size
-			_surface_positions[index] = Vector3(
-				world_xz.x,
-				_terrain_origin_y + float(sample.point.y),
-				world_xz.y
-			)
-			_surface_normals[index] = sample.normal
+	_total_target_pixels = _generated_layout.target_pixel_count()
+	assert(_total_target_pixels > 0, "PaintSystem requires at least one target pixel.")
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 	_target_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes)
 	var nontarget_bytes := PackedByteArray()
@@ -707,10 +750,7 @@ func _create_masks_and_surface_cache() -> void:
 	_recent_image = null
 	_recent_texture = null
 	if _recent_diagnostics_enabled:
-		_recent_image = Image.create_from_data(
-			MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes
-		)
-		_recent_texture = ImageTexture.create_from_image(_recent_image)
+		_allocate_recent_diagnostics()
 	_target_texture = ImageTexture.create_from_image(_target_image)
 	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
 	_painted_target_pixels = 0
@@ -722,6 +762,67 @@ func _create_masks_and_surface_cache() -> void:
 	_paint_texture_publish_elapsed = 0.0
 	_coverage_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
+
+
+## Resolves only pixels reached by a paint footprint. The former eager 512-square
+## topology walk blocked scene entry even though a shot touches a small fraction.
+func _ensure_surface_sample(index: int) -> bool:
+	if index < 0 or index >= _surface_sample_states.size():
+		return false
+	var state := int(_surface_sample_states[index])
+	if state != SURFACE_SAMPLE_UNKNOWN:
+		return state == SURFACE_SAMPLE_ACTIVE
+	var pixel := Vector2i(index % MASK_SIZE, index / MASK_SIZE)
+	var normalized := Vector2(
+		(float(pixel.x) + 0.5) / float(MASK_SIZE),
+		(float(pixel.y) + 0.5) / float(MASK_SIZE)
+	)
+	var topology := _generated_layout.top_topology
+	var topology_bounds := topology.local_bounds
+	var topology_cells := topology.cell_count
+	var local_xz := topology_bounds.position + normalized * topology_bounds.size
+	var grid := (local_xz - topology_bounds.position) / topology_bounds.size \
+			* Vector2(topology_cells)
+	var cell := Vector2i(
+		clampi(floori(grid.x), 0, topology_cells.x - 1),
+		clampi(floori(grid.y), 0, topology_cells.y - 1)
+	)
+	if not topology.is_cell_active(cell):
+		assert(
+			_target_bytes[index] < _surface_tuning.painted_threshold_byte,
+			"Eligible coverage pixels must belong to a real mountain top triangle."
+		)
+		_surface_sample_states[index] = SURFACE_SAMPLE_INACTIVE
+		return false
+	var local_uv := Vector2(grid.x - float(cell.x), grid.y - float(cell.y))
+	var address := TerrainTopTopology.triangle_barycentric_for_cell_uv(local_uv)
+	var triangle_in_cell := int(address.x)
+	var source_indices := topology.triangle_vertex_indices(cell, triangle_in_cell)
+	assert(source_indices.x >= 0, "Active paint pixels require an emitted top triangle.")
+	var local_point := topology.vertex_at(source_indices.x) * address.y \
+			+ topology.vertex_at(source_indices.y) * address.z \
+			+ topology.vertex_at(source_indices.z) * address.w
+	var world_xz := _world_bounds.position + normalized * _world_bounds.size
+	_surface_positions[index] = Vector3(
+		world_xz.x,
+		_terrain_origin_y + local_point.y,
+		world_xz.y
+	)
+	_surface_normals[index] = topology.triangle_normal(cell, triangle_in_cell)
+	_paintable_surface_bytes[index] = 255
+	_surface_sample_states[index] = SURFACE_SAMPLE_ACTIVE
+	return true
+
+
+func _allocate_recent_diagnostics() -> void:
+	if _paint_bytes.is_empty():
+		return
+	_recent_bytes.resize(_paint_bytes.size())
+	_recent_bytes.fill(0)
+	_recent_image = Image.create_from_data(
+		MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes
+	)
+	_recent_texture = ImageTexture.create_from_image(_recent_image)
 
 
 func _mark_paint_dirty(index: int) -> void:
@@ -762,11 +863,7 @@ func _upload_dirty_images() -> void:
 		return
 	if _paint_dirty_rect.has_area():
 		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
-		# Rebinding a freshly created L8 texture is reliable on the Compatibility
-		# renderer and remains bounded by the 15 Hz publication cadence.
-		_paint_texture = ImageTexture.create_from_image(_paint_image)
-		if _terrain_material != null:
-			_terrain_material.set_shader_parameter(&"paint_mask", _paint_texture)
+		_paint_texture.update(_paint_image)
 	if _recent_diagnostics_enabled and _recent_dirty_rect.has_area():
 		_recent_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _recent_bytes)
 		_recent_texture.update(_recent_image)

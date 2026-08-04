@@ -3,7 +3,7 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 5
+const FORMAT_VERSION := 6
 
 var attempt: Dictionary = {}
 var playback_index: int = 0

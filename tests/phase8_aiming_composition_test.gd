@@ -31,6 +31,7 @@ func _run_checks() -> void:
 
 
 func _check_stage(stage: StageData) -> void:
+	var generation_started := Time.get_ticks_usec()
 	var layout := SeededStageGenerator.generate_structural_sequence(
 		stage.generation_profile,
 		stage.terrain_seed,
@@ -39,6 +40,7 @@ func _check_stage(stage: StageData) -> void:
 	_assert_true(layout != null and layout.is_valid(), "%s must generate a valid layout" % stage.stage_id)
 	if layout == null:
 		return
+	var generation_ms := float(Time.get_ticks_usec() - generation_started) / 1000.0
 
 	var fixture_root := Node3D.new()
 	root.add_child(fixture_root)
@@ -58,12 +60,17 @@ func _check_stage(stage: StageData) -> void:
 	fixture_root.add_child(director)
 	await physics_frame
 
+	var aim_started := Time.get_ticks_usec()
 	var runtime_aim := DefaultAimSolver.find_runtime_aim(
 		camera.get_world_3d().direct_space_state,
 		cannon,
 		terrain,
 		layout
 	)
+	var aim_ms := float(Time.get_ticks_usec() - aim_started) / 1000.0
+	print("%s initialization timing generation=%.2f ms aim=%.2f ms" % [
+		stage.stage_id, generation_ms, aim_ms,
+	])
 	_assert_true(runtime_aim != null, "%s must derive a bounded runtime default aim" % stage.stage_id)
 	if runtime_aim == null:
 		fixture_root.queue_free()

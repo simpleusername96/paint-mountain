@@ -96,10 +96,11 @@ trajectory prediction is coalesced to 20 Hz and synchronously refreshed from the
 latest canonical aim before every Human, Replay, Agent, or Debug fire request.
 
 `PaintSystem` still owns one 512-square authoritative mask. Production texture
-publication is coalesced to 15 Hz, recreates and rebinds the current L8 texture,
-forces the final dirty state before result sealing, and omits the unused recent
-mask in release builds. The per-drain GDScript FNV loop was replaced by native
-`hash(PackedByteArray)` and replay format 5 rejects format 4. The current Stage
+publication is coalesced to 15 Hz and updates one persistent L8 texture in
+place, forces the final dirty state before result sealing, and allocates the
+recent diagnostic mask only while the F3 overlay is visible. Paint bytes update
+a deterministic incremental checksum without rescanning the full mask; replay
+format 6 rejects format 5 after that checksum contract change. The current Stage
 1 default-shot integration run applied 316 paint commands, including 302
 continuous surface sweeps, and produced 10.7419% scoreable coverage without a
 second paint authority.
@@ -379,6 +380,41 @@ the static-audit correction above.
 - `scripts/verify.ps1` passed headless project import/script parsing and
   main-scene startup with Godot `4.7.1.stable.official.a13da4feb`. No visible
   Godot window or retained Godot process was used.
+
+### Phase 9 responsiveness recovery (2026-08-04)
+
+- `AppRoot` now retains one immutable layout and preview artifact per stage for
+  the process lifetime. Returning between the main menu and stage selection no
+  longer rebuilds the active mountain, textures, material, or dressing, and
+  gameplay receives the same accepted layout while creating fresh mutable stage
+  and paint owners.
+- The runtime default aim no longer performs a 294-trajectory grid. It selects
+  the real target pixel nearest the target centroid, uses the bounded ballistic
+  nomination owned by `DirectReachabilityValidator`, and accepts it only after
+  a matching real first hit. The three measured aim components completed in
+  103.13 ms, 129.93 ms, and 100.21 ms.
+- `PaintSystem` no longer scans all 262,144 mask bytes on every paint drain or
+  samples the entire 512-square terrain surface during scene entry. It maintains
+  an incremental format-6 replay checksum, lazily caches exact topology samples
+  only around paint footprints, updates one persistent texture at 15 Hz, and
+  allocates recent-paint diagnostics only while the F3 overlay is visible.
+- In the hidden off-desktop Windows release, main-menu/stage-select calls measured
+  1.199 ms and 0.841 ms. Cached Stage 1 entry fell from 739.678 ms to 77.013 ms;
+  aim-ready time fell from 1007.062 ms to 273.611 ms. Physics remains fixed at
+  60 Hz with interpolation enabled.
+- The same bounded rendered run applied 121 surface sweeps, wrote 4,374 pixels,
+  and published 23 coalesced texture batches. Because Windows throttled the
+  off-desktop window near 30 fps, frame values are comparative only: non-drain
+  p95 was 34.060 ms and paint-drain p95 was 39.738 ms (42.381 ms max).
+- The final production capture under `.agents/evidence/phase9/` was inspected
+  directly and shows the active projectile's continuous blue path and 9.2%
+  coverage without a forced texture replacement. `stage1_mvp_test.gd` retained
+  first real top contact, 4.983 seconds of contact, 54.887 m of travel, 299
+  sweeps, 9.8688% coverage, drain-before-result, and deterministic restart.
+- Focused paint ordering, replay format-6/format-5 rejection, Stage 1 physical
+  paint, `scripts/verify.ps1`, and Windows release export passed. No visible
+  Godot window was opened; the runner used a hidden, non-focusable, off-desktop
+  production window.
 
 ### Historical verification for superseded or pre-MVP builds
 

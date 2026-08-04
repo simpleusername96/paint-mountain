@@ -173,7 +173,7 @@ static func validate_predictor(
 	for maximum_distance in witness_maximum_distances:
 		distance_margins.append(maxf(TARGET_DISTANCE_TOLERANCE - maximum_distance, 0.0))
 	var centroid := centroid_sum / float(target_points.size())
-	var default_index := DefaultAimSolver.select_witness_index(
+	var default_index := select_witness_index(
 		witnesses,
 		witness_impacts,
 		centroid
@@ -214,6 +214,54 @@ static func validate_predictor(
 		"reused_target_count": reused_target_count,
 		"elapsed_ms": Time.get_ticks_msec() - started,
 	}
+
+
+static func select_witness_index(
+		witnesses: Array[AimTuple],
+		witness_impact_points: PackedVector3Array,
+		target_centroid_xz: Vector2
+) -> int:
+	if witnesses.is_empty() or witnesses.size() != witness_impact_points.size() \
+			or not target_centroid_xz.is_finite():
+		return -1
+	var best_index := -1
+	var best_distance_squared := INF
+	for index in range(witnesses.size()):
+		var witness := witnesses[index]
+		var impact := witness_impact_points[index]
+		if witness == null or not witness.is_valid() or not impact.is_finite():
+			return -1
+		var distance_squared := Vector2(impact.x, impact.z).distance_squared_to(
+			target_centroid_xz
+		)
+		if best_index < 0 or distance_squared < best_distance_squared:
+			best_index = index
+			best_distance_squared = distance_squared
+		elif distance_squared == best_distance_squared \
+				and _aim_tuple_precedes(witness, witnesses[best_index]):
+			best_index = index
+	return best_index
+
+
+static func _aim_tuple_precedes(candidate: AimTuple, incumbent: AimTuple) -> bool:
+	var candidate_key := [
+		absf(candidate.yaw_degrees),
+		candidate.elevation_degrees,
+		candidate.power_percent,
+		candidate.yaw_degrees,
+	]
+	var incumbent_key := [
+		absf(incumbent.yaw_degrees),
+		incumbent.elevation_degrees,
+		incumbent.power_percent,
+		incumbent.yaw_degrees,
+	]
+	for index in range(candidate_key.size()):
+		if candidate_key[index] < incumbent_key[index]:
+			return true
+		if candidate_key[index] > incumbent_key[index]:
+			return false
+	return false
 
 
 static func validate_rigidbody_batches(

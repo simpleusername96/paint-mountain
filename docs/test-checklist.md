@@ -251,10 +251,10 @@ Korean HUD, game menu, visual direction, and approved assets:
 
 Replay, regression, performance, and delivery:
 
-- [ ] Observation schema 4 and replay format 5 contain no payload/flow fields, store stable
+- [ ] Observation schema 4 and replay format 6 contain no payload/flow fields, store stable
   contact/mechanism/child ordering plus paint-drain/checksum facts, and fresh-
   process replay reproduces identities, final state, target checksum, and paint
-  checksum exactly while rejecting replay format 4.
+  checksum exactly while rejecting replay format 5.
 - [ ] `scripts/test.ps1`, every active focused test, persistence/replay matrices,
   `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export
   pass through the approved explicit headless Godot path without parser errors,

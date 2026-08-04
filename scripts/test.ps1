@@ -71,7 +71,7 @@ try {
     foreach ($test in $ordinaryTests) {
         Invoke-GodotTest -ScriptName $test
     }
-    Invoke-GodotTest -ScriptName 'phase8_performance_test.gd' -EngineArguments @('--resolution', '1920x1080')
+    Invoke-GodotTest -ScriptName 'phase8_performance_test.gd'
     Invoke-GodotTest -ScriptName 'phase6_solution_test.gd'
 
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=cleanup')

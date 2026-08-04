@@ -9,13 +9,14 @@ const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
-var _preview_dressing: Node3D
 var _main_menu: MainMenuScreen
 var _stage_select: StageSelectScreen
 var _settings: SettingsScreen
 var _gameplay: Node3D
 var _settings_return: StringName = &"main_menu"
-var _preview_layout_cache: Dictionary = {}
+var _stage_layout_cache: Dictionary = {}
+var _preview_artifact_cache: Dictionary = {}
+var _active_preview_stage_id: StringName = &""
 
 
 func _ready() -> void:
@@ -73,6 +74,8 @@ func _start_stage(stage_id: StringName) -> void:
 	var game_state := get_node("/root/GameState")
 	if not game_state.select_stage(stage_id):
 		return
+	var selected_stage := StageCatalog.get_stage(stage_id)
+	var cached_layout := _layout_for_stage(selected_stage)
 	_audio_ui()
 	_remove_gameplay()
 	_preview_world.visible = false
@@ -80,9 +83,10 @@ func _start_stage(stage_id: StringName) -> void:
 	_stage_select.visible = false
 	_gameplay = GAMEPLAY_SCENE.instantiate()
 	_gameplay.name = "ActiveGameplay"
-	add_child(_gameplay)
+	_gameplay.call(&"prepare_stage", selected_stage, cached_layout)
 	if _gameplay.has_signal("navigation_requested"):
 		_gameplay.navigation_requested.connect(_on_gameplay_navigation)
+	add_child(_gameplay)
 
 
 func _on_gameplay_navigation(destination: StringName) -> void:
@@ -162,9 +166,6 @@ func _build_preview_world() -> void:
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
 	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	_preview_world.add_child(_preview_mountain)
-	_preview_dressing = ENVIRONMENT_DRESSING_SCRIPT.new()
-	_preview_dressing.name = "PreviewDressing"
-	_preview_world.add_child(_preview_dressing)
 	var ground := MeshInstance3D.new()
 	var ground_mesh := PlaneMesh.new()
 	ground_mesh.size = Vector2(360.0, 360.0)
@@ -181,23 +182,112 @@ func _build_preview_world() -> void:
 func _set_preview_stage(stage: StageData) -> void:
 	if stage == null or _preview_mountain == null:
 		return
-	var layout: GeneratedStageLayout = _preview_layout_cache.get(stage.stage_id)
-	if layout == null:
-		layout = SeededStageGenerator.generate(stage.generation_profile, stage.terrain_seed, stage)
-		if layout != null:
-			_preview_layout_cache[stage.stage_id] = layout
-	if layout == null:
+	var cached: Dictionary = _preview_artifact_cache.get(stage.stage_id, {})
+	if _active_preview_stage_id == stage.stage_id \
+			and _preview_artifact_matches_stage(cached, stage):
+		return
+	var artifact := _preview_artifact_for_stage(stage)
+	if artifact.is_empty():
 		push_error("Could not build preview layout for %s." % stage.stage_id)
 		return
-	_preview_mountain.mesh = TerrainGeometryFactory.build(layout).render_mesh
+	for entry in _preview_artifact_cache.values():
+		var cached_dressing := entry.get("dressing") as Node3D
+		if cached_dressing != null and is_instance_valid(cached_dressing):
+			cached_dressing.visible = false
+	_preview_mountain.position = stage.terrain_center
+	_preview_mountain.mesh = artifact.get("mesh") as ArrayMesh
+	_preview_mountain.material_override = artifact.get("material") as ShaderMaterial
+	var dressing := artifact.get("dressing") as Node3D
+	if dressing != null:
+		dressing.visible = true
+	_active_preview_stage_id = stage.stage_id
+
+
+func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
+	if stage == null or stage.generation_profile == null:
+		return {}
+	var cached: Dictionary = _preview_artifact_cache.get(stage.stage_id, {})
+	if _preview_artifact_matches_stage(cached, stage):
+		return cached
+	var stale_dressing := cached.get("dressing") as Node3D
+	if stale_dressing != null and is_instance_valid(stale_dressing):
+		stale_dressing.queue_free()
+	var layout := _layout_for_stage(stage)
+	if not _layout_matches_stage(layout, stage):
+		return {}
+	var geometry := TerrainGeometryFactory.build(layout)
+	var paint_texture := _preview_paint_texture(stage.stage_number)
+	var target_texture := _preview_target_texture(layout)
 	var material := ShaderMaterial.new()
 	material.shader = load("res://src/paint/terrain_paint.gdshader")
-	material.set_shader_parameter(&"paint_mask", _preview_paint_texture(stage.stage_number))
-	material.set_shader_parameter(&"target_mask", _preview_target_texture(layout))
+	material.set_shader_parameter(&"paint_mask", paint_texture)
+	material.set_shader_parameter(&"target_mask", target_texture)
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
 	material.set_shader_parameter(&"rock_color", Color(0.63, 0.65, 0.68, 1.0))
-	_preview_mountain.material_override = material
-	_preview_dressing.configure(stage, layout)
+	var dressing: Node3D = ENVIRONMENT_DRESSING_SCRIPT.new()
+	dressing.name = "PreviewDressing_%s" % stage.stage_id
+	dressing.visible = false
+	_preview_world.add_child(dressing)
+	dressing.configure(stage, layout)
+	var artifact := {
+		"stage_id": stage.stage_id,
+		"stage_version": stage.stage_version,
+		"profile_id": stage.generation_profile.profile_id,
+		"profile_version": stage.generation_profile.profile_version,
+		"terrain_seed": stage.terrain_seed,
+		"layout_checksum": layout.checksum,
+		"paint_color": stage.paint_color,
+		"layout": layout,
+		"mesh": geometry.render_mesh,
+		"material": material,
+		"paint_texture": paint_texture,
+		"target_texture": target_texture,
+		"dressing": dressing,
+	}
+	_preview_artifact_cache[stage.stage_id] = artifact
+	return artifact
+
+
+func _layout_for_stage(stage: StageData) -> GeneratedStageLayout:
+	if stage == null or stage.generation_profile == null:
+		return null
+	var cached := _stage_layout_cache.get(stage.stage_id) as GeneratedStageLayout
+	if _layout_matches_stage(cached, stage):
+		return cached
+	var layout := SeededStageGenerator.generate(
+		stage.generation_profile,
+		stage.terrain_seed,
+		stage
+	)
+	if not _layout_matches_stage(layout, stage):
+		return null
+	_stage_layout_cache[stage.stage_id] = layout
+	return layout
+
+
+func _preview_artifact_matches_stage(artifact: Dictionary, stage: StageData) -> bool:
+	if artifact.is_empty() or stage == null or stage.generation_profile == null:
+		return false
+	var layout := artifact.get("layout") as GeneratedStageLayout
+	var dressing := artifact.get("dressing") as Node3D
+	return artifact.get("stage_id", &"") == stage.stage_id \
+			and int(artifact.get("stage_version", -1)) == stage.stage_version \
+			and artifact.get("profile_id", &"") == stage.generation_profile.profile_id \
+			and int(artifact.get("profile_version", -1)) \
+					== stage.generation_profile.profile_version \
+			and int(artifact.get("terrain_seed", -1)) == stage.terrain_seed \
+			and int(artifact.get("layout_checksum", 0)) == (layout.checksum if layout != null else 0) \
+			and artifact.get("paint_color", Color.TRANSPARENT) == stage.paint_color \
+			and artifact.get("mesh") is ArrayMesh \
+			and artifact.get("material") is ShaderMaterial \
+			and artifact.get("paint_texture") is ImageTexture \
+			and artifact.get("target_texture") is ImageTexture \
+			and dressing != null and is_instance_valid(dressing) \
+			and _layout_matches_stage(layout, stage)
+
+
+func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bool:
+	return layout != null and layout.matches_stage_identity(stage)
 
 
 func _preview_target_texture(layout: GeneratedStageLayout) -> ImageTexture:

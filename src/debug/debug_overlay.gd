@@ -59,8 +59,8 @@ func configure(
 	_replay = replay
 	_paint_preview.texture = _paint.paint_texture()
 	_target_preview.texture = _paint.target_texture()
-	_recent_preview.texture = _paint.recent_texture()
 	_nontarget_preview.texture = _paint.nontarget_texture()
+	_set_overlay_visible(visible)
 	_controller.shot_result.connect(func(gain: float, _total: float) -> void: _last_gain = gain)
 	_controller.restart_completed.connect(func(elapsed_ms: float) -> void: _last_restart_ms = elapsed_ms)
 
@@ -108,13 +108,25 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F3:
-		visible = not visible
+		_set_overlay_visible(not visible)
 		get_viewport().set_input_as_handled()
 
 
 func set_debug_visible(value: bool) -> void:
-	if OS.is_debug_build():
-		visible = value
+	_set_overlay_visible(value)
+
+
+func _exit_tree() -> void:
+	if _paint != null:
+		_paint.set_recent_diagnostics_enabled(false)
+
+
+func _set_overlay_visible(value: bool) -> void:
+	visible = value and OS.is_debug_build()
+	if _paint == null:
+		return
+	_paint.set_recent_diagnostics_enabled(visible)
+	_recent_preview.texture = _paint.recent_texture() if visible else null
 
 
 func export_shot_log(path: String = "user://paint_mountain_shot_log.json") -> Error:
