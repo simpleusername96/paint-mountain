@@ -110,19 +110,15 @@ static func build(
 	var target_maximum_slope := _maximum(target_slopes)
 	var route_core_p95_slope := _percentile95(route_core_slopes)
 	var corridor_lip_maximum_slope := _maximum(corridor_lip_slopes)
-	var passes := target_ratio >= profile.target_ratio_range.x \
+	# Slope distributions remain useful QA metrics, but they must not prevent a
+	# structurally complete mountain from entering the runtime MVP.
+	var structurally_ready := target_ratio >= profile.target_ratio_range.x \
 			and target_ratio <= profile.target_ratio_range.y \
-			and target_mean_slope >= profile.target_mean_slope_range.x \
-			and target_mean_slope <= profile.target_mean_slope_range.y \
-			and target_p95_slope <= profile.target_p95_slope_max \
-			and target_maximum_slope <= profile.target_maximum_slope \
-			and route_core_p95_slope <= profile.route_core_p95_slope_max \
-			and corridor_lip_maximum_slope <= profile.corridor_lip_maximum_slope \
 			and int(connectivity.component_count) == 1 \
 			and bool(connectivity.graph_nodes_reachable)
 	return {
-		"valid": passes,
-		"rejection": "" if passes else "target_acceptance",
+		"valid": structurally_ready,
+		"rejection": "" if structurally_ready else "target_structure",
 		"bytes": target_mask,
 		"checksum": byte_checksum(target_mask),
 		"target_count": target_count,

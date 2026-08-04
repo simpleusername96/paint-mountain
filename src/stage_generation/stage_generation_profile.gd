@@ -2,8 +2,8 @@ class_name StageGenerationProfile
 extends Resource
 
 @export_category("Identity")
-@export var profile_id: StringName = &"first_descent_v4"
-@export_range(1, 99, 1) var profile_version: int = 4
+@export var profile_id: StringName = &"first_descent_v5"
+@export_range(1, 99, 1) var profile_version: int = 5
 @export var base_seed: int = 845479992
 @export var fallback_seed: int = 1820876501
 @export var generation_contract: StageGenerationContract

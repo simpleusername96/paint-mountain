@@ -22,15 +22,21 @@ Production implementation tasks 1.1 through 5.4 are complete. The plan remains
 active only because visible gameplay QA and the deferred formal checks still
 require explicit user authorization.
 
-`RouteGraphMountainSynthesizer` now produces both a sampled height field and a
-connected, irregular cell footprint for all three stages. Its seeded noise is
-restricted to the exterior contour: each occupied depth row is filled between
-its left and right edges, empty interior rows are bridged, and adjacent rows
-overlap. Branching route bands therefore cannot carve a visible or physical
-hole through the target. The height builder also supplies a broad body floor
-beneath route shoulders; routes shape the playable ridges and valleys without
-letting the rest of the mountain collapse to apron height and appear visually
-empty. `TerrainTopTopology`
+The user accepted the standalone `Closed Mountain Lab` result as the intended
+terrain MVP and instructed that algorithm to be applied directly to the game.
+Generation contract v5 now transfers its broad continuous backbone, elongated
+mountain-range silhouette, ordered secondary summits, level-dependent passes,
+and rare shallow off-center basin into `RouteGraphMountainSynthesizer` and
+`MountainHeightFieldBuilder`. Stage 1 produces four ridge fields and no basin;
+Stages 2 and 3 add ridge fields and passes, while only Stage 3 adds one shallow
+side basin. The central ridge is never replaced by a crater.
+
+`RouteGraphMountainSynthesizer` produces both that sampled height field and a
+connected, irregular row-solid footprint for all three stages. The footprint
+joins the rear wall, widens into a substantial body, tapers toward the cannon,
+and cannot contain an internal hole. Existing route geometry blends broad,
+rollable target lanes into the range without becoming the visible silhouette
+or excavating the body. `TerrainTopTopology`
 emits top triangles only for those cells and supplies the same indexed faces to
 rendering, concave collision, surface queries, target rasterization, and paint
 addressing. `TerrainGeometryFactory` closes every exposed contour with thick
@@ -67,17 +73,15 @@ Fire button, and top-right shots plus gear. Gear/Escape opens the full paused
 menu; Restart exists there and in result/replay flows, not in the aiming HUD.
 Closing the application-level Settings overlay returns to the still-paused menu.
 
-No visible Godot process, test suite, certifier, screenshot capture, performance
-pass, replay matrix, balance check, or user visual review was run for this
-revision. Godot 4.7.1 headlessly passed project import/script parsing,
-main-scene startup, and a direct First Descent gameplay-scene startup that
-reached `BRIEFING`. The verifier was strengthened to fail on Godot script/runtime
-error text even when the engine returns exit code zero; this caught and led to
-fixes for invalid constant expressions and an obsolete decoration admission
-gate. The Windows release was rebuilt from current source and passed a hidden
-headless startup. Its SHA-256 is
-`F59E7D7B50C208538226C5AB366B4A695FC8AAED345AD6730B1791C70F3A06BD`, and the
-existing fastrun entry points to `builds/windows/PaintMountain.exe`.
+No visible Godot process, focused test suite, certifier, screenshot capture,
+performance pass, replay matrix, balance check, or user review of the in-game
+v5 terrain was run. Godot 4.7.1 headlessly passed project import/script parsing
+and main-scene startup after the v5 transfer. Target slope distributions remain
+recorded as QA metrics but no longer act as runtime certification gates;
+connected target topology, graph-node inclusion, and the configured target-area
+range remain mandatory. The Windows release was not rebuilt, so the existing
+fastrun executable still represents the previous build until the user opens the
+deferred export/testing phase.
 
 These checks establish importability and startup, not visual correctness,
 gameplay balance, all-stage outcomes, projectile behavior, or user approval.

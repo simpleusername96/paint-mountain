@@ -8,7 +8,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"split_ridge"
-stage_version = 4
+stage_version = 5
 display_name_key = &"stage.split_ridge.name"
 stage_number = 3
 target_coverage = 70.0

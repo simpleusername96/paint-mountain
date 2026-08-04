@@ -8,7 +8,7 @@ const FNV_PRIME: int = 16777619
 
 
 static func sample_unit(stage_id: StringName, attempt_seed: int, field_key: String) -> float:
-	var key := "paint_mountain:%s:v4:%d:%s" % [String(stage_id), attempt_seed, field_key]
+	var key := "paint_mountain:%s:v5:%d:%s" % [String(stage_id), attempt_seed, field_key]
 	return float(fnv1a32(key) & 0x7fffffff) / 2147483647.0
 
 

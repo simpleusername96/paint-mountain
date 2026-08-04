@@ -48,26 +48,44 @@ static func _build_footprint(
 	cells.resize(contract.cell_count.x * contract.cell_count.y)
 	var contour_noise := FastNoiseLite.new()
 	contour_noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v4:%d:footprint" % [String(stage_id), attempt_seed]
+		"paint_mountain:%s:v5:%d:footprint" % [String(stage_id), attempt_seed]
 	) & 0x7fffffff
 	contour_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	contour_noise.frequency = 0.055
 
 	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
+	var contour_phase := KEYED_STAGE_SAMPLER.sample_range(
+		stage_id, attempt_seed, "range/footprint/phase", Vector2(0.0, TAU)
+	)
+	var bend_phase := KEYED_STAGE_SAMPLER.sample_range(
+		stage_id, attempt_seed, "range/footprint/bend", Vector2(0.0, TAU)
+	)
 	for cell_z in range(contract.cell_count.y):
 		for cell_x in range(contract.cell_count.x):
 			var center := contract.local_bounds.position + Vector2(
 				(float(cell_x) + 0.5) * cell_size.x,
 				(float(cell_z) + 0.5) * cell_size.y
 			)
+			var depth_t := (float(cell_z) + 0.5) / float(contract.cell_count.y)
+			var arch := pow(maxf(0.0, sin(depth_t / 0.93 * PI)), 0.68) \
+					if depth_t <= 0.93 else 0.0
+			var half_width := lerpf(52.0, 30.0, depth_t / 0.93) + arch * 25.0
+			var center_bend := sin(depth_t * TAU * 0.72 + bend_phase) * 5.5
+			var irregularity := contour_noise.get_noise_2d(
+				center.y * 0.65 + cos(contour_phase) * 20.0,
+				sin(contour_phase) * 20.0
+			) * 4.5
+			var included := depth_t <= 0.93 \
+					and absf(center.x - center_bend) <= half_width + irregularity
+
+			# Route shoulders may widen the silhouette, but never punch holes in the
+			# mountain-range body established above.
 			var nearest := graph.nearest_edge(center)
 			var edge := nearest.get("edge") as GeneratedRouteEdge
-			var included := false
-			if edge != null:
+			if not included and depth_t <= 0.93 and edge != null:
 				var base_radius := edge.width * 0.5 + contract.support_distance * 0.82
-				var irregularity := contour_noise.get_noise_2d(center.x, center.y) * 4.5
-				included = float(nearest.get("distance", INF)) <= base_radius + irregularity
-			if not included:
+				included = float(nearest.get("distance", INF)) <= base_radius
+			if not included and depth_t <= 0.93:
 				for pad in graph.pad_nodes():
 					var pad_radius := pad.pad_radius + contract.support_distance * 0.72
 					if center.distance_to(Vector2(pad.position.x, pad.position.z)) <= pad_radius:

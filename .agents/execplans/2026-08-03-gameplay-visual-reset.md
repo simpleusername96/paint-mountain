@@ -548,6 +548,20 @@ behavior, or release claim.
 - Canonical progress: task checkboxes in this document.
 - Current phase: implementation-ready handoff; tasks 1.1 through 5.4 are
   complete.
+- 2026-08-04 terrain MVP transfer: the user accepted the standalone Closed
+  Mountain Lab as sufficiently close to the intended MVP and instructed direct
+  integration. Generation contract v5 now uses the same continuous central
+  backbone, ordered broad ridge fields, increasing passes, rare shallow
+  off-center basin, spike-free broad variation, and elongated closed mass.
+  Existing route data blends playable rolling lanes into that body without
+  owning its silhouette or carving out its center.
+- Runtime target admission now treats slope distributions as dormant QA metrics
+  and retains structural target-area, connectivity, and graph-node gates. This
+  follows the locked rule that formal quality certification cannot block the
+  implemented MVP from loading.
+- Godot 4.7.1 headless import, script parsing, and main-scene startup passed for
+  generation v5. No visible in-game inspection, Stage 2/3 gameplay run, physics
+  validation, screenshot, export, or balance claim was made.
 - Next task: wait for explicit user authorization before visible or formal QA.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
@@ -556,9 +570,9 @@ behavior, or release claim.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
 - Do not run formal tests until the user explicitly activates deferred QA.
-- Godot 4.7.1 headless import/script parsing, main-scene startup, direct
-  gameplay-scene startup through `BRIEFING`, release export, and exported-build
-  headless startup passed on 2026-08-04 without a visible window.
+- Earlier v4 release/export evidence is historical. The v5 source passed only
+  the mandatory headless import and main-scene startup; the registered fastrun
+  executable has not been rebuilt from v5.
 - `scripts/verify.ps1` now treats Godot `SCRIPT ERROR:` and `ERROR:` output as
   failure because this engine can return exit code zero after such errors.
 - `builds/windows/PaintMountain.exe` was rebuilt from the current source and

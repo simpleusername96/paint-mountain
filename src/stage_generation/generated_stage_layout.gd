@@ -110,7 +110,7 @@ func is_certified() -> bool:
 	if not is_valid() or not has_valid_target_mask() \
 			or reachability_certificate == null or not reachability_certificate.is_valid():
 		return false
-	return reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v4")) \
+	return reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v5")) \
 			and reachability_certificate.profile_version == profile_version \
 			and reachability_certificate.requested_seed == terrain_seed \
 			and reachability_certificate.accepted_seed == accepted_seed \

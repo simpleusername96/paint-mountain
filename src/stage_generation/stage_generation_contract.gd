@@ -1,9 +1,9 @@
 class_name StageGenerationContract
 extends Resource
 
-## Owns every generation-wide version-4 constant consumed by production.
+## Owns every generation-wide version-5 constant consumed by production.
 
-const CONTRACT_VERSION := 4
+const CONTRACT_VERSION := 5
 const REQUIRED_CELL_COUNT := Vector2i(72, 48)
 const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-90.0, -60.0), Vector2(180.0, 120.0))
 const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 6912
@@ -40,13 +40,10 @@ enum CellDiagonal {
 @export_category("Height synthesis")
 @export_range(0.0, 32.0, 0.5) var outer_band_width: float = 12.0
 @export_range(0.1, 16.0, 0.1) var terrace_step: float = 4.0
-@export_range(0.0, 1.0, 0.01) var terrace_blend: float = 0.90
-@export_range(0.0, 16.0, 0.5) var bank_height: float = 4.0
+@export_range(0.0, 1.0, 0.01) var terrace_blend: float = 0.24
 @export_range(0.1, 32.0, 0.5) var bank_blend_distance: float = 8.0
 @export_range(0.1, 32.0, 0.5) var target_shoulder_distance: float = 12.0
 @export_range(0.1, 64.0, 0.5) var support_distance: float = 24.0
-@export_range(0.1, 16.0, 0.1) var smooth_max_k: float = 6.0
-@export_range(0.1, 16.0, 0.1) var smooth_min_k: float = 3.0
 
 @export_category("Noise")
 @export_range(0.001, 1.0, 0.001) var noise_frequency: float = 0.035
@@ -72,13 +69,10 @@ func is_valid() -> bool:
 			and is_equal_approx(maximum_station_x_delta, 18.0) \
 			and is_equal_approx(outer_band_width, 12.0) \
 			and is_equal_approx(terrace_step, 4.0) \
-			and is_equal_approx(terrace_blend, 0.90) \
-			and is_equal_approx(bank_height, 4.0) \
+			and is_equal_approx(terrace_blend, 0.24) \
 			and is_equal_approx(bank_blend_distance, 8.0) \
 			and is_equal_approx(target_shoulder_distance, 12.0) \
 			and is_equal_approx(support_distance, 24.0) \
-			and is_equal_approx(smooth_max_k, 6.0) \
-			and is_equal_approx(smooth_min_k, 3.0) \
 			and is_equal_approx(noise_frequency, 0.035) \
 			and noise_octaves == 2 \
 			and is_equal_approx(noise_lacunarity, 2.0) \

@@ -1,8 +1,9 @@
 class_name MountainHeightFieldBuilder
 extends RefCounted
 
-## Internal height-field helper for RouteGraphMountainSynthesizer. It does not
-## decide which cells physically exist and is not a terrain owner.
+## Samples the mountain-range surface inside the footprint owned by
+## RouteGraphMountainSynthesizer. A continuous backbone and broad summit fields
+## create the mass; route geometry only blends usable rolling lanes into it.
 
 const KEYED_STAGE_SAMPLER := preload("res://src/stage_generation/keyed_stage_sampler.gd")
 
@@ -16,7 +17,7 @@ static func build(
 	var contract := profile.generation_contract
 	var noise := FastNoiseLite.new()
 	noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v4:%d:noise/seed" % [String(stage_id), attempt_seed]
+		"paint_mountain:%s:v5:%d:range/noise" % [String(stage_id), attempt_seed]
 	) & 0x7fffffff
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = contract.noise_frequency
@@ -24,6 +25,7 @@ static func build(
 	noise.fractal_octaves = contract.noise_octaves
 	noise.fractal_lacunarity = contract.noise_lacunarity
 	noise.fractal_gain = contract.noise_gain
+	var parameters := _build_range_parameters(stage_id, graph, attempt_seed)
 	var ordered_pads := graph.pad_nodes()
 
 	var sample_size := contract.cell_count + Vector2i.ONE
@@ -42,7 +44,8 @@ static func build(
 				float(x_index) / float(contract.cell_count.x)
 			)
 			heights[z_index * sample_size.x + x_index] = _height_at(
-				Vector2(local_x, local_z), graph, ordered_pads, contract, noise
+				Vector2(local_x, local_z), graph, ordered_pads, contract,
+				noise, parameters
 			)
 	return heights
 
@@ -92,13 +95,14 @@ static func route_footprint_ratio(
 					1.0
 				)
 				var closest := edge_starts[edge_index] + delta * t
-				if point.distance_squared_to(closest) <= footprint_radii[edge_index] * footprint_radii[edge_index]:
+				if point.distance_squared_to(closest) \
+						<= footprint_radii[edge_index] * footprint_radii[edge_index]:
 					included = true
 					break
 			if not included:
 				for pad_index in range(pad_positions.size()):
-					if point.distance_squared_to(pad_positions[pad_index]) <= \
-							pad_radii[pad_index] * pad_radii[pad_index]:
+					if point.distance_squared_to(pad_positions[pad_index]) \
+							<= pad_radii[pad_index] * pad_radii[pad_index]:
 						included = true
 						break
 			if included:
@@ -106,90 +110,183 @@ static func route_footprint_ratio(
 	return float(count) / float(contract.mask_size * contract.mask_size)
 
 
+static func _build_range_parameters(
+		stage_id: StringName,
+		graph: GeneratedRouteGraph,
+		attempt_seed: int
+) -> Dictionary:
+	var level := clampi(graph.route_count(), 1, 3)
+	var range_angle := _sample_range(
+		stage_id, attempt_seed, "range/angle", Vector2(-0.12, 0.12)
+	)
+	var direction := Vector2(cos(range_angle), sin(range_angle))
+	var perpendicular := Vector2(-direction.y, direction.x)
+	var ridges: Array[Dictionary] = [{
+		"center": Vector2(
+			_sample_range(stage_id, attempt_seed, "range/backbone/x", Vector2(-0.04, 0.04)),
+			_sample_range(stage_id, attempt_seed, "range/backbone/z", Vector2(-0.34, -0.20))
+		),
+		"angle": range_angle + _sample_range(
+			stage_id, attempt_seed, "range/backbone/angle", Vector2(-0.08, 0.08)
+		),
+		"height": _sample_range(
+			stage_id, attempt_seed, "range/backbone/height", Vector2(0.47, 0.54)
+		),
+		"length_spread": _sample_range(
+			stage_id, attempt_seed, "range/backbone/length", Vector2(0.58, 0.78)
+		),
+		"width_spread": _sample_range(
+			stage_id, attempt_seed, "range/backbone/width", Vector2(0.11, 0.17)
+		),
+	}]
+	var secondary_count := 2 + level
+	for index in range(secondary_count):
+		var key := "range/ridge/%d" % index
+		var progress := float(index + 1) / float(secondary_count + 1)
+		var along := lerpf(-0.66, 0.66, progress) + _sample_range(
+			stage_id, attempt_seed, key + "/along", Vector2(-0.07, 0.07)
+		)
+		var cross_limit := 0.10 + float(level) * 0.014
+		var across := _sample_range(
+			stage_id, attempt_seed, key + "/across", Vector2(-cross_limit, cross_limit)
+		)
+		ridges.append({
+			"center": Vector2(0.0, -0.25) + direction * along + perpendicular * across,
+			"angle": range_angle + _sample_range(
+				stage_id, attempt_seed, key + "/angle", Vector2(-0.20, 0.20)
+			),
+			"height": _sample_range(
+				stage_id, attempt_seed, key + "/height",
+				Vector2(0.20 + float(level) * 0.015, 0.28 + float(level) * 0.020)
+			),
+			"length_spread": _sample_range(
+				stage_id, attempt_seed, key + "/length", Vector2(0.22, 0.40)
+			),
+			"width_spread": _sample_range(
+				stage_id, attempt_seed, key + "/width", Vector2(0.050, 0.095)
+			),
+		})
+
+	var basins: Array[Dictionary] = []
+	if level >= 3:
+		var first: Dictionary = ridges[2]
+		var second: Dictionary = ridges[3]
+		var first_center: Vector2 = first["center"]
+		var second_center: Vector2 = second["center"]
+		basins.append({
+			"center": first_center.lerp(second_center, 0.5) \
+					+ perpendicular * 0.25,
+			"angle": range_angle + _sample_range(
+				stage_id, attempt_seed, "range/basin/angle", Vector2(-0.45, 0.45)
+			),
+			"height": _sample_range(
+				stage_id, attempt_seed, "range/basin/depth", Vector2(0.035, 0.055)
+			),
+			"length_spread": _sample_range(
+				stage_id, attempt_seed, "range/basin/length", Vector2(0.10, 0.16)
+			),
+			"width_spread": _sample_range(
+				stage_id, attempt_seed, "range/basin/width", Vector2(0.10, 0.17)
+			),
+		})
+
+	var passes: Array[Dictionary] = []
+	for index in range(maxi(0, level - 1)):
+		var key := "range/pass/%d" % index
+		var progress := float(index + 1) / float(level)
+		var along := lerpf(-0.46, 0.46, progress) + _sample_range(
+			stage_id, attempt_seed, key + "/along", Vector2(-0.04, 0.04)
+		)
+		passes.append({
+			"center": Vector2(0.0, -0.25) + direction * along,
+			"angle": range_angle + PI * 0.5 + _sample_range(
+				stage_id, attempt_seed, key + "/angle", Vector2(-0.18, 0.18)
+			),
+			"height": _sample_range(
+				stage_id, attempt_seed, key + "/depth", Vector2(0.025, 0.045)
+			),
+			"length_spread": _sample_range(
+				stage_id, attempt_seed, key + "/length", Vector2(0.14, 0.22)
+			),
+			"width_spread": _sample_range(
+				stage_id, attempt_seed, key + "/width", Vector2(0.028, 0.050)
+			),
+		})
+
+	var waves: Array[Dictionary] = []
+	for index in range(maxi(0, level - 1)):
+		var key := "range/wave/%d" % index
+		waves.append({
+			"angular_frequency": 2.0 + float(index),
+			"radial_frequency": 1.0 + float(index % 2),
+			"phase": _sample_range(stage_id, attempt_seed, key + "/phase", Vector2(0.0, TAU)),
+			"amplitude": _sample_range(
+				stage_id, attempt_seed, key + "/amplitude",
+				Vector2(0.008, 0.014 + float(level) * 0.003)
+			),
+		})
+	return {
+		"ridges": ridges,
+		"basins": basins,
+		"passes": passes,
+		"waves": waves,
+	}
+
+
 static func _height_at(
 		point: Vector2,
 		graph: GeneratedRouteGraph,
 		pads: Array[GeneratedRouteNode],
 		contract: StageGenerationContract,
-		noise: FastNoiseLite
+		noise: FastNoiseLite,
+		parameters: Dictionary
 ) -> float:
-	# Wide route envelopes overlap several consecutive graph segments. Distance
-	# follows the nearest segment, while height follows the route's monotonic-Z
-	# cross-section. Decoupling them prevents distant parts of the same chain
-	# from introducing a false wall without changing its geometric footprint.
-	var nearest_edge_by_route: Dictionary = {}
-	var nearest_sample_by_route: Dictionary = {}
+	var nearest_distance := INF
+	var nearest_core_radius := 0.0
+	var route_height := 0.0
 	for route_index in range(graph.route_count()):
 		var route_edges := graph.route_edges(route_index)
 		var closest_edge: GeneratedRouteEdge
 		var closest_sample: Dictionary = {}
 		for candidate_edge in route_edges:
-			var candidate_sample := _edge_sample(point, graph, candidate_edge)
+			var candidate := _edge_sample(point, graph, candidate_edge)
 			if closest_sample.is_empty() \
-					or float(candidate_sample.distance) < float(closest_sample.distance) \
-					or (is_equal_approx(float(candidate_sample.distance), float(closest_sample.distance)) \
-							and candidate_edge.edge_index < closest_edge.edge_index):
+					or float(candidate.distance) < float(closest_sample.distance):
 				closest_edge = candidate_edge
-				closest_sample = candidate_sample
+				closest_sample = candidate
 		var height_edge := _edge_for_route_z(point.y, graph, route_edges)
-		if closest_edge != null and height_edge != null:
-			var height_sample := _cross_section_sample(point, graph, height_edge)
-			closest_sample["height"] = height_sample.height
-			nearest_edge_by_route[route_index] = closest_edge
-			nearest_sample_by_route[route_index] = closest_sample
-
-	var raw_mass := 0.0
-	var has_mass := false
-	var folded_floor := 0.0
-	var has_floor := false
-	var carve_weight := 0.0
-	var nearest_distance := INF
-	var nearest_core_radius := 0.0
-	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
-	var target_triangle_guard := cell_size.length() + 0.01
-	for route_index in range(graph.route_count()):
-		var edge: GeneratedRouteEdge = nearest_edge_by_route.get(route_index)
-		if edge == null:
+		if closest_edge == null or height_edge == null:
 			continue
-		var sample: Dictionary = nearest_sample_by_route[route_index]
-		var distance := float(sample.distance)
-		var core_radius := edge.width * 0.5
-		if distance >= core_radius + contract.support_distance:
-			continue
-		var route_height := float(sample.height)
-		var bank := contract.bank_height * _smoothstep01(
-			(distance - core_radius) / contract.bank_blend_distance
-		)
-		var falloff := 1.0 - _smoothstep01(
-			(distance - (core_radius + contract.target_shoulder_distance)) \
-					/ (contract.support_distance - contract.target_shoulder_distance)
-		)
-		var support := maxf(0.0, falloff * (route_height + bank))
-		if support > 0.0:
-			raw_mass = _smooth_max(raw_mass, support, contract.smooth_max_k) if has_mass else support
-			has_mass = true
+		var cross_section := _cross_section_sample(point, graph, height_edge)
+		var distance := float(closest_sample.distance)
 		if distance < nearest_distance:
 			nearest_distance = distance
-			nearest_core_radius = core_radius
-		if distance <= core_radius + contract.target_shoulder_distance + target_triangle_guard:
-			folded_floor = _smooth_min(folded_floor, route_height, contract.smooth_min_k) \
-					if has_floor else route_height
-			has_floor = true
-			carve_weight = 1.0
-	var body_floor := _mountain_body_floor(
-			point,
-			graph,
-			nearest_edge_by_route,
-			nearest_sample_by_route,
-			contract
+			nearest_core_radius = closest_edge.width * 0.5
+			route_height = float(cross_section.height)
+
+	var normalized := Vector2(point.x / 90.0, point.y / 60.0)
+	var height_ratio := _range_height_ratio(normalized, parameters)
+	var mountain_height := route_height * height_ratio
+	var terraced := roundf(mountain_height / contract.terrace_step) * contract.terrace_step
+	mountain_height = lerpf(mountain_height, terraced, contract.terrace_blend)
+	var target_edge := nearest_core_radius + contract.target_shoulder_distance
+	var support_edge := nearest_core_radius + contract.support_distance
+	var route_blend := 1.0
+	if nearest_distance > nearest_core_radius and nearest_distance <= target_edge:
+		var target_t := _smoothstep01(
+			(nearest_distance - nearest_core_radius) / contract.target_shoulder_distance
 		)
-	var mass_with_body := maxf(raw_mass, body_floor)
-	var terraced := lerpf(
-		mass_with_body,
-		roundf(mass_with_body / contract.terrace_step) * contract.terrace_step,
-		contract.terrace_blend
-	)
-	var height := lerpf(terraced, folded_floor, carve_weight) if has_floor else terraced
+		route_blend = lerpf(1.0, 0.94, target_t)
+	elif nearest_distance > target_edge:
+		var support_t := _smoothstep01(
+			(nearest_distance - target_edge) \
+					/ maxf(support_edge - target_edge, 0.001)
+		)
+		route_blend = 0.94 * (1.0 - support_t)
+	var height := lerpf(mountain_height, route_height, route_blend)
+	var noise_weight := 1.0 - route_blend
+	height += noise.get_noise_2d(point.x, point.y) * contract.noise_amplitude * noise_weight
+
 	for pad in pads:
 		var distance_to_pad := point.distance_to(Vector2(pad.position.x, pad.position.z))
 		var pad_weight := 1.0 - _smoothstep01(
@@ -197,23 +294,56 @@ static func _height_at(
 		)
 		height = lerpf(height, pad.position.y, pad_weight)
 
-	if has_mass:
-		var noise_weight := _smoothstep01(
-			(nearest_distance - (nearest_core_radius + contract.target_shoulder_distance)) \
-					/ (contract.support_distance - contract.target_shoulder_distance)
-		) * clampf(raw_mass / contract.terrace_step, 0.0, 1.0)
-		height += noise.get_noise_2d(point.x, point.y) * contract.noise_amplitude * noise_weight
-
-	# Finish the non-target edge falloff one triangle diagonal before the target
-	# band begins, so a target-classified triangle never straddles that cliff.
-	var edge_falloff_width := maxf(
-		contract.outer_band_width - target_triangle_guard,
-		0.001
-	)
+	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
+	var edge_falloff_width := maxf(contract.outer_band_width - cell_size.length() - 0.01, 0.001)
 	var edge_blend := _smoothstep01(
 		_edge_distance(contract.local_bounds, point) / edge_falloff_width
 	)
 	return maxf(0.0, height * edge_blend)
+
+
+static func _range_height_ratio(point: Vector2, parameters: Dictionary) -> float:
+	var radial := Vector2(point.x * 0.88, (point.y + 0.08) * 0.78).length()
+	var body := 0.30 + 0.26 * pow(maxf(0.0, 1.0 - pow(radial, 1.8)), 0.68)
+	var strongest := 0.0
+	var second := 0.0
+	var third := 0.0
+	for ridge in parameters.ridges:
+		var contribution := float(ridge.height) * _oriented_gaussian(point, ridge)
+		if contribution > strongest:
+			third = second
+			second = strongest
+			strongest = contribution
+		elif contribution > second:
+			third = second
+			second = contribution
+		elif contribution > third:
+			third = contribution
+	var ratio := body + strongest + second * 0.34 + third * 0.12
+	var theta := atan2(point.y, point.x)
+	for wave in parameters.waves:
+		var angular_wave := sin(theta * float(wave.angular_frequency) + float(wave.phase))
+		var radial_wave := sin(radial * PI * float(wave.radial_frequency))
+		ratio += angular_wave * radial_wave * float(wave.amplitude)
+	for basin in parameters.basins:
+		ratio -= float(basin.height) * _oriented_gaussian(point, basin)
+	for range_pass in parameters.passes:
+		ratio -= float(range_pass.height) * _oriented_gaussian(point, range_pass)
+	return clampf(ratio, 0.58, 1.0)
+
+
+static func _oriented_gaussian(point: Vector2, feature: Dictionary) -> float:
+	var center: Vector2 = feature.center
+	var delta := point - center
+	var angle := float(feature.angle)
+	var cosine := cos(angle)
+	var sine := sin(angle)
+	var along := delta.x * cosine + delta.y * sine
+	var across := -delta.x * sine + delta.y * cosine
+	return exp(-(
+		along * along / float(feature.length_spread)
+		+ across * across / float(feature.width_spread)
+	))
 
 
 static func _edge_sample(
@@ -226,7 +356,11 @@ static func _edge_sample(
 	var from_xz := Vector2(from.x, from.z)
 	var to_xz := Vector2(to.x, to.z)
 	var delta := to_xz - from_xz
-	var t := clampf((point - from_xz).dot(delta) / maxf(delta.length_squared(), 0.000001), 0.0, 1.0)
+	var t := clampf(
+		(point - from_xz).dot(delta) / maxf(delta.length_squared(), 0.000001),
+		0.0,
+		1.0
+	)
 	return {
 		"distance": point.distance_to(from_xz.lerp(to_xz, t)),
 		"height": lerpf(from.y, to.y, t),
@@ -255,65 +389,23 @@ static func _cross_section_sample(
 	var from := graph.node_by_id(edge.from_node_id).position
 	var to := graph.node_by_id(edge.to_node_id).position
 	var t := clampf((point.y - from.z) / maxf(to.z - from.z, 0.000001), 0.0, 1.0)
-	var center := Vector2(lerpf(from.x, to.x, t), lerpf(from.z, to.z, t))
 	return {
-		"distance": point.distance_to(center),
 		"height": lerpf(from.y, to.y, t),
-		"center_x": center.x,
 	}
 
 
-## Supplies the mountain's visible body independently of route shoulders. The
-## route profiles still own the playable elevations, but areas between and
-## outside those routes retain a substantial top height instead of collapsing
-## toward the apron and reading as an empty stage shell.
-static func _mountain_body_floor(
-		point: Vector2,
-		graph: GeneratedRouteGraph,
-		nearest_edges: Dictionary,
-		nearest_samples: Dictionary,
-		contract: StageGenerationContract
+static func _sample_range(
+		stage_id: StringName,
+		attempt_seed: int,
+		key: String,
+		value_range: Vector2
 ) -> float:
-	var left_edge := INF
-	var right_edge := -INF
-	var lowest_route_height := INF
-	var has_cross_section := false
-	for route_index in range(graph.route_count()):
-		var edge: GeneratedRouteEdge = nearest_edges.get(route_index)
-		var sample: Dictionary = nearest_samples.get(route_index, {})
-		if edge == null or sample.is_empty():
-			continue
-		var outer_radius := edge.width * 0.5 + contract.support_distance * 0.90
-		var center_x := float(sample.get("center_x", point.x))
-		left_edge = minf(left_edge, center_x - outer_radius)
-		right_edge = maxf(right_edge, center_x + outer_radius)
-		lowest_route_height = minf(lowest_route_height, float(sample.height))
-		has_cross_section = true
-	if not has_cross_section or point.x < left_edge or point.x > right_edge:
-		return 0.0
-
-	var edge_distance := minf(point.x - left_edge, right_edge - point.x)
-	var edge_weight := lerpf(
-		0.58,
-		1.0,
-		_smoothstep01(edge_distance / maxf(contract.support_distance * 0.55, 0.001))
-	)
-	var span_t := clampf((point.x - left_edge) / maxf(right_edge - left_edge, 0.001), 0.0, 1.0)
-	var crown_height := sin(span_t * PI) * minf(9.0, (right_edge - left_edge) * 0.08)
-	return maxf(10.0, lowest_route_height * 0.58 * edge_weight + crown_height)
+	return KEYED_STAGE_SAMPLER.sample_range(stage_id, attempt_seed, key, value_range)
 
 
 static func _smoothstep01(value: float) -> float:
 	var clamped := clampf(value, 0.0, 1.0)
 	return clamped * clamped * (3.0 - 2.0 * clamped)
-
-
-static func _smooth_max(a: float, b: float, k: float) -> float:
-	return maxf(a, b) + pow(maxf(k - absf(a - b), 0.0), 2.0) / (4.0 * k)
-
-
-static func _smooth_min(a: float, b: float, k: float) -> float:
-	return minf(a, b) - pow(maxf(k - absf(a - b), 0.0), 2.0) / (4.0 * k)
 
 
 static func _edge_distance(bounds: Rect2, point: Vector2) -> float:

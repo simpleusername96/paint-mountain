@@ -19,7 +19,7 @@ static func generate(
 		push_error("Stage generation profile is invalid.")
 		return null
 	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v4")
+		String(profile.profile_id).trim_suffix("_v5")
 	)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	if stage_data == null:
@@ -53,7 +53,7 @@ static func generate_structural_sequence(
 		return null
 	var contract := profile.generation_contract
 	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v4")
+		String(profile.profile_id).trim_suffix("_v5")
 	)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	for attempt_index in range(contract.attempt_count):

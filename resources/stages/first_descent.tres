@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"first_descent"
-stage_version = 4
+stage_version = 5
 display_name_key = &"stage.first_descent.name"
 stage_number = 1
 target_coverage = 4.0
