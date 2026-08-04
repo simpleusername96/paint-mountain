@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>닫힌 산 오브젝트 생성기</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="toolbar">
+      <div class="title-group">
+        <p class="eyebrow">CLOSED MOUNTAIN LAB</p>
+        <h1>닫힌 산 오브젝트 생성기</h1>
+      </div>
+      <button id="regenerate" type="button">새 지형 만들기</button>
+    </header>
+
+    <section class="viewport-shell" aria-label="생성된 3D 산 미리보기">
+      <canvas id="mountain-canvas" tabindex="0"></canvas>
+      <div class="status" aria-live="polite">
+        <span class="status-mark" aria-hidden="true"></span>
+        <span id="mesh-status">닫힌 메시 생성됨</span>
+      </div>
+      <dl class="metrics">
+        <div><dt>시드</dt><dd id="seed-value">—</dd></div>
+        <div><dt>삼각형</dt><dd id="triangle-value">—</dd></div>
+        <div><dt>최고점</dt><dd id="height-value">—</dd></div>
+      </dl>
+      <p class="hint">드래그: 회전 · 휠: 확대 · 지형 클릭 또는 Space: 새로 생성</p>
+      <p id="webgl-error" class="error" hidden>
+        이 브라우저에서는 WebGL을 사용할 수 없습니다.
+      </p>
+    </section>
+  </main>
+
+  <script src="terrain-generator.js"></script>
+  <script src="renderer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
