@@ -5,13 +5,13 @@
 - Preserve the planning puzzle: the player chooses yaw, elevation, and power before firing and never steers a projectile in flight.
 - Treat the verbatim directive in `docs/source-brief.md` as the baseline product requirement. Explicit later user revisions recorded in that document supersede only the clauses they name; `docs/design-spec.md` and `docs/technical-architecture.md` remain working interpretations, and the effective source brief wins any conflict.
 - Check `.agents/Documentation.md` for implemented status before claiming that a planned feature exists.
-- Before any visual task—including world geometry, materials, lighting, camera, paint, mechanisms, effects, HUD, menus, typography, or player-facing layout—read `docs/visual-direction/README.md` and every document it marks required for that task; the effective source brief wins conflicts, and reference images are comparative direction rather than literal geometry, layout, runtime behavior, or acceptance proof.
+- Before visual or substantial player-facing work, load `$uiux-gate` and read `.agents/design/DESIGN.md`; use its task map to consult the relevant `docs/visual-direction/*` specifications and production owners.
 
 ## Operating Model
 - Use Godot 4.x, typed GDScript where practical, the Compatibility renderer, a fixed 60 Hz physics tick, and Windows desktop as the first delivery target.
 - Keep the project launchable after each milestone. Run `scripts/verify.ps1` after script, scene, resource, or project-setting changes.
 - Do not add production dependencies, plugins, network services, Docker, or asset packs without the user's explicit approval.
-- Before user-facing interface changes, load `$uiux-gate`; before broad or cross-module implementation, use the active `.agents/Plan.md` and finish with `$codebase-quality-auditor`.
+- Before broad or cross-module implementation, use the relevant active ExecPlan under `.agents/execplans/` and finish with `$codebase-quality-auditor`.
 - Final gameplay handoff requires an exported or production-style build check and separate running-game screenshots listed in `docs/test-checklist.md`.
 
 ## Architectural Guardrails

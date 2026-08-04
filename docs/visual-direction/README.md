@@ -3,12 +3,13 @@ type: policy
 status: active
 created: 2026-08-04
 last_reviewed: 2026-08-04
-canonical_for: Paint Mountain visual-task reading order and visual-reference interpretation
+canonical_for: Paint Mountain world-art, UIUX, and visual-reference product documentation
 scope: world art, camera, paint, mechanisms, effects, HUD, menus, typography, and player-facing layout
 related:
   - ART_DIRECTION.md
   - UIUX_GUIDELINES.md
   - VISUAL_REFERENCES.md
+  - ../../.agents/design/DESIGN.md
   - ../source-brief.md
   - ../design-spec.md
 ---
@@ -17,9 +18,12 @@ related:
 
 ## Purpose
 
-This folder is the durable entry point for every Paint Mountain visual task. It
-separates accepted art and UI requirements from concept images, rejected
-captures, implementation state, and temporary execution plans.
+This folder is the durable product-design documentation entry point for Paint
+Mountain. It separates accepted art and UI requirements from concept images,
+rejected captures, implementation state, and temporary execution plans.
+
+Agents begin with `.agents/design/DESIGN.md`, which maps task scope to this
+folder and to the actual Godot production owners without copying either.
 
 ## Scope
 
@@ -90,6 +94,8 @@ current task. Temporary experiments remain non-canonical until accepted.
 
 ## Related
 
+- `../../.agents/design/DESIGN.md`: canonical agent-facing design context and
+  runtime-owner map.
 - `../source-brief.md`: baseline product directive and effective user revisions.
 - `../design-spec.md`: broader working product interpretation.
 - `../../.agents/execplans/2026-08-03-gameplay-visual-reset.md`: current
