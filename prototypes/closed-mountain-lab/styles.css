@@ -30,6 +30,7 @@ body {
 }
 
 button,
+input,
 canvas {
   -webkit-tap-highlight-color: transparent;
 }
@@ -52,6 +53,42 @@ canvas {
 
 .title-group {
   min-width: 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.level-control {
+  display: grid;
+  grid-template-columns: 116px;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.level-control span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.level-control output {
+  color: var(--accent);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-control input {
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .eyebrow {
@@ -94,6 +131,7 @@ button:active {
 }
 
 button:focus-visible,
+input:focus-visible,
 canvas:focus-visible {
   outline: 3px solid rgb(20 119 239 / 42%);
   outline-offset: 3px;
@@ -214,7 +252,18 @@ canvas:active {
   }
 
   .toolbar {
+    flex-wrap: wrap;
     gap: 12px;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .level-control {
+    flex: 1 1 auto;
+    grid-template-columns: minmax(112px, 1fr);
   }
 
   .eyebrow {

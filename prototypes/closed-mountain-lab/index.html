@@ -13,7 +13,13 @@
         <p class="eyebrow">CLOSED MOUNTAIN LAB</p>
         <h1>닫힌 산 오브젝트 생성기</h1>
       </div>
-      <button id="regenerate" type="button">새 지형 만들기</button>
+      <div class="toolbar-actions">
+        <label class="level-control" for="level-input">
+          <span>굴곡 레벨 <output id="level-value" for="level-input">1</output></span>
+          <input id="level-input" type="range" min="1" max="5" step="1" value="1">
+        </label>
+        <button id="regenerate" type="button">새 지형 만들기</button>
+      </div>
     </header>
 
     <section class="viewport-shell" aria-label="생성된 3D 산 미리보기">
@@ -24,6 +30,7 @@
       </div>
       <dl class="metrics">
         <div><dt>시드</dt><dd id="seed-value">—</dd></div>
+        <div><dt>굴곡</dt><dd id="feature-value">—</dd></div>
         <div><dt>삼각형</dt><dd id="triangle-value">—</dd></div>
         <div><dt>최고점</dt><dd id="height-value">—</dd></div>
       </dl>
