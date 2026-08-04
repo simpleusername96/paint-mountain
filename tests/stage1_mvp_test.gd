@@ -30,10 +30,10 @@ func _run_checks() -> void:
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var layout: GeneratedStageLayout = gameplay.generated_layout()
 	var stage: StageData = controller.stage_data
-	_assert_true(layout != null and layout.is_mvp_playable(), "Stage 1 must construct from an admitted layout")
+	_assert_true(layout != null and layout.is_runtime_ready(), "Stage 1 must construct from a runtime-ready layout")
 	_assert_true(
-		stage != null and stage.mvp_permit != null and stage.mvp_permit.is_valid(),
-		"Stage 1 must carry its persisted MVP permit"
+		stage != null and stage.stage_version == 5,
+		"Stage 1 must use the accepted generation-v5 contract"
 	)
 	var default_aim := layout.default_aim
 	_assert_true(default_aim != null and default_aim.is_valid(), "Stage 1 must expose a valid admitted default aim")
@@ -138,13 +138,22 @@ func _run_checks() -> void:
 		]
 	)
 	var centerline := _centerline_evidence(observed.sweeps, paint, stage.paint_world_bounds())
+	_assert_true(int(centerline.samples) > 0, "the real sweep path must sample painted terrain texels")
+	_assert_true(
+		int(centerline.unpainted_samples) == 0,
+		"every sampled terrain centerline texel must cross the authoritative paint threshold"
+	)
 	_assert_true(int(centerline.target_samples) > 0, "the real sweep path must sample target centerline texels")
 	_assert_true(
 		int(centerline.unpainted_target_samples) == 0,
 		"every sampled target centerline texel must cross the authoritative paint threshold"
 	)
 	_assert_true(paint.coverage_percent() > 0.0, "the physical surface path must increase authoritative coverage")
-	_assert_true(paint.persistent_nontarget_pixel_count() == 0, "persistent paint must remain target-only")
+	var shader_source := FileAccess.get_file_as_string("res://src/paint/terrain_paint.gdshader")
+	_assert_true(
+		shader_source.contains("texture(paint_mask, UV).r * paintable_surface"),
+		"visible paint must use the traversed top surface while target classification remains score-only"
+	)
 	_assert_true(manager.active_count() == 0, "the shot decision must leave no active projectile")
 	_assert_true(manager.pending_intent_count() == 0, "the shot decision must leave no paint intent awaiting canonicalization")
 	_assert_true(paint.pending_work_count() == 0, "the shot decision must leave no paint command awaiting drain")
@@ -208,6 +217,8 @@ func _centerline_evidence(sweeps: Array, paint: PaintSystem, world_bounds: Rect2
 	var paint_bytes := paint.paint_bytes_read_only()
 	var target_bytes := paint.target_bytes_read_only()
 	var threshold := 128
+	var samples := 0
+	var unpainted_samples := 0
 	var target_samples := 0
 	var unpainted_target_samples := 0
 	var sample_spacing := minf(
@@ -227,12 +238,17 @@ func _centerline_evidence(sweeps: Array, paint: PaintSystem, world_bounds: Rect2
 				clampi(floori(uv.y * PaintSystem.MASK_SIZE), 0, PaintSystem.MASK_SIZE - 1)
 			)
 			var index := pixel.y * PaintSystem.MASK_SIZE + pixel.x
+			samples += 1
+			if paint_bytes[index] < threshold:
+				unpainted_samples += 1
 			if target_bytes[index] < threshold:
 				continue
 			target_samples += 1
 			if paint_bytes[index] < threshold:
 				unpainted_target_samples += 1
 	return {
+		"samples": samples,
+		"unpainted_samples": unpainted_samples,
 		"target_samples": target_samples,
 		"unpainted_target_samples": unpainted_target_samples,
 	}

@@ -14,7 +14,7 @@ drop_range = Vector2(6, 8)
 rise_range = Vector2(3, 4.5)
 lateral_bend_range = Vector2(-7, 7)
 mechanism_kind = 0
-mechanism_pad_t = 0.36
+mechanism_pad_t = 0.52
 mechanism_pad_radius = 8.0
 
 [sub_resource type="Resource" id="Route_burst_b"]

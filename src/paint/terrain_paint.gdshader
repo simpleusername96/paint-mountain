@@ -18,11 +18,13 @@ void vertex() {
 void fragment() {
 	vec2 texel = vec2(1.0 / 512.0);
 	float target = step(0.5, texture(target_mask, UV).r) * paintable_surface;
-	float center = texture(paint_mask, UV).r * target;
+	// Every physically traversed mountain-top texel stays visibly painted. The
+	// target mask classifies scoreable coverage; it does not erase valid paint.
+	float center = texture(paint_mask, UV).r * paintable_surface;
 	float neighbor = max(
 		max(texture(paint_mask, UV + vec2(texel.x * 1.5, 0.0)).r, texture(paint_mask, UV - vec2(texel.x * 1.5, 0.0)).r),
 		max(texture(paint_mask, UV + vec2(0.0, texel.y * 1.5)).r, texture(paint_mask, UV - vec2(0.0, texel.y * 1.5)).r)
-	) * target;
+	) * paintable_surface;
 	float painted = smoothstep(0.08, 0.32, center);
 	float dark_rim = clamp(smoothstep(0.06, 0.24, neighbor) - painted, 0.0, 1.0);
 	float wet_core = smoothstep(0.34, 0.72, center);

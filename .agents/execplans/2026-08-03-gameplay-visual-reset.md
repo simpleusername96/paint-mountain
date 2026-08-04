@@ -487,6 +487,72 @@ certificate gate, or competing presentation path.
 Final implementation checkpoint: run only the mandatory headless launch smoke,
 report implementation-ready state, and stop.
 
+### Phase 6: Bounded MVP QA and headless delivery
+
+Goal: prove only the contracts that can invalidate the accepted mountain-range
+MVP, then rebuild the already-registered Windows executable without opening a
+visible Godot process.
+
+Preconditions:
+
+- The user explicitly authorized continuation after the v5 terrain integration.
+- Godot 4.7.1 console exists at the already approved local path.
+- No visible screenshot or manual play session is authorized by this phase.
+
+Source owners: `src/stage_generation`, `src/terrain`, `src/projectile`,
+`src/paint`, `src/stage/stage_controller.gd`, `tests`, `export_presets.cfg`,
+and the exact paint-mountain entry in the fastrun registry.
+
+- [x] **6.1 Prove every stage builds the accepted mountain mass.**
+  - Change: add one v5-focused headless check for all three persisted stages;
+    assert row-solid footprint continuity, non-rectangular substantial mass,
+    central-backbone height, valid canonical topology, closed render/collision
+    geometry, and complete mechanism placement.
+  - Accept: `mountain_range_mvp_test.gd` exits zero for all three stages.
+  - Guard: do not migrate the old v4 candidate-search, fixed-face-count, or
+    exhaustive slope/certificate assertions.
+  - Evidence (2026-08-04): `mountain_range_mvp_test.gd` passed all three
+    persisted stages. Active-cell/top-triangle/closed-shell results were
+    2128/4256/412, 2186/4372/412, and 2404/4808/432; mechanism placement was
+    0/0, 1/1, and 2/2. The check also caught and corrected sub-unit route-grade
+    sign handling and moved the Stage 2 Burst pad onto its visible front ridge.
+
+- [x] **6.2 Prove the real Stage 1 ball paints its traversed surface.**
+  - Change: remove only the obsolete permit assertions from the focused Stage 1
+    MVP check and bind admission to `GeneratedStageLayout.is_runtime_ready()`.
+  - Accept: one headless default shot reports a real `terrain/top` contact,
+    continuous target sweeps, positive authoritative coverage, no penetration,
+    drain-before-result settlement, and deterministic Restart.
+  - Evidence (2026-08-04): the default shot made a real terrain-top contact,
+    remained in contact for 4.400 seconds, traversed 34.045 m through 264
+    continuous sweeps, and produced 15.2824% scoreable coverage. Every sampled
+    sweep-center texel was painted, the shot had zero penetration guards, paint
+    drained before result sealing, and Restart restored the deterministic blank
+    state. The terrain shader now displays valid paint outside the score mask
+    instead of using that mask to erase physically traversed paint.
+
+- [x] **6.3 Recheck repository startup after QA-owned changes.**
+  - Accept: `scripts/verify.ps1` passes import/script parsing and main-scene
+    startup through the approved Godot console.
+  - Evidence (2026-08-04): `scripts/verify.ps1` passed the Godot 4.7.1 headless
+    editor import/script parse and three-second main-scene startup with no
+    reported script/runtime error.
+
+- [x] **6.4 Rebuild and validate the canonical Windows start path.**
+  - Change: export `Windows Desktop` to `builds/windows/PaintMountain.exe` with
+    the existing preset; do not change the registered command when its exact
+    directory entry remains `& '.\builds\windows\PaintMountain.exe'`.
+  - Accept: the exported executable exists, a hidden headless startup exits
+    without script/runtime errors, and the exact fastrun registry entry still
+    resolves to it.
+  - Evidence (2026-08-04): the release preset rebuilt the 132,482,824-byte
+    `PaintMountain.exe`; a hidden `--headless --quit-after 3` launch exited zero
+    without script/runtime errors. The exact fastrun entry remains
+    `D:\npjt\paint-mountain<TAB>& '.\builds\windows\PaintMountain.exe'`.
+
+Phase gate: record the four results once, update `Documentation.md`, and stop.
+Visible composition remains a user-owned manual gate.
+
 ## Mandatory Launch Smoke Only
 
 Repository policy requires launchability after coherent production changes.
@@ -508,19 +574,18 @@ Cadence:
 - do not launch a focused test unless the user opens the testing stage;
 - document-only changes use git diff --check and do not run Godot.
 
-## Deferred QA Backlog - Inactive
+## Remaining Deferred QA Backlog - Inactive
 
 This work has no active checkboxes and may not start automatically:
 
-- all focused tests and scripts/test.ps1;
-- generation, target, terrain, containment, contact, paint, mechanism, state,
-  UI, localization, replay, persistence, agent, debug, and reliability suites;
+- scripts/test.ps1 and all focused checks except Phase 6.1-6.3;
+- containment, UI, localization, replay, persistence, agent, debug, reliability,
+  and broad mechanism/state suites;
 - exhaustive reachability and certificate generation;
 - predictor/rigid-body tolerance and repeated-process determinism;
 - solution search and target/shot balance confirmation;
 - load, memory, frame-time, allocation, and stress measurement;
 - migration/deletion of obsolete test fixtures and runner registrations;
-- Windows export and fastrun executable verification;
 - visible resolution/locale QA, screenshots, manifests, and reference comparison;
 - final release documentation and plan closure.
 
@@ -562,21 +627,20 @@ behavior, or release claim.
 - Godot 4.7.1 headless import, script parsing, and main-scene startup passed for
   generation v5. No visible in-game inspection, Stage 2/3 gameplay run, physics
   validation, screenshot, export, or balance claim was made.
-- Next task: wait for explicit user authorization before visible or formal QA.
+- Phase 6.1 through 6.4 passed headlessly; no visible process was opened. The
+  bounded MVP QA and headless delivery phase is complete.
+- Next task: stop at the user-owned visible composition/play gate.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
   the existing slab.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
-- Do not run formal tests until the user explicitly activates deferred QA.
-- Earlier v4 release/export evidence is historical. The v5 source passed only
-  the mandatory headless import and main-scene startup; the registered fastrun
-  executable has not been rebuilt from v5.
+- Run only the Phase 6 checks activated by the user's continuation instruction.
+- Earlier v4 release/export evidence is historical. The registered fastrun
+  executable was rebuilt from generation v5 and passed hidden headless startup.
 - `scripts/verify.ps1` now treats Godot `SCRIPT ERROR:` and `ERROR:` output as
   failure because this engine can return exit code zero after such errors.
-- `builds/windows/PaintMountain.exe` was rebuilt from the current source and
-  the existing exact-directory fastrun entry points to it.
 
 ## Completion and Stop Conditions
 

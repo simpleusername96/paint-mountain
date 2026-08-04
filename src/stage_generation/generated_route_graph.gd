@@ -257,7 +257,7 @@ func route_reversal_count(route_index: int) -> int:
 		var delta := node_by_id(edge.to_node_id).position.y - node_by_id(edge.from_node_id).position.y
 		if is_zero_approx(delta):
 			continue
-		var current_sign := signi(delta)
+		var current_sign := 1 if delta > 0.0 else -1
 		if previous_sign != 0 and current_sign != previous_sign:
 			reversals += 1
 		previous_sign = current_sign
