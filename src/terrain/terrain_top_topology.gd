@@ -21,8 +21,9 @@ var _local_bounds := Rect2()
 var _vertices := PackedVector3Array()
 var _triangle_indices := PackedInt32Array()
 var _triangle_normals := PackedVector3Array()
-var _boundary_vertex_indices := PackedInt32Array()
-var _boundary_corner_indices := PackedInt32Array()
+var _active_cells := PackedByteArray()
+var _cell_triangle_ids := PackedInt32Array()
+var _boundary_edges := PackedInt32Array()
 var _grid_scale := Vector2.ZERO
 var _is_initialized := false
 
@@ -30,7 +31,8 @@ var _is_initialized := false
 static func build(
 		grid_cell_count: Vector2i,
 		bounds: Rect2,
-		height_samples: PackedFloat32Array
+		height_samples: PackedFloat32Array,
+		active_cells: PackedByteArray = PackedByteArray()
 ) -> TerrainTopTopology:
 	if grid_cell_count.x <= 0 or grid_cell_count.y <= 0 or not bounds.has_area():
 		return null
@@ -40,11 +42,18 @@ static func build(
 	for height in height_samples:
 		if not is_finite(height):
 			return null
+	var cell_total := grid_cell_count.x * grid_cell_count.y
+	if active_cells.is_empty():
+		active_cells.resize(cell_total)
+		active_cells.fill(1)
+	if active_cells.size() != cell_total:
+		return null
 
 	var topology := TerrainTopTopology.new()
 	topology._cell_count = grid_cell_count
 	topology._local_bounds = bounds
 	topology._grid_scale = Vector2(grid_cell_count) / bounds.size
+	topology._active_cells = active_cells.duplicate()
 	topology._build_vertices(height_samples)
 	topology._build_triangle_indices()
 	topology._build_triangle_normals()
@@ -88,9 +97,10 @@ func _has_valid_structure() -> bool:
 		return false
 	if _triangle_normals.size() != triangle_count() or not _grid_scale.is_finite():
 		return false
-	if _boundary_vertex_indices.size() != 2 * (_cell_count.x + _cell_count.y):
+	if _active_cells.size() != _cell_count.x * _cell_count.y \
+			or _cell_triangle_ids.size() != _active_cells.size() * TRIANGLES_PER_CELL:
 		return false
-	if _boundary_corner_indices.size() != 4:
+	if _boundary_edges.size() < 6 or _boundary_edges.size() % 2 != 0:
 		return false
 	for vertex in _vertices:
 		if not vertex.is_finite():
@@ -103,7 +113,7 @@ func sample_size() -> Vector2i:
 
 
 func triangle_count() -> int:
-	return _cell_count.x * _cell_count.y * TRIANGLES_PER_CELL
+	return _triangle_indices.size() / CORNERS_PER_TRIANGLE
 
 
 func canonical_vertices_read_only() -> PackedVector3Array:
@@ -114,12 +124,12 @@ func canonical_triangle_indices_read_only() -> PackedInt32Array:
 	return _triangle_indices.duplicate()
 
 
-func boundary_vertex_indices_read_only() -> PackedInt32Array:
-	return _boundary_vertex_indices.duplicate()
+func boundary_edges_read_only() -> PackedInt32Array:
+	return _boundary_edges.duplicate()
 
 
-func boundary_corner_indices_read_only() -> PackedInt32Array:
-	return _boundary_corner_indices.duplicate()
+func active_cells_read_only() -> PackedByteArray:
+	return _active_cells.duplicate()
 
 
 func expanded_triangle_faces() -> PackedVector3Array:
@@ -145,7 +155,9 @@ func sample_vertex_index(sample_x: int, sample_z: int) -> int:
 func source_triangle_id(cell: Vector2i, triangle_in_cell: int) -> int:
 	if not _is_valid_cell(cell) or triangle_in_cell < 0 or triangle_in_cell >= TRIANGLES_PER_CELL:
 		return -1
-	return (cell.y * _cell_count.x + cell.x) * TRIANGLES_PER_CELL + triangle_in_cell
+	return _cell_triangle_ids[
+		(cell.y * _cell_count.x + cell.x) * TRIANGLES_PER_CELL + triangle_in_cell
+	]
 
 
 func triangle_vertex_indices(cell: Vector2i, triangle_in_cell: int) -> Vector3i:
@@ -191,13 +203,17 @@ func surface_sample_at_local(
 		mini(floori(grid_x), _cell_count.x - 1),
 		mini(floori(grid_z), _cell_count.y - 1)
 	)
+	if not is_cell_active(cell):
+		return {}
 	var local_uv := Vector2(grid_x - float(cell.x), grid_z - float(cell.y))
 	local_uv.x = clampf(local_uv.x, 0.0, 1.0)
 	local_uv.y = clampf(local_uv.y, 0.0, 1.0)
 	var address := triangle_barycentric_for_cell_uv(local_uv)
 	var triangle_in_cell := int(address.x)
 	var barycentric := Vector3(address.y, address.z, address.w)
-	var triangle_id := (cell.y * _cell_count.x + cell.x) * TRIANGLES_PER_CELL + triangle_in_cell
+	var triangle_id := source_triangle_id(cell, triangle_in_cell)
+	if triangle_id < 0:
+		return {}
 	var corner_offset := triangle_id * CORNERS_PER_TRIANGLE
 	var indices := Vector3i(
 		_triangle_indices[corner_offset],
@@ -264,6 +280,10 @@ func matches_height_grid(
 	return true
 
 
+func is_cell_active(cell: Vector2i) -> bool:
+	return _is_valid_cell(cell) and _active_cells[cell.y * _cell_count.x + cell.x] != 0
+
+
 func _build_vertices(height_samples: PackedFloat32Array) -> void:
 	var size := sample_size()
 	_vertices.resize(height_samples.size())
@@ -284,17 +304,23 @@ func _build_vertices(height_samples: PackedFloat32Array) -> void:
 
 
 func _build_triangle_indices() -> void:
-	_triangle_indices.resize(triangle_count() * CORNERS_PER_TRIANGLE)
-	var write_index := 0
+	_triangle_indices = PackedInt32Array()
+	_cell_triangle_ids.resize(_active_cells.size() * TRIANGLES_PER_CELL)
+	_cell_triangle_ids.fill(-1)
 	for cell_z in range(_cell_count.y):
 		for cell_x in range(_cell_count.x):
+			var cell := Vector2i(cell_x, cell_z)
+			if not is_cell_active(cell):
+				continue
 			var p00 := sample_vertex_index(cell_x, cell_z)
 			var p01 := sample_vertex_index(cell_x, cell_z + 1)
 			var p10 := sample_vertex_index(cell_x + 1, cell_z)
 			var p11 := sample_vertex_index(cell_x + 1, cell_z + 1)
-			for source_index in [p00, p01, p10, p10, p01, p11]:
-				_triangle_indices[write_index] = source_index
-				write_index += 1
+			var cell_offset := (cell_z * _cell_count.x + cell_x) * TRIANGLES_PER_CELL
+			_cell_triangle_ids[cell_offset] = triangle_count()
+			_triangle_indices.append_array(PackedInt32Array([p00, p01, p10]))
+			_cell_triangle_ids[cell_offset + 1] = triangle_count()
+			_triangle_indices.append_array(PackedInt32Array([p10, p01, p11]))
 
 
 func _build_triangle_normals() -> void:
@@ -308,22 +334,27 @@ func _build_triangle_normals() -> void:
 
 
 func _build_boundary_indices() -> void:
-	_boundary_vertex_indices = PackedInt32Array()
-	# Clockwise in XZ when viewed from above: north, east, south, west.
-	for sample_x in range(_cell_count.x):
-		_boundary_vertex_indices.append(sample_vertex_index(sample_x, 0))
-	for sample_z in range(_cell_count.y):
-		_boundary_vertex_indices.append(sample_vertex_index(_cell_count.x, sample_z))
-	for sample_x in range(_cell_count.x, 0, -1):
-		_boundary_vertex_indices.append(sample_vertex_index(sample_x, _cell_count.y))
-	for sample_z in range(_cell_count.y, 0, -1):
-		_boundary_vertex_indices.append(sample_vertex_index(0, sample_z))
-	_boundary_corner_indices = PackedInt32Array([
-		sample_vertex_index(0, 0),
-		sample_vertex_index(_cell_count.x, 0),
-		sample_vertex_index(_cell_count.x, _cell_count.y),
-		sample_vertex_index(0, _cell_count.y),
-	])
+	_boundary_edges = PackedInt32Array()
+	for cell_z in range(_cell_count.y):
+		for cell_x in range(_cell_count.x):
+			var cell := Vector2i(cell_x, cell_z)
+			if not is_cell_active(cell):
+				continue
+			var p00 := sample_vertex_index(cell_x, cell_z)
+			var p01 := sample_vertex_index(cell_x, cell_z + 1)
+			var p10 := sample_vertex_index(cell_x + 1, cell_z)
+			var p11 := sample_vertex_index(cell_x + 1, cell_z + 1)
+			_append_boundary_edge_if_exposed(cell + Vector2i(0, -1), p00, p10)
+			_append_boundary_edge_if_exposed(cell + Vector2i(1, 0), p10, p11)
+			_append_boundary_edge_if_exposed(cell + Vector2i(0, 1), p11, p01)
+			_append_boundary_edge_if_exposed(cell + Vector2i(-1, 0), p01, p00)
+
+
+func _append_boundary_edge_if_exposed(neighbor: Vector2i, first: int, second: int) -> void:
+	if is_cell_active(neighbor):
+		return
+	_boundary_edges.append(first)
+	_boundary_edges.append(second)
 
 
 func _is_valid_cell(cell: Vector2i) -> bool:

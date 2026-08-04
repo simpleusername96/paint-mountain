@@ -79,8 +79,8 @@ func configure(
 			or paint_system == null or terrain_surface == null:
 		push_error("StageController requires complete stage runtime dependencies.")
 		return false
-	if generated_layout == null or not generated_layout.is_mvp_playable():
-		push_error("StageController requires a playable GeneratedStageLayout before briefing.")
+	if generated_layout == null or not generated_layout.is_runtime_ready():
+		push_error("StageController requires a runtime-ready GeneratedStageLayout before briefing.")
 		return false
 	var containment_proof: Dictionary = CONTAINMENT_DOMAIN_PROOF.evaluate(
 		cannon,
@@ -224,8 +224,8 @@ func restart(
 	if stage_data == null or _generated_layout == null or _cannon == null \
 			or _projectile_manager == null or _paint_system == null:
 		return false
-	if not _generated_layout.is_mvp_playable():
-		push_error("Stage restart rejected because its generated layout admission is missing or stale.")
+	if not _generated_layout.is_runtime_ready():
+		push_error("Stage restart rejected because its generated layout is incomplete.")
 		return false
 	var default_aim := _generated_layout.default_aim
 	if default_aim == null or not default_aim.is_valid():

@@ -21,7 +21,6 @@ extends Resource
 @export var terrain_size := Vector2(180.0, 120.0)
 @export var cannon_transform := Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 5.0))
 @export var reachability_certificate: DirectReachabilityCertificate
-@export var mvp_permit: StageMvpPermit
 @export var mechanism_loadout: Array[MechanismData] = []
 @export var reliable_solution: Array[Vector3] = []
 

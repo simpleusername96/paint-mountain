@@ -1,7 +1,8 @@
-class_name RouteGraphHeightSynthesizer
+class_name MountainHeightFieldBuilder
 extends RefCounted
 
-## Produces the sole one-height-per-XZ sample field from a resolved graph.
+## Internal height-field helper for RouteGraphMountainSynthesizer. It does not
+## decide which cells physically exist and is not a terrain owner.
 
 const KEYED_STAGE_SAMPLER := preload("res://src/stage_generation/keyed_stage_sampler.gd")
 

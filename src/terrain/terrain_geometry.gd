@@ -31,4 +31,4 @@ func is_valid() -> bool:
 			and top_render_source_vertex_indices.size() == top_vertex_count \
 			and top_render_source_triangle_ids.size() == top_triangle_count \
 			and skirt_triangle_count > 0 \
-			and bottom_triangle_count == 2
+			and bottom_triangle_count == top_triangle_count

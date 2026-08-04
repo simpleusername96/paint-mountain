@@ -33,25 +33,25 @@ layout_mode = 1
 [node name="AimControls" parent="HUDRoot" instance=ExtResource("3")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 24.0
-offset_top = 586.0
-offset_right = 324.0
+offset_left = 144.0
+offset_top = 592.0
+offset_right = 444.0
 offset_bottom = 696.0
 
 [node name="CoverageMeter" parent="HUDRoot" instance=ExtResource("4")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 410.0
-offset_top = 640.0
-offset_right = 870.0
-offset_bottom = 696.0
+offset_left = 24.0
+offset_top = 228.0
+offset_right = 128.0
+offset_bottom = 552.0
 
 [node name="ActionButtons" parent="HUDRoot" instance=ExtResource("5")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 1028.0
-offset_top = 584.0
-offset_right = 1256.0
+offset_left = 552.0
+offset_top = 624.0
+offset_right = 728.0
 offset_bottom = 696.0
 
 [node name="ObservationControls" parent="HUDRoot" instance=ExtResource("6")]

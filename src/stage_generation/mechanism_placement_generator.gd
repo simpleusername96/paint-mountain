@@ -165,7 +165,11 @@ static func _terrain_ray_clear(
 		)
 		if not layout.local_bounds.has_point(local_xz):
 			continue
-		var surface_y := stage_data.terrain_center.y + layout.height_at_local(local_xz.x, local_xz.y)
+		var sample := layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
+		if sample.is_empty():
+			continue
+		var sample_point: Vector3 = sample.point
+		var surface_y := stage_data.terrain_center.y + sample_point.y
 		if surface_y > point.y + 0.05:
 			return false
 	return true

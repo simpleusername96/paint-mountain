@@ -3,27 +3,17 @@ extends PanelContainer
 
 @onready var progress: ProgressBar = %Progress
 @onready var value_label: Label = %CoverageValue
-@onready var target_marker: ColorRect = %TargetMarker
+@onready var target_label: Label = %TargetValue
 var _target := 0.0
 
 
 func configure(target: float) -> void:
 	_target = clampf(target, 0.0, 100.0)
-	_update_marker.call_deferred()
+	target_label.text = "%s %.0f%%" % [tr("hud.target"), _target]
 	update_coverage(0.0)
 
 
 func update_coverage(coverage: float) -> void:
-	progress.value = clampf(coverage, 0.0, 100.0)
-	value_label.text = tr("hud.coverage_format") % [coverage, _target]
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
-		_update_marker.call_deferred()
-
-
-func _update_marker() -> void:
-	if not is_instance_valid(target_marker) or not is_instance_valid(progress):
-		return
-	target_marker.position.x = progress.position.x + progress.size.x * _target / 100.0 - 1.0
+	var absolute_coverage := clampf(coverage, 0.0, 100.0)
+	progress.value = clampf(absolute_coverage / maxf(_target, 0.001) * 100.0, 0.0, 100.0)
+	value_label.text = "%.1f%%" % absolute_coverage

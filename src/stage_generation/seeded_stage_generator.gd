@@ -2,7 +2,9 @@ class_name SeededStageGenerator
 extends RefCounted
 
 const ROUTE_GRAPH_RESOLVER := preload("res://src/stage_generation/route_graph_resolver.gd")
-const ROUTE_GRAPH_HEIGHT_SYNTHESIZER := preload("res://src/stage_generation/route_graph_height_synthesizer.gd")
+const ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER := preload(
+	"res://src/stage_generation/route_graph_mountain_synthesizer.gd"
+)
 const DECORATION_MODEL_CYCLE: Array[StringName] = [
 	&"tree_pineSmallA", &"tree_pineSmallB", &"rock_smallA", &"tree_pineTallA", &"rock_largeA",
 ]
@@ -21,58 +23,20 @@ static func generate(
 	)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	if stage_data == null:
-		push_error("Production stage generation requires persisted admission proof.")
-		return null
-	var certificate := stage_data.reachability_certificate
-	var permit := stage_data.mvp_permit
-	if certificate == null and permit == null:
-		push_error("Production stage generation requires a certificate or MVP permit.")
-		return null
-	# A present full certificate always supersedes the temporary permit. A stale
-	# full proof fails closed instead of silently falling back to MVP admission.
-	var proof_stage_id: StringName
-	var proof_profile_version: int
-	var proof_requested_seed: int
-	var proof_accepted_seed: int
-	if certificate != null:
-		proof_stage_id = certificate.stage_id
-		proof_profile_version = certificate.profile_version
-		proof_requested_seed = certificate.requested_seed
-		proof_accepted_seed = certificate.accepted_seed
-	else:
-		proof_stage_id = permit.stage_id
-		proof_profile_version = permit.profile_version
-		proof_requested_seed = permit.requested_seed
-		proof_accepted_seed = permit.accepted_seed
-	if proof_stage_id != stage_id \
-			or proof_profile_version != profile.profile_version \
-			or proof_requested_seed != requested_seed:
-		push_error("Stage admission proof identity does not match its production request.")
-		return null
-	var attempt_index := _attempt_index_for_accepted_seed(
-		profile,
-		requested_seed,
-		proof_accepted_seed
-	)
-	if attempt_index < -1:
-		push_error("Certified accepted seed is outside the deterministic attempt sequence.")
+		push_error("Production stage generation requires StageData.")
 		return null
 	var layout := _build_attempt(
 		stage_id,
 		profile,
 		requested_seed,
-		proof_accepted_seed,
-		attempt_index
+		requested_seed,
+		0
 	)
 	if not _validate(profile, layout) or not _finalize_layout(profile, stage_data, layout):
 		var rejection := layout.metrics if layout != null else {"rejection": "route_graph"}
-		push_error("Certified production layout failed structural rebuild: %s" % str(rejection))
+		push_error("Production layout failed structural construction: %s" % str(rejection))
 		return null
-	layout.reachability_certificate = certificate
-	layout.mvp_permit = permit
-	if not layout.is_mvp_playable():
-		push_error("Production layout identifiers do not match the persisted admission proof.")
-		return null
+	layout.reachability_certificate = stage_data.reachability_certificate
 	return layout
 
 
@@ -134,7 +98,11 @@ static func _build_attempt(
 	if graph == null:
 		return null
 	var contract := profile.generation_contract
-	var heights: PackedFloat32Array = ROUTE_GRAPH_HEIGHT_SYNTHESIZER.build(stage_id, profile, graph, attempt_seed)
+	var mountain: Dictionary = ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER.build(
+		stage_id, profile, graph, attempt_seed
+	)
+	var heights: PackedFloat32Array = mountain.get("heights", PackedFloat32Array())
+	var footprint: PackedByteArray = mountain.get("footprint", PackedByteArray())
 
 	var layout := GeneratedStageLayout.new()
 	layout.profile_id = profile.profile_id
@@ -146,7 +114,10 @@ static func _build_attempt(
 	layout.cell_count = contract.cell_count
 	layout.local_bounds = contract.local_bounds
 	layout.heights = heights
-	layout.top_topology = TerrainTopTopology.build(layout.cell_count, layout.local_bounds, heights)
+	layout.install_footprint(footprint)
+	layout.top_topology = TerrainTopTopology.build(
+		layout.cell_count, layout.local_bounds, heights, footprint
+	)
 	layout.route_graph = graph
 	layout.containment = ContainmentSpec.new()
 	layout.checksum = _height_checksum(heights)
@@ -174,14 +145,14 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 	if not _validate_pads(layout):
 		layout.metrics["rejection"] = "mechanism_pad"
 		return false
-	var footprint_ratio: float = ROUTE_GRAPH_HEIGHT_SYNTHESIZER.route_footprint_ratio(
+	var footprint_ratio: float = ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER.route_footprint_ratio(
 		layout.route_graph, profile.generation_contract
 	)
 	layout.metrics["route_footprint_ratio"] = footprint_ratio
 	if footprint_ratio < profile.target_ratio_range.x or footprint_ratio > profile.target_ratio_range.y:
 		layout.metrics["rejection"] = "route_footprint_ratio"
 		return false
-	layout.metrics["top_triangles"] = profile.generation_contract.top_triangle_count
+	layout.metrics["top_triangles"] = layout.top_topology.triangle_count()
 	return true
 
 
@@ -307,7 +278,11 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 		var local_z := lerpf(layout.local_bounds.position.y, layout.local_bounds.end.y, float(z_index) / float(layout.cell_count.y))
 		for x_index in range(2, sample_size.x - 2):
 			var local_x := lerpf(layout.local_bounds.position.x, layout.local_bounds.end.x, float(x_index) / float(layout.cell_count.x))
-			if layout.normal_at_local(local_x, local_z).y < cos(deg_to_rad(42.0)):
+			var sample := layout.surface_sample_at_local(local_x, local_z, false)
+			if sample.is_empty():
+				continue
+			var sample_normal: Vector3 = sample.normal
+			if sample_normal.y < cos(deg_to_rad(42.0)):
 				continue
 			var local_xz := Vector2(local_x, local_z)
 			candidates.append(local_xz)

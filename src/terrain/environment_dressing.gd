@@ -40,7 +40,7 @@ func _add_decoration(placement: DecorationPlacement) -> void:
 
 
 func _apply_muted_material(node: Node, is_tree: bool) -> void:
-	var material := _material(Color("59636d") if is_tree else Color("747b82"), 0.94)
+	var material := _material(Color("40566a") if is_tree else Color("9aa0a8"), 0.94)
 	for child in node.get_children():
 		if child is MeshInstance3D:
 			(child as MeshInstance3D).material_override = material

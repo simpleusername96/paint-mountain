@@ -18,8 +18,8 @@ func start_attempt(
 		generated_layout: GeneratedStageLayout
 ) -> bool:
 	if stage_data == null or generated_layout == null \
-			or not generated_layout.is_mvp_playable():
-		push_error("ReplayRecorder requires the admitted generated layout.")
+			or not generated_layout.is_runtime_ready():
+		push_error("ReplayRecorder requires the runtime-ready generated layout.")
 		attempt = {}
 		reset_playback()
 		return false
@@ -47,7 +47,7 @@ func start_attempt(
 		),
 		"containment_checksum": generated_layout.containment.checksum(),
 		"placement_checksum": generated_layout.placement_checksum(),
-		"layout_admission": "certificate" if has_full_certificate else "mvp_permit",
+		"layout_admission": "certificate" if has_full_certificate else "structural",
 		"generated_default_aim": {
 			"yaw": default_aim.yaw_degrees,
 			"elevation": default_aim.elevation_degrees,
@@ -263,7 +263,7 @@ func _layout_metadata_is_valid(data: Dictionary) -> bool:
 	if admission == "certificate":
 		if reachability_checksum == 0:
 			return false
-	elif admission == "mvp_permit":
+	elif admission == "structural":
 		if reachability_checksum != 0:
 			return false
 	else:

@@ -7,7 +7,7 @@ const TERRAIN_COLLISION_MASK := 1
 static func can_bridge(
 		terrain_surface: TerrainSurface,
 		tuning: PaintSurfaceTuning,
-		target_mask: PackedByteArray,
+		_eligible_mask: PackedByteArray,
 		from_contact: ProjectileContact,
 		to_contact: ProjectileContact,
 		missing_ticks: int,
@@ -31,9 +31,6 @@ static func can_bridge(
 	var chord_length := from_contact.world_position.distance_to(to_contact.world_position)
 	if chord_length > tuning.maximum_bridge_chord:
 		return false
-	var expected_mask_size := tuning.mask_size * tuning.mask_size
-	if target_mask.size() != expected_mask_size:
-		return false
 	var segment_count := maxi(1, ceili(chord_length / tuning.bridge_sample_spacing))
 	var previous_normal := from_contact.normal
 	var minimum_normal_dot := cos(deg_to_rad(tuning.maximum_normal_delta_degrees))
@@ -42,13 +39,7 @@ static func can_bridge(
 		var chord_point := from_contact.world_position.lerp(to_contact.world_position, weight)
 		var surface_point := terrain_surface.world_surface_point(Vector2(chord_point.x, chord_point.z))
 		var surface_normal := terrain_surface.world_surface_normal(Vector2(chord_point.x, chord_point.z))
-		if not _is_target_point(
-			terrain_surface,
-			tuning.mask_size,
-			tuning.painted_threshold_byte,
-			target_mask,
-			surface_point
-		):
+		if not _is_paintable_surface_point(terrain_surface, surface_point):
 			return false
 		if absf((chord_point - surface_point).dot(surface_normal)) > tuning.surface_clearance:
 			return false
@@ -66,48 +57,28 @@ static func can_bridge(
 	return previous_normal.dot(to_contact.normal) >= minimum_normal_dot
 
 
-static func is_target_contact(
+static func is_paintable_contact(
 		terrain_surface: TerrainSurface,
 		tuning: PaintSurfaceTuning,
-		target_mask: PackedByteArray,
+		_eligible_mask: PackedByteArray,
 		contact: ProjectileContact
 ) -> bool:
 	return terrain_surface != null and tuning != null and contact != null \
 			and contact.has_stable_identity() \
 			and contact.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
 			and terrain_surface.is_top_collider(contact.collider) \
-			and _is_target_point(
-				terrain_surface,
-				tuning.mask_size,
-				tuning.painted_threshold_byte,
-				target_mask,
-				contact.world_position
-			)
+			and _is_paintable_surface_point(terrain_surface, contact.world_position)
 
 
-static func _is_target_point(
+static func _is_paintable_surface_point(
 		terrain_surface: TerrainSurface,
-		mask_size: int,
-		threshold_byte: int,
-		target_mask: PackedByteArray,
 		world_point: Vector3
 ) -> bool:
 	var layout := terrain_surface.layout_read_only()
-	if layout == null or mask_size <= 0 or target_mask.size() != mask_size * mask_size:
+	if layout == null:
 		return false
 	var local_point := terrain_surface.to_local(world_point)
-	var local_xz := Vector2(local_point.x, local_point.z)
-	if not layout.local_bounds.has_point(local_xz):
-		return false
-	var normalized := Vector2(
-		(local_xz.x - layout.local_bounds.position.x) / layout.local_bounds.size.x,
-		(local_xz.y - layout.local_bounds.position.y) / layout.local_bounds.size.y
-	)
-	var pixel := Vector2i(
-		clampi(floori(normalized.x * mask_size), 0, mask_size - 1),
-		clampi(floori(normalized.y * mask_size), 0, mask_size - 1)
-	)
-	return target_mask[pixel.y * mask_size + pixel.x] >= threshold_byte
+	return not layout.surface_sample_at_local(local_point.x, local_point.z, false).is_empty()
 
 
 static func _ray_returns_same_top(

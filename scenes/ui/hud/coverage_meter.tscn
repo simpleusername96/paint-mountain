@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://src/ui/hud/coverage_meter.gd" id="1"]
 
 [node name="CoverageMeter" type="PanelContainer"]
-custom_minimum_size = Vector2(460, 56)
-offset_right = 460.0
-offset_bottom = 56.0
+custom_minimum_size = Vector2(104, 324)
+offset_right = 104.0
+offset_bottom = 324.0
 script = ExtResource("1")
 
 [node name="Content" type="Control" parent="."]
@@ -13,41 +13,55 @@ layout_mode = 2
 
 [node name="CoverageCaption" type="Label" parent="Content"]
 layout_mode = 0
-offset_left = 14.0
-offset_top = 7.0
-offset_right = 86.0
-offset_bottom = 27.0
+offset_left = 8.0
+offset_top = 16.0
+offset_right = 96.0
+offset_bottom = 38.0
 theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
 theme_override_font_sizes/font_size = 14
-text = "칠한 면적"
+text = "hud.coverage"
+horizontal_alignment = 1
 
 [node name="Progress" type="ProgressBar" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 96.0
-offset_top = 12.0
-offset_right = 340.0
-offset_bottom = 28.0
+offset_left = 36.0
+offset_top = 80.0
+offset_right = 68.0
+offset_bottom = 260.0
 mouse_filter = 2
+fill_mode = 3
 show_percentage = false
 
-[node name="TargetMarker" type="ColorRect" parent="Content"]
-unique_name_in_owner = true
+[node name="TargetLine" type="ColorRect" parent="Content"]
 layout_mode = 0
-offset_left = 266.0
-offset_top = 8.0
-offset_right = 268.0
-offset_bottom = 32.0
+offset_left = 28.0
+offset_top = 78.0
+offset_right = 76.0
+offset_bottom = 80.0
 mouse_filter = 2
 color = Color(0.85098, 0.298039, 0.298039, 1)
 
 [node name="CoverageValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 14.0
-offset_top = 30.0
-offset_right = 446.0
-offset_bottom = 52.0
-theme_override_font_sizes/font_size = 16
-text = "현재 0.0% / 목표 70.0%"
-horizontal_alignment = 2
+offset_left = 6.0
+offset_top = 42.0
+offset_right = 98.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 22
+text = "0.0%"
+horizontal_alignment = 1
+
+[node name="TargetValue" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 4.0
+offset_top = 270.0
+offset_right = 100.0
+offset_bottom = 308.0
+theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+theme_override_font_sizes/font_size = 13
+text = "목표 70%"
+horizontal_alignment = 1
+vertical_alignment = 1

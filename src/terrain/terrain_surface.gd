@@ -62,7 +62,10 @@ func contains_world_xz(world_xz: Vector2, margin: float = 0.0) -> bool:
 	if _layout == null:
 		return false
 	var local_reference := to_local(Vector3(world_xz.x, global_position.y, world_xz.y))
-	return _layout.local_bounds.grow(margin).has_point(Vector2(local_reference.x, local_reference.z))
+	var local_xz := Vector2(local_reference.x, local_reference.z)
+	if not _layout.local_bounds.grow(margin).has_point(local_xz):
+		return false
+	return not _layout.surface_sample_at_local(local_xz.x, local_xz.y, false).is_empty()
 
 
 func is_top_collider(object: Object) -> bool:

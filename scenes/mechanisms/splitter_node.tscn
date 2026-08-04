@@ -3,12 +3,12 @@
 [ext_resource type="Script" path="res://src/mechanisms/splitter_node.gd" id="1_script"]
 
 [sub_resource type="StandardMaterial3D" id="Silver"]
-albedo_color = Color(0.82, 0.87, 0.93, 1)
+albedo_color = Color(0.72, 0.42, 1, 1)
 metallic = 0.36
 roughness = 0.28
 
 [sub_resource type="StandardMaterial3D" id="Blue"]
-albedo_color = Color(0.03, 0.42, 1, 1)
+albedo_color = Color(0.52, 0.16, 0.94, 1)
 metallic = 0.2
 roughness = 0.18
 

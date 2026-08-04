@@ -170,11 +170,11 @@ func _build_label() -> void:
 	_label = Label3D.new()
 	_label.name = "BriefingLabel"
 	_label.text = tr(String(data.display_name_key))
-	_label.font_size = 26
-	_label.outline_size = 5
+	_label.font_size = 30
+	_label.outline_size = 6
 	_label.modulate = Color(0.95, 0.97, 1.0, 1.0)
 	_label.outline_modulate = Color(0.04, 0.07, 0.12, 0.9)
-	_label.position = Vector3(0.0, -5.0, 0.0)
+	_label.position = Vector3(0.0, 4.4, 0.0)
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.fixed_size = true
 	_label.pixel_size = 0.001

@@ -1,10 +1,16 @@
 class_name TopStatusBar
 extends Control
 
+signal settings_requested
+
 @onready var stage_value: Label = %StageValue
 @onready var target_value: Label = %TargetValue
 @onready var shots_value: Label = %ShotsValue
 @onready var mode_value: Label = %ModeValue
+
+
+func _ready() -> void:
+	%SettingsButton.pressed.connect(func() -> void: settings_requested.emit())
 
 
 func configure(stage: StageData) -> void:

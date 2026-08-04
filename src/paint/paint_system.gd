@@ -37,6 +37,7 @@ var _expected_top_shape_index: int = 0
 
 var _paint_bytes := PackedByteArray()
 var _target_bytes := PackedByteArray()
+var _paintable_surface_bytes := PackedByteArray()
 var _recent_bytes := PackedByteArray()
 var _surface_positions := PackedVector3Array()
 var _surface_normals := PackedVector3Array()
@@ -281,7 +282,7 @@ func _build_radial_candidates(center: Vector3, normal: Vector3, radius: float) -
 	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
 		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+			if _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
 				continue
 			if _surface_positions[index].distance_squared_to(center) > radius_squared:
 				continue
@@ -311,7 +312,7 @@ func _build_sweep_candidates(
 	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
 		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+			if _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
 				continue
 			var surface_point := _surface_positions[index]
 			var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
@@ -433,14 +434,17 @@ func _alpha_for_distance(distance: float, radius: float) -> int:
 
 
 func _write_paint_value(index: int, value: int) -> Dictionary:
-	if index < 0 or index >= _paint_bytes.size() or _target_bytes[index] < _surface_tuning.painted_threshold_byte:
+	if index < 0 or index >= _paint_bytes.size() \
+			or _paintable_surface_bytes[index] < _surface_tuning.painted_threshold_byte:
 		return {"written": 0, "newly_painted": 0}
 	var existing := int(_paint_bytes[index])
 	var updated := maxi(existing, clampi(value, 0, 255))
 	if updated <= existing:
 		return {"written": 0, "newly_painted": 0}
-	var newly_painted := existing < _surface_tuning.painted_threshold_byte \
+	var crossed_paint_threshold := existing < _surface_tuning.painted_threshold_byte \
 			and updated >= _surface_tuning.painted_threshold_byte
+	var newly_painted := crossed_paint_threshold \
+			and _target_bytes[index] >= _surface_tuning.painted_threshold_byte
 	_paint_bytes[index] = updated
 	_recent_bytes[index] = 255
 	if newly_painted:
@@ -631,6 +635,8 @@ func _create_masks_and_surface_cache() -> void:
 	var pixel_count := MASK_SIZE * MASK_SIZE
 	_paint_bytes.resize(pixel_count)
 	_paint_bytes.fill(0)
+	_paintable_surface_bytes.resize(pixel_count)
+	_paintable_surface_bytes.fill(0)
 	_recent_bytes.resize(pixel_count)
 	_recent_bytes.fill(0)
 	_target_bytes = _generated_layout.target_mask
@@ -651,8 +657,6 @@ func _create_masks_and_surface_cache() -> void:
 	for pixel_y in range(MASK_SIZE):
 		for pixel_x in range(MASK_SIZE):
 			var index := pixel_y * MASK_SIZE + pixel_x
-			if _target_bytes[index] >= _surface_tuning.painted_threshold_byte:
-				_total_target_pixels += 1
 			var normalized := Vector2(
 				(float(pixel_x) + 0.5) / float(MASK_SIZE),
 				(float(pixel_y) + 0.5) / float(MASK_SIZE)
@@ -660,7 +664,17 @@ func _create_masks_and_surface_cache() -> void:
 			var local_xz := _generated_layout.local_bounds.position \
 					+ normalized * _generated_layout.local_bounds.size
 			var sample := _generated_layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
-			assert(not sample.is_empty(), "Every paint texel must reconstruct on the accepted top triangle.")
+			if sample.is_empty():
+				assert(
+					_target_bytes[index] < _surface_tuning.painted_threshold_byte,
+					"Eligible coverage pixels must belong to a real mountain top triangle."
+				)
+				_surface_positions[index] = Vector3.ZERO
+				_surface_normals[index] = Vector3.UP
+				continue
+			_paintable_surface_bytes[index] = 255
+			if _target_bytes[index] >= _surface_tuning.painted_threshold_byte:
+				_total_target_pixels += 1
 			var world_xz := _world_bounds.position + normalized * _world_bounds.size
 			_surface_positions[index] = Vector3(
 				world_xz.x,

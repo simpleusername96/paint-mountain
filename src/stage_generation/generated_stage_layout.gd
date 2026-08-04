@@ -17,7 +17,7 @@ var top_topology: TerrainTopTopology
 var route_graph: GeneratedRouteGraph
 var containment: ContainmentSpec
 var reachability_certificate: DirectReachabilityCertificate
-var mvp_permit: StageMvpPermit
+var generated_default_aim: AimTuple
 var metrics: Dictionary = {}
 var checksum: int = 0
 var mechanism_placements: Array[MechanismPlacement] = []
@@ -33,12 +33,13 @@ var default_aim: AimTuple:
 		if reachability_certificate != null:
 			return reachability_certificate.default_aim \
 					if reachability_certificate.is_valid() else null
-		return mvp_permit.default_aim \
-				if mvp_permit != null and mvp_permit.is_valid() else null
+		return generated_default_aim if generated_default_aim != null \
+				and generated_default_aim.is_valid() else null
 
 var _target_mask := PackedByteArray()
 var _target_mask_checksum: int = 0
 var _target_pixel_indices := PackedInt32Array()
+var _footprint_cells := PackedByteArray()
 
 
 func sample_size() -> Vector2i:
@@ -50,6 +51,7 @@ func is_valid() -> bool:
 	return size.x > 1 and size.y > 1 and heights.size() == size.x * size.y \
 			and profile_version == StageGenerationContract.CONTRACT_VERSION \
 			and layout_version == StageGenerationContract.CONTRACT_VERSION \
+			and has_valid_footprint() \
 			and top_topology != null and top_topology.is_valid() \
 			and top_topology.matches_height_grid(cell_count, local_bounds, heights) \
 			and route_graph != null and route_graph.is_valid() \
@@ -68,6 +70,32 @@ func install_target_mask(bytes: PackedByteArray, mask_checksum: int) -> bool:
 		if _target_mask[pixel_index] >= 128:
 			_target_pixel_indices.append(pixel_index)
 	return true
+
+
+func install_footprint(cells: PackedByteArray) -> bool:
+	if not _footprint_cells.is_empty() or cells.size() != cell_count.x * cell_count.y:
+		return false
+	var active_count := 0
+	for value in cells:
+		if value != 0:
+			active_count += 1
+	if active_count <= 0:
+		return false
+	_footprint_cells = cells.duplicate()
+	return true
+
+
+func footprint_cells_read_only() -> PackedByteArray:
+	return _footprint_cells.duplicate()
+
+
+func has_valid_footprint() -> bool:
+	if _footprint_cells.size() != cell_count.x * cell_count.y:
+		return false
+	for value in _footprint_cells:
+		if value != 0:
+			return true
+	return false
 
 
 func has_valid_target_mask() -> bool:
@@ -97,12 +125,9 @@ func is_certified() -> bool:
 			and default_aim != null and default_aim.is_valid()
 
 
-## Runtime MVP admission accepts one persisted default-shot proof only when no
-## full certificate is present. Release gates continue to call is_certified().
-func is_mvp_playable() -> bool:
-	if reachability_certificate != null:
-		return is_certified()
-	return is_valid() and has_valid_target_mask() and _mvp_permit_matches_layout()
+func is_runtime_ready() -> bool:
+	return is_valid() and has_valid_target_mask() \
+			and default_aim != null and default_aim.is_valid()
 
 
 func target_centroid_local_xz() -> Vector2:
@@ -120,50 +145,10 @@ func target_centroid_local_xz() -> Vector2:
 	return sum / float(_target_pixel_indices.size())
 
 
-func _mvp_permit_matches_layout() -> bool:
-	if mvp_permit == null or not mvp_permit.is_valid():
+func is_target_local_xz(local_xz: Vector2) -> bool:
+	if not has_valid_target_mask() or not local_bounds.has_point(local_xz):
 		return false
-	if mvp_permit.stage_id != StringName(String(profile_id).trim_suffix("_v4")) \
-			or mvp_permit.profile_version != profile_version \
-			or mvp_permit.requested_seed != terrain_seed \
-			or mvp_permit.accepted_seed != accepted_seed \
-			or mvp_permit.height_checksum != checksum \
-			or mvp_permit.target_checksum != _target_mask_checksum \
-			or mvp_permit.placement_checksum != placement_checksum() \
-			or mvp_permit.containment_checksum != containment.checksum():
-		return false
-	var centroid := target_centroid_local_xz()
-	if not centroid.is_finite() \
-			or centroid.distance_to(mvp_permit.target_centroid_xz) > 0.0015:
-		return false
-	return _permit_hit_matches_layout(
-		mvp_permit.predictor_identity(),
-		mvp_permit.predictor_point
-	) and _permit_hit_matches_layout(
-		mvp_permit.rigidbody_identity(),
-		mvp_permit.rigidbody_point
-	)
-
-
-func _permit_hit_matches_layout(
-		identity: TrajectoryHitIdentity,
-		local_point: Vector3
-) -> bool:
-	if identity == null or not identity.is_valid() or not local_point.is_finite():
-		return false
-	var sample := top_topology.surface_sample_at_local(
-		local_point.x,
-		local_point.z,
-		false
-	)
-	if sample.is_empty() or sample.cell != identity.terrain_cell \
-			or int(sample.triangle) != identity.terrain_triangle \
-			or absf(float(sample.point.y) - local_point.y) > 0.01:
-		return false
-	var normalized := Vector2(
-		(local_point.x - local_bounds.position.x) / local_bounds.size.x,
-		(local_point.z - local_bounds.position.y) / local_bounds.size.y
-	)
+	var normalized := (local_xz - local_bounds.position) / local_bounds.size
 	var mask_size := StageGenerationContract.REQUIRED_MASK_SIZE
 	var pixel := Vector2i(
 		clampi(floori(normalized.x * mask_size), 0, mask_size - 1),

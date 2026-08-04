@@ -109,6 +109,8 @@ func show_state(state: StageController.State) -> void:
 			_hint_timer.start()
 	elif state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and not _replay_active:
 		_result.focus_retry()
+	elif state == StageController.State.PAUSED and not _replay_active:
+		_pause.focus_resume.call_deferred()
 
 
 func show_shot_observation(observation: ShotObservation) -> void:
@@ -149,8 +151,8 @@ func _connect_components() -> void:
 	%Start.pressed.connect(func() -> void: begin_aiming_requested.emit())
 	%Back.pressed.connect(func() -> void: stage_select_requested.emit())
 	_aim.power_step_requested.connect(func(direction: float) -> void: power_step_requested.emit(direction))
+	_top.settings_requested.connect(func() -> void: pause_requested.emit())
 	_actions.fire_requested.connect(func() -> void: fire_requested.emit())
-	_actions.restart_requested.connect(func() -> void: restart_requested.emit())
 	_observation.camera_mode_requested.connect(func(mode: int) -> void: camera_mode_requested.emit(mode))
 	_observation.simulation_speed_requested.connect(func(speed: float) -> void: simulation_speed_requested.emit(speed))
 	_observation.pause_requested.connect(func() -> void: pause_requested.emit())

@@ -20,10 +20,10 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/backstop_environment.tscn" id="18_containment"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
-sky_top_color = Color(0.63, 0.75, 0.88, 1)
-sky_horizon_color = Color(0.92, 0.9, 0.84, 1)
-ground_bottom_color = Color(0.32, 0.34, 0.38, 1)
-ground_horizon_color = Color(0.78, 0.76, 0.7, 1)
+sky_top_color = Color(0.78, 0.84, 0.91, 1)
+sky_horizon_color = Color(0.988, 0.972, 0.94, 1)
+ground_bottom_color = Color(0.64, 0.66, 0.7, 1)
+ground_horizon_color = Color(0.9, 0.88, 0.84, 1)
 
 [sub_resource type="Sky" id="Sky"]
 sky_material = SubResource("SkyMaterial")
@@ -32,8 +32,8 @@ sky_material = SubResource("SkyMaterial")
 background_mode = 2
 sky = SubResource("Sky")
 ambient_light_source = 3
-ambient_light_color = Color(0.69, 0.72, 0.77, 1)
-ambient_light_energy = 0.68
+ambient_light_color = Color(0.78, 0.81, 0.86, 1)
+ambient_light_energy = 0.48
 reflected_light_source = 2
 tonemap_mode = 2
 
@@ -55,7 +55,7 @@ environment = SubResource("Environment_gameplay")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-48, -28, 0)
 light_color = Color(1, 0.95, 0.84, 1)
-light_energy = 0.88
+light_energy = 1.15
 shadow_enabled = true
 directional_shadow_max_distance = 260.0
 

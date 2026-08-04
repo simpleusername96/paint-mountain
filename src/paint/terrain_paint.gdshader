@@ -3,8 +3,8 @@ render_mode depth_draw_opaque, cull_back;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
 uniform sampler2D target_mask : filter_nearest, repeat_disable;
-uniform vec4 rock_color : source_color = vec4(0.788235, 0.803922, 0.827451, 1.0);
-uniform vec4 shadow_tint : source_color = vec4(0.556863, 0.584314, 0.623529, 1.0);
+uniform vec4 rock_color : source_color = vec4(0.945098, 0.92549, 0.886275, 1.0);
+uniform vec4 shadow_tint : source_color = vec4(0.690196, 0.701961, 0.721569, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
 
 varying float paintable_surface;

@@ -42,6 +42,19 @@ func _ready() -> void:
 		stage_data = selected_stage
 	if not _build_stage_world():
 		return
+	# Newly assigned concave shapes enter the physics space at the next fixed
+	# boundary. Default aim is then chosen from real first-hit queries, never from
+	# a stage-authored tuple or an exhaustive runtime certificate.
+	await get_tree().physics_frame
+	_generated_layout.generated_default_aim = DefaultAimSolver.find_runtime_aim(
+		get_world_3d().direct_space_state,
+		_cannon,
+		_terrain_surface,
+		_generated_layout
+	)
+	if not _generated_layout.is_runtime_ready():
+		push_error("GameplayScene could not derive a bounded center-target default aim.")
+		return
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface)
 	_trajectory_preview.configure(_cannon)
@@ -55,7 +68,7 @@ func _ready() -> void:
 		_terrain_surface,
 		_mechanisms
 	):
-		push_error("GameplayScene cannot enter briefing without a certified generated default aim.")
+		push_error("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
 		return
 	_replay_presentation.configure(_replay_recorder, _stage_controller, _camera_director)
 	_aim_input.configure(_cannon, _stage_controller)

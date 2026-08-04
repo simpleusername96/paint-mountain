@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-04
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -14,76 +14,61 @@ related:
 
 # Project Record
 
-## Current Gameplay and Visual Reset (2026-08-03)
+## Current Gameplay and Visual Reset (2026-08-04)
 
 The active execution plan is
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
-It incorporates the user's later correction that the physical ball continuously
-paints every scoreable target surface traversed while in contact. It fixes the
-remaining product decisions before execution: a graph-first mountain, a
-one-height-per-XZ surface whose exact triangles are shared by render, collision,
-queries, target rasterization, and paint; one filled target footprint without
-slope masking; direct first-hit reachability for every scoreable target texel; a
-generated center-near default aim; a solid off-white rear backstop and collider-
-matched apron; low ordinary-terrain rebound; color-distinct/tolerance-tested
-Burst/Splitter/Bumper behavior; fixed `4 / 27 / 70%` targets; and two user-
-coordinated visible validation sessions.
-The validated Claude response is supporting evidence, not executable authority.
+Production implementation tasks 1.1 through 5.3 are complete by source and
+resource inspection. Task 5.4 and the plan itself remain open until the required
+headless source launch can run and the user later authorizes visible QA.
 
-The later HUD decision is also part of that active contract: authoritative
-coverage appears in a left vertical goal-relative gauge, Fire is the sole
-bottom-center aiming action, shots and a labeled gear occupy the top-right, and
-Restart lives in the fully input-capturing paused game menu rather than the
-aiming HUD or Settings. The liked concept board is useful for art, composition,
-material, depth, and readability comparison only; its exact HUD placement,
-literal geometry, and painted still states are not implementation authority.
+`RouteGraphMountainSynthesizer` now produces both a sampled height field and a
+connected, irregular cell footprint for all three stages. `TerrainTopTopology`
+emits top triangles only for those cells and supplies the same indexed faces to
+rendering, concave collision, surface queries, target rasterization, and paint
+addressing. `TerrainGeometryFactory` closes every exposed contour with thick
+support walls and a bottom cap. The mountain is therefore a real closed 3D mass,
+not a full-bounds top card with a camera-hidden collider.
 
-Phase 0 and Tasks 1.1 through 1.MVP now establish one truthful Stage 1 core
-loop. First Descent is generated from the version-4 route graph as one height
-per XZ sample. One indexed top-triangle topology now drives rendering, the real
-concave top collider, terrain queries, target rasterization, contact identity,
-and paint reconstruction; the apron, shell, visible rear backstop, and
-containment domain are derived alongside it. Production no longer uses a
-`HeightMapShape3D`, bilinear playable query, authored initial aim, or a second
-top-surface representation.
+Runtime admission no longer depends on `StageMvpPermit`, candidate sweeps, or an
+exhaustive certificate. Each stage builds its persisted seed once, installs its
+target and mechanism data, and derives a bounded default yaw/elevation/power by
+sphere-casting the real projectile toward an eligible point near the target
+centroid after physics registration. The existing `StageController`, rigid-body
+projectile, measured contact, low-rebound tuning, settlement, result, and
+restart owners remain connected to that same terrain.
 
-Projectile contact now reports measured points, normals, center positions,
-stable owner/shape/cell/triangle identities, and deterministic current-contact
-event indices. The production ball has low rebound, emits typed impact/sweep/
-settle paint intent only from verified target-top contact, permits only proven
-short contact gaps, and retires immediately without paint on the backstop.
-`ProjectileManager` owns spawn ordinals and late intent ordering;
-`PaintSystem` alone drains the commands into the authoritative 512x512 mask,
-renders that mask, and derives target coverage from the same threshold bytes.
+The paint/coverage contract is now correctly separated. A ball in verified
+contact with any real mountain-top triangle emits continuous impact, sweep, and
+settle commands, so every traversed top area can become visibly painted.
+`PaintSystem` remains the only paint-mask writer. Its separate eligible mask is
+used only to decide which threshold crossings increase coverage; wall, apron,
+support faces, and empty cells are neither scoreable nor treated as top surface.
 
-Finite paint quantity, depletion, shrinking footprints, autonomous downhill
-flow, and their projectile/resource/mechanism/state/replay/debug/HUD fields are
-absent. `ShotObservation` and replay format 4 record ordered contacts,
-mechanisms, children, settlements, paint-command drain, checksum, and coverage.
-`StageController` enters `PAINT_SETTLING` after the last projectile and seals a
-shot only after canonical intent and paint queues are empty and the final drain
-has remained inactive for two physics ticks.
+Stage 1 uses the broadest route mass, Stage 2 adds Burst, and Stage 3 adds
+Splitter plus Bumper and the greatest route complexity. Mechanism placement
+still comes from generated route pads; their solid collision silhouettes are
+now color-separated as amber, violet, and coral. Approved trees and rocks remain
+non-gameplay dressing outside route and mechanism clearance.
 
-Stage 1 is temporarily admitted by the persisted
-`StageMvpPermit` at `resources/stages/permits/first_descent_mvp_v4.tres`. It
-binds the Stage 1 identity, profile version, requested/accepted seeds, height,
-target, placement, and containment checksums to the canonical default aim. The
-predictor and production rigid body both first hit `terrain/top` near the
-target centroid. A present full certificate always supersedes this permit and
-fails closed when stale; the permit is not a release certificate.
+World presentation now uses a bright warm rear wall, warm off-white faceted
+mountain, lower support/apron plane, white-and-navy cannon, restrained blue
+trajectory dots, a depth-tested impact ring, and aiming cameras behind the
+cannon. The Korean-first Pretendard HUD now has a left vertical goal-relative
+coverage rail with an absolute percentage, lower-left aim/power, one centered
+Fire button, and top-right shots plus gear. Gear/Escape opens the full paused
+menu; Restart exists there and in result/replay flows, not in the aiming HUD.
+Closing the application-level Settings overlay returns to the still-paused menu.
 
-The integrated real-gameplay headless gate now passes from a clean Stage 1:
-default aim and Fire produce one physical ordinal-zero ball; first contact is
-the visible terrain top; the parent records `5.100 s` of target contact and
-`36.688 m` of surface path through `306` continuous sweeps; the authoritative
-coverage reaches `18.8140%`; the drain precedes observation sealing and result;
-and Restart restores the same layout identity, default aim, shots, and blank
-paint mask. No visible editor or game window was launched for this evidence.
-
-Remaining work is explicit: the exhaustive every-target direct-reachability
-certificate portion of Task 1.2, Stage 2/3 admission and balance, the
-user-coordinated Stage 1 visual gate, and the later presentation/UI phases are
-not complete. Stage 2/3 therefore remain fail-closed in production.
+No visible Godot process, test suite, certifier, export, screenshot capture,
+performance pass, replay matrix, or balance check was run for this revision.
+The required `scripts/verify.ps1` command was attempted once, but stopped before
+launch because no Godot executable is on PATH, `GODOT_BIN` is unset, and no
+approved local console executable was discoverable. The stale exported Windows
+binary is still registered with fastrun but cannot validate these source
+changes. Consequently the new geometry, collisions, default aims, mechanism
+placements, paint appearance, UI layout, and all three stage outcomes remain
+implemented-but-unverified until a Godot console path is supplied.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 

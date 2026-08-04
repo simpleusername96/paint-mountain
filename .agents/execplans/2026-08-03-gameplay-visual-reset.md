@@ -297,14 +297,14 @@ src/terrain/terrain_geometry_factory.gd,
 src/terrain/terrain_surface.gd,
 src/terrain/backstop_environment.gd, scenes/gameplay/gameplay.tscn
 
-- [ ] **1.1 Remove certification-driven runtime admission.**
+- [x] **1.1 Remove certification-driven runtime admission.**
   - Change: remove StageMvpPermit and its resource/producer from production;
     make certificates optional; add structural runtime readiness; migrate
     StageController, GameplayScene, and ReplayRecorder.
   - Accept by inspection: no production load path requires a permit, certifier,
     all-target loop, or repeated candidate search.
 
-- [ ] **1.2 Generate the irregular mountain footprint.**
+- [x] **1.2 Generate the irregular mountain footprint.**
   - Change: replace RouteGraphHeightSynthesizer with
     RouteGraphMountainSynthesizer; generate one connected footprint and Stage 1
     route features; retire the rectangle-wide path after migration.
@@ -312,7 +312,7 @@ src/terrain/backstop_environment.gd, scenes/gameplay/gameplay.tscn
     front and side contours are irregular; no whole-bounds top rectangle or
     straight full-width front skirt remains.
 
-- [ ] **1.3 Build one closed render/collision/paint mass.**
+- [x] **1.3 Build one closed render/collision/paint mass.**
   - Change: emit upper triangles only inside the footprint, close every exposed
     boundary into support and bottom faces, and make render, collision, queries,
     target classification, and paint mapping consume this topology.
@@ -320,7 +320,7 @@ src/terrain/backstop_environment.gd, scenes/gameplay/gameplay.tscn
     faces exist; no plane, duplicate collider, alternate formula, or visual-only
     playable shell remains.
 
-- [ ] **1.4 Recompose the Stage 1 world around the mass.**
+- [x] **1.4 Recompose the Stage 1 world around the mass.**
   - Change: narrow/remove the dominant apron, join mountain and wall, apply
     off-white faceted materials and readable shadows, replace camera bookmarks,
     and keep the cannon small.
@@ -338,7 +338,7 @@ Goal: cannon, ball, paint, coverage, result, and restart operate on the new mass
 Source owners: src/cannon, src/projectile, src/paint,
 src/stage/stage_controller.gd, src/gameplay/gameplay_scene.gd
 
-- [ ] **2.1 Add bounded center aim and truthful trajectory.**
+- [x] **2.1 Add bounded center aim and truthful trajectory.**
   - Change: derive default aim through a fixed-budget center-target search;
     preserve independent manual controls; draw the complete first-impact arc and
     depth-tested ring.
@@ -346,20 +346,22 @@ src/stage/stage_controller.gd, src/gameplay/gameplay_scene.gd
     search budget is finite; endpoint identity comes from collision; Fire
     acceptance remains in StageController.
 
-- [ ] **2.2 Adapt real contact, rebound, roll, and settlement.**
+- [x] **2.2 Adapt real contact, rebound, roll, and settlement.**
   - Change: preserve rigid-body measured contacts and low rebound while adapting
     identity/gap handling to the irregular surface. Wall hits retire without
     paint or bank shots.
   - Accept by inspection: contacts use collision facts and emitted face normals;
     no fake center-minus-up contact, guide force, or post-fire steering exists.
 
-- [ ] **2.3 Adapt continuous paint and coverage.**
-  - Change: map paint commands onto replacement target faces, keep support/apron/
-    wall non-scoreable, and bind the shader to the same mask.
-  - Accept by inspection: PaintSystem is the only mask writer; coverage and
-    visuals use the same bytes; no payload, flow, or alternate paint owner exists.
+- [x] **2.3 Adapt continuous paint and coverage.**
+  - Change: map paint commands onto every traversed mountain-top face, keep
+    support/apron/wall unpaintable, use the eligible mask only for scoring, and
+    bind the shader to the authoritative paint mask.
+  - Accept by inspection: PaintSystem is the only mask writer; visible paint
+    and coverage read the same paint bytes while eligibility only filters the
+    coverage numerator; no payload, flow, or alternate paint owner exists.
 
-- [ ] **2.4 Preserve shot result and Restart.**
+- [x] **2.4 Preserve shot result and Restart.**
   - Change: reconnect aim, Fire, observation, drain, result, shots, clear/fail,
     and Restart after terrain migration.
   - Accept by inspection: StageController remains authority; result waits for
@@ -376,26 +378,26 @@ collidable, and meaningfully placed.
 Source owners: resources/stage_generation, resources/stages,
 src/stage_generation, scenes/mechanisms, src/mechanisms
 
-- [ ] **3.1 Implement Stage 2 and Stage 3 mass profiles.**
+- [x] **3.1 Implement Stage 2 and Stage 3 mass profiles.**
   - Change: encode the locked routes, reversals, shelves, branches, and target
     surfaces through the same by-construction generator.
   - Accept by inspection: all stages use one generator; no permit/certificate
     blocks loading; Stage 1 is broadest and Stage 3 has the most route changes.
 
-- [ ] **3.2 Rebuild and place readable mechanism objects.**
+- [x] **3.2 Rebuild and place readable mechanism objects.**
   - Change: create solid amber/violet/coral silhouettes and place them on
     generated route shelves with clear aiming-camera sightlines.
   - Accept by inspection: visible meshes match solid collision; placement comes
     from route roles; Stage 2 has Burst and Stage 3 has Splitter plus Bumper.
 
-- [ ] **3.3 Connect mechanism effects to real contact.**
+- [x] **3.3 Connect mechanism effects to real contact.**
   - Change: keep amount-free Burst paint, exactly three Splitter children,
     Bumper redirection aligned with its arrow, the eight-ball cap, and reset.
   - Accept by inspection: only real contact invokes effects; authoritative
     projectile/paint owners remain; no invisible miss, recursive split, fourth
     mechanism, or alternate coverage writer exists.
 
-- [ ] **3.4 Add restrained dressing.**
+- [x] **3.4 Add restrained dressing.**
   - Change: place approved trees, rocks, and effects outside route clearance and
     below gameplay-object prominence.
   - Accept by inspection: dressing has no ball-affecting collision, target,
@@ -413,26 +415,26 @@ Source owners: scenes/ui/hud, src/ui/hud_controller.gd,
 scenes/ui/screens/pause_overlay.tscn, scenes/ui/screens/settings.tscn,
 src/app/app_root.gd, translations/ui.csv, project.godot
 
-- [ ] **4.1 Replace the aiming HUD tree.**
+- [x] **4.1 Replace the aiming HUD tree.**
   - Change: install left vertical CoverageGauge, sole bottom-center Fire,
     top-right shots plus gear, lower-left aim/power, and locked top cards.
   - Accept by scene inspection: one Fire node; no aiming Restart; vertical
     bottom-origin coverage; anchor/container roots; no competing legacy widgets.
 
-- [ ] **4.2 Move Restart into the paused gear menu.**
+- [x] **4.2 Move Restart into the paused gear menu.**
   - Change: gear/Escape open one paused input barrier with Continue, Restart,
     Settings, Stage Select, and Main Menu; Settings returns to it.
   - Accept by scene/signal inspection: Restart is absent from aiming/Settings;
     menu emits typed actions; full-viewport root captures input; Settings close
     returns to the menu.
 
-- [ ] **4.3 Finish Korean-first typography and copy.**
+- [x] **4.3 Finish Korean-first typography and copy.**
   - Change: Korean default, Pretendard shared Theme, concise translation keys,
     English switching, and removal of obsolete payload-era copy.
   - Accept by resource inspection: visible strings exist in both locales; Theme
     owns font; StageData stores keys rather than display text.
 
-- [ ] **4.4 Connect authoritative HUD values and actions.**
+- [x] **4.4 Connect authoritative HUD values and actions.**
   - Change: display coverage/target, shots, aim, power, Fire validity, mechanism
     feedback, and sealed result from typed owners; share canonical Fire, gear,
     and Restart paths.
@@ -447,19 +449,19 @@ Run no UI, localization, input, replay, or navigation test and no visible window
 Goal: one coherent production game remains, without the slab, legacy HUD,
 certificate gate, or competing presentation path.
 
-- [ ] **5.1 Normalize materials, light, cannon, trajectory, and effects.**
+- [x] **5.1 Normalize materials, light, cannon, trajectory, and effects.**
   - Change: apply the locked palette, faceting, shadows, small readable cannon,
     depth-tested trajectory, and bounded paint/mechanism effects across stages.
   - Accept by inspection: no gray rejected terrain, black cannon silhouette,
     no-depth marker, flat-card material, or uncontrolled effect owner remains.
 
-- [ ] **5.2 Normalize cameras across all stages.**
+- [x] **5.2 Normalize cameras across all stages.**
   - Change: set aiming, briefing, observation, and result bookmarks that show
     mountain depth, routes, mechanisms, wall join, and a small cannon.
   - Accept by inspection: bookmarks are explicit; no camera hides missing
     geometry; mountain dominates and mechanisms stay in intended view.
 
-- [ ] **5.3 Delete retired production owners and resources.**
+- [x] **5.3 Delete retired production owners and resources.**
   - Change: remove old rectangular synthesizer, permit resource/producer,
     obsolete HUD, duplicate formulas, and stale scene nodes after replacements
     connect. Do not migrate obsolete tests.
@@ -535,8 +537,11 @@ behavior, or release claim.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this document.
-- Current phase: Phase 1, replacing the rejected terrain.
-- Next task: 1.1, remove certification-driven runtime admission.
+- Current phase: Phase 5 handoff; implementation tasks 1.1 through 5.3 are
+  complete by production inspection.
+- Next task: 5.4 remains open because the mandatory headless launch smoke could
+  not start on 2026-08-04: no Godot executable is on PATH, `GODOT_BIN` is
+  unset, and no approved local console executable was discoverable.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
@@ -544,7 +549,11 @@ behavior, or release claim.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
 - Do not run formal tests until the user explicitly activates deferred QA.
-- After Task 5.4 and the final launch smoke, report and wait.
+- `scripts/verify.ps1` was invoked once after the coherent implementation and
+  stopped before launching any process with the explicit missing-Godot error.
+- Do not substitute the stale exported executable for source validation. After
+  a Godot console path is available, run the one headless smoke, finish Task
+  5.4, report, and wait.
 
 ## Completion and Stop Conditions
 

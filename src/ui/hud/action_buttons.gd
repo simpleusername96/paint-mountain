@@ -2,12 +2,10 @@ class_name ActionButtons
 extends Control
 
 signal fire_requested
-signal restart_requested
 
 
 func _ready() -> void:
 	%FireButton.pressed.connect(func() -> void: fire_requested.emit())
-	%Restart.pressed.connect(func() -> void: restart_requested.emit())
 
 
 func set_fire_enabled(enabled: bool) -> void:

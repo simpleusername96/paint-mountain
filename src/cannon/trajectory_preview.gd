@@ -2,7 +2,7 @@ class_name TrajectoryPreview
 extends Node3D
 
 const MAXIMUM_DOTS := 96
-const MINIMUM_DOT_SPACING := 2.2
+const MINIMUM_DOT_SPACING := 2.8
 
 var first_collision_position := Vector3.ZERO
 var has_first_collision := false
@@ -119,8 +119,8 @@ func _display_points(source: PackedVector3Array) -> PackedVector3Array:
 func _build_visuals() -> void:
 	var dot_material := _unshaded_material(Color(0.08, 0.46, 1.0, 0.9))
 	var dot_mesh := SphereMesh.new()
-	dot_mesh.radius = 0.26
-	dot_mesh.height = 0.52
+	dot_mesh.radius = 0.18
+	dot_mesh.height = 0.36
 	dot_mesh.radial_segments = 8
 	dot_mesh.rings = 4
 	dot_mesh.material = dot_material
@@ -133,8 +133,8 @@ func _build_visuals() -> void:
 		add_child(dot)
 		_dots.append(dot)
 	var marker_mesh := TorusMesh.new()
-	marker_mesh.inner_radius = 0.82
-	marker_mesh.outer_radius = 1.2
+	marker_mesh.inner_radius = 0.68
+	marker_mesh.outer_radius = 1.0
 	marker_mesh.rings = 16
 	marker_mesh.ring_segments = 10
 	marker_mesh.material = _unshaded_material(Color(0.78, 0.90, 1.0, 0.96))
@@ -162,7 +162,7 @@ func _build_visuals() -> void:
 
 func _set_marker_scale(marker: Node3D, endpoint: Vector3) -> void:
 	var active_camera := get_viewport().get_camera_3d()
-	var marker_scale := clampf(active_camera.global_position.distance_to(endpoint) / 60.0, 1.0, 4.0) \
+	var marker_scale := clampf(active_camera.global_position.distance_to(endpoint) / 80.0, 1.0, 2.5) \
 			if active_camera != null else 1.0
 	marker.scale = Vector3.ONE * marker_scale
 
@@ -172,5 +172,5 @@ func _unshaded_material(color: Color) -> StandardMaterial3D:
 	material.albedo_color = color
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.no_depth_test = true
+	material.no_depth_test = false
 	return material

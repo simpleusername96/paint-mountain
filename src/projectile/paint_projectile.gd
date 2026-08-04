@@ -262,7 +262,7 @@ func _update_target_contact_interval(
 	_current_target_event_index = -1
 	for event_index in range(current_contacts.size()):
 		var contact := current_contacts[event_index]
-		if SurfaceContactGapValidator.is_target_contact(
+		if SurfaceContactGapValidator.is_paintable_contact(
 			_terrain_surface,
 			_paint_surface_tuning,
 			_target_mask,

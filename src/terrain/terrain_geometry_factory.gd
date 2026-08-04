@@ -1,7 +1,7 @@
 class_name TerrainGeometryFactory
 extends RefCounted
 
-const DEFAULT_BASE_Y := -12.0
+const DEFAULT_BASE_Y := -28.0
 const MINIMUM_SKIRT_HEIGHT := 8.0
 
 
@@ -69,8 +69,8 @@ static func build(layout: GeneratedStageLayout, base_y: float = DEFAULT_BASE_Y) 
 	geometry.top_vertex_count = top_vertices.size()
 	geometry.shell_vertex_count = shell_vertices.size()
 	geometry.top_triangle_count = topology.triangle_count()
-	geometry.skirt_triangle_count = topology.boundary_vertex_indices_read_only().size() * 2
-	geometry.bottom_triangle_count = 2
+	geometry.skirt_triangle_count = topology.boundary_edges_read_only().size()
+	geometry.bottom_triangle_count = topology.triangle_count()
 	geometry.top_render_source_vertex_indices = top_source_vertices
 	geometry.top_render_source_triangle_ids = top_source_triangles
 	return geometry
@@ -119,10 +119,10 @@ static func _append_skirts(
 		uvs: PackedVector2Array,
 		colors: PackedColorArray
 ) -> void:
-	var boundary := topology.boundary_vertex_indices_read_only()
-	for edge_index in range(boundary.size()):
-		var top_a := topology.vertex_at(boundary[edge_index])
-		var top_b := topology.vertex_at(boundary[(edge_index + 1) % boundary.size()])
+	var boundary_edges := topology.boundary_edges_read_only()
+	for edge_offset in range(0, boundary_edges.size(), 2):
+		var top_a := topology.vertex_at(boundary_edges[edge_offset])
+		var top_b := topology.vertex_at(boundary_edges[edge_offset + 1])
 		assert(
 			minf(top_a.y, top_b.y) - base_y >= MINIMUM_SKIRT_HEIGHT,
 			"Terrain boundary must retain the minimum visible skirt height."
@@ -159,23 +159,20 @@ static func _append_bottom(
 		uvs: PackedVector2Array,
 		colors: PackedColorArray
 ) -> void:
-	var corners := topology.boundary_corner_indices_read_only()
-	var north_west_source := topology.vertex_at(corners[0])
-	var north_east_source := topology.vertex_at(corners[1])
-	var south_east_source := topology.vertex_at(corners[2])
-	var south_west_source := topology.vertex_at(corners[3])
-	var north_west := Vector3(north_west_source.x, base_y, north_west_source.z)
-	var north_east := Vector3(north_east_source.x, base_y, north_east_source.z)
-	var south_east := Vector3(south_east_source.x, base_y, south_east_source.z)
-	var south_west := Vector3(south_west_source.x, base_y, south_west_source.z)
-	_append_triangle(
-		vertices, normals, uvs, colors,
-		north_west, north_east, south_east, Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, false
-	)
-	_append_triangle(
-		vertices, normals, uvs, colors,
-		north_west, south_east, south_west, Vector2.ZERO, Vector2.ONE, Vector2.DOWN, false
-	)
+	var canonical_vertices := topology.canonical_vertices_read_only()
+	var canonical_indices := topology.canonical_triangle_indices_read_only()
+	for triangle_id in range(topology.triangle_count()):
+		var offset := triangle_id * 3
+		var source_a := canonical_vertices[canonical_indices[offset]]
+		var source_b := canonical_vertices[canonical_indices[offset + 1]]
+		var source_c := canonical_vertices[canonical_indices[offset + 2]]
+		var a := Vector3(source_a.x, base_y, source_a.z)
+		var b := Vector3(source_b.x, base_y, source_b.z)
+		var c := Vector3(source_c.x, base_y, source_c.z)
+		_append_triangle(
+			vertices, normals, uvs, colors,
+			a, c, b, Vector2.ZERO, Vector2.ONE, Vector2.RIGHT, false
+		)
 
 
 static func _append_triangle(
