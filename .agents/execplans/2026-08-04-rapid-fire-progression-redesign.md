@@ -1,9 +1,10 @@
 ---
 type: plan
-status: active
+status: draft
 created: 2026-08-04
+last_reviewed: 2026-08-05
 scope: all-open thirty-stage progression, concurrent repeat firing, projectile/paint scale correction, faster perceived cadence, and Korean-first HUD redesign
-source: explicit user directives through 2026-08-04 and the selected visual proposal under docs/concepts/rapid-fire-progression-2026-08-04
+source: explicit user directives through 2026-08-04 and a preliminary visual proposal later rejected as insufficiently grounded in current runtime captures
 supersedes: 2026-08-03-gameplay-visual-reset.md
 related:
   - ../PLANS.md
@@ -26,6 +27,12 @@ related:
 ---
 
 # Paint Mountain Rapid-Fire Progression Redesign - Execution Contract
+
+> **Draft only — do not execute.** On 2026-08-05 the user rejected the visual
+> grounding of this plan because its mockups were generated without attaching
+> the corresponding current runtime screens. The user will decide whether a new
+> plan should be written only after reviewing a replacement, runtime-grounded
+> mockup set.
 
 The observable outcome is a clean Korean-first Paint Mountain build in which all
 thirty stages are available immediately, the player may prepare and launch the
