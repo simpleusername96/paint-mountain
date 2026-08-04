@@ -17,8 +17,11 @@ related:
 # Runtime-Grounded Screen Concepts
 
 This folder is review evidence, not an implementation plan and not proof that
-the proposed visuals already run in Godot. The user will decide whether these
-screens are a suitable basis for a later ExecPlan.
+the proposed visuals already run in Godot. On 2026-08-05 the user selected this
+screen set as the basis for new execution planning. The resulting plans are
+`.agents/execplans/2026-08-05-physical-gameplay-mvp.md`,
+`2026-08-05-rapid-fire-thirty-stage-progression.md`, and
+`2026-08-05-runtime-grounded-interface.md`; their runtime gates remain required.
 
 Open [`index.html`](index.html) for the complete current-versus-proposed review.
 
@@ -79,9 +82,7 @@ valid layout evidence only; they are not gameplay-outcome verification.
 
 ## Review Boundary
 
-Approval of these images would approve a visual and interaction direction only.
-It would not prove closed geometry, collision, continuous paint authority,
+Selection of these images approves a visual and interaction direction only. It
+does not prove closed geometry, collision, continuous paint authority,
 physics tuning, responsiveness, localization behavior, focus behavior, or
-stage-generation scalability. Those contracts belong in a later plan only if
-the user accepts this screen direction.
-
+stage-generation scalability. Those contracts belong to the three linked plans.

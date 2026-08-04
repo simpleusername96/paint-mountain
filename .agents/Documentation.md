@@ -2,21 +2,44 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-05
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
   - execplans/2026-08-03-gameplay-visual-reset.md
   - execplans/2026-08-03-core-interaction-redesign.md
+  - execplans/2026-08-05-physical-gameplay-mvp.md
+  - execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
+  - execplans/2026-08-05-runtime-grounded-interface.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
 ---
 
 # Project Record
 
+## Active Execution Sequence (2026-08-05)
+
+The user selected the nine-screen runtime-grounded concept set as the basis for
+new planning. Three separately scoped active ExecPlans now govern future work in
+strict order:
+
+1. [`execplans/2026-08-05-physical-gameplay-mvp.md`](execplans/2026-08-05-physical-gameplay-mvp.md)
+   first proves the visible closed mountain, real contact, continuous paint, and
+   responsiveness and then stops for user approval.
+2. [`execplans/2026-08-05-rapid-fire-thirty-stage-progression.md`](execplans/2026-08-05-rapid-fire-thirty-stage-progression.md)
+   adds deterministic two-family repeat fire, faster grounded cadence, thirty
+   generated stages, and all-open progression after that approval.
+3. [`execplans/2026-08-05-runtime-grounded-interface.md`](execplans/2026-08-05-runtime-grounded-interface.md)
+   implements the nine real screens only after both functional predecessors are
+   done.
+
+No implementation task in these three plans has been completed yet. The record
+below describes the current pre-plan baseline and must not be interpreted as
+proof of the new outcomes.
+
 ## Current Gameplay and Visual Reset (2026-08-04)
 
-The active execution plan is
+The preceding implementation record was governed by
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
 Production implementation tasks 1.1 through 5.4 and the bounded headless MVP QA
 tasks 6.1 through 7.4 are complete. Phase 10's Fire, audio, and rendered follow-

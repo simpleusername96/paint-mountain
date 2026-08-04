@@ -2,7 +2,7 @@
 type: plan
 status: done
 created: 2026-08-02
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-05
 scope: procedural stage generation, mechanism placement, aiming interaction, Korean-first UI, visual remediation, and licensed asset integration
 source: user remediation directive dated 2026-08-02
 related:
@@ -10,6 +10,9 @@ related:
   - Documentation.md
   - execplans/2026-08-03-gameplay-visual-reset.md
   - execplans/2026-08-03-core-interaction-redesign.md
+  - execplans/2026-08-05-physical-gameplay-mvp.md
+  - execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
+  - execplans/2026-08-05-runtime-grounded-interface.md
   - ../docs/source-brief.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -21,9 +24,11 @@ related:
 
 > Historical plan: this document records the remediation that was marked done
 > on 2026-08-03. A later static code audit found that several claimed outcomes
-> are not supported by the current implementation. The only active successor is
-> [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md);
-> use its progress checklist and acceptance gates for all further work.
+> are not supported by the current implementation. The current execution entry
+> point is
+> [`execplans/2026-08-05-physical-gameplay-mvp.md`](execplans/2026-08-05-physical-gameplay-mvp.md),
+> followed in order by the linked rapid-fire/progression and runtime-interface
+> plans. This file is historical only.
 
 At plan creation, the baseline contained the original three-stage rules, paint mask, projectile physics, mechanisms, replay, and export path but lacked procedural progression, readable placement, Korean-first UI, direct targeting, and the target composition. The six phases below were executed to preserve the working gameplay owners while rebuilding the visible core experience; all completion gates passed on 2026-08-03.
 

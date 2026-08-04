@@ -1,11 +1,12 @@
 ---
 type: plan
-status: draft
+status: superseded
 created: 2026-08-04
 last_reviewed: 2026-08-05
 scope: all-open thirty-stage progression, concurrent repeat firing, projectile/paint scale correction, faster perceived cadence, and Korean-first HUD redesign
 source: explicit user directives through 2026-08-04 and a preliminary visual proposal later rejected as insufficiently grounded in current runtime captures
 supersedes: 2026-08-03-gameplay-visual-reset.md
+superseded_by: 2026-08-05-physical-gameplay-mvp.md
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -24,15 +25,20 @@ related:
   - ../../docs/concepts/rapid-fire-progression-2026-08-04/03-rapid-multishot.png
   - ../../docs/concepts/rapid-fire-progression-2026-08-04/04-pause-settings.png
   - ../../docs/concepts/rapid-fire-progression-2026-08-04/05-stage-clear.png
+  - 2026-08-05-physical-gameplay-mvp.md
+  - 2026-08-05-rapid-fire-thirty-stage-progression.md
+  - 2026-08-05-runtime-grounded-interface.md
 ---
 
 # Paint Mountain Rapid-Fire Progression Redesign - Execution Contract
 
-> **Draft only — do not execute.** On 2026-08-05 the user rejected the visual
-> grounding of this plan because its mockups were generated without attaching
-> the corresponding current runtime screens. The user will decide whether a new
-> plan should be written only after reviewing a replacement, runtime-grounded
-> mockup set.
+> **Superseded — do not execute.** On 2026-08-05 the user rejected this plan's
+> visual grounding, reviewed a replacement nine-screen set derived from current
+> runtime captures, and requested new ExecPlans. Its scope is now split across
+> `2026-08-05-physical-gameplay-mvp.md`,
+> `2026-08-05-rapid-fire-thirty-stage-progression.md`, and
+> `2026-08-05-runtime-grounded-interface.md`. The physical MVP plan is the entry
+> point; this file is retained only as historical decision evidence.
 
 The observable outcome is a clean Korean-first Paint Mountain build in which all
 thirty stages are available immediately, the player may prepare and launch the
