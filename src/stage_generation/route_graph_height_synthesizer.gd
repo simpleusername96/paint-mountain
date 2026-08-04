@@ -176,9 +176,17 @@ static func _height_at(
 					if has_floor else route_height
 			has_floor = true
 			carve_weight = 1.0
+	var body_floor := _mountain_body_floor(
+			point,
+			graph,
+			nearest_edge_by_route,
+			nearest_sample_by_route,
+			contract
+		)
+	var mass_with_body := maxf(raw_mass, body_floor)
 	var terraced := lerpf(
-		raw_mass,
-		roundf(raw_mass / contract.terrace_step) * contract.terrace_step,
+		mass_with_body,
+		roundf(mass_with_body / contract.terrace_step) * contract.terrace_step,
 		contract.terrace_blend
 	)
 	var height := lerpf(terraced, folded_floor, carve_weight) if has_floor else terraced
@@ -251,7 +259,48 @@ static func _cross_section_sample(
 	return {
 		"distance": point.distance_to(center),
 		"height": lerpf(from.y, to.y, t),
+		"center_x": center.x,
 	}
+
+
+## Supplies the mountain's visible body independently of route shoulders. The
+## route profiles still own the playable elevations, but areas between and
+## outside those routes retain a substantial top height instead of collapsing
+## toward the apron and reading as an empty stage shell.
+static func _mountain_body_floor(
+		point: Vector2,
+		graph: GeneratedRouteGraph,
+		nearest_edges: Dictionary,
+		nearest_samples: Dictionary,
+		contract: StageGenerationContract
+) -> float:
+	var left_edge := INF
+	var right_edge := -INF
+	var lowest_route_height := INF
+	var has_cross_section := false
+	for route_index in range(graph.route_count()):
+		var edge: GeneratedRouteEdge = nearest_edges.get(route_index)
+		var sample: Dictionary = nearest_samples.get(route_index, {})
+		if edge == null or sample.is_empty():
+			continue
+		var outer_radius := edge.width * 0.5 + contract.support_distance * 0.90
+		var center_x := float(sample.get("center_x", point.x))
+		left_edge = minf(left_edge, center_x - outer_radius)
+		right_edge = maxf(right_edge, center_x + outer_radius)
+		lowest_route_height = minf(lowest_route_height, float(sample.height))
+		has_cross_section = true
+	if not has_cross_section or point.x < left_edge or point.x > right_edge:
+		return 0.0
+
+	var edge_distance := minf(point.x - left_edge, right_edge - point.x)
+	var edge_weight := lerpf(
+		0.58,
+		1.0,
+		_smoothstep01(edge_distance / maxf(contract.support_distance * 0.55, 0.001))
+	)
+	var span_t := clampf((point.x - left_edge) / maxf(right_edge - left_edge, 0.001), 0.0, 1.0)
+	var crown_height := sin(span_t * PI) * minf(9.0, (right_edge - left_edge) * 0.08)
+	return maxf(10.0, lowest_route_height * 0.58 * edge_weight + crown_height)
 
 
 static func _smoothstep01(value: float) -> float:

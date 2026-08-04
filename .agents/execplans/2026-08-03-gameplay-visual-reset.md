@@ -141,6 +141,9 @@ from an irregular connected footprint around the route graph:
 - its horizontal footprint is simply connected: contour noise may shape only
   the exterior and must never cut an internal hole, tunnel, or route-shaped
   void through the target;
+- a broad mountain-body height floor spans the footprint beneath the route
+  features, so valleys remain surface depressions and never read as an empty
+  stage shell or a background-colored cutout;
 - playable upper faces exist only inside the footprint;
 - every exposed boundary closes into real front, side, rear-support, and bottom
   faces, producing one watertight volume;
@@ -314,7 +317,9 @@ src/terrain/backstop_environment.gd, scenes/gameplay/gameplay.tscn
   - Accept by inspection: outside-footprint cells create no playable top faces;
     front and side contours are irregular; no whole-bounds top rectangle or
     straight full-width front skirt remains; every occupied depth row is one
-    continuous span, adjacent spans overlap, and no internal cell void exists.
+    continuous span, adjacent spans overlap, no internal cell void exists, and
+    non-route portions retain enough height to make the target read as one
+    solid mountain body.
 
 - [x] **1.3 Build one closed render/collision/paint mass.**
   - Change: emit upper triangles only inside the footprint, close every exposed

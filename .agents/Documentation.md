@@ -27,7 +27,10 @@ connected, irregular cell footprint for all three stages. Its seeded noise is
 restricted to the exterior contour: each occupied depth row is filled between
 its left and right edges, empty interior rows are bridged, and adjacent rows
 overlap. Branching route bands therefore cannot carve a visible or physical
-hole through the target. `TerrainTopTopology`
+hole through the target. The height builder also supplies a broad body floor
+beneath route shoulders; routes shape the playable ridges and valleys without
+letting the rest of the mountain collapse to apron height and appear visually
+empty. `TerrainTopTopology`
 emits top triangles only for those cells and supplies the same indexed faces to
 rendering, concave collision, surface queries, target rasterization, and paint
 addressing. `TerrainGeometryFactory` closes every exposed contour with thick
