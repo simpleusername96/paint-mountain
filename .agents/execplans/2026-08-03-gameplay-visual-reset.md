@@ -1,8 +1,9 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-03
 last_reviewed: 2026-08-04
+superseded_by: 2026-08-04-rapid-fire-progression-redesign.md
 scope: implementation-first completion of the visible 3D mountain, physical paintball loop, mechanisms, three stages, Korean-first HUD, world presentation, and the user-authorized fire-to-flight responsiveness recovery
 source: explicit user corrections through 2026-08-04, including rejection of the current running screen, later approval of bounded visual checks, and repeated reports of severe transition and projectile-flight stutter after the Phase 9 export
 related:

@@ -1500,6 +1500,39 @@ decisions are requirements, not optional interpretations:
 
 All baseline clauses not named above remain in force.
 
+## Later User Supersession (2026-08-04): Open Progression and Faster Play
+
+The user explicitly revised the following product requirements after inspecting
+the current implementation. These revisions override conflicting three-stage,
+single-shot-wait, paint-scale, pacing, and HUD clauses above:
+
+- **Open stage progression:** provide approximately thirty stages and make every
+  stage selectable from the beginning. Stage availability is no longer an unlock
+  reward or a selection gate.
+- **Immediate repeat firing:** firing the cannon must not lock the player out
+  until the previous ball has completely stopped. The player may immediately
+  adjust the next aim and fire again, while already launched balls remain purely
+  physical and cannot be steered.
+- **Projectile and paint scale:** increase the visible paintball and reduce the
+  traversed paint footprint from the current implementation. The selected result
+  must be a readable midpoint: paint remains wider than the physical ball, but
+  no longer looks unrelated to its contact area.
+- **Gradual stage growth:** stages increase progressively rather than through
+  abrupt jumps. Later stages use somewhat larger mountain ranges, more broad
+  rises and descents, more route undulation, more decorations, and more visible
+  Burst/Splitter/Bumper placements. Growth must not reintroduce spikes, holes,
+  detached boards, or unreasonably frustrating layouts.
+- **Approximately doubled cadence:** normal play should feel about twice as fast
+  overall. This is a pacing requirement, not permission to reduce fixed-step
+  collision or paint-contact correctness.
+- **HUD and typography:** replace the ambiguous top `follow/cannon/1x/2x` strip
+  with grouped, icon-supported controls whose state and effect are immediately
+  understandable. Redesign the layout around the established sparse edge HUD,
+  use Pretendard with clearly bold hierarchy, keep Korean as the default, and
+  retain Fire as the single bottom-center primary action.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
