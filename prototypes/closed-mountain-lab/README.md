@@ -7,15 +7,18 @@ Open `index.html` directly in a modern browser. Click the mountain, press
 Space, or use the `새 지형 만들기` button to generate another seeded object.
 Drag to orbit and use the mouse wheel to zoom.
 
-The `굴곡 레벨` control ranges from 1 to 5. Higher levels add broad peaks,
-ridges, valleys, and radial undulations. Every level applies neighbor-height
+The `굴곡 레벨` control ranges from 1 to 5. The generator builds an elongated
+mountain range from several broad, similarly oriented ridge fields. Higher
+levels add ridges, cross-ridge passes, and secondary undulations. A small number
+of shallow off-center basins may appear between secondary ridges, but the broad
+central backbone always remains intact. Every level applies neighbor-height
 relaxation and a maximum local grade, so variation increases without producing
 single-vertex spikes.
 
 Each generated object consists of:
 
-- one triangulated, faceted top surface with peaks, ridges, valleys, terraces,
-  and steep slopes;
+- one triangulated, faceted top surface with mountain chains, shallow side
+  depressions, passes, terraces, and steep slopes;
 - one continuous irregular perimeter;
 - side-wall triangles joining every perimeter edge to a shared base; and
 - a bottom cap.

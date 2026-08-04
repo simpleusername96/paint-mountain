@@ -23,11 +23,6 @@
     return clamped * clamped * (3 - 2 * clamped);
   }
 
-  function angularDistance(first, second) {
-    const distance = Math.abs(first - second) % TAU;
-    return Math.min(distance, TAU - distance);
-  }
-
   function computeNormal(a, b, c) {
     const abx = b[0] - a[0];
     const aby = b[1] - a[1];
@@ -61,29 +56,65 @@
   }
 
   function buildShapeParameters(random, level) {
-    const peaks = [];
-    const peakCount = 1 + level;
-    peaks.push({
-      x: randomRange(random, -0.16, 0.16),
-      z: randomRange(random, -0.30, -0.08),
-      height: randomRange(random, 20, 27),
-      spread: randomRange(random, 0.28, 0.38),
-    });
-    for (let index = 1; index < peakCount; index += 1) {
-      peaks.push({
-        x: randomRange(random, -0.58, 0.58),
-        z: randomRange(random, -0.48, 0.42),
-        height: randomRange(random, 7 + level, 13 + level * 1.4),
-        spread: randomRange(random, 0.20, 0.34),
+    const rangeAngle = randomRange(random, -0.34, 0.34);
+    const rangeDirection = [Math.cos(rangeAngle), Math.sin(rangeAngle)];
+    const rangePerpendicular = [-rangeDirection[1], rangeDirection[0]];
+    const secondaryRidgeCount = 2 + level;
+    // A broad, unbroken backbone keeps the object a mountain range instead of a crater.
+    const ridges = [{
+      x: randomRange(random, -0.05, 0.05),
+      z: randomRange(random, -0.10, 0.02),
+      angle: rangeAngle + randomRange(random, -0.10, 0.10),
+      height: randomRange(random, 23, 29),
+      lengthSpread: randomRange(random, 0.58, 0.78),
+      widthSpread: randomRange(random, 0.10, 0.16),
+    }];
+    for (let index = 0; index < secondaryRidgeCount; index += 1) {
+      const progress = (index + 1) / (secondaryRidgeCount + 1);
+      const alongOffset = -0.62 + progress * 1.24 + randomRange(random, -0.07, 0.07);
+      const crossOffset = randomRange(random, -0.10 - level * 0.012, 0.10 + level * 0.012);
+      ridges.push({
+        x: rangeDirection[0] * alongOffset + rangePerpendicular[0] * crossOffset,
+        z: rangeDirection[1] * alongOffset + rangePerpendicular[1] * crossOffset,
+        angle: rangeAngle + randomRange(random, -0.22 - level * 0.012, 0.22 + level * 0.012),
+        height: randomRange(random, 15 + level * 0.6, 23 + level * 1.2),
+        lengthSpread: randomRange(random, 0.24, 0.44),
+        widthSpread: randomRange(random, 0.045, 0.095),
       });
     }
 
-    const valleys = Array.from({ length: level }, () => ({
-      angle: randomRange(random, 0, TAU),
-      width: randomRange(random, 0.22, 0.36),
-      depth: randomRange(random, 4 + level * 0.8, 7 + level * 1.4),
-      start: randomRange(random, 0.22, 0.42),
-    }));
+    // Basins are rare side features; they never replace or excavate the central backbone.
+    const basinCount = level === 5 ? 2 : level >= 3 ? 1 : 0;
+    const basins = Array.from({ length: basinCount }, (_, index) => {
+      const firstIndex = Math.min(ridges.length - 2, 1 + index * 2);
+      const first = ridges[firstIndex];
+      const second = ridges[firstIndex + 1];
+      const side = index % 2 === 0 ? 1 : -1;
+      const centerX = (first.x + second.x) * 0.5 + rangePerpendicular[0] * 0.25 * side;
+      const centerZ = (first.z + second.z) * 0.5 + rangePerpendicular[1] * 0.25 * side;
+      return {
+        x: centerX + randomRange(random, -0.06, 0.06),
+        z: centerZ + randomRange(random, -0.06, 0.06),
+        angle: rangeAngle + randomRange(random, -0.55, 0.55),
+        depth: randomRange(random, 3.0, 5.0 + level * 0.25),
+        lengthSpread: randomRange(random, 0.09, 0.16),
+        widthSpread: randomRange(random, 0.09, 0.17),
+      };
+    });
+
+    const passes = Array.from({ length: Math.max(0, level - 1) }, (_, index) => {
+      const progress = (index + 1) / level;
+      const alongOffset = -0.48 + progress * 0.96 + randomRange(random, -0.05, 0.05);
+      const crossOffset = randomRange(random, -0.04, 0.04);
+      return {
+        x: rangeDirection[0] * alongOffset + rangePerpendicular[0] * crossOffset,
+        z: rangeDirection[1] * alongOffset + rangePerpendicular[1] * crossOffset,
+        angle: rangeAngle + Math.PI * 0.5 + randomRange(random, -0.22, 0.22),
+        depth: randomRange(random, 2.6, 4.2 + level * 0.45),
+        lengthSpread: randomRange(random, 0.14, 0.22),
+        widthSpread: randomRange(random, 0.025, 0.050),
+      };
+    });
 
     const waves = Array.from({ length: Math.max(0, level - 1) }, (_, index) => ({
       angularFrequency: 2 + index,
@@ -93,15 +124,14 @@
     }));
 
     return {
-      peaks,
-      valleys,
+      rangeAngle,
+      ridges,
+      basins,
+      passes,
       waves,
       contourPhaseA: randomRange(random, 0, TAU),
       contourPhaseB: randomRange(random, 0, TAU),
       contourPhaseC: randomRange(random, 0, TAU),
-      ridgePhase: randomRange(random, 0, TAU),
-      ridgeCount: 2 + level,
-      ridgeAmplitude: 2.6 + level * 1.0,
       terraceMix: randomRange(random, 0.16, 0.28),
       terraceStep: randomRange(random, 3.8, 5.0),
       smoothingBlend: 0.28 - level * 0.018,
@@ -110,36 +140,45 @@
   }
 
   function contourRadius(theta, parameters) {
+    const relativeAngle = theta - parameters.rangeAngle;
+    const longRadius = 58;
+    const shortRadius = 43;
+    const ellipseRadius = longRadius * shortRadius / Math.sqrt(
+      Math.pow(shortRadius * Math.cos(relativeAngle), 2) +
+      Math.pow(longRadius * Math.sin(relativeAngle), 2)
+    );
     const variation =
       Math.sin(theta * 2 + parameters.contourPhaseA) * 0.075 +
       Math.sin(theta * 3 + parameters.contourPhaseB) * 0.050 +
       Math.sin(theta * 7 + parameters.contourPhaseC) * 0.025;
-    return 48 * (1 + variation);
+    return ellipseRadius * (1 + variation);
+  }
+
+  function orientedGaussian(x, z, feature) {
+    const dx = x - feature.x;
+    const dz = z - feature.z;
+    const cosine = Math.cos(feature.angle);
+    const sine = Math.sin(feature.angle);
+    const along = dx * cosine + dz * sine;
+    const across = -dx * sine + dz * cosine;
+    return Math.exp(
+      -(along * along / feature.lengthSpread + across * across / feature.widthSpread)
+    );
   }
 
   function surfaceHeight(x, z, radialRatio, theta, parameters) {
-    const normalizedX = x / 48;
-    const normalizedZ = z / 48;
-    const dome = 9 + 34 * Math.pow(Math.max(0, 1 - Math.pow(radialRatio, 1.75)), 0.58);
-    let height = dome;
+    const normalizedX = x / 54;
+    const normalizedZ = z / 54;
+    const body = 8.5 + 18 * Math.pow(Math.max(0, 1 - Math.pow(radialRatio, 1.8)), 0.68);
+    let height = body;
 
-    let strongestPeak = 0;
-    let secondPeak = 0;
-    parameters.peaks.forEach((peak) => {
-      const dx = normalizedX - peak.x;
-      const dz = normalizedZ - peak.z;
-      const contribution = peak.height * Math.exp(-(dx * dx + dz * dz) / peak.spread);
-      if (contribution > strongestPeak) {
-        secondPeak = strongestPeak;
-        strongestPeak = contribution;
-      } else if (contribution > secondPeak) {
-        secondPeak = contribution;
-      }
+    const ridgeContributions = parameters.ridges.map((ridge) => {
+      return ridge.height * orientedGaussian(normalizedX, normalizedZ, ridge);
     });
-    height += strongestPeak + secondPeak * 0.24;
-
-    const ridge = Math.sin(theta * parameters.ridgeCount + parameters.ridgePhase);
-    height += Math.max(0, ridge) * (1 - radialRatio) * parameters.ridgeAmplitude;
+    ridgeContributions.sort((first, second) => second - first);
+    height += (ridgeContributions[0] || 0) +
+      (ridgeContributions[1] || 0) * 0.34 +
+      (ridgeContributions[2] || 0) * 0.12;
 
     parameters.waves.forEach((wave) => {
       const angularWave = Math.sin(theta * wave.angularFrequency + wave.phase);
@@ -147,11 +186,12 @@
       height += angularWave * radialWave * wave.amplitude;
     });
 
-    parameters.valleys.forEach((valley) => {
-      const angleGap = angularDistance(theta, valley.angle);
-      const angularCut = Math.exp(-(angleGap * angleGap) / valley.width);
-      const radialCut = smoothstep((radialRatio - valley.start) / 0.20);
-      height -= valley.depth * angularCut * radialCut * (0.35 + radialRatio * 0.65);
+    const interiorWeight = 1 - smoothstep((radialRatio - 0.72) / 0.22);
+    parameters.basins.forEach((basin) => {
+      height -= basin.depth * orientedGaussian(normalizedX, normalizedZ, basin) * interiorWeight;
+    });
+    parameters.passes.forEach((pass) => {
+      height -= pass.depth * orientedGaussian(normalizedX, normalizedZ, pass) * interiorWeight;
     });
 
     const terraced = Math.round(height / parameters.terraceStep) * parameters.terraceStep;
@@ -338,14 +378,19 @@
     }
 
     const closed = validateClosedMesh(indices);
+    const centerHeight = vertices[0][1];
     const faceted = expandFaceted(vertices, indices, random, baseY);
     return {
       seed,
       level,
       closed,
-      featureCount: parameters.peaks.length + parameters.valleys.length + parameters.waves.length,
+      featureCount: parameters.ridges.length + parameters.basins.length +
+        parameters.passes.length + parameters.waves.length,
+      ridgeCount: parameters.ridges.length,
+      basinCount: parameters.basins.length,
       triangleCount: indices.length / 3,
       maximumHeight: faceted.maximumHeight,
+      centerHeight,
       maximumGrade,
       positions: faceted.positions,
       normals: faceted.normals,

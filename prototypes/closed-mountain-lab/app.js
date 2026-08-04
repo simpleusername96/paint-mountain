@@ -27,10 +27,10 @@
     const mesh = window.MountainGenerator.generate(randomSeed(), level);
     renderer.setMesh(mesh);
     seedValue.textContent = mesh.seed.toString(16).toUpperCase().padStart(8, "0");
-    featureValue.textContent = mesh.featureCount.toLocaleString("ko-KR");
+    featureValue.textContent = `${mesh.ridgeCount} · ${mesh.basinCount}`;
     triangleValue.textContent = mesh.triangleCount.toLocaleString("ko-KR");
     heightValue.textContent = `${mesh.maximumHeight.toFixed(1)} m`;
-    status.textContent = mesh.closed ? "닫힌 메시 생성됨" : "메시 경계 오류";
+    status.textContent = mesh.closed ? "닫힌 산맥 메시 생성됨" : "메시 경계 오류";
   }
 
   try {

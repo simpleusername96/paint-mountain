@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>닫힌 산 오브젝트 생성기</title>
+  <title>닫힌 3D 산맥 생성기</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="toolbar">
       <div class="title-group">
         <p class="eyebrow">CLOSED MOUNTAIN LAB</p>
-        <h1>닫힌 산 오브젝트 생성기</h1>
+        <h1>닫힌 3D 산맥 생성기</h1>
       </div>
       <div class="toolbar-actions">
         <label class="level-control" for="level-input">
@@ -22,15 +22,15 @@
       </div>
     </header>
 
-    <section class="viewport-shell" aria-label="생성된 3D 산 미리보기">
+    <section class="viewport-shell" aria-label="생성된 3D 산맥 미리보기">
       <canvas id="mountain-canvas" tabindex="0"></canvas>
       <div class="status" aria-live="polite">
         <span class="status-mark" aria-hidden="true"></span>
-        <span id="mesh-status">닫힌 메시 생성됨</span>
+        <span id="mesh-status">닫힌 산맥 메시 생성됨</span>
       </div>
       <dl class="metrics">
         <div><dt>시드</dt><dd id="seed-value">—</dd></div>
-        <div><dt>굴곡</dt><dd id="feature-value">—</dd></div>
+        <div><dt>능선·분지</dt><dd id="feature-value">—</dd></div>
         <div><dt>삼각형</dt><dd id="triangle-value">—</dd></div>
         <div><dt>최고점</dt><dd id="height-value">—</dd></div>
       </dl>
