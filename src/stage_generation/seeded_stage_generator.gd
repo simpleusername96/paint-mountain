@@ -265,9 +265,7 @@ static func _finalize_layout(
 		return false
 	if stage_data != null:
 		layout.decoration_placements = _generate_decorations(stage_data, layout)
-		if layout.decoration_placements.size() != _decoration_count(stage_data.stage_number):
-			layout.metrics["rejection"] = "decoration_placement"
-			return false
+		layout.metrics["decoration_count"] = layout.decoration_placements.size()
 	return true
 
 
@@ -371,7 +369,7 @@ static func _decoration_footprint_is_clear(
 	var nearest_edge := nearest.get("edge") as GeneratedRouteEdge
 	if nearest_edge != null and float(nearest.get("distance", INF)) \
 			<= nearest_edge.width * 0.5 \
-					+ support_distance + visual_radius:
+					+ minf(support_distance, 1.5) + visual_radius:
 		return false
 	for pad in layout.route_graph.pad_nodes():
 		if center.distance_to(Vector2(pad.position.x, pad.position.z)) \

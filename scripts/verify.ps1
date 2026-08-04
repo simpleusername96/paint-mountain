@@ -21,16 +21,34 @@ if ([string]::IsNullOrWhiteSpace($GodotPath) -or -not (Test-Path -LiteralPath $G
 
 $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path
 
-Write-Host 'Checking project import and script parsing...'
-& $resolvedGodot --headless --path $projectRoot --editor --quit
-if ($LASTEXITCODE -ne 0) {
-    throw "Godot editor smoke check failed with exit code $LASTEXITCODE."
+function Invoke-GodotCheck {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [Parameter(Mandatory = $true)]
+        [string]$Label
+    )
+
+    $output = & $resolvedGodot @Arguments 2>&1
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host $_ }
+    $text = $output | Out-String
+    if ($exitCode -ne 0) {
+        throw "$Label failed with exit code $exitCode."
+    }
+    if ($text -match '(?m)^(SCRIPT ERROR|ERROR):') {
+        throw "$Label reported a Godot script or runtime error."
+    }
 }
 
+Write-Host 'Checking project import and script parsing...'
+Invoke-GodotCheck -Label 'Godot editor smoke check' -Arguments @(
+    '--headless', '--path', $projectRoot, '--editor', '--quit'
+)
+
 Write-Host 'Checking main-scene startup...'
-& $resolvedGodot --headless --path $projectRoot --quit-after 3
-if ($LASTEXITCODE -ne 0) {
-    throw "Godot runtime smoke check failed with exit code $LASTEXITCODE."
-}
+Invoke-GodotCheck -Label 'Godot runtime smoke check' -Arguments @(
+    '--headless', '--path', $projectRoot, '--quit-after', '3'
+)
 
 Write-Host 'Paint Mountain verification passed.'

@@ -5,9 +5,9 @@ extends RefCounted
 ## a real first terrain hit near the visible target center; exhaustive witness
 ## sets remain optional QA evidence.
 
-const YAW_OFFSETS := PackedFloat32Array([0.0, -6.0, 6.0, -12.0, 12.0, -18.0, 18.0])
-const ELEVATIONS := PackedFloat32Array([24.0, 30.0, 36.0, 42.0, 48.0, 54.0, 60.0])
-const POWERS := PackedInt32Array([52, 62, 72, 82, 92, 100])
+const YAW_OFFSETS := [0.0, -6.0, 6.0, -12.0, 12.0, -18.0, 18.0]
+const ELEVATIONS := [24.0, 30.0, 36.0, 42.0, 48.0, 54.0, 60.0]
+const POWERS := [52, 62, 72, 82, 92, 100]
 
 
 static func find_runtime_aim(

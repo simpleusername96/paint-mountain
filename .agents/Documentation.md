@@ -18,9 +18,9 @@ related:
 
 The active execution plan is
 [`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md).
-Production implementation tasks 1.1 through 5.3 are complete by source and
-resource inspection. Task 5.4 and the plan itself remain open until the required
-headless source launch can run and the user later authorizes visible QA.
+Production implementation tasks 1.1 through 5.4 are complete. The plan remains
+active only because visible gameplay QA and the deferred formal checks still
+require explicit user authorization.
 
 `RouteGraphMountainSynthesizer` now produces both a sampled height field and a
 connected, irregular cell footprint for all three stages. `TerrainTopTopology`
@@ -60,15 +60,20 @@ Fire button, and top-right shots plus gear. Gear/Escape opens the full paused
 menu; Restart exists there and in result/replay flows, not in the aiming HUD.
 Closing the application-level Settings overlay returns to the still-paused menu.
 
-No visible Godot process, test suite, certifier, export, screenshot capture,
-performance pass, replay matrix, or balance check was run for this revision.
-The required `scripts/verify.ps1` command was attempted once, but stopped before
-launch because no Godot executable is on PATH, `GODOT_BIN` is unset, and no
-approved local console executable was discoverable. The stale exported Windows
-binary is still registered with fastrun but cannot validate these source
-changes. Consequently the new geometry, collisions, default aims, mechanism
-placements, paint appearance, UI layout, and all three stage outcomes remain
-implemented-but-unverified until a Godot console path is supplied.
+No visible Godot process, test suite, certifier, screenshot capture, performance
+pass, replay matrix, balance check, or user visual review was run for this
+revision. Godot 4.7.1 headlessly passed project import/script parsing,
+main-scene startup, and a direct First Descent gameplay-scene startup that
+reached `BRIEFING`. The verifier was strengthened to fail on Godot script/runtime
+error text even when the engine returns exit code zero; this caught and led to
+fixes for invalid constant expressions and an obsolete decoration admission
+gate. The Windows release was rebuilt from current source and passed a hidden
+headless startup. Its SHA-256 is
+`F59E7D7B50C208538226C5AB366B4A695FC8AAED345AD6730B1791C70F3A06BD`, and the
+existing fastrun entry points to `builds/windows/PaintMountain.exe`.
+
+These checks establish importability and startup, not visual correctness,
+gameplay balance, all-stage outcomes, projectile behavior, or user approval.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 

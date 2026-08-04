@@ -468,7 +468,7 @@ certificate gate, or competing presentation path.
   - Accept by inspection: one mountain generator/topology, one paint owner, one
     aiming HUD, one paused menu, and one runtime-readiness path remain.
 
-- [ ] **5.4 Prepare implementation handoff and stop.**
+- [x] **5.4 Prepare implementation handoff and stop.**
   - Change: update the active implementation record with completed work and an
     explicit list of untested behavior.
   - Accept: progress says implementation-ready and awaiting user authorization;
@@ -537,11 +537,9 @@ behavior, or release claim.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this document.
-- Current phase: Phase 5 handoff; implementation tasks 1.1 through 5.3 are
-  complete by production inspection.
-- Next task: 5.4 remains open because the mandatory headless launch smoke could
-  not start on 2026-08-04: no Godot executable is on PATH, `GODOT_BIN` is
-  unset, and no approved local console executable was discoverable.
+- Current phase: implementation-ready handoff; tasks 1.1 through 5.4 are
+  complete.
+- Next task: wait for explicit user authorization before visible or formal QA.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
@@ -549,11 +547,13 @@ behavior, or release claim.
 - A checked task means implemented by production inspection, not tested or
   user-approved.
 - Do not run formal tests until the user explicitly activates deferred QA.
-- `scripts/verify.ps1` was invoked once after the coherent implementation and
-  stopped before launching any process with the explicit missing-Godot error.
-- Do not substitute the stale exported executable for source validation. After
-  a Godot console path is available, run the one headless smoke, finish Task
-  5.4, report, and wait.
+- Godot 4.7.1 headless import/script parsing, main-scene startup, direct
+  gameplay-scene startup through `BRIEFING`, release export, and exported-build
+  headless startup passed on 2026-08-04 without a visible window.
+- `scripts/verify.ps1` now treats Godot `SCRIPT ERROR:` and `ERROR:` output as
+  failure because this engine can return exit code zero after such errors.
+- `builds/windows/PaintMountain.exe` was rebuilt from the current source and
+  the existing exact-directory fastrun entry points to it.
 
 ## Completion and Stop Conditions
 
