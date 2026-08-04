@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-04
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -161,11 +161,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 ### UI, art, audio, and debug
 
 - Separate full-screen menu, stage-select, briefing, gameplay, clear, failure, pause, and settings interfaces; anchors/containers support common 16:9 desktop resolutions.
-- Use the sparse edge-aligned HUD with stage and aim-mode at upper-left, target at
-  top-center, shots plus a labeled gear at upper-right, a vertical coverage gauge
-  at left, angle/power at lower-left, and Fire alone at bottom-center. The gauge
-  shows absolute coverage text while its rail fills bottom-to-top relative to the
-  current target. No aiming-state Restart or second Fire control exists; `R`
+- Use the sparse edge-aligned HUD with stage and aim-mode at upper-left, shots
+  plus a labeled gear at upper-right, a vertical coverage gauge at left,
+  angle/power at lower-left, and Fire alone at bottom-center. The left gauge is
+  the sole coverage display: it shows absolute coverage and the target while its
+  rail fills bottom-to-top. Keep the top-center clear for the mountain and high
+  trajectory arcs. No aiming-state Restart or second Fire control exists; `R`
   remains the quick-restart shortcut.
 - Gear and Escape open the same fully input-capturing paused game menu with
   Continue, Restart, Settings, Stage Select, and Main Menu. Continue/Escape

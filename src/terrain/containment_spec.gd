@@ -4,7 +4,7 @@ extends RefCounted
 const CONTRACT_VERSION := 4
 const FIXED_CONTAINMENT_BOUNDS := AABB(Vector3(-245.0, -32.0, -178.0), Vector3(490.0, 286.0, 230.0))
 const FIXED_APRON_XZ_BOUNDS := Rect2(Vector2(-245.0, -172.25), Vector2(490.0, 224.25))
-const FIXED_APRON_MINIMUM_Y := -30.5
+const FIXED_APRON_MINIMUM_Y := -2.0
 const FIXED_BACKSTOP_CENTER := Vector3(0.0, 111.0, -174.25)
 const FIXED_BACKSTOP_SIZE := Vector3(480.0, 284.0, 4.0)
 const FIXED_REAR_TRANSITION_DEPTH := 0.25
@@ -128,13 +128,13 @@ func apron_bottom_y() -> float:
 	return _containment_bounds.position.y
 
 
-func supports_terrain_join(terrain_xz_bounds: Rect2, terrain_world_base_y: float) -> bool:
+func supports_terrain_join(terrain_xz_bounds: Rect2, terrain_world_join_y: float) -> bool:
 	if not _rect_is_finite(terrain_xz_bounds) or not terrain_xz_bounds.has_area() \
-			or not is_finite(terrain_world_base_y):
+			or not is_finite(terrain_world_join_y):
 		return false
 	if not _apron_xz_bounds.encloses(terrain_xz_bounds) \
-			or terrain_world_base_y < _apron_minimum_y \
-			or terrain_world_base_y > _containment_bounds.end.y:
+			or terrain_world_join_y < _apron_minimum_y \
+			or terrain_world_join_y > _containment_bounds.end.y:
 		return false
 	var rear_join_depth := terrain_xz_bounds.position.y - backstop_front_z()
 	var wall_bounds := backstop_bounds()

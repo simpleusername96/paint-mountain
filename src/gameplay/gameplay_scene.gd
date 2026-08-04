@@ -152,12 +152,17 @@ func _build_stage_world() -> bool:
 	_backstop_environment.configure(
 		_generated_layout.containment,
 		stage_data.paint_world_bounds(),
-		stage_data.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+		stage_data.terrain_center.y
 	)
 	_projectile_manager.configure_terrain(_terrain_surface)
 	_cannon.global_transform = stage_data.cannon_transform
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
+	paint_material.set_shader_parameter("support_floor_y", stage_data.terrain_center.y)
+	paint_material.set_shader_parameter(
+		"support_rear_z",
+		stage_data.paint_world_bounds().position.y
+	)
 	_paint_system.configure(
 		stage_data.paint_world_bounds(),
 		stage_data.terrain_center.y,
@@ -290,7 +295,7 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			_trajectory_preview.visible = false
 			_camera_director.set_mode(CameraDirector.Mode.BRIEFING)
 		StageController.State.AIMING:
-			_set_mechanism_labels_visible(true)
+			_set_mechanism_labels_visible(false)
 			Engine.time_scale = 1.0
 			_trajectory_preview.visible = _setting_bool("trajectory_preview", true)
 			if _trajectory_preview.visible:

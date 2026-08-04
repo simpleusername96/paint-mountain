@@ -45,9 +45,10 @@ flat apron, tiny mechanisms, black cannon, and legacy HUD are not a visual MVP.
 - Implementation-ready state: every task in Phases 1 through 5 is implemented,
   production contains no competing legacy terrain or HUD path, and the mandatory
   headless launch smoke reaches the main scene.
-- Testing state: after implementation-ready state, stop and wait for explicit
-  user authorization. Do not run tests, visible QA, export, performance,
-  replay, reliability, or capture work before that instruction.
+- Testing state: implementation now includes the bounded Phase 8 invalidation
+  checks and non-obstructive real-render inspection requested by the user.
+  Performance, broad regression matrices, balance, replay, and tolerance work
+  remain deferred until separately requested.
 - Final state: keep this plan active until the later user-authorized QA pass is
   added and completed. Implementation alone does not make the plan done.
 
@@ -642,6 +643,214 @@ Phase gate: update `Documentation.md`, commit the task-owned change, and stop
 without a visible Godot process. The next acceptance evidence is the user's
 manual run of the rebuilt fastrun executable.
 
+### Phase 8: Running-screen composition recovery
+
+Goal: replace the rejected 2026-08-04 aiming screen with a readable closed
+mountain, cannon-to-target composition, and truthful aiming HUD, then verify the
+result from the actual release renderer without obstructing the user's desktop.
+
+Verified starting point:
+
+- The user's 1264x709 capture from commit `787867f` shows a dominant dark front
+  shell, a narrow jagged top rim, no readable cannon, an always-visible replay
+  bar during ordinary aiming, and an apparently blank Settings button.
+- The camera is not inside an open mesh. The front footprint stops at
+  `depth_t = 0.93` while the height field reaches its outer falloff only at the
+  full local bound; `TerrainGeometryFactory` therefore closes a still-high front
+  edge vertically to local `y = -28`.
+- Aiming bypasses `TerrainCameraFramer` and uses the low authored bookmark. The
+  Phase 7 camera check covered Briefing, Wide, and Result, so it could not
+  invalidate the rejected aiming composition.
+- `ReplayBar` defaults visible and normal HUD state changes never hide it.
+  `settings.png` is white on the shared light button surface.
+- `DeliveryCaptureRunner` produces real viewport images but unconditionally
+  forces fullscreen, so it cannot yet satisfy the user's non-obstructive direct
+  inspection requirement.
+
+Locked decisions:
+
+- Preserve one closed render/collision/paint topology. Extend the connected
+  footprint through the front local bound, apply a front-specific 80 m smooth
+  height falloff, and use the full 24 m route-support band for the visible side
+  contour so the playable route descends into the apron before the shell closes;
+  do not hide the shell with culling, fog, color, or a visual duplicate.
+- Align the apron top, the terrain's zero-height boundary, and the cannon base
+  at world `y = -2`. The shell still closes to world `y = -30`, but that closure
+  belongs below the collidable apron instead of standing 28 m above it in the
+  play view. This repairs the world-space join rather than visually masking the
+  shell.
+- Keep Aiming on the authored close cannon-relative perspective and its existing
+  terrain safety correction. Reauthor each aiming target above the generated
+  foreground approach instead of inside the central peak, preventing focus
+  snapping and overhead fallback. Do not fit the complete top AABB and cannon
+  into one frustum: the first real Phase 8 capture proved that this flattens
+  depth, shrinks the cannon to a dot, and makes the mountain read as a remote
+  card.
+- Hide ReplayBar in its scene default and HUD initialization, showing it only
+  while `ReplayPresentationController.active` is true. Tint the existing
+  approved Settings icon navy for every enabled button state.
+- Add an explicit background capture option to `DeliveryCaptureRunner`. The
+  release process remains a real windowed Compatibility-renderer run at
+  1280x720, positioned outside the visible desktop before capture; headless or
+  dummy-renderer images are invalid visual evidence.
+- The implementing agent must inspect actual aiming and continuous-paint PNGs
+  against the user capture and the registered primary comparator. If the
+  mountain, cannon, trajectory, paint route, or HUD hierarchy remains
+  unreadable, the task stays unchecked and composition is revised before
+  export/handoff.
+- Preserve the canonical mesh classification already carried in vertex color:
+  paintable top triangles must remain within the bright off-white rock family
+  even when their normals are steep, while non-paintable skirts and the bottom
+  retain the darker support treatment. This is a material truth distinction,
+  not a duplicate visual mesh or an attempt to conceal open geometry.
+- Aiming may move moderately upward/backward from the rejected near-front pose
+  when direct capture shows that the foreground transition hides the range.
+  It must still read as a cannon-relative perspective and must not return to the
+  failed whole-AABB framing distance.
+
+Source owners: `src/stage_generation/route_graph_mountain_synthesizer.gd`,
+`src/terrain`, `src/camera`, `resources/stages`, `scenes/ui/hud`,
+`src/ui/hud_controller.gd`, `src/delivery/delivery_capture_runner.gd`,
+`scenes/gameplay`, and focused Phase 8 contracts under `tests`.
+
+- [x] **8.1 Replace the high front cut with a rollable foreground transition.**
+  - Change: carry every deterministic footprint row through the front bound and
+    multiply the generated route/range height by an 80 m front-specific smooth
+    falloff before shell closure. Use the existing 24 m route-support band as the
+    complete visible side contour instead of concentrating it into 12 m.
+  - Accept: all three stages remain one row-solid connected closed mass; the
+    front boundary top vertices meet the join elevation; front-facing topology
+    no longer concentrates the full descent in the final cells; render and
+    collision still derive from the same topology.
+  - Guard: route height, target scoring identity, and side/rear support faces
+    remain owned by the existing generator and geometry factory.
+
+- [x] **8.2 Make Aiming show the cannon and playable mountain top together.**
+  - Change: retain the authored close cannon-relative Aiming bookmark and use
+    a stage-authored focus above the foreground approach; camera safety only
+    prevents clipping after the foreground slope is fixed.
+  - Accept: a focused composition contract places the cannon base, muzzle, and
+    predicted first-impact point inside the final post-safety 1280x720 frustum
+    for all three stages without backing away to fit the entire mountain AABB.
+  - Guard: the final camera stays outside terrain and its focus ray does not
+    cross an intervening terrain face.
+
+- [x] **8.3 Restore truthful ordinary-aiming HUD state.**
+  - Change: default and initialize ReplayBar hidden; show it only for active
+    replay; apply readable navy Settings-icon state colors.
+  - Accept: scene/controller inspection and the actual aiming capture show no
+    replay controls, one centered Fire action, and a visible Settings glyph.
+
+- [x] **8.4 Capture and inspect the real release renderer.**
+  - Change: add the background capture argument, verify argument forwarding,
+    export the Windows release, and capture `aiming` plus
+    `projectile_and_continuous_paint` at 1280x720 from the actual executable
+    positioned off-screen.
+  - Accept: both PNGs are non-empty and the implementing agent directly confirms
+    that a thick bright mountain dominates the play area, the cannon remains in
+    the lower foreground while aiming, the trajectory terminates on a readable
+    upper face, traversed surface paint is visibly blue in observation, no dark
+    front slab or replay bar dominates the frame, and HUD elements do not clip
+    or overlap.
+  - Guard: no headless or dummy-renderer image may satisfy this task.
+
+Phase gate: run `scripts/verify.ps1`, the two focused geometry/composition
+contracts, `git diff --check`, the release export, and the two real background
+runtime captures. Update `Documentation.md`, run `$codebase-quality-auditor`,
+commit the task-owned change, and keep the plan active until the user's next
+running-build review.
+
+Iteration evidence (2026-08-04): the first real 1280x720 release capture removed
+the false replay controls and restored the Settings glyph, but failed world
+composition. The full-bounds Aiming framer made the cannon a dot and the last
+few metres of height falloff still rendered as a dark front slab. Tasks 8.1 and
+8.2 remain unchecked; the locked decisions above replace that failed approach.
+
+The second real release capture carried the footprint to the front bound and
+distributed the descent across the then-current 52 m value, superseded by the
+final 80 m contract above. It proved that the remaining dominant dark
+region is the canonical paintable top transition, not an unclosed hole: the
+terrain shader shaded steep top triangles with the same minimum value as shell
+triangles. The capture is still rejected because this erases the top/shell
+distinction and the near-low Aiming pose lets that one transition occupy most of
+the frame. Tasks 8.1, 8.2, and 8.4 therefore remain unchecked until the corrected
+material classification and revised close-perspective capture are inspected.
+
+The third real release capture used the corrected top/shell shader distinction
+and a moderate cannon-relative pullback. It exposed a second coordinate defect:
+the terrain boundary top is world `y = -2`, while the apron was joined to the
+shell base at world `y = -30` and the cannon remained near `y = 0`. The lower
+dark rectangle is the legitimately closed 28 m front skirt standing above the
+floor, and the cannon is unsupported in world space. Phase 8 now aligns the
+apron and cannon with the terrain boundary before judging final composition.
+
+The fourth real release capture aligned the apron, terrain boundary, and cannon
+base at world `y = -2`; the exposed front skirt is gone and the cannon is
+supported. It remains rejected because the cool-gray apron reads too dark, the
+then-current 52 m center route is still a broad featureless ramp, and the
+superseded 95 m aiming pose makes the cannon too small. The next locked iteration
+keeps a majority route height contribution while retaining the generated
+mountain-range relief on the route, uses the approved pale neutral apron, and
+restores a nearer
+cannon-relative bookmark without returning to the original clipping pose.
+
+The fifth real release capture restored valid relief height, generated every
+stage, brightened the authored apron material, and used the nearer bookmark. The
+large lower dark region remained unchanged, proving it is not the apron top. The
+apron currently leaves a rectangular hole for the full 180 x 120 terrain bounds,
+while the canonical mountain footprint is irregular inside that rectangle; the
+shell is therefore exposed down to its base everywhere outside the footprint.
+Production apron geometry must add collidable top cells for every inactive
+footprint cell at the world join elevation. This covers only the subterranean
+closure while preserving all real above-ground boundary cliffs.
+
+Final Phase 8 implementation evidence (2026-08-04): the height builder now
+honors the actual irregular footprint boundary instead of re-raising route and
+pad edges from the global rectangle, and applies the captured 80 m front descent
+with a 24 m contour taper. All three focused structural runs retain a
+single row-solid closed render/collision topology. The authored 55-degree
+cannon-relative views keep cannon base, muzzle, first impact, mountain, and high
+arc in frame. The HUD has one left-side coverage owner, one bottom-center Fire
+action, and no ordinary-aiming ReplayBar or top-center target card. Burst,
+Splitter, and Bumper use 2x matching visible/collision scale.
+
+The exported Windows executable produced and the implementing agent directly
+inspected all four 1280x720 Compatibility-renderer captures under
+`.agents/evidence/phase8/`. `aiming.png`, `aiming_burst.png`, and
+`aiming_split.png` show closed faceted masses, staged ridge complexity,
+foreground cannon, trajectory, impact, and readable mechanisms.
+`projectile_and_continuous_paint.png` was gated on at least 72 applied surface
+sweeps and 400 written pixels; it shows a long continuous downhill blue path and
+the authoritative 6.7% left gauge while the projectile remains active. These
+screens establish implementation evidence, not user acceptance. The plan stays
+active for the user's running-build review and any later explicitly requested
+broad QA.
+
+The legacy `terrain_geometry_test.gd` asserted the superseded full-rectangle
+mesh and exact vertex counts, so it and its broad-runner entry were retired.
+`mountain_range_mvp_test.gd` and `phase8_front_transition_test.gd` now own the
+material requirements: one closed irregular render/collision mass, connected
+mountain-range footprint, and a rollable foreground transition.
+
+The final direct-inspection iteration widened the real front/side transitions,
+moved the lower-left aim panel away from the foreground cannon, brought all
+three aiming bookmarks forward and laterally off-axis, reduced the impact mark
+from 9 m to 6 m so the 4 m rolling trail remains legible, and added restrained
+deterministic facet tones. The first camera candidate clipped the cannon, the
+first facet-tone candidate produced a checkerboard surface, and a 120-sweep
+capture gate outlived the active shot; all three were rejected from actual
+running-game images before the final values above were accepted as implementation
+evidence. The pale rear wall no longer receives the mountain's slab-like shadow.
+
+The closing contract audit found that the enlarged mechanism scenes had retained
+their pre-scale placement envelopes and that mechanism collision bodies exposed
+no stable contact metadata. Placement now uses effective 2x collision/visual
+bounds and the local typed pad as its support boundary. `GimmickBase` publishes
+stable kind/shape IDs consumed by both trajectory prediction and rigid-body
+contact. The focused physical mechanism run now completes with matching preview
+and contact bodies/shapes, one Burst activation, three Splitter children, two
+Bumper activations, and the eight-projectile cap.
+
 ## Mandatory Launch Smoke Only
 
 Repository policy requires launchability after coherent production changes.
@@ -675,7 +884,8 @@ This work has no active checkboxes and may not start automatically:
 - solution search and target/shot balance confirmation;
 - load, memory, frame-time, allocation, and stress measurement;
 - migration/deletion of obsolete test fixtures and runner registrations;
-- visible resolution/locale QA, screenshots, manifests, and reference comparison;
+- broad resolution/locale QA, screenshot matrices, manifests, and reference
+  comparison beyond the two Phase 8 runtime captures;
 - final release documentation and plan closure.
 
 When the user authorizes testing, revise this plan with a bounded QA phase based
@@ -693,7 +903,7 @@ behavior, or release claim.
 | A test becomes stale | Leave it for deferred QA | Do not spend implementation time migrating it |
 | A stage lacks a certificate | Continue when structural runtime data and bounded default aim exist | Certificate is not a runtime gate |
 | Mandatory launch smoke fails | Fix only responsible import/startup defect | Do not begin broad suites |
-| A visible launch would help | Record the untested assumption and continue | Only the user authorizes visible testing |
+| A visual/UI task lacks an actual runtime capture | Keep the task incomplete and use the background release capture path | Headless evidence cannot replace rendered inspection |
 | New asset/dependency seems necessary | Stop that branch and request approval | Existing assets/procedural geometry are default |
 | User changes visible/function contract | Update this plan before continuing | Do not bury the decision in code |
 
@@ -728,8 +938,13 @@ behavior, or release claim.
 - Godot import/startup, `scripts/verify.ps1`, the focused Phase 7 contract,
   generation-v5 closed-mountain check, Windows release export, and hidden
   exported startup passed without opening a visible process.
-- Current phase: user-owned manual review of the rebuilt fastrun executable.
-- Next task: wait for the user's visible terrain, paint, and responsiveness QA.
+- The user's 2026-08-04 aiming capture rejected Phase 7: the high front shell,
+  low authored Aiming camera, and uninitialized ReplayBar produced an unusable
+  screen despite passing headless contracts.
+- Current phase: Phase 8 implementation and background release evidence are
+  complete; the plan remains active for the user's running-build review.
+- Next task: respond to that review or, only when explicitly authorized, define
+  a bounded QA phase from the deferred backlog.
 - Baseline: ea9d28c supplies reusable physical/paint foundations but no accepted
   visual result.
 - User gate: the 2026-08-04 running screen is rejected; do not polish or expand
@@ -756,9 +971,9 @@ Implementation-ready when:
 - latest mandatory headless launch smoke passes;
 - implementation record lists every untested behavior.
 
-Phase 7 satisfies the bounded implementation and delivery gate. Stop without a
-visible launch, screenshots, broad deferred suites, or an approval claim; wait
-for the user's manual run of the rebuilt fastrun executable.
+Phase 8 is complete only after the actual off-screen release capture has been
+opened and inspected by the implementing agent. Do not substitute headless
+contracts for that visual gate or claim user approval from the agent's capture.
 
 Replan only when user feedback changes the visible object, gameplay rule, UI
 hierarchy, asset boundary, or testing boundary, or when the locked closed-mass

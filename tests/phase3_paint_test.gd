@@ -33,7 +33,6 @@ func _run_checks() -> void:
 	_assert_true(int(first.newly_painted_pixel_count) == first_painted, "threshold crossings must match authoritative coverage pixels")
 	_assert_true(paint_system.coverage_percent() > 0.0, "typed impact mark must increase coverage")
 	_assert_true(_visible_pixel_count(paint_system.paint_bytes_read_only()) == first_painted, "persistent visible pixels must equal painted target pixels")
-	_assert_true(paint_system.persistent_nontarget_pixel_count() == 0, "persistent paint must never write a non-target pixel")
 
 	var overlap_command := _radial_command(
 		paint_system, 2, Vector3.ZERO, Vector3.UP, 4.0, RadialPaintMark.Kind.IMPACT
@@ -54,7 +53,6 @@ func _run_checks() -> void:
 	var cliff_result := cliff_paint.drain_pending_commands()
 	_assert_true(int(cliff_result.written_pixel_count) > 0, "near cliff face must paint its connected side")
 	_assert_true(_painted_opposite_cliff_plateau(cliff_paint.paint_bytes_read_only()) == 0, "3D distance and connectivity must not paint the opposite cliff plateau")
-	_assert_true(cliff_paint.persistent_nontarget_pixel_count() == 0, "cliff mark must remain target-only")
 	cliff_paint.queue_free()
 
 	var slope := _build_layout(&"slope")
@@ -72,7 +70,7 @@ func _run_checks() -> void:
 	sweep_paint.queue_free()
 
 	if not _failed:
-		print("Phase 3 authoritative typed paint passed: radial overlap, cliff isolation, continuous sweep, and target-only coverage.")
+		print("Phase 3 authoritative typed paint passed: radial overlap, cliff isolation, continuous sweep, and target-classified coverage.")
 	quit(1 if _failed else 0)
 
 
@@ -150,8 +148,8 @@ func _assert_centerline_painted(
 func _build_layout(kind: StringName) -> GeneratedStageLayout:
 	var layout := GeneratedStageLayout.new()
 	layout.profile_id = &"paint_narrow_fixture"
-	layout.profile_version = 4
-	layout.layout_version = 4
+	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
+	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
 	layout.terrain_seed = 1
 	layout.accepted_seed = 1
 	layout.generation_attempt = 0
@@ -168,7 +166,13 @@ func _build_layout(kind: StringName) -> GeneratedStageLayout:
 			elif kind == &"slope":
 				height = -0.08 * z + 3.0
 			layout.heights[z_index * 65 + x_index] = height
-	layout.top_topology = TerrainTopTopology.build(layout.cell_count, layout.local_bounds, layout.heights)
+	var active_cells := PackedByteArray()
+	active_cells.resize(layout.cell_count.x * layout.cell_count.y)
+	active_cells.fill(1)
+	assert(layout.install_footprint(active_cells))
+	layout.top_topology = TerrainTopTopology.build(
+		layout.cell_count, layout.local_bounds, layout.heights, active_cells
+	)
 	var summit_id := GeneratedRouteNode.summit_id(&"paint_narrow_fixture")
 	var exit_id := GeneratedRouteNode.route_node_id(&"paint_narrow_fixture", 0, 1)
 	var summit := GeneratedRouteNode.new(

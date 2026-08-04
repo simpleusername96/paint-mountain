@@ -6,13 +6,21 @@ extends RefCounted
 ## create the mass; route geometry only blends usable rolling lanes into it.
 
 const KEYED_STAGE_SAMPLER := preload("res://src/stage_generation/keyed_stage_sampler.gd")
+const FOOTPRINT_HEIGHT_BLEND := preload(
+	"res://src/stage_generation/footprint_height_blend.gd"
+)
+const ROUTE_CORE_BLEND_RANGE := Vector2(0.30, 0.78)
+const ROUTE_TARGET_BLEND_RANGE := Vector2(0.10, 0.62)
+const RANGE_RELIEF_SCALE := 0.91
+const FRONT_DESCENT_DISTANCE := 80.0
 
 
 static func build(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
-		attempt_seed: int
+		attempt_seed: int,
+		footprint: PackedByteArray
 ) -> PackedFloat32Array:
 	var contract := profile.generation_contract
 	var noise := FastNoiseLite.new()
@@ -27,6 +35,11 @@ static func build(
 	noise.fractal_gain = contract.noise_gain
 	var parameters := _build_range_parameters(stage_id, graph, attempt_seed)
 	var ordered_pads := graph.pad_nodes()
+	var footprint_blends: PackedFloat32Array = FOOTPRINT_HEIGHT_BLEND.build(
+		contract.cell_count,
+		contract.local_bounds,
+		footprint
+	)
 
 	var sample_size := contract.cell_count + Vector2i.ONE
 	var heights := PackedFloat32Array()
@@ -43,9 +56,11 @@ static func build(
 				contract.local_bounds.end.x,
 				float(x_index) / float(contract.cell_count.x)
 			)
-			heights[z_index * sample_size.x + x_index] = _height_at(
+			var sample_index := z_index * sample_size.x + x_index
+			heights[sample_index] = _height_at(
 				Vector2(local_x, local_z), graph, ordered_pads, contract,
-				noise, parameters
+				profile.nominal_peak,
+				noise, parameters, footprint_blends[sample_index]
 			)
 	return heights
 
@@ -166,6 +181,24 @@ static func _build_range_parameters(
 				stage_id, attempt_seed, key + "/width", Vector2(0.050, 0.095)
 			),
 		})
+	var summits: Array[Dictionary] = []
+	for index in range(1, ridges.size()):
+		var ridge: Dictionary = ridges[index]
+		var key := "range/summit/%d" % (index - 1)
+		summits.append({
+			"center": ridge.center,
+			"angle": ridge.angle,
+			"height": _sample_range(
+				stage_id, attempt_seed, key + "/height",
+				Vector2(0.16 + float(level) * 0.010, 0.22 + float(level) * 0.010)
+			),
+			"length_spread": _sample_range(
+				stage_id, attempt_seed, key + "/length", Vector2(0.035, 0.065)
+			),
+			"width_spread": _sample_range(
+				stage_id, attempt_seed, key + "/width", Vector2(0.070, 0.120)
+			),
+		})
 
 	var basins: Array[Dictionary] = []
 	if level >= 3:
@@ -227,6 +260,7 @@ static func _build_range_parameters(
 		})
 	return {
 		"ridges": ridges,
+		"summits": summits,
 		"basins": basins,
 		"passes": passes,
 		"waves": waves,
@@ -235,11 +269,13 @@ static func _build_range_parameters(
 
 static func _height_at(
 		point: Vector2,
-		graph: GeneratedRouteGraph,
-		pads: Array[GeneratedRouteNode],
-		contract: StageGenerationContract,
-		noise: FastNoiseLite,
-		parameters: Dictionary
+	graph: GeneratedRouteGraph,
+	pads: Array[GeneratedRouteNode],
+	contract: StageGenerationContract,
+	nominal_peak: float,
+	noise: FastNoiseLite,
+	parameters: Dictionary,
+	footprint_blend: float
 ) -> float:
 	var nearest_distance := INF
 	var nearest_core_radius := 0.0
@@ -265,41 +301,69 @@ static func _height_at(
 			route_height = float(cross_section.height)
 
 	var normalized := Vector2(point.x / 90.0, point.y / 60.0)
+	var route_level_t := float(clampi(graph.route_count(), 1, 3) - 1) / 2.0
+	var route_core_blend := lerpf(
+		ROUTE_CORE_BLEND_RANGE.x, ROUTE_CORE_BLEND_RANGE.y, route_level_t
+	)
+	var route_target_blend := lerpf(
+		ROUTE_TARGET_BLEND_RANGE.x, ROUTE_TARGET_BLEND_RANGE.y, route_level_t
+	)
+	if nearest_core_radius > 0.0:
+		# A broad route remains rollable without becoming a perfectly flat strip.
+		# The edge-lowering crown preserves the authored centerline height and
+		# therefore does not move the certified primary landing point upward.
+		var cross_t := _smoothstep01(nearest_distance / nearest_core_radius)
+		var crown_steps := 3.0 / float(maxi(graph.route_count(), 1))
+		route_height -= contract.terrace_step * crown_steps * cross_t
 	var height_ratio := _range_height_ratio(normalized, parameters)
-	var mountain_height := route_height * height_ratio
+	# The approved mountain-range field owns the broad mass. Route height only
+	# cuts a readable rolling lane into that mass; it must not turn the whole
+	# target into one front-to-back ramp.
+	var mountain_height := nominal_peak * height_ratio * RANGE_RELIEF_SCALE
 	var terraced := roundf(mountain_height / contract.terrace_step) * contract.terrace_step
 	mountain_height = lerpf(mountain_height, terraced, contract.terrace_blend)
 	var target_edge := nearest_core_radius + contract.target_shoulder_distance
 	var support_edge := nearest_core_radius + contract.support_distance
-	var route_blend := 1.0
+	# The route remains the majority height owner, but does not erase the broad
+	# ridge field. This keeps a rollable lane from reading as a rectangular ramp.
+	var route_blend := route_core_blend
 	if nearest_distance > nearest_core_radius and nearest_distance <= target_edge:
 		var target_t := _smoothstep01(
 			(nearest_distance - nearest_core_radius) / contract.target_shoulder_distance
 		)
-		route_blend = lerpf(1.0, 0.94, target_t)
+		route_blend = lerpf(route_core_blend, route_target_blend, target_t)
 	elif nearest_distance > target_edge:
 		var support_t := _smoothstep01(
 			(nearest_distance - target_edge) \
 					/ maxf(support_edge - target_edge, 0.001)
 		)
-		route_blend = 0.94 * (1.0 - support_t)
+		route_blend = route_target_blend * (1.0 - support_t)
 	var height := lerpf(mountain_height, route_height, route_blend)
 	var noise_weight := 1.0 - route_blend
 	height += noise.get_noise_2d(point.x, point.y) * contract.noise_amplitude * noise_weight
+	height *= _front_descent_blend(contract, point.y)
 
+	# Mechanism pads retain a flat core, but the complete surface still descends
+	# through the actual irregular footprint before its closure shell begins.
 	for pad in pads:
-		var distance_to_pad := point.distance_to(Vector2(pad.position.x, pad.position.z))
+		var pad_xz := Vector2(pad.position.x, pad.position.z)
+		var distance_to_pad := point.distance_to(pad_xz)
 		var pad_weight := 1.0 - _smoothstep01(
 			(distance_to_pad - 0.65 * pad.pad_radius) / (0.35 * pad.pad_radius)
 		)
-		height = lerpf(height, pad.position.y, pad_weight)
+		var pad_height := pad.position.y * _front_descent_blend(contract, pad.position.z)
+		height = lerpf(height, pad_height, pad_weight)
+	# Never raise a contour sample above its footprint falloff. Doing so leaves a
+	# high exposed edge that the closure mesh must turn into a rectangular wall.
+	return maxf(0.0, height * footprint_blend)
 
-	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
-	var edge_falloff_width := maxf(contract.outer_band_width - cell_size.length() - 0.01, 0.001)
-	var edge_blend := _smoothstep01(
-		_edge_distance(contract.local_bounds, point) / edge_falloff_width
-	)
-	return maxf(0.0, height * edge_blend)
+
+static func _front_descent_blend(
+		contract: StageGenerationContract,
+		local_z: float
+) -> float:
+	var distance_to_front := contract.local_bounds.end.y - local_z
+	return _smoothstep01(distance_to_front / FRONT_DESCENT_DISTANCE)
 
 
 static func _range_height_ratio(point: Vector2, parameters: Dictionary) -> float:
@@ -320,6 +384,16 @@ static func _range_height_ratio(point: Vector2, parameters: Dictionary) -> float
 		elif contribution > third:
 			third = contribution
 	var ratio := body + strongest + second * 0.34 + third * 0.12
+	var strongest_summit := 0.0
+	var second_summit := 0.0
+	for summit in parameters.summits:
+		var contribution := float(summit.height) * _oriented_gaussian(point, summit)
+		if contribution > strongest_summit:
+			second_summit = strongest_summit
+			strongest_summit = contribution
+		elif contribution > second_summit:
+			second_summit = contribution
+	ratio += strongest_summit + second_summit * 0.18
 	var theta := atan2(point.y, point.x)
 	for wave in parameters.waves:
 		var angular_wave := sin(theta * float(wave.angular_frequency) + float(wave.phase))
@@ -329,7 +403,10 @@ static func _range_height_ratio(point: Vector2, parameters: Dictionary) -> float
 		ratio -= float(basin.height) * _oriented_gaussian(point, basin)
 	for range_pass in parameters.passes:
 		ratio -= float(range_pass.height) * _oriented_gaussian(point, range_pass)
-	return clampf(ratio, 0.58, 1.0)
+	# Preserve separation between overlapping ridges. Clamping at 1.0 flattened
+	# every strong contribution into one table-top summit; the paired relief
+	# scale keeps the authored nominal peak while retaining the ridge hierarchy.
+	return clampf(ratio, 0.30, 1.16)
 
 
 static func _oriented_gaussian(point: Vector2, feature: Dictionary) -> float:

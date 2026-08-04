@@ -16,7 +16,7 @@ var _apron_geometry: ApronGeometry
 func configure(
 		spec: ContainmentSpec,
 		terrain_world_bounds: Rect2,
-		terrain_world_base_y: float
+		terrain_world_join_y: float
 ) -> void:
 	assert(spec != null and spec.is_valid(), "BackstopEnvironment requires a valid containment specification.")
 	var backstop_mesh := get_node_or_null("BackstopWallMesh") as MeshInstance3D
@@ -44,7 +44,11 @@ func configure(
 		ContainmentSpec.BACKSTOP_SHAPE_ID
 	)
 
-	_apron_geometry = ApronGeometryFactory.build(spec, terrain_world_bounds, terrain_world_base_y)
+	_apron_geometry = ApronGeometryFactory.build(
+		spec,
+		terrain_world_bounds,
+		terrain_world_join_y
+	)
 	apron_mesh.mesh = _apron_geometry.render_mesh
 	apron_shape_node.shape = _apron_geometry.collision_shape
 	_configure_contact_identity(

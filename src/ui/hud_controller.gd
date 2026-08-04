@@ -42,6 +42,8 @@ var _last_coverage := 0.0
 
 
 func _ready() -> void:
+	_replay_active = false
+	_replay.hide()
 	_connect_components()
 	_hint_timer.timeout.connect(func() -> void: _first_hint.visible = false)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
@@ -88,6 +90,7 @@ func set_fire_enabled(enabled: bool) -> void:
 
 func show_state(state: StageController.State) -> void:
 	_current_state = state
+	_replay.visible = _replay_active
 	_top.update_mode(state)
 	_briefing.visible = state == StageController.State.BRIEFING and not _replay_active
 	if state in [StageController.State.AIMING, StageController.State.PROJECTILE_IN_FLIGHT]:

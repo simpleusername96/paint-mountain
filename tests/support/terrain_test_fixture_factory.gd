@@ -14,8 +14,8 @@ const BOUNDS := Rect2(Vector2(-15.0, -15.0), Vector2(30.0, 30.0))
 static func build_layout(kind: Kind) -> GeneratedStageLayout:
 	var layout := GeneratedStageLayout.new()
 	layout.profile_id = &"terrain_test_fixture"
-	layout.profile_version = 4
-	layout.layout_version = 4
+	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
+	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
 	layout.terrain_seed = int(kind) + 1
 	layout.accepted_seed = layout.terrain_seed
 	layout.generation_attempt = 0
@@ -33,7 +33,13 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 			elif kind == Kind.FACETED:
 				height = facet_height(x_index, z_index, x, z)
 			layout.heights[z_index * (CELL_COUNT.x + 1) + x_index] = height
-	layout.top_topology = TerrainTopTopology.build(layout.cell_count, layout.local_bounds, layout.heights)
+	var footprint := PackedByteArray()
+	footprint.resize(CELL_COUNT.x * CELL_COUNT.y)
+	footprint.fill(1)
+	assert(layout.install_footprint(footprint), "Terrain test fixture must install its full footprint.")
+	layout.top_topology = TerrainTopTopology.build(
+		layout.cell_count, layout.local_bounds, layout.heights, footprint
+	)
 	var summit_id := GeneratedRouteNode.summit_id(&"terrain_test_fixture")
 	var exit_id := GeneratedRouteNode.route_node_id(&"terrain_test_fixture", 0, 1)
 	var summit := GeneratedRouteNode.new(

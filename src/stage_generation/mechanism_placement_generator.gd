@@ -84,15 +84,22 @@ static func _placement_valid(
 	if slope > MAX_PLACEMENT_SLOPE_DEGREES:
 		layout.metrics["placement_rejection"] = "slope"
 		return false
-	var physical_radius := _physical_radius(kind)
-	if layout.route_graph.route_width(route_index) * 0.5 - physical_radius < ROUTE_EDGE_CLEARANCE:
+	var physical_radius := effective_collision_radius(kind)
+	# A typed mechanism pad widens its route locally; placement clearance belongs
+	# to that support boundary, while the shelf gate below owns its flat center.
+	var support_radius := maxf(
+		layout.route_graph.route_width(route_index) * 0.5,
+		shelf_radius
+	)
+	if support_radius - physical_radius < ROUTE_EDGE_CLEARANCE:
 		layout.metrics["placement_rejection"] = "route_edge_clearance"
 		return false
 	if shelf_radius * 0.60 < physical_radius:
 		layout.metrics["placement_rejection"] = "shelf_radius"
 		return false
 	for placement in existing:
-		var required := physical_radius + _physical_radius(placement.mechanism_data.kind) + 1.0
+		var required := physical_radius \
+				+ effective_collision_radius(placement.mechanism_data.kind) + 1.0
 		if local_xz.distance_to(placement.local_xz) < required:
 			layout.metrics["placement_rejection"] = "mechanism_separation"
 			return false
@@ -103,7 +110,9 @@ static func _placement_valid(
 	if edge_distance < physical_radius + ROUTE_EDGE_CLEARANCE:
 		layout.metrics["placement_rejection"] = "terrain_edge_clearance"
 		return false
-	if not _camera_visibility_passes(stage_data, layout, local_point, _visual_diameter(kind)):
+	if not _camera_visibility_passes(
+		stage_data, layout, local_point, effective_visual_diameter(kind)
+	):
 		layout.metrics["placement_rejection"] = "camera_visibility"
 		return false
 	return true
@@ -175,21 +184,21 @@ static func _terrain_ray_clear(
 	return true
 
 
-static func _physical_radius(kind: MechanismData.Kind) -> float:
+static func effective_collision_radius(kind: MechanismData.Kind) -> float:
 	match kind:
 		MechanismData.Kind.BURST:
-			return 1.8
+			return 3.6
 		MechanismData.Kind.SPLITTER:
-			return 1.75
+			return 3.5
 		_:
-			return 1.9
+			return 3.8
 
 
-static func _visual_diameter(kind: MechanismData.Kind) -> float:
+static func effective_visual_diameter(kind: MechanismData.Kind) -> float:
 	match kind:
 		MechanismData.Kind.BURST:
-			return 4.2
+			return 8.4
 		MechanismData.Kind.SPLITTER:
-			return 5.0
+			return 10.0
 		_:
-			return 5.2
+			return 10.4

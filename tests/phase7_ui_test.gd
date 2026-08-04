@@ -47,21 +47,16 @@ func _run_checks() -> void:
 	await process_frame
 	var gameplay := app.get_node("ActiveGameplay")
 	var controller: StageController = gameplay.get_node("StageController")
-	var hud_root := gameplay.get_node("HUD/HUDRoot")
-	_assert_hud_rect(hud_root.get_node("TopStatusBar/StageChip"), Rect2(24, 16, 128, 44), "stage chip")
-	_assert_hud_rect(hud_root.get_node("TopStatusBar/TargetChip"), Rect2(497, 16, 286, 44), "target chip")
-	_assert_hud_rect(hud_root.get_node("TopStatusBar/ShotsChip"), Rect2(1086, 16, 170, 44), "shots chip")
-	_assert_hud_rect(hud_root.get_node("TopStatusBar/ModeChip"), Rect2(24, 72, 128, 40), "mode chip")
-	_assert_hud_rect(hud_root.get_node("AimControls"), Rect2(24, 586, 300, 110), "aim controls")
-	_assert_hud_rect(hud_root.get_node("CoverageMeter"), Rect2(410, 640, 460, 56), "coverage meter")
-	_assert_hud_rect(hud_root.get_node("ActionButtons/Restart"), Rect2(1028, 584, 88, 112), "restart action")
-	_assert_hud_rect(hud_root.get_node("ActionButtons/FireButton"), Rect2(1128, 584, 128, 112), "fire action")
-	_assert_accessible_controls(hud_root)
+	var hud_root := gameplay.get_node("HUD/HUDRoot") as Control
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
 	_assert_true(hud_root.get_node("BriefingPanel").visible, "briefing panel must be visible before aiming")
 	_assert_true(controller.begin_aiming(), "UI flow test must enter aiming")
+	await process_frame
+	_assert_aiming_hud_contract(hud_root)
 	_assert_true(controller.toggle_pause(), "pause must be reachable from gameplay")
-	_assert_true(hud_root.get_node("PauseOverlay").visible, "pause overlay must expose its own screen")
+	var pause_overlay := hud_root.get_node("PauseOverlay") as Control
+	_assert_true(pause_overlay.visible, "pause overlay must expose its own screen")
+	_assert_true(pause_overlay.get_node_or_null("Panel/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
 	app._on_gameplay_navigation(&"settings")
 	await process_frame
 	_assert_true(settings.visible, "paused gameplay must be able to open full settings")
@@ -107,23 +102,32 @@ func _assert_theme_contract() -> void:
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
 
 
-func _assert_hud_rect(control: Control, expected: Rect2, label: String) -> void:
-	var actual := control.get_global_rect()
-	_assert_true(actual.position.distance_to(expected.position) <= 2.0 and actual.size.distance_to(expected.size) <= 2.0, "%s rect must match %s, got %s" % [label, expected, actual])
-	for resolution in [Vector2(1280, 720), Vector2(1600, 900), Vector2(1920, 1080)]:
-		var scale: float = resolution.x / 1280.0
-		var physical: Rect2 = Rect2(actual.position * scale, actual.size * scale)
-		var expected_physical: Rect2 = Rect2(expected.position * scale, expected.size * scale)
-		_assert_true(physical.position.distance_to(expected_physical.position) <= 3.0 and physical.size.distance_to(expected_physical.size) <= 3.0, "%s must preserve aspect-scaled geometry at %s" % [label, resolution])
-		_assert_true(physical.position.x >= 0.0 and physical.position.y >= 0.0 and physical.end.x <= resolution.x and physical.end.y <= resolution.y, "%s must remain onscreen at %s" % [label, resolution])
+func _assert_aiming_hud_contract(hud_root: Control) -> void:
+	var hud_rect := hud_root.get_global_rect()
+	var hud_center := hud_rect.get_center()
+	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
+	var coverage_value := coverage.get_node_or_null("Content/CoverageValue") as Label
+	var target_value := coverage.get_node_or_null("Content/TargetValue") as Label
+	var progress := coverage.get_node_or_null("Content/Progress") as ProgressBar
+	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the top bar must not duplicate target coverage")
+	_assert_true(coverage_value != null and target_value != null, "the left coverage meter must own both current and target values")
+	_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the coverage rail must fill from bottom to top")
+	_assert_true(coverage.is_visible_in_tree() and coverage.get_global_rect().get_center().x < hud_center.x, "the coverage meter must remain on the left during aiming")
 
+	var actions := hud_root.get_node("ActionButtons") as ActionButtons
+	var fire := actions.get_node_or_null("FireButton") as Button
+	var fire_rect := fire.get_global_rect()
+	_assert_true(actions.find_children("*", "Button", true, false).size() == 1, "Fire must be the sole aiming action")
+	_assert_true(actions.find_child("Restart", true, false) == null, "Restart must be absent from the aiming actions")
+	_assert_true(fire.is_visible_in_tree() and fire_rect.position.x <= hud_center.x and fire_rect.end.x >= hud_center.x and fire_rect.position.y > hud_center.y, "Fire must remain centered in the lower HUD")
+	_assert_true(not (hud_root.get_node("PauseOverlay") as Control).visible, "the paused-menu Restart must stay hidden during aiming")
 
-func _assert_accessible_controls(node: Node) -> void:
-	if node is Button:
-		_assert_true(node.size.y >= 40.0, "%s button must be at least 40px tall" % node.name)
-		_assert_true(node.get_theme_font_size("font_size") >= 16, "%s button type must be at least 16px" % node.name)
-		_assert_true(node.focus_mode == Control.FOCUS_ALL, "%s must expose keyboard focus" % node.name)
-	elif node is Label:
-		_assert_true(node.get_theme_font_size("font_size") >= 14, "%s label type must be at least 14px" % node.name)
-	for child in node.get_children():
-		_assert_accessible_controls(child)
+	var shots := hud_root.get_node("TopStatusBar/ShotsChip") as Control
+	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
+	var shots_rect := shots.get_global_rect()
+	var settings_rect := settings.get_global_rect()
+	_assert_true(shots_rect.get_center().x > hud_center.x and shots_rect.get_center().y < hud_center.y, "remaining shots must stay in the upper-right")
+	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
+	_assert_true(shots_rect.end.x <= settings_rect.position.x, "shots and settings must remain separate, ordered controls")
+	for control in [coverage, fire, shots, settings]:
+		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

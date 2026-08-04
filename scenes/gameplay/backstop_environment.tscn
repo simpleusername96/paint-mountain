@@ -3,12 +3,17 @@
 [ext_resource type="Script" path="res://src/terrain/backstop_environment.gd" id="1_environment"]
 
 [sub_resource type="StandardMaterial3D" id="Material_backstop"]
-albedo_color = Color(0.984314, 0.972549, 0.94902, 1)
+albedo_color = Color(0.96, 0.95, 0.92, 1)
 roughness = 0.88
+disable_receive_shadows = true
+shading_mode = 0
 
 [sub_resource type="StandardMaterial3D" id="Material_apron"]
-albedo_color = Color(0.68, 0.7, 0.74, 1)
+albedo_color = Color(0.91, 0.89, 0.85, 1)
 roughness = 0.88
+disable_receive_shadows = true
+cull_mode = 2
+shading_mode = 0
 
 [node name="BackstopEnvironment" type="Node3D"]
 script = ExtResource("1_environment")

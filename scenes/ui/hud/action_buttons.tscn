@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/action_buttons.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/vfx/kenney/paint_mist.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/paint_splash.svg" id="3"]
 
 [node name="ActionButtons" type="Control"]
 custom_minimum_size = Vector2(176, 72)
@@ -19,3 +19,7 @@ text = "ui.fire"
 icon = ExtResource("3")
 expand_icon = true
 icon_max_width = 36
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_pressed_color = Color(1, 1, 1, 1)

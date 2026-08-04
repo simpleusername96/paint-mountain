@@ -15,8 +15,9 @@ $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path
 
 $ordinaryTests = @(
     'version4_contract_test.gd',
-    'terrain_geometry_test.gd',
     'stage_generation_test.gd',
+    'mountain_range_mvp_test.gd',
+    'phase8_front_transition_test.gd',
     'stage_mvp_permit_test.gd',
     'mechanism_placement_test.gd',
     'decoration_placement_test.gd',
@@ -35,7 +36,9 @@ $ordinaryTests = @(
     'aim_interaction_test.gd',
     'shot_observation_test.gd',
     'camera_safety_test.gd',
+    'phase8_aiming_composition_test.gd',
     'phase7_ui_test.gd',
+    'phase8_hud_truth_test.gd',
     'localization_ui_test.gd',
     'shot_feedback_test.gd',
     'replay_presentation_test.gd',

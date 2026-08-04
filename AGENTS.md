@@ -12,6 +12,7 @@
 - Keep the project launchable after each milestone. Run `scripts/verify.ps1` after script, scene, resource, or project-setting changes.
 - Do not add production dependencies, plugins, network services, Docker, or asset packs without the user's explicit approval.
 - Before broad or cross-module implementation, use the relevant active ExecPlan under `.agents/execplans/` and finish with `$codebase-quality-auditor`.
+- UI/UX and visual-composition work must inspect the actual running-game render before handoff. Headless contracts, scene inspection, and numeric layout checks may support diagnosis but never replace before/after runtime captures reviewed by the implementing agent. Prefer the task-owned background capture path so verification does not obstruct the user's desktop.
 - Final gameplay handoff requires an exported or production-style build check and separate running-game screenshots listed in `docs/test-checklist.md`.
 
 ## Architectural Guardrails

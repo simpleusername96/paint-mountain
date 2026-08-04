@@ -31,12 +31,41 @@ func _ready() -> void:
 	assert(_selection_body != null, "%s requires its separate SelectionBody." % name)
 	assert(_mechanism_body.collision_layer == 4, "MechanismBody must use physics layer 3 only.")
 	assert(_selection_body.collision_layer == 8, "SelectionBody must use query layer 4 only.")
+	_install_contact_identity()
 	_selection_body.input_event.connect(_on_selection_input_event)
 	_build_label()
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null:
 		game_state.settings_changed.connect(_on_settings_changed)
 	reset_state()
+
+
+static func contact_owner_id_for_kind(kind: MechanismData.Kind) -> StringName:
+	return StringName("mechanism/%s" % String(MechanismData.Kind.keys()[kind]).to_lower())
+
+
+static func contact_shape_id_for_kind(
+		kind: MechanismData.Kind,
+		shape_name: StringName
+) -> StringName:
+	return StringName("%s/%s" % [contact_owner_id_for_kind(kind), String(shape_name)])
+
+
+func _install_contact_identity() -> void:
+	# Prediction and rigid-body contact resolve the same stable IDs. Without this
+	# metadata, a real paintball correctly rejects the mechanism as ambiguous.
+	_mechanism_body.set_meta(
+		ContainmentSpec.CONTACT_OWNER_META,
+		contact_owner_id_for_kind(data.kind)
+	)
+	for child in _mechanism_body.get_children():
+		var collision := child as CollisionShape3D
+		if collision == null:
+			continue
+		collision.set_meta(
+			ContainmentSpec.CONTACT_SHAPE_META,
+			contact_shape_id_for_kind(data.kind, collision.name)
+		)
 
 
 func configure(projectile_manager: ProjectileManager, paint_system: PaintSystem) -> void:

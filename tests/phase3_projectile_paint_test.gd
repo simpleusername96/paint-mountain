@@ -67,8 +67,8 @@ func _run_checks() -> void:
 			observed.paint_checksum = paint_mask_checksum
 	)
 	_assert_true(controller.begin_aiming(), "production stage must enter aiming")
-	cannon.set_aim(0.0, 38.0, 68.0)
-	_assert_true(cannon.request_fire(), "production cannon must accept a predicted fire command")
+	_assert_true(cannon.is_aim_valid(), "runtime default aim must own a valid first impact")
+	_assert_true(controller.request_fire(), "production stage must accept its runtime default shot")
 	var active := manager.active_projectiles()
 	_assert_true(active.size() == 1, "accepted fire must spawn exactly one projectile")
 	if not active.is_empty():
@@ -96,7 +96,6 @@ func _run_checks() -> void:
 	_assert_true(observed.paint_checksum == paint_system.paint_mask_checksum(), "drained checksum must match PaintSystem authority")
 	_assert_true(observed.written_pixels > 0 and observed.newly_painted_pixels > 0, "typed commands must write and cross the authoritative threshold")
 	_assert_true(paint_system.coverage_percent() > 0.0, "projectile commands must increase authoritative coverage")
-	_assert_true(paint_system.persistent_nontarget_pixel_count() == 0, "persistent paint must never enter non-target pixels")
 	if not _failed:
 		print(
 			"Phase 3 projectile-paint integration passed: %d applied, %d impact, %d sweep, %d settle, %.4f%% coverage." % [

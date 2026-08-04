@@ -4,7 +4,6 @@ extends Control
 signal settings_requested
 
 @onready var stage_value: Label = %StageValue
-@onready var target_value: Label = %TargetValue
 @onready var shots_value: Label = %ShotsValue
 @onready var mode_value: Label = %ModeValue
 
@@ -15,7 +14,6 @@ func _ready() -> void:
 
 func configure(stage: StageData) -> void:
 	stage_value.text = "%s %02d" % [tr("hud.stage"), stage.stage_number]
-	target_value.text = "%s  %.0f%%" % [tr("hud.target"), stage.target_coverage]
 	update_shots(stage.maximum_shots)
 
 

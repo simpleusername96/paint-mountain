@@ -15,6 +15,7 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	_assert_deferred_profiles_resolve_typed_pads()
+	_assert_effective_envelope_contract()
 	var fixture := _synthetic_burst_fixture()
 	var stage := fixture.stage as StageData
 	var first := fixture.layout as GeneratedStageLayout
@@ -39,6 +40,41 @@ func _assert_deferred_profiles_resolve_typed_pads() -> void:
 		for mechanism in stage.mechanism_loadout:
 			var pad := graph.pad_node_for_kind(mechanism.kind)
 			_assert_true(pad != null and pad.mechanism_kind == mechanism.kind, "%s mechanism must resolve to its typed immutable pad" % stage.stage_id)
+			if pad == null:
+				continue
+			var collision_radius := MechanismPlacementGenerator.effective_collision_radius(
+				mechanism.kind
+			)
+			var support_radius := maxf(
+				graph.route_width(pad.route_index) * 0.5,
+				pad.pad_radius
+			)
+			_assert_true(
+				support_radius - collision_radius >= MechanismPlacementGenerator.ROUTE_EDGE_CLEARANCE,
+				"%s mechanism pad must contain its 2x collision envelope plus route-edge clearance" % stage.stage_id
+			)
+			_assert_true(
+				pad.pad_radius * 0.60 >= collision_radius,
+				"%s mechanism pad must contain its 2x collision envelope on the flat inner shelf" % stage.stage_id
+			)
+
+
+func _assert_effective_envelope_contract() -> void:
+	_assert_true(
+		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.BURST), 3.6)
+				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.BURST), 8.4),
+		"Burst placement must use its 2x collision and visible bounds"
+	)
+	_assert_true(
+		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.SPLITTER), 3.5)
+				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.SPLITTER), 10.0),
+		"Splitter placement must use its 2x collision and visible bounds"
+	)
+	_assert_true(
+		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.BUMPER), 3.8)
+				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.BUMPER), 10.4),
+		"Bumper placement must use its 2x collision and visible bounds"
+	)
 
 
 func _synthetic_burst_fixture() -> Dictionary:
@@ -95,15 +131,23 @@ func _assert_placement(stage: StageData, layout: GeneratedStageLayout, placement
 	_assert_true((-placement.local_transform.basis.z).dot(tangent) >= 0.999, "%s local forward must follow the downstream tangent" % stage.stage_id)
 	var slope := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 	_assert_true(slope <= 8.0, "%s exact shelf point must be <= 8 degrees" % stage.stage_id)
-	var physical_radius := _physical_radius(placement.mechanism_data.kind)
+	var physical_radius := MechanismPlacementGenerator.effective_collision_radius(
+		placement.mechanism_data.kind
+	)
 	_assert_true(pad.pad_radius * 0.60 >= physical_radius, "%s flat pad must contain the physical body" % stage.stage_id)
-	_assert_true(layout.route_graph.route_width(placement.route_index) * 0.5 - physical_radius >= 3.0, "%s body must keep 3 m route-edge clearance" % stage.stage_id)
+	var support_radius := maxf(
+		layout.route_graph.route_width(placement.route_index) * 0.5,
+		pad.pad_radius
+	)
+	_assert_true(support_radius - physical_radius >= 3.0, "%s body must keep 3 m pad-edge clearance" % stage.stage_id)
 	_assert_visibility(stage, layout, placement, normal)
 	_assert_true(placement.local_transform.is_equal_approx(repeated.local_transform), "%s exact transform must be deterministic" % stage.stage_id)
 
 
 func _assert_visibility(stage: StageData, layout: GeneratedStageLayout, placement: MechanismPlacement, normal: Vector3) -> void:
-	var diameter := _visual_diameter(placement.mechanism_data.kind)
+	var diameter := MechanismPlacementGenerator.effective_visual_diameter(
+		placement.mechanism_data.kind
+	)
 	var surface := Vector3(placement.local_xz.x, layout.height_at_local(placement.local_xz.x, placement.local_xz.y), placement.local_xz.y)
 	var world_top := stage.terrain_center + surface + normal * diameter
 	_assert_true(MechanismPlacementGenerator._terrain_ray_clear(stage, layout, stage.aiming_camera_position, world_top), "%s mechanism must be unoccluded in aiming" % stage.stage_id)
@@ -149,8 +193,11 @@ func _assert_invalid_pad_rejected(stage: StageData, layout: GeneratedStageLayout
 	invalid_layout.cell_count = layout.cell_count
 	invalid_layout.local_bounds = layout.local_bounds
 	invalid_layout.heights = layout.heights.duplicate()
+	var footprint := layout.footprint_cells_read_only()
+	_assert_true(invalid_layout.install_footprint(footprint), "%s invalid-placement fixture must retain the source footprint" % stage.stage_id)
 	invalid_layout.top_topology = TerrainTopTopology.build(
-		invalid_layout.cell_count, invalid_layout.local_bounds, invalid_layout.heights
+		invalid_layout.cell_count, invalid_layout.local_bounds, invalid_layout.heights,
+		footprint
 	)
 	invalid_layout.route_graph = GeneratedRouteGraph.new(invalid_nodes, layout.route_graph.edges)
 	invalid_layout.containment = layout.containment
@@ -165,22 +212,6 @@ func _role_for_kind(kind: MechanismData.Kind) -> StageRouteProfile.Role:
 	if kind == MechanismData.Kind.BUMPER:
 		return StageRouteProfile.Role.BUMPER
 	return StageRouteProfile.Role.PRIMARY
-
-
-func _physical_radius(kind: MechanismData.Kind) -> float:
-	if kind == MechanismData.Kind.BURST:
-		return 1.8
-	if kind == MechanismData.Kind.SPLITTER:
-		return 1.75
-	return 1.9
-
-
-func _visual_diameter(kind: MechanismData.Kind) -> float:
-	if kind == MechanismData.Kind.BURST:
-		return 4.2
-	if kind == MechanismData.Kind.SPLITTER:
-		return 5.0
-	return 5.2
 
 
 func _placement_summary(layout: GeneratedStageLayout) -> Array[String]:

@@ -49,9 +49,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
 | Aim-mode chip | Below Stage | Compact secondary state |
-| Target card | Top-center | Target coverage |
 | Shots and Gear | Upper-right | Remaining shots followed by a separate menu action |
-| Coverage gauge | Left edge | Vertical rail; absolute coverage fills bottom-to-top and shows target |
+| Coverage gauge | Left edge | Sole coverage owner; absolute coverage fills bottom-to-top and shows target |
 | Aim and power | Lower-left | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
@@ -62,7 +61,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   survives supported desktop aspect and resolution changes. Do not freeze every
   child to viewport offsets.
 - Keep one Fire control. Do not place Restart in the aiming HUD.
-- Keep the center of the world view and the visible mountain routes free of
+- Keep the top-center and center of the world view free of duplicate status
+  cards, and keep visible mountain routes free of
   persistent panels, explanatory text, or modal overlays.
 - Trajectory and impact feedback belong in world space; the HUD must not pretend
   to predict post-impact paint.
@@ -138,10 +138,11 @@ A UI change conforms when:
   blocks the world-space impact point; and
 - every visible action is connected to real functionality.
 
-During the current implementation-first stage, inspect scene/resource structure
-without opening a visible Godot window. This spec does not authorize later
-rendered QA; follow the active ExecPlan and explicit user instruction for that
-gate.
+Every substantial UI or visual-composition change requires direct inspection of
+the actual running-game render before handoff. Headless contracts and scene
+inspection are supporting evidence only. Use the task-owned background capture
+path when possible so rendered QA does not obstruct the user's desktop, and
+record any capture limitation instead of claiming visual conformance.
 
 ## Non-Goals
 

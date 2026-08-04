@@ -3,19 +3,38 @@ render_mode depth_draw_opaque, cull_back;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
 uniform sampler2D target_mask : filter_nearest, repeat_disable;
-uniform vec4 rock_color : source_color = vec4(0.82, 0.82, 0.80, 1.0);
-uniform vec4 shadow_tint : source_color = vec4(0.46, 0.50, 0.58, 1.0);
+uniform vec4 rock_color : source_color = vec4(0.42, 0.44, 0.48, 1.0);
+uniform vec4 shadow_tint : source_color = vec4(0.32, 0.35, 0.40, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
+uniform float support_floor_y = -2.0;
+uniform float support_rear_z = -172.0;
 
 varying float paintable_surface;
 varying float upwardness;
+varying float facet_tone;
+varying vec3 world_position;
 
 void vertex() {
 	paintable_surface = COLOR.r;
 	upwardness = clamp(NORMAL.y, 0.0, 1.0);
+	facet_tone = COLOR.g;
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
+	// The top falloff terminates on the apron plane. Suppress the coplanar final
+	// millimetres so the shared join cannot shimmer into saw-tooth fragments.
+	if (paintable_surface >= 0.5 && world_position.y <= support_floor_y + 0.03) {
+		discard;
+	}
+	// The support shell closes terrain collision below the shared world floor.
+	// Only its above-floor cliffs belong in the visible mountain silhouette.
+	if (paintable_surface < 0.5 && (
+		world_position.y <= support_floor_y + 0.005 ||
+		world_position.z <= support_rear_z + 0.005
+	)) {
+		discard;
+	}
 	vec2 texel = vec2(1.0 / 512.0);
 	float target = step(0.5, texture(target_mask, UV).r) * paintable_surface;
 	// Every physically traversed mountain-top texel stays visibly painted. The
@@ -29,9 +48,16 @@ void fragment() {
 	float dark_rim = clamp(smoothstep(0.06, 0.24, neighbor) - painted, 0.0, 1.0);
 	float wet_core = smoothstep(0.34, 0.72, center);
 	float rock_luma = dot(rock_color.rgb, vec3(0.2126, 0.7152, 0.0722));
-	vec3 nontarget_rock = mix(rock_color.rgb, vec3(rock_luma), 0.20) * 0.88;
+	vec3 nontarget_rock = mix(rock_color.rgb, vec3(rock_luma), 0.08) * 0.97;
 	vec3 classified_rock = mix(nontarget_rock, rock_color.rgb, target);
-	vec3 dry_rock = mix(shadow_tint.rgb, classified_rock, 0.35 + 0.65 * upwardness);
+	// Vertex color is the canonical geometry classification: white is the
+	// paintable mountain top and black is the support shell/bottom. A steep but
+	// rollable top must not collapse to the same dark value as a vertical skirt.
+	vec3 support_rock = mix(shadow_tint.rgb, classified_rock, 0.20 + 0.25 * upwardness);
+	vec3 top_rock = classified_rock
+		* mix(0.90, 1.04, upwardness)
+		* mix(0.965, 1.035, facet_tone);
+	vec3 dry_rock = mix(support_rock, top_rock, paintable_surface);
 	vec3 painted_color = mix(paint_color.rgb * 0.58, paint_color.rgb, painted);
 	ALBEDO = mix(dry_rock, painted_color, max(painted, dark_rim));
 	ROUGHNESS = mix(0.88, 0.24, painted);

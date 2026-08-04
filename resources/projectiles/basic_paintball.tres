@@ -16,5 +16,5 @@ maximum_lifetime = 18.0
 minimum_movement_speed = 1.4
 stop_duration = 1.0
 paint_footprint_radius = 4.0
-impact_paint_radius = 9.0
+impact_paint_radius = 6.0
 settle_paint_radius = 4.0

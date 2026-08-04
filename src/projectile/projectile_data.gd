@@ -20,7 +20,7 @@ extends Resource
 
 @export_category("Paint Surface")
 @export_range(0.05, 8.0, 0.05) var paint_footprint_radius: float = 4.0
-@export_range(0.1, 20.0, 0.1) var impact_paint_radius: float = 9.0
+@export_range(0.1, 20.0, 0.1) var impact_paint_radius: float = 6.0
 @export_range(0.1, 20.0, 0.1) var settle_paint_radius: float = 4.0
 
 

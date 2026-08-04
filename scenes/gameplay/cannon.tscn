@@ -52,6 +52,7 @@ projectile_data = ExtResource("2_projectile")
 
 [node name="Base" type="MeshInstance3D" parent="."]
 position = Vector3(0, 0.15, 0)
+scale = Vector3(1.35, 1.1, 1.35)
 mesh = SubResource("Mesh_base")
 
 [node name="YawPivot" type="Node3D" parent="."]
@@ -59,6 +60,7 @@ unique_name_in_owner = true
 position = Vector3(0, 0.75, -0.1)
 
 [node name="Pivot" type="MeshInstance3D" parent="YawPivot"]
+scale = Vector3(1.25, 1.25, 1.25)
 mesh = SubResource("Mesh_pivot")
 
 [node name="ElevationPivot" type="Node3D" parent="YawPivot"]
@@ -67,11 +69,13 @@ unique_name_in_owner = true
 [node name="Barrel" type="MeshInstance3D" parent="YawPivot/ElevationPivot"]
 position = Vector3(0, 0, -1.7)
 rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(1.35, 1, 1.35)
 mesh = SubResource("Mesh_barrel")
 
 [node name="Band" type="MeshInstance3D" parent="YawPivot/ElevationPivot"]
 position = Vector3(0, 0, -2.8)
 rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(1.35, 1, 1.35)
 mesh = SubResource("Mesh_band")
 
 [node name="Muzzle" type="Marker3D" parent="YawPivot/ElevationPivot"]

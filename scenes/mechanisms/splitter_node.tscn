@@ -60,6 +60,7 @@ height = 2.5
 script = ExtResource("1_script")
 
 [node name="Visual" type="Node3D" parent="."]
+scale = Vector3(2, 2, 2)
 
 [node name="Base" type="MeshInstance3D" parent="Visual"]
 position = Vector3(0, 0.275, 0)
@@ -91,6 +92,7 @@ rotation_degrees = Vector3(90, 0, 28)
 mesh = SubResource("Outlet")
 
 [node name="MechanismBody" type="StaticBody3D" parent="."]
+scale = Vector3(2, 2, 2)
 collision_layer = 4
 collision_mask = 2
 
@@ -118,6 +120,7 @@ rotation_degrees = Vector3(90, 0, 28)
 shape = SubResource("OutletShape")
 
 [node name="SelectionBody" type="StaticBody3D" parent="."]
+scale = Vector3(2, 2, 2)
 collision_layer = 8
 collision_mask = 0
 

@@ -28,6 +28,8 @@ func _run_checks() -> void:
 
 
 func _assert_production_tuning() -> void:
+	var default_data := ProjectileData.new()
+	_assert_true(is_equal_approx(default_data.impact_paint_radius, 6.0), "default impact radius must be 6 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 0.52), "production radius must remain 0.52 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.mass, 2.4), "production mass must remain 2.4 kg")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.bounce, 0.08), "production bounce must be 0.08")
@@ -40,7 +42,7 @@ func _assert_production_tuning() -> void:
 		"normal terrain must stay restitution-neutral so ProjectileData alone owns rebound tuning"
 	)
 	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 4.0), "parent sweep radius must be 4 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 9.0), "impact radius must be 9 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 6.0), "impact radius must be 6 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.settle_paint_radius, 4.0), "settle radius must be 4 m")
 
 
@@ -66,12 +68,12 @@ func _assert_manager_canonical_ordering() -> void:
 		TerrainSurface.TOP_SHAPE_ID, 0, false
 	)
 	var later_ordinal_impact := RadialPaintMark.new(
-		tick, 1, 0, -1, point, Vector3.UP, 9.0, body.get_rid(),
+		tick, 1, 0, -1, point, Vector3.UP, 6.0, body.get_rid(),
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.IMPACT
 	)
 	var impact := RadialPaintMark.new(
-		tick, 0, 0, -1, point, Vector3.UP, 9.0, body.get_rid(),
+		tick, 0, 0, -1, point, Vector3.UP, 6.0, body.get_rid(),
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.IMPACT
 	)

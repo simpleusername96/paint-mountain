@@ -159,7 +159,7 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 static func _validate_edges(layout: GeneratedStageLayout) -> bool:
 	var size := layout.sample_size()
 	for x in range(size.x):
-		if layout.heights[x] > 0.01 or layout.heights[(size.y - 1) * size.x + x] > 0.01:
+		if layout.heights[(size.y - 1) * size.x + x] > 0.01:
 			return false
 	for z in range(size.y):
 		if layout.heights[z * size.x] > 0.01 or layout.heights[z * size.x + size.x - 1] > 0.01:

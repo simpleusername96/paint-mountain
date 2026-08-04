@@ -20,10 +20,10 @@ static func build(
 		graph: GeneratedRouteGraph,
 		attempt_seed: int
 ) -> Dictionary:
-	var heights: PackedFloat32Array = HEIGHT_FIELD_BUILDER.build(
-		stage_id, profile, graph, attempt_seed
-	)
 	var footprint := _build_footprint(stage_id, profile, graph, attempt_seed)
+	var heights: PackedFloat32Array = HEIGHT_FIELD_BUILDER.build(
+		stage_id, profile, graph, attempt_seed, footprint
+	)
 	return {
 		"heights": heights,
 		"footprint": footprint,
@@ -67,25 +67,23 @@ static func _build_footprint(
 				(float(cell_z) + 0.5) * cell_size.y
 			)
 			var depth_t := (float(cell_z) + 0.5) / float(contract.cell_count.y)
-			var arch := pow(maxf(0.0, sin(depth_t / 0.93 * PI)), 0.68) \
-					if depth_t <= 0.93 else 0.0
-			var half_width := lerpf(52.0, 30.0, depth_t / 0.93) + arch * 25.0
+			var arch := pow(maxf(0.0, sin(depth_t * PI)), 0.68)
+			var half_width := lerpf(42.0, 34.0, depth_t) + arch * 20.0
 			var center_bend := sin(depth_t * TAU * 0.72 + bend_phase) * 5.5
 			var irregularity := contour_noise.get_noise_2d(
 				center.y * 0.65 + cos(contour_phase) * 20.0,
 				sin(contour_phase) * 20.0
 			) * 4.5
-			var included := depth_t <= 0.93 \
-					and absf(center.x - center_bend) <= half_width + irregularity
+			var included := absf(center.x - center_bend) <= half_width + irregularity
 
 			# Route shoulders may widen the silhouette, but never punch holes in the
 			# mountain-range body established above.
 			var nearest := graph.nearest_edge(center)
 			var edge := nearest.get("edge") as GeneratedRouteEdge
-			if not included and depth_t <= 0.93 and edge != null:
-				var base_radius := edge.width * 0.5 + contract.support_distance * 0.82
+			if not included and edge != null:
+				var base_radius := edge.width * 0.5 + contract.support_distance
 				included = float(nearest.get("distance", INF)) <= base_radius
-			if not included and depth_t <= 0.93:
+			if not included:
 				for pad in graph.pad_nodes():
 					var pad_radius := pad.pad_radius + contract.support_distance * 0.72
 					if center.distance_to(Vector2(pad.position.x, pad.position.z)) <= pad_radius:

@@ -28,19 +28,25 @@ func _run_checks() -> void:
 	_assert_width_and_centerline(ramp, 4.0, 8.0, "ramp parent")
 	ramp.free()
 
-	var split_mask := PackedByteArray()
-	split_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
-	split_mask.fill(255)
+	var partial_target_mask := PackedByteArray()
+	partial_target_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
+	partial_target_mask.fill(255)
 	for pixel_y in range(PaintSystem.MASK_SIZE):
 		for pixel_x in range(246, 266):
-			split_mask[pixel_y * PaintSystem.MASK_SIZE + pixel_x] = 0
-	var split := _configured_system(FIXTURE_FACTORY.Kind.FLAT, split_mask)
-	_assert_disconnected_sweep_falls_back_to_endpoints(split)
-	split.free()
+			partial_target_mask[pixel_y * PaintSystem.MASK_SIZE + pixel_x] = 0
+	var partial_target := _configured_system(FIXTURE_FACTORY.Kind.FLAT, partial_target_mask)
+	_assert_target_mask_classifies_coverage_without_clipping_paint(partial_target)
+	partial_target.free()
+
+	var disconnected_layout := _build_disconnected_layout()
+	var disconnected_mask := _paintable_top_mask(disconnected_layout)
+	var disconnected := _configured_layout(disconnected_layout, disconnected_mask)
+	_assert_disconnected_sweep_falls_back_to_endpoints(disconnected)
+	disconnected.free()
 
 	PhysicsServer3D.free_rid(_top_body_rid)
 	if not _failed:
-		print("Task 1.4 paint queue passed: ordered late drain, continuous 3D footprints, target-only threshold coverage, gap rules, checksum, and one upload batch.")
+		print("Task 1.4 paint queue passed: ordered late drain, continuous 3D footprints, target-classified coverage, geometry gap rules, checksum, and one upload batch.")
 	quit(1 if _failed else 0)
 
 
@@ -155,11 +161,44 @@ func _assert_disconnected_sweep_falls_back_to_endpoints(paint: PaintSystem) -> v
 	_assert_true(bytes[left_endpoint.y * PaintSystem.MASK_SIZE + left_endpoint.x] >= SURFACE_TUNING.painted_threshold_byte, "disconnected sweep must preserve its valid left endpoint disc")
 	_assert_true(bytes[right_endpoint.y * PaintSystem.MASK_SIZE + right_endpoint.x] >= SURFACE_TUNING.painted_threshold_byte, "disconnected sweep must preserve its valid right endpoint disc")
 	_assert_true(bytes[untraversed_left_segment.y * PaintSystem.MASK_SIZE + untraversed_left_segment.x] == 0, "disconnected endpoints must not authorize the intervening chord")
-	_assert_true(paint.persistent_nontarget_pixel_count() == 0, "endpoint fallback must remain target-only")
+	_assert_coverage_matches_threshold_bytes(paint)
+
+
+func _assert_target_mask_classifies_coverage_without_clipping_paint(paint: PaintSystem) -> void:
+	var layout := paint.generated_layout_read_only()
+	var command := _sweep(layout, 1, 0, 0, Vector2(-10.0, 0.0), Vector2(10.0, 0.0), 2.0)
+	_assert_true(paint.queue_surface_paint_sweep(command), "partial-target sweep must queue")
+	var result := paint.drain_pending_commands()
+	var bytes := paint.paint_bytes_read_only()
+	var target := paint.target_bytes_read_only()
+	var nontarget_center := _world_to_pixel(Vector2.ZERO, layout.local_bounds)
+	var target_segment := _world_to_pixel(Vector2(-5.0, 0.0), layout.local_bounds)
+	var nontarget_index := nontarget_center.y * PaintSystem.MASK_SIZE + nontarget_center.x
+	var target_index := target_segment.y * PaintSystem.MASK_SIZE + target_segment.x
+	_assert_true(target[nontarget_index] == 0, "partial-target fixture center must be outside scoreable coverage")
+	_assert_true(bytes[nontarget_index] >= SURFACE_TUNING.painted_threshold_byte, "valid non-target mountain top traversed by a sweep must retain visible paint")
+	_assert_true(target[target_index] >= SURFACE_TUNING.painted_threshold_byte and bytes[target_index] >= SURFACE_TUNING.painted_threshold_byte, "the same sweep must paint its target segment")
+	_assert_true(paint.persistent_nontarget_pixel_count() > 0, "partial-target sweep must persist a material non-target paint region")
+	_assert_true(int(result.written_pixel_count) > int(result.newly_painted_pixel_count), "non-target paint writes must not increment scoreable coverage")
+	_assert_coverage_matches_threshold_bytes(paint)
 
 
 func _configured_system(kind: int, target_mask: PackedByteArray = PackedByteArray()) -> PaintSystem:
 	var layout: GeneratedStageLayout = FIXTURE_FACTORY.build_layout(kind)
+	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
+	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
+	if not layout.has_valid_footprint():
+		var full_footprint := PackedByteArray()
+		full_footprint.resize(layout.cell_count.x * layout.cell_count.y)
+		full_footprint.fill(1)
+		assert(layout.install_footprint(full_footprint))
+	return _configured_layout(layout, target_mask)
+
+
+func _configured_layout(
+		layout: GeneratedStageLayout,
+		target_mask: PackedByteArray = PackedByteArray()
+) -> PaintSystem:
 	var installed_mask := target_mask
 	if installed_mask.is_empty():
 		installed_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
@@ -186,6 +225,44 @@ func _configured_system(kind: int, target_mask: PackedByteArray = PackedByteArra
 	_assert_true(material.get_shader_parameter(&"paint_mask") == paint.paint_texture(), "terrain shader must sample PaintSystem's authoritative texture")
 	_assert_true(material.get_shader_parameter(&"target_mask") == paint.target_texture(), "terrain shader must sample PaintSystem's immutable target mask")
 	return paint
+
+
+func _build_disconnected_layout() -> GeneratedStageLayout:
+	var source: GeneratedStageLayout = FIXTURE_FACTORY.build_layout(FIXTURE_FACTORY.Kind.FLAT)
+	var layout := GeneratedStageLayout.new()
+	layout.profile_id = source.profile_id
+	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
+	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
+	layout.terrain_seed = source.terrain_seed
+	layout.accepted_seed = source.accepted_seed
+	layout.generation_attempt = source.generation_attempt
+	layout.cell_count = source.cell_count
+	layout.local_bounds = source.local_bounds
+	layout.heights = source.heights.duplicate()
+	layout.route_graph = source.route_graph
+	layout.containment = source.containment
+	var active_cells := PackedByteArray()
+	active_cells.resize(layout.cell_count.x * layout.cell_count.y)
+	active_cells.fill(1)
+	for cell_y in range(layout.cell_count.y):
+		for cell_x in range(5, 7):
+			active_cells[cell_y * layout.cell_count.x + cell_x] = 0
+	assert(layout.install_footprint(active_cells))
+	layout.top_topology = TerrainTopTopology.build(
+		layout.cell_count, layout.local_bounds, layout.heights, active_cells
+	)
+	return layout
+
+
+func _paintable_top_mask(layout: GeneratedStageLayout) -> PackedByteArray:
+	var mask := PackedByteArray()
+	mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
+	for pixel_y in range(PaintSystem.MASK_SIZE):
+		for pixel_x in range(PaintSystem.MASK_SIZE):
+			var local_xz := _pixel_center_world(Vector2i(pixel_x, pixel_y), layout.local_bounds)
+			if not layout.surface_sample_at_local(local_xz.x, local_xz.y, false).is_empty():
+				mask[pixel_y * PaintSystem.MASK_SIZE + pixel_x] = 255
+	return mask
 
 
 func _radial(
@@ -237,7 +314,6 @@ func _assert_coverage_matches_threshold_bytes(paint: PaintSystem) -> void:
 	_assert_true(counted == paint.painted_target_pixels(), "incremental coverage count must equal thresholded authoritative bytes")
 	var expected_percent := 100.0 * float(counted) / float(paint.total_target_pixels())
 	_assert_true(is_equal_approx(expected_percent, paint.coverage_percent()), "coverage percentage must derive from the same thresholded target bytes")
-	_assert_true(paint.persistent_nontarget_pixel_count() == 0, "persistent paint must never write outside target top")
 
 
 func _world_to_pixel(world_xz: Vector2, bounds: Rect2) -> Vector2i:

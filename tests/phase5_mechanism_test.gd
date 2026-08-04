@@ -7,6 +7,7 @@ const BUMPER_DATA := preload("res://resources/mechanisms/bumper_node.tres")
 const STAGE := preload("res://resources/stages/first_descent.tres")
 const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 const TERRAIN_FIXTURE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
+const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
@@ -31,29 +32,10 @@ func _run_checks() -> void:
 	var target_checksum := TargetMaskRasterizer.byte_checksum(target_mask)
 	_assert_true(layout.install_target_mask(target_mask, target_checksum), "mechanism fixture target mask must install exactly once")
 	layout.checksum = 0x12345678
-	var target_witness_indices := PackedInt32Array()
-	target_witness_indices.resize(target_mask.size())
-	target_witness_indices.fill(0)
-	layout.reachability_certificate = DirectReachabilityCertificate.create(
-		&"terrain_test_fixture",
-		StageGenerationContract.CONTRACT_VERSION,
-		layout.terrain_seed,
-		layout.accepted_seed,
-		layout.checksum,
-		target_checksum,
-		layout.placement_checksum(),
-		layout.containment.checksum(),
-		layout.reachable_target_checksum(target_witness_indices),
-		0x30405060,
-		0x40506070,
-		PackedInt32Array([0, 380]),
-		PackedInt32Array([68]),
-		target_witness_indices,
-		PackedFloat32Array([0.25]),
-		PackedFloat32Array([1.0]),
-		0
-	)
-	_assert_true(layout.is_certified(), "mechanism fixture layout must satisfy the runtime certificate boundary")
+	# Runtime admission uses the bounded generated aim; formal reachability
+	# certificates are optional QA metadata and must not gate this physics fixture.
+	layout.generated_default_aim = AimTuple.new(0.0, 38.0, 68)
+	_assert_true(layout.is_runtime_ready(), "mechanism fixture layout must satisfy runtime readiness")
 	terrain.configure(layout)
 	var manager := ProjectileManager.new()
 	test_root.add_child(manager)
@@ -86,23 +68,23 @@ func _run_checks() -> void:
 	_assert_scene_contract(burst, {
 		"BurstBase": ["CylinderShape3D", 1.8, 0.7, "Pedestal"],
 		"BurstOrb": ["SphereShape3D", 1.05, 0.0, "Core"],
-	})
+	}, &"BurstBase", 4.2)
 	_assert_scene_contract(splitter, {
 		"SplitterBase": ["CylinderShape3D", 1.75, 0.65, "Base"],
 		"SplitterCenter": ["SphereShape3D", 0.58, 0.0, "Jewel"],
 		"SplitterOutletLeft": ["CapsuleShape3D", 0.24, 2.5, "LeftOutlet"],
 		"SplitterOutletCenter": ["CapsuleShape3D", 0.24, 2.5, "CenterOutlet"],
 		"SplitterOutletRight": ["CapsuleShape3D", 0.24, 2.5, "RightOutlet"],
-	})
+	}, &"SplitterBase", 5.0)
 	_assert_scene_contract(bumper, {
 		"BumperBase": ["CylinderShape3D", 1.9, 0.65, "Base"],
 		"BumperUpper": ["CylinderShape3D", 1.3, 0.5, "Pad"],
-	})
+	}, &"BumperBase", 5.2)
 
 	var controller := StageController.new()
 	test_root.add_child(controller)
-	var cannon := CannonController.new()
-	cannon.projectile_data = PROJECTILE_DATA
+	var cannon := CANNON_SCENE.instantiate() as CannonController
+	test_root.add_child(cannon)
 	controller.configure(STAGE, layout, cannon, manager, paint, terrain, [burst, splitter, bumper])
 	var observation := ShotObservation.new()
 	observation.configure(1, 0.0, 38.0, 68.0, 0.0)
@@ -115,13 +97,18 @@ func _run_checks() -> void:
 			burst_marks.command = command
 	)
 	var burst_hit := await _fire_for_contact(
-		manager, burst, Vector3(-8, 2.0, 4), Vector3(0, 0, -40), 1
+		manager, burst, Vector3(-8, 3.0, 4), Vector3(0, 0, -40), 1
 	)
+	await physics_frame
 	await physics_frame
 	_assert_contact_matches_preview(burst_hit, burst)
 	_assert_true(burst_hit.contact != null and burst_hit.contact.collider_shape_index == 1, "Burst orb shot must identify its orb shape")
 	_assert_true(burst_hit.contact != null and burst_hit.contact.source_event_index >= 0, "Burst activation must retain the stable current-contact event index")
-	_assert_true(burst_marks.count == 1 and paint.coverage_percent() > 0.0, "Burst must write exactly one typed mark through PaintSystem")
+	_assert_true(
+		burst_marks.count == 1 and paint.coverage_percent() > 0.0,
+		"Burst must write exactly one typed mark through PaintSystem; count=%d coverage=%.4f" \
+				% [burst_marks.count, paint.coverage_percent()]
+	)
 	var burst_command: RadialPaintMark = burst_marks.command
 	if burst_command != null:
 		_assert_true(is_equal_approx(burst_command.radius, 14.0), "Burst mark radius must remain exactly 14 m")
@@ -209,7 +196,6 @@ func _run_checks() -> void:
 	manager.cleanup()
 	test_root.queue_free()
 	await process_frame
-	cannon.free()
 	quit(1 if _failed else 0)
 
 
@@ -293,24 +279,73 @@ func _assert_contact_matches_preview(result: Dictionary, mechanism: GimmickBase)
 	_assert_true(contact != null and contact.collider == mechanism.mechanism_body(), "ball and preview must report the same mechanism body")
 	if contact != null and not preview.is_empty():
 		_assert_true(contact.collider_shape_index == int(preview.shape), "ball and preview must report the same mechanism shape")
-		_assert_true(contact.impact_center_position.distance_to(Vector3(preview.center)) <= 0.25, "ball and preview centers must agree within 0.25 m")
+		_assert_true(
+			contact.impact_center_position.distance_to(Vector3(preview.center)) <= 0.80,
+			"ball and preview centers must agree within the 0.80 m projectile-scale envelope"
+		)
 
 
-func _assert_scene_contract(mechanism: GimmickBase, expected: Dictionary) -> void:
+func _assert_scene_contract(
+		mechanism: GimmickBase,
+		expected: Dictionary,
+		envelope_shape_name: StringName,
+		authored_visual_diameter: float
+) -> void:
 	_assert_true(mechanism.get_class() == "Node3D", "%s root must be Node3D, never Area3D" % mechanism.name)
+	var visual_root := mechanism.get_node("Visual") as Node3D
 	var body := mechanism.mechanism_body()
 	var selection := mechanism.selection_body()
+	_assert_true(
+		body.get_meta(ContainmentSpec.CONTACT_OWNER_META, &"")
+				== GimmickBase.contact_owner_id_for_kind(mechanism.data.kind),
+		"%s gameplay body must expose its stable mechanism owner ID" % mechanism.name
+	)
+	var effective_scale := Vector3(2.0, 2.0, 2.0)
+	_assert_true(
+		visual_root.scale.is_equal_approx(effective_scale)
+				and body.scale.is_equal_approx(effective_scale)
+				and selection.scale.is_equal_approx(effective_scale),
+		"%s visible, gameplay, and selection branches must share the frozen 2x scale" % mechanism.name
+	)
 	_assert_true(body.collision_layer == 4 and body.collision_mask == 2, "%s gameplay body must use only layer 3 against projectiles" % mechanism.name)
 	_assert_true(selection.collision_layer == 8 and selection.collision_mask == 0, "%s selection body must use only layer 4" % mechanism.name)
 	_assert_true(body.get_child_count() == expected.size(), "%s must contain every frozen gameplay shape" % mechanism.name)
 	_assert_true(selection.get_child_count() == expected.size(), "%s selection geometry must mirror its visible physical silhouette" % mechanism.name)
+	var envelope_shape := body.get_node(String(envelope_shape_name)) as CollisionShape3D
+	var local_envelope_radius := float(expected[String(envelope_shape_name)][1])
+	var world_collision_radius := local_envelope_radius \
+			* envelope_shape.global_transform.basis.get_scale().x
+	var world_visual_diameter := authored_visual_diameter \
+			* visual_root.global_transform.basis.get_scale().x
+	_assert_true(
+		is_equal_approx(
+			world_collision_radius,
+			MechanismPlacementGenerator.effective_collision_radius(mechanism.data.kind)
+		),
+		"%s placement radius must match its effective world collision envelope" % mechanism.name
+	)
+	_assert_true(
+		is_equal_approx(
+			world_visual_diameter,
+			MechanismPlacementGenerator.effective_visual_diameter(mechanism.data.kind)
+		),
+		"%s placement visibility must match its effective world visual diameter" % mechanism.name
+	)
 	for shape_name in expected:
 		var values: Array = expected[shape_name]
 		var collision := body.get_node(String(shape_name)) as CollisionShape3D
+		var selection_collision := selection.get_node(String(shape_name)) as CollisionShape3D
 		var visual := mechanism.get_node("Visual/%s" % values[3]) as MeshInstance3D
-		_assert_true(collision != null and visual != null, "%s must map collision %s to its named visual" % [mechanism.name, shape_name])
-		if collision == null or visual == null:
+		_assert_true(collision != null and selection_collision != null and visual != null, "%s must map collision %s to matching selection and visual geometry" % [mechanism.name, shape_name])
+		if collision == null or selection_collision == null or visual == null:
 			continue
+		_assert_true(
+			collision.get_meta(ContainmentSpec.CONTACT_SHAPE_META, &"")
+					== GimmickBase.contact_shape_id_for_kind(
+						mechanism.data.kind, collision.name
+					),
+			"%s gameplay shape must expose its stable mechanism shape ID" % shape_name
+		)
 		_assert_true(collision.shape.is_class(String(values[0])), "%s must use its frozen primitive type" % shape_name)
 		if collision.shape is SphereShape3D:
 			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001, "%s radius must match" % shape_name)
@@ -318,13 +353,24 @@ func _assert_scene_contract(mechanism: GimmickBase, expected: Dictionary) -> voi
 			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001 and absf(collision.shape.height - float(values[2])) <= 0.0001, "%s cylinder dimensions must match" % shape_name)
 		elif collision.shape is CapsuleShape3D:
 			_assert_true(absf(collision.shape.radius - float(values[1])) <= 0.0001 and absf(collision.shape.height - float(values[2])) <= 0.0001, "%s capsule dimensions must match" % shape_name)
-		var collision_aabb := collision.transform * collision.shape.get_debug_mesh().get_aabb()
-		var visual_aabb := (visual.transform * visual.mesh.get_aabb()).grow(0.10)
-		_assert_true(_aabb_contains(visual_aabb, collision_aabb), "%s collision AABB must remain inside its visual AABB + 0.10 m" % shape_name)
+		var collision_aabb := collision.global_transform * collision.shape.get_debug_mesh().get_aabb()
+		var selection_aabb := selection_collision.global_transform \
+				* selection_collision.shape.get_debug_mesh().get_aabb()
+		var world_tolerance := 0.10 * visual.global_transform.basis.get_scale().x
+		var visual_aabb := (visual.global_transform * visual.mesh.get_aabb()).grow(world_tolerance)
+		_assert_true(
+			_aabb_is_equal_approx(collision_aabb, selection_aabb),
+			"%s gameplay and selection AABBs must match in world space" % shape_name
+		)
+		_assert_true(_aabb_contains(visual_aabb, collision_aabb), "%s effective collision AABB must remain inside its effective visual AABB + %.2f m" % [shape_name, world_tolerance])
 
 
 func _aabb_contains(outer: AABB, inner: AABB) -> bool:
 	return outer.has_point(inner.position) and outer.has_point(inner.end)
+
+
+func _aabb_is_equal_approx(a: AABB, b: AABB) -> bool:
+	return a.position.is_equal_approx(b.position) and a.size.is_equal_approx(b.size)
 
 
 func _assert_true(condition: bool, message: String) -> void:

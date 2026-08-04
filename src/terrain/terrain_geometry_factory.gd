@@ -95,19 +95,25 @@ static func _append_top(
 		var a := canonical_vertices[index_a]
 		var b := canonical_vertices[index_b]
 		var c := canonical_vertices[index_c]
+		var upward_normal := (b - a).cross(c - a).normalized()
+		# Godot renders clockwise triangle winding as the front face. Canonical
+		# topology remains upward-wound for queries and collision, while the render
+		# copy swaps its final corners and retains the canonical upward normal.
 		_append_triangle(
 			vertices,
 			normals,
 			uvs,
 			colors,
 			a,
-			b,
 			c,
+			b,
 			_uv_for(topology.local_bounds, a),
+			_uv_for(topology.local_bounds, c),
 			_uv_for(topology.local_bounds, b),
-			_uv_for(topology.local_bounds, c)
+			true,
+			upward_normal
 		)
-		source_vertex_indices.append_array(PackedInt32Array([index_a, index_b, index_c]))
+		source_vertex_indices.append_array(PackedInt32Array([index_a, index_c, index_b]))
 		source_triangle_ids.append(source_triangle_id)
 
 
@@ -186,13 +192,23 @@ static func _append_triangle(
 		uv_a: Vector2,
 		uv_b: Vector2,
 		uv_c: Vector2,
-		paintable: bool = true
+		paintable: bool = true,
+	normal_override: Vector3 = Vector3.ZERO
 ) -> void:
-	var normal := (b - a).cross(c - a).normalized()
+	var normal := normal_override.normalized() \
+			if not normal_override.is_zero_approx() \
+			else (b - a).cross(c - a).normalized()
 	vertices.append_array(PackedVector3Array([a, b, c]))
 	normals.append_array(PackedVector3Array([normal, normal, normal]))
 	uvs.append_array(PackedVector2Array([uv_a, uv_b, uv_c]))
-	var classification := Color.WHITE if paintable else Color.BLACK
+	var classification := Color.BLACK
+	if paintable:
+		var center := (a + b + c) / 3.0
+		var facet_seed := sin(center.x * 12.9898 + center.z * 78.233) * 43758.5453
+		var facet_tone := fposmod(facet_seed, 1.0)
+		# Red remains the binary top/shell contract. Green carries a stable
+		# per-triangle tone so the low-poly surface stays readable in bright light.
+		classification = Color(1.0, facet_tone, 0.0, 1.0)
 	colors.append_array(PackedColorArray([classification, classification, classification]))
 
 

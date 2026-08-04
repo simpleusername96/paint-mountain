@@ -68,15 +68,24 @@ solid collision silhouettes remain color-separated as amber, violet, and coral.
 Approved trees and rocks remain non-gameplay dressing outside route and
 mechanism clearance.
 
-World presentation now separates the warm rear wall from a light cool-gray
-faceted mountain, darker support/apron plane, lower ambient fill, and stronger
-daylight key. Briefing, Wide, and Result calculate their composition from the
-generated render AABB and camera FOV; Aiming retains its authored cannon-relative
-view. The white-and-navy cannon, restrained blue trajectory, and saturated
-non-emissive paint remain unchanged. The Korean-first Pretendard HUD keeps its
-left vertical goal-relative coverage rail, lower-left aim/power, one centered
-Fire button, and top-right shots plus gear. Gear/Escape opens the full paused
-menu; Restart exists there and in result/replay flows, not in the aiming HUD.
+World presentation now separates the warm rear wall from a light faceted
+mountain and pale apron. An 80 m front descent plus a 24 m actual-footprint taper
+brings the top surface to the apron before the closed shell begins, so no raised
+rectangular support skirt remains in the play view. Aiming uses an authored
+55-degree cannon-relative view; the lower-left aim panel, cannon, full
+pre-impact arc, impact ring, and playable mountain remain visible together. The
+white-and-navy cannon,
+saturated non-emissive paint, and amber/violet/coral mechanisms retain the same
+physical world, with mechanism visual and collision scale increased together to
+2x so they remain identifiable at aiming distance. Each mechanism body and
+compound shape now publishes a stable kind/shape contact identity, so trajectory
+prediction and real projectile contact resolve the same solid object instead of
+rejecting it as ambiguous. The Korean-first Pretendard HUD uses a single left
+vertical current/target coverage owner, lower-left
+aim/power, one
+centered Fire button with a crisp local splash icon, and top-right shots plus
+gear. Gear/Escape opens the full paused menu; Restart exists there and in
+result/replay flows, not in the aiming HUD.
 
 The user's QA of the previous generation-v5 build rejected terrain visibility,
 paint feedback, and camera/aim responsiveness. Phase 7 now frames the final
@@ -90,23 +99,25 @@ latest canonical aim before every Human, Replay, Agent, or Debug fire request.
 publication is coalesced to 15 Hz, recreates and rebinds the current L8 texture,
 forces the final dirty state before result sealing, and omits the unused recent
 mask in release builds. The per-drain GDScript FNV loop was replaced by native
-`hash(PackedByteArray)` and replay format 5 rejects format 4. Stage 1's real
-default paintball still remained on the canonical terrain top for 4.400 seconds,
-traversed 34.045 m through 264 continuous sweeps, produced 15.2824% scoreable
-coverage without penetration, and published texture bytes identical to the
-authoritative final mask.
+`hash(PackedByteArray)` and replay format 5 rejects format 4. The current Stage
+1 default-shot integration run applied 316 paint commands, including 302
+continuous surface sweeps, and produced 10.7419% scoreable coverage without a
+second paint authority.
 
-No visible Godot process, screenshot capture, broad performance pass, replay
-matrix, balance check, or user review of the rebuilt Phase 7 result was run.
-Godot 4.7.1 passed the focused Phase 7 contract, closed-mountain and Stage 1
-physical-paint checks, headless import/script parsing, and main-scene startup.
-The Windows release was rebuilt, passed a hidden headless startup, and remains
-connected to the exact fastrun command
-`& '.\builds\windows\PaintMountain.exe'`. These checks establish structural
-terrain construction, final camera framing, the Stage 1 physical paint and
-texture-publication path, bounded update cadence, importability, startup, and
-delivery wiring. They do not establish visible composition, Stage 2/3
-playthroughs, broad performance, balance, or user approval.
+Phase 8 rebuilt the Windows release and ran it as a real windowed Compatibility
+renderer at 1280x720, positioned outside the visible desktop and made
+non-focusable. The implementing agent directly inspected Stage 1/2/3 aiming and
+an active continuous-paint frame under `.agents/evidence/phase8/`. The paint
+capture waited for at least 72 applied contact sweeps and 400 written pixels,
+then force-published the authoritative mask; the captured left gauge reads 6.7%
+and the long downhill blue path is visibly continuous. Focused closed-mountain,
+aiming-composition, HUD-state, mountain-range, and Stage 1 physical paint checks
+pass, as do `scripts/verify.ps1` and release export. The legacy
+`terrain_geometry_test.gd` full-rectangle and exact-count contract was retired;
+`mountain_range_mvp_test.gd` and `phase8_front_transition_test.gd` now own the
+closed irregular mass and foreground-transition contracts. No broad performance,
+replay, balance, exhaustive reliability, or Stage 2/3 playthrough pass was run,
+and the screens are implementation evidence rather than user approval.
 
 ## Superseded Core-Interaction Implementation Record (2026-08-03)
 
@@ -371,21 +382,21 @@ the static-audit correction above.
 
 ### Historical verification for superseded or pre-MVP builds
 
-- Active redesign Task 02: `stage_generation_test.gd` passed base and
+- Superseded redesign Task 02: `stage_generation_test.gd` passed base and
   fallback-request determinism for all stages. Fallback requests accepted at
   attempts `0 / 5 / 28`; eligible ratios remained `0.423386 / 0.446671 /
   0.414547`. `mechanism_placement_test.gd` passed exact role/centerline/shelf,
   transform, tangent, physical-clearance, visibility, and fixed-point rejection
   gates. `decoration_placement_test.gd` passed deterministic `10 / 14 / 18`
   placements. All checks used Godot 4.7.1 headlessly.
-- Active redesign Task 03: `terrain_geometry_test.gd` proved the exact
+- Superseded redesign Task 03: `terrain_geometry_test.gd` proved the exact
   `7,394`-triangle production shell, flat winding, normalized watertight edge
   ownership, `≤0.01 m` heightmap parity, stable gameplay nodes, shader
   constraints, and all four direct fixture casts. The migrated
   `phase2_physics_test.gd`, `phase2_test.gd`, `phase3_paint_test.gd`, and
   `phase5_mechanism_test.gd` passed, followed by `scripts/verify.ps1` and a
   30-frame headless main-project startup.
-- Active redesign Task 04: `projectile_contact_test.gd` passed 20 repetitions
+- Superseded redesign Task 04: `projectile_contact_test.gd` passed 20 repetitions
   each of flat, 35-degree ramp, high-speed graze, and skirt impacts (80/80),
   exact collider/shape identity, measured point/normal/radius tolerances, and
   separated recontact debounce. `phase3_paint_test.gd` produced exactly 3,228
@@ -395,7 +406,7 @@ the static-audit correction above.
   329.4 of 520 payload only after contact, and reached 4.2039% coverage with no
   ineligible pixels. Phase 2 ballistics/fixture and Phase 4 state regressions
   also passed headlessly.
-- Active redesign Task 09 partial gate: the ordered `scripts/test.ps1` passed
+- Superseded redesign Task 09 partial gate: the ordered `scripts/test.ps1` passed
   terrain geometry, generation, placement, decoration, ballistics, contact,
   authoritative paint, production projectile-paint, state, and mechanism
   tests before stopping at the intentional Stage 2/3 empty-solution assertions.
