@@ -16,6 +16,7 @@ func _run() -> void:
 	_assert_true(defaults.version == 4, "current saves must use format 4")
 	_assert_true(defaults.settings.language == "ko", "new installs must default to Korean")
 	_assert_true(not defaults.settings.language_user_selected, "new installs must not claim an explicit language choice")
+	_assert_true(not defaults.settings.reduced_motion, "decorative motion must remain enabled by default")
 
 	_write_v1_fixture()
 	var migrated: Dictionary = save_system.load_data(MIGRATION_PATH)
@@ -104,6 +105,7 @@ func _assert_translation_contract(locale: String) -> void:
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
 		"result.completed", "result.time_expired", "result.grade", "result.elapsed",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
+		"settings.reduced_motion",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
 		"replay.incompatible_format",
 	]

@@ -4,6 +4,7 @@ extends Node3D
 const DEBRIS_COUNT := 24
 const MIN_HEIGHT_ABOVE_TERRAIN := 1.5
 const HEIGHT_SPAN := 7.0
+const GUST_CUE_SECONDS := 0.8
 
 var _terrain_surface: TerrainSurface
 var _wind_controller: WindController
@@ -13,6 +14,14 @@ var _height_offsets := PackedFloat32Array()
 var _phases := PackedFloat32Array()
 var _multimesh: MultiMesh
 var _visual_time := 0.0
+var _gust_cue_remaining := 0.0
+
+
+func _ready() -> void:
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null:
+		game_state.settings_changed.connect(_on_settings_changed)
+		_on_settings_changed(game_state.settings)
 
 
 func configure(
@@ -24,19 +33,27 @@ func configure(
 	assert(stage_data != null and terrain_surface != null and wind_controller != null)
 	_terrain_surface = terrain_surface
 	_wind_controller = wind_controller
+	if not _wind_controller.strong_episode_started.is_connected(_on_strong_episode_started):
+		_wind_controller.strong_episode_started.connect(_on_strong_episode_started)
 	_world_bounds = stage_data.paint_world_bounds()
 	_build_visuals(schedule_seed)
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null:
+		_on_settings_changed(game_state.settings)
 
 
 func _process(delta: float) -> void:
-	if _multimesh == null or _wind_controller == null or _terrain_surface == null:
+	if not visible or _multimesh == null or _wind_controller == null or _terrain_surface == null:
 		return
 	var snapshot := _wind_controller.current_snapshot()
 	if snapshot == null:
 		return
 	_visual_time += delta
+	_gust_cue_remaining = maxf(0.0, _gust_cue_remaining - delta)
 	var direction := snapshot.push_direction()
 	var travel_speed := lerpf(0.35, 3.4, snapshot.normalized_strength)
+	var gust_weight := _gust_cue_remaining / GUST_CUE_SECONDS
+	travel_speed *= 1.0 + gust_weight * 0.75
 	for index in range(_positions.size()):
 		var phase := _phases[index]
 		var lateral := Vector3(-direction.z, 0.0, direction.x) \
@@ -50,6 +67,7 @@ func _process(delta: float) -> void:
 		var yaw := atan2(direction.x, direction.z) + sin(_visual_time * 2.8 + phase) * 0.35
 		var flutter := sin(_visual_time * 4.2 + phase) * 0.55
 		var basis := Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, flutter)
+		basis = basis.scaled(Vector3.ONE * (1.0 + gust_weight * 0.25))
 		_multimesh.set_instance_transform(index, Transform3D(basis, _positions[index]))
 
 
@@ -112,3 +130,11 @@ func _wrap_position(position: Vector3) -> Vector3:
 	elif wrapped.z > _world_bounds.end.y:
 		wrapped.z = _world_bounds.position.y
 	return wrapped
+
+
+func _on_settings_changed(settings: Dictionary) -> void:
+	visible = not bool(settings.get("reduced_motion", false))
+
+
+func _on_strong_episode_started(_episode_id: int, _snapshot: WindSnapshot) -> void:
+	_gust_cue_remaining = GUST_CUE_SECONDS

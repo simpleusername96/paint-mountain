@@ -122,6 +122,7 @@ settings.master,MASTER VOLUME,전체 음량
 settings.music,MUSIC VOLUME,음악 음량
 settings.sfx,SOUND EFFECTS,효과음
 settings.camera_shake,CAMERA SHAKE,카메라 흔들림
+settings.reduced_motion,REDUCE DECORATIVE MOTION,장식 움직임 줄이기
 settings.trajectory,TRAJECTORY PREVIEW,궤적 미리 보기
 settings.fullscreen,FULLSCREEN,전체 화면
 settings.resolution,RESOLUTION,해상도

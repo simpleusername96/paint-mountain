@@ -14,6 +14,7 @@ func default_data() -> Dictionary:
 			"music_volume": 0.7,
 			"sfx_volume": 0.85,
 			"camera_shake": true,
+			"reduced_motion": false,
 			"trajectory_preview": true,
 			"fullscreen": false,
 			"resolution": "1920x1080",

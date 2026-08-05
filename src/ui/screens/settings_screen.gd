@@ -13,6 +13,7 @@ func _ready() -> void:
 		&"music_volume": %Music,
 		&"sfx_volume": %Sfx,
 		&"camera_shake": %CameraShake,
+		&"reduced_motion": %ReducedMotion,
 		&"trajectory_preview": %Trajectory,
 		&"fullscreen": %Fullscreen,
 		&"resolution": %Resolution,
@@ -50,7 +51,7 @@ func _add_options(option: OptionButton, values: Array[String]) -> void:
 func _connect_controls() -> void:
 	for key in [&"master_volume", &"music_volume", &"sfx_volume"]:
 		(_controls[key] as HSlider).value_changed.connect(func(value: float) -> void: _store(key, value / 100.0))
-	for key in [&"camera_shake", &"trajectory_preview", &"fullscreen"]:
+	for key in [&"camera_shake", &"reduced_motion", &"trajectory_preview", &"fullscreen"]:
 		(_controls[key] as CheckButton).toggled.connect(func(value: bool) -> void: _store(key, value))
 	for key in [&"resolution", &"quality", &"language"]:
 		var option := _controls[key] as OptionButton

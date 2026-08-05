@@ -117,6 +117,11 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "settings.camera_shake"
+[node name="ReducedMotion" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "settings.reduced_motion"
 [node name="Trajectory" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
