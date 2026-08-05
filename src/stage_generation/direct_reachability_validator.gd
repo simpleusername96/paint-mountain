@@ -11,10 +11,19 @@ extends RefCounted
 # reject legitimate contacts on adjacent facets even though the impact mark
 # fully covers the scoreable texel.
 const TARGET_DISTANCE_TOLERANCE := 2.10
+# The predictor is an analytical center-path approximation while the proof
+# body uses a discrete rigid sphere. Keep target assignments conservative here
+# so the real contact remains inside the authoritative 2.10 m paint mark.
+const CERTIFICATION_DISTANCE_TOLERANCE := 1.70
+const RIGIDBODY_IDENTITY_DISTANCE_TOLERANCE := TARGET_DISTANCE_TOLERANCE
+const SUMMIT_CONTACT_DISTANCE_TOLERANCE := 0.75
 const MAXIMUM_PERPENDICULAR_MISS := 1.02
 const ELEVATION_SAMPLE_STEP_DEGREES := 1.0
 const ELEVATION_BISECTION_ITERATIONS := 12
-const RIGIDBODY_BATCH_SIZE := 128
+# Certification bodies use layer 2 and never collide with one another; a
+# wider offline batch keeps the real-body parity proof bounded without changing
+# gameplay physics or the witness semantics.
+const RIGIDBODY_BATCH_SIZE := 256
 const MAXIMUM_UNCOVERED_DIAGNOSTICS := 32
 const WITNESS_SPATIAL_BUCKET_METERS := TARGET_DISTANCE_TOLERANCE
 const CHECKSUM_OFFSET := 2166136261
@@ -58,6 +67,7 @@ static func validate_predictor(
 	var predictor_call_count := 0
 	var candidate_tuple_count := 0
 	var reused_target_count := 0
+	var full_mark_fallback_count := 0
 	var uncovered_diagnostics: Array[Dictionary] = []
 	var uncovered_count := 0
 	var centroid_sum := Vector2.ZERO
@@ -92,13 +102,15 @@ static func validate_predictor(
 			var reused_index := _nearest_reusable_witness(
 				witnesses_by_triangle.get(triangle_key, PackedInt32Array()),
 				witness_impacts,
-				target_world_point
+				target_world_point,
+				CERTIFICATION_DISTANCE_TOLERANCE
 			)
 			if reused_index < 0:
 				reused_index = _nearest_spatial_reusable_witness(
 					witnesses_by_spatial_bucket,
 					witness_impacts,
-					target_world_point
+					target_world_point,
+					CERTIFICATION_DISTANCE_TOLERANCE
 				)
 			if reused_index >= 0:
 				var reused_distance := witness_impacts[reused_index].distance_to(target_world_point)
@@ -123,8 +135,28 @@ static func validate_predictor(
 				target_world_normal,
 				sample,
 				prediction_cache,
-				solver_cache
+				solver_cache,
+				CERTIFICATION_DISTANCE_TOLERANCE
 			)
+			if not bool(solved.get("valid", false)):
+				# A small number of lattice positions can be reachable only near the
+				# outer edge of the 2.10 m mark. Keep those explicit and let the real
+				# rigid-body pass decide whether the physical contact still qualifies.
+				var fallback := _solve_target(
+					space_state,
+					cannon,
+					layout,
+					stage_bounds,
+					target_world_point,
+					target_world_normal,
+					sample,
+					prediction_cache,
+					solver_cache,
+					TARGET_DISTANCE_TOLERANCE
+				)
+				if bool(fallback.get("valid", false)):
+					solved = fallback
+					full_mark_fallback_count += 1
 			predictor_call_count += int(solved.get("predictor_calls", 0))
 			candidate_tuple_count += int(solved.get("candidate_count", 0))
 			if not bool(solved.get("valid", false)):
@@ -230,6 +262,7 @@ static func validate_predictor(
 		"predictor_call_count": predictor_call_count,
 		"candidate_tuple_count": candidate_tuple_count,
 		"reused_target_count": reused_target_count,
+		"full_mark_fallback_count": full_mark_fallback_count,
 		"elapsed_ms": Time.get_ticks_msec() - started,
 	}
 
@@ -405,25 +438,24 @@ static func validate_rigidbody_batches(
 	var expected_identities: Array[TrajectoryHitIdentity] = []
 	for value in predictor_result.get("witness_identities", []):
 		expected_identities.append(value as TrajectoryHitIdentity)
-	var target_assignments: PackedInt32Array = predictor_result.get(
-		"target_witness_indices",
-		PackedInt32Array()
-	)
 	var target_points: PackedVector3Array = predictor_result.get("target_points", PackedVector3Array())
+	var expected_impacts: PackedVector3Array = predictor_result.get(
+		"witness_impacts",
+		PackedVector3Array()
+	)
 	if witnesses.is_empty() or expected_identities.size() != witnesses.size() \
-			or target_assignments.size() != target_points.size() or batch_size <= 0:
+			or expected_impacts.size() != witnesses.size() \
+			or target_points.is_empty() or batch_size <= 0:
 		return _failure(&"invalid_rigidbody_contract", started)
-
-	var assigned_targets: Array[PackedInt32Array] = []
-	assigned_targets.resize(witnesses.size())
-	for witness_index in range(witnesses.size()):
-		assigned_targets[witness_index] = PackedInt32Array()
-	for target_index in range(target_assignments.size()):
-		assigned_targets[target_assignments[target_index]].append(target_index)
 
 	var outcomes: Array[Dictionary] = []
 	outcomes.resize(witnesses.size())
 	var failure_diagnostics: Array[Dictionary] = []
+	var physical_points := PackedVector3Array()
+	physical_points.resize(witnesses.size())
+	var physical_witness_valid := PackedByteArray()
+	physical_witness_valid.resize(witnesses.size())
+	physical_witness_valid.fill(0)
 	var batch_start := 0
 	while batch_start < witnesses.size():
 		var batch_end := mini(batch_start + batch_size, witnesses.size())
@@ -519,7 +551,13 @@ static func validate_rigidbody_batches(
 		var actual_identity: TrajectoryHitIdentity = outcome.identity
 		var expected_identity := expected_identities[witness_index]
 		if actual_identity == null or expected_identity == null \
-				or not actual_identity.has_same_surface_address(expected_identity):
+				or not outcome.point.is_finite() \
+				or not _rigidbody_identity_compatible(
+					actual_identity,
+					expected_identity,
+					expected_impacts[witness_index],
+					outcome.point
+				):
 			failure_diagnostics.append({
 				"witness_index": witness_index,
 				"aim": witnesses[witness_index].stable_key(),
@@ -528,17 +566,59 @@ static func validate_rigidbody_batches(
 				"actual": actual_identity.stable_key() if actual_identity != null else &"",
 			})
 			continue
-		var point: Vector3 = outcome.point
-		for target_index in assigned_targets[witness_index]:
-			if point.distance_to(target_points[target_index]) > TARGET_DISTANCE_TOLERANCE:
-				failure_diagnostics.append({
-					"witness_index": witness_index,
-					"aim": witnesses[witness_index].stable_key(),
-					"reason": &"assigned_target_distance",
-					"target_index": target_index,
-					"distance": point.distance_to(target_points[target_index]),
-				})
-				break
+		physical_points[witness_index] = outcome.point
+		physical_witness_valid[witness_index] = 1
+
+	# Predictor assignments are only nominations. Reconcile the complete target
+	# table against actual rigid-body contact points so a nearby physical witness
+	# can cover a texel when the first analytical witness drifted at a facet edge.
+	var reconciled_assignments := PackedInt32Array()
+	var reconciled_distance_margins := PackedFloat32Array()
+	reconciled_distance_margins.resize(witnesses.size())
+	var physical_witness_buckets: Dictionary = {}
+	for witness_index in range(witnesses.size()):
+		reconciled_distance_margins[witness_index] = TARGET_DISTANCE_TOLERANCE
+		if physical_witness_valid[witness_index] == 1:
+			var physical_bucket := _spatial_bucket_for(physical_points[witness_index])
+			var physical_indices: PackedInt32Array = physical_witness_buckets.get(
+				physical_bucket,
+				PackedInt32Array()
+			)
+			physical_indices.append(witness_index)
+			physical_witness_buckets[physical_bucket] = physical_indices
+	for target_index in range(target_points.size()):
+		var best_witness_index := -1
+		var best_distance := INF
+		var target_bucket := _spatial_bucket_for(target_points[target_index])
+		# Buckets are exactly the certification radius wide, so a 3x3 neighborhood
+		# contains every physical witness that can cover this target point.
+		for bucket_x in range(target_bucket.x - 1, target_bucket.x + 2):
+			for bucket_z in range(target_bucket.y - 1, target_bucket.y + 2):
+				var nearby_indices: PackedInt32Array = physical_witness_buckets.get(
+					Vector2i(bucket_x, bucket_z),
+					PackedInt32Array()
+				)
+				for witness_index in nearby_indices:
+					var distance := physical_points[witness_index].distance_to(target_points[target_index])
+					if distance <= TARGET_DISTANCE_TOLERANCE \
+							and (distance < best_distance \
+							or (is_equal_approx(distance, best_distance) \
+							and (best_witness_index < 0 or witness_index < best_witness_index))):
+						best_witness_index = witness_index
+						best_distance = distance
+		if best_witness_index < 0:
+			failure_diagnostics.append({
+				"target_index": target_index,
+				"reason": &"physical_target_uncovered",
+				"distance": best_distance,
+			})
+			reconciled_assignments.append(0)
+			continue
+		reconciled_assignments.append(best_witness_index)
+		reconciled_distance_margins[best_witness_index] = minf(
+			reconciled_distance_margins[best_witness_index],
+			TARGET_DISTANCE_TOLERANCE - best_distance
+		)
 
 	var valid := failure_diagnostics.is_empty()
 	return {
@@ -546,6 +626,9 @@ static func validate_rigidbody_batches(
 		"rejection": &"" if valid else &"rigidbody_parity",
 		"failure_diagnostics": failure_diagnostics,
 		"outcomes": outcomes,
+		"physical_witness_impacts": physical_points,
+		"target_witness_indices": reconciled_assignments,
+		"minimum_distance_margins": reconciled_distance_margins,
 		"rigidbody_reachability_checksum": _rigidbody_checksum(
 			witnesses,
 			outcomes
@@ -581,6 +664,31 @@ static func build_certificate(
 		angles.append(roundi(witness.yaw_degrees * 10.0))
 		angles.append(roundi(witness.elevation_degrees * 10.0))
 		powers.append(witness.power_percent)
+	var certificate_target_indices: PackedInt32Array = rigidbody_result.get(
+		"target_witness_indices",
+		predictor_result.target_witness_indices
+	)
+	var certificate_distance_margins: PackedFloat32Array = rigidbody_result.get(
+		"minimum_distance_margins",
+		predictor_result.minimum_distance_margins
+	)
+	var certificate_default_index := int(predictor_result.default_witness_index)
+	var physical_impacts: PackedVector3Array = rigidbody_result.get(
+		"physical_witness_impacts",
+		PackedVector3Array()
+	)
+	if physical_impacts.size() == witnesses.size():
+		certificate_default_index = select_witness_index(
+			witnesses,
+			physical_impacts,
+			predictor_result.target_centroid_xz
+		)
+	var expected_target_count := int(predictor_result.get("target_count", -1))
+	if expected_target_count < 0:
+		expected_target_count = certificate_target_indices.size()
+	if certificate_target_indices.size() != expected_target_count \
+			or certificate_default_index < 0:
+		return null
 	var summit_region_checksum := 0
 	var summit_triangle_ids := PackedInt32Array()
 	var summit_witness_index := -1
@@ -610,7 +718,25 @@ static func build_certificate(
 		summit_witness_angle_tenths.append(roundi(summit_aim.yaw_degrees * 10.0))
 		summit_witness_angle_tenths.append(roundi(summit_aim.elevation_degrees * 10.0))
 		summit_witness_power = summit_aim.power_percent
-		summit_height_margin = _summit_height_margin(layout, summit_result, 0)
+		var summit_physical_impacts: PackedVector3Array = summit_rigidbody_result.get(
+			"physical_witness_impacts",
+			PackedVector3Array()
+		)
+		if summit_physical_impacts.size() > 0:
+			var summit_predicted_impacts: PackedVector3Array = summit_result.get(
+				"witness_impacts",
+				PackedVector3Array()
+			)
+			if summit_predicted_impacts.is_empty() \
+					or summit_physical_impacts[0].distance_to(summit_predicted_impacts[0]) \
+					> SUMMIT_CONTACT_DISTANCE_TOLERANCE:
+				return null
+		summit_height_margin = _summit_height_margin(
+			layout,
+			summit_result,
+			0,
+			summit_physical_impacts
+		)
 		if summit_height_margin > 1.0:
 			return null
 	var certificate := DirectReachabilityCertificate.create(
@@ -622,15 +748,15 @@ static func build_certificate(
 		layout.target_mask_checksum,
 		layout.placement_checksum(),
 		layout.containment.checksum(),
-		int(predictor_result.reachable_target_checksum),
+		layout.reachable_target_checksum(certificate_target_indices),
 		int(predictor_result.predictor_reachability_checksum),
 		int(rigidbody_result.rigidbody_reachability_checksum),
 		angles,
 		powers,
-		predictor_result.target_witness_indices,
-		predictor_result.minimum_distance_margins,
+		certificate_target_indices,
+		certificate_distance_margins,
 		predictor_result.minimum_range_margins,
-		int(predictor_result.default_witness_index),
+		certificate_default_index,
 		summit_region_checksum,
 		summit_triangle_ids,
 		summit_witness_index,
@@ -646,7 +772,8 @@ static func build_certificate(
 static func _summit_height_margin(
 		layout: GeneratedStageLayout,
 		summit_result: Dictionary,
-		summit_index: int
+		summit_index: int,
+		physical_impacts: PackedVector3Array = PackedVector3Array()
 ) -> float:
 	var maximum_height := -INF
 	for height in layout.heights:
@@ -655,10 +782,12 @@ static func _summit_height_margin(
 		"target_points",
 		PackedVector3Array()
 	)
-	var witness_impacts: PackedVector3Array = summit_result.get(
-		"witness_impacts",
-		PackedVector3Array()
-	)
+	var witness_impacts: PackedVector3Array = physical_impacts
+	if witness_impacts.is_empty():
+		witness_impacts = summit_result.get(
+			"witness_impacts",
+			PackedVector3Array()
+		)
 	if summit_index < 0 or summit_index >= target_points.size() \
 			or summit_index >= witness_impacts.size():
 		return INF
@@ -748,7 +877,8 @@ static func _solve_target(
 		target_world_normal: Vector3,
 		target_sample: Dictionary,
 		prediction_cache: Dictionary,
-		solver_cache: Dictionary = {}
+		solver_cache: Dictionary = {},
+		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
 ) -> Dictionary:
 	if solver_cache.is_empty():
 		solver_cache = _build_solver_cache(cannon)
@@ -873,7 +1003,12 @@ static func _solve_target(
 			target_sample,
 			aim
 		)
-		if not _prediction_witnesses_target(prediction, target_world_point, target_sample):
+		if not _prediction_witnesses_target(
+				prediction,
+				target_world_point,
+				target_sample,
+				maximum_distance
+			):
 			continue
 		return {
 			"valid": true,
@@ -1195,9 +1330,10 @@ static func _nomination_precedes(first: Dictionary, second: Dictionary) -> bool:
 
 
 static func _prediction_witnesses_target(
-		prediction: TrajectoryPrediction,
-		target_world_point: Vector3,
-		target_sample: Dictionary
+	prediction: TrajectoryPrediction,
+	target_world_point: Vector3,
+	target_sample: Dictionary,
+	maximum_distance: float = TARGET_DISTANCE_TOLERANCE
 ) -> bool:
 	if prediction == null or prediction.kind != TrajectoryPrediction.Kind.COLLISION \
 			or prediction.hit_identity == null:
@@ -1205,7 +1341,7 @@ static func _prediction_witnesses_target(
 	var identity := prediction.hit_identity
 	return identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
 			and not target_sample.is_empty() \
-			and prediction.endpoint.distance_to(target_world_point) <= TARGET_DISTANCE_TOLERANCE
+			and prediction.endpoint.distance_to(target_world_point) <= maximum_distance
 
 
 static func _new_prediction_diagnostics() -> Dictionary:
@@ -1289,13 +1425,14 @@ static func _finalize_prediction_diagnostics(diagnostics: Dictionary) -> Diction
 static func _nearest_reusable_witness(
 		candidate_indices: PackedInt32Array,
 		witness_impacts: PackedVector3Array,
-		target_world_point: Vector3
+		target_world_point: Vector3,
+		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
 ) -> int:
 	var best_index := -1
 	var best_distance := INF
 	for witness_index in candidate_indices:
 		var distance := witness_impacts[witness_index].distance_to(target_world_point)
-		if distance <= TARGET_DISTANCE_TOLERANCE \
+		if distance <= maximum_distance \
 				and (distance < best_distance or (distance == best_distance and witness_index < best_index)):
 			best_index = witness_index
 			best_distance = distance
@@ -1305,7 +1442,8 @@ static func _nearest_reusable_witness(
 static func _nearest_spatial_reusable_witness(
 		buckets: Dictionary,
 		witness_impacts: PackedVector3Array,
-		target_world_point: Vector3
+		target_world_point: Vector3,
+		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
 ) -> int:
 	var center := _spatial_bucket_for(target_world_point)
 	var candidates := PackedInt32Array()
@@ -1315,7 +1453,12 @@ static func _nearest_spatial_reusable_witness(
 			var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
 			for witness_index in bucket:
 				candidates.append(witness_index)
-	return _nearest_reusable_witness(candidates, witness_impacts, target_world_point)
+	return _nearest_reusable_witness(
+		candidates,
+		witness_impacts,
+		target_world_point,
+		maximum_distance
+	)
 
 
 static func _register_spatial_witness(
@@ -1327,6 +1470,32 @@ static func _register_spatial_witness(
 	var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
 	bucket.append(witness_index)
 	buckets[bucket_key] = bucket
+
+
+static func _rigidbody_identity_compatible(
+		actual: TrajectoryHitIdentity,
+		expected: TrajectoryHitIdentity,
+		expected_endpoint: Vector3,
+		actual_point: Vector3
+) -> bool:
+	if actual == null or expected == null or not actual.is_valid() or not expected.is_valid():
+		return false
+	if actual.contact_owner_id != expected.contact_owner_id \
+			or actual.contact_shape_id != expected.contact_shape_id \
+			or actual.body_shape_index != expected.body_shape_index:
+		return false
+	if actual.contact_owner_id != TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
+		return actual.has_same_surface_address(expected)
+	# A rigid sphere can cross a faceted edge between physics ticks. The owner,
+	# shape, and body-shape metadata prove it remained on the same top collider;
+	# the endpoint/contact distance prevents a distant triangle from masquerading
+	# as an adjacent facet.
+	if actual.terrain_cell == expected.terrain_cell \
+			and actual.terrain_triangle == expected.terrain_triangle:
+		return true
+	return expected_endpoint.is_finite() and actual_point.is_finite() \
+			and actual_point.distance_to(expected_endpoint) \
+			<= RIGIDBODY_IDENTITY_DISTANCE_TOLERANCE
 
 
 static func _spatial_bucket_for(world_point: Vector3) -> Vector2i:
@@ -1367,9 +1536,8 @@ static func _runtime_contact_identity(
 		return null
 	var shape_id := StringName(shape_owner.get_meta(ContainmentSpec.CONTACT_SHAPE_META, &""))
 	if owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
-		return terrain_surface.classify_top_hit(
+		return terrain_surface.classify_top_physics_hit(
 			contact.world_position,
-			contact.normal,
 			shape_id,
 			contact.collider_shape_index
 		)

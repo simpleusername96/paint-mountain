@@ -148,18 +148,20 @@ func _run_checks() -> void:
 			if certificate != null:
 				_assert_true(certificate.witness_count() == predictor.witnesses.size(), "certificate must retain every distinct witness exactly once")
 				_assert_true(certificate.target_witness_indices.size() == predictor.target_count, "certificate must assign every target texel in row-major target order")
+				_assert_true(certificate.target_witness_indices == rigidbody.target_witness_indices, "certificate must use physical-contact target assignments")
 				_assert_true(certificate.default_aim.is_equal_to(predictor.witnesses[predictor.default_witness_index]), "certificate default aim must be the centroid-nearest certified witness")
 				_assert_true(certificate.summit_witness != null and certificate.summit_witness.is_equal_to(summit.witnesses[0]), "certificate summit aim must remain independent from the centroid witness table")
 
 	print(
 		(
 			"Target reachability: target=%d witnesses=%d reused=%d predictor_calls=%d "
-			+ "predictor_ms=%d rigidbody_ms=%d"
+			+ "full_mark_fallback=%d predictor_ms=%d rigidbody_ms=%d"
 		) % [
 			int(predictor.get("target_count", 0)),
 			predictor.get("witnesses", []).size(),
 			int(predictor.get("reused_target_count", 0)),
 			int(predictor.get("predictor_call_count", 0)),
+			int(predictor.get("full_mark_fallback_count", 0)),
 			int(predictor.get("elapsed_ms", 0)),
 			int(rigidbody.get("elapsed_ms", 0)) if bool(predictor.get("valid", false)) else 0,
 		]
@@ -208,6 +210,33 @@ func _assert_separate_summit_certificate_contract(
 	_assert_true(certificate != null and certificate.is_valid(), "summit certificate must serialize a separate legal witness")
 	_assert_true(certificate != null and certificate.summit_witness != null, "summit certificate must expose its dedicated witness")
 	_assert_true(certificate != null and certificate.summit_witness.is_equal_to(summit_aim), "dedicated summit witness must round-trip unchanged")
+	if certificate != null:
+		# The primitive certificate can validate a non-empty assignment array, but
+		# only the generated layout knows how many scoreable texels exist. A
+		# shortened prefix must therefore fail the complete-proof boundary.
+		var partial_assignments := PackedInt32Array()
+		partial_assignments.resize(maxi(layout.target_pixel_count() - 1, 1))
+		var partial_predictor := {
+			"valid": true,
+			"witnesses": [target_aim],
+			"target_witness_indices": partial_assignments,
+			"minimum_distance_margins": PackedFloat32Array([1.0]),
+			"minimum_range_margins": PackedFloat32Array([1.0]),
+			"default_witness_index": 0,
+			"reachable_target_checksum": layout.reachable_target_checksum(partial_assignments),
+			"predictor_reachability_checksum": 1,
+		}
+		var partial_certificate := DirectReachabilityValidator.build_certificate(
+			StringName(String(layout.profile_id).trim_suffix("_v7")),
+			layout,
+			partial_predictor,
+			{"valid": true, "rigidbody_reachability_checksum": 1},
+			summit,
+			summit_rigidbody
+		)
+		layout.reachability_certificate = partial_certificate
+		_assert_true(not layout.is_certified(), "a partial target assignment must not certify the layout")
+		layout.reachability_certificate = null
 	_assert_true(certificate != null and not certificate.summit_witness.is_equal_to(target_aim), "dedicated summit witness must not alias the target witness table")
 
 

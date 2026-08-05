@@ -113,12 +113,23 @@ func is_certified() -> bool:
 	if not is_valid() or not has_valid_target_mask() \
 			or reachability_certificate == null or not reachability_certificate.is_valid():
 		return false
+	# DirectReachabilityCertificate validates primitive witness indices but cannot
+	# know this layout's target count. Keep the cross-resource cardinality check
+	# here so a partial prefix can never be promoted to a complete proof.
+	if reachability_certificate.target_witness_indices.size() != target_pixel_count():
+		return false
+	if reachability_certificate.minimum_distance_margins.size() \
+			!= reachability_certificate.witness_count() \
+			or reachability_certificate.minimum_range_margins.size() \
+			!= reachability_certificate.witness_count():
+		return false
 	var summit_matches := true
 	if reachability_certificate.summit_region_checksum != 0:
 		summit_matches = reachability_certificate.summit_region_checksum == summit_region_checksum() \
 				and reachability_certificate.summit_triangle_ids == summit_triangle_ids() \
 				and reachability_certificate.summit_witness != null \
-				and reachability_certificate.summit_witness.is_valid()
+				and reachability_certificate.summit_witness.is_valid() \
+				and reachability_certificate.summit_minimum_height_margin <= 1.0
 	return summit_matches \
 			and reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v7")) \
 			and reachability_certificate.profile_version == profile_version \

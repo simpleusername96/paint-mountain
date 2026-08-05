@@ -32,7 +32,7 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-05 recovery checkpoint 7)
+## Current Implemented Truth (2026-08-05 recovery checkpoint 9)
 
 - Terrain/paint foundation: the selected gameplay layout is a closed row-solid
   3D top/shell mass with shared render/collision topology. PaintSystem remains
@@ -57,12 +57,16 @@ checked tasks while claiming major phases were implemented.
   ballistic vector and yaw nomination now use the same sign convention as the
   visual muzzle; `projectile_contact_test.gd` guards that contract. Summit
   certificates now store a dedicated summit aim tuple instead of requiring the
-  summit to alias a target witness. No
-  thirty-stage target-wide certificate bundle has been generated yet. Target
-  witnesses use the authoritative 2.10 m impact footprint. A candidate
-  front-envelope raster filter was rolled back after its generation-cost and
-  no-target-deletion implications were measured. This remains a blocking Phase
-  3 item.
+  summit to alias a target witness. The Stage 01 target-wide predictor and
+  production-Rigidbody proof now passes all `67,729` scoreable texels with
+  `2,432` physical witnesses; its certificate table is rebuilt from actual
+  contact points inside the authoritative `2.10 m` impact mark. A reusable
+  offline certificate worker is present, but no thirty-stage target-wide
+  certificate bundle has been promoted yet. Target witnesses use the
+  authoritative 2.10 m impact footprint. A candidate front-envelope raster
+  filter was rolled back after its generation-cost and no-target-deletion
+  implications were measured. The all-thirty certificate/preview gate remains
+  open.
 - Repeat Fire: StageController keeps the board in AIMING while two root families
   are active and after the final paint drain, rejects a third without side
   effects, and publishes activity/readiness to the HUD. The old serial result

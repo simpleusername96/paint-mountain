@@ -108,6 +108,31 @@ func classify_top_hit(
 	)
 
 
+func classify_top_physics_hit(
+		world_point: Vector3,
+		shape_id: StringName = TOP_SHAPE_ID,
+		body_shape_index: int = 0
+) -> TrajectoryHitIdentity:
+	# RigidBody contact manifolds at a shared faceted edge can report a blended
+	# normal that is not the authored triangle normal. The top collider metadata
+	# already proves the owner/shape; classify the canonical triangle from the
+	# measured contact XZ and retain only the authoritative height check.
+	if _layout == null or _layout.top_topology == null:
+		return null
+	var local_point := to_local(world_point)
+	var sample := _layout.top_topology.surface_sample_at_local(local_point.x, local_point.z, false)
+	if sample.is_empty() or absf(float(sample.point.y) - local_point.y) \
+			> TerrainTopTopology.HIT_HEIGHT_TOLERANCE:
+		return null
+	return TrajectoryHitIdentity.terrain_top(
+		shape_id,
+		body_shape_index,
+		sample.cell,
+		int(sample.triangle),
+		sample.barycentric
+	)
+
+
 static func classify_top_cell_uv(
 		shape_id: StringName,
 		body_shape_index: int,

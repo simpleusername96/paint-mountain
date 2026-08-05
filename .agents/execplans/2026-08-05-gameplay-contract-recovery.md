@@ -749,14 +749,15 @@ Rules:
   contract, and target witnesses use the authoritative impact-mark tolerance.
   Summit certificate serialization now keeps a dedicated summit aim tuple
   separate from the target witness table.
-  Target-wide predictor/rigid-body certificates and the complete
-  certificate/preview bundle are still open. A candidate front-envelope
-  raster filter was measured but rolled back because it added unacceptable
-  generation cost and would have weakened the no-target-deletion rule; the
-  unchanged thirty-layout generation gate then passed in `254.2 s`.
-  A bounded Stage 01 target throughput sample projected `1,296,772 ms` for the
-  full target pass; it remains an estimate and is not being promoted to a
-  representative certificate.
+  The complete Stage 01 target-wide predictor/rigid-body pass now passes all
+  `67,729` target texels with `2,432` physical witnesses after reconciling
+  target assignments to actual contact points. The dedicated offline worker
+  and physical-contact certificate path are in place, but target-wide proofs
+  for stages 02–30 and the complete certificate/preview bundle are still open.
+  A candidate front-envelope raster filter was measured but rolled back because
+  it added unacceptable generation cost and would have weakened the
+  no-target-deletion rule; the unchanged thirty-layout generation gate then
+  passed in `254.2 s`.
 - [x] Phase 4: usable immediate re-aim/repeat fire (the live board now remains
   AIMING, the serial result timer is bypassed, and the matching-key readiness
   contract is implemented with prediction-change republishing, translated

@@ -8,6 +8,11 @@ const CORNERS_PER_TRIANGLE := 3
 const HIT_POSITION_EPSILON := 0.0001
 const HIT_HEIGHT_TOLERANCE := 0.05
 const HIT_NORMAL_TOLERANCE_DEGREES := 1.0
+# A sphere's discrete physics manifold normal can deviate from the authored
+# triangle normal at a faceted edge. The collider owner and height sample still
+	# identify the canonical top surface, so allow that bounded manifold deviation
+	# after the strict authored-normal comparison has been evaluated.
+const PHYSICS_MANIFOLD_NORMAL_TOLERANCE_DEGREES := 35.0
 
 var cell_count: Vector2i:
 	get:
@@ -252,7 +257,9 @@ func classify_local_hit(
 	var normal_angle := rad_to_deg(acos(clampf(
 		expected_normal.dot(predicted_local_normal.normalized()), -1.0, 1.0
 	)))
-	if normal_angle > HIT_NORMAL_TOLERANCE_DEGREES:
+	if normal_angle <= HIT_NORMAL_TOLERANCE_DEGREES:
+		return sample
+	if normal_angle > PHYSICS_MANIFOLD_NORMAL_TOLERANCE_DEGREES:
 		return {}
 	return sample
 

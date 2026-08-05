@@ -411,6 +411,37 @@ A bounded Stage 01 throughput sample visited `512` of `67,729` target pixels in
 as a cost estimate only (`is_certificate=false`); no representative sample is
 being promoted to a target-wide certificate.
 
+## Recovery checkpoint 8 (2026-08-05)
+
+The first full Stage 01 target pass exposed a real proof-boundary issue: the
+analytic predictor's nominated witness could drift across a faceted edge or by
+more than the predictor's conservative `1.70 m` reuse distance when reproduced
+by the discrete rigid sphere. The proof no longer rejects that case by comparing
+one stale predictor assignment. It classifies the production contact from the
+authoritative top topology, allows only same-owner/shape/body metadata with a
+bounded adjacent-facet drift, and reassigns every target texel to the nearest
+valid physical contact point inside the authoritative `2.10 m` impact mark.
+The reconciliation uses spatial buckets; it does not broaden the paint radius
+or delete target pixels.
+
+Evidence after this correction:
+
+- `tests/target_reachability_test.gd --stage=stage_01 --summit-only` passed after
+  the physical classifier and certificate fallback contract were updated.
+- The focused three-pixel physical diagnostic passed with all three real-body
+  contacts and produced reconciled assignments `[2, 2, 2]`.
+- The complete Stage 01 target pass passed twice in the hidden Compatibility
+  fixture. The final run visited all `67,729` target pixels, produced `2,432`
+  distinct witnesses, `65,297` reused assignments, `27,058` predictor calls,
+  `3` explicit full-mark fallbacks, and completed predictor/rigid-body phases in
+  `257,698 ms` / `78,582 ms`. The error log contained no identity, uncovered-
+  target, certificate, or script failures, and the test's certificate assertion
+  confirmed that the serialized target table uses the physical-contact
+  reconciliation.
+- This is now a representative Stage 01 target-wide physical proof. It does
+  not promote a thirty-stage certificate bundle; stages 02–30 still require the
+  same worker and catalog promotion gate.
+
 ## Limitations
 
 - This audit does not claim fresh runtime reproduction; it explains the user's
