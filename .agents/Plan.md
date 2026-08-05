@@ -13,6 +13,7 @@ related:
   - execplans/2026-08-05-physical-gameplay-mvp.md
   - execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
   - execplans/2026-08-05-runtime-grounded-interface.md
+  - execplans/2026-08-05-gameplay-contract-recovery.md
   - ../docs/source-brief.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -25,10 +26,9 @@ related:
 > Historical plan: this document records the remediation that was marked done
 > on 2026-08-03. A later static code audit found that several claimed outcomes
 > are not supported by the current implementation. The current execution entry
-> point is
-> [`execplans/2026-08-05-physical-gameplay-mvp.md`](execplans/2026-08-05-physical-gameplay-mvp.md),
-> followed in order by the linked rapid-fire/progression and runtime-interface
-> plans. This file is historical only.
+> point is the sole active
+> [`execplans/2026-08-05-gameplay-contract-recovery.md`](execplans/2026-08-05-gameplay-contract-recovery.md).
+> This file and the three intervening 2026-08-05 plans are historical only.
 
 At plan creation, the baseline contained the original three-stage rules, paint mask, projectile physics, mechanisms, replay, and export path but lacked procedural progression, readable placement, Korean-first UI, direct targeting, and the target composition. The six phases below were executed to preserve the working gameplay owners while rebuilding the visible core experience; all completion gates passed on 2026-08-03.
 
@@ -491,10 +491,8 @@ Rerun policy:
 ## Next Steps
 
 All six remediation phases completed on 2026-08-03. Their claims are historical.
-Further gameplay-reset work follows
-[`execplans/2026-08-03-gameplay-visual-reset.md`](execplans/2026-08-03-gameplay-visual-reset.md),
-the sole active successor installed after the corrected paint rule and validated
-external review.
+Further gameplay recovery follows the sole active
+[`execplans/2026-08-05-gameplay-contract-recovery.md`](execplans/2026-08-05-gameplay-contract-recovery.md).
 
 ## Completion Criteria
 

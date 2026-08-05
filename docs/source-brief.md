@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-05
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -1530,6 +1530,44 @@ single-shot-wait, paint-scale, pacing, and HUD clauses above:
   understandable. Redesign the layout around the established sparse edge HUD,
   use Pretendard with clearly bold hierarchy, keep Korean as the default, and
   retain Fire as the single bottom-center primary action.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Clarification (2026-08-05): Gameplay Contract Recovery
+
+The user inspected Stages 04 and 05 and the current firing loop, then made the
+following requirements explicit. These clauses clarify the 2026-08-04
+progression, repeat-fire, reachability, and scale requirements; they are not
+optional polish:
+
+- **Per-stage terrain difficulty:** adjacent stages must not merely clone one of
+  a few terrain templates and change a seed or nominal height. The deterministic
+  stage inputs must progressively change player-visible range size, broad
+  rises/descents, route undulation, decorations, and mechanism opportunities.
+  Stages 04 and 05 are an explicit acceptance pair: they must be measurably and
+  visibly distinct while remaining gradual and free of spikes, holes, and abrupt
+  scale jumps.
+- **Summit reachability:** in addition to the existing target-wide reachability
+  rule, every accepted stage must have at least one legal manual
+  yaw/elevation/power tuple whose first physical terrain contact reaches the
+  stage's global highest playable top region. A rear or foreground ridge may not
+  occlude every legal trajectory to the summit. The default aim remains near the
+  target-mask centroid; it does not become an automatic summit solution.
+- **Usable immediate re-aiming:** accepting a Fire action must leave the next
+  yaw, elevation, and power controls immediately editable. The camera,
+  trajectory preview, HUD, and prediction-readiness feedback must also keep the
+  next shot visibly aimable while earlier balls move. Controller-level support
+  without a usable aiming view does not satisfy this requirement.
+- **Projectile/paint scale acceptance:** the current `0.60 m` ball,
+  `2.25 m` traversed/settlement radius, and `3.20 m` impact radius remain too far
+  apart in the running game and are not an accepted midpoint. The next contract
+  must make the physical/visible ball materially larger and the traversed paint
+  materially narrower, then prove the relationship from real contact and the
+  authoritative mask.
+- **Completion truth:** catalog enumeration, permissive smoke checks, or partial
+  controller support cannot be reported as completion of a stronger ExecPlan.
+  Implemented-status records and plan checkboxes must match the actual code and
+  production-style evidence.
 
 All earlier requirements not contradicted here remain in force.
 

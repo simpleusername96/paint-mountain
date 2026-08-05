@@ -1,10 +1,11 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-05
 last_reviewed: 2026-08-05
 scope: Korean-first design system, nine runtime-grounded screens, honest gameplay HUD states, responsive desktop layout, accessibility, and final rendered handoff
 source: runtime-grounded current-versus-proposed review selected by the user as the planning basis on 2026-08-05
+superseded_by: 2026-08-05-gameplay-contract-recovery.md
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -23,6 +24,12 @@ related:
 ---
 
 # Runtime-Grounded Interface - Execution Contract
+
+> Superseded on 2026-08-05 because its observation/repeat-fire surface depended
+> on gameplay contracts that were only partially implemented. Preserve its
+> approved static visual direction, but execute the live aiming/readiness repair
+> only through
+> [`2026-08-05-gameplay-contract-recovery.md`](2026-08-05-gameplay-contract-recovery.md).
 
 This plan turns the nine selected, current-runtime-grounded concepts into the
 actual Godot interface after the physical and progression plans are complete.

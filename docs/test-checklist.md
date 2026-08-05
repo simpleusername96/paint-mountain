@@ -16,6 +16,7 @@ related:
   - ../.agents/execplans/2026-08-05-physical-gameplay-mvp.md
   - ../.agents/execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
   - ../.agents/execplans/2026-08-05-runtime-grounded-interface.md
+  - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
 ---
 
 # Test Checklist
@@ -23,38 +24,40 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-The dated execution gate below is the current authority for the user-approved
-2026-08-05 ExecPlan pass. Older sections are retained as historical records and
-must not be read as current failures or current proof.
+The recovery gate below is current. Older checked sections are historical
+evidence for earlier builds and must not be read as proof of the recovery.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
 
-## Current ExecPlan execution gate (2026-08-05)
+## Current gameplay-contract recovery gate (2026-08-05)
 
-- [x] Closed 3D mountain shell, top topology, apron/backstop containment, and
-  measured rigid-body contact pass focused fixtures.
-- [x] Predictor and real projectile share stable terrain/mechanism identities;
-  projectile CCD contact, low rebound, settlement, and continuous target-top
-  paint pass.
-- [x] PaintSystem remains the sole authoritative mask/coverage owner; the
-  dirty-region GPU publication path preserves the mask and passes the rendered
-  responsiveness probe.
-- [x] Two root families can be admitted immediately, third admission is a
-  side-effect-free capacity rejection, Splitter children inherit shot IDs, and
-  observation/replay/agent schemas preserve family identity.
-- [x] Stage 01–30 are deterministic catalog entries, all-open in fresh and
-  migrated saves, and stage-select paging does not generate terrain.
-- [x] Korean-first menu, stage select, briefing, aiming, observation, pause,
-  settings, clear, failure, and replay states render through real owners with
-  one left coverage owner, lower-left aim/power, centered Fire, and upper-right
-  settings/shots.
-- [x] Focused test suite, `scripts/verify.ps1`, Windows release export, and
-  exported off-screen aiming capture pass. See
-  `.agents/evidence/2026-08-05-execution-evidence.md`.
-- [ ] Foreground play review by the user. The agent intentionally does not open
-  a desktop-blocking Godot window.
+- [ ] Stage 01–30 use committed version-7 per-stage profiles/layout identities;
+  all 29 difficulty-score deltas are `0.35..5.00`, adjacent normalized height
+  RMS is `1.0..18.0 m`, and Stage 04/05 pass their exact distinctness canary.
+- [ ] Every stage has a full certificate for every scoreable target triangle and
+  a separate legal predictor/rigid-body first hit on the global Summit Region;
+  power endpoints are `32/150 m/s` and the damped full-domain containment proof
+  passes with no hidden collision.
+- [ ] While ball 1 remains active, human input changes the next aim, a matching
+  trajectory remains visible from the cannon view, and ball 2 fires at that new
+  tuple before ball 1 settles; capacity disables only Fire.
+- [ ] Parent physical radius is `0.90 m`; continuous/settlement/impact paint
+  radii are `1.50/1.50/2.10 m`; controlled real-contact mask widths and an
+  off-screen running capture prove the relationship.
+- [ ] The focused recovery checks, deterministic catalog `--check`,
+  `scripts/verify.ps1`, Windows release export, metadata JSON, and named
+  background Compatibility captures all pass.
+- [ ] `.agents/Documentation.md` and the active ExecPlan checkboxes match the
+  observed implementation; no superseded shortcut is called complete.
+- [ ] Foreground play review by the user. The agent does not open a desktop-
+  blocking Godot window.
+
+The checked `f13927a` evidence formerly listed here proved only partial contact,
+catalog enumeration, direct-controller repeat Fire, static UI, and performance.
+It is retained in `.agents/evidence/2026-08-05-execution-evidence.md` as historical
+evidence and does not satisfy this gate.
 
 ## Requirements and Acceptance Criteria
 
@@ -170,7 +173,7 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [ ] The user-coordinated running-game visual gate has passed. No headless test
   or concept image may satisfy this item.
 
-### Gameplay and visual reset release gate (active 2026-08-03)
+### Gameplay and visual reset release gate (historical 2026-08-03)
 
 Authority and deterministic target terrain:
 

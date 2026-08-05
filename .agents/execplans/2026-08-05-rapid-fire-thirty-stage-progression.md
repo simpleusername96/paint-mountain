@@ -1,10 +1,11 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-05
 last_reviewed: 2026-08-05
 scope: concurrent root-shot families, deterministic paint attribution, faster grounded cadence, thirty generated stages, all-open persistence, and non-generating stage selection
 source: source brief plus user progression and pacing directives through 2026-08-05
+superseded_by: 2026-08-05-gameplay-contract-recovery.md
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -19,6 +20,12 @@ related:
 ---
 
 # Rapid Fire and Thirty-Stage Progression - Execution Contract
+
+> Superseded on 2026-08-05 after a static code and plan audit found that the
+> implementation cloned three legacy profiles instead of executing the locked
+> version-6 progression and left repeat-fire visually unusable. The sole active
+> recovery contract is
+> [`2026-08-05-gameplay-contract-recovery.md`](2026-08-05-gameplay-contract-recovery.md).
 
 This plan expands an accepted physical gameplay MVP into thirty immediately
 selectable stages and allows the player to launch a second root paintball while

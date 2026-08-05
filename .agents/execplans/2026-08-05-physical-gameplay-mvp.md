@@ -1,10 +1,11 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-05
 last_reviewed: 2026-08-05
 scope: visible closed mountain gameplay, first-hit aiming, real projectile contact, continuous authoritative paint, and fire/camera responsiveness
 source: source brief plus user corrections through 2026-08-05 and the runtime-grounded screen review
+superseded_by: 2026-08-05-gameplay-contract-recovery.md
 supersedes: 2026-08-04-rapid-fire-progression-redesign.md
 related:
   - ../PLANS.md
@@ -23,6 +24,11 @@ related:
 ---
 
 # Physical Gameplay Foundation - Execution Contract
+
+> Superseded on 2026-08-05 after a static code and plan audit found that the
+> execution checkpoint below overstates reachability and scale acceptance. The
+> sole active recovery contract is
+> [`2026-08-05-gameplay-contract-recovery.md`](2026-08-05-gameplay-contract-recovery.md).
 
 The first deliverable is one visibly credible, closed, collidable mountain board
 on which the real ball lands, rolls, and paints the exact scoreable surface it

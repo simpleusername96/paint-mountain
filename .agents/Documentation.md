@@ -11,66 +11,54 @@ related:
   - execplans/2026-08-05-physical-gameplay-mvp.md
   - execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
   - execplans/2026-08-05-runtime-grounded-interface.md
+  - execplans/2026-08-05-gameplay-contract-recovery.md
+  - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
 ---
 
 # Project Record
 
-## Active Execution Sequence (2026-08-05)
+## Active Recovery Sequence (2026-08-05)
 
-The user authorized execution of the three decision-complete ExecPlans in one
-continuous pass. The implementation checkpoint is recorded in
-[`evidence/2026-08-05-execution-evidence.md`](evidence/2026-08-05-execution-evidence.md)
-and the current rendered captures are under `evidence/current/`.
+The user's foreground QA invalidated four completion claims made after commit
+`f13927a`. A static audit confirmed the reports and is preserved at
+[`evidence/2026-08-05-gameplay-contract-gap-audit.md`](evidence/2026-08-05-gameplay-contract-gap-audit.md).
+The sole active execution authority is now
+[`execplans/2026-08-05-gameplay-contract-recovery.md`](execplans/2026-08-05-gameplay-contract-recovery.md).
 
-1. [`execplans/2026-08-05-physical-gameplay-mvp.md`](execplans/2026-08-05-physical-gameplay-mvp.md)
-   now has a closed row-solid mountain, shared render/collision topology,
-   measured rigid-body contact, continuous authoritative paint, containment,
-   and a passing off-screen responsiveness probe.
-2. [`execplans/2026-08-05-rapid-fire-thirty-stage-progression.md`](execplans/2026-08-05-rapid-fire-thirty-stage-progression.md)
-   now has two admitted root families with monotonic shot IDs, family-local
-   observations, replay/agent schema updates, thirty all-open deterministic
-   stage entries, progressive generation, and cached stage navigation.
-3. [`execplans/2026-08-05-runtime-grounded-interface.md`](execplans/2026-08-05-runtime-grounded-interface.md)
-   now has the Korean-first runtime HUD/menu/settings/stage-select flows,
-   left-side coverage ownership, lower-left aim controls, centered Fire,
-   observation controls, and off-screen Compatibility captures.
+The physical, rapid-fire/progression, and runtime-interface plans dated
+2026-08-05 are superseded. Their designs remain historical context, but their
+progress prose is not current implementation evidence: each still had zero
+checked tasks while claiming major phases were implemented.
 
-The plans remain `active` until the evidence/report and release-build audit are
-committed. That lifecycle status is not a claim that implementation is absent;
-it marks the final documentation and handoff work still being completed in this
-run.
+## Current Implemented Truth (2026-08-05 static audit)
 
-## Current Execution Checkpoint (2026-08-05)
-
-- Physical contract: closed terrain shell and apron/backstop containment are
-  real 3D bodies; prediction and projectile contact publish the same stable
-  terrain/mechanism identities. PaintSystem is the sole authoritative mask and
-  shader source; the visible brush footprint is now between the original ball
-  and oversized brush behavior.
-- Fire contract: the next aim can be edited while a family is airborne; two
-  root families may be admitted immediately, a third is rejected without side
-  effects, and Splitter children inherit the parent `shot_id`.
-- Progression contract: Stage 01–30 are catalog members and selectable in a
-  fresh save; generation is deterministic and progressive, and stage-select
-  paging does not construct gameplay terrain. Mechanism bands intentionally use
-  0/1/2 visible objects (intro/Burst/late Splitter+Bumper) to preserve the
-  user's requested readability and gradual difficulty; the six-object concept
-  note is retained as a future expansion, not silently represented as done.
-- Interface contract: Korean is the default locale. A single left vertical
-  coverage meter owns current/target values; aim/power is lower-left, Fire is
-  centered at the bottom, and settings/gear is upper-right. Observation keeps
-  camera, speed, and pause controls without hiding aim or Fire.
-- Performance contract: Compatibility off-screen responsiveness telemetry now
-  passes all thresholds after dirty-region GPU texture publication. The latest
-  run recorded direct paint-drain p95 `1.37 ms`, maximum `2.309 ms`, and an
-  empty acceptance-failure list.
-- Validation: focused contact, paint, replay, rapid-fire, generation,
-  localization, UI, camera-safety, and shot-feedback checks pass; the project
-  verifier passed after the final edits, the Windows release export produced
-  `builds/windows/PaintMountain.exe`, and exported off-screen aiming also
-  passed. Only foreground play review remains user-owned.
+- Terrain/paint foundation: the selected gameplay layout is a closed row-solid
+  3D top/shell mass with shared render/collision topology. PaintSystem remains
+  the sole mask/coverage owner. This audit did not rerun those older physical
+  checks.
+- Stage catalog: thirty IDs are selectable, but Stages 04–30 are created by
+  cloning one of the three legacy stage/profile resources at runtime. Stages 04
+  and 05 both clone First Descent, preserve the same fixed version-5 geometry
+  contract, have zero mechanisms and ten decorations, and differ mainly by seed
+  and `0.6 m` nominal peak. This is not accepted progressive generation.
+- Reachability: runtime derives one legal first hit near the target centroid.
+  It does not identify/certify the global summit, and the current layouts do not
+  carry the full target-wide certificate required by the source brief.
+- Repeat Fire: StageController and AimInputController can accept two roots before
+  settlement. The human experience is incomplete: Fire switches away from the
+  cannon view, hides the next trajectory, temporarily invalidates Fire while an
+  unlabelled 20 Hz prediction refresh runs, and the HUD does not consume real
+  family capacity/terminal readiness.
+- Scale: the resource now uses `0.60 m` physical radius and
+  `2.25/3.20/2.25 m` paint radii. Those values are wired consistently but remain
+  visually rejected by the user and lack controlled running scale evidence.
+- Interface: the Korean-first edge HUD and app screens exist, but their repeat-
+  aim/readiness behavior depends on the unresolved gameplay recovery above.
+- Evidence boundary: no Godot window or test was run during this audit. The
+  preceding claims are code/document/git facts combined with the user's running-
+  game observations, not a new runtime acceptance pass.
 
 Historical sections below describe earlier builds and are retained for
 traceability only. They must not be used as current implementation evidence.

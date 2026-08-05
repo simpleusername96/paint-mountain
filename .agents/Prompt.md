@@ -2,6 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
+last_reviewed: 2026-08-05
 source: ../docs/source-brief.md
 scope: repository purpose and non-negotiable product constraints
 related:
@@ -9,6 +10,7 @@ related:
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
   - execplans/2026-08-03-gameplay-visual-reset.md
+  - execplans/2026-08-05-gameplay-contract-recovery.md
 ---
 
 # Paint Mountain Project Brief
@@ -27,7 +29,8 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
 
 ## Requirements
 
-- Deliver three stages, the full menu-to-result loop, inspection/aim/follow/result
+- Deliver thirty all-open, gradually harder stages, the full menu-to-result loop,
+  inspection/aim/follow/result
   cameras, continuous physical-contact paint, target-mask coverage, saving,
   replay, debug tools, audio/visual feedback, and exactly Burst, Splitter, and
   Bumper mechanisms.
@@ -39,7 +42,13 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
   apron contain the current board.
 - Prove that every target-mask texel has a legal manual first-hit aim and derive
   the stage-start/restart aim from the certified hit nearest the target centroid;
-  never expose the certificate as auto-aim.
+  separately prove that the global highest playable top region has a legal first
+  physical hit; never expose either certificate as auto-aim.
+- Keep the next yaw/elevation/power aim and trajectory usable after Fire while up
+  to two root-shot families move; motion is not an input-blocking stage phase.
+- Use one `0.90 m` parent physical radius with `1.50 m` traversed/settlement and
+  `2.10 m` impact paint radii, all reconstructed through the authoritative mask;
+  map power `0..100` linearly to `32..150 m/s` so accepted summits are reachable.
 - Keep repeated launches effectively deterministic and the initial trajectory preview consistent with real launch physics.
 - Keep the human UI independent from an in-process observation/action API suitable for later AI play and automated testing.
 - Validate the finished project by running it, testing at least one reliable solution per stage, and capturing seven separate full-resolution screenshots from the actual game.

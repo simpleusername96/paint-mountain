@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-05
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -12,6 +12,7 @@ related:
   - ../.agents/Plan.md
   - ../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
+  - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
 ---
 
 # Paint Mountain Design Specification
@@ -19,10 +20,11 @@ related:
 ## Purpose
 
 Define the compact working interpretation of the effective `source-brief.md`
-for a polished three-stage 3D gravity-driven paintball puzzle game. Its dated
-2026-08-03 supersessions replace finite-payload/flow behavior and the original
-aiming-HUD placement while preserving manual launch planning, measured physical
-contacts, Korean-first presentation, and the rest of the baseline directive.
+for a polished thirty-stage 3D gravity-driven paintball puzzle game. Its dated
+supersessions replace finite-payload/flow behavior, locked progression, serial
+Fire, rejected paint scale, and the original aiming-HUD placement while
+preserving manual launch planning, measured physical contacts, Korean-first
+presentation, and the rest of the baseline directive.
 
 ## Scope
 
@@ -34,7 +36,10 @@ paint reservoir, depletion, or autonomous flow. After all projectiles and paint
 commands settle, the stage clears at its target or continues/fails according to
 shots remaining.
 
-The vertical slice includes a main menu, stage select, briefing/inspection, aiming, projectile observation, clear/failure, pause, settings, saving, replay, debug tooling, audio/visual feedback, three stages, one ball type, and exactly three mechanism types.
+The vertical slice includes a main menu, stage select, briefing/inspection,
+aiming, projectile observation, clear/failure, pause, settings, saving, replay,
+debug tooling, audio/visual feedback, thirty all-open stages, one ball type, and
+exactly three mechanism types.
 
 ## Requirements
 
@@ -61,13 +66,20 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
   collision geometry, and collision layers as the real ball. It ends at the
   first physical collision. Bounds exits and timeouts are non-fireable errors;
   no post-impact route is shown.
-- During observation, reduce aiming controls and offer camera mode plus optional 1×/2× after landing.
+- Firing never hides or disables the next aim. The default camera remains on the
+  cannon with a visible next-shot trajectory while prior balls move. Follow and
+  wide observation are explicit modes; any new aim input returns to the cannon.
 
 ### Stage state
 
-- Authoritative states: `LOADING`, `BRIEFING`, `AIMING`, `PROJECTILE_IN_FLIGHT`, `PAINT_SETTLING`, `SHOT_RESULT`, `STAGE_CLEAR`, `STAGE_FAILED`, `PAUSED`.
-- Firing is disabled while any parent/child projectile is active. Coverage finalizes only after projectiles and paint effects settle.
-- Shot result briefly shows gained coverage, then clears, fails, or returns to aiming.
+- Authoritative Board Phases are `LOADING`, `BRIEFING`, `AIMING`, `PAUSED`,
+  `STAGE_CLEAR`, and `STAGE_FAILED`. Active projectile families, paint drain, and
+  terminal pending are orthogonal typed activity, not input-blocking phases.
+- Two root-shot families may coexist. Fire alone disables at two-family capacity,
+  invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
+  controls remain editable while prior families move.
+- Family coverage feedback is nonmodal. Clear/failure resolves only after every
+  admitted family and authoritative paint command settles.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
 
 ### Projectile and paint
@@ -79,6 +91,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - Projectile data owns radius, mass, bounce, friction, damping, lifetime, stop
   thresholds, contact footprint, impact/settle radii, and activation cap. It owns
   no paint amount, payload, depletion rate, or flow budget.
+- The parent ball uses one `0.90 m` visible/collision/prediction radius. Continuous
+  and settlement paint use `1.50 m`; first impact uses `2.10 m`. Splitter children
+  scale both physical and paint radii uniformly by `0.78`.
+- Power `0..100` maps linearly to `32..150 m/s`. Generated summit height/range,
+  predictor, rigid body, and containment use that same curve; maximum-power
+  rescue through a second velocity constant is forbidden.
 - Airborne travel uses no paint. A verified target-top first contact may create a
   radial impact mark; consecutive real target-top contact samples create a
   continuous 3D surface sweep; final target-top settlement may create an
@@ -112,9 +130,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 
 ### Stages
 
-- Generate one accepted immutable `73 × 49` height-sample grid per stage from a
-  deterministic route graph, stage ID/version, fixed seed, and typed generation
-  profile. The resulting surface has exactly one playable top height per XZ and
+- Generate one accepted immutable variable-size height grid per stage from a
+  deterministic route graph, canonical stage ID/version, fixed accepted seed,
+  and complete typed progression profile. Stage 01 begins at `180 × 120 m` and
+  `72 × 48` cells; Stage 30 ends at `240 × 160 m` and `96 × 64` cells, with
+  bounded adjacent steps and the exact formulas in the active ExecPlan. The
+  resulting surface has exactly one playable top height per XZ and
   may form broad rollable slopes, terraces, ridges, valleys, and pads, never
   caves, overhangs, tunnels, stacked tops, detached pieces, or literal stairs.
 - Emit the indexed top-triangle list once with one fixed diagonal. The render
@@ -127,14 +148,24 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
   skirts and bottom cap. A visible bright off-white rear wall and a faceted,
   collider-matched non-target apron close the board so legal shots cannot pass
   through or over the playable scene.
-- First Descent: one broad 28 m `PRIMARY` route with zero reversals, no mechanisms, 4% target, four shots.
-- Burst Basin: two 18 m `PRIMARY` routes with two reversals each, one high-value Burst, 27% target, five shots.
-- Split Ridge: 16/12/12 m `SAFE`/`SPLITTER`/`BUMPER` routes with two/four/four reversals, Splitter plus Bumper, safe inefficient route, 70% target, six shots.
+- All thirty stages are selectable from first launch. Per-stage bounds, cells,
+  nominal peak, macro undulation, decorations, targets, and seeds change
+  gradually; routes, reversals, ridges, passes, basins, station counts, and
+  mechanisms increase in staggered bounded steps rather than at one shared band
+  boundary. Adjacent layouts must have unique checksums, a profile-score delta
+  of `0.35..5.00`, and a normalized height RMS of `1.0..18.0 m`; Stages 04 and
+  05 are explicit distinctness canaries.
+- Stage 01 has no mechanism; Stage 02 introduces Burst; Stage 03 uses Splitter
+  plus Bumper. Later stages grow to six visible, collider-matched mechanisms by
+  Stage 25–30 without adding a fourth kind.
 - Mechanisms sit at the exact owning-route centerline shelf transform and must pass slope, spacing, bounds, visibility, projected-size, tangent, and clearance checks. A failed fixed placement rejects the candidate; production resources contain no authored X/Z fallback or placement scoring alternative.
 - Every target-mask texel must have a certified legal manual aim whose first
   physical hit is the same target-top triangle. The certificate is fairness
   evidence and is never exposed as auto-aim. Stage start and restart use the
   certified witness whose impact is nearest the target-mask centroid.
+- Every accepted stage also has a separately certified legal first physical hit
+  on its global highest playable top region. This summit witness does not replace
+  target-wide proof and is not used as the default aim.
 - Each StageData includes identity and translation keys, generation profile/seed,
   cannon transform, camera bookmarks, target/shots/color, mechanism loadout,
   containment, star thresholds, best data, and tutorial keys. The generated
@@ -151,12 +182,12 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 - Clear uses coverage only; failure occurs after the last settled shot below target. Stars use stage data and remain understandable.
 - Results show stage, final/target coverage, shots used/remaining, previous best, new best, rank/stars, final mountain, retry, next/select, and replay. Failure emphasizes missing coverage and Retry.
 - Save version, unlocks, best coverage/stars, and settings locally.
-- Replay format 6 stores stage/profile versions, accepted seed plus height,
+- Replay format 7 stores stage/profile/layout/certificate versions, accepted seed plus height,
   target/reachability/containment checksums, the generated default aim,
   fixed-tick canonical manual actions, expected ordered contacts/effects, and the
   final paint-mask checksum. Replay presentation locks normal input and accepts
-  only replay-origin actions; format 5 is rejected because the authoritative
-  paint-mask checksum changed to the incremental runtime contract.
+  only replay-origin actions; older formats are rejected because they cannot
+  prove the version-7 generated layout and summit certificate.
 
 ### UI, art, audio, and debug
 
@@ -209,14 +240,14 @@ The vertical slice includes a main menu, stage select, briefing/inspection, aimi
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the physical
-contact, closed-terrain, manual-aim, mechanism-body, replay-format-6, or rebuilt-UI
+contact, closed-terrain, manual-aim, mechanism-body, replay-format-7, or rebuilt-UI
 contracts above.
 
 The sole active implementation contract is
-`.agents/execplans/2026-08-03-gameplay-visual-reset.md`. It supersedes the earlier
-core-interaction plan where the contracts differ. `.agents/Documentation.md` is
-the implemented-truth boundary, and the unchecked gameplay/visual-reset gate in
-`test-checklist.md` defines what remains to be proved.
+`.agents/execplans/2026-08-05-gameplay-contract-recovery.md`. It supersedes the
+three contradictory 2026-08-05 physical/progression/interface plans where their
+progress claims or contracts differ. `.agents/Documentation.md` remains the
+implemented-truth boundary.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.
