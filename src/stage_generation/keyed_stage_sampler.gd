@@ -5,6 +5,10 @@ extends RefCounted
 
 const FNV_OFFSET_BASIS: int = 2166136261
 const FNV_PRIME: int = 16777619
+# Contract metadata may advance for radius, aiming, or placement validation
+# without resampling every accepted mountain. Change this revision only when
+# the structural terrain sampling algorithm intentionally changes.
+const TERRAIN_SAMPLING_REVISION := "v7"
 
 
 static func sample_unit(stage_id: StringName, attempt_seed: int, field_key: String) -> float:
@@ -14,7 +18,7 @@ static func sample_unit(stage_id: StringName, attempt_seed: int, field_key: Stri
 
 static func versioned_key(stage_id: StringName, attempt_seed: int, field_key: String) -> String:
 	return "paint_mountain:%s:%s:%d:%s" % [
-		String(stage_id), StageGenerationContract.version_tag(), attempt_seed, field_key,
+		String(stage_id), TERRAIN_SAMPLING_REVISION, attempt_seed, field_key,
 	]
 
 
