@@ -43,7 +43,11 @@ static func generate(
 		if _validate(profile, accepted) and _finalize_layout(profile, stage_data, accepted):
 			accepted.reachability_certificate = stage_data.reachability_certificate
 			return accepted
-		push_error("Generated stage %s failed its persisted accepted seed." % stage_id)
+		var failure_metrics := accepted.metrics if accepted != null else {"rejection": "route_graph"}
+		push_error(
+			"Generated stage %s failed its persisted accepted seed: %s" \
+					% [stage_id, str(failure_metrics)]
+		)
 		return null
 	for attempt_index in range(profile.generation_contract.attempt_count):
 		var attempt_seed := int((requested_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)

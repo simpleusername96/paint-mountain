@@ -320,8 +320,10 @@ static func _intro_route(
 		route.lateral_bend_range = Vector2(-4.0, 4.0)
 	if stage_number == 2:
 		route.mechanism_kinds = PackedInt32Array([MechanismData.Kind.BURST])
-		route.mechanism_pad_ts = PackedFloat32Array([0.54])
-		route.mechanism_pad_radii = PackedFloat32Array([8.0])
+		# Keep the tutorial glyph on the broad upper shelf. The former midpoint
+		# crossed the sharp bank and could not render as a readable surface mark.
+		route.mechanism_pad_ts = PackedFloat32Array([0.25])
+		route.mechanism_pad_radii = PackedFloat32Array([10.0])
 	elif mechanism_kind >= 0:
 		route.mechanism_kinds = PackedInt32Array([mechanism_kind])
 		route.mechanism_pad_ts = PackedFloat32Array([mechanism_pad_t])
@@ -419,7 +421,9 @@ static func _mechanism_pad_radius(kind: MechanismData.Kind) -> float:
 			# Uphill Rebound needs nearby terrain relief; a wide flattened pad
 			# removes the rise witness that makes this glyph useful.
 			return 1.5
-	return 8.0
+	# Burst's full ring must stay on its broad shelf instead of crossing the
+	# sharp support blend at the edge of the old 8 m anchor.
+	return 10.0
 
 
 static func _canonical_mechanism_data(kind: MechanismData.Kind) -> MechanismData:
