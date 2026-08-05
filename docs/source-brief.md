@@ -1600,6 +1600,65 @@ certification contract:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-06): Persistent Wind-Driven Coverage Loop
+
+The user explicitly revised the projectile lifetime, wind, completion,
+mechanism, camera, and HUD requirements after inspecting the current running
+game. These clauses override only the conflicting earlier clauses:
+
+- **Persistent terrain paintballs:** a paintball has no finite paint payload.
+  Once it has reached valid playable mountain top, age, low speed, and the
+  engine's sleeping state must not delete it during the run. The rigid body may
+  sleep naturally for performance and must remain present so collision or
+  strong wind can move it again. Explicit mechanism consumption, real escape,
+  a never-contacted miss timeout, unrecoverable invalid geometry, and stage
+  cleanup are the only pre-result termination families.
+- **Terrain contact recovery and paint:** a valid top traversal always produces
+  visible paint, including outside the scoreable mask; only overlap with the
+  authoritative target mask increases coverage. A stationary ball does not
+  repeat paint at one point, and resumed movement paints only its new physical
+  path. Terrain embedding is recovered from the authoritative surface and
+  physical radius instead of being treated as an ordinary deletion outcome.
+- **Wind:** one deterministic, stage-seeded wind changes on a readable
+  30-second rhythm with a natural three-second transition. It affects both the
+  trajectory preview and real projectile physics. Strong wind can wake
+  terrain-resting balls, while small leaves or debris provide restrained world
+  motion. A HUD cue must show the direction that projectiles are pushed,
+  strength, time to change, and the approaching direction during the
+  transition; world particles are supplementary, not the sole rule cue.
+- **Timed coverage result:** the first actual launch starts a stage duration of
+  90, 120, or 180 seconds according to progression. Reaching target coverage or
+  spending all shots does not auto-end or fail the run. The player may use a
+  Finish action after the first shot, or the timer ends the run. The sole score
+  is final unique target coverage; existing star thresholds remain grades.
+- **Surface glyph mechanisms:** Burst, Splitter, and Bumper are no longer
+  physical raised 3D obstacles. They become terrain-conforming flat circular
+  glyphs activated by a real valid-top contact inside their visible footprint.
+  Burst applies its large paint effect and consumes the ball; Splitter keeps a
+  readable three-way useful branch; Bumper becomes Uphill Rebound and sends the
+  ball toward the locally highest meaningful direction. Small stages may have
+  no glyph or one or two; larger stages may contain more. Additional mechanism
+  ideas remain future candidates, not part of this implementation slice.
+- **Aim lock and map inspection:** the Follow/Wide/Cannon camera preset strip
+  and its gameplay 1x/2x/Pause actions are removed. Gameplay has two clear
+  interaction modes while stage rules remain in the aiming phase. In Aim Lock,
+  left drag adjusts yaw/elevation, the wheel adjusts power, keyboard aiming and
+  Fire are available, and the authored aiming camera is restored. In Map
+  Inspection, a terrain click changes inspection focus, left drag orbits the
+  safe camera, the wheel zooms, and aim/Fire inputs are blocked. Tab and one
+  visible focusable toggle switch modes without changing the stored aim or
+  preview. Briefing starts in inspection; Start enters Aim Lock. Gear and Escape
+  remain the only pause/settings entry, and ordinary gameplay exposes no time
+  scaling.
+- **HUD and visual acceptance:** status remains sparse and edge-aligned. It
+  includes time, shots, resident-ball activity, wind, Finish, and the current
+  interaction mode without covering the mountain. The ball must become more
+  readable and its continuous/impact paint marks must become more natural in
+  real contact footage; internal numeric tuning is subordinate to that visible
+  result.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

@@ -25,14 +25,48 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-The 2026-08-06 preparation gate below is current. Older checked sections are historical
-evidence for earlier builds and must not be read as proof of the recovery.
+The completed preparation gate and older checked sections are historical evidence for
+earlier builds. They do not prove the pending wind-driven coverage loop below.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
 
-## Current ballistic-terrain preparation gate (2026-08-06)
+## Current wind-driven coverage loop gate (pending)
+
+These are behavior-level acceptance checks for the active successor plan. They
+intentionally avoid treating small numerical tolerances or individual physics
+ticks as product requirements.
+
+- [ ] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
+  whole mountain. In `AIM_LOCKED`, drag and wheel adjust aim and power without
+  moving the camera; rightward aim input moves both preview and actual landing
+  point right on screen.
+- [ ] A ball that reaches playable mountain top remains present for the stage,
+  keeps its physical presence while naturally resting, paints again when it
+  later moves, and does not disappear from ordinary terrain contact.
+- [ ] Ground contact on representative slopes and joins does not produce the
+  one-mark-then-disappear failure. A genuine invalid geometry condition is
+  diagnosable without being confused with ordinary play.
+- [ ] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
+  projectile motion, HUD direction/strength/countdown, replay, and decorative
+  debris agree; pausing does not advance the run.
+- [ ] Strong wind can restart an eligible resting ball. The player can see why
+  it moves, and resting balls do not produce repeated stationary paint.
+- [ ] A run begins with the first shot and ends only through Finish or time
+  expiry. Its result uses final unique painted coverage, not automatic
+  clear/failure or hidden time/wind bonuses.
+- [ ] Burst, Splitter, and Uphill Rebound are readable terrain-conforming
+  glyphs with effects that match their markings: Burst consumes after painting,
+  Splitter visibly divides toward its marked routes, and Uphill Rebound sends a
+  ball uphill.
+- [ ] The active HUD leaves the mountain readable and offers no ambiguous
+  Follow/Wide/Cannon rail. Gear and Escape remain one pause/settings entry.
+- [ ] Production-style captures at common desktop sizes show the aiming,
+  persistence/recovery, wind, glyph, and timed-result states without obscuring
+  the terrain.
+
+## Completed ballistic-terrain preparation gate (2026-08-06, historical baseline)
 
 - [x] The shared fixed-60-Hz damped recurrence and fixed muzzle transform admit a
   known legal trajectory and reject synthetic yaw, horizon, too-high, and
@@ -56,7 +90,7 @@ Run narrow checks throughout development, then complete this full checklist agai
 - [x] Per the user's direction for this change, no foreground gameplay or
   rendered-game test is used as acceptance evidence.
 
-## Current gameplay-contract recovery gate (2026-08-05)
+## Gameplay-contract recovery gate (2026-08-05, historical and incomplete)
 
 - [ ] Stage 01–30 use committed version-7 per-stage profiles/layout identities;
   all 29 difficulty-score deltas are `0.35..5.00`, adjacent normalized height

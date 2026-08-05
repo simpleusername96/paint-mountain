@@ -18,7 +18,7 @@ related:
 
 # Wind-Driven Coverage Loop - Execution Contract
 
-Paint Mountain will become a deterministic timed coverage puzzle: screen-right input moves the predicted and real landing point right, paintballs that reach playable mountain top persist until the stage ends and can move again after collision or strong wind, wind changes on a readable 30-second schedule, the player ends a 90/120/180-second run manually or by timeout, coverage is the sole score, the three existing mechanisms are terrain-conforming circular glyphs, and gameplay controls no longer cover the mountain. Work begins only after the concurrent ballistic-range and layout-preparation slice reaches a clean committed checkpoint.
+Paint Mountain will become a deterministic timed coverage puzzle: screen-right input moves the predicted and real landing point right, paintballs that reach playable mountain top persist until the stage ends and can move again after collision or strong wind, wind changes on a readable 30-second schedule, the player ends a 90/120/180-second run manually or by timeout, coverage is the sole score, the three existing mechanisms are terrain-conforming circular glyphs, and one clear aim-lock/map-inspection interaction replaces the legacy camera preset strip. The completed ballistic-range and layout-preparation checkpoint at `19f2d45` is the implementation baseline.
 
 ## Purpose
 
@@ -36,14 +36,14 @@ In scope:
 - One data-driven, fixed-tick, seeded wind schedule and its predictor/physics consumers.
 - 90/120/180-second stage durations, manual Finish, coverage-only score, and star thresholds.
 - Burst, Splitter, and Uphill Rebound as terrain-conforming circular glyphs.
-- Right-edge HUD, world wind debris, result presentation, accessibility labels, and reduced decorative motion.
+- Aim-lock/map-inspection camera interaction, edge HUD, world wind debris, result presentation, accessibility labels, and reduced decorative motion.
 - Save, replay, attempt observation, agent/debug API, localization, generation admission, tests, docs, export, and rendered evidence affected by these rules.
 
 Out of scope:
 
 - Implementing the nine additional mechanism candidates in the audit report.
 - Changing terrain family generation except where the new projectile radius, yaw convention, or flat-glyph placement invalidates an admission contract.
-- Replacing the concurrent asynchronous layout preparer or its three-entry cache.
+- Replacing the completed asynchronous layout preparer or its three-entry cache.
 - Unlimited ammunition, steering a projectile in flight, online services, new dependencies, plugins, or external asset packs.
 - Mobile layout or a new art direction unrelated to wind and mechanism readability.
 
@@ -59,6 +59,7 @@ Constraints and invariants:
 - Once a paintball has contacted valid playable top, neither age, low speed, nor Godot sleeping may remove it before the stage result. Natural sleeping is allowed as a reversible physics optimization, not as deletion or permanent freeze.
 - The same stage and accepted layout seed produce the same wind schedule on retry and replay.
 - Flat mechanism glyphs do not participate in projectile collision. Activation derives from an authoritative mountain-top contact inside the glyph footprint.
+- `StageController` remains in gameplay `AIMING` while the player toggles presentation/input between `AIM_LOCKED` and `MAP_INSPECTION`; camera interaction never becomes a competing gameplay state owner.
 - Compatibility rendering, Windows desktop, typed GDScript where practical, and no production dependency additions remain mandatory.
 
 Destructive or irreversible actions:
@@ -74,19 +75,19 @@ Exact actions requiring owner or user approval:
 
 | Requirement or concern | Verified current owner and behavior | Evidence | Locked decision | Task IDs |
 | --- | --- | --- | --- | --- |
-| Concurrent work | The active ballistic plan owns `CannonBallistics`, range admission, `AppRoot`, layout preparation, and shared docs | Active sibling plan and live dirty worktree | Do not edit or commit overlapping owners until that slice is committed; rebase this plan on its final contract | 0.1 |
+| Completed predecessor | Commit `19f2d45` implements the analytic range gate and asynchronous three-layout preparation; its plan is `done` | Git history, predecessor plan, implementation record | Use `19f2d45` as the baseline, preserve its ownership and current user-authored worktree changes, and do not reopen its completed scope | 0.1 |
 | Horizontal aim | Input makes right drag/D increase yaw, while positive yaw launches toward world `-X`; tests check numbers, not screen direction | `aim_input_controller.gd`, `cannon_ballistics.gd`, `aim_interaction_test.gd` | Positive yaw means screen-right in the fixed aiming camera; keep right drag and D positive and change the shared ballistic/visual convention, then prove it by projection | 1.1 |
 | Scale | Current radii are 0.90/1.50/2.10m and current scale capture does not show a live contact comparison | Projectile resource and runtime capture | Use 1.20m ball, 1.40m continuous paint, 1.75m impact paint, and no separate settle blob; visible and collision radius remain identical | 1.2, 2.3 |
 | Paint disappearance | There is no payload; slow/sleep/12-second lifetime paths immediately free the body | `paint_projectile.gd`, `projectile_data.gd` | A valid-top ball persists through the stage. Low speed/sleep becomes reversible `RESTING_ON_TERRAIN`; only explicit consumption, real escape, unrecoverable invalid geometry, or a never-contacted 30-second miss terminates it before result | 2.1 |
-| Ground embed then disappearance | Impact can paint before the current 3m/two-tick penetration guard frees the body; settle paint can overlap impact | `paint_projectile.gd` contact and deactivation order | Remove deletion as the normal penetration response; recover sphere clearance from authoritative surface point/normal, preserve tangent motion, and terminate only after three failed recoveries with diagnostics | 2.2 |
+| Ground embed then disappearance | Impact can paint before the current deep-penetration guard frees the body; settle paint can overlap impact | `paint_projectile.gd` contact and deactivation order | Remove deletion as the normal penetration response; recover sphere clearance from authoritative surface point/normal, preserve tangent motion, and reserve termination for verified invalid geometry | 2.2 |
 | Contact paint | Valid top contact emits paint; containment and mechanism bodies do not | Contact validator and paint projectile | Paint every valid playable top traversal, including non-scoreable top; score only through the existing target mask; suppress stationary duplicates and wake blobs/bridges | 2.3 |
-| Wind | No current owner, data, physics, UI, or replay contract exists | Repository search and architecture audit | Add 1,800-tick keyframes: hold ticks 0–1,619, ease ticks 1,620–1,799, commit at 1,800; forecast from tick 1,620; strong threshold 0.75; predictor, physics, HUD, replay, and agent use one snapshot | 2.4–2.6, 5.2 |
+| Wind | No current owner, data, physics, UI, or replay contract exists | Repository search and architecture audit | Use one seeded 30-second schedule with a 3-second transition/forecast, a configured strong-wind threshold, and one snapshot shared by predictor, physics, HUD, replay, and agent | 2.4–2.6, 5.2 |
 | Stage result | Target coverage auto-clears and zero shots auto-fails; no timer/Finish | `StageController`, `StageData`, result HUD | Timer starts when the first queued root actually spawns; stage tiers are 90/120/180 seconds; no coverage/shot auto-terminal; Finish or timeout snapshots coverage; coverage is the sole score | 3.1–3.3 |
 | Resting shots and observations | Shot observations seal when families terminate; resting balls can later wake | Stage controller, replay, agent API | Initial-flight Fire capacity ignores already-resident and reawakened balls; add attempt-level rest/wake/recovery/result events; keep per-shot observations as initial-flight diagnostics | 2.7, 3.4 |
 | Mechanism form | All three mechanisms are 8–10m physical 3D bodies and `GimmickBase` requires their physics bodies | Mechanism scenes/base and runtime captures | Replace `GimmickBase` with a glyph presentation/charge base plus `TerrainMechanismResolver`; selection remains query-only | 4.1 |
 | Mechanism effects | Burst does not consume, Splitter creates three children, Bumper redirects downstream | Mechanism scripts and phase 5 tests | Burst consumes after ordered paint; Splitter keeps three route-aligned children; Bumper migrates to `UPHILL_REBOUND` using local terrain gradient | 4.2–4.4 |
 | Mechanism count | Stage count already grows from 0 to 6 | `StageProgressionData` | Keep the count curve; replace placement checks with glyph overlap, slope projection, and screen-size checks | 4.5 |
-| HUD occlusion | Horizontal observation controls cover the upper-right mountain | HUD scenes and runtime capture | Use a right-edge vertical tool rail, adjacent compact status card, and lower-right Finish; leave center/top-center clear | 5.1–5.3 |
+| Camera interaction and HUD occlusion | Follow/Wide/Cannon change only camera presets while aim drag/wheel remain active, and their horizontal panel covers the mountain | CameraDirector, AimInputController, observation controls, runtime capture | Replace the preset strip with `AIM_LOCKED` and `MAP_INSPECTION`; Tab and one clear toggle switch them, map drag/wheel inspect the terrain, and Gear/Escape remain the only pause entry | 5.1–5.3 |
 | Persistence/replay | Save stores coverage/stars; replay format 7 lacks wind and Finish; agent lacks both | GameState, ReplayRecorder, GameplayAgentApi | Save format 4 preserves prior results and adds metadata for the best-coverage run; replay format 8 records wind and Finish tick; agent/debug expose the same snapshot | 3.4, 5.4 |
 | Additional mechanisms | Nine non-overlapping candidates are documented | Audit report | Do not implement them in this slice; collect evidence from the revised core three first | Out of scope |
 
@@ -94,34 +95,34 @@ Readiness statement:
 
 - Every material product, architecture, data, UX, ownership, safety, and validation decision for this slice is closed.
 - The approved Godot 4.7.1 console binary and the repository's build, test, export, and background-capture paths are available.
-- Remaining unknowns are implementation-local calibration details constrained by numeric outcomes and rendered acceptance below; they cannot change this contract.
+- Remaining unknowns are implementation-local calibration details constrained by the visible and behavioral acceptance below; they cannot change this contract.
 
 ## Tasks
 
 ### Phase 0: Establish the uncontested authority and baseline
 
-Goal: begin from the concurrent generation slice without losing its work and make the user's latest rules authoritative before gameplay code changes.
+Goal: establish the completed predecessor as the baseline and make the user's latest rules authoritative before gameplay code changes.
 
 Preconditions:
 
-- The active `2026-08-06-ballistic-terrain-preparation.md` work has stopped all task-owned Godot processes, committed its coherent changes, and recorded its validation result.
-- `git status --short` has been reviewed; unrelated user changes remain untouched.
+- Commit `19f2d45` and the `done` predecessor plan are present.
+- `git status --short` has been reviewed; existing user-authored changes and stopped-session artifacts remain untouched and unstaged.
 
 Source owners: `docs/source-brief.md`, `docs/design-spec.md`, `docs/technical-architecture.md`, `docs/test-checklist.md`, `.agents/Documentation.md`, this plan
 
-- [ ] **0.1** Preserve the concurrent slice and establish the successor baseline.
-  - Change: record the predecessor commit hash and inspect its final `CannonBallistics`, `ProjectileRangeConstraint`, `StageLayoutPreparer`, generated-catalog version, and changed docs. Update this plan only if names moved without changing the locked behavior.
-  - Accept: no uncommitted file owned by the predecessor is staged or overwritten; its focused tests pass at the recorded commit.
-- [ ] **0.2** Record the latest user supersession in product and technical contracts.
-  - Change: append the 30-second wind and direction UI, stage-long valid-top paintball persistence, recover-instead-of-delete terrain contact, timed coverage result, flat-glyph mechanism, Burst consumption, uphill rebound, scale, and edge-HUD decisions to `source-brief.md`; update interpretations and checklist rows; mark the old physical-3D mechanism and clear/fail clauses as superseded only in the named scope.
+- [x] **0.1** Preserve the completed predecessor and establish the successor baseline.
+  - Change: record `19f2d45`; inspect its final `CannonBallistics`, `ProjectileRangeConstraint`, `StageLayoutPreparer`, generated-catalog version, and changed docs; identify the remaining uncommitted user-owned files so later task commits do not absorb them.
+  - Accept: the predecessor plan is `done`, its implementation record names the same owners, and no existing user-owned change is staged, overwritten, or claimed by this plan.
+- [x] **0.2** Record the latest user supersession in product and technical contracts.
+  - Change: append the 30-second wind and direction UI, stage-long valid-top paintball persistence, recover-instead-of-delete terrain contact, timed coverage result, flat-glyph mechanism, Burst consumption, uphill rebound, scale, and aim-lock/map-inspection camera contract to `source-brief.md`; update interpretations and checklist rows; mark the old physical-3D mechanism, clear/fail, and camera-preset clauses as superseded only in the named scope.
   - Accept: source brief, design spec, architecture, checklist, implementation status, and this plan use the same terms and do not claim the new behavior is implemented.
-- [ ] **0.3** Remove stale scale assertions before adding new ones.
-  - Change: update or retire old default-value assertions in `projectile_settling_test.gd` and any test that still expects the pre-recovery 0.52/4/6/4m values.
+- [x] **0.3** Remove stale scale assertions before adding new ones.
+  - Change: update or retire legacy projectile-scale assertions that conflict with the revised contact-paint contract.
   - Accept: one canonical projectile resource defines production scale, tests load it, and no test embeds an incompatible legacy scale.
 
 Batch gate:
 
-- The repository imports headlessly and the predecessor's range/preparer tests still pass before the new yaw or radius contract is applied.
+- Product/spec/status documents agree on the new loop, old scale assertions are removed, and the committed predecessor remains intact before gameplay code changes.
 
 ### Phase 1: Make aim direction and scale truthful
 
@@ -135,7 +136,7 @@ Source owners: `src/cannon/cannon_ballistics.gd`, `src/cannon/cannon_controller.
 
 - [ ] **1.1** Define positive yaw as aiming-camera screen right.
   - Change: reverse the shared yaw transform in launch direction, launch origin, cannon visual rotation, and analytic range fan while leaving right drag and D as positive input. Update directional copy to derive from the same sign convention.
-  - Accept: from a fixed aiming camera, right drag and D both increase the projected screen X of the preview endpoint; left drag and A decrease it; preview and actual first contact agree within the existing physical tolerance at left, center, and right aims.
+  - Accept: in the running aiming view, right drag and D move the preview and real first contact to the right, while left drag and A move them left; the cannon, preview, and physical shot agree.
   - Guard: do not special-case the mouse or change only a label; all human, agent, replay, solver, and generator callers share the same yaw meaning.
 - [ ] **1.2** Apply the revised physical and paint scale.
   - Change: set the production ball radius to `1.20m`, continuous paint radius to `1.40m`, and impact paint radius to `1.75m`; remove the separate settle-paint emission and later retire its resource field after migration; update split-child spacing/radius derivation and collision/visible-mesh parity.
@@ -143,9 +144,9 @@ Source owners: `src/cannon/cannon_ballistics.gd`, `src/cannon/cannon_controller.
 - [ ] **1.3** Rebuild radius/yaw-dependent generated evidence.
   - Change: increment the generation contract/catalog version, regenerate deterministic stage catalogs, and refresh direct reachability and containment evidence affected by the new physical radius and yaw fan.
   - Accept: catalog check passes, every stage remains runtime-ready, and no target pixel is cropped to make admission pass.
-- [ ] **1.4** Replace the false scale capture with measurable rendered evidence.
-  - Change: make `scale_contact` hold a real live projectile against a representative stage-04 top surface with its continuous trail and first-impact mark visible in the same frame; record screen-space ball and paint widths in capture metadata.
-  - Accept: at 1280×720 and 1920×1080 the ball silhouette is identifiable, the continuous paint width is 1.10–1.30 times the visible ball diameter, and the impact mark is 1.35–1.70 times it.
+- [ ] **1.4** Replace the false scale capture with rendered contact evidence.
+  - Change: make `scale_contact` hold a real live projectile against a representative stage-04 top surface with its continuous trail and first-impact mark visible in the same frame.
+  - Accept: at both supported desktop resolutions the live ball is easy to identify and its continuous and impact marks read as plausible contact paint rather than an oversized unrelated stain.
 
 Batch gate:
 
@@ -162,32 +163,34 @@ Preconditions:
 Source owners: new `src/wind/wind_profile.gd`, new `src/wind/wind_controller.gd`, new `resources/wind/standard_wind.tres`, `src/stage/stage_data.gd`, `src/projectile/paint_projectile.gd`, `src/projectile/projectile_manager.gd`, `src/projectile/projectile_data.gd`, `src/mechanisms/mechanism_data.gd`, `src/mechanisms/splitter_node.gd`, `src/cannon/cannon_ballistics.gd`, `src/cannon/trajectory_predictor.gd`, paint/contact tests
 
 - [ ] **2.1** Replace deletion-on-settle with a persistent, reversible projectile lifecycle.
-  - Change: add `MOVING_AIRBORNE`, `MOVING_ON_TERRAIN`, `RESTING_ON_TERRAIN`, and terminal reason data. Keep `can_sleep=true`; interpret Godot sleeping or stable valid-top rest as `RESTING_ON_TERRAIN` without `queue_free()` or permanent `freeze`. Collision and explicit force may set `sleeping=false` and resume movement. Stop using `minimum_movement_speed`, `stop_duration`, and `maximum_lifetime` as terminal rules for any ball that has touched valid top. Replace them with `maximum_uncontacted_seconds=30`, which applies only from spawn until first valid-top contact. Before result, termination is limited to explicit `CONSUMED`, real bounds/side-wall/backstop `ESCAPED`, or Task 2.2's unrecoverable `INVALID_GEOMETRY`. Result/restart cleans all remaining bodies after the score snapshot.
-  - Accept: a valid-top fixture ball remains visible, collidable, and queryable across the full 180-second stage; it still exists at the old 12-second and 0.5-second boundaries; while sleeping it emits no contact integration, paint command, or continuous-force work; another ball can wake it by collision; a never-contacted miss terminates at 30 seconds with reason `uncontacted_timeout`. Resident bookkeeping remains bounded by Task 2.7's 21-body cap.
+  - Change: add `MOVING_AIRBORNE`, `MOVING_ON_TERRAIN`, `RESTING_ON_TERRAIN`, and terminal reason data. Keep `can_sleep=true`; interpret Godot sleeping or stable valid-top rest as `RESTING_ON_TERRAIN` without `queue_free()` or permanent `freeze`. Collision and explicit force may set `sleeping=false` and resume movement. Stop using `minimum_movement_speed`, `stop_duration`, and `maximum_lifetime` as terminal rules for any ball that has touched valid top. Use a bounded resource-owned timeout only for balls that never reach valid terrain. Before result, termination is limited to explicit `CONSUMED`, real bounds/side-wall/backstop `ESCAPED`, or Task 2.2's unrecoverable `INVALID_GEOMETRY`. Result/restart cleans all remaining bodies after the score snapshot.
+  - Accept: a valid-top ball remains visible, collidable, and queryable through the longest stage regardless of age or low speed; sleeping produces no paint or continuous-force work; collision can wake it; a ball that never reaches valid terrain is eventually cleaned up with a truthful reason.
   - Guard: sleeping is a reversible engine state, not a gameplay terminal; do not solve persistence by forcing every resting body awake.
 - [ ] **2.2** Recover shallow terrain embedding instead of deleting the ball.
-  - Change: replace the current `surface_y - 3.0m` for two ticks deletion guard with a sphere-clearance check inside `_integrate_forces`. From the authoritative surface point and normal at the ball's XZ, calculate `dot(center - surface_point, normal) - physical_radius`. If clearance is below `-max(0.10m, physical_radius * 0.10)`, move the center to `surface_point + normal * (physical_radius + 0.02m)` and remove only inward normal velocity; preserve tangent velocity and angular velocity. Reset the failure count after a valid contact/recovery. End as `INVALID_GEOMETRY` only after three consecutive recovery attempts still fail and a collider/ray verification cannot establish playable top. Record shot ID, tick, position, penetration depth, prior velocity, contact ID, and final reason. Recovery emits no extra paint intent.
-  - Accept: every canonical reachable shot plus steep-facet, triangle-seam, and maximum-power fixtures records zero `terrain_penetration_guard` removals and continues along the surface after any recovery; an intentionally mismatched terrain/collider fixture alone reaches `INVALID_GEOMETRY` after exactly three failed recoveries with complete diagnostics.
+  - Change: replace the current deep-below-surface deletion guard with radius- and surface-normal-aware recovery inside the rigid-body integration path. Restore the ball to valid surface clearance, remove only inward normal velocity, preserve tangent motion and rotation, and emit no extra paint. Only a repeated, verified mismatch between authoritative terrain data and the real collider may terminate as `INVALID_GEOMETRY`, with enough diagnostics to reproduce it.
+  - Accept: representative steep, seam, and high-speed terrain contacts recover or continue without the ball vanishing; an intentionally invalid terrain/collider fixture fails with a clear diagnostic reason.
 - [ ] **2.3** Guarantee paint on every valid playable-top traversal.
   - Change: emit impact on first valid top contact and distance-based sweeps for every subsequent traversed segment, whether or not the segment is scoreable. Remove separate settle-paint emission. Keep the target mask solely inside `PaintSystem` coverage calculation. On entry to rest, close the movement interval after its last accepted contact; on wake, seed a new sweep anchor at the current valid contact without a second impact mark and without bridging a non-contact or long-rest gap. Suppress identical stationary writes.
   - Accept: a ball crossing target and non-target top leaves one continuous visible trail; only target overlap changes coverage; the paint-mask checksum remains unchanged while stationary; wake adds paint only along measured new travel; containment walls, backstop, selection shapes, and glyph query shapes never paint.
 - [ ] **2.4** Add the seeded 30-second fixed-tick wind owner.
-  - Change: add typed `StageData.wind_profile` and point every current stage at `standard_wind.tres`. `WindProfile` owns tuning and `WindController` owns one upfront schedule plus the authoritative snapshot of current/next vectors, normalized strength, interval tick, countdown, interpolation, `strong_episode_id`, and signals. Increment `strong_episode_id` only when sampled strength crosses from `<0.75` to `>=0.75`; adjacent keyframes that remain strong belong to the same episode. Seed from stage ID, accepted layout seed, and profile version. Keyframes are 1,800 ticks apart: hold on interval ticks `0–1,619`, ease to the next target on `1,620–1,799`, and commit at `1,800`; forecast begins at `1,620`. Initial strength is 0.25–0.55, later strength is 0.20–1.00 with adjacent absolute change at most 0.40, heading changes are 30–100 degrees, and every schedule has at least one strength `>= 0.75` by run tick 3,600.
-  - Accept: identical stage/retry inputs produce byte-identical targets, samples, and schedule checksum for at least 180 seconds; pause advances zero wind ticks; boundary fixtures at ticks 0, 1,619, 1,620, 1,799, and 1,800 show the exact hold/ease/commit states; commits occur every 1,800 physics ticks.
+  - Change: add typed `StageData.wind_profile` and point every current stage at `standard_wind.tres`. `WindProfile` owns tuning and `WindController` owns one seeded schedule plus the authoritative current/next vectors, strength, countdown, transition, `strong_episode_id`, and signals. Wind targets change every 30 seconds, ease during the last 3 seconds, and begin their forecast at that transition. A strong episode begins when the profile's configured threshold is crossed upward.
+  - Accept: retrying the same stage reproduces the same wind sequence, wind changes on the 30-second rhythm with a readable transition, and pause advances neither wind nor countdown.
 - [ ] **2.5** Apply the same wind sample to prediction and live physics.
-  - Change: add wind acceleration to the shared fixed-step recurrence and rigid-body force path. The predictor samples scheduled transitions that occur during a flight. Wind-aware predictions use the existing 20Hz cadence and are stamped with aim, wind schedule checksum, and an exact future launch slot on the next three-tick boundary; an accepted Fire queues the root spawn for that stamped tick, at most 50ms later. Any aim or launch-slot mismatch invalidates the result.
-  - Accept: Fire never spawns from a prediction stamped for another tick. In calm, hold, and easing phases across three seeded directions, predicted first contact and actual first contact remain inside the existing contact tolerance; added launch latency is at most three physics ticks. At maximum wind, a canonical three-second shot shifts laterally by 4–8m relative to calm without making every legal aim leave the mountain.
+  - Change: add wind acceleration to the shared fixed-step recurrence and rigid-body force path. The predictor samples wind changes that may occur during flight and publishes the aim, schedule identity, and intended launch tick used for its result. Fire launches only from a matching current prediction; stale results are discarded.
+  - Accept: a shot never launches from a stale prediction, and in calm, steady, and changing wind the preview and physical first contact remain visibly consistent without making the legal aim space unusable.
   - Guard: do not send continuous wind through `queue_desired_velocity()`, which remains an instantaneous mechanism effect.
 - [ ] **2.6** Wake terrain-resting balls naturally under readable strong wind.
-  - Change: at normalized strength `>= 0.75`, project the current wind onto the tangent plane stored from each valid top contact. Each ball stores `last_wake_strong_episode_id`. When a strong episode begins, or when a not-yet-latched ball enters `RESTING_ON_TERRAIN` during that episode, set `sleeping=false`, apply one bounded wake impulse, latch that episode ID, then apply continuous tangent acceleration while it moves. If it rests again in the same episode, do not issue a second impulse. Collision may wake a resting ball at any wind strength through normal rigid-body behavior. Wind below 0.75 affects airborne/already-moving balls but does not explicitly wake a sleeping one. Reawakened residents do not acquire or wait for initial-flight Fire slots. Rest events and strong-episode transitions drive the bounded eligibility scan; do not poll every sleeping body for impulses every physics tick.
-  - Accept: strengths below 0.75 do not explicitly wake the fixture; the upward crossing to 0.75 wakes every eligible resting fixture once; a ball that rests again in the same strong episode gets zero additional impulses, while a later strong episode gives exactly one; a collision can wake one independently; multiple residents may move while two new root families are in flight; instrumentation proves each strong-episode scan inspects at most `resident_body_count<=21` and sleeping residents are not polled for impulses each physics tick; each representative slope travel is 2–8m over three seconds and Task 2.3 resumes paint without a gap, blob, or artificial bridge.
+  - Change: when the configured strong-wind threshold is met, project the current wind onto the tangent plane stored from each valid top contact. Each ball stores `last_wake_strong_episode_id`. When a strong episode begins, or when a not-yet-latched ball enters `RESTING_ON_TERRAIN` during that episode, set `sleeping=false`, apply one bounded wake impulse, latch that episode ID, then apply continuous tangent acceleration while it moves. If it rests again in the same episode, do not issue a second impulse. Collision may wake a resting ball at any wind strength through normal rigid-body behavior. Weaker wind affects airborne/already-moving balls but does not explicitly wake a sleeping one. Reawakened residents do not acquire or wait for initial-flight Fire slots. Rest events and strong-episode transitions drive the bounded eligibility scan; do not poll every sleeping body for impulses every physics tick.
+  - Accept: weak wind does not explicitly wake resting balls; a strong episode wakes each eligible ball at most once, collision can wake it independently, and resumed terrain travel paints naturally without a gap, blob, or repeated impulse jitter.
 - [ ] **2.7** Make persistent projectile capacity and Fire admission truthful.
-  - Change: track `resident_body_count`, `moving_body_count`, and `initial_flight_root_count` separately. A root family consumes one of two Fire slots from root spawn until all descendants first become resting or terminal; later reawakening never consumes that slot. Move Splitter's current `MAXIMUM_SPLIT_GENERATION=1` into the typed mechanism rule consumed by both activation and capacity admission. Derive the worst concurrent descendants per root from the same branch-count/generation data (`3^1=3` now), then multiply by serialized `maximum_shots` (`<=7` now). Keep current charge and one-activation-per-projectile semantics. Reject any future data whose proved bound exceeds 24 before stage admission, never during an accepted activation.
-  - Accept: the current typed rule proves `maximum_split_generation=1`, generation-one children cannot split, `maximum_shots<=7`, and a maximum of 21 resident bodies; seven roots and every admitted split fit without hidden runtime rejection; a fixture changing the generation to 2 is rejected with its calculated bound; two initial-flight roots block a third Fire without consuming ammunition; once one family first rests, Fire reopens even if older residents later wake; all 21 may sleep or move without exceeding the hard cap.
+  - Change: track resident bodies, moving bodies, and initial-flight root families separately. A root family consumes one of two Fire slots only through its initial flight; later reawakening never consumes that slot. Move Splitter's one-generation rule into typed data shared by activation and capacity admission. The current 4–7 shot budget and one three-way split generation establish one hard resident cap of 21; reject any future loadout that exceeds it before stage admission.
+  - Accept: valid current Splitter use is never silently rejected, two initial-flight roots still gate a third Fire without spending ammunition, reawakened residents do not block Fire, and resident bodies never exceed 21.
 
 Batch gate:
 
-- Wind boundary schedule, predictor parity, persistent lifecycle, terrain recovery, collision/strong-wind wake, continuous paint, pause, and 21-body capacity tests pass for at least one no-mechanism stage and one Splitter stage.
+- Wind scheduling, predictor parity, persistent lifecycle, terrain recovery,
+  collision/strong-wind wake, continuous paint, pause, and resident capacity work
+  together on one no-mechanism stage and one Splitter stage.
 
 ### Phase 3: Replace clear/fail with a timed coverage result
 
@@ -200,24 +203,32 @@ Preconditions:
 Source owners: `src/stage/stage_controller.gd`, `src/stage/stage_data.gd`, `src/stage_generation/stage_progression_data.gd`, new `src/stage/attempt_observation.gd`, `src/projectile/projectile_manager.gd`, `src/autoload/game_state.gd`, `src/autoload/save_system.gd`, `src/replay/replay_recorder.gd`, `src/replay/replay_presentation_controller.gd`, `src/agent/gameplay_agent_api.gd`, result/stage tests
 
 - [ ] **3.1** Add the stage clock and Finish action to `StageController`.
-  - Change: add `StageData.duration_seconds`. `StageProgressionData` writes 90 seconds for stages 1–10, 120 for 11–20, and 180 for 21–30 when it builds the catalog; runtime `StageController` reads only the serialized `StageData` value. Record `run_start_tick` when the first queued root actually spawns; that tick is elapsed tick 0 and starts wind. Timeout is evaluated at `run_start_tick + duration_seconds * 60`. At an exact timeout boundary, accept already-queued Finish input and paint for that tick, then finalize before a same-tick 30-second wind commit or wake; a 180-second run therefore applies wind changes at 30/60/90/120/150 seconds, not a useless sixth change at result. Add `finish_stage` for human, replay, and agent origins. Replace `STAGE_CLEAR`/`STAGE_FAILED` terminal decisions with `FINISHING` and `RESULT`, preserving `BRIEFING`, `AIMING`, and `PAUSED` behavior.
-  - Accept: briefing, pre-fire aiming, and queued first-Fire latency consume no run time; pause freezes clock/wind/physics; Finish is unavailable before the first root spawns and available afterward; target coverage and zero shots never auto-end the run; exact 90/120/180-second fixtures prove terminal-before-next-wind ordering.
+  - Change: add `StageData.duration_seconds`. Generated stages use 90 seconds for 1–10, 120 for 11–20, and 180 for 21–30. The first actual root spawn starts the timer and wind. Add `finish_stage` for human, replay, and agent origins. Replace clear/fail terminal decisions with `FINISHING` and `RESULT`; once Finish or timeout is accepted, no later wind, wake, shot, or paint changes the result.
+  - Accept: preparation and pre-fire aiming consume no run time; pause freezes the run; Finish is available only after the first shot; target coverage and zero shots do not auto-end; each duration tier ends once by Finish or timeout.
 - [ ] **3.2** Snapshot one authoritative coverage score.
-  - Change: Finish or timeout records its physics tick, rejects later actions, cancels queued-but-unspawned Fire without consuming ammunition, drains all accepted paint commands through that tick, freezes remaining balls, and reads final coverage from `PaintSystem`. If a Finish action is accepted on the timeout tick before terminal evaluation, its reason is manual Finish; otherwise timeout wins. Use coverage percentage as the displayed and persisted score; use existing star thresholds as grades only.
-  - Accept: commands after the terminal tick cannot change the result; manual and timeout paths with the same paint mask produce the same score/stars; no time, shot, wind, or mechanism bonus changes the score; `terminal_resident_cleanup_test.gd` proves mask snapshot precedes resident cleanup and cleanup cannot emit late paint or alter the saved checksum.
+  - Change: Finish or timeout rejects later actions, cancels queued-but-unspawned Fire without spending ammunition, drains already accepted paint, snapshots coverage from `PaintSystem`, and only then cleans resident balls. Coverage percentage is the displayed and persisted score; existing star thresholds remain grades only.
+  - Accept: cleanup cannot add late paint or change the saved result; manual and timeout endings with the same paint mask produce the same score; time, shots, wind, and mechanisms add no separate score bonus.
 - [ ] **3.3** Preserve ammunition planning without forced waiting.
   - Change: retain generated 4–7 shot budgets and two initial-flight root slots. When ammunition is zero, aiming/fire disables but time, wind, resident balls, natural wakes, and Finish remain active. Reawakened balls never block Fire; only two root families whose initial flight has not first settled/terminated produce the capacity message, and rejected Fire never consumes ammunition.
   - Accept: the player can wait for strong wind to move resident balls or finish immediately; zero ammunition is never labeled failure; two initial-flight roots reject a third Fire; any number of already-admitted residents waking on the same tick does not change that Fire result or exceed the 21-body bound.
 - [ ] **3.4** Add attempt-level replay and observation truth.
-  - Change: add `AttemptObservation` schema 1 for shots, wind targets/transitions, rest/wake episodes, terrain-recovery attempts, exact projectile terminal reasons, mechanism activations, terminal tick/reason, paint checksum, and final coverage. Keep per-shot observations for initial-flight diagnostics, but do not use them as stage terminal authority. Upgrade replay to format 8 with wind profile version, seed, complete keyframe list, schedule checksum, run-start tick, scheduled Fire ticks, and Finish action; expose the same fields through the agent/debug API.
-  - Accept: record/replay produces the same wind, rest/wake/recovery, mechanism, mask checksum, terminal tick, and coverage events; initial-flight Fire capacity does not depend on whether a resting shot observation is sealed; a disappearance can always be classified as consumed, escaped, uncontacted timeout, invalid geometry, or stage cleanup.
+  - Change: add `AttemptObservation` schema 1 for shots, wind schedule and
+    transitions, rest/wake and terrain recovery, projectile terminal reasons,
+    mechanism activations, result reason, authoritative paint identity, and final
+    coverage. Keep per-shot observations for initial-flight diagnostics, but do
+    not use them as stage terminal authority. Upgrade replay to format 8 with the
+    wind identity and ordered aim/Fire/Finish actions; expose the same meaningful
+    state through the agent/debug API.
+  - Accept: retry and replay reproduce the same gameplay outcome and coverage;
+    initial-flight Fire capacity does not depend on whether a resting shot
+    observation is sealed; a disappearance always has a truthful reason.
 - [ ] **3.5** Migrate saved results without loss.
-  - Change: move save format to version 4. Preserve existing `coverage` and `stars`; add elapsed seconds, shots used, and terminal reason only as metadata for the best-coverage run, not as score tie-breakers. Replace the saved best-run bundle only when new coverage exceeds the previous coverage by more than `0.0001` percentage points; an equal score preserves the previous metadata.
+  - Change: move save format to version 4. Preserve existing `coverage` and `stars`; add elapsed seconds, shots used, and terminal reason only as metadata for a strictly better coverage run, not as score tie-breakers. An equal score preserves the previous metadata.
   - Accept: a version-3 fixture loads with identical best coverage/stars; lower or equal coverage cannot replace the best result or its metadata; a clean install receives valid defaults.
 
 Batch gate:
 
-- Manual Finish, timeout, no-ammunition waiting, pause/resume, restart, save migration, replay determinism, and agent-action tests pass under one seeded 180-second simulation.
+- One representative run covers manual Finish, timeout, no-ammunition waiting, pause/resume, restart, save migration, replay, and agent actions without duplicating the same checks in each task.
 
 ### Phase 4: Convert the core mechanisms to flat terrain glyphs
 
@@ -230,17 +241,17 @@ Preconditions:
 Source owners: new `src/mechanisms/terrain_mechanism_resolver.gd`, new `src/mechanisms/terrain_glyph_mechanism.gd`, obsolete `src/mechanisms/gimmick_base.gd`, `src/mechanisms/mechanism_data.gd`, mechanism scripts/scenes/resources, `src/projectile/paint_projectile.gd`, `src/gameplay/gameplay_scene.gd`, new `src/stage_generation/mechanism_loadout_planner.gd`, `src/stage_generation/route_graph_resolver.gd`, `src/stage_generation/mechanism_placement_generator.gd`, phase 5 mechanism tests and capture fixtures
 
 - [ ] **4.1** Replace physical mechanism bodies with one surface-glyph contract.
-  - Change: replace `GimmickBase` with `TerrainGlyphMechanism`, which owns presentation, selection, charges/cooldown, and a narrow effect interface but no projectile body. Add a data-owned `glyph_radius` fixed to `4.0m` for all three migrated kinds; the rendered circle, activation footprint, and query-only selection footprint use that value. Build terrain-conforming circular ring/icon meshes offset only enough to avoid z-fighting. `PaintProjectile` submits base top paint first, then emits a typed valid-top-contact event; `TerrainMechanismResolver` evaluates the center/radius and invokes the glyph effect. Delete the obsolete physical-body base and scenes after migrated tests pass.
+  - Change: replace `GimmickBase` with `TerrainGlyphMechanism`, which owns presentation, selection, charges/cooldown, and a narrow effect interface but no projectile body. Store each glyph's radius in its typed data and use that same value for its rendered circle, activation footprint, and query-only selection footprint. Build terrain-conforming circular ring/icon meshes offset only enough to avoid z-fighting. `PaintProjectile` submits base top paint first, then emits a typed valid-top-contact event; `TerrainMechanismResolver` evaluates the center/radius and invokes the glyph effect. Delete the obsolete physical-body base and scenes after migrated tests pass.
   - Accept: a projectile cannot collide with a glyph in midair; a top contact inside the visible circle activates exactly once per allowed charge/cooldown; an equally close contact outside does not; visible and activation footprints align on representative slopes.
 - [ ] **4.2** Make Burst a consuming bomb glyph.
-  - Change: use one fixed-tick command order: base impact paint suborder 0, 14m Burst mark suborder 1, charge consumption, then projectile `CONSUMED`. Consume only after both paint intents are accepted into the authoritative queue.
-  - Accept: one hit produces both marks with the required sort keys and stable final mask checksum, removes the incoming ball after paint acceptance, records reason `burst_consumed`, and cannot reactivate when spent.
+  - Change: apply the normal contact paint, accept the Burst radial paint into the authoritative queue, consume the glyph charge, and then terminate the projectile as `CONSUMED`.
+  - Accept: one hit produces the normal and Burst paint, removes the incoming ball only after paint acceptance, records `burst_consumed`, and cannot reactivate when spent.
 - [ ] **4.3** Make Splitter's three directions readable and useful.
-  - Change: refactor mechanism loadout into two deterministic passes: build terrain/route topology and generic glyph candidate anchors first, then choose mechanism kinds and materialize typed placements. During the second pass, admit Splitter only when an anchor has three distinct, reachable, valid-top branch witnesses. Their predicted first-top contacts must be pairwise at least 8m apart and launch headings at least 15 degrees apart. Store those targets and draw matching arrow spokes. If an anchor fails, choose another valid kind before typed placement is created; if no assignment can fill the required count, reject that generated candidate. Keep split recursion disabled.
+  - Change: refactor mechanism loadout into two deterministic passes: build terrain/route topology and generic glyph anchors first, then choose mechanism kinds. Admit Splitter only where three distinct reachable top branches produce visibly different useful routes, store those routes, and draw matching arrow spokes. If an anchor fails, choose another valid kind before placement; keep split recursion disabled.
   - Accept: fixture and running capture show three visually distinct branches; all three arrows match their child launches and three distinct valid-top targets; capacity never silently rejects a valid activation.
 - [ ] **4.4** Replace Bumper with Uphill Rebound.
-  - Change: migrate `BUMPER` data/replay values to `UPHILL_REBOUND`. Sample the authoritative height field at center plus/minus the glyph radius on local X and Z, compute the central-difference gradient, and admit the glyph only when horizontal grade is at least 0.08. Store the steepest-ascent tangent, align the glyph arrow, and apply a tangent-plus-normal-lift impulse. A flatter candidate is rejected with no arbitrary fallback direction.
-  - Accept: every admitted glyph has grade `>= 0.08`; arrow, stored tangent, sampled higher side, and actual post-contact velocity agree; the ball gains local elevation over the next measured segment; approaching from another side does not reverse the promised uphill direction.
+  - Change: migrate `BUMPER` data/replay values to `UPHILL_REBOUND`. Use the authoritative local height field to find the steepest meaningful ascent, store that tangent, align the glyph arrow, and apply a tangent-plus-lift impulse. Reject locations too flat to promise an uphill result.
+  - Accept: the arrow, stored uphill direction, higher terrain side, and actual redirected motion agree; flat terrain does not receive this glyph.
 - [ ] **4.5** Keep the count curve and replace placement acceptance.
   - Change: retain 0, 1, 2, then gradual growth to 6 glyphs. Replace the current kind-first physical-pad construction with generic candidate anchors followed by deterministic kind assignment. Validate minimum glyph separation, projected slope distortion, valid top footprint, camera-readable screen diameter, and kind-specific effect witnesses before typed placement/catalog materialization.
   - Accept: small stages contain 0–2 glyphs, large stages may contain up to 6, no glyph overlaps another or leaves valid top terrain, and each placed effect has a reachable/useful route witness.
@@ -249,22 +260,22 @@ Batch gate:
 
 - Updated mechanism tests, stage generation admission, prediction/contact ordering, attempt observation, and 1280×720 mechanism captures pass for all three kinds.
 
-### Phase 5: Expose time, wind, completion, and observation without covering the mountain
+### Phase 5: Unify camera interaction and expose the new run state without covering the mountain
 
-Goal: the player can read and act on the new rules while the mountain and trajectory remain the dominant visual surface.
+Goal: the player can move naturally between locked aiming and free map inspection, read the new run rules, and keep the mountain and trajectory as the dominant visual surface.
 
 Preconditions:
 
 - Phase 4 passes; runtime signals and result fields are stable.
 
-Source owners: HUD scenes/scripts, result panel, pause/settings, translations, new wind cue presentation owner, procedural mesh/particle resources, delivery capture runner, `.agents/design/*`
+Source owners: `src/camera/camera_director.gd`, `src/input/aim_input_controller.gd`, `src/gameplay/gameplay_scene.gd`, HUD scenes/scripts, replay/agent presentation actions, result panel, pause/settings, translations, new wind cue presentation owner, procedural mesh/particle resources, delivery capture runner, `.agents/design/*`
 
-- [ ] **5.1** Move observation tools to a right-edge vertical rail.
-  - Change: reserve the final 264 logical pixels of the 1280×720 reference viewport (`x=1016..1279`) for the compact status/result cards and a vertical rail containing only Follow, Wide, Cannon, 1×, and 2×. Keep the existing top-right Gear as the single pause/settings entry; Escape invokes the same action, and no separate Pause or Settings button is added. Keep keyboard focus order, accessible names, Korean/English tooltips, and current enable/selected states. Camera composition keeps the summit, predicted first contact, and active ball at `x<=992`, leaving a 24px gap to the reserved zone.
-  - Accept: at 1280×720 and 1920×1080 every right-side control stays inside the proportional reserved zone; summit, predicted path/first contact, active ball, coverage rail, aim panel, Fire, and results do not overlap it; Gear and Escape open the same pause/settings state exactly once; the result drawer is at most 240 logical pixels wide; no label clips in Korean or English.
+- [ ] **5.1** Replace camera presets with aim lock and map inspection.
+  - Change: replace Follow/Wide/Cannon and the gameplay 1×/2×/Pause observation strip with `CameraDirector.InteractionMode { AIM_LOCKED, MAP_INSPECTION }`. Keep `StageController` in `AIMING` during both modes. `AIM_LOCKED` restores the authored aiming pose; left drag adjusts yaw/elevation, wheel adjusts power, keyboard aim remains active, and Fire is available. `MAP_INSPECTION` blocks aim and Fire input; a short terrain click changes the inspection focus, left drag orbits the safe camera around that focus, and the wheel zooms across a range that can frame the whole mountain. Tab and one focusable localized toggle switch modes. Briefing starts in inspection; Start enters aim lock; returning to aim preserves the current aim values and preview. Gear and Escape remain the only pause entry. Replay playback may keep its own speed controls, but normal gameplay does not expose time scaling.
+  - Accept: drag and wheel affect only aim/power while locked and only camera orbit/zoom while inspecting; terrain click can refocus inspection; the whole mountain can be inspected without camera penetration; returning to aim restores the same aim and preview; no Follow/Wide/Cannon or duplicate Pause control remains; keyboard focus, Korean/English labels, and Gear/Escape behavior remain usable.
 - [ ] **5.2** Add one compact run-status card and Finish action.
-  - Change: place remaining time, remaining shots, moving/resting resident counts, wind, and Finish in one compact card beside the rail. The main arrow explicitly means **projectile push direction**, projects the authoritative world vector through the active camera, and refreshes after camera changes. Show normalized strength as a whole percentage plus non-color band: `<0.25 잔잔`, `<0.50 약함`, `<0.75 보통`, otherwise `강함`. Derive `변화 00:ss` from `ceil((1,800 - interval_tick) / 60)` so it shows 30 down to 1 and resets without a stale 0. During ticks 1,620–1,799 show a second `다음 바람` arrow/band. If the normalized screen-plane projection is below 0.15, replace a misleading flat arrow with `화면 안쪽` or `화면 쪽` depth badge. Its accessible label states push direction, band, percentage, and seconds. Place Finish at lower right, separated from Fire, enable it only after the first root spawns, and bind `finish_stage` to `F` by default.
-  - Accept: every displayed value comes from the same StageController/WindController/ProjectileManager snapshot used by physics, prediction, replay, and agent APIs; the UI never runs a separate clock or predicts state locally. At tick 0/1,619/1,620/1,799/1,800 it shows 30/4/3/1/30 seconds with forecast hidden/hidden/shown/shown/hidden. Camera-left, camera-right, into-screen, and out-of-screen fixtures agree with actual projectile push; Finish has mouse and keyboard access.
+  - Change: place remaining time, remaining shots, moving/resting resident counts, wind, and Finish in one compact edge-aligned status area. The main arrow means **projectile push direction**, projects the authoritative world vector through the active camera, and refreshes after camera movement. Show a localized strength band plus percentage and a countdown to the next 30-second change. During the final 3 seconds show the next wind direction and strength; use an explicit into-screen/out-of-screen cue when a flat arrow would mislead. The accessible label states direction, strength, and time. Place Finish away from Fire, enable it only after the first root spawns, and bind it to `F`.
+  - Accept: every value comes from the same StageController/WindController/ProjectileManager snapshot used by physics, prediction, replay, and the agent API; direction cues agree with visible projectile/debris motion in both camera modes; Finish works by mouse and keyboard; the status area does not obscure the mountain at supported desktop resolutions.
 - [ ] **5.3** Add restrained world wind cues.
   - Change: use pooled procedural low-poly leaf/debris particles with no collision or paint participation. Drive direction and speed from the current wind vector. Add a brief gust/wake cue without camera shake.
   - Accept: particles visibly agree with the HUD push direction in calm, side wind, depth wind, and strong wind; they do not obscure glyphs or trajectory; disabling reduced decorative motion hides/limits particles without changing physics or UI wind information.
@@ -293,8 +304,14 @@ Source owners: all task-owned code/resources/tests/docs, `scripts/verify.ps1`, e
   - Change: run focused failures first, then the full `scripts/verify.ps1`, generated catalog `--check`, replay fixtures, and save migration checks. Explain the final gate's cost and stopping condition before it starts.
   - Accept: all required checks pass without weakening supply-chain or test safeguards; known non-blocking engine warnings are recorded once.
 - [ ] **6.3** Export and inspect production-style gameplay.
-  - Change: export `builds/windows/PaintMountain.exe`, start only the exported build through the task-owned background capture path, and capture `aim_screen_right`, `scale_contact`, `impact_recovered`, `wind_aiming`, `wind_forecast`, `wind_depth`, `resting_reawakened`, `surface_mechanisms`, `timed_result`, and `timeout_result` at 1280×720 and 1920×1080.
-  - Accept: the implementing agent visually inspects every image; all facts claimed in `docs/test-checklist.md` have separate running-game evidence; no ordinary foreground window takes focus.
+  - Change: export `builds/windows/PaintMountain.exe`, start only the exported
+    build through the task-owned background capture path, and capture a compact
+    set covering screen-right aiming, map inspection and aim return, live
+    ball/paint contact and recovery, wind-driven rest/wake, surface mechanisms,
+    and both result reasons at 1280×720 and 1920×1080.
+  - Accept: the implementing agent visually inspects the compact evidence set;
+    it proves the behavior-level checklist without redundant near-identical
+    frames, and no ordinary foreground window takes focus.
 - [ ] **6.4** Close documentation and commit the coherent slice.
   - Change: update implemented status and checklist evidence links, record exact validation results, mark this plan `done`, and commit only task-owned changes.
   - Accept: docs distinguish implemented behavior from future mechanism candidates; `git status --short` leaves unrelated user files untouched; the commit is scoped to this execution contract.
@@ -310,15 +327,12 @@ if ([string]::IsNullOrWhiteSpace($env:PAINT_MOUNTAIN_GODOT)) {
 $paintMountainGodot = (Resolve-Path -LiteralPath $env:PAINT_MOUNTAIN_GODOT).Path
 ```
 
-| Cadence | Exact check | Run when | Do not rerun until |
+| Cadence | Check | Run when | Do not rerun until |
 | --- | --- | --- | --- |
-| Inner loop | `& $paintMountainGodot --headless --path . --script res://tests/aim_screen_direction_test.gd` and the one phase-owned focused test | Relevant owner parses and its narrow behavior is complete | That owner or fixture changes |
-| Phase 1 gate | Aim screen direction, projectile contact/scale, range constraint, and `build_stage_catalog.gd -- --write` followed by `-- --check` | Tasks 1.1–1.4 pass | Yaw, radius, generation profile, or catalog input changes |
-| Phase 2 gate | `wind_schedule_test.gd` at exact 1,800-tick boundaries, `wind_prediction_parity_test.gd`, terrain recovery fixtures, `projectile_rest_wake_test.gd` with collision and multi-ball wake, continuous-paint wake test, and 21-body capacity fixture | Tasks 2.1–2.7 pass | Wind/profile/projectile/terrain-contact/paint input changes |
-| Phase 3 gate | `timed_coverage_loop_test.gd`, `terminal_resident_cleanup_test.gd`, replay-format fixture, agent contract test, and save migration test | Tasks 3.1–3.5 pass | Stage/replay/save/agent contract changes |
-| Phase 4 gate | Updated `phase5_mechanism_test.gd`, mechanism placement test, and three named mechanism captures | Tasks 4.1–4.5 pass | Mechanism data/resolver/placement/visual changes |
-| Phase 5 gate | HUD truth/layout tests plus named 1280×720 and 1920×1080 background captures | Tasks 5.1–5.4 pass | Visible HUD/cue/result input changes |
-| Final gate | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -GodotPath $paintMountainGodot`, catalog `--check`, release export, then exported-build captures | Every phase gate passes | A final-gate input changes |
+| Task loop | One focused check for the changed behavior: screen-right aim, persistent/recovered contact, wind, timed result, one mechanism effect, or camera interaction | The task's implementation is coherent | That behavior or its fixture changes |
+| Gameplay integration | Run one ordinary stage and one Splitter stage through aim, paint, wind, resident-ball movement, and result | Core gameplay phases are integrated | A gameplay-rule owner changes |
+| Persistence and repeatability | Retry the same stage, replay one attempt, open an existing save, and exercise the agent-facing actions | Runtime schemas and actions are connected | Save/replay/agent or deterministic-input contracts change |
+| Final gate | Run `scripts/verify.ps1`, catalog `--check`, release export, then inspect exported-build captures at 1280×720 and 1920×1080 | All tasks and focused checks pass | A final-gate input changes |
 
 Final production commands:
 
@@ -332,7 +346,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -GodotP
 Validation rules:
 
 - Run the narrowest check that proves the current task.
-- Run each phase gate once after its tasks pass.
+- Run each broader gate once after its owned behavior is integrated.
 - Do not run foreground gameplay or an ad hoc server. Use the background capture path and clean up only positively task-owned processes.
 - Before the broad final verification, tell the user its purpose, scope, expected cost, and stopping condition.
 - Rerun a failed check only after a relevant implementation change or a new hypothesis can produce new evidence.
@@ -342,13 +356,13 @@ Validation rules:
 
 | Trigger | Required response | Boundary or escalation point |
 | --- | --- | --- |
-| The concurrent predecessor changes a shared file or contract named here | Rebase onto its committed result, preserve its behavior, and update path/symbol references only | Stop if its final product decision contradicts positive-yaw or physical-radius decisions; do not silently choose a third contract |
+| An existing user-authored worktree change overlaps a task-owned hunk | Preserve the existing change and stage only the task-owned delta; defer that file if separation is unsafe | Do not absorb, revert, or claim the existing change |
 | New radius/yaw causes a persisted stage seed to fail admission | Generate a new deterministic accepted seed, increment the catalog/contract version, and record the rejected reason | Never crop a target mask, weaken the range gate, or restore mismatched visual/physical radius |
-| Maximum wind sends every legal canonical aim outside the mountain | Tune only `WindProfile` acceleration within the locked 4–8m three-second deflection outcome | Do not reduce strength semantics, hide predictor mismatch, or change the 30-second schedule |
+| Maximum wind makes ordinary legal aiming unusable | Tune only `WindProfile` force while preserving readable strong wind and predictor/live parity | Do not hide predictor mismatch or change the 30-second schedule |
 | A resting ball jitters or consumes measurable physics cost | Correct contact/friction tuning and allow Godot's reversible sleeping state; preserve contact/tangent metadata for collision or wind wake | Do not delete it, permanently freeze it, force every body awake, or run duplicate stationary paint writes |
 | Terrain recovery visibly pops or repeatedly triggers on valid geometry | Fix the authoritative point/normal or recovery tolerance and preserve tangent/angular motion; retain diagnostics until canonical fixtures are clean | Do not restore the 3m/two-tick deletion path or hide the disappearance behind an effect |
 | A flat glyph cannot conform without z-fighting | Tessellate a thin generated mesh from authoritative terrain samples and use a small visual offset | Do not restore a projectile collision volume or add a renderer-specific external dependency |
-| A future Splitter child/generation rule proves a worst-case capacity above 24 | Reject that loadout before placement and require a separately approved capacity or split-rule change | Do not regenerate the same deterministic placement indefinitely or silently skip an activation at runtime |
+| A future Splitter child/generation rule proves a worst-case capacity above 21 | Reject that loadout before placement and require a separately approved capacity or split-rule change | Do not silently skip an accepted activation at runtime |
 | Save/replay migration cannot prove old fixture preservation | Stop publication, retain the old reader as a versioned migration path, and add a deterministic fixture | Do not discard user best results or accept nondeterministic replay |
 | Rendered evidence fails even though numeric tests pass | Treat the visible failure as blocking, fix the responsible owner, and recapture only the affected state | Do not mark a visual task complete from headless evidence |
 | A verified material fact contradicts this contract | Stop the affected branch, update the contract, and obtain any required approval before resuming | The executor must not choose a new product, architecture, dependency, score, ammunition, or UX contract |
@@ -358,17 +372,17 @@ Implementation-local discoveries may be handled inside the locked contract when 
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 0, waiting for the separately scoped ballistic terrain preparation checkpoint.
-- Next task: 0.1, record and preserve the predecessor result.
-- Last completed gate: Discovery Closure Gate.
+- Current phase: Phase 1, truthful aim direction and scale.
+- Next task: 1.1, make positive yaw mean screen right across input, preview,
+  cannon, physics, and generation.
+- Last completed gate: Phase 0 contract and stale-test cleanup.
 - Update rule: after a checkpoint passes, record its concise evidence, check the task, and advance this pointer in the same edit.
 
 ## Completion and Stop Conditions
 
 Complete when:
 
-- Every task acceptance check passes.
-- Every guard, phase gate, and final gate named by this contract passes.
+- Every task acceptance check and the four validation levels above pass.
 - All thirty stages use the timed coverage result and seeded wind without losing deterministic restart/replay.
 - Rendered evidence proves screen-correct aim, readable ball/paint scale, terrain-contact recovery without disappearance, 30-second wind direction/forecast/depth cues, rest/wake, all three flat mechanisms, unobstructed HUD, and both stage terminal reasons.
 - Durable product/architecture/test/status documents match the implemented behavior.

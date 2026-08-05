@@ -14,6 +14,7 @@ related:
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
+  - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
 ---
 
 # Paint Mountain Design Specification
@@ -29,16 +30,16 @@ presentation, and the rest of the baseline directive.
 
 ## Scope
 
-The player inspects a distant mountain, aims a stationary cannon by
-yaw/elevation/power, fires a rigid-body paintball, and watches gravity, real
-surface contact, rolling, and mechanisms produce coverage. Every scoreable
-target-top area physically traversed while in contact is painted; there is no
-paint reservoir, depletion, or autonomous flow. After all projectiles and paint
-commands settle, the stage clears at its target or continues/fails according to
-shots remaining.
+The player inspects a distant mountain, locks a stationary cannon's
+yaw/elevation/power, fires a rigid-body paintball, and watches gravity, wind,
+real surface contact, rolling, and mechanisms produce coverage. Every valid
+playable-top area physically traversed while in contact is painted; only its
+overlap with the immutable target mask counts toward coverage. There is no paint
+reservoir, depletion, or autonomous flow. The first actual launch starts the
+stage timer; the player finishes the run or the timer ends it.
 
 The vertical slice includes a main menu, stage select, briefing/inspection,
-aiming, projectile observation, clear/failure, pause, settings, saving, replay,
+aiming, projectile observation, coverage result, pause, settings, saving, replay,
 debug tooling, audio/visual feedback, thirty all-open stages, one ball type, and
 exactly three mechanism types.
 
@@ -54,55 +55,64 @@ exactly three mechanism types.
 
 - Cannon length is roughly 2–3 m; target distance 70–150 m; mountain width 120–250 m and height 60–140 m.
 - In the perspective aiming view, the cannon stays in the lower foreground at no more than about 15–20% of the frame; the mountain dominates the middle and upper frame.
-- Briefing uses limited three-quarter orbit/zoom; aiming uses roughly 45–55° FOV; observation supports follow, wide terrain, and cannon views; result uses a restrained three-quarter reveal.
-- Transitions use smooth 0.3–0.7 second interpolation, avoid terrain clipping and rapid cuts, and widen when split children cannot be read together.
+- Briefing begins in map inspection with a limited three-quarter orbit/zoom; Aim Lock restores the authored aiming camera; result uses a restrained three-quarter reveal.
+- Map inspection must keep the whole mountain explorable without terrain clipping or rapid cuts. It does not follow projectiles or switch to preset camera views.
 
 ### Controls and information
 
-- Briefing: left-drag orbit, wheel zoom, mechanism selection, Enter/Start to aim, Escape back.
-- Aiming: drag empty 3D space to change yaw/elevation independently; wheel or explicit `−/+` controls adjust power; Space fires; R restarts; Escape pauses; Tab inspects. A/D change yaw and W/S change elevation through the same manual command path.
+- Briefing starts in Map Inspection: terrain click changes inspection focus, left-drag orbits, wheel zooms, Enter/Start enters Aim Lock, and Escape pauses.
+- Gameplay has two interaction modes while Board Phase remains `AIMING`. In Aim Lock, left-drag changes yaw/elevation, wheel or explicit `−/+` controls adjust power, A/D/W/S use the same aim path, and Space/Fire launch. In Map Inspection, terrain click changes inspection focus, left-drag orbits, wheel zooms, and aim/Fire input is blocked. Tab and one visible focusable toggle switch modes without changing the stored aim or preview.
 - Show target, current coverage, shots, angle, power, a dotted initial ballistic arc, and an approximate first impact. Never preview post-impact solution paths or exact coverage.
 - Terrain clicks never solve or alter aim. The complete pre-impact preview uses
   the same radius, fixed-tick gravity, damping, launch origin, speed, shared
   collision geometry, and collision layers as the real ball. It ends at the
   first physical collision. Bounds exits and timeouts are non-fireable errors;
   no post-impact route is shown.
-- Firing never hides or disables the next aim. The default camera remains on the
-  cannon with a visible next-shot trajectory while prior balls move. Follow and
-  wide observation are explicit modes; any new aim input returns to the cannon.
+- Firing never hides or disables the next aim. Aim Lock restores the authored
+  cannon view with a visible next-shot trajectory while prior balls move. There
+  are no Follow, Wide, Cannon, gameplay speed, or gameplay Pause strips.
+- One deterministic stage-seeded wind changes on a readable 30-second rhythm
+  with a natural three-second transition. The preview and physics use the same
+  wind; restrained leaves or debris supplement, but do not replace, the HUD cue.
 
 ### Stage state
 
 - Authoritative Board Phases are `LOADING`, `BRIEFING`, `AIMING`, `PAUSED`,
-  `STAGE_CLEAR`, and `STAGE_FAILED`. Active projectile families, paint drain, and
-  terminal pending are orthogonal typed activity, not input-blocking phases.
+  `FINISHING`, and `RESULT`. Active projectile families, resident balls, paint
+  drain, and camera interaction mode are orthogonal typed activity, not
+  competing stage phases.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
   invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
   controls remain editable while prior families move.
-- Family coverage feedback is nonmodal. Clear/failure resolves only after every
-  admitted family and authoritative paint command settles.
+- Family coverage feedback is nonmodal. Reaching target coverage or spending all
+  shots neither clears nor fails the run. After the first shot, Finish may end
+  the run; otherwise the stage duration ends it. Final unique target coverage is
+  the sole score and star thresholds remain grades.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
 
 ### Projectile and paint
 
 - Rigid bodies use gravity, CCD, low ordinary-terrain rebound, rolling/sliding
-  friction, angular motion, damping, bounds/lifetime/slow-stop termination, and
-  fixed-timestep behavior. A backstop hit stops immediately; Bumper is the only
-  intentional strong-redirect exception.
-- Projectile data owns radius, mass, bounce, friction, damping, lifetime, stop
-  thresholds, contact footprint, impact/settle radii, and activation cap. It owns
-  no paint amount, payload, depletion rate, or flow budget.
-- The parent ball uses one `0.90 m` visible/collision/prediction radius. Continuous
-  and settlement paint use `1.50 m`; first impact uses `2.10 m`. Splitter children
-  scale both physical and paint radii uniformly by `0.78`.
+  friction, angular motion, damping, bounds, and fixed-timestep behavior. Once
+  a ball has reached valid playable top, age, low speed, and engine sleeping do
+  not delete it; it may sleep naturally and collision or strong wind may move it
+  again. Explicit mechanism consumption, real escape, a never-contacted miss
+  timeout, unrecoverable invalid geometry, and stage cleanup are the only
+  pre-result termination families.
+- Projectile data owns physical and paint tuning plus activation capacity. It
+  owns no paint amount, payload, depletion rate, lifetime, slow-stop threshold,
+  or flow budget. The ball must read materially larger than the old version,
+  while its continuous paint mark remains a natural, visibly narrower midpoint
+  than the old oversized mark.
 - Power `0..100` maps linearly to `32..160 m/s`. Generated summit height/range,
   predictor, rigid body, and containment use that same curve; maximum-power
   rescue through a second velocity constant is forbidden.
-- Airborne travel uses no paint. A verified target-top first contact may create a
-  radial impact mark; consecutive real target-top contact samples create a
-  continuous 3D surface sweep; final target-top settlement may create an
-  idempotent radial mark. Short sampled gaps may bridge only after explicit
-  same-surface and clearance checks; real airborne gaps remain blank.
+- Airborne travel uses no paint. A verified valid-top first contact may create a
+  radial impact mark and consecutive real valid-top contact samples create a
+  continuous 3D surface sweep. A stationary ball does not repeatedly paint one
+  point; resumed motion paints only its new physical path. Terrain embedding is
+  recovered against the authoritative surface and physical radius, not treated
+  as an ordinary deletion outcome.
 - One 512×512 paint mask is the mutable visual and scoring source. One immutable
   512×512 `target_mask`, rasterized from the accepted shared terrain triangles,
   defines every configured scoreable top texel through the target-shoulder
@@ -114,25 +124,27 @@ exactly three mechanism types.
   never removes a target pixel. At least one canonical Summit Region sample
   must pass the same pure analytic gate. Exact terrain occlusion and first-hit
   proof remain the separate certificate contract.
-- Persistent paint is written only by verified target-top surface sweeps and the
-  defined impact, settle, and Burst radial marks reconstructed on the exact
-  rendered/collidable triangle. Visual paint and scored paint cannot diverge.
+- Persistent paint is written only by verified playable-top surface sweeps and
+  defined impact and Burst radial marks reconstructed on the exact
+  rendered/collidable triangle. Visual paint and scored paint cannot diverge;
+  paint outside the target mask remains visible but does not increase coverage.
 - Coverage is target-mask texels at or above the paint threshold divided by all
   target-mask texels. Overlap counts once and the UI presents that authoritative
   percentage without a second coverage representation.
 
 ### Mechanisms
 
-- All mechanisms share data-driven activation, state, cooldown/charges where applicable, feedback, and reset behavior. Their visible silhouettes have matching compound `StaticBody3D` collision; no gameplay `Area3D` trigger is used.
-- Burst Node: physical hit, one charge, one terrain-aware authoritative radial
-  mark, strong feedback, and a visibly spent state.
-- Splitter Node: consumes the incoming ball and emits exactly three
-  fan-distributed generation-one children. Children retain the fixed speed and
-  smaller contact-footprint multipliers, not divided payload.
-- Bumper Node: applies a visible directional impulse without consuming the ball and uses a cooldown to prevent repeated instability.
-- Active Burst, Splitter, and Bumper read as amber, violet, and coral respectively
-  and also differ by silhouette/icon/outlet/arrow cues. Their visible interactive
-  mass matches named physical collision shapes; color is never the only cue.
+- All mechanisms are terrain-conforming flat circular glyphs. A real valid-top
+  contact inside the visible glyph footprint activates their data-driven effect;
+  raised 3D obstacle bodies and hidden trigger volumes are not used.
+- Burst applies one large authoritative paint effect, consumes the ball, and
+  visibly enters a spent state.
+- Splitter consumes the incoming ball and emits exactly three readable,
+  fan-distributed useful branches.
+- Uphill Rebound redirects the ball toward the locally highest meaningful
+  terrain direction rather than acting as a merely punitive random bounce.
+- Glyph icons, arrows, and state treatment distinguish Burst, Splitter, and
+  Uphill Rebound without relying on color alone.
 - No fourth mechanism is implemented in the vertical slice.
 
 ### Stages
@@ -162,10 +174,12 @@ exactly three mechanism types.
   boundary. Adjacent layouts must have unique checksums, a profile-score delta
   of `0.35..5.00`, and a normalized height RMS of `1.0..18.0 m`; Stages 04 and
   05 are explicit distinctness canaries.
-- Stage 01 has no mechanism; Stage 02 introduces Burst; Stage 03 uses Splitter
-  plus Bumper. Later stages grow to six visible, collider-matched mechanisms by
-  Stage 25–30 without adding a fourth kind.
-- Mechanisms sit at the exact owning-route centerline shelf transform and must pass slope, spacing, bounds, visibility, projected-size, tangent, and clearance checks. A failed fixed placement rejects the candidate; production resources contain no authored X/Z fallback or placement scoring alternative.
+- Small stages may have no glyph or one or two glyphs. Larger stages contain
+  more glyph opportunities, using only Burst, Splitter, and Uphill Rebound.
+- Glyphs use deterministic valid-top route anchors and must pass footprint,
+  separation, slope presentation, visibility, and effect-usefulness checks. A
+  failed placement rejects or changes the candidate through the generation
+  contract; production resources contain no hand-authored X/Z repair fallback.
 - Every target-mask texel must have a certified legal manual aim whose first
   physical hit is the same target-top triangle. The certificate is fairness
   evidence and is never exposed as auto-aim. Stage start and restart use the
@@ -186,26 +200,34 @@ exactly three mechanism types.
 
 ### Results, persistence, and replay
 
-- Clear uses coverage only; failure occurs after the last settled shot below target. Stars use stage data and remain understandable.
-- Results show stage, final/target coverage, shots used/remaining, previous best, new best, rank/stars, final mountain, retry, next/select, and replay. Failure emphasizes missing coverage and Retry.
+- The first actual launch starts the stage duration, which is 90, 120, or 180
+  seconds according to progression. Finish ends an active run after that first
+  shot; timer expiry also ends it. Results use final unique target coverage as
+  the sole score, with existing star thresholds as grades.
+- Results show stage, final coverage, time outcome, shots used/remaining,
+  previous best, new best, rank/stars, final mountain, retry, next/select, and
+  replay. They do not present target coverage or spent shots as an automatic
+  clear/failure result.
 - Save version, unlocks, best coverage/stars, and settings locally.
-- Replay format 7 stores stage/profile/layout/certificate versions, accepted seed plus height,
-  target/reachability/containment checksums, the generated default aim,
-  fixed-tick canonical manual actions, expected ordered contacts/effects, and the
-  final paint-mask checksum. Replay presentation locks normal input and accepts
-  only replay-origin actions; older formats are rejected because they cannot
-  prove the version-7 generated layout and summit certificate.
+- Replay format 8 stores stage/profile/layout/certificate versions, accepted
+  seed, terrain identities, generated default aim, wind schedule identity,
+  fixed-tick aim/Fire/Finish actions, attempt outcome, and final paint-mask
+  checksum. Replay presentation locks normal input and accepts only replay-origin
+  actions; older incompatible formats are rejected deterministically.
 
 ### UI, art, audio, and debug
 
-- Separate full-screen menu, stage-select, briefing, gameplay, clear, failure, pause, and settings interfaces; anchors/containers support common 16:9 desktop resolutions.
-- Use the sparse edge-aligned HUD with stage and aim-mode at upper-left, shots
-  plus a labeled gear at upper-right, a vertical coverage gauge at left,
-  angle/power at lower-left, and Fire alone at bottom-center. The left gauge is
-  the sole coverage display: it shows absolute coverage and the target while its
-  rail fills bottom-to-top. Keep the top-center clear for the mountain and high
-  trajectory arcs. No aiming-state Restart or second Fire control exists; `R`
-  remains the quick-restart shortcut.
+- Separate full-screen menu, stage-select, briefing, gameplay, coverage-result,
+  pause, and settings interfaces; anchors/containers support common 16:9 desktop
+  resolutions.
+- Use the sparse edge-aligned HUD with stage and current interaction mode at
+  upper-left, time, shots, resident-ball activity, wind, Finish, and a labeled
+  gear at the edge, a vertical coverage gauge at left, angle/power at lower-left,
+  and Fire alone at bottom-center. The wind cue shows the direction projectiles
+  are pushed, strength, time to change, and approaching direction during the
+  transition. Keep the top-center clear for the mountain and high trajectory
+  arcs. No aiming-state Restart or second Fire control exists; `R` remains the
+  quick-restart shortcut.
 - Gear and Escape open the same fully input-capturing paused game menu with
   Continue, Restart, Settings, Stage Select, and Main Menu. Continue/Escape
   restores the exact pre-pause state without advancing simulation. Settings is a
@@ -216,11 +238,12 @@ exactly three mechanism types.
   other than the intentionally opened paused game menu.
 - Bundle Pretendard, default fresh and migrated V1 saves to Korean, support immediate persistent Korean/English switching, and store translation keys rather than visible text in gameplay resources. Interactive controls remain at least 40 px high with visible keyboard focus and no clipped Korean at the three supported resolutions.
 - Use low-poly faceted neutral terrain, sparse scale cues, bright glossy
-  non-emissive blue paint, a dark stylized small cannon, and readable mechanisms
-  whose active amber/violet/coral colors and distinct silhouettes follow the
-  mechanism contract above. Use soft daylight, one main directional light, and
-  lightweight effects.
-- Provide the specified compact sound set, impact/muzzle/mechanism/clear particles, and small non-continuous shake.
+  non-emissive blue paint, a dark stylized small cannon, and readable flat
+  terrain glyphs with distinct icons and directional cues. Use soft daylight,
+  one main directional light, lightweight effects, and small moving leaves or
+  debris to support visible wind.
+- Provide the specified compact sound set, impact/muzzle/mechanism/result
+  particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/velocity,
   coverage gains and masks, paint-command ordering, preview/collision,
   mechanisms, seed, reachability/containment identities, bounds, camera, and
@@ -234,8 +257,12 @@ exactly three mechanism types.
   with a truthful preparing state, retains at most three accepted layouts for
   selected/current/next use, and materializes scene/render/physics state only on
   the main thread. Heavy preview artifacts retain at most one stage.
-- Use one low-poly principal terrain mesh (preferably under ~50k triangles), batched mask updates, effect pooling, lightweight shadows, at most eight balls, and one split generation.
-- Provide a UI-independent in-process observation/action/event interface with stage/aim/terrain/mechanism/previous-shot data and set aim/fire/restart/camera/next-stage actions.
+- Use one low-poly principal terrain mesh (preferably under ~50k triangles),
+  batched mask updates, effect pooling, lightweight shadows, a 21-resident-ball
+  hard cap, and one split generation.
+- Provide a UI-independent in-process observation/action/event interface with
+  stage/aim/terrain/wind/mechanism/projectile/attempt data and set aim, Fire,
+  Finish, restart, interaction-mode, and next-stage actions.
 
 ## Non-Goals
 
@@ -251,9 +278,9 @@ exactly three mechanism types.
 ## Historical Evidence and Active Reset
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
-superseded implementation. They do not establish conformance with the physical
-contact, closed-terrain, manual-aim, mechanism-body, replay-format-7, or rebuilt-UI
-contracts above.
+superseded implementation. They do not establish conformance with the current
+contact, persistent-ball, wind, timed-result, surface-glyph, replay-format-8, or
+interaction-mode contracts above.
 
 The 2026-08-05 gameplay-recovery plan is superseded history. The completed
 `.agents/execplans/2026-08-06-ballistic-terrain-preparation.md` records the

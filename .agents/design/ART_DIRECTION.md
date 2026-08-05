@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-06
 canonical_for: Paint Mountain world art style, visual composition, and gameplay-object legibility
 scope: procedural mountain, wall, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
 source: ../../docs/source-brief.md
@@ -12,6 +12,7 @@ related:
   - VISUAL_REFERENCES.md
   - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
   - ../execplans/2026-08-03-gameplay-visual-reset.md
+  - ../execplans/2026-08-06-wind-driven-coverage-loop.md
 ---
 
 # Paint Mountain Art Direction
@@ -82,8 +83,9 @@ owned by `UIUX_GUIDELINES.md`.
   dependent on emission.
 - Cannon: dark navy, off-white, and blue; avoid a featureless pure-black
   silhouette.
-- Burst, Splitter, and Bumper: amber, violet, and coral respectively, with shape
-  cues that remain distinct without color.
+- Burst, Splitter, and Uphill Rebound: amber, violet, and coral respectively,
+  expressed as flat circular terrain glyphs with icons and direction cues that
+  remain distinct without color.
 - Reserve saturated color for paint, trajectory, interactive mechanisms, and
   meaningful state feedback. Keep environment dressing subdued.
 - Shared material Resources own implemented values. Do not scatter duplicate
@@ -99,17 +101,24 @@ owned by `UIUX_GUIDELINES.md`.
 
 ### Gameplay objects and feedback
 
-- Every visible gameplay mass has matching collision; assisting triggers stay
-  inside the visible object envelope.
-- Burst uses a radial silhouette, Splitter a three-pronged silhouette, and
-  Bumper a directional body with an explicit arrow.
-- Mechanisms must be large enough to identify from the aiming camera and placed
-  on meaningful route nodes with clear sightlines.
+- Every raised visible gameplay mass has matching collision. Mechanism glyphs
+  are the explicit exception: they are terrain-conforming markings, do not act
+  as projectile obstacles, and keep the visible and activation footprints in
+  agreement.
+- Burst uses a radial explosion icon, Splitter three readable arrow spokes, and
+  Uphill Rebound one explicit uphill arrow. Color is supplementary.
+- Glyphs must be large enough to identify from the aiming and inspection cameras
+  and placed on meaningful route nodes with clear sightlines. Larger stages may
+  carry more glyphs; small stages may have few or none.
 - The predicted trajectory uses blue depth-tested marks and ends at the first
   real collision with a readable impact ring.
-- A ball's valid target contact produces a continuous, gap-free blue route over
-  every traversed target area. Airborne travel remains unpainted.
-- Muzzle, contact, mechanism, clear, and failure effects are brief and bounded.
+- A ball's valid playable-top contact produces a continuous blue route over its
+  real traversal, including outside the scoreable mask. Only target-mask overlap
+  affects coverage. Airborne travel remains unpainted.
+- Small pooled leaves or debris move with the current wind as a restrained depth
+  cue. They never hide the trajectory, paint, or glyphs, and reduced decorative
+  motion can suppress them without hiding the HUD wind rule.
+- Muzzle, contact, mechanism, Finish, and timeout effects are brief and bounded.
   They explain cause and effect rather than covering it.
 
 ### Asset use

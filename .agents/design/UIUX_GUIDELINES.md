@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-06
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -12,6 +12,7 @@ related:
   - VISUAL_REFERENCES.md
   - ../../docs/design-spec.md
   - ../execplans/2026-08-03-gameplay-visual-reset.md
+  - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -48,8 +49,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Element | Placement | Contract |
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
-| Aim-mode chip | Below Stage | Compact secondary state |
-| Shots and Gear | Upper-right | Remaining shots followed by a separate menu action |
+| Interaction-mode chip and toggle | Below Stage | Shows `Aim Lock` or `Map Inspection`; the focusable toggle and Tab switch modes |
+| Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Readable run state without covering the mountain; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage owner; absolute coverage fills bottom-to-top and shows target |
 | Aim and power | Lower-left | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
@@ -61,11 +62,31 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   survives supported desktop aspect and resolution changes. Do not freeze every
   child to viewport offsets.
 - Keep one Fire control. Do not place Restart in the aiming HUD.
+- Do not expose Follow, Wide, Cannon, gameplay speed, or gameplay Pause strips.
 - Keep the top-center and center of the world view free of duplicate status
   cards, and keep visible mountain routes free of
   persistent panels, explanatory text, or modal overlays.
 - Trajectory and impact feedback belong in world space; the HUD must not pretend
   to predict post-impact paint.
+
+### Aim Lock and map inspection
+
+- Gameplay remains in the aiming Board Phase while the player switches between
+  `Aim Lock` and `Map Inspection`; this is a presentation/input state, not a
+  separate stage flow.
+- In Aim Lock, the authored aiming view is restored. Left drag adjusts
+  yaw/elevation, the wheel adjusts power, keyboard aiming and Fire are enabled.
+- In Map Inspection, terrain click changes the inspection focus, left drag
+  orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
+- Tab and one visible focusable toggle switch modes without changing the stored
+  aim or preview. The first-session hint and toggle tooltip state the shortcut
+  and the active mouse behavior.
+- Wind is a concise status cue, not a decorative mystery: show the direction
+  projectiles are pushed, strength, time until change, and the approaching
+  direction during the transition. Leaves or debris are supporting world
+  feedback only.
+- Finish is unavailable until the first actual launch. Target coverage and spent
+  shots do not force an outcome; time expiry or Finish ends the run.
 
 ### Navigation and pause
 
@@ -83,6 +104,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 - HUD components display authoritative state and emit typed intent. They do not
   calculate coverage, mutate paint, advance stage state, or own launch physics.
+- Time, resident-ball activity, wind, interaction mode, and Finish availability
+  are displayed from their authoritative owners. The HUD does not run a second
+  timer, wind schedule, or camera/input state machine.
 - Coverage always means absolute painted eligible area. Its percentage, rail,
   and target label must agree.
 - Shots, target, angle, power, and Fire validity update from their authoritative
@@ -127,10 +151,14 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 A UI change conforms when:
 
 - the mountain remains the dominant visual and Fire is the unmistakable next
-  action during aiming;
-- the left vertical coverage gauge, lower-left controls, top status, top-right
+  action during Aim Lock;
+- Aim Lock and Map Inspection make their active input behavior clear, and Tab
+  or the visible toggle returns between them without losing the current aim;
+- the left vertical coverage gauge, lower-left controls, edge status, top-right
   gear, and bottom-center Fire preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;
+- gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
+  pause action;
 - Korean and English labels fit without clipping at supported desktop sizes;
 - all reachable controls expose stable enabled, disabled, hover, pressed, and
   keyboard-focus states;

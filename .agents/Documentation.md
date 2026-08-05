@@ -70,6 +70,23 @@ checked tasks while claiming major phases were implemented.
 
 ## Current Implemented Truth (2026-08-06 recovery checkpoint 14)
 
+### Completed baseline versus pending gameplay loop
+
+- Commit `19f2d45` completed the separate range-aware generation and responsive
+  layout-preparation baseline. It is the required predecessor for later
+  gameplay work, not an implementation of the wind-driven coverage loop.
+- The following user-approved loop changes remain **pending**: screen-correct
+  yaw as seen from the aiming camera; larger ball/narrower paint midpoint;
+  stage-long valid-top projectile persistence and terrain-contact recovery;
+  seeded 30-second wind with direction UI and decorative debris; timed
+  coverage-only Finish/timeout results; terrain-conforming Burst, Splitter,
+  and Uphill Rebound glyphs; and the `AIM_LOCKED`/`MAP_INSPECTION` camera
+  interaction replacing the ambiguous Follow/Wide/Cannon controls.
+- Existing low-speed, sleeping, lifetime, and terrain-penetration removal
+  behavior is still current implementation, not accepted new-loop behavior.
+  Existing clear/failure, physical mechanism, and observation-control UI are
+  likewise historical baseline behavior until their replacement is implemented.
+
 - Terrain/paint foundation: the selected gameplay layout is a closed row-solid
   3D top/shell mass with shared render/collision topology. PaintSystem remains
   the sole mask/coverage owner. `projectile_contact_test.gd` now passes the

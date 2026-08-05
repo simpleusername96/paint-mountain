@@ -28,22 +28,21 @@ func _run_checks() -> void:
 
 
 func _assert_production_tuning() -> void:
-	var default_data := ProjectileData.new()
-	_assert_true(is_equal_approx(default_data.impact_paint_radius, 6.0), "default impact radius must be 6 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 0.52), "production radius must remain 0.52 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.mass, 2.4), "production mass must remain 2.4 kg")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.bounce, 0.08), "production bounce must be 0.08")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.friction, 0.78), "production friction must be 0.78")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.linear_damp, 0.18), "production linear damping must be 0.18")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.angular_damp, 0.35), "production angular damping must be 0.35")
+	_assert_true(PROJECTILE_DATA.radius > 0.0, "production projectile must have a physical radius")
+	_assert_true(PROJECTILE_DATA.mass > 0.0, "production projectile must have positive mass")
 	_assert_true(
 		is_zero_approx(NORMAL_TERRAIN_PHYSICS_MATERIAL.bounce) \
 				and is_equal_approx(NORMAL_TERRAIN_PHYSICS_MATERIAL.friction, 1.0),
 		"normal terrain must stay restitution-neutral so ProjectileData alone owns rebound tuning"
 	)
-	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 4.0), "parent sweep radius must be 4 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 6.0), "impact radius must be 6 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.settle_paint_radius, 4.0), "settle radius must be 4 m")
+	_assert_true(
+		PROJECTILE_DATA.paint_footprint_radius >= PROJECTILE_DATA.radius,
+		"continuous contact paint must remain at least as wide as the physical ball"
+	)
+	_assert_true(
+		PROJECTILE_DATA.impact_paint_radius >= PROJECTILE_DATA.paint_footprint_radius,
+		"the first-impact mark must not be narrower than continuous contact paint"
+	)
 
 
 func _assert_manager_canonical_ordering() -> void:
@@ -58,22 +57,22 @@ func _assert_manager_canonical_ordering() -> void:
 	manager.radial_paint_mark_ready.connect(func(command: RadialPaintMark) -> void: emitted.append(command))
 	manager.surface_paint_sweep_ready.connect(func(command: SurfacePaintSweep) -> void: emitted.append(command))
 	var settle := RadialPaintMark.new(
-		tick, 0, 0, -1, point, Vector3.UP, 4.0, body.get_rid(),
+		tick, 0, 0, -1, point, Vector3.UP, PROJECTILE_DATA.settle_paint_radius, body.get_rid(),
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.SETTLE
 	)
 	var sweep := SurfacePaintSweep.new(
 		tick, 0, 0, -1, point, point + Vector3.RIGHT, Vector3.UP, Vector3.UP,
-		4.0, body.get_rid(), TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
+		PROJECTILE_DATA.paint_footprint_radius, body.get_rid(), TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
 		TerrainSurface.TOP_SHAPE_ID, 0, false
 	)
 	var later_ordinal_impact := RadialPaintMark.new(
-		tick, 1, 0, -1, point, Vector3.UP, 6.0, body.get_rid(),
+		tick, 1, 0, -1, point, Vector3.UP, PROJECTILE_DATA.impact_paint_radius, body.get_rid(),
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.IMPACT
 	)
 	var impact := RadialPaintMark.new(
-		tick, 0, 0, -1, point, Vector3.UP, 6.0, body.get_rid(),
+		tick, 0, 0, -1, point, Vector3.UP, PROJECTILE_DATA.impact_paint_radius, body.get_rid(),
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.IMPACT
 	)
@@ -188,7 +187,6 @@ func _assert_gap_proof() -> void:
 	var surface: TerrainSurface = fixture.surface
 	var manager: ProjectileManager = fixture.manager
 	var top_body := surface.get_node("TerrainTopBody") as StaticBody3D
-	var target_mask := surface.layout_read_only().target_mask
 	var from_point := surface.world_surface_point(Vector2(-2.0, 0.0))
 	var to_point := surface.world_surface_point(Vector2(2.0, 0.0))
 	var from_contact := _fixture_contact(top_body, from_point, 10)
@@ -196,21 +194,21 @@ func _assert_gap_proof() -> void:
 	var space_state := host.get_world_3d().direct_space_state
 	_assert_true(
 		SurfaceContactGapValidator.can_bridge(
-			surface, SURFACE_TUNING, target_mask, from_contact, to_contact, 2, space_state
+			surface, SURFACE_TUNING, from_contact, to_contact, 2, space_state
 		),
 		"a same-top two-tick surface chord must pass the complete bridge proof"
 	)
 	var airborne_contact := _fixture_contact(top_body, to_point + Vector3.UP, 13)
 	_assert_true(
 		not SurfaceContactGapValidator.can_bridge(
-			surface, SURFACE_TUNING, target_mask, from_contact, airborne_contact, 2, space_state
+			surface, SURFACE_TUNING, from_contact, airborne_contact, 2, space_state
 		),
 		"a chord more than 0.4 m above the reconstructed surface must stay blank"
 	)
 	var long_gap_contact := _fixture_contact(top_body, to_point, 14)
 	_assert_true(
 		not SurfaceContactGapValidator.can_bridge(
-			surface, SURFACE_TUNING, target_mask, from_contact, long_gap_contact, 3, space_state
+			surface, SURFACE_TUNING, from_contact, long_gap_contact, 3, space_state
 		),
 		"a three-tick missing-contact gap must stay blank"
 	)
@@ -256,7 +254,11 @@ func _assert_settle_command() -> void:
 	_assert_true(impact != null and settle != null, "target settlement must emit impact and settle marks")
 	if impact != null and settle != null:
 		_assert_true(impact.sequence < settle.sequence, "settle must be sequenced after impact for the same ordinal")
-		_assert_true(settle.spawn_ordinal == 0 and is_equal_approx(settle.radius, 4.0), "settle must preserve ordinal and fixed radius")
+		_assert_true(
+			settle.spawn_ordinal == 0 \
+					and is_equal_approx(settle.radius, PROJECTILE_DATA.settle_paint_radius),
+			"settle must preserve ordinal and use the production resource radius"
+		)
 	await _dispose_fixture(host, manager, surface)
 
 
