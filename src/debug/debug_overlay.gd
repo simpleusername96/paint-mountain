@@ -1,7 +1,6 @@
 class_name DebugOverlay
 extends CanvasLayer
 
-signal replay_last_shot_requested
 signal mechanism_labels_toggled(visible: bool)
 
 var _stage_data: StageData
@@ -199,7 +198,6 @@ func _build() -> void:
 	_add_action(actions, "SLOW MOTION", func() -> void: _run_debug_action(_toggle_slow_motion))
 	_add_action(actions, "MECHANISM LABELS", func() -> void: _run_debug_action(_toggle_labels))
 	_add_action(actions, "SAVE AIM", func() -> void: _run_debug_action(_save_aim))
-	_add_action(actions, "REPLAY LAST SHOT", func() -> void: _run_debug_action(func() -> void: replay_last_shot_requested.emit()))
 	_add_action(actions, "EXPORT SHOT LOG", func() -> void: export_shot_log())
 
 

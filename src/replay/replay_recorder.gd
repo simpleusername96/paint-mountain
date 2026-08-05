@@ -270,46 +270,6 @@ func export_attempt() -> Dictionary:
 	return attempt.duplicate(true)
 
 
-func last_shot_attempt() -> Dictionary:
-	if attempt.is_empty():
-		return {}
-	var actions: Array = attempt.get("actions", [])
-	var last_fire_index := -1
-	var previous_fire_index := -1
-	for index in range(actions.size()):
-		if String(actions[index].get("kind", "")) == "fire":
-			previous_fire_index = last_fire_index
-			last_fire_index = index
-	if last_fire_index < 0:
-		return {}
-	var start_index := previous_fire_index + 1
-	var sliced: Array = []
-	var has_aim := false
-	for index in range(start_index, last_fire_index + 1):
-		if String(actions[index].get("kind", "")) == "aim":
-			has_aim = true
-			break
-	if not has_aim:
-		for index in range(start_index - 1, -1, -1):
-			if String(actions[index].get("kind", "")) == "aim":
-				var inherited_aim: Dictionary = actions[index].duplicate(true)
-				inherited_aim.physics_tick = 0
-				sliced.append(inherited_aim)
-				break
-	var first_tick := int(actions[start_index].get("physics_tick", 0))
-	for index in range(start_index, last_fire_index + 1):
-		var action: Dictionary = actions[index].duplicate(true)
-		action.physics_tick = int(action.physics_tick) - first_tick
-		sliced.append(action)
-	var result := attempt.duplicate(true)
-	result.actions = sliced
-	var expected: Array = attempt.get("expected_observations", [])
-	result.expected_observations = [expected.back().duplicate(true)] if not expected.is_empty() else []
-	result.final_result = {}
-	result.attempt_observation = _action_only_observation(sliced)
-	return result
-
-
 func reset_playback() -> void:
 	playback_index = 0
 	playback_paused = false
@@ -447,35 +407,6 @@ func _sync_attempt_observation() -> void:
 	if attempt.is_empty() or _attempt_observation == null:
 		return
 	attempt["attempt_observation"] = _attempt_observation.to_dictionary()
-
-
-func _action_only_observation(actions: Array) -> Dictionary:
-	var observation := AttemptObservation.new()
-	if not observation.configure(
-		StringName(String(attempt.stage_id)),
-		StringName(String(attempt.wind_schedule_identity)),
-		int(attempt.wind_schedule_seed),
-		0
-	):
-		return {}
-	for action_variant in actions:
-		var action := action_variant as Dictionary
-		if action == null:
-			continue
-		var physics_tick := int(action.get("physics_tick", 0))
-		match String(action.get("kind", "")):
-			"aim":
-				observation.record_aim(
-					float(action.yaw),
-					float(action.elevation),
-					float(action.power),
-					physics_tick
-				)
-			"fire":
-				observation.record_fire(int(action.shot_id), physics_tick)
-			"finish":
-				observation.record_finish(&"manual", physics_tick)
-	return observation.to_dictionary()
 
 
 func _action_observation_order_matches(actions: Array, events: Array[Dictionary]) -> bool:

@@ -4,7 +4,7 @@ signal navigation_requested(destination: StringName)
 
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
-const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
+const UPHILL_REBOUND_SCENE := preload("res://scenes/mechanisms/uphill_rebound_node.tscn")
 const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 
@@ -20,6 +20,8 @@ const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
 @onready var _paint_system: PaintSystem = %PaintSystem
 @onready var _stage_controller: StageController = %StageController
+@onready var _wind_controller: WindController = %WindController
+@onready var _wind_debris: WindDebrisField = %WindDebrisField
 @onready var _camera_director: CameraDirector = %CameraDirector
 @onready var _hud: HUDController = %HUD
 @onready var _mechanism_root: Node3D = %Mechanisms
@@ -30,8 +32,8 @@ const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 @onready var _presentation_effects: PresentationEffects = %PresentationEffects
 @onready var _debug_overlay: DebugOverlay = %DebugOverlay
 
-var _shot_has_impacted: bool = false
-var _mechanisms: Array[GimmickBase] = []
+var _mechanisms: Array[TerrainGlyphMechanism] = []
+var _mechanism_resolver := TerrainMechanismResolver.new()
 var _generated_layout: GeneratedStageLayout
 var _prepared_layout: GeneratedStageLayout
 var _prepared_stage_id: StringName = &""
@@ -39,6 +41,7 @@ var _prepared_layout_checksum: int = 0
 var _prediction_dirty := false
 var _prediction_refresh_cooldown_seconds := 0.0
 var _prediction_compute_count := 0
+var _wind_transition_was_active := false
 
 
 func _ready() -> void:
@@ -88,10 +91,21 @@ func _ready() -> void:
 	):
 		push_error("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
 		return
-	_replay_presentation.configure(_replay_recorder, _stage_controller, _camera_director)
+	_replay_presentation.configure(
+		_replay_recorder,
+		_stage_controller,
+		_camera_director,
+		_wind_controller
+	)
 	_aim_input.configure(_cannon, _stage_controller, _camera_director)
+	_cannon.configure_prediction_refresh(_recompute_prediction)
 	_recompute_prediction()
-	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
+	_replay_recorder.start_attempt(
+		stage_data,
+		_generated_layout.accepted_seed,
+		_generated_layout,
+		_wind_controller.schedule_identity()
+	)
 	_agent_api.configure(
 		stage_data,
 		_stage_controller,
@@ -100,7 +114,8 @@ func _ready() -> void:
 		_projectile_manager,
 		_camera_director,
 		_mechanisms,
-		_generated_layout
+		_generated_layout,
+		_wind_controller
 	)
 	_debug_overlay.configure(
 		stage_data,
@@ -114,9 +129,9 @@ func _ready() -> void:
 		_replay_recorder,
 		_generated_layout
 	)
-	_debug_overlay.replay_last_shot_requested.connect(_start_last_shot_replay)
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
+	_on_wind_snapshot_changed(_wind_controller.current_snapshot())
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
 
 
@@ -194,6 +209,19 @@ func _build_stage_world() -> bool:
 		stage_data.terrain_center.y
 	)
 	_projectile_manager.configure_terrain(_terrain_surface)
+	if stage_data.wind_profile == null or not _wind_controller.configure(
+		stage_data.wind_profile,
+		_generated_layout.accepted_seed
+	):
+		push_error("GameplayScene requires a valid stage wind profile.")
+		return false
+	_projectile_manager.configure_wind(_wind_controller, stage_data.wind_profile)
+	_wind_debris.configure(
+		stage_data,
+		_terrain_surface,
+		_wind_controller,
+		_generated_layout.accepted_seed
+	)
 	_cannon.global_transform = stage_data.cannon_transform
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
@@ -249,6 +277,13 @@ func _connect_systems() -> void:
 	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
 	_projectile_manager.surface_paint_sweep_ready.connect(_paint_system.queue_surface_paint_sweep)
 	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
+	_projectile_manager.valid_top_traversed.connect(_on_valid_top_traversed)
+	_projectile_manager.valid_top_exited.connect(_mechanism_resolver.clear_projectile)
+	_projectile_manager.projectile_motion_state_changed.connect(_on_projectile_motion_state_changed)
+	_projectile_manager.projectile_woke.connect(_on_projectile_woke)
+	_projectile_manager.projectile_terrain_recovered.connect(_on_projectile_terrain_recovered)
+	_projectile_manager.projectile_stopped.connect(_on_projectile_stopped)
+	_projectile_manager.resident_activity_changed.connect(_hud.update_resident_activity)
 	_paint_system.coverage_changed.connect(_hud.update_coverage)
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
@@ -259,11 +294,15 @@ func _connect_systems() -> void:
 	_stage_controller.aim_action_accepted.connect(_on_aim_action_accepted)
 	_stage_controller.fire_action_accepted.connect(_on_fire_action_accepted)
 	_stage_controller.restart_action_accepted.connect(_on_restart_action_accepted)
-	_stage_controller.stage_cleared.connect(_on_stage_cleared)
-	_stage_controller.stage_failed.connect(_on_stage_failed)
-	_camera_director.interaction_mode_changed.connect(_hud.set_interaction_mode)
+	_stage_controller.finish_action_accepted.connect(_on_finish_action_accepted)
+	_stage_controller.stage_clock_started.connect(func(_duration_ticks: int) -> void: _wind_controller.start())
+	_stage_controller.stage_clock_changed.connect(_on_stage_clock_changed)
+	_stage_controller.stage_finished.connect(_on_stage_finished)
+	_wind_controller.snapshot_changed.connect(_on_wind_snapshot_changed)
+	_camera_director.interaction_mode_changed.connect(_on_interaction_mode_changed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
+	_hud.finish_requested.connect(func() -> void: _stage_controller.finish_stage(StageController.ActionOrigin.HUMAN))
 	_hud.power_step_requested.connect(_aim_input.adjust_power_button)
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false, StageController.ActionOrigin.HUMAN))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN))
@@ -292,9 +331,17 @@ func _recompute_prediction() -> void:
 	var prediction := TrajectoryPredictor.predict(
 		get_world_3d().direct_space_state,
 		_cannon,
-		_generated_layout.containment.containment_bounds
+		_generated_layout.containment.containment_bounds,
+		stage_data.wind_profile,
+		_generated_layout.accepted_seed,
+		_wind_controller.elapsed_ticks()
 	)
-	_cannon.set_prediction(prediction, prediction_aim_key)
+	_cannon.set_prediction(
+		prediction,
+		prediction_aim_key,
+		_wind_controller.schedule_identity(),
+		_wind_controller.elapsed_ticks()
+	)
 	_prediction_dirty = false
 	_prediction_refresh_cooldown_seconds = PREDICTION_REFRESH_INTERVAL_SECONDS
 
@@ -303,14 +350,9 @@ func _on_transient_splash_requested(_projectile: PaintProjectile, contact: Proje
 	_presentation_effects.splash(contact.world_position, clampf(contact.relative_normal_speed / 32.0, 0.7, 1.5))
 	_audio_cue(&"impact")
 	_camera_director.add_impact_shake(clampf(contact.relative_normal_speed / 80.0, 0.12, 0.42))
-	_shot_has_impacted = true
-	if _setting_bool("fast_progress", true):
-		Engine.time_scale = 2.0
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
-	_shot_has_impacted = false
-	Engine.time_scale = 2.0 if _setting_bool("fast_progress", true) else 1.0
 	_presentation_effects.muzzle_flash(_cannon.get_launch_origin())
 	_audio_cue(&"fire")
 
@@ -338,8 +380,72 @@ func _on_fire_action_accepted(origin: int) -> void:
 
 
 func _on_restart_action_accepted(origin: int) -> void:
+	_wind_controller.reset()
+	_wind_transition_was_active = false
+	_mechanism_resolver.clear_all()
 	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
 		_replay_recorder.record_restart()
+
+
+func _on_finish_action_accepted(origin: int) -> void:
+	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
+		_replay_recorder.record_finish(StageController.FINISH_REASON_MANUAL)
+
+
+func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void:
+	_hud.update_clock(_stage_controller.clock_snapshot())
+
+
+func _on_wind_snapshot_changed(snapshot: WindSnapshot) -> void:
+	_prediction_dirty = true
+	if snapshot == null:
+		return
+	var current_projection := _wind_hud_projection(snapshot.acceleration)
+	var next_projection := _wind_hud_projection(snapshot.next_acceleration)
+	_hud.update_wind(
+		snapshot,
+		current_projection.screen_direction,
+		current_projection.depth_cue,
+		next_projection.screen_direction,
+		next_projection.depth_cue
+	)
+	var transition_started := snapshot.is_transitioning() and not _wind_transition_was_active
+	_wind_transition_was_active = snapshot.is_transitioning()
+	var observation := _live_attempt_observation()
+	if transition_started and observation != null:
+		observation.record_wind_transition(snapshot)
+
+
+func _on_stage_finished(result: Dictionary) -> void:
+	_wind_controller.stop()
+	_mechanism_resolver.clear_all()
+	var final_coverage := float(result.get("coverage", 0.0))
+	var stars := _stars_for_coverage(final_coverage)
+	var game_state := get_node_or_null("/root/GameState")
+	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) \
+			if game_state != null else 0.0
+	_hud.show_coverage_result_snapshot(result, stars, previous_best)
+	if _replay_presentation.active:
+		return
+	_replay_recorder.store_final_result(result)
+	_presentation_effects.clear_glint(
+		stage_data.terrain_center
+				+ Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0)
+	)
+	_audio_cue(&"clear")
+	if game_state != null:
+		var ticks_per_second := maxi(Engine.physics_ticks_per_second, 1)
+		game_state.complete_stage(
+			stage_data.stage_id,
+			final_coverage,
+			stars,
+			true,
+			{
+				"elapsed_seconds": float(result.get("elapsed_ticks", 0)) / float(ticks_per_second),
+				"shots_used": int(result.get("shots_used", 0)),
+				"finish_reason": String(result.get("finish_reason", "")),
+			}
+		)
 
 
 func _on_state_changed(current_state: int, previous_state: int) -> void:
@@ -362,27 +468,10 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			# or locked into aim. All other entries to Aiming start in Aim Lock.
 			if previous_state != StageController.State.PAUSED:
 				_camera_director.set_mode(CameraDirector.Mode.AIMING)
-		StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED:
+		StageController.State.FINISHING, StageController.State.RESULT, \
+				StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
-
-
-func _on_stage_cleared(final_coverage: float, shots_used: int) -> void:
-	var stars := _stars_for_coverage(final_coverage)
-	var game_state := get_node_or_null("/root/GameState")
-	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) if game_state != null else 0.0
-	_hud.show_clear(final_coverage, shots_used, stars, previous_best)
-	_presentation_effects.clear_glint(stage_data.terrain_center + Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0))
-	_audio_cue(&"clear")
-	if game_state != null and not _replay_presentation.active:
-		game_state.complete_stage(stage_data.stage_id, final_coverage, stars)
-
-
-func _on_stage_failed(final_coverage: float, missing: float) -> void:
-	var game_state := get_node_or_null("/root/GameState")
-	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) if game_state != null else 0.0
-	_hud.show_failure(final_coverage, missing, previous_best)
-	_audio_cue(&"fail")
 
 
 func _on_interaction_mode_requested(mode: int) -> void:
@@ -393,55 +482,59 @@ func _on_interaction_mode_requested(mode: int) -> void:
 	_camera_director.set_interaction_mode(mode as CameraDirector.InteractionMode)
 
 
+func _on_interaction_mode_changed(mode: int) -> void:
+	_hud.set_interaction_mode(mode as CameraDirector.InteractionMode)
+	if not _replay_presentation.active and not _stage_controller.action_origin_is_locked():
+		_replay_recorder.record_camera(mode)
+
+
 func _spawn_mechanisms() -> void:
 	_mechanisms.clear()
 	var placements: Array[MechanismPlacement] = _generated_layout.mechanism_placements
 	for placement in placements:
 		var mechanism_scene: PackedScene
-		match placement.mechanism_data.kind:
+		match placement.mechanism_data.canonical_kind():
 			MechanismData.Kind.BURST:
 				mechanism_scene = BURST_SCENE
 			MechanismData.Kind.SPLITTER:
 				mechanism_scene = SPLITTER_SCENE
-			MechanismData.Kind.BUMPER:
-				mechanism_scene = BUMPER_SCENE
-		var mechanism := mechanism_scene.instantiate() as GimmickBase
-		mechanism.name = MechanismData.Kind.keys()[placement.mechanism_data.kind].capitalize()
+			MechanismData.Kind.UPHILL_REBOUND:
+				mechanism_scene = UPHILL_REBOUND_SCENE
+		var mechanism := mechanism_scene.instantiate() as TerrainGlyphMechanism
+		mechanism.name = "%s_%s" % [
+			MechanismData.Kind.keys()[int(placement.mechanism_data.canonical_kind())].capitalize(),
+			String(placement.anchor_id),
+		]
+		mechanism.set_meta("anchor_id", placement.anchor_id)
 		mechanism.data = placement.mechanism_data
 		var world_transform := placement.local_transform
 		world_transform.origin += stage_data.terrain_center
 		mechanism.transform = world_transform
-		mechanism.configure(_projectile_manager, _paint_system)
+		mechanism.configure(_projectile_manager, _paint_system, _terrain_surface)
 		_mechanism_root.add_child(mechanism)
 		if mechanism is SplitterNode:
 			var route_targets := PackedVector3Array()
-			for required_role in mechanism.data.child_target_route_roles:
-				var route_index := _generated_layout.route_graph.route_index_for_role(required_role)
-				assert(route_index >= 0, "Splitter child target role must exist in the accepted layout.")
-				var route_target := _generated_layout.route_graph.route_position(
-					route_index, mechanism.data.child_target_t
-				)
-				route_targets.append(stage_data.terrain_center + Vector3(
-					route_target.x,
-					_generated_layout.height_at_local(route_target.x, route_target.z),
-					route_target.z
-				))
+			for route_target in placement.splitter_route_targets:
+				route_targets.append(stage_data.terrain_center + route_target)
 			mechanism.configure_route_targets(route_targets, placement.downstream_tangent)
-		elif mechanism is BumperNode:
-			mechanism.configure_downstream_tangent(placement.downstream_tangent)
+		elif mechanism is UphillReboundNode:
+			mechanism.configure_uphill_tangent(placement.uphill_tangent)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
 		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)
+	_mechanism_resolver.configure(_terrain_surface)
+	for mechanism in _mechanisms:
+		_mechanism_resolver.register_glyph(mechanism)
 
-func _on_mechanism_selected(mechanism: GimmickBase) -> void:
+func _on_mechanism_selected(mechanism: TerrainGlyphMechanism) -> void:
 	if _stage_controller.current_state == StageController.State.BRIEFING:
 		_camera_director.focus_briefing_target(mechanism.global_position)
 		_hud.show_mechanism_brief(mechanism.data.kind)
 
 
 func _on_mechanism_activated(
-		mechanism: GimmickBase,
-		_projectile: PaintProjectile,
+		mechanism: TerrainGlyphMechanism,
+		projectile: PaintProjectile,
 		kind: MechanismData.Kind
 ) -> void:
 	var payload := {
@@ -453,6 +546,14 @@ func _on_mechanism_activated(
 	_presentation_effects.mechanism_burst(mechanism.global_position)
 	_audio_cue(&"mechanism")
 	_camera_director.add_impact_shake(0.32)
+	var observation := _live_attempt_observation()
+	if observation != null and projectile != null:
+		observation.record_mechanism_activation(
+			projectile.shot_id,
+			projectile.spawn_ordinal,
+			StringName(mechanism.get_meta("anchor_id", mechanism.name)),
+			int(kind)
+		)
 
 
 func _set_mechanism_labels_visible(visible: bool) -> void:
@@ -475,18 +576,100 @@ func _start_replay() -> void:
 	_replay_presentation.start(saved_attempt)
 
 
-func _start_last_shot_replay() -> void:
-	var saved_attempt := _replay_recorder.last_shot_attempt()
-	if not saved_attempt.is_empty():
-		_replay_presentation.start(saved_attempt)
-
-
 func _on_replay_exited() -> void:
 	_replay_recorder.start_attempt(
 		stage_data,
-		stage_data.stage_number * 1000 + stage_data.stage_version,
-		_generated_layout
+		_generated_layout.accepted_seed,
+		_generated_layout,
+		_wind_controller.schedule_identity()
 	)
+
+
+func _on_valid_top_traversed(
+		projectile: PaintProjectile,
+		contact: ProjectileContact,
+		base_paint_committed: bool
+) -> void:
+	_mechanism_resolver.resolve_after_base_paint(projectile, contact, base_paint_committed)
+
+
+func _on_projectile_motion_state_changed(
+		projectile: PaintProjectile,
+		_previous_state: int,
+		current_state: int
+) -> void:
+	if current_state == PaintProjectile.MotionState.MOVING_AIRBORNE:
+		_mechanism_resolver.clear_projectile(projectile)
+	var observation := _live_attempt_observation()
+	if observation != null and current_state == PaintProjectile.MotionState.RESTING_ON_TERRAIN:
+		observation.record_projectile_rest(projectile.shot_id, projectile.spawn_ordinal)
+
+
+func _on_projectile_woke(
+		projectile: PaintProjectile,
+		reason: StringName,
+		strong_episode_id: int
+) -> void:
+	var observation := _live_attempt_observation()
+	if observation != null:
+		observation.record_projectile_wake(
+			projectile.shot_id,
+			projectile.spawn_ordinal,
+			reason,
+			strong_episode_id
+		)
+
+
+func _on_projectile_terrain_recovered(
+		projectile: PaintProjectile,
+		_physics_tick: int,
+		_correction_distance: float
+) -> void:
+	var observation := _live_attempt_observation()
+	if observation != null:
+		observation.record_terrain_recovery(
+			projectile.shot_id,
+			projectile.spawn_ordinal,
+			&"surface_clearance"
+		)
+
+
+func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
+	_mechanism_resolver.clear_projectile(projectile)
+	var observation := _live_attempt_observation()
+	if observation != null:
+		observation.record_projectile_terminal(
+			projectile.shot_id,
+			projectile.spawn_ordinal,
+			reason
+		)
+
+
+func _live_attempt_observation() -> AttemptObservation:
+	if _replay_presentation.active or _stage_controller.action_origin_is_locked():
+		return null
+	return _replay_recorder.current_attempt_observation()
+
+
+func _wind_hud_projection(world_direction: Vector3) -> Dictionary:
+	if world_direction.is_zero_approx() or _camera == null:
+		return {
+			"screen_direction": Vector2.ZERO,
+			"depth_cue": RunStatusCard.DepthCue.NONE,
+		}
+	var local_direction := _camera.global_basis.inverse() * world_direction.normalized()
+	var screen_direction := Vector2(local_direction.x, -local_direction.y)
+	var depth_cue := RunStatusCard.DepthCue.NONE
+	if screen_direction.length() < 0.35 and absf(local_direction.z) >= 0.35:
+		depth_cue = RunStatusCard.DepthCue.INTO_SCREEN \
+				if local_direction.z < 0.0 else RunStatusCard.DepthCue.OUT_OF_SCREEN
+		screen_direction = Vector2.ZERO
+	elif not screen_direction.is_zero_approx():
+		screen_direction = screen_direction.normalized()
+	return {
+		"screen_direction": screen_direction,
+		"depth_cue": depth_cue,
+	}
 
 
 func _request_navigation(destination: StringName) -> void:

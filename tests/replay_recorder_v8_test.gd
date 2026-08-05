@@ -74,14 +74,6 @@ func _run_checks() -> void:
 		not loaded.load_attempt(mismatched_order),
 		"replay action order must agree with the attempt observation"
 	)
-	var last_shot := recorder.last_shot_attempt()
-	_assert_true(
-		loaded.load_attempt(last_shot) \
-				and last_shot.expected_observations.size() == 1 \
-				and last_shot.final_result.is_empty(),
-		"last-shot replay must remain an initial-flight diagnostic, not stage authority"
-	)
-
 	recorder.queue_free()
 	loaded.queue_free()
 	await process_frame

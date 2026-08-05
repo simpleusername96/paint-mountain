@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -18,6 +18,8 @@
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
 [ext_resource type="Script" path="res://src/replay/replay_presentation_controller.gd" id="17_replay_presentation"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/backstop_environment.tscn" id="18_containment"]
+[ext_resource type="Script" path="res://src/wind/wind_controller.gd" id="19_wind"]
+[ext_resource type="Script" path="res://src/wind/wind_debris_field.gd" id="20_wind_debris"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.78, 0.84, 0.91, 1)
@@ -118,6 +120,14 @@ script = ExtResource("6_paint")
 [node name="StageController" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("7_stage_controller")
+
+[node name="WindController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("19_wind")
+
+[node name="WindDebrisField" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("20_wind_debris")
 
 [node name="CameraDirector" type="Node" parent="."]
 unique_name_in_owner = true
