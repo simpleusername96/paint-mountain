@@ -318,6 +318,7 @@ func placement_checksum() -> int:
 		if placement == null or placement.mechanism_data == null:
 			return 0
 		hash = _hash_int(hash, int(placement.mechanism_data.kind))
+		hash = _hash_string_name(hash, placement.anchor_id)
 		hash = _hash_int(hash, placement.route_index)
 		hash = _hash_int(hash, int(placement.route_role))
 		hash = _hash_int(hash, roundi(placement.route_t * 1000000.0))
@@ -328,6 +329,16 @@ func placement_checksum() -> int:
 			placement.downstream_tangent.x,
 			placement.downstream_tangent.y,
 			placement.downstream_tangent.z,
+		]:
+			hash = _hash_int(hash, roundi(float(component) * 1000.0))
+		hash = _hash_int(hash, placement.splitter_route_targets.size())
+		for target in placement.splitter_route_targets:
+			for component in [target.x, target.y, target.z]:
+				hash = _hash_int(hash, roundi(float(component) * 1000.0))
+		for component in [
+			placement.uphill_tangent.x,
+			placement.uphill_tangent.y,
+			placement.uphill_tangent.z,
 		]:
 			hash = _hash_int(hash, roundi(float(component) * 1000.0))
 	return hash
@@ -388,5 +399,14 @@ func _target_pixel_center_local(pixel_index: int) -> Vector2:
 static func _hash_int(hash: int, value: int) -> int:
 	for shift in [0, 8, 16, 24]:
 		hash = hash ^ ((value >> shift) & 0xff)
+		hash = int((hash * CHECKSUM_PRIME) & 0xffffffff)
+	return hash
+
+
+static func _hash_string_name(hash: int, value: StringName) -> int:
+	var bytes := String(value).to_utf8_buffer()
+	hash = _hash_int(hash, bytes.size())
+	for byte in bytes:
+		hash = hash ^ byte
 		hash = int((hash * CHECKSUM_PRIME) & 0xffffffff)
 	return hash

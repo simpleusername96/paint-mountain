@@ -18,7 +18,7 @@ const STAGE_COUNT := 30
 # these content-addressed candidates directly; it never searches or silently
 # substitutes a different mountain after the player enters a stage.
 const ACCEPTED_CANDIDATE_INDEX_BY_STAGE := {
-	3: 1,
+	3: 3,
 	4: 0, 5: 0, 6: 15, 7: 0, 8: 0, 9: 1, 10: 0,
 	11: 1, 12: 0, 13: 0, 14: 1, 15: 0, 16: 3, 17: 1,
 	18: 1, 19: 1, 20: 0, 21: 0, 22: 1, 23: 8, 24: 1,
@@ -100,6 +100,8 @@ static func station_count_for(stage_number: int) -> int:
 
 static func route_count_for(stage_number: int) -> int:
 	var n := clampi(stage_number, 1, STAGE_COUNT)
+	if n == 3:
+		return 3
 	return 1 if n <= 7 else (2 if n <= 17 else 3)
 
 
@@ -149,10 +151,13 @@ static func mechanism_count_for(stage_number: int) -> int:
 static func difficulty_score_for(stage_number: int) -> float:
 	var n := clampi(stage_number, 1, STAGE_COUNT)
 	var size := terrain_size_for(n)
+	# Stage 03's wide three-route fan is a Splitter teaching witness, not the
+	# late-game route-density tier. Keep the authored difficulty ladder gradual.
+	var difficulty_route_count := 1 if n == 3 else route_count_for(n)
 	return 0.05 * (size.x - 180.0) \
 			+ 0.05 * (size.y - 120.0) \
 			+ 0.10 * (nominal_peak_for(n) - 72.0) \
-			+ 4.0 * (route_count_for(n) - 1) \
+			+ 4.0 * (difficulty_route_count - 1) \
 			+ 2.0 * reversal_count_for(n) \
 			+ 0.8 * (ridge_count_for(n) - 3) \
 			+ pass_count_for(n) \

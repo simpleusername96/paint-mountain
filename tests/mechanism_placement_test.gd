@@ -24,6 +24,7 @@ func _run_checks() -> void:
 	_assert_true(repeated_placements.size() == placements.size(), "generic assignment must be deterministic")
 	if placements.size() == 3 and repeated_placements.size() == 3:
 		_assert_placement_contract(first, placements, repeated_placements)
+		_assert_placement_checksum_contract(first, placements)
 	_assert_flat_uphill_is_rejected()
 	_assert_count_cap()
 	print("Phase 4 generic glyph placement passed")
@@ -75,6 +76,42 @@ func _assert_placement_contract(
 		var start_height := layout.height_at_local(uphill.local_xz.x, uphill.local_xz.y)
 		var probe := uphill.local_xz + Vector2(uphill.uphill_tangent.x, uphill.uphill_tangent.z).normalized() * UPHILL_DATA.uphill_sample_distance
 		_assert_true(layout.height_at_local(probe.x, probe.y) > start_height, "stored uphill tangent must point toward higher terrain")
+
+
+func _assert_placement_checksum_contract(
+		layout: GeneratedStageLayout,
+		placements: Array[MechanismPlacement]
+) -> void:
+	layout.mechanism_placements = placements
+	var baseline := layout.placement_checksum()
+	_assert_true(baseline != 0, "complete glyph placement data must produce a checksum")
+
+	var anchor := placements[0]
+	var original_anchor_id := anchor.anchor_id
+	anchor.anchor_id = StringName("%s/changed" % String(original_anchor_id))
+	_assert_true(layout.placement_checksum() != baseline, "anchor identity must participate in the placement checksum")
+	anchor.anchor_id = original_anchor_id
+
+	var splitter: MechanismPlacement
+	var uphill: MechanismPlacement
+	for placement in placements:
+		if placement.mechanism_data.canonical_kind() == MechanismData.Kind.SPLITTER:
+			splitter = placement
+		elif placement.mechanism_data.canonical_kind() == MechanismData.Kind.UPHILL_REBOUND:
+			uphill = placement
+	if splitter != null:
+		var original_targets := splitter.splitter_route_targets.duplicate()
+		var changed_targets := original_targets.duplicate()
+		changed_targets[0] += Vector3(1.0, 0.0, 0.0)
+		splitter.splitter_route_targets = changed_targets
+		_assert_true(layout.placement_checksum() != baseline, "Splitter route witnesses must participate in the placement checksum")
+		splitter.splitter_route_targets = original_targets
+	if uphill != null:
+		var original_tangent := uphill.uphill_tangent
+		uphill.uphill_tangent = -original_tangent
+		_assert_true(layout.placement_checksum() != baseline, "uphill tangent must participate in the placement checksum")
+		uphill.uphill_tangent = original_tangent
+	_assert_true(layout.placement_checksum() == baseline, "restored glyph placement data must restore the checksum")
 
 
 func _assert_flat_uphill_is_rejected() -> void:

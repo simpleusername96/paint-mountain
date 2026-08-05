@@ -6,8 +6,13 @@ extends SceneTree
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
 const STAGING_PATH := "res://resources/stages/.catalog-v7.staging.tres"
-const BUNDLE_FORMAT_VERSION := 2
+const BUNDLE_FORMAT_VERSION := 3
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
+const BURST_DATA: MechanismData = preload("res://resources/mechanisms/burst_node.tres")
+const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitter_node.tres")
+const UPHILL_REBOUND_DATA: MechanismData = preload(
+	"res://resources/mechanisms/uphill_rebound_node.tres"
+)
 const SOURCE_STAGE_PATHS := [
 	"res://resources/stages/first_descent.tres",
 	"res://resources/stages/burst_basin.tres",
@@ -99,9 +104,9 @@ func _manifest_stage_descriptor(stage: StageData) -> String:
 		str(route.mechanism_pad_ts),
 		str(route.mechanism_pad_radii),
 	])
-	var loadout_kinds: Array[int] = []
+	var loadout_parts: Array[String] = []
 	for mechanism in stage.mechanism_loadout:
-		loadout_kinds.append(mechanism.kind if mechanism != null else -1)
+		loadout_parts.append(_mechanism_manifest_descriptor(mechanism))
 	var stage_line := "|".join([
 		str(stage.stage_id), str(stage.stage_number), str(stage.stage_version), str(stage.terrain_seed),
 		str(stage.terrain_center), str(stage.terrain_size), str(stage.target_coverage), str(stage.maximum_shots),
@@ -113,7 +118,24 @@ func _manifest_stage_descriptor(stage: StageData) -> String:
 	return "\n".join([
 		stage_line,
 		"routes=" + "|".join(route_parts),
-		"loadout=" + str(loadout_kinds),
+		"loadout=" + "|".join(loadout_parts),
+	])
+
+
+func _mechanism_manifest_descriptor(mechanism: MechanismData) -> String:
+	if mechanism == null:
+		return "null"
+	return ",".join([
+		str(int(mechanism.canonical_kind())), str(mechanism.glyph_radius),
+		str(mechanism.maximum_charges), str(mechanism.cooldown_seconds),
+		str(mechanism.burst_radius), str(mechanism.child_count),
+		str(mechanism.maximum_split_generation), str(mechanism.child_radius_multiplier),
+		str(mechanism.child_speed_multiplier), str(mechanism.child_minimum_route_speed),
+		str(mechanism.child_target_lift), str(mechanism.child_target_t),
+		str(mechanism.child_target_route_roles), str(mechanism.uphill_sample_distance),
+		str(mechanism.minimum_uphill_rise), str(mechanism.rebound_speed_multiplier),
+		str(mechanism.rebound_minimum_speed), str(mechanism.rebound_maximum_speed),
+		str(mechanism.rebound_lift_ratio),
 	])
 
 
@@ -172,7 +194,10 @@ func _materialize_profile(
 	profile.base_seed = terrain_seed
 	profile.fallback_seed = StageProgressionData.candidate_seed_for(stage_number, 31)
 	profile.nominal_peak = StageProgressionData.nominal_peak_for(stage_number)
-	profile.accepted_height_range = Vector2(profile.nominal_peak - 4.0, profile.nominal_peak + 10.0)
+	profile.accepted_height_range = Vector2(
+		profile.nominal_peak - (12.0 if stage_number == 3 else 4.0),
+		profile.nominal_peak + 10.0
+	)
 	profile.ridge_count = StageProgressionData.ridge_count_for(stage_number)
 	profile.basin_count = StageProgressionData.basin_count_for(stage_number)
 	profile.pass_count = StageProgressionData.pass_count_for(stage_number)
@@ -186,7 +211,7 @@ func _materialize_profile(
 		profile.route_core_p95_slope_max = 60.0
 		profile.corridor_lip_maximum_slope = 50.0
 		profile.generation_contract = _materialize_contract(profile.generation_contract, stage_number)
-		profile.routes = [_intro_route(stage_number, profile.route_width)]
+		profile.routes = _intro_routes(stage_number, profile.route_width)
 	else:
 		profile.generation_contract = profile.generation_contract.duplicate(true) as StageGenerationContract
 		profile.generation_contract.cell_count = StageProgressionData.cell_count_for(stage_number)
@@ -215,32 +240,101 @@ func _materialize_contract(source: StageGenerationContract, stage_number: int) -
 	return contract
 
 
-func _intro_route(stage_number: int, width: float) -> StageRouteProfile:
+static func _intro_routes(stage_number: int, width: float) -> Array[StageRouteProfile]:
+	var routes: Array[StageRouteProfile] = []
+	if stage_number <= 2:
+		routes.append(_intro_route(
+			stage_number,
+			width,
+			StageRouteProfile.Role.PRIMARY,
+			0.0
+		))
+		return routes
+	# Splitter's three children need three distinct, authoritative route roles.
+	# Stage 03 teaches that fan-out explicitly; later stages keep their reviewed
+	# catalog profiles rather than inheriting this tutorial topology.
+	routes.append(_intro_route(
+		stage_number,
+		width,
+		StageRouteProfile.Role.SAFE,
+		-48.0
+	))
+	routes.append(_intro_route(
+		stage_number,
+		width,
+		StageRouteProfile.Role.SPLITTER,
+		0.0,
+		MechanismData.Kind.SPLITTER,
+		0.42,
+		10.0
+	))
+	routes.append(_intro_route(
+		stage_number,
+		width,
+		StageRouteProfile.Role.BUMPER,
+		48.0,
+		MechanismData.Kind.UPHILL_REBOUND,
+		0.76,
+		1.5
+	))
+	return routes
+
+
+static func _intro_route(
+		stage_number: int,
+		width: float,
+		role: StageRouteProfile.Role,
+		endpoint_x: float,
+		mechanism_kind: int = -1,
+		mechanism_pad_t: float = -1.0,
+		mechanism_pad_radius: float = 0.0
+) -> StageRouteProfile:
 	var route := StageRouteProfile.new()
-	route.role = StageRouteProfile.Role.PRIMARY
-	route.endpoint_x = 0.0
+	route.role = role
+	route.endpoint_x = endpoint_x
 	route.width = width
 	route.grade_signs = PackedInt32Array([-1, -1, -1, -1, -1, -1, -1])
 	route.drop_range = Vector2(5.5 + float(stage_number - 1) * 0.35, 7.0 + float(stage_number - 1) * 0.45)
 	route.rise_range = Vector2.ZERO
 	route.lateral_bend_range = Vector2(-8.0 - float(stage_number), 8.0 + float(stage_number))
+	if stage_number == 3:
+		# Keep the three tutorial branches readable and inside the per-station
+		# movement limit. The route width, not this legacy pad radius, supports
+		# the terrain-conforming glyph footprint.
+		route.lateral_bend_range = Vector2(-4.0, 4.0)
 	if stage_number == 2:
 		route.mechanism_kinds = PackedInt32Array([MechanismData.Kind.BURST])
 		route.mechanism_pad_ts = PackedFloat32Array([0.54])
 		route.mechanism_pad_radii = PackedFloat32Array([8.0])
-	elif stage_number == 3:
-		route.mechanism_kinds = PackedInt32Array([MechanismData.Kind.SPLITTER, MechanismData.Kind.BUMPER])
-		route.mechanism_pad_ts = PackedFloat32Array([0.42, 0.76])
-		route.mechanism_pad_radii = PackedFloat32Array([10.0, 9.0])
+	elif mechanism_kind >= 0:
+		route.mechanism_kinds = PackedInt32Array([mechanism_kind])
+		route.mechanism_pad_ts = PackedFloat32Array([mechanism_pad_t])
+		route.mechanism_pad_radii = PackedFloat32Array([mechanism_pad_radius])
 	return route
 
 
-func _materialize_mechanisms(source: Array[MechanismData], stage_number: int) -> Array[MechanismData]:
+static func _materialize_mechanisms(source: Array[MechanismData], stage_number: int) -> Array[MechanismData]:
 	var result: Array[MechanismData] = []
 	var desired := StageProgressionData.mechanism_count_for(stage_number)
 	for index in range(mini(desired, source.size())):
-		result.append(source[index].duplicate(true) as MechanismData)
+		var source_data := source[index]
+		if source_data == null:
+			continue
+		var canonical := _canonical_mechanism_data(source_data.canonical_kind())
+		if canonical != null:
+			result.append(canonical.duplicate(true) as MechanismData)
 	return result
+
+
+static func _canonical_mechanism_data(kind: MechanismData.Kind) -> MechanismData:
+	match int(kind):
+		int(MechanismData.Kind.BURST):
+			return BURST_DATA
+		int(MechanismData.Kind.SPLITTER):
+			return SPLITTER_DATA
+		int(MechanismData.Kind.UPHILL_REBOUND):
+			return UPHILL_REBOUND_DATA
+	return null
 
 
 func _sha256(value: String) -> String:

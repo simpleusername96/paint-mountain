@@ -166,8 +166,8 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 		return false
 	if not _validate_routes(profile, layout):
 		return false
-	if not _validate_pads(layout):
-		layout.metrics["rejection"] = "mechanism_pad"
+	if not _validate_glyph_anchors(layout):
+		layout.metrics["rejection"] = "mechanism_anchor"
 		return false
 	var footprint_ratio: float = ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER.route_footprint_ratio(
 		layout.route_graph, profile.generation_contract
@@ -244,19 +244,13 @@ static func _validate_routes(profile: StageGenerationProfile, layout: GeneratedS
 	return true
 
 
-static func _validate_pads(layout: GeneratedStageLayout) -> bool:
+static func _validate_glyph_anchors(layout: GeneratedStageLayout) -> bool:
 	for pad in layout.route_graph.pad_nodes():
-		var center := pad.position
-		# Stay inside the fixed 65% pad core on the exact shared triangles.
-		var radius := pad.pad_radius * 0.30
-		for sample_index in range(17):
-			var point := Vector2(center.x, center.z)
-			if sample_index > 0:
-				var angle := TAU * float(sample_index - 1) / 16.0
-				point += Vector2(cos(angle), sin(angle)) * radius
-			var slope := _local_slope_degrees(layout, point, 0.25)
-			if slope > 28.0:
-				return false
+		# Pads are deterministic anchor metadata now, not physical platforms.
+		# The glyph planner below validates the complete typed footprint, slope,
+		# normal variation, and kind-specific witnesses on the real surface.
+		if layout.surface_sample_at_local(pad.position.x, pad.position.z, false).is_empty():
+			return false
 	return true
 
 
@@ -376,25 +370,6 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 	return result
 
 
-static func _local_slope_degrees(layout: GeneratedStageLayout, point: Vector2, step: float) -> float:
-	var left := layout.height_at_local(point.x - step, point.y)
-	var right := layout.height_at_local(point.x + step, point.y)
-	var back := layout.height_at_local(point.x, point.y - step)
-	var front := layout.height_at_local(point.x, point.y + step)
-	var normal := Vector3(left - right, 2.0 * step, back - front).normalized()
-	return rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
-
-
-static func _mechanism_exclusion_radius(kind: MechanismData.Kind) -> float:
-	match kind:
-		MechanismData.Kind.BURST:
-			return 2.8
-		MechanismData.Kind.SPLITTER:
-			return 2.75
-		_:
-			return 2.9
-
-
 static func _decoration_visual_radius(model_id: StringName, uniform_scale: float) -> float:
 	# Conservative XZ enclosing radii for the approved imported meshes. Keeping
 	# this geometry contract beside placement avoids loading visual assets in the
@@ -424,13 +399,11 @@ static func _decoration_footprint_is_clear(
 			<= nearest_edge.width * 0.5 \
 					+ minf(support_distance, 1.5) + visual_radius:
 		return false
-	for pad in layout.route_graph.pad_nodes():
-		if center.distance_to(Vector2(pad.position.x, pad.position.z)) \
-				<= pad.pad_radius + 2.0 + visual_radius:
-			return false
 	for mechanism in layout.mechanism_placements:
+		if mechanism == null or mechanism.mechanism_data == null:
+			continue
 		if center.distance_to(mechanism.local_xz) \
-				<= _mechanism_exclusion_radius(mechanism.mechanism_data.kind) \
+				<= mechanism.mechanism_data.glyph_radius \
 						+ 2.0 + visual_radius:
 			return false
 	return _circle_is_outside_target_mask(
