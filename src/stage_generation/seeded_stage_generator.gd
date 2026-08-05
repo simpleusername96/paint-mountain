@@ -18,9 +18,8 @@ static func generate(
 	if profile == null or not profile.is_valid():
 		push_error("Stage generation profile is invalid.")
 		return null
-	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v7")
-	)
+	var stage_id := stage_data.stage_id if stage_data != null \
+			else StageGenerationProfile.stage_id_from_profile_id(profile.profile_id)
 	# Legacy authored IDs are accepted only at this migration boundary. Once a
 	# canonical catalog entry exists, generation uses that serialized profile and
 	# seed so old save/test fixtures cannot reintroduce runtime template search.
@@ -67,9 +66,8 @@ static func generate_structural_sequence(
 		push_error("Stage generation profile is invalid.")
 		return null
 	var contract := profile.generation_contract
-	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v7")
-	)
+	var stage_id := stage_data.stage_id if stage_data != null \
+			else StageGenerationProfile.stage_id_from_profile_id(profile.profile_id)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	for attempt_index in range(contract.attempt_count):
 		var attempt_seed := int((requested_seed + attempt_index * contract.attempt_seed_stride) & 0x7fffffff)

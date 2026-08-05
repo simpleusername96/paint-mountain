@@ -95,7 +95,9 @@ func _test_stages() -> Array[StageData]:
 	var result: Array[StageData] = []
 	for index in range(4):
 		var profile := StageGenerationProfile.new()
-		profile.profile_id = StringName("test_stage_%02d_v7" % (index + 1))
+		profile.profile_id = StageGenerationProfile.profile_id_for_stage(
+			StringName("test_stage_%02d" % (index + 1))
+		)
 		profile.profile_version = StageGenerationContract.CONTRACT_VERSION
 		profile.base_seed = 1000 + index
 		profile.generation_contract = StageGenerationContract.new()

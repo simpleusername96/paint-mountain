@@ -48,7 +48,7 @@ static func _build_footprint(
 	cells.resize(contract.cell_count.x * contract.cell_count.y)
 	var contour_noise := FastNoiseLite.new()
 	contour_noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v7:%d:footprint" % [String(stage_id), attempt_seed]
+		KEYED_STAGE_SAMPLER.versioned_key(stage_id, attempt_seed, "footprint")
 	) & 0x7fffffff
 	contour_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	contour_noise.frequency = 0.055

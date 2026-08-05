@@ -1,12 +1,12 @@
 extends SceneTree
 
-## Consolidated version-7 progression gate. The default mode is cheap and
+## Consolidated progression gate. The default mode is cheap and
 ## checks the serialized catalog; --full-generation additionally rebuilds all
 ## thirty accepted layouts headlessly for the longer offline acceptance pass.
 
 func _initialize() -> void:
 	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(catalog != null and catalog.is_valid(), "serialized version-7 catalog must be valid")
+	_assert(catalog != null and catalog.is_valid(), "serialized current-version catalog must be valid")
 	_assert(catalog.stage_ids.size() == StageProgressionData.STAGE_COUNT, "catalog must expose thirty numeric stage IDs")
 	_assert(catalog.get_stage(&"first_descent").stage_id == &"stage_01", "legacy first_descent must map to stage_01")
 	_assert(catalog.get_stage(&"burst_basin").stage_id == &"stage_02", "legacy burst_basin must map to stage_02")

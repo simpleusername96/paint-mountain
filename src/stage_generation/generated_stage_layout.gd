@@ -131,7 +131,8 @@ func is_certified() -> bool:
 				and reachability_certificate.summit_witness.is_valid() \
 				and reachability_certificate.summit_minimum_height_margin <= 1.0
 	return summit_matches \
-			and reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v7")) \
+			and reachability_certificate.stage_id \
+					== StageGenerationProfile.stage_id_from_profile_id(profile_id) \
 			and reachability_certificate.profile_version == profile_version \
 			and reachability_certificate.requested_seed == terrain_seed \
 			and reachability_certificate.accepted_seed == accepted_seed \

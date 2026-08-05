@@ -18,6 +18,16 @@ extends Resource
 }
 
 
+static func generated_bundle_root(manifest_hash: String) -> String:
+	return "res://resources/generated_stage_catalogs/%s-%s" % [
+		StageGenerationContract.version_tag(), manifest_hash,
+	]
+
+
+static func generated_bundle_manifest_path(manifest_hash: String) -> String:
+	return "%s/manifest.json" % generated_bundle_root(manifest_hash)
+
+
 func is_valid(require_bundle: bool = true) -> bool:
 	if catalog_version != StageGenerationContract.CONTRACT_VERSION:
 		return false
@@ -40,13 +50,54 @@ func is_valid(require_bundle: bool = true) -> bool:
 			return false
 		if stage.generation_profile == null or not stage.generation_profile.is_valid():
 			return false
+		if StageGenerationProfile.stage_id_from_profile_id(
+			stage.generation_profile.profile_id
+		) != stage_id:
+			return false
+		if not _stage_mechanism_contract_is_valid(stage):
+			return false
 		seen[stage_id] = true
 	return not manifest_sha256.is_empty() \
-			and bundle_manifest_path == "res://resources/generated_stage_catalogs/v7-%s/manifest.json" % manifest_sha256 \
+			and bundle_manifest_path == generated_bundle_manifest_path(manifest_sha256) \
 			and (not require_bundle or FileAccess.file_exists(bundle_manifest_path)) \
 			and legacy_aliases.get("first_descent", "") == "stage_01" \
 			and legacy_aliases.get("burst_basin", "") == "stage_02" \
 			and legacy_aliases.get("split_ridge", "") == "stage_03"
+
+
+static func _stage_mechanism_contract_is_valid(stage: StageData) -> bool:
+	if stage.mechanism_loadout.size() \
+			!= StageProgressionData.mechanism_count_for(stage.stage_number):
+		return false
+	var loadout_kinds := PackedInt32Array()
+	for mechanism in stage.mechanism_loadout:
+		if mechanism == null or not mechanism.is_valid():
+			return false
+		loadout_kinds.append(int(mechanism.canonical_kind()))
+	var slot_kinds := PackedInt32Array()
+	for route in stage.generation_profile.routes:
+		for slot in route.mechanism_slots():
+			slot_kinds.append(int(slot.kind))
+	if slot_kinds != loadout_kinds:
+		return false
+	if stage.stage_number == 1:
+		return loadout_kinds.is_empty()
+	if stage.stage_number == 2:
+		return loadout_kinds == PackedInt32Array([MechanismData.Kind.BURST])
+	if stage.stage_number == 3:
+		return loadout_kinds == PackedInt32Array([
+			MechanismData.Kind.SPLITTER,
+			MechanismData.Kind.UPHILL_REBOUND,
+		]) and stage.generation_profile.routes.size() == 3
+	for kind in loadout_kinds:
+		if kind == MechanismData.Kind.SPLITTER \
+				and stage.generation_profile.routes.size() < 3:
+			return false
+		if stage.stage_number <= 17 \
+				and kind != MechanismData.Kind.BURST \
+				and kind != MechanismData.Kind.UPHILL_REBOUND:
+			return false
+	return true
 
 
 func get_stage(stage_id: StringName) -> StageData:

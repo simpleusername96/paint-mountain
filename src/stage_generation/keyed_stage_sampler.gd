@@ -8,8 +8,14 @@ const FNV_PRIME: int = 16777619
 
 
 static func sample_unit(stage_id: StringName, attempt_seed: int, field_key: String) -> float:
-	var key := "paint_mountain:%s:v7:%d:%s" % [String(stage_id), attempt_seed, field_key]
-	return float(fnv1a32(key) & 0x7fffffff) / 2147483647.0
+	return float(fnv1a32(versioned_key(stage_id, attempt_seed, field_key)) & 0x7fffffff) \
+			/ 2147483647.0
+
+
+static func versioned_key(stage_id: StringName, attempt_seed: int, field_key: String) -> String:
+	return "paint_mountain:%s:%s:%d:%s" % [
+		String(stage_id), StageGenerationContract.version_tag(), attempt_seed, field_key,
+	]
 
 
 static func sample_range(

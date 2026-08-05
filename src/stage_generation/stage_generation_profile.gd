@@ -2,8 +2,8 @@ class_name StageGenerationProfile
 extends Resource
 
 @export_category("Identity")
-@export var profile_id: StringName = &"stage_01_v7"
-@export_range(1, 99, 1) var profile_version: int = 5
+@export var profile_id: StringName = profile_id_for_stage(&"stage_01")
+@export_range(1, 99, 1) var profile_version: int = StageGenerationContract.CONTRACT_VERSION
 @export var base_seed: int = 845479992
 @export var fallback_seed: int = 1820876501
 @export var generation_contract: StageGenerationContract
@@ -29,8 +29,20 @@ extends Resource
 @export_range(0.0, 90.0, 0.5) var corridor_lip_maximum_slope: float = 30.0
 
 
+static func profile_id_for_stage(stage_id: StringName) -> StringName:
+	return StringName("%s_%s" % [stage_id, StageGenerationContract.version_tag()])
+
+
+static func stage_id_from_profile_id(versioned_profile_id: StringName) -> StringName:
+	return StringName(
+		String(versioned_profile_id).trim_suffix("_%s" % StageGenerationContract.version_tag())
+	)
+
+
 func is_valid() -> bool:
 	if profile_version != StageGenerationContract.CONTRACT_VERSION:
+		return false
+	if not String(profile_id).ends_with("_%s" % StageGenerationContract.version_tag()):
 		return false
 	if generation_contract == null or not generation_contract.is_valid() or routes.is_empty():
 		return false

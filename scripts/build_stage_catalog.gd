@@ -5,7 +5,6 @@ extends SceneTree
 ## runtime then consumes only the serialized result.
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
-const STAGING_PATH := "res://resources/stages/.catalog-v7.staging.tres"
 const BUNDLE_FORMAT_VERSION := 3
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
 const BURST_DATA: MechanismData = preload("res://resources/mechanisms/burst_node.tres")
@@ -22,10 +21,17 @@ const SOURCE_STAGE_PATHS := [
 
 func _initialize() -> void:
 	var write := "--write" in OS.get_cmdline_user_args()
+	var dry_build := "--dry-build" in OS.get_cmdline_user_args()
 	var catalog = _build_catalog()
 	if catalog == null or not catalog.is_valid(false):
 		push_error("Stage catalog build failed validation.")
 		quit(1)
+		return
+	if dry_build:
+		print("Stage catalog dry build passed: %d stages manifest=%s" % [
+			catalog.stages.size(), catalog.manifest_sha256,
+		])
+		quit()
 		return
 	if not write:
 		var existing = load(CATALOG_PATH)
@@ -41,13 +47,14 @@ func _initialize() -> void:
 		push_error("Could not promote the content-addressed stage bundle.")
 		quit(1)
 		return
-	var staging_error := ResourceSaver.save(catalog, STAGING_PATH)
+	var staging_path := _catalog_staging_path()
+	var staging_error := ResourceSaver.save(catalog, staging_path)
 	if staging_error != OK:
 		push_error("Could not write catalog staging resource: %s" % staging_error)
 		quit(1)
 		return
 	var promoted := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(STAGING_PATH),
+		ProjectSettings.globalize_path(staging_path),
 		ProjectSettings.globalize_path(CATALOG_PATH)
 	)
 	if promoted != OK:
@@ -60,7 +67,8 @@ func _initialize() -> void:
 
 func _build_catalog():
 	var result = CATALOG_DATA_SCRIPT.new()
-	result.progression = load("res://resources/stage_generation/version7_progression.tres") as StageProgressionData
+	result.catalog_version = StageGenerationContract.CONTRACT_VERSION
+	result.progression = load(_progression_path()) as StageProgressionData
 	var source_stages: Array[StageData] = []
 	var existing = load(CATALOG_PATH)
 	if existing != null and existing.has_method("ordered_stages"):
@@ -83,7 +91,9 @@ func _build_catalog():
 		manifest_parts.append(_manifest_stage_descriptor(stage))
 	manifest_parts.append("bundle_format=%d" % BUNDLE_FORMAT_VERSION)
 	result.manifest_sha256 = _sha256("\n".join(manifest_parts))
-	result.bundle_manifest_path = "res://resources/generated_stage_catalogs/v7-%s/manifest.json" % result.manifest_sha256
+	result.bundle_manifest_path = CATALOG_DATA_SCRIPT.generated_bundle_manifest_path(
+		result.manifest_sha256
+	)
 	return result
 
 
@@ -139,12 +149,11 @@ func _mechanism_manifest_descriptor(mechanism: MechanismData) -> String:
 	])
 
 
-func _materialize_stage(source: StageData, stage_number: int) -> StageData:
+static func _materialize_stage(source: StageData, stage_number: int) -> StageData:
 	if source == null:
 		return null
 	var stage := source.duplicate(true) as StageData
 	var stage_id := StringName("stage_%02d" % stage_number)
-	var progression := load("res://resources/stage_generation/version7_progression.tres") as StageProgressionData
 	stage.stage_id = stage_id
 	stage.stage_version = StageGenerationContract.CONTRACT_VERSION
 	stage.stage_number = stage_number
@@ -166,30 +175,34 @@ func _materialize_stage(source: StageData, stage_number: int) -> StageData:
 		-2.0,
 		-172.0 + stage.terrain_size.y * 0.5
 	)
+	stage.mechanism_loadout = _materialize_mechanisms(source.mechanism_loadout, stage_number)
+	if stage.mechanism_loadout.size() != StageProgressionData.mechanism_count_for(stage_number):
+		return null
 	stage.generation_profile = _materialize_profile(
 		stage.generation_profile,
 		stage_number,
 		stage_id,
-		stage.terrain_seed,
-		progression
+		stage.terrain_seed
 	)
-	if stage.generation_profile == null or not stage.generation_profile.is_valid():
+	if stage.generation_profile == null \
+			or not _materialize_route_mechanism_slots(
+				stage.generation_profile, stage.mechanism_loadout
+			) \
+			or not stage.generation_profile.is_valid():
 		return null
-	stage.mechanism_loadout = _materialize_mechanisms(source.mechanism_loadout, stage_number)
 	return stage
 
 
-func _materialize_profile(
+static func _materialize_profile(
 	source: StageGenerationProfile,
 	stage_number: int,
 	stage_id: StringName,
-	terrain_seed: int,
-	_progression: StageProgressionData
+	terrain_seed: int
 ) -> StageGenerationProfile:
 	if source == null:
 		return null
 	var profile := source.duplicate(true) as StageGenerationProfile
-	profile.profile_id = StringName("%s_v7" % stage_id)
+	profile.profile_id = StageGenerationProfile.profile_id_for_stage(stage_id)
 	profile.profile_version = StageGenerationContract.CONTRACT_VERSION
 	profile.base_seed = terrain_seed
 	profile.fallback_seed = StageProgressionData.candidate_seed_for(stage_number, 31)
@@ -203,6 +216,11 @@ func _materialize_profile(
 	profile.pass_count = StageProgressionData.pass_count_for(stage_number)
 	profile.undulation_amplitude = StageProgressionData.undulation_for(stage_number)
 	profile.route_width = StageProgressionData.route_width_for(stage_number)
+	profile.generation_contract = _materialize_contract(
+		profile.generation_contract, stage_number
+	)
+	if profile.generation_contract == null:
+		return null
 	if stage_number <= 3:
 		profile.target_ratio_range = Vector2(0.18, 0.72)
 		profile.target_mean_slope_range = Vector2(12.0, 45.0)
@@ -210,22 +228,20 @@ func _materialize_profile(
 		profile.target_maximum_slope = 68.0
 		profile.route_core_p95_slope_max = 60.0
 		profile.corridor_lip_maximum_slope = 50.0
-		profile.generation_contract = _materialize_contract(profile.generation_contract, stage_number)
 		profile.routes = _intro_routes(stage_number, profile.route_width)
-	else:
-		profile.generation_contract = profile.generation_contract.duplicate(true) as StageGenerationContract
-		profile.generation_contract.cell_count = StageProgressionData.cell_count_for(stage_number)
-		profile.generation_contract.local_bounds = Rect2(
-			-StageProgressionData.terrain_size_for(stage_number) * 0.5,
-			StageProgressionData.terrain_size_for(stage_number)
-		)
-		profile.generation_contract.maximum_top_triangle_count = \
-			profile.generation_contract.cell_count.x * profile.generation_contract.cell_count.y * 2
 	return profile
 
 
-func _materialize_contract(source: StageGenerationContract, stage_number: int) -> StageGenerationContract:
+static func _materialize_contract(
+		source: StageGenerationContract,
+		stage_number: int
+) -> StageGenerationContract:
+	if source == null:
+		return null
 	var contract := source.duplicate(true) as StageGenerationContract
+	contract.generation_version = StageGenerationContract.CONTRACT_VERSION
+	contract.profile_version = StageGenerationContract.CONTRACT_VERSION
+	contract.layout_version = StageGenerationContract.CONTRACT_VERSION
 	var terrain_size := StageProgressionData.terrain_size_for(stage_number)
 	contract.cell_count = StageProgressionData.cell_count_for(stage_number)
 	contract.local_bounds = Rect2(-terrain_size * 0.5, terrain_size)
@@ -316,14 +332,94 @@ static func _intro_route(
 static func _materialize_mechanisms(source: Array[MechanismData], stage_number: int) -> Array[MechanismData]:
 	var result: Array[MechanismData] = []
 	var desired := StageProgressionData.mechanism_count_for(stage_number)
-	for index in range(mini(desired, source.size())):
-		var source_data := source[index]
-		if source_data == null:
-			continue
-		var canonical := _canonical_mechanism_data(source_data.canonical_kind())
-		if canonical != null:
-			result.append(canonical.duplicate(true) as MechanismData)
+	if stage_number == 1:
+		return result
+	if stage_number == 2:
+		_append_canonical_mechanism(result, MechanismData.Kind.BURST)
+		return result
+	if stage_number == 3:
+		_append_canonical_mechanism(result, MechanismData.Kind.SPLITTER)
+		_append_canonical_mechanism(result, MechanismData.Kind.UPHILL_REBOUND)
+		return result
+
+	var route_count := StageProgressionData.route_count_for(stage_number)
+	var safe_early_kinds := [MechanismData.Kind.BURST, MechanismData.Kind.UPHILL_REBOUND]
+	var three_route_fallback_kinds := [
+		MechanismData.Kind.BURST,
+		MechanismData.Kind.SPLITTER,
+		MechanismData.Kind.UPHILL_REBOUND,
+	]
+	for index in range(desired):
+		var kind: MechanismData.Kind
+		if route_count < 3:
+			kind = safe_early_kinds[index % safe_early_kinds.size()]
+		elif index < source.size() and source[index] != null and source[index].is_valid():
+			kind = source[index].canonical_kind()
+		else:
+			kind = three_route_fallback_kinds[index % three_route_fallback_kinds.size()]
+		_append_canonical_mechanism(result, kind)
 	return result
+
+
+static func _append_canonical_mechanism(
+		result: Array[MechanismData],
+		kind: MechanismData.Kind
+) -> void:
+	var canonical := _canonical_mechanism_data(kind)
+	if canonical != null:
+		result.append(canonical.duplicate(true) as MechanismData)
+
+
+static func _materialize_route_mechanism_slots(
+		profile: StageGenerationProfile,
+		loadout: Array[MechanismData]
+) -> bool:
+	if profile == null:
+		return false
+	var slot_count := 0
+	for route in profile.routes:
+		if route != null:
+			slot_count += route.mechanism_slots().size()
+	if slot_count != loadout.size():
+		return false
+
+	var loadout_index := 0
+	for route in profile.routes:
+		if route == null:
+			return false
+		var source_slots := route.mechanism_slots()
+		if source_slots.is_empty():
+			continue
+		var kinds := PackedInt32Array()
+		var pad_ts := PackedFloat32Array()
+		var pad_radii := PackedFloat32Array()
+		for source_slot in source_slots:
+			var mechanism := loadout[loadout_index]
+			if mechanism == null:
+				return false
+			var kind := mechanism.canonical_kind()
+			kinds.append(int(kind))
+			pad_ts.append(float(source_slot.get("t", -1.0)))
+			pad_radii.append(_mechanism_pad_radius(kind))
+			loadout_index += 1
+		route.mechanism_kind = -1
+		route.mechanism_pad_t = -1.0
+		route.mechanism_pad_radius = 0.0
+		route.mechanism_kinds = kinds
+		route.mechanism_pad_ts = pad_ts
+		route.mechanism_pad_radii = pad_radii
+	return loadout_index == loadout.size()
+
+
+static func _mechanism_pad_radius(kind: MechanismData.Kind) -> float:
+	match int(kind):
+		int(MechanismData.Kind.SPLITTER):
+			return 10.0
+		int(MechanismData.Kind.UPHILL_REBOUND):
+			# Uphill Rebound needs nearby terrain relief; a wide flattened pad
+			# removes the rise witness that makes this glyph useful.
+			return 1.5
+	return 8.0
 
 
 static func _canonical_mechanism_data(kind: MechanismData.Kind) -> MechanismData:
@@ -345,7 +441,7 @@ func _sha256(value: String) -> String:
 
 
 func _write_bundle_manifest(catalog) -> bool:
-	var bundle_root := "res://resources/generated_stage_catalogs/v7-%s" % catalog.manifest_sha256
+	var bundle_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
 	var final_absolute := ProjectSettings.globalize_path(bundle_root)
 	var final_manifest_path := "%s/manifest.json" % bundle_root
 	# A matching immutable bundle is already the desired output. Never rewrite it
@@ -356,7 +452,9 @@ func _write_bundle_manifest(catalog) -> bool:
 			return true
 		push_error("Refusing to overwrite an incomplete content-addressed bundle: %s" % bundle_root)
 		return false
-	var staging_root := "res://resources/generated_stage_catalogs/.v7-%s.staging" % catalog.manifest_sha256
+	var staging_root := "res://resources/generated_stage_catalogs/.%s-%s.staging" % [
+		StageGenerationContract.version_tag(), catalog.manifest_sha256,
+	]
 	var staging_absolute := ProjectSettings.globalize_path(staging_root)
 	DirAccess.make_dir_recursive_absolute(staging_absolute)
 	var bundle_catalog := "%s/catalog.tres" % staging_root
@@ -403,3 +501,13 @@ func _write_bundle_manifest(catalog) -> bool:
 		push_error("Could not promote stage bundle %s" % bundle_root)
 		return false
 	return FileAccess.file_exists(ProjectSettings.globalize_path(final_manifest_path))
+
+
+static func _catalog_staging_path() -> String:
+	return "res://resources/stages/.catalog-%s.staging.tres" % \
+			StageGenerationContract.version_tag()
+
+
+static func _progression_path() -> String:
+	return "res://resources/stage_generation/version%d_progression.tres" % \
+			StageGenerationContract.CONTRACT_VERSION

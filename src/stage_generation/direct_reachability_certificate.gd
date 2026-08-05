@@ -5,7 +5,7 @@ extends Resource
 ## canonical human aim lattice. Serialized state stays primitive; AimTuple
 ## instances are reconstructed as immutable runtime views.
 
-const CONTRACT_VERSION := 7
+const CONTRACT_VERSION := StageGenerationContract.CONTRACT_VERSION
 
 @export_storage var serialized_contract_version: int = CONTRACT_VERSION
 @export_storage var serialized_stage_id: StringName
@@ -31,7 +31,7 @@ const CONTRACT_VERSION := 7
 # witness table. A global summit may be outside the scoreable route mask.
 @export_storage var serialized_summit_witness_angle_tenths := PackedInt32Array()
 @export_storage var serialized_summit_witness_power: int = -1
-# Kept for version-7 reads of an early in-memory draft; new certificates leave
+# Kept for reads of an early in-memory draft; new certificates leave
 # this at -1 and use the dedicated summit tuple above.
 @export_storage var serialized_summit_witness_index: int = -1
 @export_storage var serialized_summit_predictor_reachability_checksum: int = 0

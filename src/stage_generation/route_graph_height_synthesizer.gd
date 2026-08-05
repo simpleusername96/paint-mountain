@@ -25,7 +25,7 @@ static func build(
 	var contract := profile.generation_contract
 	var noise := FastNoiseLite.new()
 	noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v7:%d:range/noise" % [String(stage_id), attempt_seed]
+		KEYED_STAGE_SAMPLER.versioned_key(stage_id, attempt_seed, "range/noise")
 	) & 0x7fffffff
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = contract.noise_frequency

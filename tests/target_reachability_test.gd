@@ -188,7 +188,7 @@ func _assert_separate_summit_certificate_contract(
 	target_assignments.resize(layout.target_pixel_count())
 	var target_checksum := layout.reachable_target_checksum(target_assignments)
 	var certificate := DirectReachabilityValidator.build_certificate(
-		StringName(String(layout.profile_id).trim_suffix("_v7")),
+		StageGenerationProfile.stage_id_from_profile_id(layout.profile_id),
 		layout,
 		{
 			"valid": true,
@@ -227,7 +227,7 @@ func _assert_separate_summit_certificate_contract(
 			"predictor_reachability_checksum": 1,
 		}
 		var partial_certificate := DirectReachabilityValidator.build_certificate(
-			StringName(String(layout.profile_id).trim_suffix("_v7")),
+			StageGenerationProfile.stage_id_from_profile_id(layout.profile_id),
 			layout,
 			partial_predictor,
 			{"valid": true, "rigidbody_reachability_checksum": 1},

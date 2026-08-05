@@ -184,11 +184,12 @@ func _write_bundle(stage_ids: Array[StringName]) -> bool:
 			]).to_utf8_buffer()
 		)
 	var bundle_hash := manifest_context.finish().hex_encode()
-	var final_root := "%s/v7-%s" % [OUTPUT_ROOT, bundle_hash]
+	var version_tag := StageGenerationContract.version_tag()
+	var final_root := "%s/%s-%s" % [OUTPUT_ROOT, version_tag, bundle_hash]
 	var final_absolute := ProjectSettings.globalize_path(final_root)
 	if DirAccess.dir_exists_absolute(final_absolute):
 		return FileAccess.file_exists(ProjectSettings.globalize_path("%s/manifest.json" % final_root))
-	var staging_root := "%s/.v7-%s.staging" % [OUTPUT_ROOT, bundle_hash]
+	var staging_root := "%s/.%s-%s.staging" % [OUTPUT_ROOT, version_tag, bundle_hash]
 	var staging_absolute := ProjectSettings.globalize_path(staging_root)
 	DirAccess.make_dir_recursive_absolute(staging_absolute)
 	var paths: Array[String] = []

@@ -1,9 +1,9 @@
 class_name StageGenerationContract
 extends Resource
 
-## Owns every generation-wide version-7 constant consumed by production.
+## Owns the generation-wide version and constants consumed by production.
 
-const CONTRACT_VERSION := 7
+const CONTRACT_VERSION := 8
 const REQUIRED_CELL_COUNT := Vector2i(72, 48)
 const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-90.0, -60.0), Vector2(180.0, 120.0))
 const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 6912
@@ -11,6 +11,10 @@ const REQUIRED_MASK_SIZE := 512
 const REQUIRED_ATTEMPT_COUNT := 32
 const REQUIRED_ATTEMPT_SEED_STRIDE := 7919
 const REQUIRED_ROUTE_STATION_Z := [-44.0, -32.0, -20.0, -8.0, 4.0, 16.0, 30.0, 44.0]
+
+
+static func version_tag() -> String:
+	return "v%d" % CONTRACT_VERSION
 
 enum CellDiagonal {
 	P01_TO_P10,

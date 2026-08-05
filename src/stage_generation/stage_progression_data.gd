@@ -14,9 +14,9 @@ const STAGE_COUNT := 30
 @export var progression_version: int = StageGenerationContract.CONTRACT_VERSION
 @export var stage_count: int = STAGE_COUNT
 
-# Produced by the version-7 offline generation pass. Runtime stage entry uses
-# these content-addressed candidates directly; it never searches or silently
-# substitutes a different mountain after the player enters a stage.
+# Candidate indices from the last accepted catalog seed map. The v8 offline
+# artifact rebuild must replace any entry rejected by the new keyed sampler;
+# runtime still never searches or substitutes a mountain after stage entry.
 const ACCEPTED_CANDIDATE_INDEX_BY_STAGE := {
 	3: 3,
 	4: 0, 5: 0, 6: 15, 7: 0, 8: 0, 9: 1, 10: 0,
