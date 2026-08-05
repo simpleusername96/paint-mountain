@@ -45,11 +45,12 @@ hud.coverage_format,Current %.1f%% / Target %.1f%%,현재 %.1f%% / 목표 %.1f%%
 hud.summary_split,Split %d×,분열 %d회
 hud.summary_balls,%d balls,공 %d개
 hud.summary_direct,Direct route,직접 경로
-hud.first_hint,Drag or A·D·W·S to aim · Wheel or −·+ for power · Space to fire,드래그/A·D·W·S로 조준 · 휠/−·+로 파워 · Space로 발사
+hud.first_hint,Aim: drag or A·D·W·S · Wheel power · Space fire · Tab inspect,조준: 드래그/A·D·W·S · 휠 파워 · Space 발사 · Tab 맵 보기
 hud.camera_hint,LEFT-DRAG ORBIT · WHEEL ZOOM,왼쪽 드래그 회전 · 휠 확대
-hud.camera_follow,FOLLOW,추적
-hud.camera_wide,WIDE,전체
-hud.camera_cannon,CANNON,대포
+hud.aim_lock,AIM LOCK,조준 고정
+hud.map_inspection,MAP INSPECTION,맵 둘러보기
+hud.switch_to_map_inspection,Switch to Map Inspection (Tab) · Drag orbit · Wheel zoom,맵 둘러보기로 전환 (Tab) · 드래그 회전 · 휠 확대/축소
+hud.switch_to_aim_lock,Switch to Aim Lock (Tab) · Drag aim · Wheel power,조준 고정으로 전환 (Tab) · 드래그 조준 · 휠 파워
 hud.briefing,BRIEFING,지형 확인
 hud.aiming,AIMING,조준
 hud.in_flight,IN FLIGHT,비행 중

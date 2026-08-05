@@ -25,13 +25,32 @@ func _run() -> void:
 	_assert_true(hud_root.get_node("FirstSessionHint").visible and is_equal_approx(hud_root.get_node("FirstSessionHint/HintTimer").wait_time, 4.0), "Stage 1 must show one four-second aiming hint")
 	hud.update_aim(-7.5, 41.0, 72.0)
 	_assert_true("왼쪽" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim panel must expose direction and elevation independently")
-	var observation_controls := hud_root.get_node("ObservationControls/Content")
+	var interaction_control := hud_root.get_node("CameraInteractionControl") as CameraInteractionControl
 	_assert_true(
-		observation_controls.get_child_count() == 6,
-		"observation controls must not expose a finite paint meter"
+		interaction_control != null and interaction_control.visible \
+				and interaction_control.custom_minimum_size.y >= 40.0,
+		"Aiming must expose one focusable interaction-mode control"
 	)
-	for control_name in ["Follow", "Wide", "Cannon", "Speed1", "Speed2", "Pause"]:
-		_assert_true(observation_controls.has_node(control_name), "%s control must remain available" % control_name)
+	_assert_true(
+		hud_root.get_node_or_null("ObservationControls") == null \
+				and not interaction_control.text.contains("추적") \
+				and not interaction_control.text.contains("대포"),
+		"normal gameplay must not expose camera presets, speed, or Pause strips"
+	)
+	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
+	_assert_true(
+		interaction_control.visible and "맵 둘러보기" in interaction_control.text \
+				and not hud_root.get_node("AimControls").visible \
+				and not hud_root.get_node("ActionButtons").visible,
+		"Map Inspection must identify itself and hide aim-only actions"
+	)
+	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
+	_assert_true(
+		"조준 고정" in interaction_control.text \
+				and hud_root.get_node("AimControls").visible \
+				and hud_root.get_node("ActionButtons").visible,
+		"Aim Lock must restore aim and Fire controls"
+	)
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")
 	hud.update_coverage(2.0)
 	await process_frame
@@ -65,7 +84,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shot feedback passed: direction, compact observation controls, target, causal summary, callout timing, and replay controls.")
+		print("Shot feedback passed: direction, camera interaction state, target, causal summary, callout timing, and replay controls.")
 	quit(1 if _failed else 0)
 
 

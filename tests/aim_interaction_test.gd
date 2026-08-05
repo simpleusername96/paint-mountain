@@ -33,12 +33,18 @@ func _run_checks() -> void:
 	var unlocked: Dictionary = root.get_node("/root/SaveSystem").default_data()
 	unlocked.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
 	game_state.initialize_from_data(unlocked)
+	var manual_only := "--manual-only" in OS.get_cmdline_user_args()
 	await _check_manual_input(game_state)
-	await _check_stage_predictions(game_state)
-	await _check_isolated_prediction_fixtures()
+	if not manual_only:
+		await _check_stage_predictions(game_state)
+		await _check_isolated_prediction_fixtures()
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Task 06 aiming passed: manual input contract, 30 stage predictions, 3 mechanism casts, bounds exit, and 96-dot cap.")
+		print(
+			"Aim interaction passed: Aim Lock and Map Inspection input routing." \
+			if manual_only else \
+			"Task 06 aiming passed: manual input contract, stage predictions, mechanism casts, bounds exit, and preview cap."
+		)
 	quit(1 if _failed else 0)
 
 
@@ -50,8 +56,11 @@ func _check_manual_input(game_state: Node) -> void:
 	await process_frame
 	var cannon: CannonController = gameplay.get_node("Cannon")
 	var stage_controller: StageController = gameplay.get_node("StageController")
+	var camera_director: CameraDirector = gameplay.get_node("CameraDirector")
+	var aim_input: AimInputController = gameplay.get_node("AimInputController")
 	var hud: HUDController = gameplay.get_node("HUD")
-	_assert_true(stage_controller.begin_aiming(), "Tab/input fixture must begin in aiming")
+	_assert_true(stage_controller.begin_aiming(), "manual input fixture must begin in aiming")
+	_assert_true(camera_director.aim_is_locked(), "Start must enter Aim Lock")
 	var initial := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
@@ -118,27 +127,70 @@ func _check_manual_input(game_state: Node) -> void:
 		await _push_key(KEY_ENTER, false)
 		_assert_close(cannon.power_percent, before_focus - 2.0, 0.0001, "focused power button must activate through keyboard")
 
-	cannon.set_aim(45.0, 68.0, 100.0)
+	cannon.set_aim(AimTuple.MAXIMUM_YAW_DEGREES, AimTuple.MAXIMUM_ELEVATION_DEGREES, 100.0)
 	await _push_key(KEY_D, true)
 	await _push_key(KEY_D, false)
 	await _push_key(KEY_W, true)
 	await _push_key(KEY_W, false)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
-	_assert_aim(cannon, Vector3(45, 68, 100), "manual inputs must clamp to the frozen maxima")
-	cannon.set_aim(-45.0, 10.0, 0.0)
+	_assert_aim(
+		cannon,
+		Vector3(AimTuple.MAXIMUM_YAW_DEGREES, AimTuple.MAXIMUM_ELEVATION_DEGREES, 100.0),
+		"manual inputs must clamp to the legal maxima"
+	)
+	cannon.set_aim(AimTuple.MINIMUM_YAW_DEGREES, AimTuple.MINIMUM_ELEVATION_DEGREES, 0.0)
 	await _push_key(KEY_A, true)
 	await _push_key(KEY_A, false)
 	await _push_key(KEY_S, true)
 	await _push_key(KEY_S, false)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_DOWN, true)
-	_assert_aim(cannon, Vector3(-45, 10, 0), "manual inputs must clamp to the frozen minima")
+	_assert_aim(
+		cannon,
+		Vector3(AimTuple.MINIMUM_YAW_DEGREES, AimTuple.MINIMUM_ELEVATION_DEGREES, 0.0),
+		"manual inputs must clamp to the legal minima"
+	)
 
+	var aim_before_inspection := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	await _push_key(KEY_TAB, true)
-	_assert_true(stage_controller.current_state == StageController.State.BRIEFING, "Tab must switch aiming to briefing")
 	await _push_key(KEY_TAB, false)
+	_assert_true(
+		stage_controller.current_state == StageController.State.AIMING \
+				and camera_director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
+		"Tab must enter Map Inspection without leaving the Board Phase"
+	)
+	var inspection_distance_before := camera_director.inspection_distance()
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
+	_assert_true(
+		camera_director.inspection_distance() < inspection_distance_before,
+		"wheel input must zoom the inspection camera"
+	)
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
+	var inspection_drag := InputEventMouseMotion.new()
+	inspection_drag.position = Vector2(680, 300)
+	inspection_drag.relative = Vector2(40, -20)
+	inspection_drag.button_mask = MOUSE_BUTTON_MASK_LEFT
+	Input.parse_input_event(inspection_drag)
+	await process_frame
+	await _push_mouse_button(Vector2(680, 300), MOUSE_BUTTON_LEFT, false)
+	await _push_key(KEY_D, true)
+	await _push_key(KEY_D, false)
+	_assert_true(not aim_input.request_fire(), "Map Inspection must block Fire")
+	_assert_aim(cannon, aim_before_inspection, "Map Inspection must not mutate the stored aim")
 	await _push_key(KEY_TAB, true)
-	_assert_true(stage_controller.current_state == StageController.State.AIMING, "Tab must switch briefing to aiming")
 	await _push_key(KEY_TAB, false)
+	_assert_true(camera_director.aim_is_locked(), "Tab must return to Aim Lock")
+	_assert_aim(cannon, aim_before_inspection, "returning to Aim Lock must restore the same aim")
+	_assert_true(
+		stage_controller.lock_action_origin(StageController.ActionOrigin.REPLAY),
+		"replay lock fixture must acquire the action origin"
+	)
+	await _push_key(KEY_TAB, true)
+	await _push_key(KEY_TAB, false)
+	_assert_true(camera_director.aim_is_locked(), "replay lock must block human mode switching")
+	_assert_true(
+		stage_controller.release_action_origin(StageController.ActionOrigin.REPLAY),
+		"replay lock fixture must release the action origin"
+	)
 	var admitted_aim: AimTuple = gameplay.generated_layout().default_aim
 	cannon.set_aim(admitted_aim.yaw_degrees, admitted_aim.elevation_degrees, float(admitted_aim.power_percent))
 	await create_timer(0.12).timeout

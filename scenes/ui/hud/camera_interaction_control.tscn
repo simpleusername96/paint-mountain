@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/hud/camera_interaction_control.gd" id="1"]
+
+[node name="CameraInteractionControl" type="Button"]
+custom_minimum_size = Vector2(220, 44)
+offset_right = 220.0
+offset_bottom = 44.0
+tooltip_text = "hud.switch_to_map_inspection"
+text = "hud.aim_lock"
+script = ExtResource("1")

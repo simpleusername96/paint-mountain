@@ -11,14 +11,20 @@ const HOLD_REPEAT_SECONDS := 0.08
 
 var _cannon: CannonController
 var _stage_controller: StageController
+var _camera_director: CameraDirector
 var _drag_active := false
 var _pending_drag_degrees := Vector2.ZERO
 var _held_keys: Dictionary = {}
 
 
-func configure(cannon: CannonController, stage_controller: StageController) -> void:
+func configure(
+		cannon: CannonController,
+		stage_controller: StageController,
+		camera_director: CameraDirector
+) -> void:
 	_cannon = cannon
 	_stage_controller = stage_controller
+	_camera_director = camera_director
 	_pending_drag_degrees = Vector2.ZERO
 
 
@@ -79,8 +85,8 @@ func _input(event: InputEvent) -> void:
 		return
 	var key := event as InputEventKey
 	var keycode := key.physical_keycode if key.physical_keycode != 0 else key.keycode
-	_handle_key(key)
-	if keycode in [KEY_TAB, KEY_SPACE]:
+	var consumed := _handle_key(key)
+	if consumed and keycode in [KEY_TAB, KEY_SPACE]:
 		get_viewport().set_input_as_handled()
 
 
@@ -107,26 +113,31 @@ func _unhandled_input(event: InputEvent) -> void:
 			_drag_active = false
 
 
-func _handle_key(event: InputEventKey) -> void:
+func _handle_key(event: InputEventKey) -> bool:
 	var keycode := event.physical_keycode if event.physical_keycode != 0 else event.keycode
 	if keycode == KEY_TAB and event.pressed and not event.echo:
-		if _stage_controller.current_state == StageController.State.AIMING:
-			_stage_controller.enter_briefing(StageController.ActionOrigin.HUMAN)
-		elif _stage_controller.current_state == StageController.State.BRIEFING:
-			_stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN)
-		return
+		return _stage_controller != null \
+				and not _stage_controller.action_origin_is_locked() \
+				and _stage_controller.current_state == StageController.State.AIMING \
+				and _camera_director != null \
+				and _camera_director.toggle_interaction_mode()
 	if keycode == KEY_SPACE:
+		# Secondary focused buttons retain native Space activation. Fire keeps its
+		# one-press shortcut even when the primary button owns focus.
+		var focus_owner := get_viewport().gui_get_focus_owner()
+		if focus_owner is Button and focus_owner.name != &"FireButton":
+			return false
 		if event.pressed and not event.echo:
-			request_fire()
-		return
+			return request_fire()
+		return false
 	var axis := _axis_for_key(keycode)
 	if axis.is_zero_approx():
-		return
+		return false
 	if not event.pressed:
 		_held_keys.erase(keycode)
-		return
+		return false
 	if event.echo or _held_keys.has(keycode) or not _can_adjust_aim():
-		return
+		return false
 	_apply_axis_step(axis.x, axis.y)
 	_held_keys[keycode] = {
 		"yaw": axis.x,
@@ -134,6 +145,7 @@ func _handle_key(event: InputEventKey) -> void:
 		"elapsed": 0.0,
 		"next_repeat": HOLD_DELAY_SECONDS,
 	}
+	return false
 
 
 func _apply_axis_step(yaw_delta: float, elevation_delta: float) -> void:
@@ -169,6 +181,7 @@ func _axis_for_key(keycode: Key) -> Vector2:
 
 func _can_adjust_aim() -> bool:
 	return _cannon != null and _stage_controller != null \
+			and _camera_director != null and _camera_director.aim_is_locked() \
 			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
 			and _stage_controller.current_state == StageController.State.AIMING

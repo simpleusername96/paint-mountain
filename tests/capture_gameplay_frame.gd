@@ -11,6 +11,7 @@ func _capture() -> void:
 	var requested_stage := &"first_descent"
 	var requested_state := "briefing"
 	var requested_locale := "ko"
+	var background_capture := false
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/gameplay_capture.png")
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
@@ -21,6 +22,12 @@ func _capture() -> void:
 			output_path = argument.trim_prefix("--output=")
 		elif argument.begins_with("--locale="):
 			requested_locale = argument.trim_prefix("--locale=")
+		elif argument == "--background":
+			background_capture = true
+	if background_capture:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+		DisplayServer.window_set_position(Vector2i(-32000, -32000))
 	DirAccess.make_dir_recursive_absolute(output_path.get_base_dir())
 	var game_state := root.get_node("/root/GameState")
 	var unlocked_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
@@ -36,6 +43,13 @@ func _capture() -> void:
 	match requested_state:
 		"aiming":
 			controller.begin_aiming()
+		"map_inspection":
+			controller.begin_aiming()
+			await process_frame
+			(gameplay.get_node("CameraDirector") as CameraDirector).set_interaction_mode(
+				CameraDirector.InteractionMode.MAP_INSPECTION,
+				true
+			)
 		"pause":
 			controller.begin_aiming()
 			controller.toggle_pause()

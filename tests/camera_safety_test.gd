@@ -39,12 +39,16 @@ func _run() -> void:
 		var director: CameraDirector = gameplay.get_node("CameraDirector")
 		var terrain: TerrainSurface = gameplay.get_node("TerrainSurface")
 		print("Camera safety: briefing fixtures.")
+		_assert_true(
+			director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
+			"%s briefing must begin in Map Inspection" % stage.stage_id
+		)
 		for yaw in [-22.0, 0.0, 22.0]:
 			for zoom in [-22.0, 28.0]:
 				director.set_mode(CameraDirector.Mode.BRIEFING, true)
 				director.set_briefing_offsets(yaw, zoom)
 				await _sample_camera(camera, director, terrain, 4, "%s briefing %.0f/%.0f" % [stage.stage_id, yaw, zoom])
-		for mode in [CameraDirector.Mode.AIMING, CameraDirector.Mode.WIDE, CameraDirector.Mode.RESULT, CameraDirector.Mode.CANNON]:
+		for mode in [CameraDirector.Mode.AIMING, CameraDirector.Mode.RESULT]:
 			director.set_mode(mode)
 			await _sample_camera(camera, director, terrain, 6, "%s bookmark %s" % [stage.stage_id, CameraDirector.Mode.keys()[mode]])
 		print("Camera safety: bookmarks complete.")
@@ -60,8 +64,8 @@ func _run() -> void:
 		var edge_surface := terrain.world_surface_point(edge_xz)
 		var safe_skirt := director.safe_position_for(edge_surface - Vector3.UP * 8.0, edge_surface, true)
 		_assert_clearance(safe_skirt, terrain, "%s skirt fixture" % stage.stage_id)
-		await _exercise_split_follow(gameplay, camera, director, terrain, stage)
-		print("Camera safety: split follow complete.")
+		await _exercise_map_inspection(camera, director, terrain, stage)
+		print("Camera safety: map inspection complete.")
 		print("Camera safety fixture completed for %s." % stage.stage_id)
 		gameplay.queue_free()
 		await process_frame
@@ -69,44 +73,34 @@ func _run() -> void:
 	Engine.time_scale = 1.0
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Camera safety checks passed for all bookmarks, mechanisms, terrain fixtures, and split framing.")
+		print("Camera safety checks passed for lifecycle views, map inspection, and terrain fixtures.")
 	quit(1 if _failed else 0)
 
 
-func _exercise_split_follow(
-		gameplay: Node3D,
+func _exercise_map_inspection(
 		camera: Camera3D,
 		director: CameraDirector,
 		terrain: TerrainSurface,
 		stage: StageData
 ) -> void:
-	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
-	var cannon: CannonController = gameplay.get_node("Cannon")
-	var positions := [
-		stage.terrain_center + Vector3(-78.0, 88.0, 5.0),
-		stage.terrain_center + Vector3(78.0, 84.0, 5.0),
-		stage.terrain_center + Vector3(0.0, 92.0, -48.0),
-	]
-	var projectiles: Array[PaintProjectile] = []
-	for index in range(3):
-		var projectile := manager.spawn_projectile(
-			cannon.projectile_data,
-			positions[index],
-			Vector3(2.0 + index, 0.0, -2.0),
-			1,
-			1
-		)
-		projectile.freeze = true
-		projectile.global_position = positions[index]
-		projectiles.append(projectile)
-	director.set_mode(CameraDirector.Mode.FOLLOW, true)
-	await _sample_camera(camera, director, terrain, 5, "%s split spread" % stage.stage_id)
-	_assert_true(director.follow_wide_is_latched(), "%s split spread must latch wide framing" % stage.stage_id)
-	for index in range(projectiles.size()):
-		projectiles[index].global_position = stage.terrain_center + Vector3(float(index - 1) * 5.0, 88.0, 0.0)
-	await _sample_camera(camera, director, terrain, 5, "%s split regroup" % stage.stage_id)
-	_assert_true(not director.follow_wide_is_latched(), "%s regrouped children must release below the hysteresis threshold" % stage.stage_id)
-	manager.cleanup()
+	director.set_mode(CameraDirector.Mode.AIMING, true)
+	_assert_true(director.aim_is_locked(), "%s Aiming must begin in Aim Lock" % stage.stage_id)
+	_assert_true(
+		director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true),
+		"%s must allow Map Inspection during Aiming" % stage.stage_id
+	)
+	var center := terrain.world_surface_point(Vector2(stage.terrain_center.x, stage.terrain_center.z))
+	_assert_true(director.focus_inspection_target(center), "%s terrain focus must be selectable" % stage.stage_id)
+	var distance_before := director.inspection_distance()
+	_assert_true(director.orbit_inspection(Vector2(80.0, -30.0)), "%s inspection orbit must accept drag" % stage.stage_id)
+	_assert_true(director.zoom_inspection(1.0), "%s inspection zoom must accept wheel input" % stage.stage_id)
+	_assert_true(director.inspection_distance() < distance_before, "%s wheel up must zoom closer" % stage.stage_id)
+	await _sample_camera(camera, director, terrain, 8, "%s map inspection" % stage.stage_id)
+	_assert_true(
+		director.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED, true),
+		"%s must return to Aim Lock" % stage.stage_id
+	)
+	await _sample_camera(camera, director, terrain, 2, "%s aim lock return" % stage.stage_id)
 
 
 func _sample_camera(camera: Camera3D, director: CameraDirector, terrain: TerrainSurface, ticks: int, label: String) -> void:

@@ -2,14 +2,22 @@ class_name CameraDirector
 extends Node
 
 signal mode_changed(mode: int)
+signal interaction_mode_changed(mode: int)
 
 enum Mode {
 	BRIEFING,
 	AIMING,
+	# Legacy presentation modes remain loadable for existing replay and delivery
+	# fixtures, but normal gameplay no longer exposes them.
 	FOLLOW,
 	WIDE,
 	CANNON,
 	RESULT,
+}
+
+enum InteractionMode {
+	AIM_LOCKED,
+	MAP_INSPECTION,
 }
 
 const CAMERA_CLEARANCE := 1.5
@@ -20,8 +28,14 @@ const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
 const FOLLOW_DIRECTION := Vector3(52.0, 34.0, 74.0)
+const INSPECTION_ORBIT_DEGREES_PER_PIXEL := Vector2(0.18, 0.14)
+const INSPECTION_MIN_PITCH_DEGREES := 12.0
+const INSPECTION_MAX_PITCH_DEGREES := 78.0
+const INSPECTION_ZOOM_FACTOR := 0.90
+const INSPECTION_CLICK_DRAG_THRESHOLD := 6.0
 
 var current_mode: Mode = Mode.AIMING
+var current_interaction_mode: InteractionMode = InteractionMode.MAP_INSPECTION
 var _camera: Camera3D
 var _stage_data: StageData
 var _projectile_manager: ProjectileManager
@@ -45,6 +59,16 @@ var _shake_strength: float = 0.0
 var _shake_phase: float = 0.0
 var _computed_follow_position := Vector3.ZERO
 var _computed_follow_focus := Vector3.ZERO
+var _inspection_focus := Vector3.ZERO
+var _inspection_yaw_radians := 0.0
+var _inspection_pitch_radians := 0.0
+var _inspection_distance := 100.0
+var _inspection_min_distance := 30.0
+var _inspection_max_distance := 280.0
+var _inspection_pose_initialized := false
+var _inspection_drag_active := false
+var _inspection_press_position := Vector2.ZERO
+var _inspection_drag_distance := 0.0
 
 
 func configure(
@@ -87,15 +111,39 @@ func add_impact_shake(strength: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if current_mode != Mode.BRIEFING or _camera == null:
+	if not _can_inspect_map():
+		_inspection_drag_active = false
 		return
-	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
-		set_briefing_offsets(_briefing_yaw_offset + event.relative.x * 0.16, _briefing_zoom_offset)
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			set_briefing_offsets(_briefing_yaw_offset, _briefing_zoom_offset - 5.0)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			set_briefing_offsets(_briefing_yaw_offset, _briefing_zoom_offset + 5.0)
+	if event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		if button.button_index == MOUSE_BUTTON_LEFT:
+			if button.pressed:
+				_inspection_drag_active = true
+				_inspection_press_position = button.position
+				_inspection_drag_distance = 0.0
+			elif _inspection_drag_active:
+				_inspection_drag_active = false
+				_inspection_drag_distance = maxf(
+					_inspection_drag_distance,
+					button.position.distance_to(_inspection_press_position)
+				)
+				if _inspection_drag_distance <= INSPECTION_CLICK_DRAG_THRESHOLD:
+					_focus_inspection_from_screen(button.position)
+			get_viewport().set_input_as_handled()
+		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP:
+			zoom_inspection(1.0)
+			get_viewport().set_input_as_handled()
+		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			zoom_inspection(-1.0)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		var motion := event as InputEventMouseMotion
+		if _inspection_drag_active and motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			_inspection_drag_distance += motion.relative.length()
+			orbit_inspection(motion.relative)
+			get_viewport().set_input_as_handled()
+		elif not (motion.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			_inspection_drag_active = false
 
 
 func set_mode(mode: Mode, immediate: bool = false) -> void:
@@ -107,7 +155,12 @@ func set_mode(mode: Mode, immediate: bool = false) -> void:
 		_safe_pose_valid = false
 		_safe_pose_dirty = true
 		_safety_solve_elapsed = SAFETY_SOLVE_INTERVAL
-	if mode == Mode.FOLLOW:
+	if mode == Mode.BRIEFING:
+		_initialize_inspection_pose(_bookmark_for(Mode.BRIEFING), true)
+		_set_interaction_mode(InteractionMode.MAP_INSPECTION, immediate)
+	elif mode == Mode.AIMING:
+		_set_interaction_mode(InteractionMode.AIM_LOCKED, immediate)
+	elif mode == Mode.FOLLOW:
 		_follow_wide_latched = false
 		_update_follow_target()
 	else:
@@ -116,16 +169,83 @@ func set_mode(mode: Mode, immediate: bool = false) -> void:
 	mode_changed.emit(current_mode)
 
 
+func set_interaction_mode(mode: InteractionMode, immediate: bool = false) -> bool:
+	if _camera == null or _stage_data == null:
+		return false
+	if current_mode not in [Mode.BRIEFING, Mode.AIMING]:
+		return false
+	if mode == InteractionMode.AIM_LOCKED and current_mode != Mode.AIMING:
+		return false
+	_set_interaction_mode(mode, immediate)
+	return true
+
+
+func toggle_interaction_mode() -> bool:
+	if current_mode != Mode.AIMING:
+		return false
+	var next_mode := InteractionMode.MAP_INSPECTION \
+			if current_interaction_mode == InteractionMode.AIM_LOCKED \
+			else InteractionMode.AIM_LOCKED
+	return set_interaction_mode(next_mode)
+
+
+func interaction_mode_name() -> String:
+	return InteractionMode.keys()[current_interaction_mode]
+
+
+func aim_is_locked() -> bool:
+	return current_interaction_mode == InteractionMode.AIM_LOCKED
+
+
+func orbit_inspection(relative: Vector2) -> bool:
+	if not _can_inspect_map() or relative.is_zero_approx():
+		return false
+	_inspection_yaw_radians += deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x)
+	_inspection_pitch_radians = clampf(
+		_inspection_pitch_radians - deg_to_rad(relative.y * INSPECTION_ORBIT_DEGREES_PER_PIXEL.y),
+		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),
+		deg_to_rad(INSPECTION_MAX_PITCH_DEGREES)
+	)
+	_apply_inspection_orbit()
+	return true
+
+
+func zoom_inspection(wheel_steps: float) -> bool:
+	if not _can_inspect_map() or is_zero_approx(wheel_steps):
+		return false
+	_inspection_distance = clampf(
+		_inspection_distance * pow(INSPECTION_ZOOM_FACTOR, wheel_steps),
+		_inspection_min_distance,
+		_inspection_max_distance
+	)
+	_apply_inspection_orbit()
+	return true
+
+
+func focus_inspection_target(world_position: Vector3) -> bool:
+	if not _can_inspect_map() or _terrain_surface == null:
+		return false
+	var world_xz := Vector2(world_position.x, world_position.z)
+	if not _terrain_surface.contains_world_xz(world_xz):
+		return false
+	_inspection_focus = _terrain_surface.world_surface_point(world_xz) \
+			+ Vector3.UP * OCCLUSION_END_TOLERANCE
+	_apply_inspection_orbit()
+	return true
+
+
+func inspection_distance() -> float:
+	return _inspection_distance
+
+
 func mode_name() -> String:
 	return Mode.keys()[current_mode]
 
 
 func focus_briefing_target(world_position: Vector3) -> bool:
-	if current_mode != Mode.BRIEFING or _camera == null or _stage_data == null:
+	if current_mode != Mode.BRIEFING:
 		return false
-	var view_direction := (_stage_data.briefing_camera_position - _stage_data.briefing_camera_target).normalized()
-	_move_to(world_position + view_direction * 42.0 + Vector3.UP * 6.0, world_position, false)
-	return true
+	return focus_inspection_target(world_position)
 
 
 func set_briefing_offsets(yaw_degrees: float, zoom_distance: float) -> void:
@@ -240,6 +360,71 @@ func _apply_briefing_orbit() -> void:
 	var direction := rotated.normalized()
 	var distance := clampf(rotated.length() + _briefing_zoom_offset, 82.0, 152.0)
 	_move_to(bookmark[1] + direction * distance, bookmark[1], false)
+
+
+func _set_interaction_mode(mode: InteractionMode, immediate: bool) -> void:
+	var changed := current_interaction_mode != mode
+	current_interaction_mode = mode
+	_inspection_drag_active = false
+	if mode == InteractionMode.AIM_LOCKED:
+		var aiming_bookmark := _bookmark_for(Mode.AIMING)
+		_move_to(aiming_bookmark[0], aiming_bookmark[1], immediate)
+	else:
+		if not _inspection_pose_initialized:
+			_initialize_inspection_pose(_bookmark_for(Mode.WIDE), false)
+		_apply_inspection_orbit(immediate)
+	if changed:
+		interaction_mode_changed.emit(current_interaction_mode)
+
+
+func _initialize_inspection_pose(bookmark: Array[Vector3], force: bool) -> void:
+	if _inspection_pose_initialized and not force:
+		return
+	var position := bookmark[0]
+	_inspection_focus = bookmark[1]
+	var offset := position - _inspection_focus
+	_inspection_distance = maxf(offset.length(), 0.001)
+	_inspection_yaw_radians = atan2(offset.x, offset.z)
+	_inspection_pitch_radians = asin(clampf(offset.y / _inspection_distance, -1.0, 1.0))
+	var span := maxf(_stage_data.terrain_size.x, _stage_data.terrain_size.y)
+	_inspection_min_distance = maxf(30.0, minf(_stage_data.terrain_size.x, _stage_data.terrain_size.y) * 0.24)
+	_inspection_max_distance = maxf(_inspection_distance, span * 1.4)
+	_inspection_distance = clampf(_inspection_distance, _inspection_min_distance, _inspection_max_distance)
+	_inspection_pose_initialized = true
+
+
+func _apply_inspection_orbit(immediate: bool = false) -> void:
+	if not _inspection_pose_initialized:
+		return
+	var horizontal_scale := cos(_inspection_pitch_radians) * _inspection_distance
+	var offset := Vector3(
+		sin(_inspection_yaw_radians) * horizontal_scale,
+		sin(_inspection_pitch_radians) * _inspection_distance,
+		cos(_inspection_yaw_radians) * horizontal_scale
+	)
+	_move_to(_inspection_focus + offset, _inspection_focus, immediate)
+
+
+func _can_inspect_map() -> bool:
+	return _camera != null and _stage_data != null \
+			and current_mode in [Mode.BRIEFING, Mode.AIMING] \
+			and current_interaction_mode == InteractionMode.MAP_INSPECTION
+
+
+func _focus_inspection_from_screen(screen_position: Vector2) -> bool:
+	var ray_origin := _camera.project_ray_origin(screen_position)
+	var ray_end := ray_origin + _camera.project_ray_normal(screen_position) * _camera.far
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_end, 1)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var hit := _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return false
+	var collider: Object = hit.get("collider")
+	if not _terrain_surface.is_top_collider(collider) \
+			and not _terrain_surface.is_skirt_collider(collider):
+		return false
+	return focus_inspection_target(Vector3(hit.position))
 
 
 func _update_follow_target() -> void:

@@ -89,7 +89,7 @@ func _ready() -> void:
 		push_error("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
 		return
 	_replay_presentation.configure(_replay_recorder, _stage_controller, _camera_director)
-	_aim_input.configure(_cannon, _stage_controller)
+	_aim_input.configure(_cannon, _stage_controller, _camera_director)
 	_recompute_prediction()
 	_replay_recorder.start_attempt(stage_data, stage_data.stage_number * 1000 + stage_data.stage_version, _generated_layout)
 	_agent_api.configure(
@@ -261,6 +261,7 @@ func _connect_systems() -> void:
 	_stage_controller.restart_action_accepted.connect(_on_restart_action_accepted)
 	_stage_controller.stage_cleared.connect(_on_stage_cleared)
 	_stage_controller.stage_failed.connect(_on_stage_failed)
+	_camera_director.interaction_mode_changed.connect(_hud.set_interaction_mode)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
 	_hud.power_step_requested.connect(_aim_input.adjust_power_button)
@@ -271,8 +272,8 @@ func _connect_systems() -> void:
 	_hud.main_menu_requested.connect(func() -> void: _request_navigation(&"main_menu"))
 	_hud.next_stage_requested.connect(func() -> void: _request_navigation(&"next_stage"))
 	_hud.replay_requested.connect(_start_replay)
-	_hud.camera_mode_requested.connect(_on_camera_mode_requested)
-	_hud.simulation_speed_requested.connect(_on_simulation_speed_requested)
+	_hud.interaction_mode_requested.connect(_on_interaction_mode_requested)
+	_hud.replay_speed_requested.connect(_replay_presentation.set_speed)
 	_hud.replay_pause_requested.connect(_replay_presentation.set_paused)
 	_hud.replay_restart_requested.connect(_replay_presentation.restart_playback)
 	_hud.replay_exit_requested.connect(_replay_presentation.exit)
@@ -357,7 +358,10 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			_trajectory_preview.visible = _setting_bool("trajectory_preview", true)
 			if _trajectory_preview.visible:
 				_trajectory_preview.refresh()
-			_camera_director.set_mode(CameraDirector.Mode.AIMING)
+			# Pause/resume must preserve whether the player was inspecting the map
+			# or locked into aim. All other entries to Aiming start in Aim Lock.
+			if previous_state != StageController.State.PAUSED:
+				_camera_director.set_mode(CameraDirector.Mode.AIMING)
 		StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
@@ -381,23 +385,12 @@ func _on_stage_failed(final_coverage: float, missing: float) -> void:
 	_audio_cue(&"fail")
 
 
-func _on_camera_mode_requested(mode: int) -> void:
+func _on_interaction_mode_requested(mode: int) -> void:
 	if _replay_presentation.active:
 		return
 	if _stage_controller.current_state != StageController.State.AIMING:
 		return
-	_camera_director.set_mode(mode as CameraDirector.Mode)
-	_replay_recorder.record_camera(mode)
-
-
-func _on_simulation_speed_requested(speed: float) -> void:
-	if _replay_presentation.active:
-		_replay_presentation.set_speed(speed)
-		return
-	if _stage_controller.current_state == StageController.State.AIMING \
-			and _projectile_manager.active_count() > 0 \
-			and _shot_has_impacted and _setting_bool("fast_progress", true):
-		Engine.time_scale = clampf(speed, 1.0, 2.0)
+	_camera_director.set_interaction_mode(mode as CameraDirector.InteractionMode)
 
 
 func _spawn_mechanisms() -> void:

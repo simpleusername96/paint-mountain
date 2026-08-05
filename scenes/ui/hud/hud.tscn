@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/aim_controls.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/coverage_meter.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/action_buttons.tscn" id="5"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud/observation_controls.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/camera_interaction_control.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/shot_summary.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/result_panel.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/replay_bar.tscn" id="9"]
@@ -54,13 +54,13 @@ offset_top = 620.0
 offset_right = 740.0
 offset_bottom = 704.0
 
-[node name="ObservationControls" parent="HUDRoot" instance=ExtResource("6")]
+[node name="CameraInteractionControl" parent="HUDRoot" instance=ExtResource("6")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 800.0
-offset_top = 72.0
-offset_right = 1256.0
-offset_bottom = 124.0
+offset_left = 24.0
+offset_top = 84.0
+offset_right = 244.0
+offset_bottom = 128.0
 
 [node name="ShotSummary" parent="HUDRoot" instance=ExtResource("7")]
 unique_name_in_owner = true

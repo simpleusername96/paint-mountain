@@ -13,13 +13,13 @@ func _initialize() -> void:
 func _run() -> void:
 	var save_system := root.get_node("/root/SaveSystem")
 	var defaults: Dictionary = save_system.default_data()
-	_assert_true(defaults.version == 3, "current saves must use format 3")
+	_assert_true(defaults.version == 4, "current saves must use format 4")
 	_assert_true(defaults.settings.language == "ko", "new installs must default to Korean")
 	_assert_true(not defaults.settings.language_user_selected, "new installs must not claim an explicit language choice")
 
 	_write_v1_fixture()
 	var migrated: Dictionary = save_system.load_data(MIGRATION_PATH)
-	_assert_true(migrated.version == 3, "format 1 saves must migrate to format 3")
+	_assert_true(migrated.version == 4, "format 1 saves must migrate to format 4")
 	_assert_true(not migrated.has("unlocked_stages"), "all-open migration must discard the obsolete lock list")
 	_assert_true(is_equal_approx(float(migrated.best_results.first_descent.coverage), 14.25), "migration must preserve best results")
 	_assert_true(is_equal_approx(float(migrated.settings.master_volume), 0.37), "migration must preserve settings")
@@ -96,7 +96,8 @@ func _assert_translation_contract(locale: String) -> void:
 	var required := [
 		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
 		"hud.coverage_format", "hud.summary_split", "hud.summary_balls",
-		"hud.summary_direct", "hud.first_hint", "mechanism.burst.description",
+		"hud.summary_direct", "hud.first_hint", "hud.aim_lock", "hud.map_inspection",
+		"hud.switch_to_map_inspection", "hud.switch_to_aim_lock", "mechanism.burst.description",
 		"mechanism.splitter.description", "mechanism.bumper.description", "mechanism.activated",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
 		"replay.incompatible_format",
