@@ -28,7 +28,12 @@ var paint_command_rejections: Array[Dictionary] = []
 var paint_command_rejection_count: int = 0
 var final_drain_tick: int = -1
 var final_paint_mask_checksum: int = 0
-var penetration_guard_count: int = 0
+var invalid_geometry_count: int = 0
+# Read-only compatibility for diagnostics that have not yet moved to the
+# explicit INVALID_GEOMETRY terminal reason.
+var penetration_guard_count: int:
+	get:
+		return invalid_geometry_count
 var is_sealed: bool = false
 
 
@@ -129,8 +134,8 @@ func record_settlement(
 		"physics_tick": physics_tick,
 	})
 	settlement_reason_counts[reason] = int(settlement_reason_counts.get(reason, 0)) + 1
-	if reason == &"terrain_penetration_guard":
-		penetration_guard_count += 1
+	if reason == ProjectileSettlementReason.INVALID_GEOMETRY:
+		invalid_geometry_count += 1
 
 
 func record_paint_command(_command_physics_tick: int) -> void:
@@ -205,7 +210,7 @@ func to_dictionary() -> Dictionary:
 		"paint_command_rejection_count": paint_command_rejection_count,
 		"final_drain_tick": final_drain_tick,
 		"final_paint_mask_checksum": final_paint_mask_checksum,
-		"penetration_guard_count": penetration_guard_count,
+		"invalid_geometry_count": invalid_geometry_count,
 		"is_sealed": is_sealed,
 	}
 

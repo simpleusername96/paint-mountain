@@ -3,7 +3,8 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 7
+const FORMAT_VERSION := 8
+const DEFAULT_WIND_SCHEDULE_VERSION := 1
 
 var attempt: Dictionary = {}
 var playback_index: int = 0
@@ -11,29 +12,48 @@ var playback_paused: bool = false
 var playback_speed: float = 1.0
 var _recording_start_tick: int = 0
 var _recorded_fire_count: int = 0
+var _attempt_observation: AttemptObservation
 
 
 func start_attempt(
 		stage_data: StageData,
-		_physics_seed: int,
-		generated_layout: GeneratedStageLayout
+		physics_seed: int,
+		generated_layout: GeneratedStageLayout,
+		wind_schedule_identity: StringName = &""
 ) -> bool:
 	if stage_data == null or generated_layout == null \
 			or not generated_layout.is_runtime_ready():
 		push_error("ReplayRecorder requires the runtime-ready generated layout.")
 		attempt = {}
+		_attempt_observation = null
 		reset_playback()
 		return false
 	var default_aim := generated_layout.default_aim
 	if default_aim == null or not default_aim.is_valid():
 		push_error("ReplayRecorder requires the generated default aim.")
 		attempt = {}
+		_attempt_observation = null
 		reset_playback()
 		return false
 	var certificate := generated_layout.reachability_certificate
 	var has_full_certificate := certificate != null and certificate.is_valid()
 	_recording_start_tick = Engine.get_physics_frames()
 	_recorded_fire_count = 0
+	var resolved_wind_identity := wind_schedule_identity
+	if String(resolved_wind_identity).is_empty():
+		resolved_wind_identity = _default_wind_schedule_identity(physics_seed)
+	_attempt_observation = AttemptObservation.new()
+	if not _attempt_observation.configure(
+		stage_data.stage_id,
+		resolved_wind_identity,
+		physics_seed,
+		_recording_start_tick
+	):
+		push_error("ReplayRecorder requires a stable wind schedule identity.")
+		attempt = {}
+		_attempt_observation = null
+		reset_playback()
+		return false
 	attempt = {
 		"format_version": FORMAT_VERSION,
 		"stage_id": String(stage_data.stage_id),
@@ -56,20 +76,26 @@ func start_attempt(
 			"power": default_aim.power_percent,
 		},
 		"physics_fps": 60,
+		"wind_schedule_identity": String(resolved_wind_identity),
+		"wind_schedule_seed": physics_seed,
 		"actions": [],
 		"expected_observations": [],
+		"final_result": {},
+		"attempt_observation": _attempt_observation.to_dictionary(),
 	}
 	reset_playback()
 	return true
 
 
 func record_aim(yaw: float, elevation: float, power: float) -> void:
-	_append_action({
+	var physics_tick := _append_action({
 		"kind": "aim",
 		"yaw": yaw,
 		"elevation": elevation,
 		"power": power,
 	})
+	if physics_tick >= 0 and _attempt_observation != null:
+		_attempt_observation.record_aim(yaw, elevation, power, physics_tick)
 
 
 func record_fire(shot_id: int = 0) -> void:
@@ -78,7 +104,15 @@ func record_fire(shot_id: int = 0) -> void:
 	# would receive from a fresh ProjectileManager attempt.
 	var resolved_shot_id := shot_id if shot_id > 0 else _recorded_fire_count + 1
 	_recorded_fire_count = maxi(_recorded_fire_count, resolved_shot_id)
-	_append_action({"kind": "fire", "shot_id": resolved_shot_id})
+	var physics_tick := _append_action({"kind": "fire", "shot_id": resolved_shot_id})
+	if physics_tick >= 0 and _attempt_observation != null:
+		_attempt_observation.record_fire(resolved_shot_id, physics_tick)
+
+
+func record_finish(reason: StringName = &"manual") -> void:
+	var physics_tick := _append_action({"kind": "finish"})
+	if physics_tick >= 0 and _attempt_observation != null:
+		_attempt_observation.record_finish(reason, physics_tick)
 
 
 func record_restart() -> void:
@@ -105,6 +139,58 @@ func record_observation(observation: ShotObservation) -> void:
 	)
 	sealed["result_state"] = -1
 	expected.append(sealed)
+	if _attempt_observation != null:
+		_attempt_observation.record_shot_observation(observation)
+
+
+func current_attempt_observation() -> AttemptObservation:
+	return _attempt_observation
+
+
+func store_attempt_observation(observation: AttemptObservation) -> bool:
+	if attempt.is_empty() or observation == null or not AttemptObservation.dictionary_is_valid(
+		observation.to_dictionary()
+	):
+		return false
+	if observation.stage_id != StringName(String(attempt.stage_id)) \
+			or observation.wind_schedule_identity \
+					!= StringName(String(attempt.wind_schedule_identity)) \
+			or observation.wind_schedule_seed != int(attempt.wind_schedule_seed):
+		return false
+	_attempt_observation = observation
+	_sync_attempt_observation()
+	return true
+
+
+func store_final_result(
+		result: Dictionary,
+		observation: AttemptObservation = null
+) -> bool:
+	if attempt.is_empty() or not _result_dictionary_is_valid(result):
+		return false
+	var resolved_observation := observation if observation != null else _attempt_observation
+	if resolved_observation == null or resolved_observation.stage_id \
+			!= StringName(String(attempt.stage_id)) \
+			or resolved_observation.wind_schedule_identity \
+					!= StringName(String(attempt.wind_schedule_identity)) \
+			or resolved_observation.wind_schedule_seed != int(attempt.wind_schedule_seed):
+		return false
+	var reason := StringName(String(
+		result.get("finish_reason", result.get("result_reason", ""))
+	))
+	if not resolved_observation.is_sealed and not resolved_observation.seal(
+		reason,
+		int(result.paint_mask_checksum),
+		float(result.coverage),
+		int(result.elapsed_ticks)
+	):
+		return false
+	if not _result_matches_observation(result, resolved_observation):
+		return false
+	_attempt_observation = resolved_observation
+	attempt["final_result"] = _json_safe_dictionary(result)
+	_sync_attempt_observation()
+	return true
 
 
 func update_latest_result_state(result_state: int) -> void:
@@ -118,6 +204,8 @@ func update_latest_result_state(result_state: int) -> void:
 
 func load_attempt(data: Dictionary) -> bool:
 	if int(data.get("format_version", -1)) != FORMAT_VERSION:
+		return false
+	if not _is_json_safe(data):
 		return false
 	if String(data.get("stage_id", "")).is_empty() \
 			or not data.has("stage_version") \
@@ -133,23 +221,52 @@ func load_attempt(data: Dictionary) -> bool:
 			or not data.has("layout_admission") \
 			or not data.get("generated_default_aim", {}) is Dictionary \
 			or int(data.get("physics_fps", 0)) != 60 \
+			or String(data.get("wind_schedule_identity", "")).is_empty() \
+			or not data.has("wind_schedule_seed") \
 			or not data.get("actions", []) is Array \
-			or not data.get("expected_observations", []) is Array:
+			or not data.get("expected_observations", []) is Array \
+			or not data.get("final_result", {}) is Dictionary \
+			or not data.get("attempt_observation", {}) is Dictionary:
 		return false
 	if not _layout_metadata_is_valid(data):
 		return false
+	var previous_action_tick := -1
 	for action in data.actions:
-		if not action is Dictionary or not _action_is_valid(action):
+		if not action is Dictionary or not _action_is_valid(action) \
+				or int(action.physics_tick) < previous_action_tick:
 			return false
+		previous_action_tick = int(action.physics_tick)
 	for observation in data.expected_observations:
 		if not observation is Dictionary or not _sealed_observation_is_valid(observation):
 			return false
+	var loaded_observation := AttemptObservation.new()
+	if not loaded_observation.load_dictionary(data.attempt_observation) \
+			or loaded_observation.stage_id != StringName(String(data.stage_id)) \
+			or loaded_observation.wind_schedule_identity \
+					!= StringName(String(data.wind_schedule_identity)) \
+			or loaded_observation.wind_schedule_seed != int(data.wind_schedule_seed) \
+			or not _action_observation_order_matches(data.actions, loaded_observation.events):
+		return false
+	var final_result: Dictionary = data.final_result
+	if final_result.is_empty():
+		if loaded_observation.is_sealed:
+			return false
+	elif not _result_dictionary_is_valid(final_result) \
+			or not _result_matches_observation(final_result, loaded_observation):
+		return false
 	attempt = data.duplicate(true)
+	_attempt_observation = loaded_observation
+	_recording_start_tick = Engine.get_physics_frames()
+	_recorded_fire_count = 0
+	for action in attempt.actions:
+		if String(action.kind) == "fire":
+			_recorded_fire_count = maxi(_recorded_fire_count, int(action.shot_id))
 	reset_playback()
 	return true
 
 
 func export_attempt() -> Dictionary:
+	_sync_attempt_observation()
 	return attempt.duplicate(true)
 
 
@@ -176,7 +293,7 @@ func last_shot_attempt() -> Dictionary:
 		for index in range(start_index - 1, -1, -1):
 			if String(actions[index].get("kind", "")) == "aim":
 				var inherited_aim: Dictionary = actions[index].duplicate(true)
-				inherited_aim.physics_tick = int(actions[start_index].get("physics_tick", 0))
+				inherited_aim.physics_tick = 0
 				sliced.append(inherited_aim)
 				break
 	var first_tick := int(actions[start_index].get("physics_tick", 0))
@@ -188,6 +305,8 @@ func last_shot_attempt() -> Dictionary:
 	result.actions = sliced
 	var expected: Array = attempt.get("expected_observations", [])
 	result.expected_observations = [expected.back().duplicate(true)] if not expected.is_empty() else []
+	result.final_result = {}
+	result.attempt_observation = _action_only_observation(sliced)
 	return result
 
 
@@ -224,13 +343,14 @@ func emit_next_action() -> bool:
 	return true
 
 
-func _append_action(fields: Dictionary) -> void:
+func _append_action(fields: Dictionary) -> int:
 	if attempt.is_empty():
-		return
+		return -1
 	var action := fields.duplicate(true)
 	action["physics_tick"] = maxi(0, Engine.get_physics_frames() - _recording_start_tick)
 	var actions: Array = attempt.actions
 	actions.append(action)
+	return int(action.physics_tick)
 
 
 func _action_is_valid(action: Dictionary) -> bool:
@@ -238,13 +358,19 @@ func _action_is_valid(action: Dictionary) -> bool:
 		return false
 	match String(action.get("kind", "")):
 		"aim":
-			return action.size() == 5 and action.has("yaw") and action.has("elevation") and action.has("power")
+			return action.size() == 5 and action.has("yaw") \
+					and action.has("elevation") and action.has("power") \
+					and is_finite(float(action.yaw)) \
+					and is_finite(float(action.elevation)) \
+					and is_finite(float(action.power))
 		"camera":
 			return action.size() == 3 and action.has("mode")
 		"restart":
 			return action.size() == 2
 		"fire":
 			return action.size() == 3 and action.has("shot_id") and int(action.shot_id) > 0
+		"finish":
+			return action.size() == 2
 		_:
 			return false
 
@@ -317,6 +443,109 @@ func _sealed_observation_is_valid(observation: Dictionary) -> bool:
 	return true
 
 
+func _sync_attempt_observation() -> void:
+	if attempt.is_empty() or _attempt_observation == null:
+		return
+	attempt["attempt_observation"] = _attempt_observation.to_dictionary()
+
+
+func _action_only_observation(actions: Array) -> Dictionary:
+	var observation := AttemptObservation.new()
+	if not observation.configure(
+		StringName(String(attempt.stage_id)),
+		StringName(String(attempt.wind_schedule_identity)),
+		int(attempt.wind_schedule_seed),
+		0
+	):
+		return {}
+	for action_variant in actions:
+		var action := action_variant as Dictionary
+		if action == null:
+			continue
+		var physics_tick := int(action.get("physics_tick", 0))
+		match String(action.get("kind", "")):
+			"aim":
+				observation.record_aim(
+					float(action.yaw),
+					float(action.elevation),
+					float(action.power),
+					physics_tick
+				)
+			"fire":
+				observation.record_fire(int(action.shot_id), physics_tick)
+			"finish":
+				observation.record_finish(&"manual", physics_tick)
+	return observation.to_dictionary()
+
+
+func _action_observation_order_matches(actions: Array, events: Array[Dictionary]) -> bool:
+	var replay_actions: Array[Dictionary] = []
+	for action_variant in actions:
+		var action := action_variant as Dictionary
+		if action != null and String(action.get("kind", "")) in ["aim", "fire", "finish"]:
+			replay_actions.append(action)
+	var observed_actions: Array[Dictionary] = []
+	for event in events:
+		if String(event.get("kind", "")) in [
+			AttemptObservation.EVENT_AIM,
+			AttemptObservation.EVENT_FIRE,
+			AttemptObservation.EVENT_FINISH,
+		]:
+			observed_actions.append(event)
+	if replay_actions.size() != observed_actions.size():
+		return false
+	for index in range(replay_actions.size()):
+		var action := replay_actions[index]
+		var event := observed_actions[index]
+		if String(action.kind) != String(event.kind) \
+				or int(action.physics_tick) != int(event.physics_tick):
+			return false
+		match String(action.kind):
+			"aim":
+				if not is_equal_approx(float(action.yaw), float(event.yaw)) \
+						or not is_equal_approx(
+							float(action.elevation), float(event.elevation)
+						) \
+						or not is_equal_approx(float(action.power), float(event.power)):
+					return false
+			"fire":
+				if int(action.shot_id) != int(event.shot_id):
+					return false
+	return true
+
+
+func _result_dictionary_is_valid(result: Dictionary) -> bool:
+	var reason := String(result.get("finish_reason", result.get("result_reason", "")))
+	var coverage := float(result.get("coverage", -1.0))
+	return _is_json_safe(_json_safe_dictionary(result)) \
+			and not reason.is_empty() \
+			and int(result.get("paint_mask_checksum", 0)) != 0 \
+			and is_finite(coverage) and coverage >= 0.0 and coverage <= 100.0 \
+			and int(result.get("elapsed_ticks", -1)) >= 0
+
+
+func _result_matches_observation(
+		result: Dictionary,
+		observation: AttemptObservation
+) -> bool:
+	if observation == null or not observation.is_sealed:
+		return false
+	var final := observation.final_result
+	var reason := String(result.get("finish_reason", result.get("result_reason", "")))
+	return (not result.has("stage_id") or String(result.stage_id) == String(observation.stage_id)) \
+			and String(final.get("reason", "")) == reason \
+			and int(final.get("paint_mask_checksum", 0)) \
+					== int(result.get("paint_mask_checksum", 0)) \
+			and is_equal_approx(
+				float(final.get("coverage", -1.0)), float(result.get("coverage", -2.0))
+			) \
+			and int(final.get("elapsed_ticks", -1)) == int(result.get("elapsed_ticks", -2))
+
+
+static func _default_wind_schedule_identity(schedule_seed: int) -> StringName:
+	return StringName("wind-v%d-%d" % [DEFAULT_WIND_SCHEDULE_VERSION, schedule_seed])
+
+
 func _json_safe_value(value: Variant) -> Variant:
 	if value is Vector3:
 		return [value.x, value.y, value.z]
@@ -329,7 +558,7 @@ func _json_safe_value(value: Variant) -> Variant:
 		for entry in value:
 			converted.append(_json_safe_value(entry))
 		return converted
-	if value is PackedInt32Array:
+	if value is PackedInt32Array or value is PackedInt64Array:
 		return Array(value)
 	return value
 
@@ -339,3 +568,23 @@ func _json_safe_dictionary(source: Dictionary) -> Dictionary:
 	for key in source:
 		converted[String(key)] = _json_safe_value(source[key])
 	return converted
+
+
+func _is_json_safe(value: Variant) -> bool:
+	match typeof(value):
+		TYPE_NIL, TYPE_BOOL, TYPE_INT, TYPE_STRING:
+			return true
+		TYPE_FLOAT:
+			return is_finite(float(value))
+		TYPE_ARRAY:
+			for entry in value:
+				if not _is_json_safe(entry):
+					return false
+			return true
+		TYPE_DICTIONARY:
+			for key in value:
+				if not key is String or not _is_json_safe(value[key]):
+					return false
+			return true
+		_:
+			return false
