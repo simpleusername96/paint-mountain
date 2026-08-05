@@ -42,7 +42,7 @@ func configure(
 		_on_settings_changed(game_state.settings)
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not visible or _multimesh == null or _wind_controller == null or _terrain_surface == null:
 		return
 	var snapshot := _wind_controller.current_snapshot()

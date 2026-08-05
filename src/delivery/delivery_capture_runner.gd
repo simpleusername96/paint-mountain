@@ -12,6 +12,7 @@ const DRAIN_P95_MAX_MILLISECONDS := 4.0
 const DRAIN_MAX_MILLISECONDS := 8.0
 const DRAIN_FRAME_P95_DELTA_MAX_MILLISECONDS := 4.0
 const TIMEOUT_CAPTURE_TIME_SCALE := 8.0
+const STAGE_PREPARATION_TIMEOUT_MSEC := 180_000
 
 var _app: AppRoot
 var _screen: String = ""
@@ -107,10 +108,14 @@ func _run_capture() -> void:
 			await _capture_continuous_paint()
 		"pause":
 			var paused_gameplay := await _start_stage(&"stage_01", true)
+			if paused_gameplay == null:
+				return
 			(paused_gameplay.get_node("StageController") as StageController).toggle_pause()
 			await get_tree().process_frame
 		"settings":
 			var settings_gameplay := await _start_stage(&"stage_01", true)
+			if settings_gameplay == null:
+				return
 			(settings_gameplay.get_node("StageController") as StageController).toggle_pause()
 			_app._show_settings(&"gameplay")
 			await get_tree().process_frame
@@ -187,9 +192,8 @@ func _run_responsiveness_probe() -> void:
 	var stage_start_usec := Time.get_ticks_usec()
 	_app._start_stage(&"first_descent")
 	var stage_start_call_ms := float(Time.get_ticks_usec() - stage_start_usec) / 1000.0
-	var gameplay := _app.get_node_or_null("ActiveGameplay") as Node3D
+	var gameplay := await _wait_for_active_gameplay(&"stage_01")
 	if gameplay == null:
-		_fail_capture("responsiveness probe could not create ActiveGameplay")
 		get_tree().quit(1)
 		return
 	var readiness_samples := PackedFloat64Array()
@@ -432,16 +436,30 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	data.selected_stage_id = stage_id
 	game_state.initialize_from_data(data)
 	_app._start_stage(stage_id)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var gameplay: Node3D = _app.get_node("ActiveGameplay")
+	var gameplay := await _wait_for_active_gameplay(stage_id)
+	if gameplay == null:
+		return null
 	if begin_aiming:
 		gameplay.get_node("StageController").begin_aiming()
 	return gameplay
 
 
+func _wait_for_active_gameplay(stage_id: StringName) -> Node3D:
+	var canonical_stage_id := StageCatalog.canonical_id(stage_id)
+	var deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
+	while Time.get_ticks_msec() < deadline:
+		var gameplay := _app.get_node_or_null("ActiveGameplay") as Node3D
+		if gameplay != null:
+			return gameplay
+		await get_tree().process_frame
+	_fail_capture("stage %s did not finish background preparation" % canonical_stage_id)
+	return null
+
+
 func _capture_wind_aiming(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
 	var wind := gameplay.get_node("WindController") as WindController
 	if director.current_interaction_mode != CameraDirector.InteractionMode.AIM_LOCKED:
@@ -456,6 +474,8 @@ func _capture_wind_aiming(stage_id: StringName) -> void:
 
 func _capture_map_inspection(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
 	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
 	var center := terrain.global_position
@@ -478,6 +498,8 @@ func _capture_map_inspection(stage_id: StringName) -> void:
 
 func _capture_aim_return(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
 	if not director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true):
 		_fail_capture("aim return capture could not enter Map Inspection")
@@ -498,6 +520,8 @@ func _capture_aim_return(stage_id: StringName) -> void:
 
 func _capture_manual_result(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
 	if not await _fire_until_target_paint(gameplay):
 		return
 	var controller := gameplay.get_node("StageController") as StageController
@@ -510,6 +534,8 @@ func _capture_manual_result(stage_id: StringName) -> void:
 
 func _capture_timeout_result(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
 	var controller := gameplay.get_node("StageController") as StageController
 	var cannon := gameplay.get_node("Cannon") as CannonController
 	await _wait_for_cannon_prediction(cannon)
@@ -562,6 +588,8 @@ func _validate_result_capture(controller: StageController, expected_reason: Stri
 
 func _capture_summit_hit() -> void:
 	var gameplay := await _start_stage(_capture_stage, true)
+	if gameplay == null:
+		return
 	await get_tree().process_frame
 	var controller := gameplay.get_node("StageController") as StageController
 	var cannon := gameplay.get_node("Cannon") as CannonController
@@ -598,6 +626,8 @@ func _capture_summit_hit() -> void:
 
 func _capture_next_aim(wait_until_ready: bool) -> void:
 	var gameplay := await _start_stage(_capture_stage, true)
+	if gameplay == null:
+		return
 	await get_tree().process_frame
 	var controller := gameplay.get_node("StageController") as StageController
 	var cannon := gameplay.get_node("Cannon") as CannonController
@@ -617,6 +647,8 @@ func _capture_next_aim(wait_until_ready: bool) -> void:
 
 func _capture_two_family() -> void:
 	var gameplay := await _start_stage(_capture_stage, true)
+	if gameplay == null:
+		return
 	await get_tree().process_frame
 	var controller := gameplay.get_node("StageController") as StageController
 	var cannon := gameplay.get_node("Cannon") as CannonController
@@ -638,6 +670,8 @@ func _capture_two_family() -> void:
 
 func _capture_scale_contact() -> void:
 	var gameplay := await _start_stage(_capture_stage, true)
+	if gameplay == null:
+		return
 	await get_tree().process_frame
 	var controller := gameplay.get_node("StageController") as StageController
 	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
@@ -648,19 +682,19 @@ func _capture_scale_contact() -> void:
 			if written_pixel_count > 0 and manager.active_count() > 0:
 				contact_paint_seen.value = true
 	)
-	# Hold the real physics just after the first authoritative mark so the
-	# rendered evidence contains both the physical ball and the paint response.
-	# This is capture-only timing; gameplay keeps its normal configured speed.
-	Engine.time_scale = 0.08
 	if not controller.request_fire():
 		_fail_capture("scale capture could not fire the default aim")
 		return
-	var budget := 240
+	# Run the real flight at normal speed, then hold just after the first
+	# authoritative mark so the frame contains the physical ball and paint.
+	var budget := Engine.physics_ticks_per_second * 12
 	while not bool(contact_paint_seen.value) and budget > 0:
 		await get_tree().physics_frame
 		budget -= 1
 	if not bool(contact_paint_seen.value):
 		_fail_capture("scale capture did not observe a live ball and target paint together")
+		return
+	Engine.time_scale = 0.08
 
 
 func _wait_for_cannon_prediction(cannon: CannonController) -> void:
@@ -672,6 +706,8 @@ func _wait_for_cannon_prediction(cannon: CannonController) -> void:
 
 func _capture_continuous_paint() -> void:
 	var gameplay := await _start_stage(&"first_descent", true)
+	if gameplay == null:
+		return
 	var controller: StageController = gameplay.get_node("StageController")
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
