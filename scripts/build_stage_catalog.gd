@@ -418,9 +418,9 @@ static func _mechanism_pad_radius(kind: MechanismData.Kind) -> float:
 		int(MechanismData.Kind.SPLITTER):
 			return 10.0
 		int(MechanismData.Kind.UPHILL_REBOUND):
-			# Uphill Rebound needs nearby terrain relief; a wide flattened pad
-			# removes the rise witness that makes this glyph useful.
-			return 1.5
+			# This glyph conforms to a natural slope. Even a small shelf can erase
+			# the nearby ascent witness or create a sharp ring around the decal.
+			return 0.25
 	# Burst's full ring must stay on its broad shelf instead of crossing the
 	# sharp support blend at the edge of the old 8 m anchor.
 	return 10.0
