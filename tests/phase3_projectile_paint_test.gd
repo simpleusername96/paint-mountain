@@ -27,28 +27,20 @@ func _run_checks() -> void:
 		"applied_count": 0,
 		"radial_count": 0,
 		"impact_count": 0,
-		"settle_count": 0,
 		"sweep_count": 0,
 		"written_pixels": 0,
 		"newly_painted_pixels": 0,
 		"impact_radii": PackedFloat32Array(),
 		"sweep_radii": PackedFloat32Array(),
-		"stop_reason": &"",
 		"last_drained_tick": -1,
 		"paint_checksum": 0,
 	}
-	manager.projectile_stopped.connect(
-		func(_projectile: PaintProjectile, reason: StringName) -> void:
-			observed.stop_reason = reason
-	)
 	manager.radial_paint_mark_ready.connect(
 		func(command: RadialPaintMark) -> void:
 			observed.radial_count += 1
 			if command.kind == RadialPaintMark.Kind.IMPACT:
 				observed.impact_count += 1
 				observed.impact_radii.append(command.radius)
-			elif command.kind == RadialPaintMark.Kind.SETTLE:
-				observed.settle_count += 1
 	)
 	manager.surface_paint_sweep_ready.connect(
 		func(command: SurfacePaintSweep) -> void:
@@ -73,21 +65,21 @@ func _run_checks() -> void:
 	_assert_true(active.size() == 1, "accepted fire must spawn exactly one projectile")
 	if not active.is_empty():
 		_assert_true(active[0].spawn_ordinal == 0, "shot parent must receive stable spawn ordinal zero")
-	var frame_budget := 60 * 24
-	while manager.active_count() > 0 and frame_budget > 0:
+	var frame_budget := 60 * 12
+	while (observed.impact_count == 0 or observed.sweep_count == 0 \
+			or observed.newly_painted_pixels == 0) and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
+	for projectile in manager.active_projectiles():
+		projectile.sleeping = true
 	await physics_frame
-	await physics_frame
+	manager.finalize_pending_paint_intents()
 	paint_system.flush_pending()
-	_assert_true(manager.active_count() == 0, "painted projectile must terminate without an orphan")
-	_assert_true(manager.pending_intent_count() == 0, "projectile termination must leave no uncanonicalized paint intent")
+	_assert_true(manager.active_count() > 0, "a valid-top projectile must remain resident until stage cleanup")
+	_assert_true(manager.pending_intent_count() == 0, "explicit paint finalization must leave no uncanonicalized intent")
 	_assert_true(observed.applied_count > 0, "physical target contacts must apply typed paint commands")
 	_assert_true(observed.impact_count > 0, "first target contact must emit an impact mark")
 	_assert_true(observed.sweep_count > 0, "sustained target contact must emit continuous surface sweeps")
-	_assert_true(observed.stop_reason != &"", "projectile termination must publish a bounded stop reason")
-	if observed.stop_reason == &"settled":
-		_assert_true(observed.settle_count == 1, "target-top settlement must emit exactly one settle mark")
 	for radius in observed.impact_radii:
 		_assert_true(is_equal_approx(radius, cannon.projectile_data.impact_paint_radius), "impact radius must remain fixed for the whole shot")
 	for radius in observed.sweep_radii:
@@ -98,11 +90,10 @@ func _run_checks() -> void:
 	_assert_true(paint_system.coverage_percent() > 0.0, "projectile commands must increase authoritative coverage")
 	if not _failed:
 		print(
-			"Phase 3 projectile-paint integration passed: %d applied, %d impact, %d sweep, %d settle, %.4f%% coverage." % [
+			"Phase 3 projectile-paint integration passed: %d applied, %d impact, %d sweep, persistent resident, %.4f%% coverage." % [
 				observed.applied_count,
 				observed.impact_count,
 				observed.sweep_count,
-				observed.settle_count,
 				paint_system.coverage_percent(),
 			]
 		)

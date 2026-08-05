@@ -48,14 +48,18 @@ func _run_checks() -> void:
 
 
 func _assert_scale_contract() -> void:
-	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 0.90), "physical projectile radius must be 0.90 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 1.20), "physical projectile radius must be 1.20 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.minimum_launch_speed, 32.0), "minimum launch speed must be 32 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.maximum_launch_speed, 160.0), "maximum launch speed must be 160 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(0.0), 32.0), "zero power must map to 32 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(100.0), 160.0), "full power must map to 160 m/s")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 1.50), "sweep paint radius must be 1.50 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 2.10), "impact paint radius must be 2.10 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.settle_paint_radius, 1.50), "settle paint radius must be 1.50 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 1.40), "sweep paint radius must be 1.40 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 1.75), "impact paint radius must be 1.75 m")
+	_assert_true(
+		PROJECTILE_DATA.impact_paint_radius > PROJECTILE_DATA.paint_footprint_radius \
+				and PROJECTILE_DATA.paint_footprint_radius > PROJECTILE_DATA.radius,
+		"impact, sweep, and physical radii must keep the revised middle proportion"
+	)
 
 
 func _assert_cannon_ballistic_yaw_contract() -> void:
@@ -164,8 +168,6 @@ func _assert_recontact_debounce() -> void:
 	manager.configure_terrain(surface)
 	var bouncing_data := PROJECTILE_DATA.duplicate() as ProjectileData
 	bouncing_data.bounce = 0.82
-	bouncing_data.minimum_movement_speed = 0.1
-	bouncing_data.stop_duration = 4.0
 	var ticks := PackedInt32Array()
 	var first_flags: Array[bool] = []
 	manager.projectile_contact_reported.connect(func(projectile: PaintProjectile, contact: ProjectileContact) -> void:

@@ -5,11 +5,23 @@ signal contact_reported(projectile: PaintProjectile, contact: ProjectileContact)
 signal radial_paint_mark_intent_requested(projectile: PaintProjectile, intent: RadialPaintMark)
 signal surface_paint_sweep_intent_requested(projectile: PaintProjectile, intent: SurfacePaintSweep)
 signal transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal motion_state_changed(
+	projectile: PaintProjectile,
+	previous_state: int,
+	current_state: int
+)
 signal stopped(projectile: PaintProjectile, reason: StringName)
 
 const IMPACT_SPEED_THRESHOLD := 8.0
 const RECONTACT_ABSENCE_TICKS := 2
-const CONTACT_CONFIGURATION_ERROR := &"contact_configuration_error"
+const RECOVERY_CLEARANCE_EPSILON := 0.01
+const INVALID_GEOMETRY_CONFIRMATION_TICKS := 3
+
+enum MotionState {
+	MOVING_AIRBORNE,
+	MOVING_ON_TERRAIN,
+	RESTING_ON_TERRAIN,
+}
 
 var projectile_data: ProjectileData
 var split_generation: int = 0
@@ -18,23 +30,34 @@ var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 2
 var spawn_ordinal: int:
 	get:
 		return _spawn_ordinal
+var motion_state: MotionState:
+	get:
+		return _motion_state
+var terminal_reason: StringName:
+	get:
+		return _terminal_reason
 
 var _terrain_surface: TerrainSurface
 var _paint_surface_tuning: PaintSurfaceTuning
 var _spawn_ordinal: int = -1
 var _elapsed: float = 0.0
-var _slow_elapsed: float = 0.0
 var _deactivated: bool = false
+var _motion_state: MotionState = MotionState.MOVING_AIRBORNE
+var _terminal_reason: StringName = &""
+var _has_touched_playable_top: bool = false
 var _current_top_contact: ProjectileContact
-var _current_target_top_contact: ProjectileContact
-var _current_target_event_index: int = -1
+var _current_paintable_top_contact: ProjectileContact
+var _current_paintable_event_index: int = -1
+var _last_valid_top_contact: ProjectileContact
+var _sweep_anchor_contact: ProjectileContact
 var _interval_last_contact: ProjectileContact
 var _interval_missing_ticks: int = 0
+var _has_emitted_first_impact: bool = false
 var _cached_incoming_velocity: Vector3 = Vector3.ZERO
 var _contact_missing_ticks: Dictionary = {}
 var _stable_identity_rids: Dictionary = {}
 var _has_reported_contact: bool = false
-var _penetration_ticks: int = 0
+var _invalid_geometry_ticks: int = 0
 var _velocity_history: Array[Vector3] = []
 var _queued_desired_velocity := Vector3.INF
 var _queued_desired_velocity_tick: int = -1
@@ -46,6 +69,14 @@ func paint_radius_multiplier() -> float:
 
 func physical_radius() -> float:
 	return projectile_data.radius * (0.78 if split_generation > 0 else 1.0)
+
+
+func has_reached_playable_top() -> bool:
+	return _has_touched_playable_top
+
+
+func is_resting_on_terrain() -> bool:
+	return _motion_state == MotionState.RESTING_ON_TERRAIN
 
 
 func configure(
@@ -93,28 +124,20 @@ func _physics_process(delta: float) -> void:
 		return
 	_elapsed += delta
 	if not stage_bounds.has_point(global_position):
-		deactivate(&"out_of_bounds")
+		deactivate(ProjectileSettlementReason.ESCAPED_BOUNDS)
 		return
-	if _terrain_surface.contains_world_xz(Vector2(global_position.x, global_position.z)):
-		var surface_y := _terrain_surface.world_surface_point(Vector2(global_position.x, global_position.z)).y
-		_penetration_ticks = _penetration_ticks + 1 if global_position.y < surface_y - 3.0 else 0
-	else:
-		_penetration_ticks = 0
-	if _penetration_ticks >= 2:
-		deactivate(&"terrain_penetration_guard")
+	if not _has_touched_playable_top \
+			and _elapsed >= projectile_data.never_contacted_timeout:
+		deactivate(ProjectileSettlementReason.MISSED_TERRAIN)
 		return
-	if _elapsed >= projectile_data.maximum_lifetime:
-		deactivate(&"lifetime")
-		return
-	if sleeping:
-		deactivate(&"settled")
-		return
-	if linear_velocity.length() <= projectile_data.minimum_movement_speed:
-		_slow_elapsed += delta
-		if _slow_elapsed >= projectile_data.stop_duration:
-			deactivate(&"settled")
-	else:
-		_slow_elapsed = maxf(0.0, _slow_elapsed - delta * 0.35)
+	if sleeping and _has_touched_playable_top and _last_valid_top_contact != null:
+		_set_motion_state(MotionState.RESTING_ON_TERRAIN)
+	elif not sleeping and _motion_state == MotionState.RESTING_ON_TERRAIN:
+		_set_motion_state(
+			MotionState.MOVING_ON_TERRAIN
+			if _current_paintable_top_contact != null
+			else MotionState.MOVING_AIRBORNE
+		)
 
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
@@ -179,7 +202,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 	if not String(identity_failure).is_empty():
 		push_error("PaintProjectile blocked an invalid gameplay contact identity: %s" % identity_failure)
-		_deactivate_from_state(state, CONTACT_CONFIGURATION_ERROR)
+		_deactivate_from_state(
+			state,
+			ProjectileSettlementReason.CONTACT_CONFIGURATION_ERROR
+		)
 		return
 
 	var current_contacts: Array[ProjectileContact] = []
@@ -223,7 +249,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		_deactivate_from_state(state, ProjectileSettlementReason.BACKSTOP)
 		return
 
-	_update_target_contact_interval(current_contacts, state.get_space_state())
+	_recover_terrain_embedding(state, _current_top_contact)
+	if _deactivated:
+		return
+	_update_paintable_contact_interval(current_contacts, state.get_space_state())
 	if _queued_desired_velocity != Vector3.INF and physics_tick > _queued_desired_velocity_tick:
 		state.apply_central_impulse(mass * (_queued_desired_velocity - state.linear_velocity))
 		_queued_desired_velocity = Vector3.INF
@@ -238,14 +267,16 @@ func queue_desired_velocity(desired_velocity: Vector3, contact_tick: int) -> voi
 	if desired_velocity.is_finite() and not desired_velocity.is_zero_approx():
 		_queued_desired_velocity = desired_velocity
 		_queued_desired_velocity_tick = contact_tick
+		sleeping = false
+		if _motion_state == MotionState.RESTING_ON_TERRAIN:
+			_set_motion_state(MotionState.MOVING_ON_TERRAIN)
 
 
 func deactivate(reason: StringName) -> void:
 	if _deactivated:
 		return
-	if reason == &"settled" and _current_target_top_contact != null:
-		_emit_settle_intent(_current_target_top_contact, _current_target_event_index)
 	_deactivated = true
+	_terminal_reason = reason
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	freeze = true
@@ -253,12 +284,12 @@ func deactivate(reason: StringName) -> void:
 	queue_free()
 
 
-func _update_target_contact_interval(
+func _update_paintable_contact_interval(
 		current_contacts: Array[ProjectileContact],
 		space_state: PhysicsDirectSpaceState3D
 ) -> void:
-	_current_target_top_contact = null
-	_current_target_event_index = -1
+	_current_paintable_top_contact = null
+	_current_paintable_event_index = -1
 	for event_index in range(current_contacts.size()):
 		var contact := current_contacts[event_index]
 		if SurfaceContactGapValidator.is_paintable_contact(
@@ -266,47 +297,86 @@ func _update_target_contact_interval(
 			_paint_surface_tuning,
 			contact
 		):
-			_current_target_top_contact = contact
-			_current_target_event_index = event_index
+			_current_paintable_top_contact = contact
+			_current_paintable_event_index = event_index
 			break
-	if _current_target_top_contact == null:
+
+	if _current_paintable_top_contact == null:
+		if _motion_state != MotionState.RESTING_ON_TERRAIN:
+			_set_motion_state(MotionState.MOVING_AIRBORNE)
 		if _interval_last_contact != null:
 			_interval_missing_ticks += 1
 			if _interval_missing_ticks > _paint_surface_tuning.maximum_bridge_ticks:
-				_interval_last_contact = null
-				_interval_missing_ticks = 0
+				_close_paint_interval()
 		return
 
-	var current := _current_target_top_contact
-	if _interval_last_contact == null or not _interval_last_contact.same_collider_shape(current):
-		_emit_impact_intent(current, _current_target_event_index)
-	else:
-		var missing_ticks := maxi(0, current.physics_tick - _interval_last_contact.physics_tick - 1)
-		if missing_ticks == 0:
-			_emit_sweep_intent(
-				_interval_last_contact,
-				current,
-				_current_target_event_index,
-				false
-			)
-		elif SurfaceContactGapValidator.can_bridge(
+	var current := _current_paintable_top_contact
+	_has_touched_playable_top = true
+	_last_valid_top_contact = current
+	_set_motion_state(
+		MotionState.RESTING_ON_TERRAIN
+		if sleeping
+		else MotionState.MOVING_ON_TERRAIN
+	)
+
+	if not _has_emitted_first_impact:
+		_emit_impact_intent(current, _current_paintable_event_index)
+		_has_emitted_first_impact = true
+		_seed_paint_interval(current)
+		return
+	if _sweep_anchor_contact == null or _interval_last_contact == null \
+			or not _interval_last_contact.same_collider_shape(current):
+		_seed_paint_interval(current)
+		return
+
+	var missing_ticks := maxi(0, current.physics_tick - _interval_last_contact.physics_tick - 1)
+	var bridged_gap := false
+	if missing_ticks > 0:
+		bridged_gap = SurfaceContactGapValidator.can_bridge(
 			_terrain_surface,
 			_paint_surface_tuning,
 			_interval_last_contact,
 			current,
 			missing_ticks,
 			space_state
-		):
-			_emit_sweep_intent(
-				_interval_last_contact,
-				current,
-				_current_target_event_index,
-				true
-			)
-		else:
-			_emit_impact_intent(current, _current_target_event_index)
+		)
+		if not bridged_gap:
+			_seed_paint_interval(current)
+			return
+
+	if _sweep_anchor_contact.world_position.distance_to(current.world_position) \
+			>= projectile_data.minimum_paint_travel_distance:
+		_emit_sweep_intent(
+			_sweep_anchor_contact,
+			current,
+			_current_paintable_event_index,
+			bridged_gap
+		)
+		_sweep_anchor_contact = current
 	_interval_last_contact = current
 	_interval_missing_ticks = 0
+
+
+func _seed_paint_interval(contact: ProjectileContact) -> void:
+	_sweep_anchor_contact = contact
+	_interval_last_contact = contact
+	_interval_missing_ticks = 0
+
+
+func _close_paint_interval() -> void:
+	_sweep_anchor_contact = null
+	_interval_last_contact = null
+	_interval_missing_ticks = 0
+
+
+func _set_motion_state(next_state: MotionState) -> void:
+	if _motion_state == next_state:
+		return
+	var previous := _motion_state
+	_motion_state = next_state
+	if next_state == MotionState.RESTING_ON_TERRAIN:
+		_close_paint_interval()
+	motion_state_changed.emit(self, previous, next_state)
 
 
 func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) -> void:
@@ -356,30 +426,83 @@ func _emit_sweep_intent(
 		surface_paint_sweep_intent_requested.emit(self, intent)
 
 
-func _emit_settle_intent(contact: ProjectileContact, source_event_index: int) -> void:
-	var intent := RadialPaintMark.new(
-		contact.physics_tick,
-		_spawn_ordinal,
-		source_event_index,
-		-1,
-		contact.world_position,
-		contact.normal,
-		projectile_data.settle_paint_radius * paint_radius_multiplier(),
-		contact.collider_rid,
-		contact.contact_owner_id,
-		contact.contact_shape_id,
-		contact.collider_shape_index,
-			RadialPaintMark.Kind.SETTLE,
-			shot_id
+func _recover_terrain_embedding(
+		state: PhysicsDirectBodyState3D,
+		top_contact: ProjectileContact
+) -> void:
+	var center := state.transform.origin
+	var probe_xz := Vector2(center.x, center.z)
+	if top_contact != null:
+		probe_xz = Vector2(top_contact.world_position.x, top_contact.world_position.z)
+	if not _terrain_surface.contains_world_xz(probe_xz):
+		if top_contact != null:
+			_record_invalid_geometry(state, top_contact, &"top_contact_outside_playable_surface")
+		else:
+			_invalid_geometry_ticks = 0
+		return
+
+	var surface_point := _terrain_surface.world_surface_point(probe_xz)
+	var surface_normal := _terrain_surface.world_surface_normal(probe_xz)
+	if not surface_point.is_finite() or not surface_normal.is_finite() \
+			or surface_normal.is_zero_approx():
+		_record_invalid_geometry(state, top_contact, &"non_finite_surface_sample")
+		return
+	if top_contact != null and absf(
+		(top_contact.world_position - surface_point).dot(surface_normal)
+	) > TerrainTopTopology.HIT_HEIGHT_TOLERANCE:
+		_record_invalid_geometry(state, top_contact, &"collider_surface_mismatch")
+		return
+
+	var signed_clearance := (center - surface_point).dot(surface_normal)
+	# Without a real top contact, do not pre-empt the normal CCD collision. The
+	# fallback only catches a body whose center has already tunneled below top.
+	if top_contact == null and signed_clearance >= -RECOVERY_CLEARANCE_EPSILON:
+		_invalid_geometry_ticks = 0
+		return
+	var correction_distance := physical_radius() - signed_clearance
+	if correction_distance <= RECOVERY_CLEARANCE_EPSILON:
+		_invalid_geometry_ticks = 0
+		return
+	var corrected_transform := state.transform
+	corrected_transform.origin += surface_normal \
+			* (correction_distance + RECOVERY_CLEARANCE_EPSILON)
+	if not corrected_transform.origin.is_finite():
+		_record_invalid_geometry(state, top_contact, &"non_finite_recovery_transform")
+		return
+	state.transform = corrected_transform
+	var inward_normal_speed := state.linear_velocity.dot(surface_normal)
+	if inward_normal_speed < 0.0:
+		state.linear_velocity -= surface_normal * inward_normal_speed
+	_invalid_geometry_ticks = 0
+
+
+func _record_invalid_geometry(
+		state: PhysicsDirectBodyState3D,
+		contact: ProjectileContact,
+		diagnostic: StringName
+) -> void:
+	_invalid_geometry_ticks += 1
+	if _invalid_geometry_ticks < INVALID_GEOMETRY_CONFIRMATION_TICKS:
+		return
+	var contact_point := contact.world_position if contact != null else Vector3.INF
+	push_warning(
+		"PaintProjectile invalid geometry: diagnostic=%s shot=%d ordinal=%d center=%s contact=%s radius=%.3f" % [
+			String(diagnostic),
+			shot_id,
+			_spawn_ordinal,
+			str(state.transform.origin),
+			str(contact_point),
+			physical_radius(),
+		]
 	)
-	if intent.is_intent_valid():
-		radial_paint_mark_intent_requested.emit(self, intent)
+	_deactivate_from_state(state, ProjectileSettlementReason.INVALID_GEOMETRY)
 
 
 func _deactivate_from_state(state: PhysicsDirectBodyState3D, reason: StringName) -> void:
 	if _deactivated:
 		return
 	_deactivated = true
+	_terminal_reason = reason
 	state.linear_velocity = Vector3.ZERO
 	state.angular_velocity = Vector3.ZERO
 	linear_velocity = Vector3.ZERO

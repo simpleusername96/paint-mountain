@@ -96,7 +96,9 @@ func _assert_wall_launch(
 		"linear_at_stop": Vector3.INF,
 		"angular_at_stop": Vector3.INF,
 	}
-	var projectile := manager.spawn_projectile(PROJECTILE_DATA, origin, velocity)
+	var launch_data := PROJECTILE_DATA.duplicate() as ProjectileData
+	launch_data.never_contacted_timeout = 10.0
+	var projectile := manager.spawn_projectile(launch_data, origin, velocity)
 	_assert_true(projectile != null, "%s wall fixture must spawn" % aim)
 	var contact_callback := func(reported_projectile: PaintProjectile, contact: ProjectileContact) -> void:
 		if reported_projectile != projectile:
@@ -127,7 +129,7 @@ func _assert_wall_launch(
 	_assert_true(
 		(observed_backstop and observed.reason == ProjectileSettlementReason.BACKSTOP) \
 				or (observed_side_wall and observed.reason == ProjectileSettlementReason.BACKSTOP) \
-				or (observed_apron and observed.reason == &"settled"),
+				or (observed_apron and observed.reason == ProjectileSettlementReason.MISSED_TERRAIN),
 		"%s must use the matching containment settlement reason" % aim
 	)
 	_assert_true(observed.contacts.size() == 1, "%s must report exactly one begun wall contact" % aim)

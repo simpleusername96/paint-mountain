@@ -13,15 +13,13 @@ extends Resource
 @export_range(1.0, 100.0, 0.5) var minimum_launch_speed: float = 32.0
 @export_range(1.0, 200.0, 0.5) var maximum_launch_speed: float = 160.0
 
-@export_category("Lifetime")
-@export_range(1.0, 60.0, 0.25) var maximum_lifetime: float = 18.0
-@export_range(0.05, 5.0, 0.05) var minimum_movement_speed: float = 1.4
-@export_range(0.1, 5.0, 0.1) var stop_duration: float = 1.0
+@export_category("Miss Cleanup")
+@export_range(1.0, 120.0, 0.25) var never_contacted_timeout: float = 30.0
 
 @export_category("Paint Surface")
 @export_range(0.05, 8.0, 0.05) var paint_footprint_radius: float = 4.0
 @export_range(0.1, 20.0, 0.1) var impact_paint_radius: float = 6.0
-@export_range(0.1, 20.0, 0.1) var settle_paint_radius: float = 4.0
+@export_range(0.001, 1.0, 0.001) var minimum_paint_travel_distance: float = 0.05
 
 
 func launch_speed(power_percent: float) -> float:

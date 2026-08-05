@@ -106,6 +106,17 @@ func pending_intent_count() -> int:
 	return _pending_intents.size()
 
 
+## Publishes every already accepted paint intent in canonical order. Result
+## owners call this before PaintSystem's final drain and projectile cleanup.
+## Repeated calls are safe and return zero after the first drain.
+func finalize_pending_paint_intents() -> int:
+	if _pending_intents.is_empty():
+		return 0
+	var ready := _pending_intents
+	_pending_intents = []
+	return _emit_canonicalized_intents(ready)
+
+
 func active_shot_ids() -> PackedInt64Array:
 	_prune_invalid()
 	var ids := PackedInt64Array()
@@ -190,8 +201,14 @@ func _canonicalize_completed_ticks(current_physics_tick: int) -> void:
 		else:
 			waiting.append(entry)
 	_pending_intents = waiting
-	ready.sort_custom(_intent_entry_less)
-	for entry in ready:
+	_emit_canonicalized_intents(ready)
+
+
+func _emit_canonicalized_intents(entries: Array[Dictionary]) -> int:
+	if entries.is_empty():
+		return 0
+	entries.sort_custom(_intent_entry_less)
+	for entry in entries:
 		var intent: Variant = entry.intent
 		var ordinal := int(intent.spawn_ordinal)
 		var sequence := int(_next_sequence_by_ordinal.get(ordinal, 0))
@@ -204,6 +221,7 @@ func _canonicalize_completed_ticks(current_physics_tick: int) -> void:
 			var sweep := (intent as SurfacePaintSweep).with_sequence(sequence)
 			assert(sweep.is_valid(), "Canonicalized sweep command must be valid.")
 			surface_paint_sweep_ready.emit(sweep)
+	return entries.size()
 
 
 func _intent_entry_less(a: Dictionary, b: Dictionary) -> bool:

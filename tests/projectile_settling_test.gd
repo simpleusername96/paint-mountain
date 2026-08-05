@@ -21,9 +21,12 @@ func _run_checks() -> void:
 	await _assert_bounded_rebound_and_recovery(false)
 	await _assert_bounded_rebound_and_recovery(true)
 	await _assert_gap_proof()
-	await _assert_settle_command()
+	await _assert_persistent_rest_and_wake()
+	await _assert_embedding_recovery()
+	await _assert_invalid_geometry_is_explicit()
+	await _assert_never_contacted_timeout()
 	if not _failed:
-		print("Projectile settling checks passed: low rebound, flat/ramp recovery, exact gap proof, and ordered impact/sweep/settle intent.")
+		print("Projectile lifecycle checks passed: contact recovery, persistent rest/wake, truthful miss cleanup, continuous paint, and canonical intent finalization.")
 	quit(1 if _failed else 0)
 
 
@@ -56,11 +59,6 @@ func _assert_manager_canonical_ordering() -> void:
 	var emitted: Array[RefCounted] = []
 	manager.radial_paint_mark_ready.connect(func(command: RadialPaintMark) -> void: emitted.append(command))
 	manager.surface_paint_sweep_ready.connect(func(command: SurfacePaintSweep) -> void: emitted.append(command))
-	var settle := RadialPaintMark.new(
-		tick, 0, 0, -1, point, Vector3.UP, PROJECTILE_DATA.settle_paint_radius, body.get_rid(),
-		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
-		0, RadialPaintMark.Kind.SETTLE
-	)
 	var sweep := SurfacePaintSweep.new(
 		tick, 0, 0, -1, point, point + Vector3.RIGHT, Vector3.UP, Vector3.UP,
 		PROJECTILE_DATA.paint_footprint_radius, body.get_rid(), TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID,
@@ -76,27 +74,24 @@ func _assert_manager_canonical_ordering() -> void:
 		TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID, TerrainSurface.TOP_SHAPE_ID,
 		0, RadialPaintMark.Kind.IMPACT
 	)
-	_assert_true(manager.submit_radial_paint_intent(settle), "valid settle intent must queue")
 	_assert_true(manager.submit_surface_paint_intent(sweep), "valid sweep intent must queue")
 	_assert_true(manager.submit_radial_paint_intent(later_ordinal_impact), "second ordinal intent must queue")
 	_assert_true(manager.submit_radial_paint_intent(impact), "valid impact intent must queue")
-	await physics_frame
-	await physics_frame
-	_assert_true(emitted.size() == 4, "manager must canonicalize all four typed intents")
-	if emitted.size() == 4:
+	_assert_true(manager.finalize_pending_paint_intents() == 3, "explicit finalization must publish every accepted intent")
+	_assert_true(manager.finalize_pending_paint_intents() == 0, "explicit finalization must be idempotent")
+	_assert_true(emitted.size() == 3, "manager must canonicalize all three typed intents")
+	if emitted.size() == 3:
 		var emitted_impact := emitted[0] as RadialPaintMark
 		var emitted_sweep := emitted[1] as SurfacePaintSweep
-		var emitted_settle := emitted[2] as RadialPaintMark
-		var emitted_later := emitted[3] as RadialPaintMark
-		_assert_true(emitted_impact != null and emitted_impact.kind == RadialPaintMark.Kind.IMPACT, "IMPACT must sort before SWEEP and SETTLE")
+		var emitted_later := emitted[2] as RadialPaintMark
+		_assert_true(emitted_impact != null and emitted_impact.kind == RadialPaintMark.Kind.IMPACT, "IMPACT must sort before SWEEP")
 		_assert_true(emitted_sweep != null, "SWEEP must sort after IMPACT")
-		_assert_true(emitted_settle != null and emitted_settle.kind == RadialPaintMark.Kind.SETTLE, "SETTLE must sort last for one source event")
 		_assert_true(emitted_later != null and emitted_later.spawn_ordinal == 1, "higher spawn ordinal must sort after ordinal zero")
 		_assert_true(
 			emitted_impact != null and emitted_sweep != null \
-					and emitted_settle != null and emitted_later != null \
+					and emitted_later != null \
 					and emitted_impact.sequence == 0 and emitted_sweep.sequence == 1 \
-					and emitted_settle.sequence == 2 and emitted_later.sequence == 0,
+					and emitted_later.sequence == 0,
 			"sequence must increase independently per spawn ordinal"
 		)
 	_assert_true(manager.pending_intent_count() == 0, "completed-tick intent buffer must drain")
@@ -215,51 +210,152 @@ func _assert_gap_proof() -> void:
 	await _dispose_fixture(host, manager, surface)
 
 
-func _assert_settle_command() -> void:
+func _assert_persistent_rest_and_wake() -> void:
 	var fixture := await _build_fixture(false)
 	var host: Node3D = fixture.host
 	var surface: TerrainSurface = fixture.surface
 	var manager: ProjectileManager = fixture.manager
-	var data := PROJECTILE_DATA.duplicate() as ProjectileData
-	data.minimum_movement_speed = 2.0
-	data.stop_duration = 0.2
 	var commands: Array[RefCounted] = []
-	var observed := {"stop_reason": &""}
+	var stop_reasons: Array[StringName] = []
 	manager.radial_paint_mark_ready.connect(func(command: RadialPaintMark) -> void: commands.append(command))
 	manager.surface_paint_sweep_ready.connect(func(command: SurfacePaintSweep) -> void: commands.append(command))
-	manager.projectile_contact_reported.connect(func(projectile: PaintProjectile, contact: ProjectileContact) -> void:
-		if contact.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
-			projectile.linear_velocity = Vector3.ZERO
-	)
-	manager.projectile_stopped.connect(func(_projectile: PaintProjectile, reason: StringName) -> void: observed.stop_reason = reason)
+	manager.projectile_stopped.connect(func(_projectile: PaintProjectile, reason: StringName) -> void: stop_reasons.append(reason))
 	var surface_y := surface.world_surface_point(Vector2.ZERO).y
-	manager.spawn_projectile(data, Vector3(0.0, surface_y + 2.0, 0.0), Vector3(0.0, -8.0, 0.0))
+	var projectile := manager.spawn_projectile(
+		PROJECTILE_DATA,
+		Vector3(0.0, surface_y + 3.0, 0.0),
+		Vector3(0.0, -12.0, 0.0)
+	)
 	var budget := 180
-	while observed.stop_reason == &"" and budget > 0:
+	while is_instance_valid(projectile) and not projectile.has_reached_playable_top() and budget > 0:
 		await physics_frame
 		budget -= 1
-	for _tick in range(2):
+	_assert_true(is_instance_valid(projectile) and projectile.has_reached_playable_top(), "rest fixture must reach playable top")
+	if not is_instance_valid(projectile):
+		await _dispose_fixture(host, manager, surface)
+		return
+	projectile.linear_velocity = Vector3.ZERO
+	projectile.angular_velocity = Vector3.ZERO
+	projectile.sleeping = true
+	for _tick in range(6):
 		await physics_frame
-	_assert_true(observed.stop_reason == &"settled", "low-speed fixture must settle on target top")
-	var impact: RadialPaintMark
-	var settle: RadialPaintMark
-	for command in commands:
-		var radial := command as RadialPaintMark
-		if radial == null:
-			continue
-		if radial.kind == RadialPaintMark.Kind.IMPACT and impact == null:
-			impact = radial
-		elif radial.kind == RadialPaintMark.Kind.SETTLE:
-			settle = radial
-	_assert_true(impact != null and settle != null, "target settlement must emit impact and settle marks")
-	if impact != null and settle != null:
-		_assert_true(impact.sequence < settle.sequence, "settle must be sequenced after impact for the same ordinal")
-		_assert_true(
-			settle.spawn_ordinal == 0 \
-					and is_equal_approx(settle.radius, PROJECTILE_DATA.settle_paint_radius),
-			"settle must preserve ordinal and use the production resource radius"
-		)
+	manager.finalize_pending_paint_intents()
+	var command_count_at_rest := commands.size()
+	for _tick in range(30):
+		await physics_frame
+	manager.finalize_pending_paint_intents()
+	_assert_true(is_instance_valid(projectile) and manager.active_count() == 1, "a terrain-resting ball must remain resident")
+	_assert_true(projectile.is_resting_on_terrain(), "natural sleep must map to reversible terrain rest")
+	_assert_true(stop_reasons.is_empty(), "rest must not publish a terminal reason")
+	_assert_true(commands.size() == command_count_at_rest, "stationary rest must not emit duplicate paint commands")
+
+	var impact_count_before_wake := _radial_kind_count(commands, RadialPaintMark.Kind.IMPACT)
+	var sweep_count_before_wake := _sweep_count(commands)
+	projectile.sleeping = false
+	projectile.linear_velocity = Vector3(8.0, 0.0, 0.0)
+	budget = 180
+	while is_instance_valid(projectile) and _sweep_count(commands) <= sweep_count_before_wake \
+			and budget > 0:
+		await physics_frame
+		budget -= 1
+	manager.finalize_pending_paint_intents()
+	_assert_true(is_instance_valid(projectile), "a woken resident must continue as the same body")
+	_assert_true(_sweep_count(commands) > sweep_count_before_wake, "measured travel after wake must resume sweep paint")
+	_assert_true(
+		_radial_kind_count(commands, RadialPaintMark.Kind.IMPACT) == impact_count_before_wake,
+		"wake must seed a new sweep interval without a second impact blob"
+	)
 	await _dispose_fixture(host, manager, surface)
+
+
+func _assert_embedding_recovery() -> void:
+	var fixture := await _build_fixture(false)
+	var host: Node3D = fixture.host
+	var surface: TerrainSurface = fixture.surface
+	var manager: ProjectileManager = fixture.manager
+	var surface_point := surface.world_surface_point(Vector2.ZERO)
+	var projectile := manager.spawn_projectile(
+		PROJECTILE_DATA,
+		surface_point - Vector3.UP * 0.4,
+		Vector3(5.0, -2.0, 0.0)
+	)
+	for _tick in range(5):
+		await physics_frame
+	_assert_true(is_instance_valid(projectile), "an embedded valid-top ball must recover instead of disappearing")
+	if is_instance_valid(projectile):
+		var xz := Vector2(projectile.global_position.x, projectile.global_position.z)
+		var normal := surface.world_surface_normal(xz)
+		var clearance := (projectile.global_position - surface.world_surface_point(xz)).dot(normal)
+		_assert_true(clearance > 0.0, "recovery must restore the center to the playable side of the surface")
+		_assert_true(projectile.linear_velocity.dot(normal) >= -0.1, "recovery must remove inward normal motion")
+		_assert_true(absf(projectile.linear_velocity.x) > 0.1, "recovery must preserve tangent motion")
+	await _dispose_fixture(host, manager, surface)
+
+
+func _assert_invalid_geometry_is_explicit() -> void:
+	var fixture := await _build_fixture(false)
+	var host: Node3D = fixture.host
+	var surface: TerrainSurface = fixture.surface
+	var manager: ProjectileManager = fixture.manager
+	var collision := surface.get_node("TerrainTopBody/CollisionShape3D") as CollisionShape3D
+	var invalid_shape := BoxShape3D.new()
+	invalid_shape.size = Vector3(8.0, 1.0, 8.0)
+	collision.shape = invalid_shape
+	collision.position = Vector3(25.0, 0.0, 0.0)
+	await physics_frame
+	var stop_reasons: Array[StringName] = []
+	manager.projectile_stopped.connect(func(_projectile: PaintProjectile, reason: StringName) -> void: stop_reasons.append(reason))
+	manager.spawn_projectile(
+		PROJECTILE_DATA,
+		Vector3(25.0, 4.0, 0.0),
+		Vector3(0.0, -12.0, 0.0)
+	)
+	var budget := 180
+	while stop_reasons.is_empty() and budget > 0:
+		await physics_frame
+		budget -= 1
+	_assert_true(
+		stop_reasons.has(ProjectileSettlementReason.INVALID_GEOMETRY),
+		"a repeated real-collider/topology mismatch must terminate with INVALID_GEOMETRY"
+	)
+	await _dispose_fixture(host, manager, surface)
+
+
+func _assert_never_contacted_timeout() -> void:
+	var fixture := await _build_fixture(false)
+	var host: Node3D = fixture.host
+	var surface: TerrainSurface = fixture.surface
+	var manager: ProjectileManager = fixture.manager
+	var miss_data := PROJECTILE_DATA.duplicate() as ProjectileData
+	miss_data.never_contacted_timeout = 0.15
+	var stop_reasons: Array[StringName] = []
+	manager.projectile_stopped.connect(func(_projectile: PaintProjectile, reason: StringName) -> void: stop_reasons.append(reason))
+	manager.spawn_projectile(miss_data, Vector3(60.0, 20.0, 0.0), Vector3.ZERO)
+	var budget := 60
+	while stop_reasons.is_empty() and budget > 0:
+		await physics_frame
+		budget -= 1
+	_assert_true(
+		stop_reasons.has(ProjectileSettlementReason.MISSED_TERRAIN),
+		"a ball that never reaches playable top must use the resource-owned miss timeout"
+	)
+	await _dispose_fixture(host, manager, surface)
+
+
+func _radial_kind_count(commands: Array[RefCounted], kind: int) -> int:
+	var count := 0
+	for command in commands:
+		if command is RadialPaintMark and (command as RadialPaintMark).kind == kind:
+			count += 1
+	return count
+
+
+func _sweep_count(commands: Array[RefCounted]) -> int:
+	var count := 0
+	for command in commands:
+		if command is SurfacePaintSweep:
+			count += 1
+	return count
 
 
 func _build_fixture(on_ramp: bool) -> Dictionary:
