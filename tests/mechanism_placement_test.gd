@@ -1,10 +1,8 @@
 extends SceneTree
 
-const DEFERRED_STAGES: Array[StageData] = [
-	preload("res://resources/stages/burst_basin.tres"),
-	preload("res://resources/stages/split_ridge.tres"),
-]
 const BURST_DATA: MechanismData = preload("res://resources/mechanisms/burst_node.tres")
+const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitter_node.tres")
+const UPHILL_DATA: MechanismData = preload("res://resources/mechanisms/uphill_rebound_node.tres")
 
 var _failed := false
 
@@ -14,215 +12,162 @@ func _initialize() -> void:
 
 
 func _run_checks() -> void:
-	_assert_deferred_profiles_resolve_typed_pads()
-	_assert_effective_envelope_contract()
-	var fixture := _synthetic_burst_fixture()
-	var stage := fixture.stage as StageData
-	var first := fixture.layout as GeneratedStageLayout
-	var repeated := _synthetic_burst_fixture().layout as GeneratedStageLayout
-	first.mechanism_placements = MechanismPlacementGenerator.generate(stage, first)
-	repeated.mechanism_placements = MechanismPlacementGenerator.generate(stage, repeated)
-	_assert_true(first.mechanism_placements.size() == 1 and repeated.mechanism_placements.size() == 1, "synthetic typed pad must place Burst deterministically")
-	if first.mechanism_placements.size() == 1 and repeated.mechanism_placements.size() == 1:
-		_assert_placement(stage, first, first.mechanism_placements[0], repeated.mechanism_placements[0])
-		_assert_graph_immutability(stage, first)
-		_assert_invalid_pad_rejected(stage, first)
-		print("Task 1.1 graph-owned mechanism placement passed: %s" % _placement_summary(first))
+	_assert_shared_radius_contract()
+	var first_fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.RAMP)
+	var repeated_fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.RAMP)
+	var stage := first_fixture.stage as StageData
+	var first := first_fixture.layout as GeneratedStageLayout
+	var repeated := repeated_fixture.layout as GeneratedStageLayout
+	var placements := MechanismPlacementGenerator.generate(stage, first)
+	var repeated_placements := MechanismPlacementGenerator.generate(stage, repeated)
+	_assert_true(placements.size() == 3, "three generic anchors must admit the three typed glyphs")
+	_assert_true(repeated_placements.size() == placements.size(), "generic assignment must be deterministic")
+	if placements.size() == 3 and repeated_placements.size() == 3:
+		_assert_placement_contract(first, placements, repeated_placements)
+	_assert_flat_uphill_is_rejected()
+	_assert_count_cap()
+	print("Phase 4 generic glyph placement passed")
 	quit(1 if _failed else 0)
 
 
-func _assert_deferred_profiles_resolve_typed_pads() -> void:
-	for stage in DEFERRED_STAGES:
-		var graph := RouteGraphResolver.resolve(stage.stage_id, stage.generation_profile, stage.terrain_seed)
-		_assert_true(graph != null and graph.is_valid(), "%s v4 graph input must resolve before Phase 2 acceptance" % stage.stage_id)
-		if graph == null:
-			continue
-		for mechanism in stage.mechanism_loadout:
-			var pad := graph.pad_node_for_kind(mechanism.kind)
-			_assert_true(pad != null and pad.mechanism_kind == mechanism.kind, "%s mechanism must resolve to its typed immutable pad" % stage.stage_id)
-			if pad == null:
+func _assert_shared_radius_contract() -> void:
+	for data in [BURST_DATA, SPLITTER_DATA, UPHILL_DATA]:
+		_assert_true(
+			is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(data.kind), data.glyph_radius),
+			"compatibility radius must resolve the typed glyph footprint"
+		)
+		_assert_true(
+			is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(data.kind), data.glyph_radius * 2.0),
+			"render diameter must derive from the same typed glyph radius"
+		)
+
+
+func _assert_placement_contract(
+		layout: GeneratedStageLayout,
+		placements: Array[MechanismPlacement],
+		repeated: Array[MechanismPlacement]
+) -> void:
+	var by_kind: Dictionary = {}
+	for index in range(placements.size()):
+		var placement := placements[index]
+		by_kind[int(placement.mechanism_data.canonical_kind())] = placement
+		_assert_true(not String(placement.anchor_id).is_empty(), "placement must retain its generic anchor identity")
+		_assert_true(placement.local_transform.is_equal_approx(repeated[index].local_transform), "same layout must repeat the same transform")
+		var radius := placement.mechanism_data.glyph_radius
+		_assert_true(layout.local_bounds.grow(-radius).has_point(placement.local_xz), "glyph footprint must remain inside terrain bounds")
+		for other in placements:
+			if other == placement:
 				continue
-			var collision_radius := MechanismPlacementGenerator.effective_collision_radius(
-				mechanism.kind
-			)
-			var support_radius := maxf(
-				graph.route_width(pad.route_index) * 0.5,
-				pad.pad_radius
-			)
 			_assert_true(
-				support_radius - collision_radius >= MechanismPlacementGenerator.ROUTE_EDGE_CLEARANCE,
-				"%s mechanism pad must contain its 2x collision envelope plus route-edge clearance" % stage.stage_id
+				placement.local_xz.distance_to(other.local_xz) >= radius + other.mechanism_data.glyph_radius,
+				"glyph footprints must not overlap"
 			)
-			_assert_true(
-				pad.pad_radius * 0.60 >= collision_radius,
-				"%s mechanism pad must contain its 2x collision envelope on the flat inner shelf" % stage.stage_id
-			)
+	var splitter := by_kind.get(int(MechanismData.Kind.SPLITTER)) as MechanismPlacement
+	_assert_true(splitter != null and splitter.splitter_route_targets.size() == 3, "Splitter placement must store three route witnesses")
+	if splitter != null:
+		var unique_targets: Dictionary = {}
+		for target in splitter.splitter_route_targets:
+			unique_targets[Vector2(target.x, target.z).snapped(Vector2.ONE)] = true
+		_assert_true(unique_targets.size() == 3, "Splitter route witnesses must be visibly distinct")
+	var uphill := by_kind.get(int(MechanismData.Kind.UPHILL_REBOUND)) as MechanismPlacement
+	_assert_true(uphill != null and not uphill.uphill_tangent.is_zero_approx(), "Uphill Rebound must store an authoritative ascent tangent")
+	if uphill != null:
+		var start_height := layout.height_at_local(uphill.local_xz.x, uphill.local_xz.y)
+		var probe := uphill.local_xz + Vector2(uphill.uphill_tangent.x, uphill.uphill_tangent.z).normalized() * UPHILL_DATA.uphill_sample_distance
+		_assert_true(layout.height_at_local(probe.x, probe.y) > start_height, "stored uphill tangent must point toward higher terrain")
 
 
-func _assert_effective_envelope_contract() -> void:
-	_assert_true(
-		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.BURST), 3.6)
-				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.BURST), 8.4),
-		"Burst placement must use its 2x collision and visible bounds"
-	)
-	_assert_true(
-		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.SPLITTER), 3.5)
-				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.SPLITTER), 10.0),
-		"Splitter placement must use its 2x collision and visible bounds"
-	)
-	_assert_true(
-		is_equal_approx(MechanismPlacementGenerator.effective_collision_radius(MechanismData.Kind.BUMPER), 3.8)
-				and is_equal_approx(MechanismPlacementGenerator.effective_visual_diameter(MechanismData.Kind.BUMPER), 10.4),
-		"Bumper placement must use its 2x collision and visible bounds"
-	)
+func _assert_flat_uphill_is_rejected() -> void:
+	var fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.FLAT)
+	var stage := fixture.stage as StageData
+	stage.mechanism_loadout = [UPHILL_DATA]
+	var rejected := MechanismPlacementGenerator.generate(stage, fixture.layout)
+	_assert_true(rejected.is_empty(), "flat terrain must not receive Uphill Rebound")
 
 
-func _synthetic_burst_fixture() -> Dictionary:
+func _assert_count_cap() -> void:
+	var fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.RAMP)
+	var stage := fixture.stage as StageData
+	stage.mechanism_loadout = [
+		BURST_DATA, BURST_DATA, BURST_DATA, BURST_DATA,
+		BURST_DATA, BURST_DATA, BURST_DATA,
+	]
+	_assert_true(MechanismPlacementGenerator.generate(stage, fixture.layout).is_empty(), "placement must preserve the six-glyph stage cap")
+
+
+func _three_route_fixture(kind: TerrainTestFixtureFactory.Kind) -> Dictionary:
+	var layout := TerrainTestFixtureFactory.build_layout(kind)
+	layout.route_graph = _three_route_graph(layout)
 	var stage := StageData.new()
-	stage.stage_id = &"mechanism_graph_fixture"
-	stage.stage_version = 4
+	stage.stage_id = &"generic_glyph_fixture"
 	stage.terrain_center = Vector3.ZERO
-	stage.mechanism_loadout = [BURST_DATA]
-	stage.aiming_camera_position = Vector3(0.0, 8.0, 12.0)
-	stage.aiming_camera_target = Vector3(0.0, 1.0, 0.0)
-	stage.briefing_camera_position = Vector3(10.0, 10.0, 12.0)
-	stage.briefing_camera_target = Vector3(0.0, 1.0, 0.0)
-	var layout := TerrainTestFixtureFactory.build_layout(TerrainTestFixtureFactory.Kind.FLAT)
-	layout.profile_id = &"mechanism_graph_fixture_v4"
-	var summit_id := GeneratedRouteNode.summit_id(stage.stage_id)
-	var pad_id := GeneratedRouteNode.pad_id(stage.stage_id, 0, 0, MechanismData.Kind.BURST)
-	var exit_id := GeneratedRouteNode.route_node_id(stage.stage_id, 0, 2)
-	var summit := GeneratedRouteNode.new(
-		summit_id, Vector3(0.0, 0.0, -10.0), -1, 0, GeneratedRouteNode.Kind.SUMMIT
-	)
-	var pad := GeneratedRouteNode.new(
-		pad_id, Vector3.ZERO, 0, 1, GeneratedRouteNode.Kind.PAD, MechanismData.Kind.BURST, 8.0
-	)
-	var exit := GeneratedRouteNode.new(
-		exit_id, Vector3(0.0, 0.0, 10.0), 0, 2, GeneratedRouteNode.Kind.EXIT
-	)
-	var first_edge := GeneratedRouteEdge.new(
-		GeneratedRouteEdge.stable_id(stage.stage_id, 0, 0, &"a"),
-		summit_id, pad_id, 0, 0, StageRouteProfile.Role.PRIMARY, 10.0
-	)
-	var second_edge := GeneratedRouteEdge.new(
-		GeneratedRouteEdge.stable_id(stage.stage_id, 0, 0, &"b"),
-		pad_id, exit_id, 0, 1, StageRouteProfile.Role.PRIMARY, 10.0
-	)
-	layout.route_graph = GeneratedRouteGraph.new([summit, pad, exit], [first_edge, second_edge])
+	stage.aiming_camera_position = Vector3(34, 32, 34)
+	stage.aiming_camera_target = Vector3.ZERO
+	stage.briefing_camera_position = Vector3(-34, 38, 34)
+	stage.briefing_camera_target = Vector3.ZERO
+	stage.mechanism_loadout = [UPHILL_DATA, BURST_DATA, SPLITTER_DATA]
+	_assert_true(layout.is_valid(), "synthetic three-route glyph layout must be structurally valid")
 	return {"stage": stage, "layout": layout}
 
 
-func _assert_placement(stage: StageData, layout: GeneratedStageLayout, placement: MechanismPlacement, repeated: MechanismPlacement) -> void:
-	var expected_role := _role_for_kind(placement.mechanism_data.kind)
-	_assert_true(placement.route_role == expected_role, "%s mechanism must map to its route role" % stage.stage_id)
-	_assert_true(layout.route_graph.route_role(placement.route_index) == expected_role, "%s placement route index must own the role" % stage.stage_id)
-	var pad := layout.route_graph.pad_node_for_kind(placement.mechanism_data.kind)
-	_assert_true(pad != null and pad.route_index == placement.route_index, "%s placement must come from its typed pad node" % stage.stage_id)
-	_assert_true(is_equal_approx(placement.route_t, layout.route_graph.route_normalized_t_for_node(placement.route_index, pad.id)), "%s placement must use the resolved pad arc position" % stage.stage_id)
-	var route_point := pad.position
-	_assert_true(placement.local_xz.is_equal_approx(Vector2(route_point.x, route_point.z)), "%s placement must stay on the route centerline" % stage.stage_id)
-	var surface := Vector3(route_point.x, layout.height_at_local(route_point.x, route_point.z), route_point.z)
-	var normal := layout.normal_at_local(route_point.x, route_point.z)
-	_assert_true(placement.local_transform.origin.is_equal_approx(surface + normal * 0.05), "%s transform origin must be the sampled surface plus 0.05 m" % stage.stage_id)
-	_assert_true(placement.local_transform.basis.y.is_equal_approx(normal), "%s local Y must align to the surface normal" % stage.stage_id)
-	var tangent := layout.route_graph.route_tangent(placement.route_index, placement.route_t)
-	_assert_true(placement.downstream_tangent.is_equal_approx(tangent), "%s downstream tangent must come from t +/- 0.02" % stage.stage_id)
-	_assert_true((-placement.local_transform.basis.z).dot(tangent) >= 0.999, "%s local forward must follow the downstream tangent" % stage.stage_id)
-	var slope := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
-	_assert_true(slope <= 8.0, "%s exact shelf point must be <= 8 degrees" % stage.stage_id)
-	var physical_radius := MechanismPlacementGenerator.effective_collision_radius(
-		placement.mechanism_data.kind
+func _three_route_graph(layout: GeneratedStageLayout) -> GeneratedRouteGraph:
+	var stage_id := &"generic_glyph_fixture"
+	var summit_id := GeneratedRouteNode.summit_id(stage_id)
+	var summit_xz := Vector2(0, -14)
+	var summit := GeneratedRouteNode.new(
+		summit_id,
+		Vector3(summit_xz.x, layout.height_at_local(summit_xz.x, summit_xz.y), summit_xz.y),
+		-1,
+		0,
+		GeneratedRouteNode.Kind.SUMMIT
 	)
-	_assert_true(pad.pad_radius * 0.60 >= physical_radius, "%s flat pad must contain the physical body" % stage.stage_id)
-	var support_radius := maxf(
-		layout.route_graph.route_width(placement.route_index) * 0.5,
-		pad.pad_radius
-	)
-	_assert_true(support_radius - physical_radius >= 3.0, "%s body must keep 3 m pad-edge clearance" % stage.stage_id)
-	_assert_visibility(stage, layout, placement, normal)
-	_assert_true(placement.local_transform.is_equal_approx(repeated.local_transform), "%s exact transform must be deterministic" % stage.stage_id)
-
-
-func _assert_visibility(stage: StageData, layout: GeneratedStageLayout, placement: MechanismPlacement, normal: Vector3) -> void:
-	var diameter := MechanismPlacementGenerator.effective_visual_diameter(
-		placement.mechanism_data.kind
-	)
-	var surface := Vector3(placement.local_xz.x, layout.height_at_local(placement.local_xz.x, placement.local_xz.y), placement.local_xz.y)
-	var world_top := stage.terrain_center + surface + normal * diameter
-	_assert_true(MechanismPlacementGenerator._terrain_ray_clear(stage, layout, stage.aiming_camera_position, world_top), "%s mechanism must be unoccluded in aiming" % stage.stage_id)
-	_assert_true(MechanismPlacementGenerator._terrain_ray_clear(stage, layout, stage.briefing_camera_position, world_top), "%s mechanism must be unoccluded in briefing" % stage.stage_id)
-	var aiming_pixels := MechanismPlacementGenerator._projected_horizontal_pixels(stage.aiming_camera_position, stage.aiming_camera_target, world_top, diameter)
-	var briefing_pixels := MechanismPlacementGenerator._projected_horizontal_pixels(stage.briefing_camera_position, stage.briefing_camera_target, world_top, diameter)
-	_assert_true(aiming_pixels >= 18.0, "%s mechanism must project to >= 18 px in aiming" % stage.stage_id)
-	_assert_true(briefing_pixels >= 24.0, "%s mechanism must project to >= 24 px in briefing" % stage.stage_id)
-
-
-func _assert_graph_immutability(stage: StageData, layout: GeneratedStageLayout) -> void:
-	if layout.mechanism_placements.is_empty():
-		return
-	var exposed_nodes := layout.route_graph.nodes
-	exposed_nodes.clear()
-	_assert_true(layout.route_graph.is_valid() and not layout.route_graph.nodes.is_empty(), "%s graph access must not permit mutation of the production owner" % stage.stage_id)
-
-
-func _assert_invalid_pad_rejected(stage: StageData, layout: GeneratedStageLayout) -> void:
-	var mechanism := stage.mechanism_loadout[0]
-	var source_pad := layout.route_graph.pad_node_for_kind(mechanism.kind)
-	var invalid_nodes: Array[GeneratedRouteNode] = []
-	for node in layout.route_graph.nodes:
-		if node.id == source_pad.id:
-			invalid_nodes.append(GeneratedRouteNode.new(
-				node.id,
-				node.position,
-				node.route_index,
-				node.station_index,
-				node.kind,
-				node.mechanism_kind,
-				0.5
-			))
-		else:
-			invalid_nodes.append(node)
-	var invalid_layout := GeneratedStageLayout.new()
-	invalid_layout.profile_id = layout.profile_id
-	invalid_layout.profile_version = layout.profile_version
-	invalid_layout.layout_version = layout.layout_version
-	invalid_layout.terrain_seed = layout.terrain_seed
-	invalid_layout.accepted_seed = layout.accepted_seed
-	invalid_layout.generation_attempt = layout.generation_attempt
-	invalid_layout.cell_count = layout.cell_count
-	invalid_layout.local_bounds = layout.local_bounds
-	invalid_layout.heights = layout.heights.duplicate()
-	var footprint := layout.footprint_cells_read_only()
-	_assert_true(invalid_layout.install_footprint(footprint), "%s invalid-placement fixture must retain the source footprint" % stage.stage_id)
-	invalid_layout.top_topology = TerrainTopTopology.build(
-		invalid_layout.cell_count, invalid_layout.local_bounds, invalid_layout.heights,
-		footprint
-	)
-	invalid_layout.route_graph = GeneratedRouteGraph.new(invalid_nodes, layout.route_graph.edges)
-	invalid_layout.containment = layout.containment
-	_assert_true(invalid_layout.is_valid(), "%s invalid-placement fixture must preserve the typed graph shape" % stage.stage_id)
-	var rejected := MechanismPlacementGenerator.generate(stage, invalid_layout)
-	_assert_true(rejected.is_empty(), "%s must reject the whole candidate when its exact pad is too small" % stage.stage_id)
-
-
-func _role_for_kind(kind: MechanismData.Kind) -> StageRouteProfile.Role:
-	if kind == MechanismData.Kind.SPLITTER:
-		return StageRouteProfile.Role.SPLITTER
-	if kind == MechanismData.Kind.BUMPER:
-		return StageRouteProfile.Role.BUMPER
-	return StageRouteProfile.Role.PRIMARY
-
-
-func _placement_summary(layout: GeneratedStageLayout) -> Array[String]:
-	var result: Array[String] = []
-	for placement in layout.mechanism_placements:
-		result.append("%s role=%s route=%d t=%.2f at=%s" % [
-			MechanismData.Kind.keys()[placement.mechanism_data.kind],
-			StageRouteProfile.Role.keys()[placement.route_role], placement.route_index,
-			placement.route_t, placement.local_xz,
-		])
-	return result
+	var nodes: Array[GeneratedRouteNode] = [summit]
+	var edges: Array[GeneratedRouteEdge] = []
+	var pad_points := [Vector2(-9, -7), Vector2(0, 8), Vector2(9, -7)]
+	var exit_points := [Vector2(-12, 14), Vector2(0, 14), Vector2(12, 14)]
+	var roles := [StageRouteProfile.Role.SAFE, StageRouteProfile.Role.SPLITTER, StageRouteProfile.Role.BUMPER]
+	for route_index in range(3):
+		var pad_xz: Vector2 = pad_points[route_index]
+		var exit_xz: Vector2 = exit_points[route_index]
+		var pad_id := StringName("%s/route/%d/generic_anchor" % [stage_id, route_index])
+		var exit_id := GeneratedRouteNode.route_node_id(stage_id, route_index, 2)
+		var pad := GeneratedRouteNode.new(
+			pad_id,
+			Vector3(pad_xz.x, layout.height_at_local(pad_xz.x, pad_xz.y), pad_xz.y),
+			route_index,
+			1,
+			GeneratedRouteNode.Kind.PAD,
+			int(MechanismData.Kind.BURST),
+			7.0
+		)
+		var exit := GeneratedRouteNode.new(
+			exit_id,
+			Vector3(exit_xz.x, layout.height_at_local(exit_xz.x, exit_xz.y), exit_xz.y),
+			route_index,
+			2,
+			GeneratedRouteNode.Kind.EXIT
+		)
+		nodes.append(pad)
+		nodes.append(exit)
+		edges.append(GeneratedRouteEdge.new(
+			GeneratedRouteEdge.stable_id(stage_id, route_index, 0, &"anchor"),
+			summit_id,
+			pad_id,
+			route_index,
+			0,
+			roles[route_index],
+			12.0
+		))
+		edges.append(GeneratedRouteEdge.new(
+			GeneratedRouteEdge.stable_id(stage_id, route_index, 1, &"exit"),
+			pad_id,
+			exit_id,
+			route_index,
+			1,
+			roles[route_index],
+			12.0
+		))
+	return GeneratedRouteGraph.new(nodes, edges)
 
 
 func _assert_true(condition: bool, message: String) -> void:
