@@ -247,16 +247,6 @@ func show_coverage_result_snapshot(result: Dictionary, star_count: int, previous
 	)
 
 
-func show_clear(final_coverage: float, shots_used: int, stars: int = 1, previous_best: float = 0.0) -> void:
-	# Compatibility wrapper while callers migrate to the coverage-only result.
-	show_coverage_result(final_coverage, stars, previous_best, -1.0, shots_used, &"manual")
-
-
-func show_failure(final_coverage: float, _missing: float, previous_best: float = 0.0) -> void:
-	# Legacy failure no longer has separate copy or score meaning.
-	show_coverage_result(final_coverage, 0, previous_best, -1.0, -1, &"timeout")
-
-
 func set_replay_active(active: bool) -> void:
 	_replay_active = active
 	_replay.visible = active
