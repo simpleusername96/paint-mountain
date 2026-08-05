@@ -103,7 +103,7 @@ func _assert_translation_contract(locale: String) -> void:
 		"hud.wind_strength_format", "hud.wind_change_format", "hud.wind_next_format",
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
 		"result.completed", "result.time_expired", "result.grade", "result.elapsed",
-		"mechanism.splitter.description", "mechanism.bumper.description", "mechanism.activated",
+		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
 		"replay.incompatible_format",
 	]
@@ -111,10 +111,10 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
 	if locale == "ko":
 		_assert_true(tr("stage.first_descent.objective") == "넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.", "First Descent Korean copy must describe rolling contact paint")
-		_assert_true(tr("stage.split_ridge.objective") == "범퍼와 분열 장치로 세 갈래 경로를 모두 공략하세요.", "Split Ridge Korean copy must avoid obsolete flow language")
+		_assert_true(tr("stage.split_ridge.objective") == "분열과 오르막 반동 문양으로 세 갈래 경로를 모두 공략하세요.", "Split Ridge Korean copy must name the surface glyphs")
 		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 목표 표면에 넓은 자국을 칠합니다.", "Burst Korean copy must match continuous-paint terminology")
 		_assert_true(tr("mechanism.splitter.description") == "각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.", "Splitter Korean copy must describe independent painters")
-		_assert_true(tr("mechanism.bumper.description") == "공을 화살표 방향의 다음 경사로 되돌려 보냅니다.", "Bumper Korean copy must match the frozen brief")
+		_assert_true(tr("mechanism.uphill_rebound.description") == "공을 지형에서 가장 높은 오르막 방향으로 다시 튕겨 보냅니다.", "Uphill Rebound Korean copy must explain its useful direction")
 
 
 func _assert_true(condition: bool, message: String) -> void:

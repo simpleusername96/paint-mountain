@@ -100,13 +100,15 @@ stage.first_descent.objective,Aim high on the broad slope and let the ball paint
 stage.burst_basin.name,BURST BASIN,폭발 분지
 stage.burst_basin.objective,Hit the high Burst to cover the basin below.,높은 폭발 장치를 맞혀 아래 분지를 넓게 칠하세요.
 stage.split_ridge.name,SPLIT RIDGE,분열 능선
-stage.split_ridge.objective,Use the Bumper and Splitter to reach all three routes.,범퍼와 분열 장치로 세 갈래 경로를 모두 공략하세요.
+stage.split_ridge.objective,Use the Splitter and Uphill Rebound to reach all three routes.,분열과 오르막 반동 문양으로 세 갈래 경로를 모두 공략하세요.
 mechanism.burst,BURST,폭발
 mechanism.splitter,SPLITTER,분열
 mechanism.bumper,BUMPER,범퍼
+mechanism.uphill_rebound,UPHILL REBOUND,오르막 반동
 mechanism.burst.description,Paints a broad mark on the nearby target surface when struck.,명중하면 주변 목표 표면에 넓은 자국을 칠합니다.
 mechanism.splitter.description,Creates three balls that paint independently along multiple routes.,각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.
 mechanism.bumper.description,Redirects the ball toward the next slope in the arrow direction.,공을 화살표 방향의 다음 경사로 되돌려 보냅니다.
+mechanism.uphill_rebound.description,Launches the ball back toward the steepest uphill direction.,공을 지형에서 가장 높은 오르막 방향으로 다시 튕겨 보냅니다.
 mechanism.activated,ACTIVATED,장치 작동
 mechanism.none,NONE,없음
 mechanism.no_mechanisms,NO MECHANISMS · FOLLOW THE NATURAL DESCENT,장치 없음 · 자연 경사를 따라가세요
@@ -169,25 +171,25 @@ stage.generated_19.objective,Keep both shot families moving across the range.,�
 stage.generated_20.name,TWENTIETH RANGE,스무 번째 산맥
 stage.generated_20.objective,Keep both shot families moving across the range.,두 발사 가족을 산맥 위에서 계속 굴리세요.
 stage.generated_21.name,TWENTY-FIRST RANGE,스물한 번째 산맥
-stage.generated_21.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_21.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_22.name,TWENTY-SECOND RANGE,스물두 번째 산맥
-stage.generated_22.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_22.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_23.name,TWENTY-THIRD RANGE,스물세 번째 산맥
-stage.generated_23.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_23.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_24.name,TWENTY-FOURTH RANGE,스물네 번째 산맥
-stage.generated_24.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_24.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_25.name,TWENTY-FIFTH RANGE,스물다섯 번째 산맥
-stage.generated_25.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_25.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_26.name,TWENTY-SIXTH RANGE,스물여섯 번째 산맥
-stage.generated_26.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_26.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_27.name,TWENTY-SEVENTH RANGE,스물일곱 번째 산맥
-stage.generated_27.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_27.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_28.name,TWENTY-EIGHTH RANGE,스물여덟 번째 산맥
-stage.generated_28.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_28.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_29.name,TWENTY-NINTH RANGE,스물아홉 번째 산맥
-stage.generated_29.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_29.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_30.name,THIRTIETH RANGE,서른 번째 산맥
-stage.generated_30.objective,Use the Splitter and Bumper to cover the branching range.,분열 장치와 범퍼로 갈라지는 산맥을 칠하세요.
+stage.generated_30.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 replay.label,REPLAY,리플레이
 replay.pause,PAUSE,일시정지
 replay.play,PLAY,재생

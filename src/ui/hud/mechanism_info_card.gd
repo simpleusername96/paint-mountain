@@ -33,6 +33,11 @@ func hide_card() -> void:
 
 
 func _set_copy(kind: MechanismData.Kind) -> void:
-	var stem: String = ["burst", "splitter", "bumper"][kind]
+	var stem := "uphill_rebound"
+	match kind:
+		MechanismData.Kind.BURST:
+			stem = "burst"
+		MechanismData.Kind.SPLITTER:
+			stem = "splitter"
 	title.text = tr("mechanism.%s" % stem)
 	description.text = tr("mechanism.%s.description" % stem)

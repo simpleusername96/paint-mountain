@@ -206,7 +206,13 @@ func _mechanism_names(stage: StageData) -> String:
 		return tr("mechanism.none")
 	var names: Array[String] = []
 	for mechanism_data in stage.mechanism_loadout:
-		names.append(tr(["mechanism.burst", "mechanism.splitter", "mechanism.bumper"][mechanism_data.kind]))
+		var key := "mechanism.uphill_rebound"
+		match mechanism_data.canonical_kind():
+			MechanismData.Kind.BURST:
+				key = "mechanism.burst"
+			MechanismData.Kind.SPLITTER:
+				key = "mechanism.splitter"
+		names.append(tr(key))
 	return " + ".join(names)
 
 
