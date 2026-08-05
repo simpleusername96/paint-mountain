@@ -193,7 +193,7 @@ func _build() -> void:
 	content.add_child(actions)
 	_add_action(actions, "REFILL SHOTS", func() -> void: _run_debug_action(func() -> void: _controller.debug_refill_shots()))
 	_add_action(actions, "CLEAR PAINT", func() -> void: _run_debug_action(func() -> void: _paint.clear()))
-	_add_action(actions, "FORCE CLEAR", func() -> void: _run_debug_action(func() -> void: _controller.force_stage_clear()))
+	_add_action(actions, "FORCE RESULT", func() -> void: _run_debug_action(func() -> void: _controller.force_finish_debug()))
 	_add_action(actions, "TEST PROJECTILE", func() -> void: _run_debug_action(_spawn_test_projectile))
 	_add_action(actions, "SLOW MOTION", func() -> void: _run_debug_action(_toggle_slow_motion))
 	_add_action(actions, "MECHANISM LABELS", func() -> void: _run_debug_action(_toggle_labels))

@@ -68,7 +68,7 @@ func _run_checks() -> void:
 	settings.visible = false
 	settings.close_requested.emit()
 	controller.toggle_pause()
-	controller.force_stage_clear()
+	controller.force_finish_debug()
 	await process_frame
 	_assert_true(hud_root.get_node("ResultPanel").visible, "terminal coverage snapshot must show the result interface")
 	_assert_true(hud_root.get_node("ResultPanel").size.x <= 1280.0 * 0.35, "result panel must use no more than 35 percent of the viewport width")

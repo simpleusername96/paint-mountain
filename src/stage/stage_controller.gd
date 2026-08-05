@@ -6,10 +6,6 @@ signal shots_changed(shots_remaining: int, maximum_shots: int)
 signal shot_fired(shot_number: int, yaw: float, elevation: float, power: float)
 signal shot_result(coverage_gain: float, total_coverage: float)
 signal shot_observation_sealed(observation: ShotObservation)
-# Retained only so older scenes and replay tooling still parse during migration.
-# Live attempts emit stage_finished instead of pass/fail signals.
-signal stage_cleared(final_coverage: float, shots_used: int)
-signal stage_failed(final_coverage: float, missing_coverage: float)
 signal restart_completed(elapsed_milliseconds: float)
 signal aim_action_accepted(yaw: float, elevation: float, power: float, origin: int)
 signal fire_action_accepted(origin: int)
@@ -33,7 +29,7 @@ enum State {
 	LOADING,
 	BRIEFING,
 	AIMING,
-	# Deprecated serialized aliases retained for replay decoding only. The live
+	# Deprecated integer aliases keep historical fixtures parseable. The live
 	# board never enters these motion/result states; shot activity is orthogonal.
 	PROJECTILE_IN_FLIGHT,
 	PAINT_SETTLING,
@@ -432,8 +428,6 @@ func toggle_pause(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		State.LOADING,
 		State.FINISHING,
 		State.RESULT,
-		State.STAGE_CLEAR,
-		State.STAGE_FAILED,
 	]:
 		return false
 	_state_before_pause = current_state
@@ -449,9 +443,8 @@ func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	return _begin_finish(FINISH_REASON_MANUAL, origin, false, true)
 
 
-func force_stage_clear(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
-	# Compatibility entrypoint for debug and capture scripts. Normal gameplay
-	# reaches the same coverage-only RESULT through finish_stage or timeout.
+func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
+	# Debug and capture tooling still pass through the authoritative result barrier.
 	if not _origin_allowed(origin):
 		return
 	if current_state == State.PAUSED:
@@ -567,23 +560,6 @@ func _begin_finish(
 	stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
 	stage_finished.emit(_result_snapshot.duplicate(true))
 	return true
-
-
-static func result_state_for(
-		coverage: float,
-		target: float,
-		remaining_shots: int,
-		paint_command_rejection_count: int = 0
-) -> State:
-	# Legacy replay/test decoder only. Live attempts no longer use target coverage
-	# or ammunition exhaustion to choose a terminal state.
-	if paint_command_rejection_count > 0:
-		return State.STAGE_FAILED
-	if coverage + 0.0001 >= target:
-		return State.STAGE_CLEAR
-	if remaining_shots <= 0:
-		return State.STAGE_FAILED
-	return State.AIMING
 
 
 func _on_shot_family_finished(shot_id: int) -> void:

@@ -54,7 +54,7 @@ func _capture() -> void:
 			controller.begin_aiming()
 			controller.toggle_pause()
 		"clear":
-			controller.force_stage_clear()
+			controller.force_finish_debug()
 	for _frame in range(40):
 		await process_frame
 	var image := root.get_texture().get_image()

@@ -172,11 +172,7 @@ func show_state(state: StageController.State) -> void:
 	_run_status.visible = aiming_surface and not _replay_active
 	_apply_finish_availability()
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
-	_result.visible = state in [
-		StageController.State.RESULT,
-		StageController.State.STAGE_CLEAR,
-		StageController.State.STAGE_FAILED,
-	] and not _replay_active
+	_result.visible = state == StageController.State.RESULT and not _replay_active
 	_pause.visible = state == StageController.State.PAUSED and not _replay_active
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
@@ -190,11 +186,7 @@ func show_state(state: StageController.State) -> void:
 			_first_session_hint_seen = true
 			_first_hint.visible = true
 			_hint_timer.start()
-	elif state in [
-		StageController.State.RESULT,
-		StageController.State.STAGE_CLEAR,
-		StageController.State.STAGE_FAILED,
-	] and not _replay_active:
+	elif state == StageController.State.RESULT and not _replay_active:
 		_result.focus_retry()
 	elif state == StageController.State.PAUSED and not _replay_active:
 		_pause.focus_resume.call_deferred()

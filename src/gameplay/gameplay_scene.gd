@@ -468,8 +468,7 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			# or locked into aim. All other entries to Aiming start in Aim Lock.
 			if previous_state != StageController.State.PAUSED:
 				_camera_director.set_mode(CameraDirector.Mode.AIMING)
-		StageController.State.FINISHING, StageController.State.RESULT, \
-				StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED:
+		StageController.State.FINISHING, StageController.State.RESULT:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
 

@@ -24,7 +24,5 @@ func update_mode(state: StageController.State) -> void:
 		StageController.State.SHOT_RESULT: "hud.shot_result",
 		StageController.State.FINISHING: "hud.finishing",
 		StageController.State.RESULT: "hud.result",
-		StageController.State.STAGE_CLEAR: "hud.result",
-		StageController.State.STAGE_FAILED: "hud.result",
 	}.get(state, "hud.aiming"))
 	mode_value.text = tr(key)

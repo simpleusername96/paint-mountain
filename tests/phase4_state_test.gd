@@ -24,18 +24,11 @@ func _run_checks() -> void:
 	var paint_system := gameplay.get_node("PaintSystem") as PaintSystem
 	var finished_results: Array[Dictionary] = []
 	var observed_states: Array[int] = []
-	var legacy_terminal_events: Array[StringName] = []
 	controller.state_changed.connect(
 		func(state: int, _previous: int) -> void: observed_states.append(state)
 	)
 	controller.stage_finished.connect(
 		func(result: Dictionary) -> void: finished_results.append(result)
-	)
-	controller.stage_cleared.connect(
-		func(_coverage: float, _shots: int) -> void: legacy_terminal_events.append(&"clear")
-	)
-	controller.stage_failed.connect(
-		func(_coverage: float, _missing: float) -> void: legacy_terminal_events.append(&"failed")
 	)
 
 	_assert(controller.current_state == StageController.State.BRIEFING, "stage must begin in briefing")
@@ -93,7 +86,6 @@ func _run_checks() -> void:
 	var timeout_result := controller.result_snapshot()
 	_assert(timeout_result.get("finish_reason") == StageController.FINISH_REASON_TIMEOUT, "duration expiry must record timeout")
 	_assert(finished_results.size() == 2, "manual Finish and timeout must each emit exactly one result")
-	_assert(legacy_terminal_events.is_empty(), "normal results must not emit legacy clear/fail events")
 	_assert(manager.active_count() == 0, "timeout must clean residents after its score snapshot")
 
 	if not _failed:
