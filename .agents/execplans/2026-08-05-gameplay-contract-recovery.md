@@ -764,9 +764,12 @@ Rules:
   acceptance evidence; Space maps to the same human request path.)
 - [ ] Phase 5: production evidence, quality audit, and truthful handoff. The
   task-scoped ownership audit is complete and corrected the independent-summit
-  certificate boundary; production export and focused regression evidence pass.
-  Full target certificates/previews, rendered-width proof, and baseline capture
-  reconciliation remain open.
+  certificate boundary; production export, focused regression evidence, seven
+  fresh baseline captures, and named recovery captures pass. The delivery
+  runner now records sweep intent before body removal and waits for the actual
+  terminal transition in clear/failure evidence. Full target
+  certificates/previews, rendered-width proof, and lifecycle reconciliation
+  remain open.
 
 ## Next Steps
 

@@ -381,6 +381,31 @@ export, quality audit, and lifecycle reconciliation. Checkpoint 6 records the
 export and quality-audit results; the certificate, preview, width, baseline, and
 lifecycle gates remain open.
 
+## Recovery checkpoint 7 (2026-08-05)
+
+The delivery capture runner had one evidence-only race: it required the
+projectile manager to still report an active body when the late-physics paint
+drain published a sweep. A settled body can be removed one tick earlier even
+though its authoritative paint command is valid. The runner now records an
+active sweep at the canonical intent boundary, captures the real ball/paint
+relationship, and waits for the actual terminal transition after coverage or
+shot exhaustion.
+
+Fresh background captures were produced without opening a foreground Godot
+window:
+
+- `01_main_menu.png` through `07_stage_failed.png` at `1920×1080`.
+- `stage_04_progression_aiming.png`, `stage_05_progression_aiming.png`,
+  `stage_10_progression_aiming.png`, `stage_20_progression_aiming.png`, and
+  `stage_30_progression_aiming.png` at `1280×720`.
+- The named Stage 04 summit, pending, ready, two-family, and scale frames plus
+  `05_projectile_and_continuous_paint.png` at the same background size.
+
+`stage_clear` now reaches `4.3187%` against the `4.0%` target in three legal
+runtime-solved shots, and `stage_failed` exhausts four legal repeated shots at
+`0.6437%`. These are delivery captures, not a substitute for the still-open
+thirty-stage target-wide certificate and controlled width gates.
+
 ## Limitations
 
 - This audit does not claim fresh runtime reproduction; it explains the user's

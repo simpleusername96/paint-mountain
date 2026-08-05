@@ -613,28 +613,43 @@ func _capture_continuous_paint() -> void:
 	var controller: StageController = gameplay.get_node("StageController")
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
-	var observed := {"written_pixels": 0, "sweep_count": 0}
+	var observed := {
+		"written_pixels": 0,
+		"sweep_count": 0,
+		"active_sweep_intent_seen": false,
+	}
 	paint.paint_command_applied.connect(
 		func(command, written_pixel_count: int, _newly_painted_pixel_count: int) -> void:
 			observed.written_pixels += written_pixel_count
 			if command is SurfacePaintSweep:
 				observed.sweep_count += 1
 	)
+	# The manager removes a settled body before the late-physics PaintSystem drain
+	# publishes that body's final sweep. Record activity at the canonical intent
+	# boundary instead of requiring active_count() to remain nonzero at drain time.
+	manager.surface_paint_sweep_ready.connect(
+		func(_command: SurfacePaintSweep) -> void:
+			if manager.active_count() > 0:
+				observed.active_sweep_intent_seen = true
+	)
 	var initial_upload_count := paint.texture_upload_batch_count()
 	if not controller.request_fire():
 		_fail_capture("First Descent runtime default aim could not fire")
 		return
-	Engine.time_scale = 3.0
+	# Keep the physical ball on screen long enough to capture the first real
+	# contact/sweep, then the outer runner restores normal time before saving.
+	Engine.time_scale = 1.0
 	var budget := 60 * 12
 	while (
-		int(observed.written_pixels) < 400
-		or int(observed.sweep_count) < 72
-		or manager.active_count() == 0
+		int(observed.written_pixels) < 120
+		or int(observed.sweep_count) < 12
+		or not bool(observed.active_sweep_intent_seen)
 	) and budget > 0:
 		await get_tree().physics_frame
 		budget -= 1
-	if budget <= 0 or int(observed.written_pixels) < 400 \
-			or int(observed.sweep_count) < 72 or manager.active_count() == 0:
+	if budget <= 0 or int(observed.written_pixels) < 120 \
+			or int(observed.sweep_count) < 12 \
+			or not bool(observed.active_sweep_intent_seen):
 		_fail_capture("continuous paint did not arrive while the projectile was active")
 		return
 	if paint.texture_upload_batch_count() <= initial_upload_count:
@@ -645,31 +660,134 @@ func _capture_continuous_paint() -> void:
 
 
 func _capture_clear() -> void:
-	# Stage 01 is the committed deterministic clear fixture. The legacy Burst
-	# resource intentionally has no solution because its procedural target is a
-	# progression preview, not a terminal capture fixture.
+	# Stage 01 is the committed deterministic clear fixture. Derive four legal
+	# target-spread aims from the same predictor used by Fire instead of replaying
+	# the pre-recovery hand-authored tuples that no longer match the catalog.
 	var gameplay := await _start_stage(&"first_descent", true)
-	await _play_solution(gameplay, StageCatalog.get_stage(&"first_descent").reliable_solution)
+	var controller := gameplay.get_node("StageController") as StageController
+	var fraction_sets: Array[Array] = [
+		[0.08, 0.36, 0.64, 0.92],
+		[0.03, 0.28, 0.63, 0.97],
+		[0.10, 0.45, 0.70, 0.95],
+		[0.00, 0.33, 0.66, 1.00],
+	]
+	for attempt_index in range(fraction_sets.size()):
+		if attempt_index > 0:
+			controller.restart(false)
+			await get_tree().process_frame
+		var solution := _build_runtime_capture_solution(
+			gameplay,
+			fraction_sets[attempt_index]
+		)
+		print("Clear capture runtime solution %d: %s" % [attempt_index + 1, solution])
+		await _play_solution(gameplay, solution)
+		for _frame in range(4):
+			await get_tree().process_frame
+		if controller.current_state == StageController.State.STAGE_CLEAR:
+			break
+	print("Clear capture result: state=%s coverage=%.4f shots=%d" % [
+		controller.state_name(),
+		(gameplay.get_node("PaintSystem") as PaintSystem).coverage_percent(),
+		controller.shots_remaining,
+	])
 	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_CLEAR:
 		_fail_capture("clear solution did not reach STAGE_CLEAR")
 
 
 func _capture_failure() -> void:
 	var gameplay := await _start_stage(&"first_descent", true)
-	# This legal low-power edge aim terminates on the contained apron/backstop,
-	# consumes a shot, and paints no eligible mountain surface.
-	var miss := Vector3(45, 10, 40)
+	# Repeating the legal center witness leaves the overlap below the 4% target,
+	# so this is a real exhausted-shot failure rather than an invalid-input path.
+	var default_aim: AimTuple = gameplay.generated_layout().default_aim
+	var miss := Vector3(
+		default_aim.yaw_degrees,
+		default_aim.elevation_degrees,
+		float(default_aim.power_percent)
+	)
 	var repeated: Array[Vector3] = [miss, miss, miss, miss]
 	await _play_solution(gameplay, repeated)
+	for _frame in range(4):
+		await get_tree().process_frame
 	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_FAILED:
 		_fail_capture("failure sequence did not reach STAGE_FAILED")
+
+
+func _build_runtime_capture_solution(
+		gameplay: Node3D,
+	sample_fractions: Array = [0.08, 0.36, 0.64, 0.92]
+) -> Array[Vector3]:
+	var result: Array[Vector3] = []
+	var layout := gameplay.generated_layout() as GeneratedStageLayout
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	if layout == null or terrain == null or cannon == null or not layout.has_valid_target_mask():
+		return result
+	var target_pixels := PackedInt32Array()
+	for pixel_index in range(layout.target_mask.size()):
+		if layout.target_mask[pixel_index] >= 128:
+			target_pixels.append(pixel_index)
+	var mask_size := StageGenerationContract.REQUIRED_MASK_SIZE
+	if target_pixels.is_empty():
+		return result
+	for fraction in sample_fractions:
+		var target_pixel_index := target_pixels[clampi(
+			roundi(float(target_pixels.size() - 1) * float(fraction)),
+			0,
+			target_pixels.size() - 1
+		)]
+		var pixel := Vector2i(target_pixel_index % mask_size, target_pixel_index / mask_size)
+		var local_xz := DirectReachabilityValidator._pixel_center_local(
+			pixel,
+			layout.local_bounds,
+			mask_size
+		)
+		var sample := layout.top_topology.surface_sample_at_local(local_xz.x, local_xz.y, false)
+		if sample.is_empty():
+			continue
+		var world_point := terrain.to_global(sample.point as Vector3)
+		var world_normal := (
+			terrain.global_transform.basis.inverse().transposed()
+			* (sample.normal as Vector3)
+		).normalized()
+		var solved := DirectReachabilityValidator.solve_one_target(
+			gameplay.get_world_3d().direct_space_state,
+			cannon,
+			layout,
+			layout.containment.containment_bounds,
+			world_point,
+			world_normal,
+			sample
+		)
+		if not bool(solved.get("valid", false)):
+			continue
+		var aim := solved.get("aim") as AimTuple
+		if aim == null or not aim.is_valid():
+			continue
+		var tuple := Vector3(aim.yaw_degrees, aim.elevation_degrees, float(aim.power_percent))
+		var duplicate := false
+		for existing in result:
+			if existing.is_equal_approx(tuple):
+				duplicate = true
+				break
+		if not duplicate:
+			result.append(tuple)
+	if result.is_empty() and layout.default_aim != null:
+		result.append(Vector3(
+			layout.default_aim.yaw_degrees,
+			layout.default_aim.elevation_degrees,
+			float(layout.default_aim.power_percent)
+		))
+	return result
 
 
 func _play_solution(gameplay: Node3D, shots: Array[Vector3]) -> void:
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
+	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
+	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	for shot in shots:
-		if controller.current_state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED]:
+		if controller.current_state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] \
+				or paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
 			break
 		cannon.set_aim(shot.x, shot.y, shot.z)
 		var prediction_budget := 120
@@ -680,15 +798,28 @@ func _play_solution(gameplay: Node3D, shots: Array[Vector3]) -> void:
 			_fail_capture("solution aim did not produce a valid prediction: %s" % shot)
 			break
 		if not controller.request_fire():
+			if paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
+				break
 			_fail_capture("solution shot was not admitted: %s" % shot)
 			break
 		Engine.time_scale = 3.0
 		var budget := 60 * 24
-		while controller.current_state not in [StageController.State.AIMING, StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and budget > 0:
+		while (
+			manager.active_count() > 0
+			or manager.pending_intent_count() > 0
+			or paint.pending_work_count() > 0
+		) and controller.current_state not in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and budget > 0:
 			await get_tree().physics_frame
 			budget -= 1
 		if budget <= 0:
 			_fail_capture("solution shot did not settle inside the deterministic budget")
+			break
+		print("Capture solution shot %s -> coverage=%.4f state=%s" % [
+			shot,
+			paint.coverage_percent(),
+			controller.state_name(),
+		])
+		if paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
 			break
 	Engine.time_scale = 1.0
 

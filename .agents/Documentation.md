@@ -32,7 +32,7 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-05 recovery checkpoint 6)
+## Current Implemented Truth (2026-08-05 recovery checkpoint 7)
 
 - Terrain/paint foundation: the selected gameplay layout is a closed row-solid
   3D top/shell mass with shared render/collision topology. PaintSystem remains
@@ -89,8 +89,12 @@ checked tasks while claiming major phases were implemented.
   now show the corrected prediction-to-HUD transition. Fresh progression frames
   for Stage 04, 05, 10, 20, and 30 are also stored under
   `.agents/evidence/gameplay-contract-recovery/` and show distinct 3D terrain
-  silhouettes. No foreground Godot window was opened; all checks used the
-  hidden/headless path.
+  silhouettes. The same folder now contains fresh `1920×1080` baseline screens
+  (`01_main_menu.png` through `07_stage_failed.png`) and a real
+  `05_projectile_and_continuous_paint.png` ball/paint frame. The delivery runner
+  records active sweep intent before a settled body is removed, so this capture
+  no longer depends on a timing race. No foreground Godot window was opened;
+  all checks used the hidden/headless path.
 
 Historical sections below describe earlier builds and are retained for
 traceability only. They must not be used as current implementation evidence.

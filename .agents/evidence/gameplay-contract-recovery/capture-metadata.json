@@ -3,6 +3,7 @@
   "captured_at": "2026-08-05",
   "renderer": "Godot 4.7.1 Compatibility",
   "viewport": "1280x720",
+  "baseline_viewport": "1920x1080",
   "window_mode": "background-nonfocusable",
   "foreground_window_opened": false,
   "catalog_manifest": "71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072",
@@ -98,6 +99,29 @@
       }
     }
   },
+  "baseline_captures": {
+    "main_menu": "01_main_menu.png",
+    "stage_select": "02_stage_select.png",
+    "briefing": "03_briefing.png",
+    "aiming": "04_aiming.png",
+    "projectile_and_continuous_paint": "05_projectile_and_continuous_paint.png",
+    "stage_clear": "06_stage_clear.png",
+    "stage_failed": "07_stage_failed.png"
+  },
+  "baseline_results": {
+    "stage_clear": {
+      "coverage_percent": 4.3187,
+      "target_percent": 4.0,
+      "shots_used": 3,
+      "runtime_solved": true
+    },
+    "stage_failed": {
+      "coverage_percent": 0.6437,
+      "target_percent": 4.0,
+      "shots_used": 4,
+      "runtime_solved": false
+    }
+  },
   "scale": {
     "physical_radius_m": 0.9,
     "paint_radii_m": {
@@ -123,7 +147,6 @@
     "thirty-stage target-wide predictor and rigid-body certificate bundle",
     "certificate-linked preview images",
     "controlled rendered/mask width measurement",
-    "complete baseline and recovery capture set",
     "lifecycle reconciliation"
   ]
 }

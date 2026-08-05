@@ -68,9 +68,14 @@ evidence and does not satisfy this gate.
   rapid-fire/readiness, phase-7, phase-8, replay, and default-aim handoff checks.
 - `scripts/verify.ps1`, the deterministic catalog `--check`, and the Windows
   release export passed through the approved hidden/headless Godot path.
-- These observations do not check the full target-wide certificate bundle,
-  controlled rendered-width measurement, or the seven fresh baseline captures;
-  the active recovery gate remains open for those items.
+- The seven fresh `1920×1080` baseline captures and the named `1280×720`
+  recovery captures now exist under `.agents/evidence/gameplay-contract-recovery/`;
+  the continuous-paint runner records a real sweep intent before the settled
+  body is removed, so the ball/mark frame is reproducible without a foreground
+  Godot window.
+- These observations still do not check the full target-wide certificate bundle,
+  certificate-linked previews, or controlled rendered-width measurement; the
+  active recovery gate remains open for those items.
 
 ## Requirements and Acceptance Criteria
 
