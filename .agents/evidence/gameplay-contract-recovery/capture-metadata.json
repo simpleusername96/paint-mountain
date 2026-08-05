@@ -141,6 +141,15 @@
       "rigidbody_checksum": 208192991,
       "worst_height_margin_m": 0.565
     },
+    "stage_01_target_throughput_sample": {
+      "visited_target_pixels": 512,
+      "total_target_pixels": 67729,
+      "distinct_witnesses": 99,
+      "predictor_calls": 2490,
+      "elapsed_ms": 9803,
+      "projected_full_elapsed_ms": 1296772,
+      "is_certificate": false
+    },
     "front_envelope_filter": "candidate measured then rolled back; target deletion remains forbidden"
   },
   "remaining_gates": [

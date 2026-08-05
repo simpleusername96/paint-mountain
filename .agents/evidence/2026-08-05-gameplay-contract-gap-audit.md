@@ -406,6 +406,11 @@ runtime-solved shots, and `stage_failed` exhausts four legal repeated shots at
 `0.6437%`. These are delivery captures, not a substitute for the still-open
 thirty-stage target-wide certificate and controlled width gates.
 
+A bounded Stage 01 throughput sample visited `512` of `67,729` target pixels in
+`9,803 ms` and projected `1,296,772 ms` for the full target pass. It is recorded
+as a cost estimate only (`is_certificate=false`); no representative sample is
+being promoted to a target-wide certificate.
+
 ## Limitations
 
 - This audit does not claim fresh runtime reproduction; it explains the user's

@@ -754,6 +754,9 @@ Rules:
   raster filter was measured but rolled back because it added unacceptable
   generation cost and would have weakened the no-target-deletion rule; the
   unchanged thirty-layout generation gate then passed in `254.2 s`.
+  A bounded Stage 01 target throughput sample projected `1,296,772 ms` for the
+  full target pass; it remains an estimate and is not being promoted to a
+  representative certificate.
 - [x] Phase 4: usable immediate re-aim/repeat fire (the live board now remains
   AIMING, the serial result timer is bypassed, and the matching-key readiness
   contract is implemented with prediction-change republishing, translated
