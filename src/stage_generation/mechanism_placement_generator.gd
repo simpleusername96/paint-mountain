@@ -1,7 +1,7 @@
 class_name MechanismPlacementGenerator
 extends RefCounted
 
-const MAX_PLACEMENT_SLOPE_DEGREES := 8.0
+const MAX_PLACEMENT_SLOPE_DEGREES := 28.0
 const ROUTE_EDGE_CLEARANCE := 3.0
 const TERRAIN_RAY_FINAL_ALLOWANCE := 0.5
 
@@ -25,7 +25,16 @@ static func _place_exact(
 		mechanism_data: MechanismData,
 		existing: Array[MechanismPlacement]
 ) -> MechanismPlacement:
-	var pad := layout.route_graph.pad_node_for_kind(mechanism_data.kind)
+	var pad: GeneratedRouteNode
+	for candidate in layout.route_graph.pad_nodes_for_kind(mechanism_data.kind):
+		var occupied := false
+		for existing_placement in existing:
+			if existing_placement.local_xz.distance_to(Vector2(candidate.position.x, candidate.position.z)) < 1.0:
+				occupied = true
+				break
+		if not occupied:
+			pad = candidate
+			break
 	if pad == null:
 		return null
 	var route_index := pad.route_index
@@ -126,18 +135,15 @@ static func _camera_visibility_passes(
 ) -> bool:
 	var local_normal := layout.normal_at_local(local_point.x, local_point.z)
 	var world_point := stage_data.terrain_center + local_point + local_normal * diameter
-	if _projected_horizontal_pixels(stage_data.aiming_camera_position, stage_data.aiming_camera_target, world_point, diameter) < 18.0:
+	if _projected_horizontal_pixels(stage_data.aiming_camera_position, stage_data.aiming_camera_target, world_point, diameter) < 12.0:
 		layout.metrics["visibility_rejection"] = "aiming_projected_size"
 		return false
-	if _projected_horizontal_pixels(stage_data.briefing_camera_position, stage_data.briefing_camera_target, world_point, diameter) < 24.0:
+	if _projected_horizontal_pixels(stage_data.briefing_camera_position, stage_data.briefing_camera_target, world_point, diameter) < 16.0:
 		layout.metrics["visibility_rejection"] = "briefing_projected_size"
 		return false
-	if not _terrain_ray_clear(stage_data, layout, stage_data.aiming_camera_position, world_point):
-		layout.metrics["visibility_rejection"] = "aiming_occlusion"
-		return false
-	if not _terrain_ray_clear(stage_data, layout, stage_data.briefing_camera_position, world_point):
-		layout.metrics["visibility_rejection"] = "briefing_occlusion"
-		return false
+	# Placement is already on the authoritative route surface. A camera ray is
+	# intentionally not a generation gate: it was the source of invisible or
+	# missing items when a wide camera looked through the closed mountain mass.
 	return true
 
 

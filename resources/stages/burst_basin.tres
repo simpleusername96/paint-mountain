@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("1_stage")
 stage_id = &"burst_basin"
-stage_version = 5
+stage_version = 7
 display_name_key = &"stage.burst_basin.name"
 stage_number = 2
 target_coverage = 27.0

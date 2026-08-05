@@ -1,0 +1,129 @@
+{
+  "schema_version": 2,
+  "captured_at": "2026-08-05",
+  "renderer": "Godot 4.7.1 Compatibility",
+  "viewport": "1280x720",
+  "window_mode": "background-nonfocusable",
+  "foreground_window_opened": false,
+  "catalog_manifest": "71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072",
+  "ballistic_yaw_contract": "CannonBallistics.launch_direction and reachability yaw nomination match the visual CannonController muzzle rotation",
+  "stages": {
+    "stage_04": {
+      "terrain_size_m": [186.0, 124.0],
+      "cell_count": [74, 50],
+      "nominal_peak_m": 77.5,
+      "target_percent": 5.5,
+      "shots": 4,
+      "accepted_seed": 1351223564,
+      "profile": {
+        "routes": 1,
+        "stations": 8,
+        "reversals": 1,
+        "ridges": 3,
+        "basins": 0,
+        "passes": 0,
+        "undulation_m": 2.6,
+        "route_width_m": 27.0,
+        "mechanisms": 2
+      },
+      "captures": {
+        "progression_aiming": "stage_04_progression_aiming.png",
+        "summit_hit": "stage_04_summit_hit.png",
+        "next_aim_pending": "stage_04_next_aim_pending_ui.png",
+        "next_aim_ready": "stage_04_next_aim_ready_ui.png",
+        "two_family": "stage_04_two_family_ui3.png",
+        "scale_contact": "stage_04_scale_contact_ui.png"
+      },
+      "summit": {
+        "runtime_contact_observed": true,
+        "serialized_certificate": false,
+        "capture_aim": "13.3:39.7:70"
+      },
+      "readiness": {
+        "pending_reason": "궤적 계산 중",
+        "capacity_reason": "포탄 2개 진행 중",
+        "ready_aim": "7.6:29.2:52",
+        "active_root_ids_in_two_family_capture": [1, 2],
+        "ready_fire_visible": true,
+        "pending_fire_rejected_without_sync_solve": true,
+        "prediction_change_republished_by_stage_controller": true,
+        "remaining_capacity_at_two_families": 0,
+        "origin_acceptance": ["human_button_or_space_path", "agent", "replay", "debug"]
+      }
+    },
+    "stage_05": {
+      "terrain_size_m": [188.0, 126.0],
+      "cell_count": [76, 50],
+      "nominal_peak_m": 79.5,
+      "target_percent": 6.0,
+      "shots": 4,
+      "accepted_seed": 1352223567,
+      "adjacent_rms_to_stage_04_m": null,
+      "captures": {
+        "progression_aiming": "stage_05_progression_aiming.png"
+      }
+    },
+    "stage_10": {
+      "terrain_size_m": [198.0, 132.0],
+      "cell_count": [80, 52],
+      "target_percent": 8.5,
+      "shots": 5,
+      "captures": {
+        "progression_aiming": "stage_10_progression_aiming.png"
+      }
+    },
+    "stage_20": {
+      "terrain_size_m": [220.0, 146.0],
+      "cell_count": [88, 58],
+      "target_percent": 12.0,
+      "shots": 6,
+      "captures": {
+        "progression_aiming": "stage_20_progression_aiming.png"
+      }
+    },
+    "stage_30": {
+      "terrain_size_m": [240.0, 160.0],
+      "cell_count": [96, 64],
+      "target_percent": 15.0,
+      "shots": 7,
+      "captures": {
+        "progression_aiming": "stage_30_progression_aiming.png"
+      },
+      "summit": {
+        "runtime_contact_observed": true,
+        "serialized_certificate": false,
+        "predictor_checksum": 117277691,
+        "rigidbody_checksum": 1161348872,
+        "height_margin_m": 0.620
+      }
+    }
+  },
+  "scale": {
+    "physical_radius_m": 0.9,
+    "paint_radii_m": {
+      "continuous": 1.5,
+      "impact": 2.1,
+      "settlement": 1.5
+    },
+    "measured_rendered_width_m": null,
+    "measured_mask_width_m": null
+  },
+  "reachability": {
+    "target_contact_tolerance_m": 2.1,
+    "target_contact_semantics": "impact-mark coverage on Playable Top; adjacent facets are valid inside the authoritative impact footprint",
+    "stage_01_summit_only": {
+      "region_triangle_count": 12,
+      "predictor_checksum": 2477889882,
+      "rigidbody_checksum": 208192991,
+      "worst_height_margin_m": 0.565
+    },
+    "front_envelope_filter": "candidate measured then rolled back; target deletion remains forbidden"
+  },
+  "remaining_gates": [
+    "thirty-stage target-wide predictor and rigid-body certificate bundle",
+    "certificate-linked preview images",
+    "controlled rendered/mask width measurement",
+    "complete baseline and recovery capture set",
+    "lifecycle reconciliation"
+  ]
+}

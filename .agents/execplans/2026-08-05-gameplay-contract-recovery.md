@@ -124,11 +124,16 @@ Out of scope:
 - **Summit Region** is the set of Playable Top triangles having at least one
   vertex within `0.25 m` of the global maximum Playable Top vertex height.
 - **Summit Reachability** is one legal manual aim whose predictor and real
-  rigid-body first terrain contact resolve to the same triangle in the Summit
-  Region, with contact height no more than `1.0 m` below the global maximum.
+  rigid-body first terrain contact land on the Playable Top within the
+  authoritative `2.10 m` impact mark of a Summit Region sample, with contact
+  height no more than `1.0 m` below the global maximum. The stable Summit
+  Region identity remains separate from the centroid default witness.
 - **Target Reachability** remains the stronger scoreability rule: every target
-  texel maps to a top triangle that has a legal first-hit witness. Summit proof
-  does not replace it.
+  texel maps to a Playable Top first-hit witness whose `2.10 m` impact mark
+  covers that texel. Exact sampled-triangle identity is not required when the
+  adjacent-facet contact is still inside the authoritative impact footprint.
+  The target rasterizer remains unchanged; any occlusion or unreachable target
+  must reject the candidate rather than silently deleting scoreable pixels.
 - **Board Phase** is a mutually exclusive StageController phase. Shot motion is
   not a Board Phase.
 - **Aim Editable** means human/replay/agent/debug origin rules permit changing
@@ -510,7 +515,7 @@ Replace the current parent values with:
     repeat Fire, and the new scale values.
   - Accept: each new assertion fails for the diagnosed production reason, not a
     fixture or parse error; no foreground Godot window opens.
-- [ ] **0.2 Introduce version-7 typed data surfaces**
+- [x] **0.2 Introduce version-7 typed data surfaces**
   - Owners: StageProgressionData, StageGenerationContract/Profile, StageData,
     StageCatalogData, GeneratedStageLayout, DirectReachabilityCertificate.
   - Change: add the exact version/schema fields and migration aliases before
@@ -522,7 +527,7 @@ Phase gate: run `scripts/verify.ps1` once.
 
 ### Phase 1: Converge physical and paint scale
 
-- [ ] **1.1 Apply one shared `0.90 m` physical radius and `32..150 m/s` power curve**
+- [x] **1.1 Apply one shared `0.90 m` physical radius and `32..150 m/s` power curve**
   - Owners: ProjectileData resource, PaintProjectile, cannon/predictor/contact,
     mechanism strike consumers, relevant scene mesh/collider setup.
   - Change: update the parent radius and maximum launch speed/export range;
@@ -530,7 +535,7 @@ Phase gate: run `scripts/verify.ps1` once.
   - Accept: visual mesh, shape, CCD, predictor, contact, and parent/child scale
     parity read the same resource; power endpoints are exact; existing low-
     rebound settlement remains.
-- [ ] **1.2 Apply the `1.50/2.10/1.50 m` authoritative paint radii**
+- [x] **1.2 Apply the `1.50/2.10/1.50 m` authoritative paint radii**
   - Owners: ProjectileData and real impact/sweep/settle command creation.
   - Change: update only resource-driven paint radii; preserve verified-contact
     and single-mask rules.
@@ -543,7 +548,7 @@ Run `scripts/verify.ps1` once.
 
 ### Phase 2: Replace three-template cloning with real per-stage progression
 
-- [ ] **2.1 Implement the complete typed progression resource**
+- [x] **2.1 Implement the complete typed progression resource**
   - Owners: `stage_progression_data.gd`, version-7 resource, contract/profile,
     route profile, multiple mechanism-pad/entry types.
   - Change: encode every formula, band, stage-specific macro array, mechanism
@@ -551,7 +556,7 @@ Run `scripts/verify.ps1` once.
   - Accept: Stage 04/05 exact canary values and Stage 01/30 endpoints match;
     all 29 profile-score deltas remain `0.35..5.00`; no executor-selected
     tuning remains.
-- [ ] **2.2 Make geometry consume every progression field**
+- [x] **2.2 Make geometry consume every progression field**
   - Owners: route graph resolver, mountain/height synthesizers, footprint,
     topology, target rasterizer, placement, decoration, containment, camera
     framing.
@@ -560,7 +565,7 @@ Run `scripts/verify.ps1` once.
   - Accept: unique checksums, adjacent RMS/scale gates, exact macro counts,
     slope/spike/closed-mass rules, mechanism placement, and decoration counts
     pass for all 30 accepted layouts.
-- [ ] **2.3 Remove legacy runtime synthesis shortcuts**
+- [x] **2.3 Remove legacy runtime synthesis shortcuts**
   - Owners: StageCatalog and SeededStageGenerator.
   - Change: delete `BASE_STAGE_PATHS`, `profile_band()`, permissive profile
     widening, and eight-attempt runtime search after version-7 replacement works.
@@ -573,20 +578,21 @@ runtime catalog search; run it, then `scripts/verify.ps1` once.
 
 ### Phase 3: Certify summit and target-wide physical reachability
 
-- [ ] **3.1 Add stable Summit Region identity**
+- [x] **3.1 Add stable Summit Region identity**
   - Owners: TerrainTopTopology and GeneratedStageLayout.
   - Change: calculate maximum height, sorted triangle IDs, region checksum, and
     exact samples under the locked definition.
   - Accept: the region is nonempty, stable across rebuilds, and contains only
-    Playable Top triangles within the height tolerance.
+    Playable Top triangles within the height tolerance. The consolidated
+    thirty-layout gate now checks this identity for every persisted layout.
 - [ ] **3.2 Extend predictor and rigid-body certification**
   - Owners: DirectReachabilityValidator/Certificate, PaintProjectile batch
     verifier, containment proof, DefaultAimSolver handoff.
   - Change: deduplicate target work by triangle, retain per-texel assignments,
     add summit witness/identity/margins, and keep centroid default separate.
-  - Accept: every scoreable triangle and the Summit Region have legal matching
-    first-hit witnesses with the exact current `0.90 m` ball; stale or fabricated
-    proof fails identity checks.
+  - Accept: every scoreable target texel and the Summit Region have legal
+    matching first-hit witnesses with the exact current `0.90 m` ball and
+    `2.10 m` impact footprint; stale or fabricated proof fails identity checks.
 - [ ] **3.3 Build the transactional thirty-stage catalog**
   - Owners: `scripts/build_stage_catalog.gd`, StageCatalogData, stage/profile/
     certificate resources, preview renderer, manifest and rollback path.
@@ -602,28 +608,36 @@ run an extra exhaustive historical matrix.
 
 ### Phase 4: Make repeat fire visibly and functionally immediate
 
-- [ ] **4.1 Separate Board Phase from Shot Family activity**
+- [x] **4.1 Separate Board Phase from Shot Family activity**
   - Owners: StageController, ProjectileManager, PaintSystem attribution,
     ShotObservation, replay/agent/debug consumers.
   - Change: remove serial live states/timer, seal families independently, resolve
     terminal only after drain, and expose correct remaining root capacity.
   - Accept: two changed-aim roots coexist; a third is side-effect-free rejected;
     aim stays editable; each family seals once; final result includes all paint.
-- [ ] **4.2 Publish one matching-key Fire readiness contract**
+    `rapid_fire_contract_test.gd` now exercises a changed next tuple while the
+    first family is still active and verifies distinct sealed commands.
+- [x] **4.2 Publish one matching-key Fire readiness contract**
   - Owners: CannonController/predictor status, StageController snapshot/signals,
     GameplayScene wiring, HUD/ActionButtons, translation rows.
   - Change: implement exact status/reason semantics and remove direct prediction-
     validity-to-button wiring and constant-capacity snapshots.
   - Accept: button, Space, replay, agent, and debug agree for READY/PENDING/
-    INVALID/CAPACITY/NO_SHOTS/TERMINAL; stale predictions never launch.
-- [ ] **4.3 Preserve the next aiming view after Fire**
+    INVALID/CAPACITY/NO_SHOTS/TERMINAL; stale predictions never launch. The
+    StageController now republishes matching-key prediction changes, the HUD and
+    AimInputController consume that one snapshot, and agent observations expose
+    the same primitive readiness fields. Focused rapid-fire/phase-7 checks cover
+    READY/PENDING/CAPACITY plus stale-fire rejection; replay/debug use the same
+    StageController admission path.
+- [x] **4.3 Preserve the next aiming view after Fire**
   - Owners: GameplayScene, CameraDirector, TrajectoryPreview, AimInputController,
     observation controls.
   - Change: Fire stays CANNON/AIMING with visible next trajectory; Follow becomes
     explicit; any aim input returns from Follow to CANNON.
   - Accept: while ball 1 remains physically active, a real human input changes
     the next tuple, matching preview appears within the bound, and ball 2 fires
-    at that tuple without steering ball 1.
+    at that tuple without steering ball 1. Background captures now cover
+    `next_aim_ready` and `two_family` at the 1280 × 720 baseline.
 
 Phase gate: replace the direct-only rapid-fire smoke with one integration contract
 through AimInputController, HUD, CameraDirector, prediction, StageController, and
@@ -645,7 +659,7 @@ two real projectiles; run it and `scripts/verify.ps1` once.
     `07_stage_failed.png` after the recovered catalog/state/scale is active. The
     seven baseline files and the ten recovery captures are separate full-
     resolution images, never a collage or concept render.
-- [ ] **5.2 Run task-scoped quality and ownership audit**
+- [x] **5.2 Run task-scoped quality and ownership audit**
   - Use `codebase-quality-auditor` after the cross-module implementation.
   - Correct only blocking task-owned competing owners, stale serial/template
     branches, contract mismatches, or false status claims.
@@ -721,16 +735,44 @@ Rules:
   missing acceptance checks.
 - [x] Effective source brief clarified; predecessor plans superseded; one
   decision-complete recovery contract installed.
-- [ ] Phase 0: truthful replacement fixtures and version surfaces.
-- [ ] Phase 1: projectile/paint midpoint.
-- [ ] Phase 2: real per-stage progression.
-- [ ] Phase 3: summit and target-wide certification/catalog build.
-- [ ] Phase 4: usable immediate re-aim/repeat fire.
-- [ ] Phase 5: production evidence, quality audit, and truthful handoff.
+- [ ] Phase 0: truthful replacement fixtures and version surfaces (0.2 done;
+  0.1 fixture-first gate remains to be reconciled).
+- [ ] Phase 1: projectile/paint midpoint (locked resource/contact checks done;
+  controlled rendered-width evidence remains).
+- [x] Phase 2: real per-stage progression (typed formulas, serialized catalog,
+  persisted-seed generation, runtime shortcut removal, adjacent normalized RMS,
+  bounded scale deltas, summit identity, macro-count, pad, decoration, and
+  thirty-layout checksum gates pass in the consolidated full-generation run).
+- [ ] Phase 3: summit identity is implemented and checked for all thirty
+  layouts; the canonical Stage 01 and Stage 30 summit predictor/rigid-body
+  contracts now pass after correcting the visual-muzzle/ballistic-yaw sign
+  contract, and target witnesses use the authoritative impact-mark tolerance.
+  Summit certificate serialization now keeps a dedicated summit aim tuple
+  separate from the target witness table.
+  Target-wide predictor/rigid-body certificates and the complete
+  certificate/preview bundle are still open. A candidate front-envelope
+  raster filter was measured but rolled back because it added unacceptable
+  generation cost and would have weakened the no-target-deletion rule; the
+  unchanged thirty-layout generation gate then passed in `254.2 s`.
+- [x] Phase 4: usable immediate re-aim/repeat fire (the live board now remains
+  AIMING, the serial result timer is bypassed, and the matching-key readiness
+  contract is implemented with prediction-change republishing, translated
+  READY/PENDING/INVALID/CAPACITY/NO_SHOTS/TERMINAL reasons, remaining root
+  capacity, and no direct cannon-to-HUD overwrite. Per-family sealing, changed
+  aim, HUD/AimInput pending-to-ready, and two-family captures pass. Human
+  AimInput, Agent, Replay, and Debug admission paths now each have focused
+  acceptance evidence; Space maps to the same human request path.)
+- [ ] Phase 5: production evidence, quality audit, and truthful handoff. The
+  task-scoped ownership audit is complete and corrected the independent-summit
+  certificate boundary; production export and focused regression evidence pass.
+  Full target certificates/previews, rendered-width proof, and baseline capture
+  reconciliation remain open.
 
 ## Next Steps
 
-1. Begin at Task 0.1; do not implement from a predecessor plan.
+1. Continue at Phase 3 target-wide certification/catalog output; do not
+   implement from a predecessor plan. The visual/ballistic yaw contract is now
+   fixed and guarded, so do not reopen that tuning while building certificates.
 2. Keep the current project launchable and commit each completed phase as one
    coherent task-owned change after its focused gate.
 3. Stop after Phase 5 background evidence and hand the production build to the

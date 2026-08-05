@@ -2,9 +2,12 @@ class_name TargetMaskRasterizer
 extends RefCounted
 
 ## Builds the immutable scoreable footprint from route geometry. Slope never
-## removes a pixel; exact triangle slopes reject the whole candidate instead.
+## removes a pixel; exact target structure is validated separately.
 
-const MAXIMUM_CONNECTED_STEP_METERS := 1.25
+# The raster is sampled at roughly 0.4 m while the mountain can rise several
+# metres between neighboring pixels on a steep face. A 6 m 3D step keeps those
+# continuous faces one component without bridging an actual empty XZ gap.
+const MAXIMUM_CONNECTED_STEP_METERS := 6.0
 const NEIGHBOR_OFFSETS := [
 	Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
 	Vector2i(-1, 0), Vector2i(1, 0),

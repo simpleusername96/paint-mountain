@@ -188,6 +188,199 @@ acceptance without a controlled contact-width capture.
   text, concepts, or plan prose. Require the focused contract checks and named
   production-style off-screen evidence.
 
+## Recovery checkpoint (2026-08-05)
+
+The implementation resumed from the replacement ExecPlan after this audit. The
+following hidden/headless checks now provide new evidence beyond the original
+static snapshot:
+
+- `scripts/verify.ps1 -GodotPath <Godot 4.7.1 console>` passed import, script
+  parsing, and main-scene startup.
+- `tests/stage30_progression_test.gd` passed the serialized version-7 catalog,
+  canonical numeric IDs, legacy aliases, Stage 04/05 canaries, endpoints, and
+  all adjacent difficulty-score deltas. Its `--full-generation` mode remains a
+  longer offline guard rather than a routine check.
+- Persisted-seed generation passed for stages 01–03 and 04–30 in separate
+  headless sweeps. The generated layouts reported distinct stage dimensions,
+  cell counts, route/mechanism bands, target masks, and decoration counts.
+- `tests/projectile_contact_test.gd` passed the locked 0.90 m physical radius,
+  32–150 m/s endpoints, 1.50/2.10/1.50 m paint radii, and 100 exact contacts.
+- `tests/rapid_fire_contract_test.gd` passed two immediate root families,
+  side-effect-free third-family rejection, and settlement. The Phase 7 user-QA
+  contract also passed latest-aim refresh.
+
+The recovery is not complete: no thirty-stage summit/target-wide predictor plus
+rigid-body certificate bundle or named background Compatibility captures have
+been produced, and the content bundle currently contains serialized stage and
+profile resources only. These are explicit remaining gates, not inferred
+completion claims.
+
+## Recovery checkpoint 2 (2026-08-05)
+
+The next implementation slice closed the progression and live-board gaps that
+were still open in the previous checkpoint:
+
+- The serialized bundle pointer now targets manifest
+  `71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072`. Its
+  transaction writer emits stages, profiles, empty certificate/preview folders,
+  and an explicit `previews_ready=false` manifest flag; no certificate or
+  preview is being represented as complete.
+- The full `stage30_progression_test.gd --full-generation` gate passed in
+  `163.5 s`. It rebuilt all thirty persisted seeds and checked adjacent
+  normalized height RMS, bounded dimensions, unique height checksums, summit
+  identity, containment, macro counts, mechanism pads, route slope bounds, and
+  decoration counts.
+- The live board now stays in `AIMING` while families move and after the final
+  paint drain; the former 0.7-second serial result wait is bypassed. The rapid
+  fire contract still passed with two accepted families, capacity rejection,
+  per-family observations, and an editable board after settlement.
+- `ActionButtons` now renders the authoritative disabled reason adjacent to
+  Fire. Hidden Compatibility captures inspected by the implementing agent show
+  `궤적 계산 중` in `next_aim_pending`, `포탄 2개 진행 중` in `two_family`, and a
+  blue ready Fire state in `next_aim_ready`.
+- The terrain shader's mountain albedo was lowered to a readable cool mid-value
+  while the wall/apron remained bright. A real Stage 04 background capture now
+  shows faceted 3D mass, side support faces, mechanisms, and trajectory without
+  the previous white clipping.
+- The delivery runner now accepts the named recovery screens
+  `progression_aiming`, `summit_hit`, `next_aim_pending`, `next_aim_ready`,
+  `two_family`, and `scale_contact`, plus canonical `--capture-stage` IDs.
+
+Remaining gates are unchanged in substance: persisted target-wide and summit
+predictor/rigid-body certificates, a measured rendered-width scale fixture,
+the full baseline/recovery capture set and metadata, one production export,
+the quality audit, and lifecycle reconciliation.
+
+## Recovery checkpoint 3 (2026-08-05)
+
+The reachability boundary was exercised against canonical serialized `stage_01`
+rather than the legacy `first_descent` fixture. The old fixture used the
+pre-catalog bounds and passed the wrong apron join height, so it could not prove
+the current runtime contract. `tests/target_reachability_test.gd
+--summit-only` now passes with a real predictor witness and one production
+`PaintProjectile` witness (region `12`, predictor checksum `1575122968`,
+rigid-body checksum `2777136852`, worst summit height margin `0.171 m`).
+
+The target acceptance boundary now matches the live paint contract: a first
+top-surface contact is accepted when its authoritative `2.10 m` impact mark
+covers the target texel. The former `0.50 m` point-distance plus exact-triangle
+gate rejected adjacent-facet contacts whose actual impact mark already covered
+the intended surface. A candidate positive-Z front-envelope raster filter was
+measured and then rolled back: its per-stage generation cost exceeded the
+bounded window, and deleting hidden target pixels would violate the locked
+no-target-deletion contingency. A full thirty-layout regeneration therefore
+remains unchanged; after the rollback it passed in `254.2 s` and the catalog
+pointer was not changed. The target-wide predictor/rigid-body certificate gate
+is still open.
+
+The live-board path also removed the remaining competing Fire owner: the
+cannon's partial `aim_validity_changed` signal no longer writes the Fire button
+directly. `StageController.fire_readiness_snapshot()` and
+`activity_snapshot()` now publish remaining root capacity (`0` at two active
+families, `2` after settlement), while the existing origin matrix and
+per-family sealing proof now pass in the changed-aim rapid-fire contract; the
+complete input-origin matrix remains open.
+
+## Recovery checkpoint 4 (2026-08-05)
+
+The matching-key readiness boundary is now wired end-to-end. `CannonController`
+records the aim key associated with each prediction and reports `pending`,
+`fireable`, or `invalid`; changing aim clears the key, so a stale prediction
+cannot launch. `StageController` is the sole Fire owner and republishes the
+snapshot when the matching prediction arrives. The HUD/AimInput path and the
+primitive `GameplayAgentApi` observation consume the same fields; replay and
+debug requests call the same StageController admission method. The synchronous
+Fire-time prediction refresher was removed, and the phase-7 contract was
+updated to assert pending rejection followed by one coalesced latest-aim solve.
+
+Focused evidence after this change:
+
+- `scripts/verify.ps1` passed.
+- `tests/rapid_fire_contract_test.gd` passed with real HUD pending/ready state,
+  changed-aim two-family firing, remaining capacity, and distinct sealed aim
+  tuples.
+- `tests/phase7_user_qa_contract_test.gd` passed with pending Fire rejected,
+  one later prediction solve, and latest-aim launch.
+- `tests/replay_presentation_test.gd` passed the replay-origin aim/fire path on
+  the live AIMING board, and `tests/phase8_debug_test.gd` passed a Debug-origin
+  Fire plus sealed shot-log export. The second changed-aim family in the rapid
+  contract is admitted through `GameplayAgentApi`; Space shares the same
+  `AimInputController.request_fire()` path as the button.
+- Background captures `stage_04_progression_aiming.png`,
+  `stage_04_next_aim_pending_ui.png`, `stage_04_next_aim_ready_ui.png`,
+  `stage_04_two_family_ui3.png`, `stage_04_summit_hit.png`, and
+  `stage_04_scale_contact_ui.png` were regenerated at `1280x720` with no
+  foreground Godot window. The ready frame shows an enabled Fire button; the
+  two-family frame shows only Fire disabled while the next trajectory remains.
+
+## Recovery checkpoint 5 (2026-08-05)
+
+The summit reachability failure found while preparing the Stage 30 evidence was
+an actual coordinate-contract defect, not a bad seed. `CannonController` rotates
+the visual muzzle with Godot's positive Y convention, while
+`CannonBallistics.launch_direction()` and the reachability yaw nomination had
+used the opposite X sign. Near the distant summit this produced a large
+perpendicular miss and zero analytic candidates. The ballistic vector, validator
+horizontal direction, and target-bearing recovery now share the visual muzzle
+convention. `projectile_contact_test.gd` includes a regression assertion across
+the legal yaw/elevation extrema.
+
+Focused evidence after this correction:
+
+- `tests/projectile_contact_test.gd` passed, including the visual/ballistic
+  direction contract, locked scale values, 100 exact contacts, CCD, recontact,
+  and simultaneous-contact ordering.
+- `tests/target_reachability_test.gd --stage=stage_01 --summit-only` passed with
+  region `12`, predictor checksum `2477889882`, rigid-body checksum `208192991`,
+  and height margin `0.565 m`.
+- `tests/target_reachability_test.gd --stage=stage_30 --summit-only` passed with
+  region `6`, predictor checksum `117277691`, rigid-body checksum `1161348872`,
+  and height margin `0.620 m`.
+- The bounded Stage 01 reachability sample passed with `256` visited target
+  texels, `51` witnesses, `205` reused assignments, and a `2.956 s` elapsed
+  sample. This is not the full target-wide certificate.
+- `scripts/build_stage_catalog.gd --check` still passed unchanged with manifest
+  `71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072`.
+- Fresh hidden Compatibility captures for Stage 04, 05, 10, 20, and 30 show
+  distinct mountain silhouettes and mechanism counts. The refreshed Stage 04
+  live frames show summit trajectory, pending/ready Fire states, two active
+  projectile families, and the scale-contact runner state without opening a
+  foreground window.
+
+## Recovery checkpoint 6 (2026-08-05)
+
+The post-pass ownership audit found one certificate-boundary defect: the first
+summit fields required the summit aim to be an index in the target witness
+table. That would reject a valid global summit outside the scoreable route mask,
+contradicting the locked separation between centroid/default targeting and
+summit proof. `DirectReachabilityCertificate` now serializes a dedicated summit
+angle/elevation/power tuple, and `GeneratedStageLayout.is_certified()` validates
+that tuple independently. The legacy index field remains read-compatible but is
+not emitted by new certificates.
+
+Evidence after the correction:
+
+- `tests/target_reachability_test.gd --stage=stage_01 --summit-only` passed and
+  its serialization guard round-tripped a summit tuple distinct from a target
+  witness.
+- `scripts/verify.ps1` passed after the certificate and test changes.
+- The focused contact, projectile/paint, rapid-fire, phase-7, phase-8, replay,
+  and default-aim checks passed as a final regression batch.
+- The Windows release export completed with exit code `0` and no Godot process
+  remained afterward.
+
+This does not close the remaining Phase 3/5 gates: target-wide predictor and
+rigid-body certificates for all thirty stages, certificate-linked previews,
+controlled rendered/mask width measurement, the complete baseline capture set,
+and lifecycle completion are still unverified.
+
+At checkpoint 5 the remaining release gates were target-wide predictor/rigid-body
+certificates for all thirty stages, certificate-linked previews, controlled
+rendered/mask width measurement, the complete baseline capture set, production
+export, quality audit, and lifecycle reconciliation. Checkpoint 6 records the
+export and quality-audit results; the certificate, preview, width, baseline, and
+lifecycle gates remain open.
+
 ## Limitations
 
 - This audit does not claim fresh runtime reproduction; it explains the user's

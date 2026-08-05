@@ -137,11 +137,21 @@ func _check_coalesced_runtime_work() -> void:
 	controller.shot_fired.connect(func(_shot: int, yaw: float, elevation: float, power: float) -> void:
 		fired.aim = Vector3(yaw, elevation, power)
 	)
-	_assert_true(controller.request_fire(), "immediate Fire must synchronously refresh the latest dirty prediction")
+	_assert_true(not controller.request_fire(), "pending Fire must reject instead of synchronously solving on the Fire path")
+	_assert_true(
+		gameplay.prediction_compute_count() == prediction_count,
+		"pending Fire must not add a synchronous trajectory solve"
+	)
+	var readiness_budget := 30
+	while not cannon.is_aim_valid() and readiness_budget > 0:
+		await process_frame
+		readiness_budget -= 1
+	_assert_true(readiness_budget > 0, "latest aim must publish a matching prediction after the coalesced refresh")
 	_assert_true(
 		gameplay.prediction_compute_count() == prediction_count + 1,
-		"one immediate Fire must perform exactly one latest-aim prediction"
+		"coalesced prediction must perform exactly one latest-aim solve"
 	)
+	_assert_true(controller.request_fire(), "Fire must succeed once the matching prediction is ready")
 	_assert_true(
 		Vector3(fired.aim).is_equal_approx(Vector3(
 			default_aim.yaw_degrees,

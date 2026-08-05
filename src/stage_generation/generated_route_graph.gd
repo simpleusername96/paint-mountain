@@ -165,6 +165,14 @@ func pad_node_for_kind(mechanism_kind: int) -> GeneratedRouteNode:
 	return null
 
 
+func pad_nodes_for_kind(mechanism_kind: int) -> Array[GeneratedRouteNode]:
+	var result: Array[GeneratedRouteNode] = []
+	for node in _nodes:
+		if node.kind == GeneratedRouteNode.Kind.PAD and node.mechanism_kind == mechanism_kind:
+			result.append(node)
+	return result
+
+
 func route_position(route_index: int, normalized_arc_position: float) -> Vector3:
 	var route := route_edges(route_index)
 	if route.is_empty():

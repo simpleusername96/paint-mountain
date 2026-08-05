@@ -59,6 +59,19 @@ catalog enumeration, direct-controller repeat Fire, static UI, and performance.
 It is retained in `.agents/evidence/2026-08-05-execution-evidence.md` as historical
 evidence and does not satisfy this gate.
 
+### Recovery verification snapshot (2026-08-05)
+
+- Stage 01 and Stage 30 summit-only predictor/rigid-body checks pass with the
+  shared visual-muzzle yaw contract; the certificate serialization guard keeps
+  the summit aim independent from the target witness table.
+- The final focused regression batch passed contact/CCD, projectile-to-paint,
+  rapid-fire/readiness, phase-7, phase-8, replay, and default-aim handoff checks.
+- `scripts/verify.ps1`, the deterministic catalog `--check`, and the Windows
+  release export passed through the approved hidden/headless Godot path.
+- These observations do not check the full target-wide certificate bundle,
+  controlled rendered-width measurement, or the seven fresh baseline captures;
+  the active recovery gate remains open for those items.
+
 ## Requirements and Acceptance Criteria
 
 ### Bootstrap baseline

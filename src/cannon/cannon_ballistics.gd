@@ -6,8 +6,11 @@ static func launch_direction(yaw_degrees: float, elevation_degrees: float) -> Ve
 	var yaw := deg_to_rad(yaw_degrees)
 	var elevation := deg_to_rad(elevation_degrees)
 	var horizontal_scale := cos(elevation)
+	# Godot's positive Y rotation turns the cannon's -Z forward axis toward
+	# negative X. Keep the projectile vector collinear with the visual muzzle
+	# transform so solver, preview, and rigid-body launch share one yaw contract.
 	return Vector3(
-		sin(yaw) * horizontal_scale,
+		-sin(yaw) * horizontal_scale,
 		sin(elevation),
 		-cos(yaw) * horizontal_scale
 	).normalized()

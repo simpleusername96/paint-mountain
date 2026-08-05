@@ -1,6 +1,7 @@
 extends SceneTree
 
 const FIXTURE_SCENE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
+const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 const PROJECTILE_DATA := preload("res://resources/projectiles/basic_paintball.tres")
 const REPEATS := 20
 
@@ -13,6 +14,8 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.physics_ticks_per_second = 60
+	_assert_scale_contract()
+	await _assert_cannon_ballistic_yaw_contract()
 	await _run_fixture_case(
 		&"flat", TerrainTestFixtureFactory.Kind.FLAT,
 		Vector3(0, 10, 0), Vector3(0, -100, 0), Vector3.UP
@@ -42,6 +45,37 @@ func _run_checks() -> void:
 	if not _failed:
 		print("Projectile contact checks passed: 100 exact top/ramp/ridge/shell CCD contacts, separated recontact, and stable simultaneous-body ordering at 60 Hz.")
 	quit(1 if _failed else 0)
+
+
+func _assert_scale_contract() -> void:
+	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 0.90), "physical projectile radius must be 0.90 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.minimum_launch_speed, 32.0), "minimum launch speed must be 32 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.maximum_launch_speed, 150.0), "maximum launch speed must be 150 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(0.0), 32.0), "zero power must map to 32 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(100.0), 150.0), "full power must map to 150 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 1.50), "sweep paint radius must be 1.50 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 2.10), "impact paint radius must be 2.10 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.settle_paint_radius, 1.50), "settle paint radius must be 1.50 m")
+
+
+func _assert_cannon_ballistic_yaw_contract() -> void:
+	var cannon := CANNON_SCENE.instantiate() as CannonController
+	root.add_child(cannon)
+	await physics_frame
+	for yaw in PackedFloat32Array([-45.0, -12.3, 0.0, 23.4, 45.0]):
+		for elevation in PackedFloat32Array([10.0, 38.0, 68.0]):
+			cannon.set_aim(yaw, elevation, 50.0)
+			var elevation_pivot := cannon.get_node("YawPivot/ElevationPivot") as Node3D
+			var visual_direction: Vector3 = -elevation_pivot.global_transform.basis.z.normalized()
+			var ballistic_direction: Vector3 = CannonBallistics.launch_direction(yaw, elevation)
+			_assert_true(
+				visual_direction.dot(ballistic_direction) >= 0.999,
+				"visual muzzle and ballistic launch direction must share yaw/elevation; yaw=%.1f elevation=%.1f visual=%s ballistic=%s" % [
+					yaw, elevation, visual_direction, ballistic_direction
+				]
+			)
+	cannon.queue_free()
+	await physics_frame
 
 
 func _run_fixture_case(

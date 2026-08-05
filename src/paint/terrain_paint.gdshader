@@ -1,10 +1,13 @@
 shader_type spatial;
-render_mode depth_draw_opaque, cull_back;
+render_mode depth_draw_opaque, cull_disabled;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
 uniform sampler2D target_mask : filter_nearest, repeat_disable;
-uniform vec4 rock_color : source_color = vec4(0.66, 0.70, 0.76, 1.0);
-uniform vec4 shadow_tint : source_color = vec4(0.48, 0.53, 0.61, 1.0);
+// Keep the mountain one readable value step below the bright wall and apron.
+// The aiming camera receives a strong daylight key, so near-white albedo
+// collapses every facet to a flat white silhouette.
+uniform vec4 rock_color : source_color = vec4(0.176, 0.227, 0.314, 1.0);
+uniform vec4 shadow_tint : source_color = vec4(0.063, 0.091, 0.150, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
 uniform float support_floor_y = -2.0;
 uniform float support_rear_z = -172.0;

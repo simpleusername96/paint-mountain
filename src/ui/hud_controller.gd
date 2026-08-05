@@ -41,6 +41,16 @@ var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 
 
+func update_activity(
+		_active_shot_ids: PackedInt64Array,
+		active_projectiles: int,
+		_fire_capacity: int
+) -> void:
+	# Board Phase remains AIMING during live shot families; activity, not the
+	# serial state enum, controls whether the observation strip is visible.
+	_observation.visible = active_projectiles > 0 and not _replay_active
+
+
 func _ready() -> void:
 	_replay_active = false
 	_replay.hide()
@@ -57,7 +67,7 @@ func configure(stage_data: StageData) -> void:
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
 	%BriefingObjective.text = tr(String(stage_data.objective_key))
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
-	if stage_data.stage_id == &"first_descent" and not _first_session_hint_seen:
+	if stage_data.stage_id == &"stage_01" and not _first_session_hint_seen:
 		_hint_pending = true
 		_first_hint.visible = false
 	else:
@@ -84,8 +94,8 @@ func update_coverage(value: float) -> void:
 	_coverage.update_coverage(value)
 
 
-func set_fire_enabled(enabled: bool) -> void:
-	_actions.set_fire_enabled(enabled)
+func set_fire_readiness(snapshot: Dictionary) -> void:
+	_actions.set_fire_readiness(snapshot)
 
 
 func show_state(state: StageController.State) -> void:
@@ -100,14 +110,13 @@ func show_state(state: StageController.State) -> void:
 	_briefing.visible = state == StageController.State.BRIEFING and not _replay_active
 	var aiming_surface := state in [
 		StageController.State.AIMING,
-		StageController.State.PROJECTILE_IN_FLIGHT,
-		StageController.State.PAINT_SETTLING,
 	]
 	if aiming_surface:
 		_mechanism.hide_card()
 	_aim.visible = aiming_surface and not _replay_active
 	_actions.visible = aiming_surface and not _replay_active
-	_observation.visible = state in [StageController.State.PROJECTILE_IN_FLIGHT, StageController.State.PAINT_SETTLING, StageController.State.SHOT_RESULT] and not _replay_active
+	if state != StageController.State.AIMING or _replay_active:
+		_observation.visible = false
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and not _replay_active
 	_pause.visible = state == StageController.State.PAUSED and not _replay_active

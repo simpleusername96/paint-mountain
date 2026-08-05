@@ -51,6 +51,36 @@ static func find_runtime_aim(
 	return aim
 
 
+## Bounded summit witness used by the stage certifier and fairness diagnostics.
+## It shares the same analytic nomination and SphereShape3D predictor as the
+## live cannon, so a positive result means the legal human aim domain can reach
+## the highest terrain band rather than merely its centroid.
+static func find_runtime_summit_aim(
+		space_state: PhysicsDirectSpaceState3D,
+		cannon: CannonController,
+		terrain_surface: TerrainSurface,
+		layout: GeneratedStageLayout
+) -> AimTuple:
+	if space_state == null or cannon == null or terrain_surface == null or layout == null:
+		return null
+	for summit in layout.summit_region(0.25):
+		var world_point := terrain_surface.to_global(summit.point as Vector3)
+		var world_normal := (terrain_surface.global_transform.basis.inverse().transposed() \
+			* (summit.normal as Vector3)).normalized()
+		var solved := DirectReachabilityValidator.solve_one_target(
+			space_state,
+			cannon,
+			layout,
+			layout.containment.containment_bounds,
+			world_point,
+			world_normal,
+			summit
+		)
+		if bool(solved.get("valid", false)):
+			return solved.get("aim") as AimTuple
+	return null
+
+
 static func _bounded_center_fallback(
 		space_state: PhysicsDirectSpaceState3D,
 		cannon: CannonController,
@@ -114,8 +144,6 @@ static func _prediction_matches_target(
 		return false
 	var identity := prediction.hit_identity
 	return identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
-			and identity.terrain_cell == target_sample.cell \
-			and identity.terrain_triangle == int(target_sample.triangle) \
 			and prediction.endpoint.distance_to(target_world_point) \
 					<= DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE
 

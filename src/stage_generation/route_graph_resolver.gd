@@ -68,14 +68,24 @@ static func resolve(
 	for route_index in range(profile.routes.size()):
 		var route_profile := profile.routes[route_index]
 		var chain := chains[route_index]
-		var pad_edge_index := -1
-		var pad_edge_t := -1.0
-		if route_profile.mechanism_kind >= 0:
-			var split := _pad_split(chain, route_profile.mechanism_pad_t)
-			pad_edge_index = int(split.edge_index)
-			pad_edge_t = float(split.edge_t)
-			if pad_edge_index < 0 or pad_edge_t <= 0.0 or pad_edge_t >= 1.0:
+		var pad_splits: Array[Dictionary] = []
+		for slot_index in range(route_profile.mechanism_slots().size()):
+			var slot: Dictionary = route_profile.mechanism_slots()[slot_index]
+			var split := _pad_split(chain, float(slot.t))
+			if int(split.edge_index) < 0 or float(split.edge_t) <= 0.0 or float(split.edge_t) >= 1.0:
 				return null
+			pad_splits.append({
+				"edge_index": int(split.edge_index),
+				"edge_t": float(split.edge_t),
+				"kind": int(slot.kind),
+				"radius": float(slot.radius),
+				"slot_index": slot_index,
+			})
+		pad_splits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			if int(a.edge_index) != int(b.edge_index):
+				return int(a.edge_index) < int(b.edge_index)
+			return float(a.edge_t) < float(b.edge_t)
+		)
 		var from_node_id := summit_id
 		var resolved_edge_index := 0
 		for original_edge_index in range(chain.size() - 1):
@@ -83,51 +93,27 @@ static func resolve(
 			var to_node_id := GeneratedRouteNode.route_node_id(stage_id, route_index, station_index)
 			var to_kind := GeneratedRouteNode.Kind.EXIT \
 					if station_index == chain.size() - 1 else GeneratedRouteNode.Kind.CORRIDOR
-			if original_edge_index == pad_edge_index:
-				var pad_id := GeneratedRouteNode.pad_id(
-					stage_id, route_index, original_edge_index, route_profile.mechanism_kind
-				)
-				var pad_position := chain[original_edge_index].lerp(chain[station_index], pad_edge_t)
-				nodes.append(GeneratedRouteNode.new(
-					pad_id,
-					pad_position,
-					route_index,
-					station_index,
-					GeneratedRouteNode.Kind.PAD,
-					route_profile.mechanism_kind,
-					route_profile.mechanism_pad_radius
-				))
+			var segment_slots: Array[Dictionary] = []
+			for split in pad_splits:
+				if int(split.edge_index) == original_edge_index:
+					segment_slots.append(split)
+			var segment_index := 0
+			for split in segment_slots:
+				var pad_id := StringName("%s/route/%d/edge/%d/pad/%d" % [String(stage_id), route_index, original_edge_index, int(split.slot_index)])
+				var pad_position := chain[original_edge_index].lerp(chain[station_index], float(split.edge_t))
+				nodes.append(GeneratedRouteNode.new(pad_id, pad_position, route_index, station_index, GeneratedRouteNode.Kind.PAD, int(split.kind), float(split.radius)))
 				edges.append(GeneratedRouteEdge.new(
-					GeneratedRouteEdge.stable_id(stage_id, route_index, original_edge_index, &"a"),
-					from_node_id,
-					pad_id,
-					route_index,
-					resolved_edge_index,
-					route_profile.role,
-					route_profile.width
+					GeneratedRouteEdge.stable_id(stage_id, route_index, original_edge_index, StringName("pad_%d_a" % segment_index)),
+					from_node_id, pad_id, route_index, resolved_edge_index, route_profile.role, route_profile.width
 				))
 				resolved_edge_index += 1
-				edges.append(GeneratedRouteEdge.new(
-					GeneratedRouteEdge.stable_id(stage_id, route_index, original_edge_index, &"b"),
-					pad_id,
-					to_node_id,
-					route_index,
-					resolved_edge_index,
-					route_profile.role,
-					route_profile.width
-				))
-				resolved_edge_index += 1
-			else:
-				edges.append(GeneratedRouteEdge.new(
-					GeneratedRouteEdge.stable_id(stage_id, route_index, original_edge_index),
-					from_node_id,
-					to_node_id,
-					route_index,
-					resolved_edge_index,
-					route_profile.role,
-					route_profile.width
-				))
-				resolved_edge_index += 1
+				from_node_id = pad_id
+				segment_index += 1
+			edges.append(GeneratedRouteEdge.new(
+				GeneratedRouteEdge.stable_id(stage_id, route_index, original_edge_index, StringName("finish_%d" % segment_index)),
+				from_node_id, to_node_id, route_index, resolved_edge_index, route_profile.role, route_profile.width
+			))
+			resolved_edge_index += 1
 			nodes.append(GeneratedRouteNode.new(
 				to_node_id,
 				chain[station_index],
@@ -138,7 +124,9 @@ static func resolve(
 			from_node_id = to_node_id
 
 	var graph := GeneratedRouteGraph.new(nodes, edges)
-	if not graph.is_valid() or not _pads_do_not_overlap(graph):
+	if not graph.is_valid():
+		return null
+	if not _pads_do_not_overlap(graph):
 		return null
 	return graph
 

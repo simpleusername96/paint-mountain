@@ -19,36 +19,40 @@ static func generate(
 		push_error("Stage generation profile is invalid.")
 		return null
 	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v5")
+		String(profile.profile_id).trim_suffix("_v7")
 	)
+	# Legacy authored IDs are accepted only at this migration boundary. Once a
+	# canonical catalog entry exists, generation uses that serialized profile and
+	# seed so old save/test fixtures cannot reintroduce runtime template search.
+	if stage_data != null and stage_id in [&"first_descent", &"burst_basin", &"split_ridge"]:
+		var canonical_stage := StageCatalog.get_stage(StageCatalog.canonical_id(stage_id))
+		if canonical_stage != null and canonical_stage.stage_id != stage_id:
+			return generate(
+				canonical_stage.generation_profile,
+				canonical_stage.terrain_seed,
+				canonical_stage
+			)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	if stage_data == null:
 		push_error("Production stage generation requires StageData.")
 		return null
+	# Generated progression entries use their persisted accepted seed. The three
+	# legacy resources predate the catalog builder, so they retain the bounded
+	# migration search until their content-addressed replacements are checked in.
 	if String(stage_id).begins_with("stage_"):
-		# Generated progression entries use a short deterministic search. The full
-		# certifier remains an offline tool; runtime stage entry must stay bounded.
-		var attempts := mini(profile.generation_contract.attempt_count, 8)
-		for attempt_index in range(attempts):
-			var attempt_seed := int((requested_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)
-			var candidate := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
-			if _validate(profile, candidate) and _finalize_layout(profile, stage_data, candidate):
-				return candidate
-		push_error("Generated stage %s failed its bounded runtime attempts." % stage_id)
+		var accepted := _build_attempt(stage_id, profile, requested_seed, requested_seed, 0)
+		if _validate(profile, accepted) and _finalize_layout(profile, stage_data, accepted):
+			accepted.reachability_certificate = stage_data.reachability_certificate
+			return accepted
+		push_error("Generated stage %s failed its persisted accepted seed." % stage_id)
 		return null
-	var layout := _build_attempt(
-		stage_id,
-		profile,
-		requested_seed,
-		requested_seed,
-		0
-	)
-	if not _validate(profile, layout) or not _finalize_layout(profile, stage_data, layout):
-		var rejection := layout.metrics if layout != null else {"rejection": "route_graph"}
-		push_error("Production layout failed structural construction: %s" % str(rejection))
-		return null
-	layout.reachability_certificate = stage_data.reachability_certificate
-	return layout
+	for attempt_index in range(profile.generation_contract.attempt_count):
+		var attempt_seed := int((requested_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)
+		var candidate := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
+		if _validate(profile, candidate) and _finalize_layout(profile, stage_data, candidate):
+			return candidate
+		push_error("Legacy stage %s failed its migration attempts." % stage_id)
+	return null
 
 
 ## Offline structural helper for the certifier and deterministic generation
@@ -64,7 +68,7 @@ static func generate_structural_sequence(
 		return null
 	var contract := profile.generation_contract
 	var stage_id := stage_data.stage_id if stage_data != null else StringName(
-		String(profile.profile_id).trim_suffix("_v5")
+		String(profile.profile_id).trim_suffix("_v7")
 	)
 	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	for attempt_index in range(contract.attempt_count):
@@ -144,7 +148,16 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 			layout.metrics = {"rejection": "non_finite_height"}
 			return false
 		maximum_height = maxf(maximum_height, height)
-	layout.metrics = {"maximum_height": maximum_height}
+	layout.metrics = {
+		"maximum_height": maximum_height,
+		"route_count": layout.route_graph.route_count(),
+		"station_count": profile.generation_contract.route_station_z.size(),
+		"ridge_count": profile.ridge_count,
+		"basin_count": profile.basin_count,
+		"pass_count": profile.pass_count,
+		"undulation_amplitude": profile.undulation_amplitude,
+		"route_width": profile.route_width,
+	}
 	if maximum_height < profile.accepted_height_range.x or maximum_height > profile.accepted_height_range.y:
 		layout.metrics["rejection"] = "maximum_height"
 		return false
@@ -164,6 +177,8 @@ static func _validate(profile: StageGenerationProfile, layout: GeneratedStageLay
 		layout.metrics["rejection"] = "route_footprint_ratio"
 		return false
 	layout.metrics["top_triangles"] = layout.top_topology.triangle_count()
+	layout.metrics["summit_triangle_count"] = layout.summit_triangle_ids().size()
+	layout.metrics["summit_region_checksum"] = layout.summit_region_checksum()
 	return true
 
 
@@ -240,7 +255,7 @@ static func _validate_pads(layout: GeneratedStageLayout) -> bool:
 				var angle := TAU * float(sample_index - 1) / 16.0
 				point += Vector2(cos(angle), sin(angle)) * radius
 			var slope := _local_slope_degrees(layout, point, 0.25)
-			if slope > 8.0:
+			if slope > 28.0:
 				return false
 	return true
 
@@ -433,13 +448,7 @@ static func _circle_is_outside_target_mask(
 
 
 static func _decoration_count(stage_number: int) -> int:
-	if stage_number <= 5:
-		return 10
-	if stage_number <= 10:
-		return 14
-	if stage_number <= 20:
-		return 18
-	return 22
+	return 10 + roundi(22.0 * StageProgressionData.normalized_t(stage_number))
 
 
 static func _height_checksum(heights: PackedFloat32Array) -> int:

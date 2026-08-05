@@ -5,12 +5,18 @@ extends RefCounted
 ## never exposed to gameplay; the serialized certificate keeps only canonical
 ## aim tuples, target assignments, margins, and deterministic checksums.
 
-const TARGET_DISTANCE_TOLERANCE := 0.50
+# A witness is accepted when its first top-surface contact lands inside the
+# authoritative impact mark. The radius is intentionally the same 2.10 m
+# value used by ProjectileData. Requiring the exact sampled triangle would
+# reject legitimate contacts on adjacent facets even though the impact mark
+# fully covers the scoreable texel.
+const TARGET_DISTANCE_TOLERANCE := 2.10
 const MAXIMUM_PERPENDICULAR_MISS := 1.02
 const ELEVATION_SAMPLE_STEP_DEGREES := 1.0
 const ELEVATION_BISECTION_ITERATIONS := 12
 const RIGIDBODY_BATCH_SIZE := 128
 const MAXIMUM_UNCOVERED_DIAGNOSTICS := 32
+const WITNESS_SPATIAL_BUCKET_METERS := TARGET_DISTANCE_TOLERANCE
 const CHECKSUM_OFFSET := 2166136261
 const CHECKSUM_PRIME := 16777619
 const DEFAULT_PAINT_SURFACE_TUNING := preload(
@@ -46,6 +52,7 @@ static func validate_predictor(
 	var target_pixel_indices := PackedInt32Array()
 	var target_points := PackedVector3Array()
 	var witnesses_by_triangle: Dictionary = {}
+	var witnesses_by_spatial_bucket: Dictionary = {}
 	var prediction_cache: Dictionary = {}
 	var solver_cache := _build_solver_cache(cannon)
 	var predictor_call_count := 0
@@ -87,6 +94,12 @@ static func validate_predictor(
 				witness_impacts,
 				target_world_point
 			)
+			if reused_index < 0:
+				reused_index = _nearest_spatial_reusable_witness(
+					witnesses_by_spatial_bucket,
+					witness_impacts,
+					target_world_point
+				)
 			if reused_index >= 0:
 				var reused_distance := witness_impacts[reused_index].distance_to(target_world_point)
 				witness_maximum_distances[reused_index] = maxf(
@@ -155,6 +168,11 @@ static func validate_predictor(
 			)
 			triangle_witnesses.append(witness_index)
 			witnesses_by_triangle[triangle_key] = triangle_witnesses
+			_register_spatial_witness(
+				witnesses_by_spatial_bucket,
+				prediction.endpoint,
+				witness_index
+			)
 
 	if uncovered_count > 0:
 		return _uncovered_failure(
@@ -241,6 +259,108 @@ static func select_witness_index(
 				and _aim_tuple_precedes(witness, witnesses[best_index]):
 			best_index = index
 	return best_index
+
+
+static func validate_summit(
+		space_state: PhysicsDirectSpaceState3D,
+		cannon: CannonController,
+		terrain_surface: TerrainSurface,
+		layout: GeneratedStageLayout,
+		stage_bounds: AABB
+) -> Dictionary:
+	var region := layout.summit_region(0.25) if layout != null else []
+	if region.is_empty():
+		return {"valid": false, "rejection": &"empty_summit_region"}
+	var witnesses: Array[AimTuple] = []
+	var witness_impacts := PackedVector3Array()
+	var witness_identities: Array[TrajectoryHitIdentity] = []
+	var target_points := PackedVector3Array()
+	var target_witness_indices := PackedInt32Array()
+	var distance_margins := PackedFloat32Array()
+	var range_margins := PackedFloat32Array()
+	var maximum_height := -INF
+	for height in layout.heights:
+		maximum_height = maxf(maximum_height, height)
+	var best: Dictionary = {}
+	for summit in region:
+		var world_point := terrain_surface.to_global(summit.point as Vector3)
+		var world_normal := (terrain_surface.global_transform.basis.inverse().transposed() \
+			* (summit.normal as Vector3)).normalized()
+		var solved := solve_one_target(
+			space_state,
+			cannon,
+			layout,
+			stage_bounds,
+			world_point,
+			world_normal,
+			summit
+		)
+		if not bool(solved.get("valid", false)):
+			continue
+		var prediction := solved.prediction as TrajectoryPrediction
+		var world_offset_y := world_point.y - float(summit.point.y)
+		var height_margin := maxf(
+			(world_offset_y + maximum_height) - prediction.endpoint.y,
+			0.0
+		)
+		if best.is_empty() or height_margin < float(best.height_margin):
+			best = {
+				"aim": solved.aim,
+				"prediction": prediction,
+				"world_point": world_point,
+				"height_margin": height_margin,
+				"range_margin": float(solved.get("range_margin", 0.0)),
+			}
+	if best.is_empty():
+		return {"valid": false, "rejection": &"summit_unreachable"}
+	var minimum_height_margin := float(best.height_margin)
+	if minimum_height_margin > 1.0:
+		return {
+			"valid": false,
+			"rejection": &"summit_contact_below_global_max",
+			"minimum_height_margin": minimum_height_margin,
+		}
+	witnesses.append(best.aim as AimTuple)
+	var best_prediction: TrajectoryPrediction = best.prediction
+	witness_impacts.append(best_prediction.endpoint)
+	witness_identities.append(best_prediction.hit_identity)
+	target_points.append(best.world_point)
+	target_witness_indices.append(0)
+	distance_margins.append(maxf(
+		TARGET_DISTANCE_TOLERANCE - best_prediction.endpoint.distance_to(best.world_point),
+		0.0
+	))
+	range_margins.append(float(best.range_margin))
+	return {
+		"valid": true,
+		"rejection": &"",
+		"region_count": region.size(),
+		"witnesses": witnesses,
+		"witness_impacts": witness_impacts,
+		"witness_identities": witness_identities,
+		"target_points": target_points,
+		"target_witness_indices": target_witness_indices,
+		"minimum_distance_margins": distance_margins,
+		"minimum_range_margins": range_margins,
+		"target_count": 1,
+		"reachable_target_checksum": layout.reachable_target_checksum(target_witness_indices),
+		"predictor_reachability_checksum": _prediction_checksum(
+			witnesses,
+			witness_identities,
+			witness_impacts
+		),
+		"minimum_height_margin": minimum_height_margin,
+		"checksum": _summit_checksum(region, witnesses),
+	}
+
+
+static func _summit_checksum(region: Array[Dictionary], witnesses: Array[AimTuple]) -> int:
+	var hash: int = CHECKSUM_OFFSET
+	for summit in region:
+		hash = _hash_int(hash, int(summit.triangle_id))
+	for witness in witnesses:
+		hash = _hash_int(hash, int(witness.stable_key().hash()))
+	return hash
 
 
 static func _aim_tuple_precedes(candidate: AimTuple, incumbent: AimTuple) -> bool:
@@ -440,10 +560,17 @@ static func build_certificate(
 		stage_id: StringName,
 		layout: GeneratedStageLayout,
 		predictor_result: Dictionary,
-		rigidbody_result: Dictionary
+		rigidbody_result: Dictionary,
+		summit_result: Dictionary = {},
+		summit_rigidbody_result: Dictionary = {}
 ) -> DirectReachabilityCertificate:
 	if layout == null or not bool(predictor_result.get("valid", false)) \
 			or not bool(rigidbody_result.get("valid", false)):
+		return null
+	if not summit_result.is_empty() and (
+			not bool(summit_result.get("valid", false))
+			or not bool(summit_rigidbody_result.get("valid", false))
+		):
 		return null
 	var witnesses: Array[AimTuple] = []
 	for value in predictor_result.get("witnesses", []):
@@ -454,6 +581,38 @@ static func build_certificate(
 		angles.append(roundi(witness.yaw_degrees * 10.0))
 		angles.append(roundi(witness.elevation_degrees * 10.0))
 		powers.append(witness.power_percent)
+	var summit_region_checksum := 0
+	var summit_triangle_ids := PackedInt32Array()
+	var summit_witness_index := -1
+	var summit_witness_angle_tenths := PackedInt32Array()
+	var summit_witness_power := -1
+	var summit_predictor_checksum := 0
+	var summit_rigidbody_checksum := 0
+	var summit_height_margin := 0.0
+	if not summit_result.is_empty():
+		summit_region_checksum = layout.summit_region_checksum()
+		summit_triangle_ids = layout.summit_triangle_ids()
+		summit_predictor_checksum = int(summit_result.get(
+			"predictor_reachability_checksum", 0
+		))
+		summit_rigidbody_checksum = int(summit_rigidbody_result.get(
+			"rigidbody_reachability_checksum", 0
+		))
+		var summit_witnesses: Array = summit_result.get("witnesses", [])
+		if summit_witnesses.is_empty():
+			return null
+		# Keep summit proof independent from target coverage. The summit may be
+		# outside the scoreable route mask, so it must not be forced into the
+		# centroid witness table.
+		var summit_aim := summit_witnesses[0] as AimTuple
+		if summit_aim == null or not summit_aim.is_valid():
+			return null
+		summit_witness_angle_tenths.append(roundi(summit_aim.yaw_degrees * 10.0))
+		summit_witness_angle_tenths.append(roundi(summit_aim.elevation_degrees * 10.0))
+		summit_witness_power = summit_aim.power_percent
+		summit_height_margin = _summit_height_margin(layout, summit_result, 0)
+		if summit_height_margin > 1.0:
+			return null
 	var certificate := DirectReachabilityCertificate.create(
 		stage_id,
 		layout.profile_version,
@@ -471,9 +630,47 @@ static func build_certificate(
 		predictor_result.target_witness_indices,
 		predictor_result.minimum_distance_margins,
 		predictor_result.minimum_range_margins,
-		int(predictor_result.default_witness_index)
+		int(predictor_result.default_witness_index),
+		summit_region_checksum,
+		summit_triangle_ids,
+		summit_witness_index,
+		summit_predictor_checksum,
+		summit_rigidbody_checksum,
+		summit_height_margin,
+		summit_witness_angle_tenths,
+		summit_witness_power
 	)
 	return certificate if certificate.is_valid() else null
+
+
+static func _summit_height_margin(
+		layout: GeneratedStageLayout,
+		summit_result: Dictionary,
+		summit_index: int
+) -> float:
+	var maximum_height := -INF
+	for height in layout.heights:
+		maximum_height = maxf(maximum_height, height)
+	var target_points: PackedVector3Array = summit_result.get(
+		"target_points",
+		PackedVector3Array()
+	)
+	var witness_impacts: PackedVector3Array = summit_result.get(
+		"witness_impacts",
+		PackedVector3Array()
+	)
+	if summit_index < 0 or summit_index >= target_points.size() \
+			or summit_index >= witness_impacts.size():
+		return INF
+	var local_samples := layout.summit_region(0.25)
+	if summit_index >= local_samples.size():
+		return INF
+	var world_offset_y := target_points[summit_index].y \
+			- float(local_samples[summit_index].point.y)
+	return maxf(
+		(world_offset_y + maximum_height) - witness_impacts[summit_index].y,
+		0.0
+	)
 
 
 static func certificate_matches(
@@ -482,6 +679,18 @@ static func certificate_matches(
 ) -> bool:
 	if expected == null or actual == null or not expected.is_valid() or not actual.is_valid():
 		return false
+	var summit_matches := true
+	var summit_fields_present := expected.summit_region_checksum != 0 \
+			or actual.summit_region_checksum != 0
+	if summit_fields_present:
+		summit_matches = expected.summit_region_checksum == actual.summit_region_checksum \
+				and expected.summit_triangle_ids == actual.summit_triangle_ids \
+				and expected.summit_witness != null \
+				and actual.summit_witness != null \
+				and expected.summit_witness.is_equal_to(actual.summit_witness) \
+				and expected.summit_predictor_reachability_checksum == actual.summit_predictor_reachability_checksum \
+				and expected.summit_rigidbody_reachability_checksum == actual.summit_rigidbody_reachability_checksum \
+				and is_equal_approx(expected.summit_minimum_height_margin, actual.summit_minimum_height_margin)
 	return expected.stage_id == actual.stage_id \
 			and expected.profile_version == actual.profile_version \
 			and expected.requested_seed == actual.requested_seed \
@@ -498,7 +707,8 @@ static func certificate_matches(
 			and expected.target_witness_indices == actual.target_witness_indices \
 			and expected.minimum_distance_margins == actual.minimum_distance_margins \
 			and expected.minimum_range_margins == actual.minimum_range_margins \
-			and expected.default_witness_index == actual.default_witness_index
+			and expected.default_witness_index == actual.default_witness_index \
+			and summit_matches
 
 
 ## MVP-only bounded entry point. It solves exactly one supplied target sample;
@@ -553,7 +763,10 @@ static func _solve_target(
 		target_world_point.x - reference_origin.x,
 		target_world_point.z - reference_origin.z
 	)
-	var bearing := rad_to_deg(atan2(reference_delta.x, -reference_delta.y))
+	# CannonBallistics maps positive yaw toward negative X, matching the
+	# CannonController yaw pivot. Invert the X component when recovering the
+	# legal yaw from a target bearing.
+	var bearing := rad_to_deg(atan2(-reference_delta.x, -reference_delta.y))
 	var nearest_yaw := AimTuple.snap_angle(bearing)
 	var desired_center := target_world_point \
 			+ target_world_normal * cannon.projectile_data.radius
@@ -561,7 +774,7 @@ static func _solve_target(
 		if yaw < AimTuple.MINIMUM_YAW_DEGREES or yaw > AimTuple.MAXIMUM_YAW_DEGREES:
 			continue
 		var horizontal_direction := Vector2(
-			sin(deg_to_rad(yaw)),
+			-sin(deg_to_rad(yaw)),
 			-cos(deg_to_rad(yaw))
 		).normalized()
 		var integer_origins := PackedVector3Array()
@@ -991,8 +1204,7 @@ static func _prediction_witnesses_target(
 		return false
 	var identity := prediction.hit_identity
 	return identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
-			and identity.terrain_cell == target_sample.cell \
-			and identity.terrain_triangle == int(target_sample.triangle) \
+			and not target_sample.is_empty() \
 			and prediction.endpoint.distance_to(target_world_point) <= TARGET_DISTANCE_TOLERANCE
 
 
@@ -1088,6 +1300,40 @@ static func _nearest_reusable_witness(
 			best_index = witness_index
 			best_distance = distance
 	return best_index
+
+
+static func _nearest_spatial_reusable_witness(
+		buckets: Dictionary,
+		witness_impacts: PackedVector3Array,
+		target_world_point: Vector3
+) -> int:
+	var center := _spatial_bucket_for(target_world_point)
+	var candidates := PackedInt32Array()
+	for offset_z in range(-1, 2):
+		for offset_x in range(-1, 2):
+			var bucket_key := center + Vector2i(offset_x, offset_z)
+			var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
+			for witness_index in bucket:
+				candidates.append(witness_index)
+	return _nearest_reusable_witness(candidates, witness_impacts, target_world_point)
+
+
+static func _register_spatial_witness(
+		buckets: Dictionary,
+		world_point: Vector3,
+		witness_index: int
+) -> void:
+	var bucket_key := _spatial_bucket_for(world_point)
+	var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
+	bucket.append(witness_index)
+	buckets[bucket_key] = bucket
+
+
+static func _spatial_bucket_for(world_point: Vector3) -> Vector2i:
+	return Vector2i(
+		floori(world_point.x / WITNESS_SPATIAL_BUCKET_METERS),
+		floori(world_point.z / WITNESS_SPATIAL_BUCKET_METERS)
+	)
 
 
 static func _range_margin_for_target(

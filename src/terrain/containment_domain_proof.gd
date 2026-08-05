@@ -30,8 +30,11 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 		return {"valid": false, "rejection": &"invalid_gravity"}
 	var maximum_vertical_speed := cannon.projectile_data.maximum_launch_speed \
 			* sin(deg_to_rad(AimTuple.MAXIMUM_ELEVATION_DEGREES))
-	var maximum_apex_y := muzzle_maximum.y \
-			+ maximum_vertical_speed * maximum_vertical_speed / (2.0 * gravity_magnitude)
+	var maximum_apex_y := muzzle_maximum.y + _damped_vertical_displacement(
+		maximum_vertical_speed,
+		gravity_magnitude,
+		cannon.projectile_data.linear_damp
+	)
 
 	var wall_bounds := spec.backstop_bounds()
 	var rear_contact_center_z := spec.backstop_front_z() + radius
@@ -101,6 +104,28 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 		# predictor exception check; any failed inequality rejects the proof.
 		"exact_lattice_candidate_count": 0 if valid else -1,
 	}
+
+
+static func _damped_vertical_displacement(
+		initial_speed: float,
+		gravity_magnitude: float,
+		linear_damp: float
+) -> float:
+	# Match TrajectoryPredictor's fixed-step recurrence rather than using the
+	# undamped v²/2g apex. This is intentionally conservative: it advances until
+	# the vertical velocity turns downward and records the largest sampled y.
+	const STEP := 1.0 / 60.0
+	var velocity := initial_speed
+	var displacement := 0.0
+	var maximum := 0.0
+	for _step in range(2400):
+		velocity *= maxf(0.0, 1.0 - linear_damp * STEP)
+		velocity -= gravity_magnitude * STEP
+		displacement += velocity * STEP
+		maximum = maxf(maximum, displacement)
+		if velocity <= 0.0 and displacement >= maximum - 0.0001:
+			break
+	return maximum
 
 
 static func _muzzle_extrema_yaws() -> PackedFloat32Array:

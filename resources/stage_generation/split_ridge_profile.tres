@@ -45,8 +45,8 @@ mechanism_pad_radius = 9.0
 
 [resource]
 script = ExtResource("1_profile")
-profile_id = &"split_ridge_v5"
-profile_version = 5
+profile_id = &"split_ridge_v7"
+profile_version = 7
 base_seed = 671737323
 fallback_seed = 1995119364
 generation_contract = ExtResource("3_contract")

@@ -5,7 +5,7 @@ extends Resource
 ## canonical human aim lattice. Serialized state stays primitive; AimTuple
 ## instances are reconstructed as immutable runtime views.
 
-const CONTRACT_VERSION := 4
+const CONTRACT_VERSION := 7
 
 @export_storage var serialized_contract_version: int = CONTRACT_VERSION
 @export_storage var serialized_stage_id: StringName
@@ -25,6 +25,18 @@ const CONTRACT_VERSION := 4
 @export_storage var serialized_minimum_distance_margins := PackedFloat32Array()
 @export_storage var serialized_minimum_range_margins := PackedFloat32Array()
 @export_storage var serialized_default_witness_index: int = -1
+@export_storage var serialized_summit_region_checksum: int = 0
+@export_storage var serialized_summit_triangle_ids := PackedInt32Array()
+# Summit proof is intentionally independent from the centroid/default target
+# witness table. A global summit may be outside the scoreable route mask.
+@export_storage var serialized_summit_witness_angle_tenths := PackedInt32Array()
+@export_storage var serialized_summit_witness_power: int = -1
+# Kept for version-7 reads of an early in-memory draft; new certificates leave
+# this at -1 and use the dedicated summit tuple above.
+@export_storage var serialized_summit_witness_index: int = -1
+@export_storage var serialized_summit_predictor_reachability_checksum: int = 0
+@export_storage var serialized_summit_rigidbody_reachability_checksum: int = 0
+@export_storage var serialized_summit_minimum_height_margin: float = 0.0
 
 var stage_id: StringName:
 	get:
@@ -71,6 +83,36 @@ var minimum_range_margins: PackedFloat32Array:
 var default_witness_index: int:
 	get:
 		return serialized_default_witness_index
+var summit_region_checksum: int:
+	get:
+		return serialized_summit_region_checksum
+var summit_triangle_ids: PackedInt32Array:
+	get:
+		return serialized_summit_triangle_ids.duplicate()
+var summit_witness_index: int:
+	get:
+		return serialized_summit_witness_index
+var summit_witness: AimTuple:
+	get:
+		if serialized_summit_witness_angle_tenths.size() == 2 \
+				and serialized_summit_witness_power >= 0:
+			return AimTuple.new(
+				float(serialized_summit_witness_angle_tenths[0]) / 10.0,
+				float(serialized_summit_witness_angle_tenths[1]) / 10.0,
+				serialized_summit_witness_power
+			)
+		if serialized_summit_witness_index >= 0:
+			return witness_at(serialized_summit_witness_index)
+		return null
+var summit_predictor_reachability_checksum: int:
+	get:
+		return serialized_summit_predictor_reachability_checksum
+var summit_rigidbody_reachability_checksum: int:
+	get:
+		return serialized_summit_rigidbody_reachability_checksum
+var summit_minimum_height_margin: float:
+	get:
+		return serialized_summit_minimum_height_margin
 var default_aim: AimTuple:
 	get:
 		return witness_at(serialized_default_witness_index)
@@ -99,7 +141,15 @@ static func create(
 		certificate_target_witness_indices: PackedInt32Array,
 		certificate_minimum_distance_margins: PackedFloat32Array,
 		certificate_minimum_range_margins: PackedFloat32Array,
-		certificate_default_witness_index: int
+	certificate_default_witness_index: int,
+	certificate_summit_region_checksum: int = 0,
+	certificate_summit_triangle_ids: PackedInt32Array = PackedInt32Array(),
+	certificate_summit_witness_index: int = -1,
+	certificate_summit_predictor_reachability_checksum: int = 0,
+	certificate_summit_rigidbody_reachability_checksum: int = 0,
+	certificate_summit_minimum_height_margin: float = 0.0,
+	certificate_summit_witness_angle_tenths: PackedInt32Array = PackedInt32Array(),
+	certificate_summit_witness_power: int = -1
 ) -> DirectReachabilityCertificate:
 	var certificate := DirectReachabilityCertificate.new()
 	certificate.serialized_stage_id = certificate_stage_id
@@ -119,6 +169,14 @@ static func create(
 	certificate.serialized_minimum_distance_margins = certificate_minimum_distance_margins.duplicate()
 	certificate.serialized_minimum_range_margins = certificate_minimum_range_margins.duplicate()
 	certificate.serialized_default_witness_index = certificate_default_witness_index
+	certificate.serialized_summit_region_checksum = certificate_summit_region_checksum
+	certificate.serialized_summit_triangle_ids = certificate_summit_triangle_ids.duplicate()
+	certificate.serialized_summit_witness_angle_tenths = certificate_summit_witness_angle_tenths.duplicate()
+	certificate.serialized_summit_witness_power = certificate_summit_witness_power
+	certificate.serialized_summit_witness_index = certificate_summit_witness_index
+	certificate.serialized_summit_predictor_reachability_checksum = certificate_summit_predictor_reachability_checksum
+	certificate.serialized_summit_rigidbody_reachability_checksum = certificate_summit_rigidbody_reachability_checksum
+	certificate.serialized_summit_minimum_height_margin = certificate_summit_minimum_height_margin
 	return certificate
 
 
@@ -165,6 +223,28 @@ func is_valid() -> bool:
 			or serialized_default_witness_index < 0 \
 			or serialized_default_witness_index >= count:
 		return false
+	var summit_fields_present := serialized_summit_region_checksum != 0 \
+			or not serialized_summit_triangle_ids.is_empty() \
+			or not serialized_summit_witness_angle_tenths.is_empty() \
+			or serialized_summit_witness_power >= 0 \
+			or serialized_summit_witness_index >= 0 \
+			or serialized_summit_predictor_reachability_checksum != 0 \
+			or serialized_summit_rigidbody_reachability_checksum != 0
+	if summit_fields_present:
+		if serialized_summit_region_checksum == 0 \
+				or serialized_summit_triangle_ids.is_empty() \
+				or serialized_summit_witness_index >= count \
+				or serialized_summit_predictor_reachability_checksum == 0 \
+				or serialized_summit_rigidbody_reachability_checksum == 0 \
+				or not is_finite(serialized_summit_minimum_height_margin) \
+				or serialized_summit_minimum_height_margin < 0.0:
+			return false
+		var summit_aim := summit_witness
+		if summit_aim == null or not summit_aim.is_valid():
+			return false
+		if serialized_summit_witness_angle_tenths.size() > 0 \
+				and serialized_summit_witness_angle_tenths.size() != 2:
+			return false
 	var witness_keys: Dictionary = {}
 	var witness_references := PackedInt32Array()
 	witness_references.resize(count)

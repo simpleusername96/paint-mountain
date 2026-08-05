@@ -32,33 +32,65 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-05 static audit)
+## Current Implemented Truth (2026-08-05 recovery checkpoint 6)
 
 - Terrain/paint foundation: the selected gameplay layout is a closed row-solid
   3D top/shell mass with shared render/collision topology. PaintSystem remains
-  the sole mask/coverage owner. This audit did not rerun those older physical
-  checks.
-- Stage catalog: thirty IDs are selectable, but Stages 04–30 are created by
-  cloning one of the three legacy stage/profile resources at runtime. Stages 04
-  and 05 both clone First Descent, preserve the same fixed version-5 geometry
-  contract, have zero mechanisms and ten decorations, and differ mainly by seed
-  and `0.6 m` nominal peak. This is not accepted progressive generation.
+  the sole mask/coverage owner. `projectile_contact_test.gd` now passes the
+  exact 0.90 m physical and 1.50/2.10/1.50 m paint scale assertions.
+- Stage catalog: `resources/stages/catalog.tres` is a version-7 serialized
+  pointer exposing canonical `stage_01` through `stage_30` IDs. The three old
+  names remain migration aliases only. The offline builder records accepted
+  seeds, per-stage profiles, dimensions, cells, mechanisms, and a content
+  manifest; the full-generation gate also checks adjacent normalized height
+  RMS, bounded scale deltas, unique checksums, summit identity, containment,
+  macro counts, mechanism pads, route slope bounds, and decoration counts for
+  all thirty persisted layouts. The current bundle manifest is
+  `71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072`.
 - Reachability: runtime derives one legal first hit near the target centroid.
-  It does not identify/certify the global summit, and the current layouts do not
-  carry the full target-wide certificate required by the source brief.
-- Repeat Fire: StageController and AimInputController can accept two roots before
-  settlement. The human experience is incomplete: Fire switches away from the
-  cannon view, hides the next trajectory, temporarily invalidates Fire while an
-  unlabelled 20 Hz prediction refresh runs, and the HUD does not consume real
-  family capacity/terminal readiness.
-- Scale: the resource now uses `0.60 m` physical radius and
-  `2.25/3.20/2.25 m` paint radii. Those values are wired consistently but remain
-  visually rejected by the user and lack controlled running scale evidence.
-- Interface: the Korean-first edge HUD and app screens exist, but their repeat-
-  aim/readiness behavior depends on the unresolved gameplay recovery above.
-- Evidence boundary: no Godot window or test was run during this audit. The
-  preceding claims are code/document/git facts combined with the user's running-
-  game observations, not a new runtime acceptance pass.
+  It now exposes a stable summit-region identity, a real predictor/rigid-body
+  summit witness path, and optional summit fields on
+  `DirectReachabilityCertificate`. Stage 01 summit-only passes with region `12`,
+  predictor checksum `2477889882`, rigid-body checksum `208192991`, and a
+  `0.565 m` height margin; Stage 30 passes with region `6`, predictor checksum
+  `117277691`, rigid-body checksum `1161348872`, and a `0.620 m` margin. The
+  ballistic vector and yaw nomination now use the same sign convention as the
+  visual muzzle; `projectile_contact_test.gd` guards that contract. Summit
+  certificates now store a dedicated summit aim tuple instead of requiring the
+  summit to alias a target witness. No
+  thirty-stage target-wide certificate bundle has been generated yet. Target
+  witnesses use the authoritative 2.10 m impact footprint. A candidate
+  front-envelope raster filter was rolled back after its generation-cost and
+  no-target-deletion implications were measured. This remains a blocking Phase
+  3 item.
+- Repeat Fire: StageController keeps the board in AIMING while two root families
+  are active and after the final paint drain, rejects a third without side
+  effects, and publishes activity/readiness to the HUD. The old serial result
+  wait is bypassed. Activity/readiness snapshots now expose remaining root
+  capacity, and the cannon's partial aim-validity signal no longer overwrites
+  the authoritative StageController HUD state. Matching-key predictor changes
+  are republished through that same snapshot, so pending Fire cannot remain
+  visually stale after the new prediction arrives. `rapid_fire_contract_test.gd`
+  now fires a changed second tuple through AimInputController, checks the real
+  HUD button and Korean pending reason, compares the agent observation, and
+  verifies both observations seal distinctly; `phase7_user_qa_contract_test.gd`
+  also passes with pending Fire rejected until the coalesced result is ready.
+  Replay and Debug now have focused acceptance runs, and Agent acceptance is
+  covered by the second changed-aim family in the rapid-fire contract. Space
+  remains the same AimInputController request path as the button.
+- Scale: the resource now uses the locked `0.90 m` physical radius and
+  `1.50/2.10/1.50 m` authoritative paint radii. Numeric/contact checks pass;
+  the controlled rendered-width capture remains a Phase 5 gate.
+- Interface: the Korean-first edge HUD remains in place, and the Fire control
+  now displays disabled readiness reasons such as `궤적 계산 중` and
+  `포탄 2개 진행 중` adjacent to the button. Hidden Compatibility captures for
+  Stage 04 cover progression aiming, summit contact, pending/ready next aim,
+  two active families, and live scale contact; the ready and two-family frames
+  now show the corrected prediction-to-HUD transition. Fresh progression frames
+  for Stage 04, 05, 10, 20, and 30 are also stored under
+  `.agents/evidence/gameplay-contract-recovery/` and show distinct 3D terrain
+  silhouettes. No foreground Godot window was opened; all checks used the
+  hidden/headless path.
 
 Historical sections below describe earlier builds and are retained for
 traceability only. They must not be used as current implementation evidence.

@@ -25,7 +25,7 @@ static func build(
 	var contract := profile.generation_contract
 	var noise := FastNoiseLite.new()
 	noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v5:%d:range/noise" % [String(stage_id), attempt_seed]
+		"paint_mountain:%s:v7:%d:range/noise" % [String(stage_id), attempt_seed]
 	) & 0x7fffffff
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = contract.noise_frequency
@@ -33,7 +33,7 @@ static func build(
 	noise.fractal_octaves = contract.noise_octaves
 	noise.fractal_lacunarity = contract.noise_lacunarity
 	noise.fractal_gain = contract.noise_gain
-	var parameters := _build_range_parameters(stage_id, graph, attempt_seed)
+	var parameters := _build_range_parameters(stage_id, profile, graph, attempt_seed)
 	var ordered_pads := graph.pad_nodes()
 	var footprint_blends: PackedFloat32Array = FOOTPRINT_HEIGHT_BLEND.build(
 		contract.cell_count,
@@ -127,6 +127,7 @@ static func route_footprint_ratio(
 
 static func _build_range_parameters(
 		stage_id: StringName,
+		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
 		attempt_seed: int
 ) -> Dictionary:
@@ -154,14 +155,14 @@ static func _build_range_parameters(
 			stage_id, attempt_seed, "range/backbone/width", Vector2(0.11, 0.17)
 		),
 	}]
-	var secondary_count := 2 + level
+	var secondary_count := maxi(1, profile.ridge_count - 1)
 	for index in range(secondary_count):
 		var key := "range/ridge/%d" % index
 		var progress := float(index + 1) / float(secondary_count + 1)
 		var along := lerpf(-0.66, 0.66, progress) + _sample_range(
 			stage_id, attempt_seed, key + "/along", Vector2(-0.07, 0.07)
 		)
-		var cross_limit := 0.10 + float(level) * 0.014
+		var cross_limit := 0.10 + float(profile.ridge_count - 3) * 0.014
 		var across := _sample_range(
 			stage_id, attempt_seed, key + "/across", Vector2(-cross_limit, cross_limit)
 		)
@@ -172,7 +173,7 @@ static func _build_range_parameters(
 			),
 			"height": _sample_range(
 				stage_id, attempt_seed, key + "/height",
-				Vector2(0.20 + float(level) * 0.015, 0.28 + float(level) * 0.020)
+				Vector2(0.20 + float(profile.ridge_count - 3) * 0.015, 0.28 + float(profile.ridge_count - 3) * 0.020)
 			),
 			"length_spread": _sample_range(
 				stage_id, attempt_seed, key + "/length", Vector2(0.22, 0.40)
@@ -201,16 +202,16 @@ static func _build_range_parameters(
 		})
 
 	var basins: Array[Dictionary] = []
-	if level >= 3:
+	for basin_index in range(profile.basin_count):
 		var first: Dictionary = ridges[2]
-		var second: Dictionary = ridges[3]
+		var second: Dictionary = ridges[mini(3 + basin_index, ridges.size() - 1)]
 		var first_center: Vector2 = first["center"]
 		var second_center: Vector2 = second["center"]
 		basins.append({
 			"center": first_center.lerp(second_center, 0.5) \
 					+ perpendicular * 0.25,
 			"angle": range_angle + _sample_range(
-				stage_id, attempt_seed, "range/basin/angle", Vector2(-0.45, 0.45)
+				stage_id, attempt_seed, "range/basin/%d/angle" % basin_index, Vector2(-0.45, 0.45)
 			),
 			"height": _sample_range(
 				stage_id, attempt_seed, "range/basin/depth", Vector2(0.035, 0.055)
@@ -224,9 +225,9 @@ static func _build_range_parameters(
 		})
 
 	var passes: Array[Dictionary] = []
-	for index in range(maxi(0, level - 1)):
+	for index in range(profile.pass_count):
 		var key := "range/pass/%d" % index
-		var progress := float(index + 1) / float(level)
+		var progress := float(index + 1) / float(profile.pass_count + 1)
 		var along := lerpf(-0.46, 0.46, progress) + _sample_range(
 			stage_id, attempt_seed, key + "/along", Vector2(-0.04, 0.04)
 		)
@@ -247,7 +248,7 @@ static func _build_range_parameters(
 		})
 
 	var waves: Array[Dictionary] = []
-	for index in range(maxi(0, level - 1)):
+	for index in range(profile.pass_count):
 		var key := "range/wave/%d" % index
 		waves.append({
 			"angular_frequency": 2.0 + float(index),
@@ -255,7 +256,7 @@ static func _build_range_parameters(
 			"phase": _sample_range(stage_id, attempt_seed, key + "/phase", Vector2(0.0, TAU)),
 			"amplitude": _sample_range(
 				stage_id, attempt_seed, key + "/amplitude",
-				Vector2(0.008, 0.014 + float(level) * 0.003)
+				Vector2(0.008, 0.014 + profile.undulation_amplitude * 0.0015)
 			),
 		})
 	return {
@@ -300,7 +301,10 @@ static func _height_at(
 			nearest_core_radius = closest_edge.width * 0.5
 			route_height = float(cross_section.height)
 
-	var normalized := Vector2(point.x / 90.0, point.y / 60.0)
+	var normalized := Vector2(
+		point.x / maxf(contract.local_bounds.size.x * 0.5, 0.001),
+		point.y / maxf(contract.local_bounds.size.y * 0.5, 0.001)
+	)
 	var route_level_t := float(clampi(graph.route_count(), 1, 3) - 1) / 2.0
 	var route_core_blend := lerpf(
 		ROUTE_CORE_BLEND_RANGE.x, ROUTE_CORE_BLEND_RANGE.y, route_level_t

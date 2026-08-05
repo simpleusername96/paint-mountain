@@ -14,6 +14,7 @@ signal fire_action_accepted(origin: int)
 signal restart_action_accepted(origin: int)
 signal shot_family_activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int, fire_capacity: int)
 signal terminal_pending_changed(pending: bool)
+signal fire_readiness_changed(snapshot: Dictionary)
 
 enum ActionOrigin {
 	HUMAN,
@@ -26,6 +27,8 @@ enum State {
 	LOADING,
 	BRIEFING,
 	AIMING,
+	# Deprecated serialized aliases retained for replay decoding only. The live
+	# board never enters these motion/result states; shot activity is orthogonal.
 	PROJECTILE_IN_FLIGHT,
 	PAINT_SETTLING,
 	SHOT_RESULT,
@@ -34,7 +37,6 @@ enum State {
 	PAUSED,
 }
 
-const SHOT_RESULT_DURATION := 0.7
 const MAX_CONCURRENT_ROOT_SHOTS := 2
 const SETTLEMENT_OBSERVER_PRIORITY := 1100
 const CONTAINMENT_DOMAIN_PROOF := preload("res://src/terrain/containment_domain_proof.gd")
@@ -62,6 +64,7 @@ var _last_drained_paint_command_tick: int = -1
 var _last_paint_mask_checksum: int = 0
 var _locked_action_origin: int = -1
 var _terminal_pending := false
+var _last_fire_readiness_key := ""
 
 
 func _init() -> void:
@@ -109,6 +112,8 @@ func configure(
 	_paint_system = paint_system
 	_terrain_surface = terrain_surface
 	_mechanisms = mechanisms
+	if not _cannon.prediction_changed.is_connected(_on_prediction_changed):
+		_cannon.prediction_changed.connect(_on_prediction_changed)
 	_projectile_manager.stage_bounds = _generated_layout.containment.containment_bounds
 	if not _projectile_manager.all_projectiles_settled.is_connected(_on_all_projectiles_settled):
 		_projectile_manager.all_projectiles_settled.connect(_on_all_projectiles_settled)
@@ -132,7 +137,63 @@ func configure(
 	return restart(true)
 
 
+func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dictionary:
+	var active_roots := _projectile_manager.active_root_count() if _projectile_manager != null else 0
+	var active_bodies := _projectile_manager.active_count() if _projectile_manager != null else 0
+	var remaining_capacity := maxi(MAX_CONCURRENT_ROOT_SHOTS - active_roots, 0)
+	var editable := _cannon != null and _cannon.input_enabled \
+			and current_state == State.AIMING and _origin_allowed(origin)
+	var prediction := _cannon.current_prediction() if _cannon != null else null
+	var prediction_status: StringName = _cannon.prediction_status() if _cannon != null else &"pending"
+	var prediction_key: StringName = _cannon.prediction_key() if _cannon != null else &""
+	var key := _aim_key()
+	var reason := ""
+	var reason_key := "ready"
+	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
+			and active_roots < MAX_CONCURRENT_ROOT_SHOTS \
+			and prediction_status == &"fireable" and prediction != null \
+			and _cannon.is_aim_valid() and prediction_key == key
+	if not editable:
+		reason_key = "not_editable"
+		reason = tr("fire.not_editable")
+	elif shots_remaining <= 0:
+		reason_key = "empty"
+		reason = tr("fire.empty")
+	elif _terminal_pending:
+		reason_key = "terminal"
+		reason = tr("fire.terminal")
+	elif prediction_status == &"pending":
+		reason_key = "pending"
+		reason = tr("fire.pending")
+	elif prediction_status == &"invalid":
+		reason_key = "invalid"
+		reason = tr("fire.invalid")
+	elif active_roots >= MAX_CONCURRENT_ROOT_SHOTS:
+		reason_key = "capacity"
+		reason = tr("fire.capacity")
+	return {
+		"phase": state_name(),
+		"editable": editable,
+		"prediction": prediction,
+		"prediction_status": prediction_status,
+		"prediction_key": key,
+		"prediction_aim_key": prediction_key,
+		"active_root_count": active_roots,
+		"active_body_count": active_bodies,
+		"fire_capacity": remaining_capacity,
+		"max_fire_capacity": MAX_CONCURRENT_ROOT_SHOTS,
+		"shots_remaining": shots_remaining,
+		"terminal_pending": _terminal_pending,
+		"action_lock": _locked_action_origin,
+		"fireable": fireable,
+		"reason_key": reason_key,
+		"reason": reason,
+	}
+
+
 func activity_snapshot() -> Dictionary:
+	var active_root_count := _projectile_manager.active_root_count() \
+			if _projectile_manager != null else 0
 	if _projectile_manager == null:
 		return {
 			"active_shot_ids": PackedInt64Array(),
@@ -142,7 +203,8 @@ func activity_snapshot() -> Dictionary:
 	return {
 		"active_shot_ids": _projectile_manager.active_shot_ids(),
 		"active_projectiles": _projectile_manager.active_count(),
-		"fire_capacity": MAX_CONCURRENT_ROOT_SHOTS,
+		"active_root_count": active_root_count,
+		"fire_capacity": maxi(MAX_CONCURRENT_ROOT_SHOTS - active_root_count, 0),
 		"terminal_pending": _terminal_pending,
 	}
 
@@ -151,6 +213,7 @@ func lock_action_origin(origin: ActionOrigin) -> bool:
 	if _locked_action_origin >= 0 and _locked_action_origin != origin:
 		return false
 	_locked_action_origin = origin
+	_emit_fire_readiness()
 	return true
 
 
@@ -158,6 +221,7 @@ func release_action_origin(origin: ActionOrigin) -> bool:
 	if _locked_action_origin != origin:
 		return false
 	_locked_action_origin = -1
+	_emit_fire_readiness()
 	return true
 
 
@@ -171,7 +235,12 @@ func begin_aiming(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state != State.BRIEFING:
 		return false
 	_cannon.input_enabled = true
-	return _transition_to(State.AIMING)
+	var transitioned := _transition_to(State.AIMING)
+	if transitioned:
+		# The BRIEFING snapshot is intentionally non-editable. Publish the new
+		# state immediately so the HUD cannot retain a stale disabled Fire button.
+		_emit_fire_readiness()
+	return transitioned
 
 
 func enter_briefing(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
@@ -180,28 +249,31 @@ func enter_briefing(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state != State.AIMING:
 		return false
 	_cannon.input_enabled = false
-	return _transition_to(State.BRIEFING)
+	var transitioned := _transition_to(State.BRIEFING)
+	if transitioned:
+		_emit_fire_readiness()
+	return transitioned
 
 
 func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin) \
-			or current_state not in [State.AIMING, State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING] \
+			or current_state != State.AIMING \
 			or not _cannon.input_enabled:
 		return false
 	_cannon.set_aim(yaw, elevation, power)
 	aim_action_accepted.emit(_cannon.yaw_degrees, _cannon.elevation_degrees, _cannon.power_percent, origin)
+	_emit_fire_readiness()
 	return true
 
 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin):
 		return false
-	if current_state not in [State.AIMING, State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING] \
-			or shots_remaining <= 0 or _terminal_pending:
-		return false
-	if not _cannon.is_aim_valid():
-		return false
-	if not _projectile_manager.root_capacity_available(MAX_CONCURRENT_ROOT_SHOTS):
+	var readiness := fire_readiness_snapshot(origin)
+	if not bool(readiness.get("fireable", false)):
+		# Fire is admitted only from this snapshot. In particular, a prediction
+		# for an older AimTuple can never be launched while the next key is pending.
+		_emit_fire_readiness()
 		return false
 	var launch_origin := _cannon.get_launch_origin()
 	var velocity := _cannon.get_launch_velocity()
@@ -241,8 +313,7 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		_cannon.power_percent
 	)
 	fire_action_accepted.emit(origin)
-	if current_state == State.AIMING or current_state == State.PAINT_SETTLING:
-		return _transition_to(State.PROJECTILE_IN_FLIGHT)
+	_emit_fire_readiness()
 	return true
 
 
@@ -293,6 +364,7 @@ func restart(
 	var elapsed_ms := float(Time.get_ticks_usec() - started_at) / 1000.0
 	restart_completed.emit(elapsed_ms)
 	restart_action_accepted.emit(origin)
+	_emit_fire_readiness()
 	return true
 
 
@@ -364,44 +436,43 @@ static func result_state_for(
 
 
 func _on_all_projectiles_settled() -> void:
-	if current_state != State.PROJECTILE_IN_FLIGHT \
+	if current_state != State.AIMING \
 			or _projectile_manager.active_count() > 0 \
-			or _projectile_manager.pending_intent_count() > 0:
+			or _projectile_manager.pending_intent_count() > 0 \
+			or _shot_observations.is_empty():
 		return
-	_transition_to(State.PAINT_SETTLING)
+	# Board phase remains AIMING after a family drains. The short observer
+	# debounce below only waits for the authoritative paint queue to publish; it
+	# never takes the cannon or next trajectory away from the player.
 	_inactive_settlement_ticks = 0
-	_decision_generation += 1
 
 
 func _physics_process(_delta: float) -> void:
-	# A family can finish on the same tick that its final paint intent is
-	# canonicalized. The manager's historical all-settled signal is intentionally
-	# conservative for the rapid-fire path, so poll the shared activity contract
-	# here as well; this prevents the board from remaining in PROJECTILE_IN_FLIGHT
-	# after the last queued mark has drained.
-	if current_state == State.PROJECTILE_IN_FLIGHT \
-			and _projectile_manager.active_count() == 0 \
-			and _projectile_manager.pending_intent_count() == 0:
-		_on_all_projectiles_settled()
-	if current_state != State.PAINT_SETTLING:
-		return
-	var projectiles_inactive := _projectile_manager.active_count() == 0 \
-			and _projectile_manager.pending_intent_count() == 0
-	var paint_inactive := _paint_system.pending_work_count() == 0
-	var drain_covers_last_command := _last_drained_paint_command_tick \
-			>= _last_applied_paint_command_tick
-	if projectiles_inactive and paint_inactive and drain_covers_last_command:
-		_inactive_settlement_ticks += 1
-	else:
-		_inactive_settlement_ticks = 0
-	if _inactive_settlement_ticks < 2:
-		return
-	_inactive_settlement_ticks = 0
-	_seal_shot(_decision_generation)
+	# Board Phase stays AIMING while shot families are active and after they
+	# settle. Seal observations only when the projectile and authoritative paint
+	# queues are both quiet for two physics ticks; this is not a serial result
+	# state and does not block the next aim or Fire action.
+	if current_state == State.AIMING:
+		var projectiles_inactive := _projectile_manager.active_count() == 0 \
+				and _projectile_manager.pending_intent_count() == 0
+		var paint_inactive := _paint_system.pending_work_count() == 0
+		var drain_covers_last_command := _last_drained_paint_command_tick \
+				>= _last_applied_paint_command_tick
+		if projectiles_inactive and paint_inactive and drain_covers_last_command \
+				and _has_unsealed_observations():
+			_inactive_settlement_ticks += 1
+		else:
+			_inactive_settlement_ticks = 0
+		if _inactive_settlement_ticks >= 2:
+			_inactive_settlement_ticks = 0
+			_seal_shot(_decision_generation)
+	return
 
 
 func _seal_shot(generation: int) -> void:
-	if generation != _decision_generation or current_state != State.PAINT_SETTLING:
+	if generation != _decision_generation or current_state != State.AIMING:
+		return
+	if not _has_unsealed_observations():
 		return
 	_paint_system.force_flush_paint_texture()
 	var coverage := _paint_system.coverage_percent()
@@ -421,14 +492,13 @@ func _seal_shot(generation: int) -> void:
 		shot_observation_sealed.emit(observation)
 	if coverage + 0.0001 >= stage_data.target_coverage or shots_remaining <= 0:
 		_set_terminal_pending(true)
-	_transition_to(State.SHOT_RESULT)
 	shot_result.emit(total_gain, coverage)
-	_finish_shot_result.call_deferred(generation, coverage)
+	if _terminal_pending:
+		_finish_shot_result.call_deferred(generation, coverage)
 
 
 func _finish_shot_result(generation: int, coverage: float) -> void:
-	await get_tree().create_timer(SHOT_RESULT_DURATION, true, false, true).timeout
-	if generation != _decision_generation or current_state != State.SHOT_RESULT:
+	if generation != _decision_generation or current_state != State.AIMING:
 		return
 	var rejection_count := 0
 	for observation in _sealed_shot_observations.values():
@@ -448,7 +518,6 @@ func _finish_shot_result(generation: int, coverage: float) -> void:
 			stage_failed.emit(coverage, maxf(0.0, stage_data.target_coverage - coverage))
 		_:
 			_cannon.input_enabled = true
-			_transition_to(State.AIMING)
 
 
 func _on_projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact) -> void:
@@ -474,7 +543,7 @@ func _on_paint_command_applied(
 ) -> void:
 	var observation := _observation_for_shot(int(command.shot_id)) if command != null else null
 	if observation == null or command == null \
-			or current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
+			or current_state != State.AIMING:
 		return
 	var command_tick := int(command.physics_tick)
 	_last_applied_paint_command_tick = maxi(_last_applied_paint_command_tick, command_tick)
@@ -483,8 +552,7 @@ func _on_paint_command_applied(
 
 func _on_paint_command_rejected(command) -> void:
 	var observation := _observation_for_shot(int(command.shot_id)) if command != null else null
-	if observation == null \
-			or current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
+	if observation == null or current_state != State.AIMING:
 		return
 	observation.record_paint_command_rejection(command)
 	push_warning(
@@ -497,7 +565,7 @@ func _on_paint_commands_drained(
 		_command_count: int,
 		paint_mask_checksum: int
 ) -> void:
-	if current_state not in [State.PROJECTILE_IN_FLIGHT, State.PAINT_SETTLING]:
+	if current_state != State.AIMING:
 		return
 	_last_drained_paint_command_tick = maxi(
 		_last_drained_paint_command_tick,
@@ -547,8 +615,16 @@ func _on_projectile_activity_changed(
 	shot_family_activity_changed.emit(
 		active_shot_ids,
 		active_projectiles,
-		MAX_CONCURRENT_ROOT_SHOTS
+		maxi(MAX_CONCURRENT_ROOT_SHOTS - _projectile_manager.active_root_count(), 0)
 	)
+	_emit_fire_readiness()
+
+
+func _on_prediction_changed(_prediction: TrajectoryPrediction) -> void:
+	# Prediction status is part of the StageController-owned Fire contract. The
+	# HUD never listens to Cannon validity directly, so a matching-key result
+	# must be republished through the same snapshot path as aim and activity.
+	_emit_fire_readiness()
 
 
 func _set_terminal_pending(pending: bool) -> void:
@@ -556,6 +632,29 @@ func _set_terminal_pending(pending: bool) -> void:
 		return
 	_terminal_pending = pending
 	terminal_pending_changed.emit(pending)
+	_emit_fire_readiness()
+
+
+func _aim_key() -> String:
+	if _cannon == null:
+		return ""
+	return AimTuple.new(_cannon.yaw_degrees, _cannon.elevation_degrees, int(_cannon.power_percent)).stable_key()
+
+
+func _emit_fire_readiness() -> void:
+	var snapshot := fire_readiness_snapshot()
+	var key := "%s|%s|%s|%d|%d|%s" % [
+		String(snapshot.get("phase", "")),
+		String(snapshot.get("prediction_key", "")),
+		String(snapshot.get("reason_key", "")),
+		int(snapshot.get("active_root_count", 0)),
+		int(snapshot.get("shots_remaining", 0)),
+		str(snapshot.get("fireable", false)),
+	]
+	if key == _last_fire_readiness_key:
+		return
+	_last_fire_readiness_key = key
+	fire_readiness_changed.emit(snapshot)
 
 
 func _on_mechanism_activated(
@@ -592,13 +691,7 @@ func _is_allowed_transition(from_state: State, to_state: State) -> bool:
 		State.BRIEFING:
 			return to_state == State.AIMING or to_state == State.PAUSED
 		State.AIMING:
-			return to_state in [State.BRIEFING, State.PROJECTILE_IN_FLIGHT, State.PAUSED]
-		State.PROJECTILE_IN_FLIGHT:
-			return to_state in [State.PAINT_SETTLING, State.PAUSED]
-		State.PAINT_SETTLING:
-			return to_state in [State.SHOT_RESULT, State.PAUSED]
-		State.SHOT_RESULT:
-			return to_state in [State.AIMING, State.STAGE_CLEAR, State.STAGE_FAILED, State.PAUSED]
+			return to_state in [State.BRIEFING, State.PAUSED, State.STAGE_CLEAR, State.STAGE_FAILED]
 		State.PAUSED:
 			return true
 		_:
@@ -628,3 +721,11 @@ func _ordered_observations() -> Array[ShotObservation]:
 		if observation != null:
 			result.append(observation)
 	return result
+
+
+func _has_unsealed_observations() -> bool:
+	for observation_variant in _shot_observations.values():
+		var observation := observation_variant as ShotObservation
+		if observation != null and not observation.is_sealed:
+			return true
+	return false

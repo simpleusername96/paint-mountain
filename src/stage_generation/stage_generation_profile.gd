@@ -2,7 +2,7 @@ class_name StageGenerationProfile
 extends Resource
 
 @export_category("Identity")
-@export var profile_id: StringName = &"first_descent_v5"
+@export var profile_id: StringName = &"stage_01_v7"
 @export_range(1, 99, 1) var profile_version: int = 5
 @export var base_seed: int = 845479992
 @export var fallback_seed: int = 1820876501
@@ -11,6 +11,11 @@ extends Resource
 @export_category("Stage shape")
 @export_range(1.0, 100.0, 0.5) var nominal_peak: float = 72.0
 @export var accepted_height_range := Vector2(68.0, 78.0)
+@export_range(3, 12, 1) var ridge_count: int = 3
+@export_range(0, 4, 1) var basin_count: int = 0
+@export_range(0, 4, 1) var pass_count: int = 0
+@export_range(0.0, 16.0, 0.1) var undulation_amplitude: float = 2.0
+@export_range(0.0, 64.0, 0.5) var route_width: float = 28.0
 
 @export_category("Routes")
 @export var routes: Array[StageRouteProfile] = []
@@ -32,6 +37,9 @@ func is_valid() -> bool:
 	if String(profile_id).is_empty() or base_seed <= 0 or fallback_seed <= 0:
 		return false
 	if nominal_peak <= 0.0 or accepted_height_range.x > accepted_height_range.y:
+		return false
+	if ridge_count < 3 or basin_count < 0 or pass_count < 0 \
+			or undulation_amplitude < 0.0 or route_width <= 0.0:
 		return false
 	if target_ratio_range.x <= 0.0 or target_ratio_range.x > target_ratio_range.y or target_ratio_range.y > 1.0:
 		return false

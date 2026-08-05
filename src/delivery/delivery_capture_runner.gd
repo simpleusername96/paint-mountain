@@ -16,6 +16,7 @@ const RENDERED_POSE_EPSILON_SQUARED := 0.000001
 
 var _app: AppRoot
 var _screen: String = ""
+var _capture_stage: StringName = &"stage_01"
 var _output_path: String = ""
 var _responsiveness_output_path: String = ""
 var _background_capture := false
@@ -27,6 +28,8 @@ func _ready() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--capture-screen="):
 			_screen = argument.trim_prefix("--capture-screen=")
+		elif argument.begins_with("--capture-stage="):
+			_capture_stage = StringName(argument.trim_prefix("--capture-stage="))
 		elif argument.begins_with("--capture-output="):
 			_output_path = argument.trim_prefix("--capture-output=")
 		elif argument.begins_with("--responsiveness-output="):
@@ -36,6 +39,10 @@ func _ready() -> void:
 		elif argument == "--capture-background":
 			_background_capture = true
 	if _responsiveness_output_path.is_empty() and (_screen.is_empty() or _output_path.is_empty()):
+		return
+	if StageCatalog.get_stage(_capture_stage) == null:
+		push_error("Unknown capture stage: %s" % _capture_stage)
+		get_tree().quit(1)
 		return
 	_configure_capture_window()
 	_app = get_parent() as AppRoot
@@ -61,19 +68,32 @@ func _run_capture() -> void:
 			await get_tree().process_frame
 			_app.get_node("StageSelect").set_page_for_capture(1)
 		"briefing":
-			await _start_stage(&"first_descent", false)
+			await _start_stage(_capture_stage, false)
 		"stage_briefing":
-			await _start_stage(&"first_descent", false)
+			await _start_stage(_capture_stage, false)
 		"aiming":
-			await _start_stage(&"first_descent", true)
+			await _start_stage(_capture_stage, true)
 			# Capture the stable aiming surface after the real first-session hint has
 			# completed, rather than hiding or bypassing a reachable UI state.
 			await get_tree().create_timer(4.2).timeout
+		"progression_aiming":
+			await _start_stage(_capture_stage, true)
+			await get_tree().create_timer(1.0).timeout
+		"summit_hit":
+			await _capture_summit_hit()
+		"next_aim_pending":
+			await _capture_next_aim(false)
+		"next_aim_ready":
+			await _capture_next_aim(true)
+		"two_family":
+			await _capture_two_family()
+		"scale_contact":
+			await _capture_scale_contact()
 		"aiming_burst":
-			await _start_stage(&"burst_basin", true)
+			await _start_stage(_capture_stage if _capture_stage != &"first_descent" else &"burst_basin", true)
 			await get_tree().create_timer(4.2).timeout
 		"aiming_split":
-			await _start_stage(&"split_ridge", true)
+			await _start_stage(_capture_stage if _capture_stage != &"first_descent" else &"split_ridge", true)
 			await get_tree().create_timer(4.2).timeout
 		"airborne_follow":
 			await _capture_airborne_follow()
@@ -82,11 +102,11 @@ func _run_capture() -> void:
 		"observation":
 			await _capture_airborne_follow()
 		"pause":
-			var paused_gameplay := await _start_stage(&"first_descent", true)
+			var paused_gameplay := await _start_stage(&"stage_01", true)
 			(paused_gameplay.get_node("StageController") as StageController).toggle_pause()
 			await get_tree().process_frame
 		"settings":
-			var settings_gameplay := await _start_stage(&"first_descent", true)
+			var settings_gameplay := await _start_stage(&"stage_01", true)
 			(settings_gameplay.get_node("StageController") as StageController).toggle_pause()
 			_app._show_settings(&"gameplay")
 			await get_tree().process_frame
@@ -100,12 +120,17 @@ func _run_capture() -> void:
 			push_error("Unknown delivery capture screen: %s" % _screen)
 			get_tree().quit(1)
 			return
-	if _screen not in ["airborne_follow", "projectile_and_continuous_paint"]:
+	if _screen not in ["airborne_follow", "projectile_and_continuous_paint", "summit_hit", "next_aim_pending", "next_aim_ready", "two_family", "scale_contact"]:
 		Engine.time_scale = 1.0
 	if _failed:
 		get_tree().quit(1)
 		return
-	for _frame in range(42):
+	var settle_frames := 42
+	if _screen in ["next_aim_pending", "next_aim_ready", "scale_contact"]:
+		settle_frames = 0
+	elif _screen == "two_family":
+		settle_frames = 1
+	for _frame in range(settle_frames):
 		await get_tree().process_frame
 	var absolute_path := ProjectSettings.globalize_path(_output_path)
 	DirAccess.make_dir_recursive_absolute(absolute_path.get_base_dir())
@@ -446,6 +471,117 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	if begin_aiming:
 		gameplay.get_node("StageController").begin_aiming()
 	return gameplay
+
+
+func _capture_summit_hit() -> void:
+	var gameplay := await _start_stage(_capture_stage, true)
+	await get_tree().process_frame
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var layout := gameplay.generated_layout() as GeneratedStageLayout
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var contact_state := {"seen": false}
+	manager.projectile_contact_reported.connect(
+		func(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
+			if contact != null and terrain.is_top_collider(contact.collider):
+				contact_state.seen = true
+	)
+	var summit_aim := DefaultAimSolver.find_runtime_summit_aim(
+		gameplay.get_world_3d().direct_space_state,
+		cannon,
+		terrain,
+		layout
+	)
+	if summit_aim == null:
+		_fail_capture("summit capture could not resolve a legal summit aim")
+		return
+	controller.set_aim(summit_aim.yaw_degrees, summit_aim.elevation_degrees, summit_aim.power_percent)
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("summit capture could not fire the resolved summit aim")
+		return
+	var budget := 600
+	while not bool(contact_state.seen) and budget > 0:
+		await get_tree().physics_frame
+		budget -= 1
+	if not bool(contact_state.seen):
+		_fail_capture("summit capture did not observe a real terrain contact")
+
+
+func _capture_next_aim(wait_until_ready: bool) -> void:
+	var gameplay := await _start_stage(_capture_stage, true)
+	await get_tree().process_frame
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var changed_yaw := cannon.yaw_degrees + 7.0
+	controller.set_aim(changed_yaw, cannon.elevation_degrees, cannon.power_percent)
+	if not wait_until_ready:
+		# Capture immediately after the input invalidates the old prediction. The
+		# short delivery hold lets the real HUD render the PENDING readiness
+		# surface before the coalesced predictor publishes the new key.
+		gameplay.hold_prediction_refresh_for_delivery()
+		await get_tree().process_frame
+		return
+	await _wait_for_cannon_prediction(cannon)
+	if not cannon.is_aim_valid() or not controller.fire_readiness_snapshot().fireable:
+		_fail_capture("changed aim did not become fire-ready")
+
+
+func _capture_two_family() -> void:
+	var gameplay := await _start_stage(_capture_stage, true)
+	await get_tree().process_frame
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	if not controller.request_fire():
+		_fail_capture("two-family capture could not fire the first root")
+		return
+	# Keep the first family visibly in flight while the coalesced next-aim
+	# prediction arrives; the production game itself remains at its configured
+	# fast-progress scale outside this evidence state.
+	Engine.time_scale = 0.25
+	controller.set_aim(cannon.yaw_degrees + 7.0, cannon.elevation_degrees, cannon.power_percent)
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("two-family capture could not fire the second root")
+		return
+	if manager.active_root_count() < 2:
+		_fail_capture("two-family capture did not retain two active root families")
+
+
+func _capture_scale_contact() -> void:
+	var gameplay := await _start_stage(_capture_stage, true)
+	await get_tree().process_frame
+	var controller := gameplay.get_node("StageController") as StageController
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var paint := gameplay.get_node("PaintSystem") as PaintSystem
+	var contact_paint_seen := {"value": false}
+	paint.paint_command_applied.connect(
+		func(_command, written_pixel_count: int, _newly_painted_pixel_count: int) -> void:
+			if written_pixel_count > 0 and manager.active_count() > 0:
+				contact_paint_seen.value = true
+	)
+	# Hold the real physics just after the first authoritative mark so the
+	# rendered evidence contains both the physical ball and the paint response.
+	# This is capture-only timing; gameplay keeps its normal configured speed.
+	Engine.time_scale = 0.08
+	if not controller.request_fire():
+		_fail_capture("scale capture could not fire the default aim")
+		return
+	var budget := 240
+	while not bool(contact_paint_seen.value) and budget > 0:
+		await get_tree().physics_frame
+		budget -= 1
+	if not bool(contact_paint_seen.value):
+		_fail_capture("scale capture did not observe a live ball and target paint together")
+
+
+func _wait_for_cannon_prediction(cannon: CannonController) -> void:
+	var budget := 90
+	while not cannon.is_aim_valid() and budget > 0:
+		await get_tree().process_frame
+		budget -= 1
 
 
 func _capture_airborne_follow() -> void:

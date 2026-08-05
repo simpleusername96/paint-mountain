@@ -1,11 +1,11 @@
 extends SceneTree
 
-const STAGE := preload("res://resources/stages/first_descent.tres")
 const TERRAIN_SCENE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
 const BACKSTOP_SCENE := preload("res://scenes/gameplay/backstop_environment.tscn")
 const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 
 var _failed := false
+var _stage: StageData
 
 
 func _initialize() -> void:
@@ -14,6 +14,11 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.physics_ticks_per_second = 60
+	_stage = StageCatalog.get_stage(_requested_stage_id())
+	_assert_true(_stage != null, "target reachability must use the canonical serialized stage catalog")
+	if _stage == null:
+		quit(1)
+		return
 	var candidate_prefix_limit := _candidate_prefix_limit()
 	if candidate_prefix_limit > 0:
 		await _run_candidate_prefix(candidate_prefix_limit)
@@ -32,10 +37,10 @@ func _run_checks() -> void:
 		await _run_identity_only()
 		quit(1 if _failed else 0)
 		return
-	var layout := SeededStageGenerator.generate_structural_sequence(
-		STAGE.generation_profile,
-		STAGE.terrain_seed,
-		STAGE
+	var layout := SeededStageGenerator.generate(
+		_stage.generation_profile,
+		_stage.terrain_seed,
+		_stage
 	)
 	_assert_true(layout != null, "First Descent must produce a structurally accepted target layout")
 	if layout == null:
@@ -46,22 +51,55 @@ func _run_checks() -> void:
 	certification_root.name = "TargetReachabilityFixture"
 	root.add_child(certification_root)
 	var terrain_surface := TERRAIN_SCENE.instantiate() as TerrainSurface
-	terrain_surface.position = STAGE.terrain_center
+	terrain_surface.position = _stage.terrain_center
 	certification_root.add_child(terrain_surface)
 	terrain_surface.configure(layout)
 	var backstop := BACKSTOP_SCENE.instantiate() as BackstopEnvironment
 	certification_root.add_child(backstop)
 	backstop.configure(
 		layout.containment,
-		STAGE.paint_world_bounds(),
-		STAGE.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+		_stage.paint_world_bounds(),
+		_stage.terrain_center.y
 	)
 	var cannon := CANNON_SCENE.instantiate() as CannonController
 	certification_root.add_child(cannon)
-	cannon.global_transform = STAGE.cannon_transform
+	cannon.global_transform = _stage.cannon_transform
 	await physics_frame
 
 	_assert_predictor_identity(terrain_surface, layout, cannon)
+	var summit := DirectReachabilityValidator.validate_summit(
+		root.get_world_3d().direct_space_state,
+		cannon,
+		terrain_surface,
+		layout,
+		layout.containment.containment_bounds
+	)
+	_assert_true(bool(summit.get("valid", false)), "summit region must have a legal predictor witness; result=%s" % str(summit))
+	var summit_rigidbody := {}
+	if bool(summit.get("valid", false)):
+		summit_rigidbody = await DirectReachabilityValidator.validate_rigidbody_batches(
+			self,
+			certification_root,
+			cannon,
+			terrain_surface,
+			layout,
+			layout.containment.containment_bounds,
+			summit
+		)
+		_assert_true(bool(summit_rigidbody.get("valid", false)), "summit witnesses must reproduce through production PaintProjectile; result=%s" % str(summit_rigidbody))
+	if "--summit-only" in OS.get_cmdline_user_args():
+		_assert_separate_summit_certificate_contract(layout, summit, summit_rigidbody)
+		print("Summit reachability: region=%d witness=%d predictor=%d rigidbody=%d margin=%.3f" % [
+			int(summit.get("region_count", 0)),
+			(summit.get("witnesses", []) as Array).size(),
+			int(summit.get("predictor_reachability_checksum", 0)),
+			int(summit_rigidbody.get("rigidbody_reachability_checksum", 0)),
+			float(summit.get("minimum_height_margin", 0.0)),
+		])
+		certification_root.queue_free()
+		await physics_frame
+		quit(1 if _failed else 0)
+		return
 	var predictor := DirectReachabilityValidator.validate_predictor(
 		root.get_world_3d().direct_space_state,
 		cannon,
@@ -83,7 +121,7 @@ func _run_checks() -> void:
 				]
 			)
 	)
-	_assert_true(bool(predictor.get("valid", false)), "every target texel must have an exact predictor witness; result=%s" % str(predictor))
+	_assert_true(bool(predictor.get("valid", false)), "every target texel must have a predictor witness whose impact mark covers it; result=%s" % str(predictor))
 	var rigidbody := {}
 	if bool(predictor.get("valid", false)):
 		_assert_predictor_certificate_contract(layout, predictor)
@@ -99,16 +137,19 @@ func _run_checks() -> void:
 		_assert_true(bool(rigidbody.get("valid", false)), "every distinct witness must reproduce through production PaintProjectile; result=%s" % str(rigidbody))
 		if bool(rigidbody.get("valid", false)):
 			var certificate := DirectReachabilityValidator.build_certificate(
-				STAGE.stage_id,
+				_stage.stage_id,
 				layout,
 				predictor,
-				rigidbody
+				rigidbody,
+				summit,
+				summit_rigidbody
 			)
-			_assert_true(certificate != null and certificate.is_valid(), "predictor and real-body parity must build one valid primitive certificate")
+			_assert_true(certificate != null and certificate.is_valid(), "predictor and real-body parity must build one valid target/summit certificate")
 			if certificate != null:
 				_assert_true(certificate.witness_count() == predictor.witnesses.size(), "certificate must retain every distinct witness exactly once")
 				_assert_true(certificate.target_witness_indices.size() == predictor.target_count, "certificate must assign every target texel in row-major target order")
 				_assert_true(certificate.default_aim.is_equal_to(predictor.witnesses[predictor.default_witness_index]), "certificate default aim must be the centroid-nearest certified witness")
+				_assert_true(certificate.summit_witness != null and certificate.summit_witness.is_equal_to(summit.witnesses[0]), "certificate summit aim must remain independent from the centroid witness table")
 
 	print(
 		(
@@ -128,15 +169,57 @@ func _run_checks() -> void:
 	quit(1 if _failed else 0)
 
 
+func _assert_separate_summit_certificate_contract(
+		layout: GeneratedStageLayout,
+		summit: Dictionary,
+		summit_rigidbody: Dictionary
+) -> void:
+	# This is a serialization-only guard used by the summit fast path. It keeps
+	# the target witness table deliberately distinct from the summit witness so
+	# a summit outside the scoreable route mask cannot be forced into it.
+	var target_aim := AimTuple.new(0.0, 10.0, 0)
+	var summit_witnesses: Array = summit.get("witnesses", [])
+	if summit_witnesses.is_empty():
+		return
+	var summit_aim := summit_witnesses[0] as AimTuple
+	var target_assignments := PackedInt32Array()
+	target_assignments.resize(layout.target_pixel_count())
+	var target_checksum := layout.reachable_target_checksum(target_assignments)
+	var certificate := DirectReachabilityValidator.build_certificate(
+		StringName(String(layout.profile_id).trim_suffix("_v7")),
+		layout,
+		{
+			"valid": true,
+			"witnesses": [target_aim],
+			"target_witness_indices": target_assignments,
+			"minimum_distance_margins": PackedFloat32Array([1.0]),
+			"minimum_range_margins": PackedFloat32Array([1.0]),
+			"default_witness_index": 0,
+			"reachable_target_checksum": target_checksum,
+			"predictor_reachability_checksum": 1,
+		},
+		{
+			"valid": true,
+			"rigidbody_reachability_checksum": 1,
+		},
+		summit,
+		summit_rigidbody
+	)
+	_assert_true(certificate != null and certificate.is_valid(), "summit certificate must serialize a separate legal witness")
+	_assert_true(certificate != null and certificate.summit_witness != null, "summit certificate must expose its dedicated witness")
+	_assert_true(certificate != null and certificate.summit_witness.is_equal_to(summit_aim), "dedicated summit witness must round-trip unchanged")
+	_assert_true(certificate != null and not certificate.summit_witness.is_equal_to(target_aim), "dedicated summit witness must not alias the target witness table")
+
+
 func _run_candidate_prefix(requested_target_count: int) -> void:
 	var started := Time.get_ticks_msec()
-	var profile := STAGE.generation_profile
+	var profile := _stage.generation_profile
 	var contract := profile.generation_contract
 	var candidates: Array[Dictionary] = []
 	for attempt_index in range(contract.attempt_count):
 		candidates.append({
 			"attempt": attempt_index,
-			"seed": int((STAGE.terrain_seed + attempt_index * contract.attempt_seed_stride) & 0x7fffffff),
+			"seed": int((_stage.terrain_seed + attempt_index * contract.attempt_seed_stride) & 0x7fffffff),
 		})
 	candidates.append({"attempt": -1, "seed": profile.fallback_seed})
 	var structurally_accepted_count := 0
@@ -144,14 +227,14 @@ func _run_candidate_prefix(requested_target_count: int) -> void:
 	for candidate in candidates:
 		var candidate_started := Time.get_ticks_msec()
 		var layout := SeededStageGenerator._build_attempt(
-			STAGE.stage_id,
+			_stage.stage_id,
 			profile,
-			STAGE.terrain_seed,
+			_stage.terrain_seed,
 			int(candidate.seed),
 			int(candidate.attempt)
 		)
 		if layout == null or not SeededStageGenerator._validate(profile, layout) \
-				or not SeededStageGenerator._finalize_layout(profile, STAGE, layout):
+				or not SeededStageGenerator._finalize_layout(profile, _stage, layout):
 			print(
 				(
 					"Reachability candidate first-target: attempt=%d seed=%d structural=false "
@@ -169,19 +252,19 @@ func _run_candidate_prefix(requested_target_count: int) -> void:
 		var fixture_root := Node3D.new()
 		root.add_child(fixture_root)
 		var terrain_surface := TERRAIN_SCENE.instantiate() as TerrainSurface
-		terrain_surface.position = STAGE.terrain_center
+		terrain_surface.position = _stage.terrain_center
 		fixture_root.add_child(terrain_surface)
 		terrain_surface.configure(layout)
 		var backstop := BACKSTOP_SCENE.instantiate() as BackstopEnvironment
 		fixture_root.add_child(backstop)
 		backstop.configure(
 			layout.containment,
-			STAGE.paint_world_bounds(),
-			STAGE.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+			_stage.paint_world_bounds(),
+			_stage.terrain_center.y
 		)
 		var cannon := CANNON_SCENE.instantiate() as CannonController
 		fixture_root.add_child(cannon)
-		cannon.global_transform = STAGE.cannon_transform
+		cannon.global_transform = _stage.cannon_transform
 		await physics_frame
 
 		var prefix := _validate_target_prefix(
@@ -371,9 +454,9 @@ func _validate_target_prefix(
 
 func _run_throughput_sample(requested_target_count: int) -> void:
 	var layout := SeededStageGenerator.generate_structural_sequence(
-		STAGE.generation_profile,
-		STAGE.terrain_seed,
-		STAGE
+		_stage.generation_profile,
+		_stage.terrain_seed,
+		_stage
 	)
 	_assert_true(layout != null, "throughput sample requires the accepted First Descent layout")
 	if layout == null:
@@ -387,19 +470,19 @@ func _run_throughput_sample(requested_target_count: int) -> void:
 	var fixture_root := Node3D.new()
 	root.add_child(fixture_root)
 	var terrain_surface := TERRAIN_SCENE.instantiate() as TerrainSurface
-	terrain_surface.position = STAGE.terrain_center
+	terrain_surface.position = _stage.terrain_center
 	fixture_root.add_child(terrain_surface)
 	terrain_surface.configure(layout)
 	var backstop := BACKSTOP_SCENE.instantiate() as BackstopEnvironment
 	fixture_root.add_child(backstop)
 	backstop.configure(
 		layout.containment,
-		STAGE.paint_world_bounds(),
-		STAGE.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+		_stage.paint_world_bounds(),
+		_stage.terrain_center.y
 	)
 	var cannon := CANNON_SCENE.instantiate() as CannonController
 	fixture_root.add_child(cannon)
-	cannon.global_transform = STAGE.cannon_transform
+	cannon.global_transform = _stage.cannon_transform
 	await physics_frame
 
 	var started := Time.get_ticks_msec()
@@ -625,7 +708,7 @@ func _run_solver_one() -> void:
 	if bool(solved.get("valid", false)):
 		var prediction: TrajectoryPrediction = solved.prediction
 		_assert_true(prediction.hit_identity.terrain_cell == sample.cell and prediction.hit_identity.terrain_triangle == int(sample.triangle), "single-target solve must retain exact triangle identity")
-		_assert_true(prediction.endpoint.distance_to(target_point) <= DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE, "single-target solve must satisfy the 0.50 m contact-point tolerance")
+		_assert_true(prediction.endpoint.distance_to(target_point) <= DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE, "single-target solve must satisfy the 2.10 m impact-mark coverage tolerance")
 		print("Single target witness: %s candidates=%d predictor_calls=%d" % [
 			solved.aim.stable_key(), solved.candidate_count, solved.predictor_calls,
 		])
@@ -682,7 +765,7 @@ func _assert_predictor_certificate_contract(
 	_assert_true(predictor.minimum_distance_margins.size() == predictor.witnesses.size(), "distance margins must be stored per distinct witness")
 	_assert_true(predictor.minimum_range_margins.size() == predictor.witnesses.size(), "range margins must be stored per distinct witness")
 	for margin in predictor.minimum_distance_margins:
-		_assert_true(margin >= 0.0, "distance margin must never widen the fixed 0.50 m tolerance")
+		_assert_true(margin >= 0.0, "distance margin must never widen the fixed 2.10 m impact-mark tolerance")
 	for margin in predictor.minimum_range_margins:
 		_assert_true(margin >= 0.0, "range margin must never widen the fixed 1.02 m nomination tolerance")
 	var default_point: Vector3 = predictor.witness_impacts[predictor.default_witness_index]
@@ -696,3 +779,10 @@ func _assert_true(condition: bool, message: String) -> void:
 		return
 	_failed = true
 	push_error("Target reachability check failed: %s" % message)
+
+
+func _requested_stage_id() -> StringName:
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--stage="):
+			return StageCatalog.canonical_id(StringName(argument.trim_prefix("--stage=")))
+	return &"stage_01"

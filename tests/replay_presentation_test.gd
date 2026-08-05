@@ -19,6 +19,7 @@ func _run() -> void:
 	await physics_frame
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
+	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var recorder: ReplayRecorder = gameplay.get_node("ReplayRecorder")
 	var presentation: ReplayPresentationController = gameplay.get_node("ReplayPresentationController")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
@@ -60,7 +61,10 @@ func _run() -> void:
 	await physics_frame
 	await physics_frame
 	await physics_frame
-	_assert_true(controller.current_state == StageController.State.PROJECTILE_IN_FLIGHT, "replay-origin aim and fire must use the normal stage path")
+	_assert_true(
+		controller.current_state == StageController.State.AIMING and manager.active_root_count() == 1,
+		"replay-origin aim and fire must use the normal AIMING board path with one active family"
+	)
 	_assert_true(Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent).is_equal_approx(recorded_aim), "replay aim must be applied")
 	_assert_true(presentation.set_paused(true) and presentation.set_speed(2.0), "presentation controls must remain active")
 	_assert_true(presentation.restart_playback(), "restart playback must be available while locked")

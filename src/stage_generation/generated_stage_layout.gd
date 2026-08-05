@@ -113,7 +113,14 @@ func is_certified() -> bool:
 	if not is_valid() or not has_valid_target_mask() \
 			or reachability_certificate == null or not reachability_certificate.is_valid():
 		return false
-	return reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v5")) \
+	var summit_matches := true
+	if reachability_certificate.summit_region_checksum != 0:
+		summit_matches = reachability_certificate.summit_region_checksum == summit_region_checksum() \
+				and reachability_certificate.summit_triangle_ids == summit_triangle_ids() \
+				and reachability_certificate.summit_witness != null \
+				and reachability_certificate.summit_witness.is_valid()
+	return summit_matches \
+			and reachability_certificate.stage_id == StringName(String(profile_id).trim_suffix("_v7")) \
 			and reachability_certificate.profile_version == profile_version \
 			and reachability_certificate.requested_seed == terrain_seed \
 			and reachability_certificate.accepted_seed == accepted_seed \
@@ -158,6 +165,72 @@ func target_centroid_local_xz() -> Vector2:
 
 func target_pixel_count() -> int:
 	return _target_pixel_indices.size()
+
+
+## Returns stable top-surface witnesses for the highest visible summit band.
+## Keeping the region on the canonical topology makes prediction, collision,
+## and any future serialized certificate address the same triangle.
+func summit_region(maximum_height_tolerance: float = 0.25) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if top_topology == null or not top_topology.is_valid():
+		return result
+	var maximum_height := -INF
+	for vertex in top_topology.canonical_vertices_read_only():
+		maximum_height = maxf(maximum_height, vertex.y)
+	var seen: Dictionary = {}
+	for cell_z in range(cell_count.y):
+		for cell_x in range(cell_count.x):
+			var cell := Vector2i(cell_x, cell_z)
+			if not top_topology.is_cell_active(cell):
+				continue
+			for triangle_in_cell in range(TerrainTopTopology.TRIANGLES_PER_CELL):
+				var triangle_id := top_topology.source_triangle_id(cell, triangle_in_cell)
+				if triangle_id < 0 or seen.has(triangle_id):
+					continue
+				var indices := top_topology.triangle_vertex_indices(cell, triangle_in_cell)
+				var vertices := top_topology.canonical_vertices_read_only()
+				var a := vertices[indices.x]
+				var b := vertices[indices.y]
+				var c := vertices[indices.z]
+				if maxf(a.y, maxf(b.y, c.y)) < maximum_height - maximum_height_tolerance:
+					continue
+				seen[triangle_id] = true
+				result.append({
+					"triangle_id": triangle_id,
+					"cell": cell,
+					"triangle": triangle_in_cell,
+					"point": (a + b + c) / 3.0,
+					"normal": top_topology.triangle_normal(cell, triangle_in_cell),
+					"maximum_height": maximum_height,
+				})
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if float(a.point.y) != float(b.point.y):
+			return float(a.point.y) > float(b.point.y)
+		return int(a.triangle_id) < int(b.triangle_id)
+	)
+	return result
+
+
+func summit_sample() -> Dictionary:
+	var region := summit_region()
+	return region[0] if not region.is_empty() else {}
+
+
+func summit_triangle_ids(maximum_height_tolerance: float = 0.25) -> PackedInt32Array:
+	var ids := PackedInt32Array()
+	for sample in summit_region(maximum_height_tolerance):
+		ids.append(int(sample.triangle_id))
+	return ids
+
+
+func summit_region_checksum(maximum_height_tolerance: float = 0.25) -> int:
+	var ids := summit_triangle_ids(maximum_height_tolerance)
+	if ids.is_empty():
+		return 0
+	var hash: int = CHECKSUM_OFFSET
+	for triangle_id in ids:
+		hash = _hash_int(hash, triangle_id)
+	return hash
 
 
 ## Returns the exact topological sample at the target pixel whose center is

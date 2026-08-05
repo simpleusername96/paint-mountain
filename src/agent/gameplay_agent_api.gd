@@ -58,11 +58,9 @@ func get_observation() -> Dictionary:
 		mechanism_states.append(mechanism.state_snapshot())
 	var activity := _stage_controller.activity_snapshot()
 	var active_shot_ids: PackedInt64Array = activity.get("active_shot_ids", PackedInt64Array())
-	var aim_ready := _stage_controller.current_state in [
-		StageController.State.AIMING,
-		StageController.State.PROJECTILE_IN_FLIGHT,
-		StageController.State.PAINT_SETTLING,
-	] and _cannon.input_enabled
+	var aim_ready := _stage_controller.current_state == StageController.State.AIMING \
+			and _cannon.input_enabled
+	var fire_readiness := _stage_controller.fire_readiness_snapshot(StageController.ActionOrigin.AGENT)
 	return {
 		"schema_version": ShotObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
@@ -96,6 +94,20 @@ func get_observation() -> Dictionary:
 		"active_shot_families": active_shot_ids.size(),
 		"active_shot_ids": active_shot_ids,
 		"aim_ready": aim_ready,
+		"fire_ready": bool(fire_readiness.get("fireable", false)),
+		"fire_readiness": {
+			"phase": fire_readiness.get("phase", ""),
+			"editable": bool(fire_readiness.get("editable", false)),
+			"prediction_status": String(fire_readiness.get("prediction_status", "pending")),
+			"prediction_key": String(fire_readiness.get("prediction_key", "")),
+			"active_root_count": int(fire_readiness.get("active_root_count", 0)),
+			"fire_capacity": int(fire_readiness.get("fire_capacity", 0)),
+			"shots_remaining": int(fire_readiness.get("shots_remaining", 0)),
+			"terminal_pending": bool(fire_readiness.get("terminal_pending", false)),
+			"fireable": bool(fire_readiness.get("fireable", false)),
+			"reason_key": String(fire_readiness.get("reason_key", "ready")),
+			"reason": fire_readiness.get("reason", ""),
+		},
 		"fire_capacity": int(activity.get("fire_capacity", 2)),
 		"terminal_pending": bool(activity.get("terminal_pending", false)),
 		# Compatibility alias retained for one schema cycle; it now describes aim
@@ -128,7 +140,7 @@ func restart() -> void:
 func change_camera(mode: CameraDirector.Mode) -> bool:
 	if _stage_controller.action_origin_is_locked():
 		return false
-	if _stage_controller.current_state not in [StageController.State.BRIEFING, StageController.State.AIMING, StageController.State.PROJECTILE_IN_FLIGHT]:
+	if _stage_controller.current_state not in [StageController.State.BRIEFING, StageController.State.AIMING]:
 		return false
 	_camera_director.set_mode(mode)
 	return true

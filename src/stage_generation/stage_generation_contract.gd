@@ -1,9 +1,9 @@
 class_name StageGenerationContract
 extends Resource
 
-## Owns every generation-wide version-5 constant consumed by production.
+## Owns every generation-wide version-7 constant consumed by production.
 
-const CONTRACT_VERSION := 5
+const CONTRACT_VERSION := 7
 const REQUIRED_CELL_COUNT := Vector2i(72, 48)
 const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-90.0, -60.0), Vector2(180.0, 120.0))
 const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 6912
@@ -57,15 +57,22 @@ func is_valid() -> bool:
 	return generation_version == CONTRACT_VERSION \
 			and profile_version == CONTRACT_VERSION \
 			and layout_version == CONTRACT_VERSION \
-			and cell_count == REQUIRED_CELL_COUNT \
-			and local_bounds == REQUIRED_LOCAL_BOUNDS \
-			and maximum_top_triangle_count == REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT \
+			and cell_count.x >= 72 and cell_count.x <= 96 and cell_count.x % 2 == 0 \
+			and cell_count.y >= 48 and cell_count.y <= 64 and cell_count.y % 2 == 0 \
+			and local_bounds.size.x >= 180.0 and local_bounds.size.x <= 240.0 \
+			and local_bounds.size.y >= 120.0 and local_bounds.size.y <= 160.0 \
+			and local_bounds.size.x / float(cell_count.x) >= 2.0 \
+			and local_bounds.size.x / float(cell_count.x) <= 3.0 \
+			and local_bounds.size.y / float(cell_count.y) >= 2.0 \
+			and local_bounds.size.y / float(cell_count.y) <= 3.0 \
 			and maximum_top_triangle_count == cell_count.x * cell_count.y * 2 \
 			and cell_diagonal == CellDiagonal.P01_TO_P10 \
 			and mask_size == REQUIRED_MASK_SIZE \
 			and attempt_count == REQUIRED_ATTEMPT_COUNT \
 			and attempt_seed_stride == REQUIRED_ATTEMPT_SEED_STRIDE \
-			and route_station_z == PackedFloat32Array(REQUIRED_ROUTE_STATION_Z) \
+			and route_station_z.size() >= 8 and route_station_z.size() <= 10 \
+			and route_station_z[0] <= -44.0 and route_station_z[-1] >= 44.0 \
+			and _station_spacing_is_valid() \
 			and is_equal_approx(maximum_station_x_delta, 18.0) \
 			and is_equal_approx(outer_band_width, 12.0) \
 			and is_equal_approx(terrace_step, 4.0) \
@@ -78,3 +85,14 @@ func is_valid() -> bool:
 			and is_equal_approx(noise_lacunarity, 2.0) \
 			and is_equal_approx(noise_gain, 0.45) \
 			and is_equal_approx(noise_amplitude, 0.5)
+
+
+func _station_spacing_is_valid() -> bool:
+	if route_station_z.size() < 2:
+		return false
+	for index in range(route_station_z.size() - 1):
+		if route_station_z[index + 1] <= route_station_z[index]:
+			return false
+		if route_station_z[index + 1] - route_station_z[index] < 8.0:
+			return false
+	return true

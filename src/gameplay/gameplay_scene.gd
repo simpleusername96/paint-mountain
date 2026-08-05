@@ -63,6 +63,16 @@ func _ready() -> void:
 	if not _generated_layout.is_runtime_ready():
 		push_error("GameplayScene could not derive a bounded center-target default aim.")
 		return
+	var summit_aim := DefaultAimSolver.find_runtime_summit_aim(
+		get_world_3d().direct_space_state,
+		_cannon,
+		_terrain_surface,
+		_generated_layout
+	)
+	if summit_aim == null:
+		push_error("GameplayScene rejected a stage whose highest terrain band is unreachable on the legal aim domain.")
+		return
+	_generated_layout.metrics["summit_reachability_aim"] = summit_aim.stable_key()
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface)
 	_trajectory_preview.configure(_cannon)
@@ -130,6 +140,16 @@ func prediction_compute_count() -> int:
 	return _prediction_compute_count
 
 
+## Delivery-only frame hold used to capture the real pending-readiness surface
+## before the coalesced predictor publishes the latest aim key.
+func hold_prediction_refresh_for_delivery(duration_seconds: float = 0.15) -> void:
+	_prediction_dirty = true
+	_prediction_refresh_cooldown_seconds = maxf(
+		_prediction_refresh_cooldown_seconds,
+		duration_seconds
+	)
+
+
 func _process(delta: float) -> void:
 	_prediction_refresh_cooldown_seconds = maxf(
 		0.0,
@@ -176,8 +196,11 @@ func _build_stage_world() -> bool:
 	_cannon.global_transform = stage_data.cannon_transform
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
-	paint_material.set_shader_parameter("rock_color", Color("8E9AAA"))
-	paint_material.set_shader_parameter("shadow_tint", Color("596574"))
+	# The mountain must read as a faceted 3D mass against the bright wall. Keep
+	# the wall/apron materials bright, but reserve this cooler mid-value range
+	# for terrain so daylight does not clip the top faces to white.
+	paint_material.set_shader_parameter("rock_color", Color("74839A"))
+	paint_material.set_shader_parameter("shadow_tint", Color("46546A"))
 	paint_material.set_shader_parameter("support_floor_y", stage_data.terrain_center.y)
 	paint_material.set_shader_parameter(
 		"support_rear_z",
@@ -218,14 +241,17 @@ func _layout_matches_stage(layout: GeneratedStageLayout, selected_stage: StageDa
 
 func _connect_systems() -> void:
 	_cannon.aim_changed.connect(_on_aim_changed)
-	_cannon.aim_validity_changed.connect(_hud.set_fire_enabled)
-	_cannon.fire_requested.connect(func(_origin: Vector3, _velocity: Vector3) -> void: _stage_controller.request_fire(StageController.ActionOrigin.HUMAN))
+	# StageController owns the complete Fire contract (prediction key, capacity,
+	# shots, terminal state, and action lock). Do not let the cannon's partial
+	# aim-validity signal overwrite that authoritative HUD decision.
+	_stage_controller.fire_readiness_changed.connect(_hud.set_fire_readiness)
 	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
 	_projectile_manager.surface_paint_sweep_ready.connect(_paint_system.queue_surface_paint_sweep)
 	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
 	_paint_system.coverage_changed.connect(_hud.update_coverage)
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
+	_stage_controller.shot_family_activity_changed.connect(_hud.update_activity)
 	_stage_controller.shot_fired.connect(_on_shot_fired)
 	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
@@ -260,12 +286,13 @@ func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
 
 func _recompute_prediction() -> void:
 	_prediction_compute_count += 1
+	var prediction_aim_key := _cannon.aim_key()
 	var prediction := TrajectoryPredictor.predict(
 		get_world_3d().direct_space_state,
 		_cannon,
 		_generated_layout.containment.containment_bounds
 	)
-	_cannon.set_prediction(prediction)
+	_cannon.set_prediction(prediction, prediction_aim_key)
 	_prediction_dirty = false
 	_prediction_refresh_cooldown_seconds = PREDICTION_REFRESH_INTERVAL_SECONDS
 
@@ -281,7 +308,7 @@ func _on_transient_splash_requested(_projectile: PaintProjectile, contact: Proje
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 	_shot_has_impacted = false
-	Engine.time_scale = 1.0
+	Engine.time_scale = 2.0 if _setting_bool("fast_progress", true) else 1.0
 	_presentation_effects.muzzle_flash(_cannon.get_launch_origin())
 	_audio_cue(&"fire")
 
@@ -330,13 +357,6 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			if _trajectory_preview.visible:
 				_trajectory_preview.refresh()
 			_camera_director.set_mode(CameraDirector.Mode.AIMING)
-		StageController.State.PROJECTILE_IN_FLIGHT:
-			_set_mechanism_labels_visible(false)
-			_trajectory_preview.visible = false
-			_camera_director.set_mode(CameraDirector.Mode.FOLLOW if _setting_bool("follow_camera", true) else CameraDirector.Mode.WIDE)
-		StageController.State.PAINT_SETTLING, StageController.State.SHOT_RESULT:
-			Engine.time_scale = 1.0
-			_camera_director.set_mode(CameraDirector.Mode.WIDE)
 		StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
@@ -363,11 +383,7 @@ func _on_stage_failed(final_coverage: float, missing: float) -> void:
 func _on_camera_mode_requested(mode: int) -> void:
 	if _replay_presentation.active:
 		return
-	if _stage_controller.current_state not in [
-		StageController.State.PROJECTILE_IN_FLIGHT,
-		StageController.State.PAINT_SETTLING,
-		StageController.State.SHOT_RESULT,
-	]:
+	if _stage_controller.current_state != StageController.State.AIMING:
 		return
 	_camera_director.set_mode(mode as CameraDirector.Mode)
 	_replay_recorder.record_camera(mode)
@@ -377,7 +393,8 @@ func _on_simulation_speed_requested(speed: float) -> void:
 	if _replay_presentation.active:
 		_replay_presentation.set_speed(speed)
 		return
-	if _stage_controller.current_state == StageController.State.PROJECTILE_IN_FLIGHT \
+	if _stage_controller.current_state == StageController.State.AIMING \
+			and _projectile_manager.active_count() > 0 \
 			and _shot_has_impacted and _setting_bool("fast_progress", true):
 		Engine.time_scale = clampf(speed, 1.0, 2.0)
 

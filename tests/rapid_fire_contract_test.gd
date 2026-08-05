@@ -20,12 +20,50 @@ func _run_checks() -> void:
 	await physics_frame
 	var controller := gameplay.get_node("StageController") as StageController
 	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var aim_input := gameplay.get_node("AimInputController") as AimInputController
+	var agent := gameplay.get_node("GameplayAgentApi") as GameplayAgentApi
+	var actions := gameplay.get_node("HUD/HUDRoot/ActionButtons") as ActionButtons
 	_assert(controller.begin_aiming(), "rapid-fire contract requires an aiming board")
-	var first := controller.request_fire()
-	var second := controller.request_fire()
+	var initial_readiness := controller.fire_readiness_snapshot()
+	_assert(bool(initial_readiness.get("editable", false)), "beginning aim must refresh editable Fire readiness")
+	_assert(String(initial_readiness.get("prediction_status", "")) == "fireable", "initial readiness must use a matching prediction key")
+	_assert(not actions.get_node("FireButton").disabled, "HUD Fire must follow the authoritative ready snapshot")
+	var agent_readiness: Dictionary = agent.get_observation().get("fire_readiness", {})
+	_assert(bool(agent_readiness.get("fireable", false)), "agent observation must expose the same ready Fire contract")
+	var first_aim := Vector3(
+		cannon.yaw_degrees,
+		cannon.elevation_degrees,
+		cannon.power_percent
+	)
+	var first := aim_input.request_fire()
+	# Slow the live physics family while the next aim is refreshed. This proves
+	# that the second root uses a changed tuple instead of steering family one.
+	Engine.time_scale = 0.25
+	var changed := controller.set_aim(
+		first_aim.x + 7.0,
+		first_aim.y,
+		first_aim.z,
+		StageController.ActionOrigin.HUMAN
+	)
+	_assert(changed, "the next aim must remain editable while family one moves")
+	_assert(actions.get_node("FireButton").disabled, "pending prediction must disable only Fire")
+	_assert(actions.get_node("ReadinessLabel").text == "궤적 계산 중", "pending Fire must expose the canonical Korean reason")
+	var readiness_budget := 120
+	while not bool(controller.fire_readiness_snapshot().get("fireable", false)) \
+			and readiness_budget > 0:
+		await physics_frame
+		readiness_budget -= 1
+	_assert(not actions.get_node("FireButton").disabled, "matching prediction must re-enable HUD Fire")
+	var second := agent.fire()
 	var third := controller.request_fire()
 	_assert(first and second, "two fire commands must be accepted without waiting for settlement")
+	_assert(readiness_budget > 0, "changed next aim must receive a matching prediction before Fire")
+	_assert(controller.current_state == StageController.State.AIMING, "accepted Fire must keep the board in AIMING while families move")
 	_assert(not third, "third fire must be rejected only at the two-family capacity")
+	var capacity_snapshot := controller.fire_readiness_snapshot()
+	_assert(not bool(capacity_snapshot.get("fireable", true)) and capacity_snapshot.get("reason_key", "") == "capacity", "capacity must disable only Fire with the canonical reason")
+	_assert(int(capacity_snapshot.get("fire_capacity", -1)) == 0, "readiness capacity must report remaining root slots, not the fixed maximum")
 	_assert(controller.shots_remaining == 2, "each accepted family must consume one payload")
 	_assert(manager.active_root_count() <= 2, "active root family count must stay bounded")
 	var budget := 60 * 30
@@ -38,8 +76,11 @@ func _run_checks() -> void:
 		budget -= 1
 	var sealed := controller.sealed_shot_observations()
 	_assert(sealed.size() == 2, "each accepted family must seal its own observation")
+	_assert(controller.current_state == StageController.State.AIMING, "settlement must return directly to the editable AIMING board")
+	_assert(int(controller.activity_snapshot().get("fire_capacity", -1)) == 2, "all root slots must be available after both families settle")
 	if sealed.size() == 2:
 		_assert(sealed[0].shot_id == 1 and sealed[1].shot_id == 2, "sealed family observations must retain ordered shot IDs")
+		_assert(not is_equal_approx(sealed[0].commanded_yaw, sealed[1].commanded_yaw), "the two sealed families must retain distinct aim tuples")
 	if not _failed:
 		print("rapid_fire_contract_test passed: two immediate families accepted, third rejected at capacity, and both settled")
 	Engine.time_scale = 1.0

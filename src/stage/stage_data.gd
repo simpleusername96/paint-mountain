@@ -2,8 +2,8 @@ class_name StageData
 extends Resource
 
 @export_category("Identity")
-@export var stage_id: StringName = &"first_descent"
-@export var stage_version: int = 1
+@export var stage_id: StringName = &"stage_01"
+@export var stage_version: int = StageGenerationContract.CONTRACT_VERSION
 @export var display_name_key: StringName = &"stage.first_descent.name"
 @export var stage_number: int = 1
 

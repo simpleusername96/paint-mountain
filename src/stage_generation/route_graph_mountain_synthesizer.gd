@@ -48,7 +48,7 @@ static func _build_footprint(
 	cells.resize(contract.cell_count.x * contract.cell_count.y)
 	var contour_noise := FastNoiseLite.new()
 	contour_noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		"paint_mountain:%s:v5:%d:footprint" % [String(stage_id), attempt_seed]
+		"paint_mountain:%s:v7:%d:footprint" % [String(stage_id), attempt_seed]
 	) & 0x7fffffff
 	contour_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	contour_noise.frequency = 0.055
@@ -68,7 +68,11 @@ static func _build_footprint(
 			)
 			var depth_t := (float(cell_z) + 0.5) / float(contract.cell_count.y)
 			var arch := pow(maxf(0.0, sin(depth_t * PI)), 0.68)
-			var half_width := lerpf(42.0, 34.0, depth_t) + arch * 20.0
+			var half_width := lerpf(
+				contract.local_bounds.size.x * 0.235,
+				contract.local_bounds.size.x * 0.19,
+				depth_t
+			) + arch * contract.local_bounds.size.x * 0.11
 			var center_bend := sin(depth_t * TAU * 0.72 + bend_phase) * 5.5
 			var irregularity := contour_noise.get_noise_2d(
 				center.y * 0.65 + cos(contour_phase) * 20.0,

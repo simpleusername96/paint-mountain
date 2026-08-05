@@ -4,17 +4,17 @@
 
 [resource]
 script = ExtResource("1_data")
-radius = 0.60
+radius = 0.90
 mass = 2.4
 bounce = 0.03
 friction = 0.90
 linear_damp = 0.55
 angular_damp = 1.10
 minimum_launch_speed = 32.0
-maximum_launch_speed = 72.0
+maximum_launch_speed = 150.0
 maximum_lifetime = 12.0
 minimum_movement_speed = 1.7
 stop_duration = 0.5
-paint_footprint_radius = 2.25
-impact_paint_radius = 3.2
-settle_paint_radius = 2.25
+paint_footprint_radius = 1.5
+impact_paint_radius = 2.1
+settle_paint_radius = 1.5

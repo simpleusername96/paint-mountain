@@ -229,8 +229,8 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	material.set_shader_parameter(&"paint_mask", paint_texture)
 	material.set_shader_parameter(&"target_mask", target_texture)
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
-	material.set_shader_parameter(&"rock_color", Color("8E9AAA"))
-	material.set_shader_parameter(&"shadow_tint", Color("596574"))
+	material.set_shader_parameter(&"rock_color", Color("F2F4F7"))
+	material.set_shader_parameter(&"shadow_tint", Color("C4CBD5"))
 	var dressing: Node3D = ENVIRONMENT_DRESSING_SCRIPT.new()
 	dressing.name = "PreviewDressing_%s" % stage.stage_id
 	dressing.visible = false

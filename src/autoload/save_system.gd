@@ -7,7 +7,7 @@ const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 func default_data() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
-		"selected_stage_id": "first_descent",
+		"selected_stage_id": "stage_01",
 		"best_results": {},
 		"settings": {
 			"master_volume": 0.8,
@@ -94,9 +94,11 @@ func _migrate_v1(data: Dictionary) -> Dictionary:
 	migrated_settings["language"] = "ko"
 	migrated_settings["language_user_selected"] = false
 	migrated["settings"] = migrated_settings
-	var selected := String(migrated.get("selected_stage_id", "first_descent"))
-	if selected == "stage_01":
-		selected = "first_descent"
+	var selected := String(migrated.get("selected_stage_id", "stage_01"))
+	match selected:
+		"first_descent": selected = "stage_01"
+		"burst_basin": selected = "stage_02"
+		"split_ridge": selected = "stage_03"
 	migrated["selected_stage_id"] = selected
 	migrated["version"] = SAVE_VERSION
 	return migrated

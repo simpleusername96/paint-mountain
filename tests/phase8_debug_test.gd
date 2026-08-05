@@ -11,13 +11,17 @@ func _initialize() -> void:
 
 
 func _run_checks() -> void:
-	root.get_node("/root/GameState").persistence_enabled = false
+	var game_state := root.get_node("/root/GameState") as GameState
+	game_state.persistence_enabled = false
+	game_state.initialize_from_data(root.get_node("/root/SaveSystem").default_data())
+	game_state.select_stage(&"stage_01")
 	var gameplay := GAMEPLAY_SCENE.instantiate()
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
+	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var overlay: DebugOverlay = gameplay.get_node("DebugOverlay")
 	var paint: PaintSystem = gameplay.get_node("PaintSystem")
 	_assert_true(not overlay.visible, "debug overlay must be disabled by default")
@@ -28,14 +32,14 @@ func _run_checks() -> void:
 	_assert_true(controller.begin_aiming(), "debug log shot must enter aiming")
 	# The generated default aim is already admitted by the refreshed trajectory;
 	# changing it here would intentionally invalidate Fire until the next frame.
-	_assert_true(controller.request_fire(), "debug log shot must use the normal fire path")
+	_assert_true(
+		controller.request_fire(StageController.ActionOrigin.DEBUG),
+		"debug log shot must use the normal Fire admission path"
+	)
 	Engine.time_scale = 3.0
 	var frame_budget := 60 * 24
-	while controller.current_state not in [
-		StageController.State.AIMING,
-		StageController.State.STAGE_CLEAR,
-		StageController.State.STAGE_FAILED,
-	] and frame_budget > 0:
+	while (manager.active_count() > 0 or controller.sealed_shot_observations().is_empty()) \
+			and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
 	_assert_true(frame_budget > 0, "debug log shot must settle within the bounded lifetime")
@@ -47,7 +51,7 @@ func _run_checks() -> void:
 		file.close()
 	_assert_true(parsed is Dictionary, "shot log must be valid JSON")
 	if parsed is Dictionary:
-		_assert_true(parsed.stage_id == "first_descent" and int(parsed.accepted_seed) > 0, "shot log must contain stage and accepted seed")
+		_assert_true(parsed.stage_id == "stage_01" and int(parsed.accepted_seed) > 0, "shot log must contain canonical stage and accepted seed")
 		_assert_true(_has_aim_and_fire(parsed.actions), "shot log must contain ordered aim/fire actions")
 		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
 		if parsed.expected_observations.size() == 1:
@@ -61,7 +65,7 @@ func _run_checks() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(LOG_PATH))
 	if not _failed:
 		print("Phase 8 debug checks passed: hidden default, 9 actions, drain/checksum metrics, and complete JSON shot log.")
-	root.get_node("/root/GameState").persistence_enabled = true
+	game_state.persistence_enabled = true
 	gameplay.queue_free()
 	await process_frame
 	await process_frame
