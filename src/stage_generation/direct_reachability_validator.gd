@@ -893,10 +893,9 @@ static func _solve_target(
 		target_world_point.x - reference_origin.x,
 		target_world_point.z - reference_origin.z
 	)
-	# CannonBallistics maps positive yaw toward negative X, matching the
-	# CannonController yaw pivot. Invert the X component when recovering the
-	# legal yaw from a target bearing.
-	var bearing := rad_to_deg(atan2(-reference_delta.x, -reference_delta.y))
+	# Positive yaw is the aiming camera's screen-right direction and therefore
+	# maps toward positive world X for the authored cannon/camera contract.
+	var bearing := rad_to_deg(atan2(reference_delta.x, -reference_delta.y))
 	var nearest_yaw := AimTuple.snap_angle(bearing)
 	var desired_center := target_world_point \
 			+ target_world_normal * cannon.projectile_data.radius
@@ -904,7 +903,7 @@ static func _solve_target(
 		if yaw < AimTuple.MINIMUM_YAW_DEGREES or yaw > AimTuple.MAXIMUM_YAW_DEGREES:
 			continue
 		var horizontal_direction := Vector2(
-			-sin(deg_to_rad(yaw)),
+			sin(deg_to_rad(yaw)),
 			-cos(deg_to_rad(yaw))
 		).normalized()
 		var integer_origins := PackedVector3Array()

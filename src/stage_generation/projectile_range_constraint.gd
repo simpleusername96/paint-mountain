@@ -102,7 +102,7 @@ func _evaluate_cannon_local_center(
 	)
 	if reference_delta.length_squared() <= 0.000001:
 		return _failure(&"before_muzzle")
-	var bearing := rad_to_deg(atan2(-reference_delta.x, -reference_delta.y))
+	var bearing := rad_to_deg(atan2(reference_delta.x, -reference_delta.y))
 	var nearest_yaw := AimTuple.snap_angle(clampf(
 		bearing,
 		AimTuple.MINIMUM_YAW_DEGREES,
@@ -241,7 +241,7 @@ func _configure() -> void:
 		var yaw := AimTuple.MINIMUM_YAW_DEGREES \
 				+ float(yaw_index) * YAW_SAMPLE_DEGREES
 		_yaw_directions[yaw_index] = Vector2(
-			-sin(deg_to_rad(yaw)),
+			sin(deg_to_rad(yaw)),
 			-cos(deg_to_rad(yaw))
 		).normalized()
 	var gravity_magnitude := float(ProjectSettings.get_setting(

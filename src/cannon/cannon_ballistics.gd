@@ -13,11 +13,12 @@ static func launch_direction(yaw_degrees: float, elevation_degrees: float) -> Ve
 	var yaw := deg_to_rad(yaw_degrees)
 	var elevation := deg_to_rad(elevation_degrees)
 	var horizontal_scale := cos(elevation)
-	# Godot's positive Y rotation turns the cannon's -Z forward axis toward
-	# negative X. Keep the projectile vector collinear with the visual muzzle
-	# transform so solver, preview, and rigid-body launch share one yaw contract.
+	# Positive yaw is defined in player space: it moves the aiming-camera landing
+	# point toward screen right. The visual pivot therefore rotates by the
+	# opposite Godot Y angle; solver, preview, and rigid-body launch share this
+	# player-facing convention.
 	return Vector3(
-		-sin(yaw) * horizontal_scale,
+		sin(yaw) * horizontal_scale,
 		sin(elevation),
 		-cos(yaw) * horizontal_scale
 	).normalized()
@@ -33,7 +34,7 @@ static func launch_velocity(
 
 
 static func launch_origin_local(yaw_degrees: float, elevation_degrees: float) -> Vector3:
-	var yaw_basis := Basis(Vector3.UP, deg_to_rad(yaw_degrees))
+	var yaw_basis := Basis(Vector3.UP, -deg_to_rad(yaw_degrees))
 	var elevation_basis := Basis(Vector3.RIGHT, deg_to_rad(elevation_degrees))
 	return YAW_PIVOT_OFFSET + yaw_basis * (
 		ELEVATION_PIVOT_OFFSET + elevation_basis * MUZZLE_OFFSET
