@@ -402,7 +402,9 @@ static func _materialize_route_mechanism_slots(
 				return false
 			var kind := mechanism.canonical_kind()
 			kinds.append(int(kind))
-			pad_ts.append(float(source_slot.get("t", -1.0)))
+			pad_ts.append(_mechanism_pad_t(
+				kind, float(source_slot.get("t", -1.0)), stage_number
+			))
 			pad_radii.append(_mechanism_pad_radius(kind, stage_number))
 			loadout_index += 1
 		route.mechanism_kind = -1
@@ -414,15 +416,26 @@ static func _materialize_route_mechanism_slots(
 	return loadout_index == loadout.size()
 
 
+static func _mechanism_pad_t(
+	kind: MechanismData.Kind,
+	source_t: float,
+	stage_number: int = -1
+) -> float:
+	# Stage 04's reviewed route has a natural uphill witness on its upper shelf;
+	# the old late-route anchor sits on the sharp terminal descent instead.
+	if stage_number == 4 and kind == MechanismData.Kind.UPHILL_REBOUND:
+		return 0.30
+	return source_t
+
+
 static func _mechanism_pad_radius(kind: MechanismData.Kind, stage_number: int = -1) -> float:
 	match int(kind):
 		int(MechanismData.Kind.SPLITTER):
 			return 10.0
 		int(MechanismData.Kind.UPHILL_REBOUND):
-			# Stage 08 uses an already-planar natural slope, where even a small
-			# shelf erases its ascent witness. Other authored routes need the
-			# narrow stabilizing core used by the Stage 03 tutorial.
-			return 0.25 if stage_number == 8 else 1.5
+			# Stages 04 and 08 use already-planar natural slopes, where even a
+			# narrow artificial shelf erases the ascent witness.
+			return 0.25 if stage_number in [4, 8] else 1.5
 	# Burst's full ring must stay on its broad shelf instead of crossing the
 	# sharp support blend at the edge of the old 8 m anchor.
 	return 10.0
