@@ -70,7 +70,7 @@ func _run_checks() -> void:
 	controller.toggle_pause()
 	controller.force_stage_clear()
 	await process_frame
-	_assert_true(hud_root.get_node("ResultPanel").visible, "clear must show the result interface")
+	_assert_true(hud_root.get_node("ResultPanel").visible, "terminal coverage snapshot must show the result interface")
 	_assert_true(hud_root.get_node("ResultPanel").size.x <= 1280.0 * 0.35, "result panel must use no more than 35 percent of the viewport width")
 	var result_content := hud_root.get_node("ResultPanel/Margin/Content")
 	_assert_true(result_content.get_node("Retry") is Button, "result must expose retry as a real button")
@@ -134,15 +134,15 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var fire_rect := fire.get_global_rect()
 	_assert_true(actions.find_children("*", "Button", true, false).size() == 1, "Fire must be the sole aiming action")
 	_assert_true(actions.find_child("Restart", true, false) == null, "Restart must be absent from the aiming actions")
-	_assert_true(fire.is_visible_in_tree() and absf(fire_rect.get_center().x - 640.0) <= 2.0 and fire_rect.position.y >= 560.0, "Fire must remain centered in the lower HUD")
+	_assert_true(fire.is_visible_in_tree() and fire_rect.get_center().x > hud_rect.size.x * 0.35 and fire_rect.get_center().x < hud_rect.size.x * 0.65 and fire_rect.position.y >= hud_rect.size.y * 0.75, "Fire must remain in the lower central action area")
 	_assert_true(not (hud_root.get_node("PauseOverlay") as Control).visible, "the paused-menu Restart must stay hidden during aiming")
 
-	var shots := hud_root.get_node("TopStatusBar/ShotsChip") as Control
+	var status := hud_root.get_node("RunStatusCard") as RunStatusCard
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
-	var shots_rect := shots.get_global_rect()
+	var status_rect := status.get_global_rect()
 	var settings_rect := settings.get_global_rect()
-	_assert_true(shots_rect.get_center().x > hud_center.x and shots_rect.get_center().y < hud_center.y, "remaining shots must stay in the upper-right")
+	_assert_true(status_rect.get_center().x > hud_center.x and status_rect.size.x < hud_rect.size.x * 0.25, "run state must stay in one compact right-edge card")
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
-	_assert_true(shots_rect.end.x <= settings_rect.position.x, "shots and settings must remain separate, ordered controls")
-	for control in [coverage, fire, shots, settings]:
+	_assert_true(status_rect.position.y >= settings_rect.end.y, "settings and run status must remain separate, ordered controls")
+	for control in [coverage, fire, status, settings]:
 		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

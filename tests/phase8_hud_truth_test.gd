@@ -22,6 +22,7 @@ func _run() -> void:
 	var hud_root := hud.get_node("HUDRoot") as Control
 	var replay := hud_root.get_node("ReplayBar") as ReplayBar
 	var actions := hud_root.get_node("ActionButtons") as ActionButtons
+	var status := hud_root.get_node("RunStatusCard") as RunStatusCard
 	_assert_true(not replay.visible, "HUD initialization must keep replay controls hidden")
 	_assert_true(
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
@@ -29,9 +30,9 @@ func _run() -> void:
 	)
 
 	hud.show_state(StageController.State.AIMING)
-	_assert_true(not replay.visible and actions.visible, "normal Aiming must expose Fire without replay controls")
+	_assert_true(not replay.visible and actions.visible and status.visible, "normal Aiming must expose Fire and edge status without replay controls")
 	hud.set_replay_active(true)
-	_assert_true(replay.visible and not actions.visible, "only active replay mode may expose replay controls")
+	_assert_true(replay.visible and not actions.visible and not status.visible, "only active replay mode may expose replay controls")
 	hud.set_replay_active(false)
 	_assert_true(not replay.visible and actions.visible, "leaving replay must restore normal Aiming controls")
 
@@ -40,11 +41,12 @@ func _run() -> void:
 	for state_name in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color"]:
 		_assert_true(settings.has_theme_color_override(state_name), "Settings icon must own %s" % state_name)
 		_assert_true(settings.get_theme_color(state_name).is_equal_approx(NAVY), "Settings %s must use the navy token" % state_name)
+	_assert_true(hud_root.get_node_or_null("TopStatusBar/ShotsChip") == null, "remaining shots must have one owner in the run-status card")
 
 	hud.queue_free()
 	await process_frame
 	if not _failed:
-		print("Phase 8 HUD truth passed: coverage has one owner, replay controls stay state-gated, and settings remains legible.")
+		print("Phase 8 HUD truth passed: coverage and run status have one owner, replay controls stay state-gated, and settings remains legible.")
 	quit(1 if _failed else 0)
 
 

@@ -117,21 +117,11 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "settings.camera_shake"
-[node name="FollowCamera" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-text = "settings.follow_camera"
 [node name="Trajectory" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "settings.trajectory"
-[node name="FastProgress" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-text = "settings.fast_progress"
 
 [node name="Display" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
 custom_minimum_size = Vector2(508, 0)

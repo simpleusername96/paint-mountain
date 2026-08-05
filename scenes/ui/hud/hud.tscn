@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/top_status_bar.tscn" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/replay_bar.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/mechanism_info_card.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/pause_overlay.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/run_status_card.tscn" id="12"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
@@ -61,6 +62,17 @@ offset_left = 24.0
 offset_top = 84.0
 offset_right = 244.0
 offset_bottom = 128.0
+
+[node name="RunStatusCard" parent="HUDRoot" instance=ExtResource("12")]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -292.0
+offset_top = 84.0
+offset_right = -24.0
+offset_bottom = 394.0
+grow_horizontal = 0
 
 [node name="ShotSummary" parent="HUDRoot" instance=ExtResource("7")]
 unique_name_in_owner = true
@@ -157,11 +169,14 @@ one_shot = true
 
 [node name="ResultPanel" parent="HUDRoot" instance=ExtResource("8")]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 836.0
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -444.0
 offset_top = 110.0
-offset_right = 1256.0
+offset_right = -24.0
 offset_bottom = 610.0
+grow_horizontal = 0
 
 [node name="ReplayBar" parent="HUDRoot" instance=ExtResource("9")]
 unique_name_in_owner = true

@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://src/ui/hud/result_panel.gd" id="1"]
 
 [node name="ResultPanel" type="PanelContainer"]
+visible = false
 custom_minimum_size = Vector2(420, 500)
 offset_right = 420.0
 offset_bottom = 500.0
@@ -23,22 +24,43 @@ theme_override_constants/separation = 12
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "산을 칠했습니다"
+text = "완료"
 autowrap_mode = 2
+
+[node name="CoverageLabel" type="Label" parent="Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+theme_override_font_sizes/font_size = 14
+text = "result.final"
+
+[node name="Coverage" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
+theme_override_font_sizes/font_size = 46
+text = "75.0%"
 
 [node name="Stars" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "★★★"
+theme_override_font_sizes/font_size = 24
+text = "등급  ★★★"
 
-[node name="Details" type="Label" parent="Margin/Content"]
+[node name="PreviousBest" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "이전 최고  62.0%"
+
+[node name="Metadata" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 16
-text = "최종 면적  75.0%"
+theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+theme_override_font_sizes/font_size = 14
+text = "경과 시간  01:24 · 사용한 탄  4"
+autowrap_mode = 2
 
 [node name="Retry" type="Button" parent="Margin/Content"]
 unique_name_in_owner = true

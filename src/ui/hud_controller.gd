@@ -10,6 +10,7 @@ signal stage_select_requested
 signal main_menu_requested
 signal next_stage_requested
 signal replay_requested
+signal finish_requested
 signal interaction_mode_requested(mode: int)
 signal replay_speed_requested(speed: float)
 signal power_step_requested(direction: float)
@@ -23,6 +24,7 @@ static var _first_session_hint_seen := false
 @onready var _aim: AimControls = %AimControls
 @onready var _coverage: CoverageMeter = %CoverageMeter
 @onready var _actions: ActionButtons = %ActionButtons
+@onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
 @onready var _shot_summary: ShotSummary = %ShotSummary
 @onready var _result: ResultPanel = %ResultPanel
@@ -40,16 +42,55 @@ var _hint_pending := false
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
+var _run_started := false
+var _clock_finished := false
+var _resident_total := 0
+var _moving_residents := 0
+var _resting_residents := 0
+var _has_resident_breakdown := false
 
 
 func update_activity(
 		_active_shot_ids: PackedInt64Array,
-		_active_projectiles: int,
+		active_projectiles: int,
 		_fire_capacity: int
 ) -> void:
 	# Resident-ball activity no longer changes camera controls. The interaction
 	# toggle belongs to the Board Phase and remains stable while balls move.
-	pass
+	_resident_total = maxi(active_projectiles, 0)
+	_has_resident_breakdown = false
+	_run_status.update_resident_total(_resident_total)
+
+
+func update_resident_activity(moving: int, resting: int) -> void:
+	_moving_residents = maxi(moving, 0)
+	_resting_residents = maxi(resting, 0)
+	_resident_total = _moving_residents + _resting_residents
+	_has_resident_breakdown = true
+	_run_status.update_resident_activity(_moving_residents, _resting_residents)
+
+
+func update_clock(snapshot: Dictionary) -> void:
+	_run_started = bool(snapshot.get("started", false))
+	_clock_finished = bool(snapshot.get("finished", false))
+	_run_status.update_clock(snapshot)
+	_apply_finish_availability()
+
+
+func update_wind(
+		snapshot: WindSnapshot,
+		screen_direction: Vector2,
+		depth_cue: RunStatusCard.DepthCue = RunStatusCard.DepthCue.NONE,
+		next_screen_direction: Vector2 = Vector2.ZERO,
+		next_depth_cue: RunStatusCard.DepthCue = RunStatusCard.DepthCue.NONE
+) -> void:
+	_run_status.update_wind(
+		snapshot,
+		screen_direction,
+		depth_cue,
+		next_screen_direction,
+		next_depth_cue
+	)
 
 
 func _ready() -> void:
@@ -64,6 +105,13 @@ func configure(stage_data: StageData) -> void:
 	_stage_data = stage_data
 	_top.configure(stage_data)
 	_coverage.configure(stage_data.target_coverage)
+	_run_started = false
+	_clock_finished = false
+	_moving_residents = 0
+	_resting_residents = 0
+	_resident_total = 0
+	_has_resident_breakdown = false
+	_run_status.reset_for_stage(stage_data.maximum_shots, stage_data.resolved_duration_seconds())
 	_result.configure_has_next(not StageCatalog.next_stage_id(stage_data.stage_id).is_empty())
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
 	%BriefingObjective.text = tr(String(stage_data.objective_key))
@@ -87,7 +135,7 @@ func update_aim(yaw: float, elevation: float, power: float) -> void:
 
 func update_shots(remaining: int, _maximum: int) -> void:
 	_shots_remaining = remaining
-	_top.update_shots(remaining)
+	_run_status.update_shots(remaining)
 
 
 func update_coverage(value: float) -> void:
@@ -121,8 +169,14 @@ func show_state(state: StageController.State) -> void:
 	_interaction.visible = aiming_surface and not _replay_active
 	_interaction.set_mode_switch_available(aiming_surface and not _replay_active)
 	_apply_interaction_presentation(false)
+	_run_status.visible = aiming_surface and not _replay_active
+	_apply_finish_availability()
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
-	_result.visible = state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and not _replay_active
+	_result.visible = state in [
+		StageController.State.RESULT,
+		StageController.State.STAGE_CLEAR,
+		StageController.State.STAGE_FAILED,
+	] and not _replay_active
 	_pause.visible = state == StageController.State.PAUSED and not _replay_active
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
@@ -136,7 +190,11 @@ func show_state(state: StageController.State) -> void:
 			_first_session_hint_seen = true
 			_first_hint.visible = true
 			_hint_timer.start()
-	elif state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and not _replay_active:
+	elif state in [
+		StageController.State.RESULT,
+		StageController.State.STAGE_CLEAR,
+		StageController.State.STAGE_FAILED,
+	] and not _replay_active:
 		_result.focus_retry()
 	elif state == StageController.State.PAUSED and not _replay_active:
 		_pause.focus_resume.call_deferred()
@@ -166,12 +224,45 @@ func show_mechanism_activation(kind: MechanismData.Kind) -> void:
 	_mechanism.show_activation(kind)
 
 
+func show_coverage_result(
+		final_coverage: float,
+		star_count: int,
+		previous_best: float = 0.0,
+		elapsed_seconds: float = -1.0,
+		shots_used: int = -1,
+		finish_reason: StringName = &"manual"
+) -> void:
+	_result.show_coverage_result(
+		final_coverage,
+		star_count,
+		previous_best,
+		elapsed_seconds,
+		shots_used,
+		finish_reason
+	)
+
+
+func show_coverage_result_snapshot(result: Dictionary, star_count: int, previous_best: float = 0.0) -> void:
+	var ticks_per_second := maxi(int(result.get("ticks_per_second", Engine.physics_ticks_per_second)), 1)
+	var elapsed_seconds := float(result.get("elapsed_ticks", -ticks_per_second)) / float(ticks_per_second)
+	show_coverage_result(
+		float(result.get("coverage", 0.0)),
+		star_count,
+		previous_best,
+		elapsed_seconds,
+		int(result.get("shots_used", -1)),
+		StringName(result.get("finish_reason", &"manual"))
+	)
+
+
 func show_clear(final_coverage: float, shots_used: int, stars: int = 1, previous_best: float = 0.0) -> void:
-	_result.show_clear(final_coverage, _stage_data.target_coverage, shots_used, stars, previous_best)
+	# Compatibility wrapper while callers migrate to the coverage-only result.
+	show_coverage_result(final_coverage, stars, previous_best, -1.0, shots_used, &"manual")
 
 
-func show_failure(final_coverage: float, missing: float, previous_best: float = 0.0) -> void:
-	_result.show_failure(final_coverage, missing, previous_best)
+func show_failure(final_coverage: float, _missing: float, previous_best: float = 0.0) -> void:
+	# Legacy failure no longer has separate copy or score meaning.
+	show_coverage_result(final_coverage, 0, previous_best, -1.0, -1, &"timeout")
 
 
 func set_replay_active(active: bool) -> void:
@@ -188,6 +279,7 @@ func _connect_components() -> void:
 	_aim.power_step_requested.connect(func(direction: float) -> void: power_step_requested.emit(direction))
 	_top.settings_requested.connect(func() -> void: pause_requested.emit())
 	_actions.fire_requested.connect(func() -> void: fire_requested.emit())
+	_run_status.finish_requested.connect(func() -> void: finish_requested.emit())
 	_interaction.interaction_mode_requested.connect(
 		func(mode: int) -> void: interaction_mode_requested.emit(mode)
 	)
@@ -209,12 +301,18 @@ func _connect_components() -> void:
 func _on_settings_changed(_settings: Dictionary) -> void:
 	if _stage_data != null:
 		_top.configure(_stage_data)
-		_top.update_shots(_shots_remaining)
 		_top.update_mode(_current_state)
+		_run_status.refresh_locale()
+		_run_status.update_shots(_shots_remaining)
+		if _has_resident_breakdown:
+			_run_status.update_resident_activity(_moving_residents, _resting_residents)
+		else:
+			_run_status.update_resident_total(_resident_total)
 		%BriefingTitle.text = tr(String(_stage_data.display_name_key))
 		%BriefingObjective.text = tr(String(_stage_data.objective_key))
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)
 		_interaction.refresh_locale()
+		_result.refresh_locale()
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
 		if _current_state == StageController.State.BRIEFING and not _stage_data.mechanism_loadout.is_empty():
@@ -238,3 +336,12 @@ func _apply_interaction_presentation(update_focus: bool) -> void:
 		_actions.focus_fire.call_deferred()
 	else:
 		_interaction.grab_focus.call_deferred()
+
+
+func _apply_finish_availability() -> void:
+	_run_status.set_finish_available(
+		_run_started
+		and not _clock_finished
+		and _current_state == StageController.State.AIMING
+		and not _replay_active
+	)

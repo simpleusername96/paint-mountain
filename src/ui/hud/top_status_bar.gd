@@ -4,7 +4,6 @@ extends Control
 signal settings_requested
 
 @onready var stage_value: Label = %StageValue
-@onready var shots_value: Label = %ShotsValue
 @onready var mode_value: Label = %ModeValue
 
 
@@ -14,11 +13,6 @@ func _ready() -> void:
 
 func configure(stage: StageData) -> void:
 	stage_value.text = "%s %02d" % [tr("hud.stage"), stage.stage_number]
-	update_shots(stage.maximum_shots)
-
-
-func update_shots(remaining: int) -> void:
-	shots_value.text = "%s  %d" % [tr("hud.shots"), remaining]
 
 
 func update_mode(state: StageController.State) -> void:
@@ -28,7 +22,9 @@ func update_mode(state: StageController.State) -> void:
 		StageController.State.PROJECTILE_IN_FLIGHT: "hud.in_flight",
 		StageController.State.PAINT_SETTLING: "hud.paint_settling",
 		StageController.State.SHOT_RESULT: "hud.shot_result",
-		StageController.State.STAGE_CLEAR: "hud.stage_clear",
-		StageController.State.STAGE_FAILED: "hud.stage_failed",
+		StageController.State.FINISHING: "hud.finishing",
+		StageController.State.RESULT: "hud.result",
+		StageController.State.STAGE_CLEAR: "hud.result",
+		StageController.State.STAGE_FAILED: "hud.result",
 	}.get(state, "hud.aiming"))
 	mode_value.text = tr(key)
