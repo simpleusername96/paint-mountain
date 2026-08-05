@@ -1,0 +1,111 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_contract.gd" id="1_3s471"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_route_profile.gd" id="2_2igqt"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_profile.gd" id="3_c0sx6"]
+[ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="4_f6hcf"]
+[ext_resource type="Script" path="res://src/stage/stage_data.gd" id="5_8hais"]
+[ext_resource type="Resource" path="res://resources/wind/standard_wind.tres" id="6_wf5i3"]
+
+[sub_resource type="Resource" id="Resource_rq7tr"]
+script = ExtResource("1_3s471")
+cell_count = Vector2i(82, 56)
+local_bounds = Rect2(-103, -69, 206, 138)
+maximum_top_triangle_count = 9184
+route_station_z = PackedFloat32Array(-53, -39.75, -26.5, -13.25, 0, 13.25, 26.5, 39.75, 53)
+
+[sub_resource type="Resource" id="Resource_whfej"]
+script = ExtResource("2_2igqt")
+role = 1
+endpoint_x = -37.08
+width = 27.5
+grade_signs = PackedInt32Array(-1, -1, -1, 1, 1, 1, -1, -1)
+drop_range = Vector2(6.172414, 7.8965516)
+rise_range = Vector2(3.1724138, 4.8965516)
+lateral_bend_range = Vector2(-4.6551723, 4.6551723)
+mechanism_kinds = PackedInt32Array(0, 2)
+mechanism_pad_ts = PackedFloat32Array(0.55, 0.9)
+mechanism_pad_radii = PackedFloat32Array(10, 1.5)
+
+[sub_resource type="Resource" id="Resource_tl127"]
+script = ExtResource("2_2igqt")
+role = 2
+endpoint_x = 37.08
+width = 23.5
+grade_signs = PackedInt32Array(-1, -1, -1, 1, 1, 1, -1, -1)
+drop_range = Vector2(6.172414, 7.8965516)
+rise_range = Vector2(3.1724138, 4.8965516)
+lateral_bend_range = Vector2(-4.6551723, 4.6551723)
+mechanism_kinds = PackedInt32Array(0, 2)
+mechanism_pad_ts = PackedFloat32Array(0.55, 0.9)
+mechanism_pad_radii = PackedFloat32Array(10, 1.5)
+
+[sub_resource type="Resource" id="Resource_ni5wf"]
+script = ExtResource("3_c0sx6")
+profile_id = &"stage_14_v8"
+base_seed = 1361231513
+fallback_seed = 1361469083
+generation_contract = SubResource("Resource_rq7tr")
+nominal_peak = 96.0
+accepted_height_range = Vector2(92, 106)
+ridge_count = 5
+basin_count = 1
+pass_count = 2
+undulation_amplitude = 4.7
+route_width = 23.5
+routes = Array[ExtResource("2_2igqt")]([SubResource("Resource_whfej"), SubResource("Resource_tl127")])
+target_ratio_range = Vector2(0.18, 0.72)
+target_mean_slope_range = Vector2(12, 45)
+target_p95_slope_max = 60.0
+target_maximum_slope = 68.0
+route_core_p95_slope_max = 60.0
+corridor_lip_maximum_slope = 50.0
+
+[sub_resource type="Resource" id="Resource_lrhs1"]
+script = ExtResource("4_f6hcf")
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[sub_resource type="Resource" id="Resource_4i3gv"]
+script = ExtResource("4_f6hcf")
+kind = 2
+display_name_key = &"mechanism.uphill_rebound"
+description_key = &"mechanism.uphill_rebound.description"
+glyph_radius = 5.2
+maximum_charges = 0
+cooldown_seconds = 0.8
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[sub_resource type="Resource" id="Resource_6158w"]
+script = ExtResource("4_f6hcf")
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[sub_resource type="Resource" id="Resource_4qxuq"]
+script = ExtResource("4_f6hcf")
+kind = 2
+display_name_key = &"mechanism.uphill_rebound"
+description_key = &"mechanism.uphill_rebound.description"
+glyph_radius = 5.2
+maximum_charges = 0
+cooldown_seconds = 0.8
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[resource]
+script = ExtResource("5_8hais")
+stage_id = &"stage_14"
+display_name_key = &"stage.generated_14.name"
+stage_number = 14
+maximum_shots = 5
+star_thresholds = Vector3(10, 12.5, 15)
+objective_key = &"stage.generated_14.objective"
+generation_profile = SubResource("Resource_ni5wf")
+terrain_seed = 1361231513
+terrain_center = Vector3(0, -2, -103)
+terrain_size = Vector2(206, 138)
+cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.875, 5)
+mechanism_loadout = Array[ExtResource("4_f6hcf")]([SubResource("Resource_lrhs1"), SubResource("Resource_4i3gv"), SubResource("Resource_6158w"), SubResource("Resource_4qxuq")])
+briefing_camera_target = Vector3(0, 24, -103)
+aiming_camera_position = Vector3(28, 24, 58)
+aiming_camera_target = Vector3(0, 10, -45.04)
+wide_camera_target = Vector3(0, 22, -103)
+result_camera_target = Vector3(0, 22, -103)
+follow_camera_max_distance = 140.0

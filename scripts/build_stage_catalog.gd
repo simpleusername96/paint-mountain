@@ -186,7 +186,7 @@ static func _materialize_stage(source: StageData, stage_number: int) -> StageDat
 	)
 	if stage.generation_profile == null \
 			or not _materialize_route_mechanism_slots(
-				stage.generation_profile, stage.mechanism_loadout
+				stage.generation_profile, stage.mechanism_loadout, stage_number
 			) \
 			or not stage.generation_profile.is_valid():
 		return null
@@ -374,7 +374,8 @@ static func _append_canonical_mechanism(
 
 static func _materialize_route_mechanism_slots(
 		profile: StageGenerationProfile,
-		loadout: Array[MechanismData]
+		loadout: Array[MechanismData],
+		stage_number: int = -1
 ) -> bool:
 	if profile == null:
 		return false
@@ -402,7 +403,7 @@ static func _materialize_route_mechanism_slots(
 			var kind := mechanism.canonical_kind()
 			kinds.append(int(kind))
 			pad_ts.append(float(source_slot.get("t", -1.0)))
-			pad_radii.append(_mechanism_pad_radius(kind))
+			pad_radii.append(_mechanism_pad_radius(kind, stage_number))
 			loadout_index += 1
 		route.mechanism_kind = -1
 		route.mechanism_pad_t = -1.0
@@ -413,14 +414,15 @@ static func _materialize_route_mechanism_slots(
 	return loadout_index == loadout.size()
 
 
-static func _mechanism_pad_radius(kind: MechanismData.Kind) -> float:
+static func _mechanism_pad_radius(kind: MechanismData.Kind, stage_number: int = -1) -> float:
 	match int(kind):
 		int(MechanismData.Kind.SPLITTER):
 			return 10.0
 		int(MechanismData.Kind.UPHILL_REBOUND):
-			# This glyph conforms to a natural slope. Even a small shelf can erase
-			# the nearby ascent witness or create a sharp ring around the decal.
-			return 0.25
+			# Stage 08 uses an already-planar natural slope, where even a small
+			# shelf erases its ascent witness. Other authored routes need the
+			# narrow stabilizing core used by the Stage 03 tutorial.
+			return 0.25 if stage_number == 8 else 1.5
 	# Burst's full ring must stay on its broad shelf instead of crossing the
 	# sharp support blend at the edge of the old 8 m anchor.
 	return 10.0
