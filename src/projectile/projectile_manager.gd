@@ -12,7 +12,7 @@ signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
 signal shot_family_finished(shot_id: int)
 signal activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int)
 
-const MAXIMUM_ACTIVE_PROJECTILES := 8
+const MAXIMUM_ACTIVE_PROJECTILES := 21
 const COMMAND_CANONICALIZATION_PRIORITY := 900
 const DEFAULT_PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 
@@ -25,6 +25,7 @@ var _pending_intents: Array[Dictionary] = []
 var _next_spawn_ordinal: int = 0
 var _next_shot_id: int = 1
 var _next_sequence_by_ordinal: Dictionary = {}
+var _initial_flight_shot_ids: Dictionary = {}
 
 
 func _init() -> void:
@@ -80,6 +81,7 @@ func spawn_projectile(
 	projectile.radial_paint_mark_intent_requested.connect(_on_radial_paint_mark_intent)
 	projectile.surface_paint_sweep_intent_requested.connect(_on_surface_paint_sweep_intent)
 	projectile.transient_splash_requested.connect(_on_transient_splash_requested)
+	projectile.motion_state_changed.connect(_on_projectile_motion_state_changed)
 	projectile.stopped.connect(_on_projectile_stopped)
 	projectile.position = to_local(origin)
 	projectile.linear_velocity = velocity
@@ -87,6 +89,7 @@ func spawn_projectile(
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
 	if split_generation == 0:
+		_initial_flight_shot_ids[assigned_shot_id] = true
 		shot_family_started.emit(assigned_shot_id, projectile)
 	_emit_activity_changed()
 	return projectile
@@ -128,7 +131,17 @@ func active_shot_ids() -> PackedInt64Array:
 
 
 func active_root_count() -> int:
-	return active_shot_ids().size()
+	_prune_invalid()
+	return _initial_flight_shot_ids.size()
+
+
+func initial_flight_shot_ids() -> PackedInt64Array:
+	_prune_invalid()
+	var ids := PackedInt64Array()
+	for shot_id in _initial_flight_shot_ids:
+		ids.append(int(shot_id))
+	ids.sort()
+	return ids
 
 
 func root_capacity_available(maximum_roots: int = 2) -> bool:
@@ -154,6 +167,7 @@ func cleanup() -> void:
 	_pending_intents.clear()
 	_begin_shot_ordering()
 	_next_shot_id = 1
+	_initial_flight_shot_ids.clear()
 	for projectile in _active:
 		if is_instance_valid(projectile):
 			projectile.queue_free()
@@ -238,12 +252,26 @@ func _on_transient_splash_requested(projectile: PaintProjectile, contact: Projec
 	transient_splash_requested.emit(projectile, contact)
 
 
+func _on_projectile_motion_state_changed(
+		projectile: PaintProjectile,
+		_previous_state: int,
+		current_state: int
+) -> void:
+	if projectile == null or current_state != PaintProjectile.MotionState.RESTING_ON_TERRAIN:
+		return
+	_refresh_initial_flight_family(projectile.shot_id)
+	_emit_activity_changed()
+
+
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:
 	_active.erase(projectile)
 	projectile_stopped.emit(projectile, reason)
 	var shot_id := projectile.shot_id
-	if shot_id > 0 and not _has_active_shot_id(shot_id):
-		shot_family_finished.emit(shot_id)
+	# Splitter consumes its root before it adds children in the same call stack.
+	# Defer the family check so that transient zero-member state cannot free a
+	# Fire slot while the first-flight descendants are being created.
+	if shot_id > 0:
+		_refresh_initial_flight_family.call_deferred(shot_id)
 	_emit_activity_changed()
 	if _active.is_empty() and not _settlement_check_queued:
 		_settlement_check_queued = true
@@ -264,6 +292,8 @@ func _prune_invalid() -> void:
 	for index in range(_active.size() - 1, -1, -1):
 		if not is_instance_valid(_active[index]):
 			_active.remove_at(index)
+	for shot_id in _initial_flight_shot_ids.keys():
+		_refresh_initial_flight_family_without_prune(int(shot_id))
 
 
 func _has_active_shot_id(shot_id: int) -> bool:
@@ -271,6 +301,22 @@ func _has_active_shot_id(shot_id: int) -> bool:
 		if is_instance_valid(projectile) and projectile.shot_id == shot_id:
 			return true
 	return false
+
+
+func _refresh_initial_flight_family(shot_id: int) -> void:
+	_prune_invalid()
+	_refresh_initial_flight_family_without_prune(shot_id)
+
+
+func _refresh_initial_flight_family_without_prune(shot_id: int) -> void:
+	if shot_id <= 0 or not _initial_flight_shot_ids.has(shot_id):
+		return
+	for projectile in _active:
+		if is_instance_valid(projectile) and projectile.shot_id == shot_id \
+				and not projectile.is_resting_on_terrain():
+			return
+	_initial_flight_shot_ids.erase(shot_id)
+	shot_family_finished.emit(shot_id)
 
 
 func _emit_activity_changed() -> void:

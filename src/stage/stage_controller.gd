@@ -527,8 +527,7 @@ func _begin_finish(
 	# ProjectileManager owns canonical ordering for contact-generated paint. Its
 	# result barrier hands every already accepted intent to PaintSystem before
 	# resident cleanup; later contacts cannot enter once FINISHING is active.
-	if _projectile_manager.has_method(&"finalize_pending_paint_intents"):
-		_projectile_manager.call(&"finalize_pending_paint_intents")
+	_projectile_manager.finalize_pending_paint_intents()
 	_paint_system.force_flush_paint_texture()
 	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
 	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
