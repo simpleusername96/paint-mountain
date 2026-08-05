@@ -10,6 +10,7 @@ var _cannon: CannonController
 var _paint_system: PaintSystem
 var _projectile_manager: ProjectileManager
 var _camera_director: CameraDirector
+var _wind_controller: WindController
 var _mechanisms: Array[GimmickBase] = []
 var _previous_shot: Dictionary = {}
 
@@ -19,10 +20,11 @@ func configure(
 		stage_controller: StageController,
 		cannon: CannonController,
 		paint_system: PaintSystem,
-	projectile_manager: ProjectileManager,
-	camera_director: CameraDirector,
-	mechanisms: Array[GimmickBase],
-	generated_layout: GeneratedStageLayout = null
+		projectile_manager: ProjectileManager,
+		camera_director: CameraDirector,
+		mechanisms: Array[GimmickBase],
+		generated_layout: GeneratedStageLayout = null,
+		wind_controller: WindController = null
 ) -> void:
 	_stage_data = stage_data
 	_generated_layout = generated_layout
@@ -31,12 +33,25 @@ func configure(
 	_paint_system = paint_system
 	_projectile_manager = projectile_manager
 	_camera_director = camera_director
+	_wind_controller = wind_controller
+	if _wind_controller == null and get_parent() != null:
+		_wind_controller = get_parent().get_node_or_null("WindController") as WindController
 	_mechanisms = mechanisms
-	_stage_controller.shot_fired.connect(_on_shot_fired)
-	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
-	_stage_controller.stage_cleared.connect(func(coverage: float, _shots: int) -> void: gameplay_event.emit(&"stage_cleared", {"coverage": coverage}))
-	_stage_controller.stage_failed.connect(func(coverage: float, missing: float) -> void: gameplay_event.emit(&"stage_failed", {"coverage": coverage, "missing": missing}))
-	_projectile_manager.projectile_contact_reported.connect(func(projectile: PaintProjectile, contact: ProjectileContact) -> void: gameplay_event.emit(&"projectile_impacted", {
+	if not _stage_controller.shot_fired.is_connected(_on_shot_fired):
+		_stage_controller.shot_fired.connect(_on_shot_fired)
+	if not _stage_controller.shot_observation_sealed.is_connected(_on_shot_observation_sealed):
+		_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
+	if not _stage_controller.stage_finished.is_connected(_on_stage_finished):
+		_stage_controller.stage_finished.connect(_on_stage_finished)
+	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
+		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
+
+
+func _on_projectile_contact_reported(
+		projectile: PaintProjectile,
+		contact: ProjectileContact
+) -> void:
+	gameplay_event.emit(&"projectile_impacted", {
 		"spawn_ordinal": projectile.spawn_ordinal,
 		"position": contact.world_position,
 		"normal": contact.normal,
@@ -49,7 +64,7 @@ func configure(
 		"collider_shape_index": contact.collider_shape_index,
 		"physics_tick": contact.physics_tick,
 		"source_event_index": contact.source_event_index,
-	}))
+	})
 
 
 func get_observation() -> Dictionary:
@@ -61,8 +76,10 @@ func get_observation() -> Dictionary:
 	var aim_ready := _stage_controller.current_state == StageController.State.AIMING \
 			and _cannon.input_enabled
 	var fire_readiness := _stage_controller.fire_readiness_snapshot(StageController.ActionOrigin.AGENT)
+	var projectile_activity := _projectile_activity_snapshot(activity)
+	var terminal_pending := bool(activity.get("terminal_pending", false))
 	return {
-		"schema_version": ShotObservation.SCHEMA_VERSION,
+		"schema_version": AttemptObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
 		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else _stage_data.stage_number * 1000 + _stage_data.stage_version,
 		"accepted_seed": _generated_layout.accepted_seed if _generated_layout != null else 0,
@@ -88,9 +105,18 @@ func get_observation() -> Dictionary:
 		),
 		"terrain_height_grid": _height_grid(13, 9),
 		"mechanisms": mechanism_states,
+		"clock": _stage_controller.clock_snapshot(),
+		"result": _stage_controller.result_snapshot(),
+		"wind": _wind_snapshot(),
+		"projectiles": projectile_activity,
+		"interaction": {
+			"mode": _camera_director.interaction_mode_name(),
+			"mode_id": int(_camera_director.current_interaction_mode),
+			"aim_locked": _camera_director.aim_is_locked(),
+		},
 		"previous_shot": _previous_shot.duplicate(true),
 		"sealed_shots": _sealed_shot_dictionaries(),
-		"active_projectiles": _projectile_manager.active_count(),
+		"active_projectiles": int(projectile_activity.resident_count),
 		"active_shot_families": active_shot_ids.size(),
 		"active_shot_ids": active_shot_ids,
 		"aim_ready": aim_ready,
@@ -109,7 +135,7 @@ func get_observation() -> Dictionary:
 			"reason": fire_readiness.get("reason", ""),
 		},
 		"fire_capacity": int(activity.get("fire_capacity", 2)),
-		"terminal_pending": bool(activity.get("terminal_pending", false)),
+		"terminal_pending": terminal_pending,
 		# Compatibility alias retained for one schema cycle; it now describes aim
 		# readiness rather than implying that Fire has available capacity.
 		"ready_for_action": aim_ready,
@@ -133,17 +159,28 @@ func fire() -> bool:
 	return _stage_controller.request_fire(StageController.ActionOrigin.AGENT)
 
 
+func finish() -> bool:
+	return _stage_controller.finish_stage(StageController.ActionOrigin.AGENT)
+
+
 func restart() -> void:
 	_stage_controller.restart(false, StageController.ActionOrigin.AGENT)
 
 
-func change_camera(mode: CameraDirector.Mode) -> bool:
+func change_interaction_mode(mode: CameraDirector.InteractionMode) -> bool:
 	if _stage_controller.action_origin_is_locked():
 		return false
-	if _stage_controller.current_state not in [StageController.State.BRIEFING, StageController.State.AIMING]:
+	if mode not in [
+		CameraDirector.InteractionMode.AIM_LOCKED,
+		CameraDirector.InteractionMode.MAP_INSPECTION,
+	]:
 		return false
-	_camera_director.set_mode(mode)
-	return true
+	if _stage_controller.current_state not in [
+		StageController.State.BRIEFING,
+		StageController.State.AIMING,
+	]:
+		return false
+	return _camera_director.set_interaction_mode(mode)
 
 
 func start_next_stage() -> bool:
@@ -169,6 +206,72 @@ func _on_shot_fired(order: int, yaw: float, elevation: float, power: float) -> v
 func _on_shot_observation_sealed(observation: ShotObservation) -> void:
 	_previous_shot = observation.to_dictionary()
 	gameplay_event.emit(&"shot_settled", _previous_shot.duplicate(true))
+
+
+func _on_stage_finished(result: Dictionary) -> void:
+	gameplay_event.emit(&"stage_finished", result.duplicate(true))
+
+
+func _wind_snapshot() -> Dictionary:
+	if _wind_controller == null:
+		return {
+			"schedule_identity": "",
+			"current_direction": Vector3.ZERO,
+			"current_strength": 0.0,
+			"next_direction": Vector3.ZERO,
+			"next_strength": 0.0,
+			"seconds_until_change": 0.0,
+		}
+	var snapshot := _wind_controller.current_snapshot()
+	if snapshot == null:
+		return {
+			"schedule_identity": String(_wind_controller.schedule_identity()),
+			"current_direction": Vector3.ZERO,
+			"current_strength": 0.0,
+			"next_direction": Vector3.ZERO,
+			"next_strength": 0.0,
+			"seconds_until_change": 0.0,
+		}
+	return {
+		"schedule_identity": String(snapshot.schedule_identity),
+		"physics_tick": snapshot.physics_tick,
+		"current_direction": snapshot.push_direction(),
+		"current_strength": snapshot.normalized_strength,
+		"next_direction": (
+			snapshot.next_acceleration.normalized()
+			if not snapshot.next_acceleration.is_zero_approx()
+			else Vector3.ZERO
+		),
+		"next_strength": snapshot.next_normalized_strength,
+		"seconds_until_change": snapshot.seconds_until_change,
+		"transition_progress": snapshot.transition_progress,
+		"strong": snapshot.strong,
+		"strong_episode_id": snapshot.strong_episode_id,
+	}
+
+
+func _projectile_activity_snapshot(activity: Dictionary) -> Dictionary:
+	var resident := _projectile_manager.active_projectiles()
+	var airborne_count := 0
+	var moving_on_terrain_count := 0
+	var resting_count := 0
+	for projectile in resident:
+		match projectile.motion_state:
+			PaintProjectile.MotionState.MOVING_AIRBORNE:
+				airborne_count += 1
+			PaintProjectile.MotionState.MOVING_ON_TERRAIN:
+				moving_on_terrain_count += 1
+			PaintProjectile.MotionState.RESTING_ON_TERRAIN:
+				resting_count += 1
+	return {
+		"resident_count": resident.size(),
+		"moving_count": airborne_count + moving_on_terrain_count,
+		"resting_count": resting_count,
+		"airborne_count": airborne_count,
+		"moving_on_terrain_count": moving_on_terrain_count,
+		"initial_flight_family_count": int(activity.get("active_root_count", 0)),
+		"initial_flight_capacity": int(activity.get("fire_capacity", 0)),
+	}
 
 
 func _height_grid(columns: int, rows: int) -> Array[PackedFloat32Array]:
