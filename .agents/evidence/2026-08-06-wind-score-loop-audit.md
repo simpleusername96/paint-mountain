@@ -1,11 +1,12 @@
 ---
 type: evidence
-status: active
+status: superseded
 created: 2026-08-06
 last_reviewed: 2026-08-06
 topic: current gameplay audit and revised wind-driven coverage loop
 scope: aiming, projectile paint, wind, stage scoring, terrain mechanisms, HUD, and missing UX
 source: the user's 2026-08-06 direction, current repository state, tests, and recent running-game captures
+superseded_by: ../execplans/2026-08-06-wind-driven-coverage-loop.md
 related:
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-06-ballistic-terrain-preparation.md
@@ -16,6 +17,10 @@ related:
 ---
 
 # Paint Mountain 현재 상태 분석 보고서
+
+> 이 문서는 구현 전 기준선과 판단 근거를 보존한다. 현재 구현 상태와 검증 결과는
+> [wind-driven coverage loop 실행 계획](../execplans/2026-08-06-wind-driven-coverage-loop.md)과
+> [프로젝트 구현 기록](../Documentation.md)을 따른다.
 
 ## Purpose
 

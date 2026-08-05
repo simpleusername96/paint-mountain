@@ -273,9 +273,10 @@ exactly three mechanism types.
 
 - The complete observable checklist is `test-checklist.md`.
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
-- The final evidence includes seven separate full-resolution, debug-free screenshots with the exact required names.
+- The wind-loop handoff uses the eight inspected exported-build captures listed
+  in `test-checklist.md`; older screenshot sets remain historical evidence.
 
-## Historical Evidence and Active Reset
+## Historical Evidence and Current Implementation
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the current
@@ -288,11 +289,20 @@ generation-range and responsive-preparation change; this specification and the
 source brief remain requirement authorities, while `.agents/Documentation.md`
 remains the implemented-truth boundary.
 
+The wind-driven coverage loop is implemented across the active version-8
+thirty-stage catalog. Its current manifest is
+`1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
+Stage 04 places Uphill Rebound on its natural route at `t = 0.30`; it does not
+add an artificial support shelf.
+
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.
 Its exact HUD placement, literal geometry, seed/silhouette, mechanism positions,
 and painted still states are not runtime or acceptance authority.
 
-The prior Windows release and screenshots remain historical evidence only.
-They must be replaced with fresh production-build evidence after all automated
-gates pass and after the user explicitly approves a desktop-occupation window.
+The prior Windows release and screenshots remain historical evidence only. The
+current production export passed. Eight representative exported-build
+background captures are stored under `.agents/evidence/wind-driven-coverage-loop/`.
+Per user direction, thirty-stage structural materialization plus representative
+live/glyph checks replaces a full 30-stage live-generation sweep and an
+exhaustive micro-tolerance matrix for this closeout.

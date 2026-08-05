@@ -13,6 +13,7 @@ related:
   - execplans/2026-08-05-runtime-grounded-interface.md
   - execplans/2026-08-05-gameplay-contract-recovery.md
   - execplans/2026-08-06-ballistic-terrain-preparation.md
+  - execplans/2026-08-06-wind-driven-coverage-loop.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -68,90 +69,54 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-06 recovery checkpoint 14)
+## Current Implemented Truth (2026-08-06 wind-driven coverage loop)
 
-### Completed baseline versus pending gameplay loop
+### Completed wind-driven coverage loop
 
-- Commit `19f2d45` completed the separate range-aware generation and responsive
-  layout-preparation baseline. It is the required predecessor for later
-  gameplay work, not an implementation of the wind-driven coverage loop.
-- The following user-approved loop changes remain **pending**: screen-correct
-  yaw as seen from the aiming camera; larger ball/narrower paint midpoint;
-  stage-long valid-top projectile persistence and terrain-contact recovery;
-  seeded 30-second wind with direction UI and decorative debris; timed
-  coverage-only Finish/timeout results; terrain-conforming Burst, Splitter,
-  and Uphill Rebound glyphs; and the `AIM_LOCKED`/`MAP_INSPECTION` camera
-  interaction replacing the ambiguous Follow/Wide/Cannon controls.
-- Existing low-speed, sleeping, lifetime, and terrain-penetration removal
-  behavior is still current implementation, not accepted new-loop behavior.
-  Existing clear/failure, physical mechanism, and observation-control UI are
-  likewise historical baseline behavior until their replacement is implemented.
+The effective `docs/source-brief.md` remains the product requirement authority.
+The current implementation now realizes its 2026-08-06 wind-loop supersession;
+the earlier clear/failure, finite-lifetime projectile, physical-mechanism, and
+camera-preset behavior is historical only.
 
-- Terrain/paint foundation: the selected gameplay layout is a closed row-solid
-  3D top/shell mass with shared render/collision topology. PaintSystem remains
-  the sole mask/coverage owner. `projectile_contact_test.gd` now passes the
-  exact 0.90 m physical and 1.50/2.10/1.50 m paint scale assertions.
-- Stage catalog: `resources/stages/catalog.tres` is a version-7 serialized
-  pointer exposing canonical `stage_01` through `stage_30` IDs. The three old
-  names remain migration aliases only. The offline builder records accepted
-  seeds, per-stage profiles, dimensions, cells, mechanisms, and a content
-  manifest; the full-generation gate also checks adjacent normalized height
-  RMS, bounded scale deltas, unique checksums, summit identity, containment,
-  macro counts, mechanism pads, route slope bounds, and decoration counts for
-  all thirty persisted layouts. The current bundle manifest is
-  `8eed263477b3254c251d73c364d704bbcd952346a5b58cc791efa15fd6e2f28c`.
-  StageData now derives the rear-wall-aligned terrain center from each persisted
-  size; Stage 02/03 no longer inherit a shifted default center.
-- Reachability: runtime derives one legal first hit near the target centroid.
-  It now exposes a stable summit-region identity, a real predictor/rigid-body
-  summit witness path, and optional summit fields on
-  `DirectReachabilityCertificate`. Stage 01 summit-only passes with region `12`,
-  predictor checksum `2477889882`, rigid-body checksum `208192991`, and a
-  `0.565 m` height margin; Stage 30 passes with region `6`, predictor checksum
-  `117277691`, rigid-body checksum `1161348872`, and a `0.620 m` margin. The
-  ballistic vector and yaw nomination now use the same sign convention as the
-  visual muzzle; `projectile_contact_test.gd` guards that contract. Summit
-  certificates now store a dedicated summit aim tuple instead of requiring the
-  summit to alias a target witness. The stopped recovery session produced
-  predictor/rigid-body diagnostics for eight stages only after temporarily
-  narrowing the scoreable footprint to the bank-blend boundary. That narrowing
-  is not promoted: the configured target shoulder is scoreable again, and the
-  new ballistic gate rejects a whole candidate rather than changing its mask.
-  Those worker outputs remain historical diagnostics, not current full-target
-  certification. The complete thirty-stage target and Summit first-hit bundle
-  therefore remains open.
-- Repeat Fire: StageController keeps the board in AIMING while two root families
-  are active and after the final paint drain, rejects a third without side
-  effects, and publishes activity/readiness to the HUD. The old serial result
-  wait is bypassed. Activity/readiness snapshots now expose remaining root
-  capacity, and the cannon's partial aim-validity signal no longer overwrites
-  the authoritative StageController HUD state. Matching-key predictor changes
-  are republished through that same snapshot, so pending Fire cannot remain
-  visually stale after the new prediction arrives. `rapid_fire_contract_test.gd`
-  now fires a changed second tuple through AimInputController, checks the real
-  HUD button and Korean pending reason, compares the agent observation, and
-  verifies both observations seal distinctly; `phase7_user_qa_contract_test.gd`
-  also passes with pending Fire rejected until the coalesced result is ready.
-  Replay and Debug now have focused acceptance runs, and Agent acceptance is
-  covered by the second changed-aim family in the rapid-fire contract. Space
-  remains the same AimInputController request path as the button.
-- Scale: the resource now uses the locked `0.90 m` physical radius and
-  `1.50/2.10/1.50 m` authoritative paint radii. Numeric/contact checks pass;
-  the controlled rendered-width capture remains a Phase 5 gate.
-- Interface: the Korean-first edge HUD remains in place, and the Fire control
-  now displays disabled readiness reasons such as `궤적 계산 중` and
-  `포탄 2개 진행 중` adjacent to the button. Hidden Compatibility captures for
-  Stage 04 cover progression aiming, summit contact, pending/ready next aim,
-  two active families, and live scale contact; the ready and two-family frames
-  now show the corrected prediction-to-HUD transition. Fresh progression frames
-  for Stage 04, 05, 10, 20, and 30 are also stored under
-  `.agents/evidence/gameplay-contract-recovery/` and show distinct 3D terrain
-  silhouettes. The same folder now contains fresh `1920×1080` baseline screens
-  (`01_main_menu.png` through `07_stage_failed.png`) and a real
-  `05_projectile_and_continuous_paint.png` ball/paint frame. The delivery runner
-  records active sweep intent before a settled body is removed, so this capture
-  no longer depends on a timing race. No foreground Godot window was opened;
-  all checks used the hidden/headless path.
+- Aim and camera: positive yaw moves the preview and real landing point toward
+  screen right. `AIM_LOCKED` owns aim/power/Fire input, while
+  `MAP_INSPECTION` owns terrain refocus, orbit, and zoom. Tab and the visible
+  toggle preserve the current aim and preview; Follow/Wide/Cannon and normal-play
+  speed/Pause strips are removed.
+- Projectile and paint: the production ball radius is `1.20 m`; continuous and
+  impact paint radii are `1.40 m` and `1.75 m`. Valid-top balls have no paint
+  payload and remain resident through rest and later motion until the result or
+  an explicit terminal reason. Surface recovery replaces ordinary
+  penetration-driven deletion, and every new valid-top traversal paints through
+  the sole authoritative `PaintSystem` mask.
+- Wind: one stage-seeded fixed-tick schedule changes every 30 seconds with a
+  three-second transition. Prediction, live physics, replay/agent snapshots, the
+  compact direction/strength/countdown UI, and restrained debris consume the
+  same wind truth. Strong episodes can wake eligible resting balls.
+- Results and persistence: the first root launch starts a 90/120/180-second
+  stage clock. Only Finish or timeout produces a result, and final unique target
+  coverage is the sole score. Save format 4 preserves previous best results;
+  replay format 8 and attempt observations record wind and ordered Finish truth.
+- Mechanisms: Burst, Splitter, and Uphill Rebound are flat terrain glyphs with
+  no projectile collision body. Burst paints then consumes, Splitter launches
+  three route-readable children, and Uphill Rebound uses stored local ascent.
+  Stage 04's reviewed uphill glyph uses the natural route at `t = 0.30` with no
+  artificial shelf.
+- Stage catalog: the active version-8 bundle structurally materializes all 30
+  persisted stages under manifest
+  `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
+  The catalog carries the common timed-result, wind, glyph, and 21-resident-ball
+  contracts; legacy version-7 bundles remain historical artifacts only.
+- Delivery: the final `scripts/verify.ps1` run passed with the explicit Godot
+  path, and the current Windows production export succeeded. Eight inspected
+  exported-build captures at 1280×720 and 1920×1080 are stored under
+  `.agents/evidence/wind-driven-coverage-loop/`; they cover aim return, map
+  inspection, wind HUD, contact scale, representative glyphs, and both manual
+  and timeout results.
+- Validation was intentionally bounded by user direction. Completion uses
+  structural materialization for all 30 stages plus representative live and
+  glyph checks. It does not claim a full live-generation sweep of all 30 stages
+  or an exhaustive micro-tolerance matrix.
 
 Historical sections below describe earlier builds and are retained for
 traceability only. They must not be used as current implementation evidence.

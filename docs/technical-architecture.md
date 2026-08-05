@@ -125,8 +125,8 @@ This architecture covers the single-process desktop game. It does not define a b
   rigid-body first-hit identities/margins, containment identities, and generated
   centroid-near default aim for one accepted layout. Runtime validates the
   certificate but never exposes witness tuples as player or agent aim assistance.
-- `StageMvpPermit` is legacy development evidence only and is removed from
-  version-7 runtime admission after every committed stage has a full certificate.
+- `StageMvpPermit` is legacy development evidence only and is absent from the
+  active version-8 runtime admission path.
 - Replay format 8 carries canonical stage/profile/layout/certificate versions,
   accepted seed, height/target/summit/reachability/containment checksums,
   generated default aim, physics FPS, wind schedule identity, ordered aim/Fire/
@@ -225,7 +225,7 @@ Human / Replay / GameplayAgentApi actions
 - The canonical power curve is linear `32..160 m/s` over integer power `0..100`.
   Direct/summit certification and the continuous containment envelope consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
-  reject or admit the version-7 board.
+  reject or admit the active version-8 board.
 - Record stage/wind seeds and player actions. Retry and replay consume the same
   fixed-tick schedule and must reproduce the same gameplay outcome.
 - Normal gameplay has no simulation-speed controls. Replay presentation may own
@@ -309,3 +309,15 @@ Human / Replay / GameplayAgentApi actions
   `DeliveryCaptureRunner`, including a real paused-game-menu state; normal
   launches do nothing with this node, and the debug overlay remains unavailable
   in release builds.
+- The active version-8 catalog structurally materializes all 30 stages under
+  manifest `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
+  Stage 04's Uphill Rebound uses its natural route at `t = 0.30` without an
+  artificial shelf.
+- The final `scripts/verify.ps1` run passed with the explicit Godot path, the
+  current Windows production export succeeded, and eight inspected
+  exported-build captures cover representative wind-loop states at 1280×720 and
+  1920×1080.
+- By user direction, final validation is bounded to 30-stage structural
+  materialization plus representative live and glyph checks. It does not claim
+  a full live-generation sweep of all 30 stages or an exhaustive
+  micro-tolerance matrix.

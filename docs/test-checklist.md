@@ -18,6 +18,7 @@ related:
   - ../.agents/execplans/2026-08-05-runtime-grounded-interface.md
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
+  - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
 ---
 
 # Test Checklist
@@ -26,45 +27,66 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 The completed preparation gate and older checked sections are historical evidence for
-earlier builds. They do not prove the pending wind-driven coverage loop below.
+earlier builds. The first gate below records the completed wind-driven loop and
+its bounded final evidence.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
 
-## Current wind-driven coverage loop gate (pending)
+## Completed wind-driven coverage loop gate (2026-08-06)
 
-These are behavior-level acceptance checks for the active successor plan. They
+These are behavior-level acceptance checks for the completed successor plan. They
 intentionally avoid treating small numerical tolerances or individual physics
 ticks as product requirements.
 
-- [ ] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
+- [x] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
   whole mountain. In `AIM_LOCKED`, drag and wheel adjust aim and power without
   moving the camera; rightward aim input moves both preview and actual landing
   point right on screen.
-- [ ] A ball that reaches playable mountain top remains present for the stage,
+- [x] A ball that reaches playable mountain top remains present for the stage,
   keeps its physical presence while naturally resting, paints again when it
   later moves, and does not disappear from ordinary terrain contact.
-- [ ] Ground contact on representative slopes and joins does not produce the
+- [x] Ground contact on representative slopes and joins does not produce the
   one-mark-then-disappear failure. A genuine invalid geometry condition is
   diagnosable without being confused with ordinary play.
-- [ ] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
+- [x] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
   projectile motion, HUD direction/strength/countdown, replay, and decorative
   debris agree; pausing does not advance the run.
-- [ ] Strong wind can restart an eligible resting ball. The player can see why
+- [x] Strong wind can restart an eligible resting ball. The player can see why
   it moves, and resting balls do not produce repeated stationary paint.
-- [ ] A run begins with the first shot and ends only through Finish or time
+- [x] A run begins with the first shot and ends only through Finish or time
   expiry. Its result uses final unique painted coverage, not automatic
   clear/failure or hidden time/wind bonuses.
-- [ ] Burst, Splitter, and Uphill Rebound are readable terrain-conforming
+- [x] Burst, Splitter, and Uphill Rebound are readable terrain-conforming
   glyphs with effects that match their markings: Burst consumes after painting,
   Splitter visibly divides toward its marked routes, and Uphill Rebound sends a
   ball uphill.
-- [ ] The active HUD leaves the mountain readable and offers no ambiguous
+- [x] The active HUD leaves the mountain readable and offers no ambiguous
   Follow/Wide/Cannon rail. Gear and Escape remain one pause/settings entry.
-- [ ] Production-style captures at common desktop sizes show the aiming,
-  persistence/recovery, wind, glyph, and timed-result states without obscuring
-  the terrain.
+- [x] Production-style captures at common desktop sizes show the aiming and map
+  modes, live ball/paint scale, wind HUD, representative glyphs, and timed-result
+  states without obscuring the terrain. Focused runtime contracts separately
+  cover persistence, recovery, and wind wake behavior that a still frame cannot
+  prove.
+
+Completion evidence:
+
+- The active version-8 catalog structurally materializes `stage_01` through
+  `stage_30` with manifest
+  `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
+  Representative glyph checks cover Burst, Splitter routes, and natural-terrain
+  Uphill Rebound placement; Stage 04 stores its uphill route at `t = 0.30`.
+- The final `scripts/verify.ps1` run passed with an explicit Godot executable,
+  and the current Windows production export succeeded.
+- Eight inspected exported-build captures under
+  `.agents/evidence/wind-driven-coverage-loop/` cover Aim Lock return, Map
+  Inspection, wind status, real ball/paint scale, representative glyphs, manual
+  Finish, and timeout at 1280×720 and 1920×1080.
+- Per user direction, this closeout does not include a full live-generation run
+  of all 30 stages or an exhaustive micro-tolerance matrix. Thirty-stage
+  structural materialization and representative live/glyph checks are the
+  accepted bounded substitute; no broader sweep is implied.
 
 ## Completed ballistic-terrain preparation gate (2026-08-06, historical baseline)
 
@@ -136,7 +158,12 @@ evidence and does not satisfy this gate.
   certificate-linked previews, or controlled rendered-width measurement; the
   active recovery gate remains open for those items.
 
-## Requirements and Acceptance Criteria
+## Historical vertical-slice baseline evidence
+
+The checked rows in this section describe the 2026-08-03 baseline. They remain
+traceability evidence, but the completed wind-loop gate above supersedes their
+clear/failure, finite-payload, physical-mechanism, eight-ball, observation-strip,
+and legacy screenshot statements.
 
 ### Bootstrap baseline
 
@@ -231,7 +258,7 @@ evidence and does not satisfy this gate.
 - [x] `07_stage_failed.png` is a separate 1920×1080 running-game image without debug overlay.
 - [x] Screenshots are not a collage, contact sheet, poster, or infographic.
 
-### Stage 1 core-loop MVP evidence (non-release, 2026-08-03)
+### Stage 1 core-loop MVP evidence (historical and incomplete, 2026-08-03)
 
 - [x] A persisted `StageMvpPermit` binds the exact Stage 1 layout identity,
   canonical default aim, and matching predictor/production-rigid-body target-top
@@ -332,7 +359,7 @@ Korean HUD, game menu, visual direction, and approved assets:
   rectangles are stage `(24,24,118,48)`, mode `(24,84,110,40)`, target
   `(490,24,300,48)`, shots `(1016,24,180,48)`, gear `(1208,24,48,48)`, left
   coverage `(24,228,104,324)`, aim/power `(144,592,300,104)`, and sole Fire
-  `(552,624,176,72)`, within the active plan's scaled tolerance.
+  `(552,624,176,72)`, within the then-active plan's scaled tolerance.
 - [ ] The left gauge fills bottom-to-top by `min(coverage/target, 1)` while its
   localized text shows absolute authoritative coverage and the cap shows target.
   Decorative gauge children do not intercept playfield pointer/wheel input.
