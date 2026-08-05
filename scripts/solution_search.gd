@@ -110,19 +110,23 @@ func _evaluate_shot(shot: Vector3) -> Dictionary:
 		return {}
 	if not _agent.fire():
 		return {}
-	var budget := 60 * 26
-	while _controller.current_state not in [
-		StageController.State.AIMING,
-		StageController.State.STAGE_CLEAR,
-		StageController.State.STAGE_FAILED,
-	] and budget > 0:
-		await physics_frame
-		budget -= 1
-	if budget <= 0:
-		push_error("Solution search shot did not settle: %s" % shot)
+	var fired_observation := _controller.current_shot_observation()
+	if fired_observation == null or fired_observation.shot_id <= 0:
+		push_error("Solution search could not identify its fired shot observation: %s" % shot)
 		quit(1)
 		return {}
-	var observation: Dictionary = _agent.get_observation().previous_shot
+	var fired_shot_id := fired_observation.shot_id
+	var budget := 60 * 26
+	var sealed_observation: ShotObservation
+	while sealed_observation == null and budget > 0:
+		await physics_frame
+		budget -= 1
+		sealed_observation = _sealed_observation_for_shot(fired_shot_id)
+	if budget <= 0:
+		push_error("Solution search shot did not finish its initial flight: %s" % shot)
+		quit(1)
+		return {}
+	var observation := sealed_observation.to_dictionary()
 	var paint_bytes := _paint.paint_bytes_read_only().duplicate()
 	var sparse := PackedInt32Array()
 	for index in range(paint_bytes.size()):
@@ -142,6 +146,13 @@ func _evaluate_shot(shot: Vector3) -> Dictionary:
 	if sparse.is_empty() and result.mechanisms.is_empty():
 		return {}
 	return result
+
+
+func _sealed_observation_for_shot(shot_id: int) -> ShotObservation:
+	for observation in _controller.sealed_shot_observations():
+		if observation.shot_id == shot_id:
+			return observation
+	return null
 
 
 func _beam_search(candidates: Array[Dictionary]) -> Dictionary:

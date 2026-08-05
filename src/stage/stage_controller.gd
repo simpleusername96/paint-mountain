@@ -70,7 +70,9 @@ var _shot_observation: ShotObservation
 var _sealed_shot_observation: ShotObservation
 var _shot_observations: Dictionary = {}
 var _sealed_shot_observations: Dictionary = {}
+var _shot_ids_pending_observation_seal: Dictionary = {}
 var _inactive_settlement_ticks: int = 0
+var _last_finished_family_physics_tick: int = -1
 var _last_applied_paint_command_tick: int = -1
 var _last_drained_paint_command_tick: int = -1
 var _last_paint_mask_checksum: int = 0
@@ -131,8 +133,8 @@ func configure(
 	if not _cannon.prediction_changed.is_connected(_on_prediction_changed):
 		_cannon.prediction_changed.connect(_on_prediction_changed)
 	_projectile_manager.stage_bounds = _generated_layout.containment.containment_bounds
-	if not _projectile_manager.all_projectiles_settled.is_connected(_on_all_projectiles_settled):
-		_projectile_manager.all_projectiles_settled.connect(_on_all_projectiles_settled)
+	if not _projectile_manager.shot_family_finished.is_connected(_on_shot_family_finished):
+		_projectile_manager.shot_family_finished.connect(_on_shot_family_finished)
 	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
 		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
 	if not _projectile_manager.projectile_stopped.is_connected(_on_projectile_stopped):
@@ -394,7 +396,9 @@ func restart(
 	_sealed_shot_observation = null
 	_shot_observations.clear()
 	_sealed_shot_observations.clear()
+	_shot_ids_pending_observation_seal.clear()
 	_inactive_settlement_ticks = 0
+	_last_finished_family_physics_tick = -1
 	_reset_run_clock()
 	_set_terminal_pending(false)
 	_last_applied_paint_command_tick = -1
@@ -582,37 +586,36 @@ static func result_state_for(
 	return State.AIMING
 
 
-func _on_all_projectiles_settled() -> void:
-	if current_state != State.AIMING \
-			or _projectile_manager.active_count() > 0 \
-			or _projectile_manager.pending_intent_count() > 0 \
-			or _shot_observations.is_empty():
+func _on_shot_family_finished(shot_id: int) -> void:
+	var observation := _observation_for_shot(shot_id)
+	if current_state != State.AIMING or observation == null or observation.is_sealed:
 		return
-	# Board phase remains AIMING after a family drains. The short observer
-	# debounce below only waits for the authoritative paint queue to publish; it
-	# never takes the cannon or next trajectory away from the player.
+	_shot_ids_pending_observation_seal[shot_id] = true
 	_inactive_settlement_ticks = 0
+	_last_finished_family_physics_tick = Engine.get_physics_frames()
 
 
 func _physics_process(_delta: float) -> void:
-	# Board Phase stays AIMING while shot families are active and after they
-	# settle. Seal observations only when the projectile and authoritative paint
-	# queues are both quiet for two physics ticks; this is not a serial result
-	# state and does not block the next aim or Fire action.
+	# Initial-flight families and resident paintballs have separate lifecycles.
+	# Once a family first rests or terminates, only its observation waits for the
+	# authoritative paint queues to stay drained for two complete physics ticks.
 	if current_state == State.AIMING:
-		var projectiles_inactive := _projectile_manager.active_count() == 0 \
-				and _projectile_manager.pending_intent_count() == 0
+		var paint_intents_inactive := _projectile_manager.pending_intent_count() == 0
 		var paint_inactive := _paint_system.pending_work_count() == 0
 		var drain_covers_last_command := _last_drained_paint_command_tick \
 				>= _last_applied_paint_command_tick
-		if projectiles_inactive and paint_inactive and drain_covers_last_command \
-				and _has_unsealed_observations():
+		var family_finish_tick_has_passed := Engine.get_physics_frames() \
+				> _last_finished_family_physics_tick
+		if not _shot_ids_pending_observation_seal.is_empty() \
+				and family_finish_tick_has_passed \
+				and paint_intents_inactive and paint_inactive \
+				and drain_covers_last_command:
 			_inactive_settlement_ticks += 1
 		else:
 			_inactive_settlement_ticks = 0
 		if _inactive_settlement_ticks >= 2:
 			_inactive_settlement_ticks = 0
-			_seal_shot(_decision_generation)
+			_seal_finished_shot_observations(_decision_generation)
 		if _run_started:
 			_elapsed_run_ticks = mini(_elapsed_run_ticks + 1, _duration_run_ticks)
 			stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
@@ -621,14 +624,27 @@ func _physics_process(_delta: float) -> void:
 	return
 
 
-func _seal_shot(generation: int) -> void:
+func _seal_finished_shot_observations(generation: int) -> void:
 	if generation != _decision_generation or current_state != State.AIMING:
 		return
-	if not _has_unsealed_observations():
+	if _shot_ids_pending_observation_seal.is_empty():
 		return
 	_paint_system.force_flush_paint_texture()
 	var coverage := _paint_system.coverage_percent()
-	_seal_open_observations_for_result(coverage)
+	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
+	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
+	var total_gain := 0.0
+	var sealed_any := false
+	var shot_ids := _shot_ids_pending_observation_seal.keys()
+	shot_ids.sort()
+	for shot_id in shot_ids:
+		_shot_ids_pending_observation_seal.erase(shot_id)
+		var observation := _observation_for_shot(int(shot_id))
+		if _seal_observation(observation, coverage):
+			total_gain += observation.coverage_gain
+			sealed_any = true
+	if sealed_any:
+		shot_result.emit(total_gain, coverage)
 
 
 func _seal_open_observations_for_result(coverage: float) -> void:
@@ -637,20 +653,26 @@ func _seal_open_observations_for_result(coverage: float) -> void:
 	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
 	var sealed_any := false
 	for observation in _ordered_observations():
-		if observation.is_sealed:
-			continue
-		observation.seal(
-			coverage,
-			_last_drained_paint_command_tick,
-			_last_paint_mask_checksum
-		)
-		_sealed_shot_observations[observation.shot_id] = observation
-		_sealed_shot_observation = observation
-		total_gain += observation.coverage_gain
-		shot_observation_sealed.emit(observation)
-		sealed_any = true
+		if _seal_observation(observation, coverage):
+			total_gain += observation.coverage_gain
+			sealed_any = true
+	_shot_ids_pending_observation_seal.clear()
 	if sealed_any:
 		shot_result.emit(total_gain, coverage)
+
+
+func _seal_observation(observation: ShotObservation, coverage: float) -> bool:
+	if observation == null or observation.is_sealed:
+		return false
+	observation.seal(
+		coverage,
+		_last_drained_paint_command_tick,
+		_last_paint_mask_checksum
+	)
+	_sealed_shot_observations[observation.shot_id] = observation
+	_sealed_shot_observation = observation
+	shot_observation_sealed.emit(observation)
+	return true
 
 
 func _on_projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact) -> void:
@@ -856,11 +878,3 @@ func _ordered_observations() -> Array[ShotObservation]:
 		if observation != null:
 			result.append(observation)
 	return result
-
-
-func _has_unsealed_observations() -> bool:
-	for observation_variant in _shot_observations.values():
-		var observation := observation_variant as ShotObservation
-		if observation != null and not observation.is_sealed:
-			return true
-	return false

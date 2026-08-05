@@ -40,7 +40,9 @@ func _run() -> void:
 		"last_drained_tick": -1,
 		"last_drain_checksum": 0,
 		"last_drain_event_tick": -1,
-		"all_settled_tick": -1,
+		"family_finished_tick": -1,
+		"family_finished_shot_id": 0,
+		"resident_count_at_family_finish": -1,
 		"sealed": [],
 		"sealed_tick": -1,
 	}
@@ -70,7 +72,11 @@ func _run() -> void:
 		source.last_drain_checksum = checksum
 		source.last_drain_event_tick = Engine.get_physics_frames()
 	)
-	manager.all_projectiles_settled.connect(func() -> void: source.all_settled_tick = Engine.get_physics_frames())
+	manager.shot_family_finished.connect(func(shot_id: int) -> void:
+		source.family_finished_tick = Engine.get_physics_frames()
+		source.family_finished_shot_id = shot_id
+		source.resident_count_at_family_finish = manager.active_count()
+	)
 	controller.shot_observation_sealed.connect(func(observation: ShotObservation) -> void:
 		source.sealed.append(observation)
 		source.sealed_tick = Engine.get_physics_frames()
@@ -79,6 +85,8 @@ func _run() -> void:
 	# Use the generated, already-admitted default aim so this contract test does
 	# not bypass the asynchronous trajectory refresh required by live input.
 	_assert_true(controller.request_fire(), "shot fixture must fire")
+	var fired_observation := controller.current_shot_observation()
+	var fired_shot_id := fired_observation.shot_id if fired_observation != null else 0
 	_assert_true(
 		manager.process_physics_priority == 900 \
 				and paint.process_physics_priority == 1000 \
@@ -87,16 +95,42 @@ func _run() -> void:
 	)
 	Engine.time_scale = 3.0
 	var budget := 60 * 24
-	while controller.current_state not in [StageController.State.AIMING, StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and budget > 0:
+	var forced_resident_rest := false
+	while source.sealed.is_empty() and budget > 0:
 		await physics_frame
 		budget -= 1
+		if not forced_resident_rest:
+			for projectile in manager.active_projectiles():
+				if projectile.shot_id != fired_shot_id \
+						or not projectile.has_reached_playable_top():
+					continue
+				projectile.linear_velocity = Vector3.ZERO
+				projectile.angular_velocity = Vector3.ZERO
+				projectile.sleeping = true
+				forced_resident_rest = true
+				break
 	Engine.time_scale = 1.0
-	_assert_true(budget > 0, "shot fixture must settle within its bounded lifetime")
+	_assert_true(budget > 0, "shot fixture must finish its initial flight within the test budget")
+	_assert_true(
+		int(source.family_finished_shot_id) == fired_shot_id \
+				and int(source.family_finished_tick) >= 0,
+		"the matching initial-flight family must finish before observation sealing"
+	)
+	_assert_true(
+		int(source.resident_count_at_family_finish) > 0 and manager.active_count() > 0,
+		"family-finished sealing must not delete or freeze the resident paintball"
+	)
+	_assert_true(
+		manager.active_shot_ids().has(fired_shot_id) \
+				and not manager.initial_flight_shot_ids().has(fired_shot_id),
+		"the sealed family must remain resident without reclaiming an initial-flight slot"
+	)
 	_assert_true(source.sealed.size() == 1, "exactly one sealed observation must be emitted")
 	if source.sealed.size() == 1:
 		var observation: ShotObservation = source.sealed[0]
 		_assert_true(observation.is_sealed, "consumer must receive only a sealed observation")
 		_assert_true(observation.schema_version == 5, "sealed observation must use schema 5")
+		_assert_true(observation.shot_id == fired_shot_id, "the matching finished family must own the sealed observation")
 		_assert_true(observation.shot_number == 1, "observation must retain shot order")
 		_assert_true(observation.first_contact == source.first_contact, "first contact must come from the manager signal")
 		_assert_true(observation.contacts.size() == source.contacts.size(), "every ordered manager contact must be retained")
@@ -118,7 +152,7 @@ func _run() -> void:
 		_assert_true(observation.paint_command_rejection_count == 0 and observation.paint_command_rejections.is_empty(), "a valid shot must seal with no rejected authoritative command")
 		_assert_true(observation.final_drain_tick == source.last_drained_tick and observation.final_drain_tick >= source.last_applied_tick, "sealed drain must cover the final applied command")
 		_assert_true(observation.final_paint_mask_checksum == source.last_drain_checksum and observation.final_paint_mask_checksum == paint.paint_mask_checksum(), "sealed checksum must match the authoritative drained mask")
-		_assert_true(source.sealed_tick - source.all_settled_tick >= 2, "sealing must wait two inactive physics ticks")
+		_assert_true(source.sealed_tick - source.family_finished_tick >= 2, "sealing must wait two quiet physics ticks after the initial-flight family finishes")
 		_assert_true(source.sealed_tick >= source.last_drain_event_tick, "sealing must not precede the final paint drain")
 		_assert_true(controller.last_sealed_shot_observation() == observation, "StageController must expose the same sealed object")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
@@ -127,7 +161,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shot observation checks passed: ordered contacts, settlements, drain facts, checksum, and coverage were sealed once.")
+		print("Shot observation checks passed: a finished initial-flight family sealed once while its terrain resident remained active.")
 	quit(1 if _failed else 0)
 
 
