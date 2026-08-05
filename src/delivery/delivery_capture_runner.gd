@@ -11,8 +11,7 @@ const READY_FIRE_MAX_MILLISECONDS := 8.0
 const DRAIN_P95_MAX_MILLISECONDS := 4.0
 const DRAIN_MAX_MILLISECONDS := 8.0
 const DRAIN_FRAME_P95_DELTA_MAX_MILLISECONDS := 4.0
-const CAMERA_MOVEMENT_RATIO_MINIMUM := 0.95
-const RENDERED_POSE_EPSILON_SQUARED := 0.000001
+const TIMEOUT_CAPTURE_TIME_SCALE := 8.0
 
 var _app: AppRoot
 var _screen: String = ""
@@ -72,13 +71,16 @@ func _run_capture() -> void:
 		"stage_briefing":
 			await _start_stage(_capture_stage, false)
 		"aiming":
-			await _start_stage(_capture_stage, true)
-			# Capture the stable aiming surface after the real first-session hint has
-			# completed, rather than hiding or bypassing a reachable UI state.
-			await get_tree().create_timer(4.2).timeout
+			await _capture_wind_aiming(_capture_stage)
+		"wind_aiming":
+			await _capture_wind_aiming(_capture_stage)
 		"progression_aiming":
 			await _start_stage(_capture_stage, true)
 			await get_tree().create_timer(1.0).timeout
+		"map_inspection":
+			await _capture_map_inspection(_capture_stage)
+		"aim_return":
+			await _capture_aim_return(_capture_stage)
 		"summit_hit":
 			await _capture_summit_hit()
 		"next_aim_pending":
@@ -90,17 +92,19 @@ func _run_capture() -> void:
 		"scale_contact":
 			await _capture_scale_contact()
 		"aiming_burst":
-			await _start_stage(_capture_stage if _capture_stage != &"first_descent" else &"burst_basin", true)
-			await get_tree().create_timer(4.2).timeout
+			var burst_stage := _capture_stage
+			if StageCatalog.canonical_id(burst_stage) == &"stage_01":
+				burst_stage = &"stage_02"
+			await _capture_wind_aiming(burst_stage)
 		"aiming_split":
-			await _start_stage(_capture_stage if _capture_stage != &"first_descent" else &"split_ridge", true)
-			await get_tree().create_timer(4.2).timeout
-		"airborne_follow":
-			await _capture_airborne_follow()
+			var split_stage := _capture_stage
+			if StageCatalog.canonical_id(split_stage) == &"stage_01":
+				split_stage = &"stage_03"
+			await _capture_wind_aiming(split_stage)
 		"projectile_and_continuous_paint":
 			await _capture_continuous_paint()
 		"observation":
-			await _capture_airborne_follow()
+			await _capture_continuous_paint()
 		"pause":
 			var paused_gameplay := await _start_stage(&"stage_01", true)
 			(paused_gameplay.get_node("StageController") as StageController).toggle_pause()
@@ -111,16 +115,16 @@ func _run_capture() -> void:
 			_app._show_settings(&"gameplay")
 			await get_tree().process_frame
 		"ancillary_replay":
-			await _capture_airborne_follow()
-		"stage_clear":
-			await _capture_clear()
-		"stage_failed":
-			await _capture_failure()
+			await _capture_continuous_paint()
+		"manual_result":
+			await _capture_manual_result(_capture_stage)
+		"timeout_result":
+			await _capture_timeout_result(_capture_stage)
 		_:
 			push_error("Unknown delivery capture screen: %s" % _screen)
 			get_tree().quit(1)
 			return
-	if _screen not in ["airborne_follow", "projectile_and_continuous_paint", "summit_hit", "next_aim_pending", "next_aim_ready", "two_family", "scale_contact"]:
+	if _screen not in ["projectile_and_continuous_paint", "summit_hit", "next_aim_pending", "next_aim_ready", "two_family", "scale_contact"]:
 		Engine.time_scale = 1.0
 	if _failed:
 		get_tree().quit(1)
@@ -213,8 +217,11 @@ func _run_responsiveness_probe() -> void:
 	var paint := gameplay.get_node("PaintSystem") as PaintSystem
 	var projectiles := gameplay.get_node("ProjectileManager") as ProjectileManager
 	var camera_director := gameplay.get_node("CameraDirector") as CameraDirector
-	var camera := gameplay.get_node("Camera") as Camera3D
 	controller.begin_aiming()
+	if camera_director.current_interaction_mode != CameraDirector.InteractionMode.AIM_LOCKED:
+		_fail_capture("responsiveness probe did not enter the normal Aim Lock interaction")
+		get_tree().quit(1)
+		return
 	var observed := {
 		"drains": 0,
 		"commands": 0,
@@ -280,13 +287,6 @@ func _run_responsiveness_probe() -> void:
 	var flight_samples := PackedFloat64Array()
 	var drain_frame_samples := PackedFloat64Array()
 	var nondrain_frame_samples := PackedFloat64Array()
-	var previous_projectile_position := Vector3.ZERO
-	var previous_camera_position := Vector3.ZERO
-	var previous_pose_valid := false
-	var moving_projectile_frames := 0
-	var camera_changed_frames := 0
-	var unchanged_camera_run := 0
-	var maximum_unchanged_camera_run := 0
 	previous_usec = Time.get_ticks_usec()
 	var frame_budget := RESPONSIVENESS_FLIGHT_FRAME_BUDGET
 	while frame_budget > 0:
@@ -299,30 +299,6 @@ func _run_responsiveness_probe() -> void:
 			drain_frame_samples.append(frame_ms)
 		else:
 			nondrain_frame_samples.append(frame_ms)
-		var active_projectiles := projectiles.active_projectiles()
-		if camera_director.current_mode == CameraDirector.Mode.FOLLOW \
-				and not active_projectiles.is_empty():
-			var projectile_position := active_projectiles[0] \
-					.get_global_transform_interpolated().origin
-			var camera_position := camera.global_position
-			if previous_pose_valid and projectile_position.distance_squared_to(
-					previous_projectile_position
-			) > RENDERED_POSE_EPSILON_SQUARED:
-				moving_projectile_frames += 1
-				if camera_position.distance_squared_to(
-						previous_camera_position
-				) > RENDERED_POSE_EPSILON_SQUARED:
-					camera_changed_frames += 1
-					unchanged_camera_run = 0
-				else:
-					unchanged_camera_run += 1
-					maximum_unchanged_camera_run = maxi(
-						maximum_unchanged_camera_run,
-						unchanged_camera_run
-					)
-			previous_projectile_position = projectile_position
-			previous_camera_position = camera_position
-			previous_pose_valid = true
 		previous_usec = now_usec
 		frame_budget -= 1
 		if int(observed.sweeps) >= RESPONSIVENESS_REQUIRED_SWEEPS \
@@ -344,17 +320,11 @@ func _run_responsiveness_probe() -> void:
 	var drain_duration_stats := _frame_stats(drain_duration_samples)
 	var drain_frame_stats := _frame_stats(drain_frame_samples)
 	var nondrain_frame_stats := _frame_stats(nondrain_frame_samples)
-	var camera_movement_ratio := float(camera_changed_frames) \
-			/ float(maxi(moving_projectile_frames, 1))
 	var threshold_failures: Array[String] = []
 	if dirty_fire_ms > DIRTY_FIRE_MAX_MILLISECONDS:
 		threshold_failures.append("dirty Fire exceeded %.1f ms" % DIRTY_FIRE_MAX_MILLISECONDS)
 	if ready_fire_ms > READY_FIRE_MAX_MILLISECONDS:
 		threshold_failures.append("ready Fire exceeded %.1f ms" % READY_FIRE_MAX_MILLISECONDS)
-	if moving_projectile_frames <= 0 \
-			or camera_movement_ratio < CAMERA_MOVEMENT_RATIO_MINIMUM \
-			or maximum_unchanged_camera_run > 1:
-		threshold_failures.append("rendered FOLLOW camera did not track the moving projectile")
 	if float(drain_duration_stats.p95_ms) > DRAIN_P95_MAX_MILLISECONDS \
 			or float(drain_duration_stats.maximum_ms) > DRAIN_MAX_MILLISECONDS:
 		threshold_failures.append("nonempty paint drain exceeded its duration budget")
@@ -377,6 +347,7 @@ func _run_responsiveness_probe() -> void:
 			"ready_fire_ms": ready_fire_ms,
 		},
 		"flight": {
+			"interaction_mode": camera_director.interaction_mode_name(),
 			"frames": _frame_stats(flight_samples),
 			"paint_drain_frames": drain_frame_stats,
 			"non_drain_frames": nondrain_frame_stats,
@@ -391,10 +362,6 @@ func _run_responsiveness_probe() -> void:
 			"new_surface_samples": int(observed.new_surface_samples),
 			"surface_sample_cache_miss_delta": paint.surface_sample_cache_miss_count() \
 					- initial_cache_misses,
-			"moving_projectile_frames": moving_projectile_frames,
-			"camera_changed_frames": camera_changed_frames,
-			"camera_movement_ratio": camera_movement_ratio,
-			"maximum_unchanged_camera_run": maximum_unchanged_camera_run,
 		},
 		"acceptance": {
 			"passed": threshold_failures.is_empty(),
@@ -473,6 +440,126 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	return gameplay
 
 
+func _capture_wind_aiming(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	var wind := gameplay.get_node("WindController") as WindController
+	if director.current_interaction_mode != CameraDirector.InteractionMode.AIM_LOCKED:
+		_fail_capture("wind aiming capture did not enter Aim Lock")
+		return
+	if wind.current_snapshot() == null:
+		_fail_capture("wind aiming capture did not expose a current wind snapshot")
+		return
+	# Keep the first-session hint honest, then capture the stable current HUD.
+	await get_tree().create_timer(4.2).timeout
+
+
+func _capture_map_inspection(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var center := terrain.global_position
+	if not director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true):
+		_fail_capture("map inspection capture could not leave Aim Lock")
+		return
+	if not director.focus_inspection_target(
+		terrain.world_surface_point(Vector2(center.x, center.z))
+	):
+		_fail_capture("map inspection capture could not focus the terrain")
+		return
+	if not director.orbit_inspection(Vector2(42.0, -14.0)) \
+			or not director.zoom_inspection(-1.0):
+		_fail_capture("map inspection capture could not apply orbit and zoom")
+		return
+	await get_tree().create_timer(4.2).timeout
+	if director.current_interaction_mode != CameraDirector.InteractionMode.MAP_INSPECTION:
+		_fail_capture("map inspection capture did not retain Map Inspection")
+
+
+func _capture_aim_return(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	if not director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true):
+		_fail_capture("aim return capture could not enter Map Inspection")
+		return
+	if not director.orbit_inspection(Vector2(-36.0, 12.0)) \
+			or not director.zoom_inspection(-1.0):
+		_fail_capture("aim return capture could not exercise map navigation")
+		return
+	for _frame in range(12):
+		await get_tree().process_frame
+	if not director.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED, true):
+		_fail_capture("aim return capture could not restore Aim Lock")
+		return
+	await get_tree().create_timer(4.2).timeout
+	if director.current_interaction_mode != CameraDirector.InteractionMode.AIM_LOCKED:
+		_fail_capture("aim return capture did not retain Aim Lock")
+
+
+func _capture_manual_result(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if not await _fire_until_target_paint(gameplay):
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	if not controller.finish_stage(StageController.ActionOrigin.HUMAN):
+		_fail_capture("manual result capture could not accept Finish")
+		return
+	await get_tree().process_frame
+	_validate_result_capture(controller, StageController.FINISH_REASON_MANUAL)
+
+
+func _capture_timeout_result(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("timeout result capture could not fire the first root")
+		return
+	Engine.time_scale = TIMEOUT_CAPTURE_TIME_SCALE
+	var budget := controller.remaining_run_ticks() + Engine.physics_ticks_per_second * 5
+	while controller.current_state != StageController.State.RESULT and budget > 0:
+		await get_tree().physics_frame
+		budget -= 1
+	Engine.time_scale = 1.0
+	if budget <= 0:
+		_fail_capture("timeout result capture did not reach RESULT inside its stage clock")
+		return
+	await get_tree().process_frame
+	_validate_result_capture(controller, StageController.FINISH_REASON_TIMEOUT)
+
+
+func _fire_until_target_paint(gameplay: Node3D) -> bool:
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var paint := gameplay.get_node("PaintSystem") as PaintSystem
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("manual result capture could not fire the first root")
+		return false
+	Engine.time_scale = 3.0
+	var budget := Engine.physics_ticks_per_second * 12
+	while paint.painted_target_pixels() <= 0 \
+			and controller.current_state == StageController.State.AIMING \
+			and budget > 0:
+		await get_tree().physics_frame
+		budget -= 1
+	Engine.time_scale = 1.0
+	if paint.painted_target_pixels() <= 0:
+		_fail_capture("manual result capture did not paint the target before Finish")
+		return false
+	return true
+
+
+func _validate_result_capture(controller: StageController, expected_reason: StringName) -> void:
+	if controller.current_state != StageController.State.RESULT:
+		_fail_capture("result capture did not enter RESULT")
+		return
+	var result := controller.result_snapshot()
+	if StringName(result.get("finish_reason", &"")) != expected_reason:
+		_fail_capture("result capture stored the wrong finish reason")
+
+
 func _capture_summit_hit() -> void:
 	var gameplay := await _start_stage(_capture_stage, true)
 	await get_tree().process_frame
@@ -537,9 +624,8 @@ func _capture_two_family() -> void:
 	if not controller.request_fire():
 		_fail_capture("two-family capture could not fire the first root")
 		return
-	# Keep the first family visibly in flight while the coalesced next-aim
-	# prediction arrives; the production game itself remains at its configured
-	# fast-progress scale outside this evidence state.
+	# Capture-only slow motion keeps the first family visible while the
+	# coalesced next-aim prediction arrives.
 	Engine.time_scale = 0.25
 	controller.set_aim(cannon.yaw_degrees + 7.0, cannon.elevation_degrees, cannon.power_percent)
 	await _wait_for_cannon_prediction(cannon)
@@ -584,30 +670,6 @@ func _wait_for_cannon_prediction(cannon: CannonController) -> void:
 		budget -= 1
 
 
-func _capture_airborne_follow() -> void:
-	var gameplay := await _start_stage(&"first_descent", true)
-	var controller := gameplay.get_node("StageController") as StageController
-	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
-	var paint := gameplay.get_node("PaintSystem") as PaintSystem
-	var camera_director := gameplay.get_node("CameraDirector") as CameraDirector
-	var launch_origin := (gameplay.get_node("Cannon") as CannonController).get_launch_origin()
-	if not controller.request_fire():
-		_fail_capture("First Descent runtime default aim could not fire for airborne FOLLOW capture")
-		return
-	var budget := 90
-	while budget > 0:
-		await get_tree().process_frame
-		var active := manager.active_projectiles()
-		if not active.is_empty() \
-				and active[0].global_position.distance_to(launch_origin) >= 8.0 \
-				and paint.painted_target_pixels() == 0 \
-				and camera_director.current_mode == CameraDirector.Mode.FOLLOW:
-			Engine.time_scale = 0.05
-			return
-		budget -= 1
-	_fail_capture("airborne FOLLOW state did not become capture-ready")
-
-
 func _capture_continuous_paint() -> void:
 	var gameplay := await _start_stage(&"first_descent", true)
 	var controller: StageController = gameplay.get_node("StageController")
@@ -624,9 +686,8 @@ func _capture_continuous_paint() -> void:
 			if command is SurfacePaintSweep:
 				observed.sweep_count += 1
 	)
-	# The manager removes a settled body before the late-physics PaintSystem drain
-	# publishes that body's final sweep. Record activity at the canonical intent
-	# boundary instead of requiring active_count() to remain nonzero at drain time.
+	# Record activity at the canonical intent boundary so the evidence proves the
+	# persistent body and a real continuous-paint sweep coexisted.
 	manager.surface_paint_sweep_ready.connect(
 		func(_command: SurfacePaintSweep) -> void:
 			if manager.active_count() > 0:
@@ -657,171 +718,6 @@ func _capture_continuous_paint() -> void:
 		return
 	gameplay.get_node("CameraDirector").set_mode(CameraDirector.Mode.AIMING, true)
 	Engine.time_scale = 0.25
-
-
-func _capture_clear() -> void:
-	# Stage 01 is the committed deterministic clear fixture. Derive four legal
-	# target-spread aims from the same predictor used by Fire instead of replaying
-	# the pre-recovery hand-authored tuples that no longer match the catalog.
-	var gameplay := await _start_stage(&"first_descent", true)
-	var controller := gameplay.get_node("StageController") as StageController
-	var fraction_sets: Array[Array] = [
-		[0.08, 0.36, 0.64, 0.92],
-		[0.03, 0.28, 0.63, 0.97],
-		[0.10, 0.45, 0.70, 0.95],
-		[0.00, 0.33, 0.66, 1.00],
-	]
-	for attempt_index in range(fraction_sets.size()):
-		if attempt_index > 0:
-			controller.restart(false)
-			await get_tree().process_frame
-		var solution := _build_runtime_capture_solution(
-			gameplay,
-			fraction_sets[attempt_index]
-		)
-		print("Clear capture runtime solution %d: %s" % [attempt_index + 1, solution])
-		await _play_solution(gameplay, solution)
-		for _frame in range(4):
-			await get_tree().process_frame
-		if controller.current_state == StageController.State.STAGE_CLEAR:
-			break
-	print("Clear capture result: state=%s coverage=%.4f shots=%d" % [
-		controller.state_name(),
-		(gameplay.get_node("PaintSystem") as PaintSystem).coverage_percent(),
-		controller.shots_remaining,
-	])
-	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_CLEAR:
-		_fail_capture("clear solution did not reach STAGE_CLEAR")
-
-
-func _capture_failure() -> void:
-	var gameplay := await _start_stage(&"first_descent", true)
-	# Repeating the legal center witness leaves the overlap below the 4% target,
-	# so this is a real exhausted-shot failure rather than an invalid-input path.
-	var default_aim: AimTuple = gameplay.generated_layout().default_aim
-	var miss := Vector3(
-		default_aim.yaw_degrees,
-		default_aim.elevation_degrees,
-		float(default_aim.power_percent)
-	)
-	var repeated: Array[Vector3] = [miss, miss, miss, miss]
-	await _play_solution(gameplay, repeated)
-	for _frame in range(4):
-		await get_tree().process_frame
-	if gameplay.get_node("StageController").current_state != StageController.State.STAGE_FAILED:
-		_fail_capture("failure sequence did not reach STAGE_FAILED")
-
-
-func _build_runtime_capture_solution(
-		gameplay: Node3D,
-	sample_fractions: Array = [0.08, 0.36, 0.64, 0.92]
-) -> Array[Vector3]:
-	var result: Array[Vector3] = []
-	var layout := gameplay.generated_layout() as GeneratedStageLayout
-	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
-	var cannon := gameplay.get_node("Cannon") as CannonController
-	if layout == null or terrain == null or cannon == null or not layout.has_valid_target_mask():
-		return result
-	var target_pixels := PackedInt32Array()
-	for pixel_index in range(layout.target_mask.size()):
-		if layout.target_mask[pixel_index] >= 128:
-			target_pixels.append(pixel_index)
-	var mask_size := StageGenerationContract.REQUIRED_MASK_SIZE
-	if target_pixels.is_empty():
-		return result
-	for fraction in sample_fractions:
-		var target_pixel_index := target_pixels[clampi(
-			roundi(float(target_pixels.size() - 1) * float(fraction)),
-			0,
-			target_pixels.size() - 1
-		)]
-		var pixel := Vector2i(target_pixel_index % mask_size, target_pixel_index / mask_size)
-		var local_xz := DirectReachabilityValidator._pixel_center_local(
-			pixel,
-			layout.local_bounds,
-			mask_size
-		)
-		var sample := layout.top_topology.surface_sample_at_local(local_xz.x, local_xz.y, false)
-		if sample.is_empty():
-			continue
-		var world_point := terrain.to_global(sample.point as Vector3)
-		var world_normal := (
-			terrain.global_transform.basis.inverse().transposed()
-			* (sample.normal as Vector3)
-		).normalized()
-		var solved := DirectReachabilityValidator.solve_one_target(
-			gameplay.get_world_3d().direct_space_state,
-			cannon,
-			layout,
-			layout.containment.containment_bounds,
-			world_point,
-			world_normal,
-			sample
-		)
-		if not bool(solved.get("valid", false)):
-			continue
-		var aim := solved.get("aim") as AimTuple
-		if aim == null or not aim.is_valid():
-			continue
-		var tuple := Vector3(aim.yaw_degrees, aim.elevation_degrees, float(aim.power_percent))
-		var duplicate := false
-		for existing in result:
-			if existing.is_equal_approx(tuple):
-				duplicate = true
-				break
-		if not duplicate:
-			result.append(tuple)
-	if result.is_empty() and layout.default_aim != null:
-		result.append(Vector3(
-			layout.default_aim.yaw_degrees,
-			layout.default_aim.elevation_degrees,
-			float(layout.default_aim.power_percent)
-		))
-	return result
-
-
-func _play_solution(gameplay: Node3D, shots: Array[Vector3]) -> void:
-	var controller: StageController = gameplay.get_node("StageController")
-	var cannon: CannonController = gameplay.get_node("Cannon")
-	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
-	var paint: PaintSystem = gameplay.get_node("PaintSystem")
-	for shot in shots:
-		if controller.current_state in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] \
-				or paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
-			break
-		cannon.set_aim(shot.x, shot.y, shot.z)
-		var prediction_budget := 120
-		while not cannon.is_aim_valid() and prediction_budget > 0:
-			await get_tree().process_frame
-			prediction_budget -= 1
-		if prediction_budget <= 0 or not cannon.is_aim_valid():
-			_fail_capture("solution aim did not produce a valid prediction: %s" % shot)
-			break
-		if not controller.request_fire():
-			if paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
-				break
-			_fail_capture("solution shot was not admitted: %s" % shot)
-			break
-		Engine.time_scale = 3.0
-		var budget := 60 * 24
-		while (
-			manager.active_count() > 0
-			or manager.pending_intent_count() > 0
-			or paint.pending_work_count() > 0
-		) and controller.current_state not in [StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and budget > 0:
-			await get_tree().physics_frame
-			budget -= 1
-		if budget <= 0:
-			_fail_capture("solution shot did not settle inside the deterministic budget")
-			break
-		print("Capture solution shot %s -> coverage=%.4f state=%s" % [
-			shot,
-			paint.coverage_percent(),
-			controller.state_name(),
-		])
-		if paint.coverage_percent() + 0.0001 >= controller.stage_data.target_coverage:
-			break
-	Engine.time_scale = 1.0
 
 
 func _fail_capture(message: String) -> void:
