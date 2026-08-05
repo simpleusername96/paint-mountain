@@ -13,6 +13,12 @@ func _initialize() -> void:
 	_assert(catalog.get_stage(&"split_ridge").stage_id == &"stage_03", "legacy split_ridge must map to stage_03")
 	_assert(StageProgressionData.target_for(1) == 4.0 and StageProgressionData.target_for(30) == 15.0, "target endpoints must match the locked ladder")
 	_assert(StageProgressionData.shots_for(1) == 4 and StageProgressionData.shots_for(30) == 7, "shot endpoints must match the locked ladder")
+	_assert(
+		StageProgressionData.duration_seconds_for(1) == 90
+				and StageProgressionData.duration_seconds_for(11) == 120
+				and StageProgressionData.duration_seconds_for(21) == 180,
+		"stage duration tiers must be 90, 120, and 180 seconds"
+	)
 	_assert(StageProgressionData.terrain_size_for(1) == Vector2(180.0, 120.0), "stage 01 terrain endpoint must match")
 	_assert(StageProgressionData.terrain_size_for(30) == Vector2(240.0, 160.0), "stage 30 terrain endpoint must match")
 	_assert(StageProgressionData.cell_count_for(1) == Vector2i(72, 48), "stage 01 cell endpoint must match")
@@ -28,6 +34,10 @@ func _initialize() -> void:
 		var expected_number := index + 1
 		_assert(stage.stage_id == StringName("stage_%02d" % expected_number), "stage IDs must be numeric and ordered")
 		_assert(stage.stage_number == expected_number, "stage numbers must be contiguous")
+		_assert(
+			stage.resolved_duration_seconds() == float(StageProgressionData.duration_seconds_for(expected_number)),
+			"each serialized stage must resolve the duration for its progression tier"
+		)
 		_assert(stage.terrain_seed == StageProgressionData.requested_seed_for(expected_number), "accepted seed must be persisted from the locked candidate map")
 		_assert(stage.generation_profile.ridge_count == StageProgressionData.ridge_count_for(expected_number), "ridge count must consume the progression formula")
 		_assert(stage.generation_profile.basin_count == StageProgressionData.basin_count_for(expected_number), "basin count must consume the progression formula")

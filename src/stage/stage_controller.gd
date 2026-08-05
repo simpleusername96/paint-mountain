@@ -6,15 +6,21 @@ signal shots_changed(shots_remaining: int, maximum_shots: int)
 signal shot_fired(shot_number: int, yaw: float, elevation: float, power: float)
 signal shot_result(coverage_gain: float, total_coverage: float)
 signal shot_observation_sealed(observation: ShotObservation)
+# Retained only so older scenes and replay tooling still parse during migration.
+# Live attempts emit stage_finished instead of pass/fail signals.
 signal stage_cleared(final_coverage: float, shots_used: int)
 signal stage_failed(final_coverage: float, missing_coverage: float)
 signal restart_completed(elapsed_milliseconds: float)
 signal aim_action_accepted(yaw: float, elevation: float, power: float, origin: int)
 signal fire_action_accepted(origin: int)
 signal restart_action_accepted(origin: int)
+signal finish_action_accepted(origin: int)
 signal shot_family_activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int, fire_capacity: int)
 signal terminal_pending_changed(pending: bool)
 signal fire_readiness_changed(snapshot: Dictionary)
+signal stage_clock_started(duration_ticks: int)
+signal stage_clock_changed(elapsed_ticks: int, remaining_ticks: int)
+signal stage_finished(result: Dictionary)
 
 enum ActionOrigin {
 	HUMAN,
@@ -35,11 +41,17 @@ enum State {
 	STAGE_CLEAR,
 	STAGE_FAILED,
 	PAUSED,
+	# Appended so legacy serialized state integers above remain decodable.
+	FINISHING,
+	RESULT,
 }
 
 const MAX_CONCURRENT_ROOT_SHOTS := 2
 const SETTLEMENT_OBSERVER_PRIORITY := 1100
 const CONTAINMENT_DOMAIN_PROOF := preload("res://src/terrain/containment_domain_proof.gd")
+const FINISH_REASON_MANUAL := &"manual"
+const FINISH_REASON_TIMEOUT := &"timeout"
+const FINISH_REASON_DEBUG := &"debug"
 
 var current_state: State = State.LOADING
 var stage_data: StageData
@@ -65,6 +77,10 @@ var _last_paint_mask_checksum: int = 0
 var _locked_action_origin: int = -1
 var _terminal_pending := false
 var _last_fire_readiness_key := ""
+var _run_started := false
+var _elapsed_run_ticks := 0
+var _duration_run_ticks := 0
+var _result_snapshot: Dictionary = {}
 
 
 func _init() -> void:
@@ -209,6 +225,32 @@ func activity_snapshot() -> Dictionary:
 	}
 
 
+func clock_snapshot() -> Dictionary:
+	return {
+		"started": _run_started,
+		"elapsed_ticks": _elapsed_run_ticks,
+		"remaining_ticks": remaining_run_ticks(),
+		"duration_ticks": _duration_run_ticks,
+		"finished": not _result_snapshot.is_empty(),
+	}
+
+
+func result_snapshot() -> Dictionary:
+	return _result_snapshot.duplicate(true)
+
+
+func run_has_started() -> bool:
+	return _run_started
+
+
+func elapsed_run_ticks() -> int:
+	return _elapsed_run_ticks
+
+
+func remaining_run_ticks() -> int:
+	return maxi(_duration_run_ticks - _elapsed_run_ticks, 0)
+
+
 func lock_action_origin(origin: ActionOrigin) -> bool:
 	if _locked_action_origin >= 0 and _locked_action_origin != origin:
 		return false
@@ -246,7 +288,7 @@ func begin_aiming(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 func enter_briefing(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin):
 		return false
-	if current_state != State.AIMING:
+	if current_state != State.AIMING or _run_started:
 		return false
 	_cannon.input_enabled = false
 	var transitioned := _transition_to(State.BRIEFING)
@@ -302,6 +344,7 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	_shot_observations[projectile.shot_id] = shot_observation
 	_shot_observation = shot_observation
 	shots_remaining -= 1
+	_start_run_clock()
 	# A second root shot may be fired while the first family is still in motion.
 	# The cannon remains interactive; only the two-family capacity guard limits fire.
 	_cannon.input_enabled = true
@@ -321,7 +364,7 @@ func restart(
 		return_to_briefing: bool = true,
 		origin: ActionOrigin = ActionOrigin.HUMAN
 ) -> bool:
-	if not _origin_allowed(origin):
+	if not _origin_allowed(origin) or current_state == State.FINISHING:
 		return false
 	if stage_data == null or _generated_layout == null or _cannon == null \
 			or _projectile_manager == null or _paint_system == null:
@@ -348,6 +391,7 @@ func restart(
 	_shot_observations.clear()
 	_sealed_shot_observations.clear()
 	_inactive_settlement_ticks = 0
+	_reset_run_clock()
 	_set_terminal_pending(false)
 	_last_applied_paint_command_tick = -1
 	_last_drained_paint_command_tick = -1
@@ -360,7 +404,9 @@ func restart(
 	)
 	_cannon.input_enabled = not return_to_briefing
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
-	_transition_to(State.BRIEFING if return_to_briefing else State.AIMING, true)
+	var restart_state := State.BRIEFING if return_to_briefing else State.AIMING
+	_state_before_pause = restart_state
+	_transition_to(restart_state, true)
 	var elapsed_ms := float(Time.get_ticks_usec() - started_at) / 1000.0
 	restart_completed.emit(elapsed_ms)
 	restart_action_accepted.emit(origin)
@@ -374,20 +420,38 @@ func toggle_pause(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state == State.PAUSED:
 		get_tree().paused = false
 		return _transition_to(_state_before_pause, true)
-	if current_state in [State.LOADING, State.STAGE_CLEAR, State.STAGE_FAILED]:
+	if current_state in [
+		State.LOADING,
+		State.FINISHING,
+		State.RESULT,
+		State.STAGE_CLEAR,
+		State.STAGE_FAILED,
+	]:
 		return false
 	_state_before_pause = current_state
 	get_tree().paused = true
 	return _transition_to(State.PAUSED, true)
 
 
+func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
+	if origin not in [ActionOrigin.HUMAN, ActionOrigin.REPLAY, ActionOrigin.AGENT] \
+			or not _origin_allowed(origin) or current_state != State.AIMING \
+			or not _run_started or _terminal_pending:
+		return false
+	return _begin_finish(FINISH_REASON_MANUAL, origin, false, true)
+
+
 func force_stage_clear(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
+	# Compatibility entrypoint for debug and capture scripts. Normal gameplay
+	# reaches the same coverage-only RESULT through finish_stage or timeout.
 	if not _origin_allowed(origin):
 		return
 	if current_state == State.PAUSED:
 		get_tree().paused = false
-	_transition_to(State.STAGE_CLEAR, true)
-	stage_cleared.emit(_paint_system.coverage_percent(), stage_data.maximum_shots - shots_remaining)
+		_transition_to(_state_before_pause, true)
+	if current_state not in [State.BRIEFING, State.AIMING]:
+		return
+	_begin_finish(FINISH_REASON_DEBUG, origin, true)
 
 
 func debug_refill_shots(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
@@ -420,12 +484,92 @@ func sealed_shot_observations() -> Array[ShotObservation]:
 	return result
 
 
+func _reset_run_clock() -> void:
+	_run_started = false
+	_elapsed_run_ticks = 0
+	_result_snapshot.clear()
+	var ticks_per_second := maxi(Engine.physics_ticks_per_second, 1)
+	_duration_run_ticks = maxi(
+		roundi(stage_data.resolved_duration_seconds() * float(ticks_per_second)),
+		1
+	)
+	stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
+
+
+func _start_run_clock() -> void:
+	if _run_started:
+		return
+	_run_started = true
+	stage_clock_started.emit(_duration_run_ticks)
+	stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
+
+
+func _begin_finish(
+		reason: StringName,
+		action_origin: int,
+		allow_before_first_shot: bool = false,
+		emit_finish_acceptance: bool = false
+) -> bool:
+	if _terminal_pending or current_state not in [State.BRIEFING, State.AIMING]:
+		return false
+	if not allow_before_first_shot and not _run_started:
+		return false
+	_decision_generation += 1
+	_cannon.input_enabled = false
+	_set_terminal_pending(true)
+	if not _transition_to(State.FINISHING, allow_before_first_shot):
+		_set_terminal_pending(false)
+		_cannon.input_enabled = true
+		return false
+	if emit_finish_acceptance:
+		finish_action_accepted.emit(action_origin)
+
+	# ProjectileManager owns canonical ordering for contact-generated paint. Its
+	# result barrier hands every already accepted intent to PaintSystem before
+	# resident cleanup; later contacts cannot enter once FINISHING is active.
+	if _projectile_manager.has_method(&"finalize_pending_paint_intents"):
+		_projectile_manager.call(&"finalize_pending_paint_intents")
+	_paint_system.force_flush_paint_texture()
+	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
+	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
+	var final_coverage := _paint_system.coverage_percent()
+	_seal_open_observations_for_result(final_coverage)
+
+	var rejection_count := 0
+	for observation_variant in _shot_observations.values():
+		var observation := observation_variant as ShotObservation
+		if observation != null:
+			rejection_count += observation.paint_command_rejection_count
+	_result_snapshot = {
+		"stage_id": stage_data.stage_id,
+		"finish_reason": reason,
+		"action_origin": action_origin,
+		"coverage": final_coverage,
+		"shots_used": stage_data.maximum_shots - shots_remaining,
+		"shots_remaining": shots_remaining,
+		"elapsed_ticks": _elapsed_run_ticks,
+		"duration_ticks": _duration_run_ticks,
+		"paint_mask_checksum": _last_paint_mask_checksum,
+		"paint_command_rejection_count": rejection_count,
+	}
+
+	# Cleanup happens after the immutable score inputs above are captured.
+	_projectile_manager.cleanup()
+	_transition_to(State.RESULT)
+	_emit_fire_readiness()
+	stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
+	stage_finished.emit(_result_snapshot.duplicate(true))
+	return true
+
+
 static func result_state_for(
 		coverage: float,
 		target: float,
 		remaining_shots: int,
 		paint_command_rejection_count: int = 0
 ) -> State:
+	# Legacy replay/test decoder only. Live attempts no longer use target coverage
+	# or ammunition exhaustion to choose a terminal state.
 	if paint_command_rejection_count > 0:
 		return State.STAGE_FAILED
 	if coverage + 0.0001 >= target:
@@ -466,6 +610,11 @@ func _physics_process(_delta: float) -> void:
 		if _inactive_settlement_ticks >= 2:
 			_inactive_settlement_ticks = 0
 			_seal_shot(_decision_generation)
+		if _run_started:
+			_elapsed_run_ticks = mini(_elapsed_run_ticks + 1, _duration_run_ticks)
+			stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
+			if _elapsed_run_ticks >= _duration_run_ticks:
+				_begin_finish(FINISH_REASON_TIMEOUT, -1)
 	return
 
 
@@ -476,8 +625,14 @@ func _seal_shot(generation: int) -> void:
 		return
 	_paint_system.force_flush_paint_texture()
 	var coverage := _paint_system.coverage_percent()
+	_seal_open_observations_for_result(coverage)
+
+
+func _seal_open_observations_for_result(coverage: float) -> void:
 	var total_gain := 0.0
+	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
 	_last_paint_mask_checksum = _paint_system.paint_mask_checksum()
+	var sealed_any := false
 	for observation in _ordered_observations():
 		if observation.is_sealed:
 			continue
@@ -490,34 +645,9 @@ func _seal_shot(generation: int) -> void:
 		_sealed_shot_observation = observation
 		total_gain += observation.coverage_gain
 		shot_observation_sealed.emit(observation)
-	if coverage + 0.0001 >= stage_data.target_coverage or shots_remaining <= 0:
-		_set_terminal_pending(true)
-	shot_result.emit(total_gain, coverage)
-	if _terminal_pending:
-		_finish_shot_result.call_deferred(generation, coverage)
-
-
-func _finish_shot_result(generation: int, coverage: float) -> void:
-	if generation != _decision_generation or current_state != State.AIMING:
-		return
-	var rejection_count := 0
-	for observation in _sealed_shot_observations.values():
-		rejection_count += observation.paint_command_rejection_count
-	var result := result_state_for(
-		coverage,
-		stage_data.target_coverage,
-		shots_remaining,
-		rejection_count
-	)
-	match result:
-		State.STAGE_CLEAR:
-			_transition_to(State.STAGE_CLEAR)
-			stage_cleared.emit(coverage, stage_data.maximum_shots - shots_remaining)
-		State.STAGE_FAILED:
-			_transition_to(State.STAGE_FAILED)
-			stage_failed.emit(coverage, maxf(0.0, stage_data.target_coverage - coverage))
-		_:
-			_cannon.input_enabled = true
+		sealed_any = true
+	if sealed_any:
+		shot_result.emit(total_gain, coverage)
 
 
 func _on_projectile_contact_reported(projectile: PaintProjectile, contact: ProjectileContact) -> void:
@@ -543,7 +673,7 @@ func _on_paint_command_applied(
 ) -> void:
 	var observation := _observation_for_shot(int(command.shot_id)) if command != null else null
 	if observation == null or command == null \
-			or current_state != State.AIMING:
+			or current_state not in [State.AIMING, State.FINISHING]:
 		return
 	var command_tick := int(command.physics_tick)
 	_last_applied_paint_command_tick = maxi(_last_applied_paint_command_tick, command_tick)
@@ -552,11 +682,11 @@ func _on_paint_command_applied(
 
 func _on_paint_command_rejected(command) -> void:
 	var observation := _observation_for_shot(int(command.shot_id)) if command != null else null
-	if observation == null or current_state != State.AIMING:
+	if observation == null or current_state not in [State.AIMING, State.FINISHING]:
 		return
 	observation.record_paint_command_rejection(command)
 	push_warning(
-		"Stage shot recorded a rejected authoritative paint command and will fail closed."
+		"Stage shot recorded a rejected authoritative paint command; result coverage uses accepted paint only."
 	)
 
 
@@ -565,7 +695,7 @@ func _on_paint_commands_drained(
 		_command_count: int,
 		paint_mask_checksum: int
 ) -> void:
-	if current_state != State.AIMING:
+	if current_state not in [State.AIMING, State.FINISHING]:
 		return
 	_last_drained_paint_command_tick = maxi(
 		_last_drained_paint_command_tick,
@@ -691,7 +821,9 @@ func _is_allowed_transition(from_state: State, to_state: State) -> bool:
 		State.BRIEFING:
 			return to_state == State.AIMING or to_state == State.PAUSED
 		State.AIMING:
-			return to_state in [State.BRIEFING, State.PAUSED, State.STAGE_CLEAR, State.STAGE_FAILED]
+			return to_state in [State.BRIEFING, State.PAUSED, State.FINISHING]
+		State.FINISHING:
+			return to_state == State.RESULT
 		State.PAUSED:
 			return true
 		_:

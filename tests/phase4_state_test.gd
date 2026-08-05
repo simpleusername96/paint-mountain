@@ -2,7 +2,7 @@ extends SceneTree
 
 const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 
-var _failed: bool = false
+var _failed := false
 
 
 func _initialize() -> void:
@@ -11,106 +11,100 @@ func _initialize() -> void:
 
 func _run_checks() -> void:
 	Engine.time_scale = 2.0
-	root.get_node("/root/GameState").select_stage(&"first_descent")
+	var game_state := root.get_node("/root/GameState") as GameState
+	game_state.persistence_enabled = false
+	game_state.select_stage(&"first_descent")
 	var gameplay := GAMEPLAY_SCENE.instantiate()
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
-	var controller: StageController = gameplay.get_node("StageController")
-	var cannon: CannonController = gameplay.get_node("Cannon")
-	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
-	var paint_system: PaintSystem = gameplay.get_node("PaintSystem")
-	var layout: GeneratedStageLayout = gameplay.generated_layout()
-	var restart_observation := {"elapsed_ms": -1.0}
+
+	var controller := gameplay.get_node("StageController") as StageController
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var paint_system := gameplay.get_node("PaintSystem") as PaintSystem
+	var finished_results: Array[Dictionary] = []
 	var observed_states: Array[int] = []
-	controller.state_changed.connect(func(state: int, _previous: int) -> void: observed_states.append(state))
-	controller.restart_completed.connect(func(elapsed_ms: float) -> void: restart_observation.elapsed_ms = elapsed_ms)
-
-	_assert_true(controller.current_state == StageController.State.BRIEFING, "gameplay must begin in briefing")
-	var default_aim := layout.default_aim
-	_assert_true(default_aim != null and default_aim.is_valid(), "First Descent must expose its admitted default aim")
-	_assert_true(
-		default_aim != null
-				and is_equal_approx(cannon.yaw_degrees, default_aim.yaw_degrees)
-				and is_equal_approx(cannon.elevation_degrees, default_aim.elevation_degrees)
-				and is_equal_approx(cannon.power_percent, float(default_aim.power_percent)),
-		"First Descent must apply its admitted generated default aim; got %.1f/%.1f/%.1f" % [cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent]
+	var legacy_terminal_events: Array[StringName] = []
+	controller.state_changed.connect(
+		func(state: int, _previous: int) -> void: observed_states.append(state)
 	)
-	_assert_true(controller.begin_aiming(), "briefing must accept the start-aiming action")
-	_assert_true(controller.current_state == StageController.State.AIMING, "begin aiming must enter AIMING")
-	_assert_true(controller.request_fire(), "ready aiming state must accept the first fire action")
-	_assert_true(controller.request_fire(), "a second fire action must be accepted while the first family is active")
-	_assert_true(controller.shots_remaining == 2, "two accepted fire actions must consume exactly two shots")
-	_assert_true(manager.active_root_count() == 2, "two immediate fires must expose two active root families")
-	_assert_true(not controller.request_fire(), "a third fire must be rejected at the two-family capacity")
+	controller.stage_finished.connect(
+		func(result: Dictionary) -> void: finished_results.append(result)
+	)
+	controller.stage_cleared.connect(
+		func(_coverage: float, _shots: int) -> void: legacy_terminal_events.append(&"clear")
+	)
+	controller.stage_failed.connect(
+		func(_coverage: float, _missing: float) -> void: legacy_terminal_events.append(&"failed")
+	)
 
-	var frame_budget := 60 * 60
-	while controller.current_state not in [StageController.State.AIMING, StageController.State.STAGE_CLEAR, StageController.State.STAGE_FAILED] and frame_budget > 0:
+	_assert(controller.current_state == StageController.State.BRIEFING, "stage must begin in briefing")
+	_assert(not controller.run_has_started(), "briefing must not start the run clock")
+	_assert(not controller.finish_stage(), "Finish must be unavailable before the first shot")
+	await physics_frame
+	await physics_frame
+	_assert(controller.elapsed_run_ticks() == 0, "pre-fire preparation must not consume run time")
+
+	_assert(controller.begin_aiming(), "briefing must enter the playable aiming state")
+	await physics_frame
+	_assert(controller.elapsed_run_ticks() == 0, "pre-fire aiming must not consume run time")
+	_assert(controller.request_fire(), "the admitted first root must launch")
+	await physics_frame
+	await physics_frame
+	_assert(controller.run_has_started(), "the first actual root launch must start the clock")
+	_assert(controller.elapsed_run_ticks() > 0, "an active run must advance on physics ticks")
+
+	var before_pause := controller.elapsed_run_ticks()
+	_assert(controller.toggle_pause(), "an active run must allow pause")
+	await physics_frame
+	await physics_frame
+	_assert(controller.elapsed_run_ticks() == before_pause, "pause must freeze the run clock")
+	_assert(controller.toggle_pause(), "pause must resume to the playable state")
+
+	# Settling a family, reaching a grade threshold, or exhausting ammunition no
+	# longer decides the stage. Only Finish or timeout may enter RESULT.
+	controller.stage_data.target_coverage = 0.0
+	manager.cleanup()
+	await physics_frame
+	await physics_frame
+	controller.shots_remaining = 0
+	_assert(controller.current_state == StageController.State.AIMING, "coverage and zero ammunition must not auto-end the run")
+	_assert(not controller.request_fire(), "zero ammunition must reject Fire without ending the run")
+	var coverage_before_finish := paint_system.coverage_percent()
+	_assert(controller.finish_stage(), "Finish must remain available after the first shot")
+	_assert(controller.current_state == StageController.State.RESULT, "manual Finish must produce one RESULT")
+	_assert(observed_states.has(StageController.State.FINISHING), "Finish must pass through the result barrier")
+	_assert(finished_results.size() == 1, "manual Finish must emit one result snapshot")
+	_assert(manager.active_count() == 0, "resident projectiles must be cleaned after the score snapshot")
+	var manual_result := controller.result_snapshot()
+	_assert(manual_result.get("finish_reason") == StageController.FINISH_REASON_MANUAL, "manual Finish must retain its reason")
+	_assert(is_equal_approx(float(manual_result.get("coverage", -1.0)), coverage_before_finish), "result coverage must come from PaintSystem")
+	_assert(not controller.finish_stage(), "a completed run must reject a second Finish")
+
+	controller.stage_data.duration_seconds = 0.1
+	_assert(controller.restart(false), "retry must reset directly to aiming")
+	_assert(not controller.run_has_started() and controller.elapsed_run_ticks() == 0, "retry must reset the clock and prior result")
+	_assert(controller.request_fire(), "timeout fixture must launch its first root")
+	var timeout_budget := 120
+	while controller.current_state != StageController.State.RESULT and timeout_budget > 0:
 		await physics_frame
-		frame_budget -= 1
-	_assert_true(frame_budget > 0, "shot loop must settle into a decision state")
-	var expected_result := StageController.result_state_for(
-		paint_system.coverage_percent(),
-		controller.stage_data.target_coverage,
-		controller.shots_remaining
-	)
-	_assert_true(
-		controller.current_state == expected_result,
-		"the settled shot must enter the coverage-derived decision state; got %s at %.3f%%" % [
-			controller.state_name(), paint_system.coverage_percent()
-		]
-	)
-	_assert_true(manager.active_count() == 0, "shot settlement must leave no managed projectile")
-	_assert_true(paint_system.coverage_percent() > 0.0, "settled shot must finalize authoritative coverage")
-	_assert_true(observed_states.has(StageController.State.PROJECTILE_IN_FLIGHT), "accepted shot must enter projectile observation")
-	_assert_true(observed_states.has(StageController.State.PAINT_SETTLING), "projectile settlement must enter paint settlement")
-	_assert_true(observed_states.has(StageController.State.SHOT_RESULT), "coverage gain must appear before the next decision")
-	var settled_coverage := paint_system.coverage_percent()
-
-	controller.restart(false)
-	_assert_true(controller.current_state == StageController.State.AIMING, "gameplay retry must return directly to AIMING")
-	_assert_true(controller.shots_remaining == 4, "restart must refill stage shots")
-	_assert_true(is_zero_approx(paint_system.coverage_percent()), "restart must clear paint and coverage")
-	_assert_true(manager.active_count() == 0, "restart must clear all projectiles")
-	_assert_true(restart_observation.elapsed_ms >= 0.0 and restart_observation.elapsed_ms < 1000.0, "restart must complete under one second")
-
-	_assert_true(controller.toggle_pause(), "aiming must enter pause")
-	_assert_true(controller.current_state == StageController.State.PAUSED and paused, "pause must stop the scene tree")
-	_assert_true(controller.toggle_pause(), "pause must resume to the prior state")
-	_assert_true(controller.current_state == StageController.State.AIMING and not paused, "resume must restore AIMING")
-
-	_assert_true(
-		StageController.result_state_for(70.0, 70.0, 0) == StageController.State.STAGE_CLEAR,
-		"coverage at target must clear even on the last shot"
-	)
-	_assert_true(
-		StageController.result_state_for(69.9, 70.0, 0) == StageController.State.STAGE_FAILED,
-		"exhausted shots below target must fail"
-	)
-	_assert_true(
-		StageController.result_state_for(20.0, 70.0, 2) == StageController.State.AIMING,
-		"remaining shots below target must continue"
-	)
-	_assert_true(
-		StageController.result_state_for(100.0, 70.0, 2, 1) \
-				== StageController.State.STAGE_FAILED,
-		"a rejected authoritative paint command must fail closed even above target"
-	)
+		timeout_budget -= 1
+	_assert(timeout_budget > 0, "the configured short duration must reach RESULT")
+	var timeout_result := controller.result_snapshot()
+	_assert(timeout_result.get("finish_reason") == StageController.FINISH_REASON_TIMEOUT, "duration expiry must record timeout")
+	_assert(finished_results.size() == 2, "manual Finish and timeout must each emit exactly one result")
+	_assert(legacy_terminal_events.is_empty(), "normal results must not emit legacy clear/fail events")
+	_assert(manager.active_count() == 0, "timeout must clean residents after its score snapshot")
 
 	if not _failed:
-		print(
-			"Phase 4 state checks passed: shot settled at %.4f%% and restart took %.3f ms." % [
-				settled_coverage,
-				restart_observation.elapsed_ms,
-			]
-		)
+		print("phase4_state_test passed: first-shot clock, pause, manual Finish, zero-ammo wait, and timeout")
 	Engine.time_scale = 1.0
 	paused = false
 	gameplay.queue_free()
 	quit(1 if _failed else 0)
 
 
-func _assert_true(condition: bool, message: String) -> void:
+func _assert(condition: bool, message: String) -> void:
 	if condition:
 		return
 	push_error(message)

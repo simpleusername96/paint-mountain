@@ -10,6 +10,7 @@ extends Resource
 @export_category("Rules")
 @export_range(0.01, 100.0, 0.01) var target_coverage: float = 10.0
 @export_range(1, 12, 1) var maximum_shots: int = 4
+@export_range(0.0, 300.0, 1.0) var duration_seconds: float = 0.0
 @export var paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
 @export var star_thresholds := Vector3(10.0, 18.0, 28.0)
 @export var objective_key: StringName = &"stage.first_descent.objective"
@@ -34,6 +35,14 @@ extends Resource
 @export var result_camera_position := Vector3(-78.0, 50.0, 4.0)
 @export var result_camera_target := Vector3(0.0, 22.0, -112.0)
 @export_range(24.0, 160.0, 1.0) var follow_camera_max_distance: float = 96.0
+
+
+func resolved_duration_seconds() -> float:
+	# Zero keeps existing serialized stages compatible while the progression
+	# resource supplies the canonical duration tier.
+	if duration_seconds > 0.0:
+		return duration_seconds
+	return float(StageProgressionData.duration_seconds_for(stage_number))
 
 
 func paint_world_bounds() -> Rect2:
