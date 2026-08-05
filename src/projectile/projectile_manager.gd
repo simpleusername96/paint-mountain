@@ -6,11 +6,17 @@ signal projectile_contact_reported(projectile: PaintProjectile, contact: Project
 signal radial_paint_mark_ready(command: RadialPaintMark)
 signal surface_paint_sweep_ready(command: SurfacePaintSweep)
 signal transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal valid_top_traversed(projectile: PaintProjectile, contact: ProjectileContact, base_paint_committed: bool)
+signal valid_top_exited(projectile: PaintProjectile)
 signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
+signal projectile_motion_state_changed(projectile: PaintProjectile, previous_state: int, current_state: int)
+signal projectile_woke(projectile: PaintProjectile, reason: StringName, strong_episode_id: int)
+signal projectile_terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal all_projectiles_settled
 signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
 signal shot_family_finished(shot_id: int)
 signal activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int)
+signal resident_activity_changed(moving_projectiles: int, resting_projectiles: int)
 
 const MAXIMUM_ACTIVE_PROJECTILES := 21
 const COMMAND_CANONICALIZATION_PRIORITY := 900
@@ -98,7 +104,11 @@ func spawn_projectile(
 	projectile.radial_paint_mark_intent_requested.connect(_on_radial_paint_mark_intent)
 	projectile.surface_paint_sweep_intent_requested.connect(_on_surface_paint_sweep_intent)
 	projectile.transient_splash_requested.connect(_on_transient_splash_requested)
+	projectile.valid_top_traversed.connect(_on_valid_top_traversed)
+	projectile.valid_top_exited.connect(_on_valid_top_exited)
 	projectile.motion_state_changed.connect(_on_projectile_motion_state_changed)
+	projectile.woke.connect(_on_projectile_woke)
+	projectile.terrain_recovered.connect(_on_projectile_terrain_recovered)
 	projectile.stopped.connect(_on_projectile_stopped)
 	projectile.position = to_local(origin)
 	projectile.linear_velocity = velocity
@@ -120,6 +130,18 @@ func active_count() -> int:
 func active_projectiles() -> Array[PaintProjectile]:
 	_prune_invalid()
 	return _active.duplicate()
+
+
+func resident_activity_snapshot() -> Dictionary:
+	_prune_invalid()
+	var resting := 0
+	for projectile in _active:
+		if projectile.is_resting_on_terrain():
+			resting += 1
+	return {
+		"moving": _active.size() - resting,
+		"resting": resting,
+	}
 
 
 func pending_intent_count() -> int:
@@ -269,16 +291,46 @@ func _on_transient_splash_requested(projectile: PaintProjectile, contact: Projec
 	transient_splash_requested.emit(projectile, contact)
 
 
+func _on_valid_top_traversed(
+		projectile: PaintProjectile,
+		contact: ProjectileContact,
+		base_paint_committed: bool
+) -> void:
+	valid_top_traversed.emit(projectile, contact, base_paint_committed)
+
+
+func _on_valid_top_exited(projectile: PaintProjectile) -> void:
+	valid_top_exited.emit(projectile)
+
+
 func _on_projectile_motion_state_changed(
 		projectile: PaintProjectile,
 		_previous_state: int,
 		current_state: int
 ) -> void:
-	if projectile == null or current_state != PaintProjectile.MotionState.RESTING_ON_TERRAIN:
+	projectile_motion_state_changed.emit(projectile, _previous_state, current_state)
+	if projectile == null:
 		return
-	_refresh_initial_flight_family(projectile.shot_id)
-	_wake_projectile_for_current_strong(projectile)
+	if current_state == PaintProjectile.MotionState.RESTING_ON_TERRAIN:
+		_refresh_initial_flight_family(projectile.shot_id)
+		_wake_projectile_for_current_strong(projectile)
 	_emit_activity_changed()
+
+
+func _on_projectile_woke(
+		projectile: PaintProjectile,
+		reason: StringName,
+		strong_episode_id: int
+) -> void:
+	projectile_woke.emit(projectile, reason, strong_episode_id)
+
+
+func _on_projectile_terrain_recovered(
+		projectile: PaintProjectile,
+		physics_tick: int,
+		correction_distance: float
+) -> void:
+	projectile_terrain_recovered.emit(projectile, physics_tick, correction_distance)
 
 
 func _on_strong_episode_started(_episode_id: int, snapshot: WindSnapshot) -> void:
@@ -352,3 +404,8 @@ func _refresh_initial_flight_family_without_prune(shot_id: int) -> void:
 
 func _emit_activity_changed() -> void:
 	activity_changed.emit(active_shot_ids(), _active.size())
+	var resident_activity := resident_activity_snapshot()
+	resident_activity_changed.emit(
+		int(resident_activity.moving),
+		int(resident_activity.resting)
+	)

@@ -5,17 +5,26 @@ signal contact_reported(projectile: PaintProjectile, contact: ProjectileContact)
 signal radial_paint_mark_intent_requested(projectile: PaintProjectile, intent: RadialPaintMark)
 signal surface_paint_sweep_intent_requested(projectile: PaintProjectile, intent: SurfacePaintSweep)
 signal transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal valid_top_traversed(
+	projectile: PaintProjectile,
+	contact: ProjectileContact,
+	base_paint_committed: bool
+)
+signal valid_top_exited(projectile: PaintProjectile)
 signal motion_state_changed(
 	projectile: PaintProjectile,
 	previous_state: int,
 	current_state: int
 )
+signal woke(projectile: PaintProjectile, reason: StringName, strong_episode_id: int)
+signal terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal stopped(projectile: PaintProjectile, reason: StringName)
 
 const IMPACT_SPEED_THRESHOLD := 8.0
 const RECONTACT_ABSENCE_TICKS := 2
 const RECOVERY_CLEARANCE_EPSILON := 0.01
 const INVALID_GEOMETRY_CONFIRMATION_TICKS := 3
+const RECOVERY_EVENT_MINIMUM_FRACTION := 0.25
 
 enum MotionState {
 	MOVING_AIRBORNE,
@@ -55,6 +64,7 @@ var _sweep_anchor_contact: ProjectileContact
 var _interval_last_contact: ProjectileContact
 var _interval_missing_ticks: int = 0
 var _has_emitted_first_impact: bool = false
+var _needs_recontact_impact: bool = false
 var _cached_incoming_velocity: Vector3 = Vector3.ZERO
 var _contact_missing_ticks: Dictionary = {}
 var _stable_identity_rids: Dictionary = {}
@@ -101,6 +111,7 @@ func wake_for_strong_wind(snapshot: WindSnapshot) -> bool:
 		tangent_push.normalized() * mass * _wind_profile.wake_impulse_speed
 	)
 	_set_motion_state(MotionState.MOVING_ON_TERRAIN)
+	woke.emit(self, &"strong_wind", snapshot.strong_episode_id)
 	return true
 
 
@@ -163,6 +174,7 @@ func _physics_process(delta: float) -> void:
 			if _current_paintable_top_contact != null
 			else MotionState.MOVING_AIRBORNE
 		)
+		woke.emit(self, &"collision_or_force", 0)
 
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
@@ -291,11 +303,14 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 func queue_desired_velocity(desired_velocity: Vector3, contact_tick: int) -> void:
 	if desired_velocity.is_finite() and not desired_velocity.is_zero_approx():
+		var was_resting := _motion_state == MotionState.RESTING_ON_TERRAIN
 		_queued_desired_velocity = desired_velocity
 		_queued_desired_velocity_tick = contact_tick
 		sleeping = false
 		if _motion_state == MotionState.RESTING_ON_TERRAIN:
 			_set_motion_state(MotionState.MOVING_ON_TERRAIN)
+		if was_resting:
+			woke.emit(self, &"mechanism_impulse", 0)
 
 
 func deactivate(reason: StringName) -> void:
@@ -333,10 +348,13 @@ func _update_paintable_contact_interval(
 		if _interval_last_contact != null:
 			_interval_missing_ticks += 1
 			if _interval_missing_ticks > _paint_surface_tuning.maximum_bridge_ticks:
+				_needs_recontact_impact = true
+				valid_top_exited.emit(self)
 				_close_paint_interval()
 		return
 
 	var current := _current_paintable_top_contact
+	var previous_valid_top_contact := _last_valid_top_contact
 	_has_touched_playable_top = true
 	_last_valid_top_contact = current
 	_set_motion_state(
@@ -345,14 +363,22 @@ func _update_paintable_contact_interval(
 		else MotionState.MOVING_ON_TERRAIN
 	)
 
-	if not _has_emitted_first_impact:
-		_emit_impact_intent(current, _current_paintable_event_index)
-		_has_emitted_first_impact = true
-		_seed_paint_interval(current)
-		return
-	if _sweep_anchor_contact == null or _interval_last_contact == null \
+	if not _has_emitted_first_impact or _sweep_anchor_contact == null \
+			or _interval_last_contact == null \
 			or not _interval_last_contact.same_collider_shape(current):
+		var requires_impact := not _has_emitted_first_impact or _needs_recontact_impact \
+				or (previous_valid_top_contact != null \
+				and not previous_valid_top_contact.same_collider_shape(current))
+		var impact_committed := true
+		if requires_impact:
+			impact_committed = _emit_impact_intent(
+				current,
+				_current_paintable_event_index
+			)
+		_has_emitted_first_impact = true
+		_needs_recontact_impact = false
 		_seed_paint_interval(current)
+		valid_top_traversed.emit(self, current, impact_committed)
 		return
 
 	var missing_ticks := maxi(0, current.physics_tick - _interval_last_contact.physics_tick - 1)
@@ -370,9 +396,10 @@ func _update_paintable_contact_interval(
 			_seed_paint_interval(current)
 			return
 
+	var base_paint_committed := true
 	if _sweep_anchor_contact.world_position.distance_to(current.world_position) \
 			>= projectile_data.minimum_paint_travel_distance:
-		_emit_sweep_intent(
+		base_paint_committed = _emit_sweep_intent(
 			_sweep_anchor_contact,
 			current,
 			_current_paintable_event_index,
@@ -381,6 +408,7 @@ func _update_paintable_contact_interval(
 		_sweep_anchor_contact = current
 	_interval_last_contact = current
 	_interval_missing_ticks = 0
+	valid_top_traversed.emit(self, current, base_paint_committed)
 
 
 func _seed_paint_interval(contact: ProjectileContact) -> void:
@@ -419,7 +447,7 @@ func _apply_wind_acceleration(state: PhysicsDirectBodyState3D) -> void:
 	state.linear_velocity += acceleration * state.step
 
 
-func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) -> void:
+func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) -> bool:
 	var intent := RadialPaintMark.new(
 		contact.physics_tick,
 		_spawn_ordinal,
@@ -437,6 +465,8 @@ func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) ->
 	)
 	if intent.is_intent_valid():
 		radial_paint_mark_intent_requested.emit(self, intent)
+		return true
+	return false
 
 
 func _emit_sweep_intent(
@@ -444,7 +474,7 @@ func _emit_sweep_intent(
 		to_contact: ProjectileContact,
 		source_event_index: int,
 		bridged_gap: bool
-) -> void:
+) -> bool:
 	var intent := SurfacePaintSweep.new(
 		to_contact.physics_tick,
 		_spawn_ordinal,
@@ -464,6 +494,8 @@ func _emit_sweep_intent(
 	)
 	if intent.is_intent_valid():
 		surface_paint_sweep_intent_requested.emit(self, intent)
+		return true
+	return false
 
 
 func _recover_terrain_embedding(
@@ -513,6 +545,8 @@ func _recover_terrain_embedding(
 	var inward_normal_speed := state.linear_velocity.dot(surface_normal)
 	if inward_normal_speed < 0.0:
 		state.linear_velocity -= surface_normal * inward_normal_speed
+	if correction_distance >= physical_radius() * RECOVERY_EVENT_MINIMUM_FRACTION:
+		terrain_recovered.emit(self, Engine.get_physics_frames(), correction_distance)
 	_invalid_geometry_ticks = 0
 
 
