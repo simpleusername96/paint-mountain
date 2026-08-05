@@ -14,6 +14,9 @@ var power_percent: float = 68.0
 var input_enabled: bool = true
 var _prediction: TrajectoryPrediction
 var _prediction_aim_key: StringName = &""
+var _prediction_wind_identity: StringName = &""
+var _prediction_launch_wind_tick: int = -1
+var _prediction_refresh_callback: Callable
 
 @onready var _yaw_pivot: Node3D = %YawPivot
 @onready var _elevation_pivot: Node3D = %ElevationPivot
@@ -55,6 +58,8 @@ func set_aim(
 	var was_valid := is_aim_valid()
 	_prediction = null
 	_prediction_aim_key = &""
+	_prediction_wind_identity = &""
+	_prediction_launch_wind_tick = -1
 	if was_valid:
 		aim_validity_changed.emit(false)
 	_apply_visuals()
@@ -65,10 +70,27 @@ func publish_current_aim() -> void:
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
 
-func set_prediction(value: TrajectoryPrediction, prediction_aim_key: StringName = &"") -> void:
+func configure_prediction_refresh(callback: Callable) -> void:
+	_prediction_refresh_callback = callback
+
+
+func refresh_prediction_for_fire() -> bool:
+	if _prediction_refresh_callback.is_valid():
+		_prediction_refresh_callback.call()
+	return is_aim_valid()
+
+
+func set_prediction(
+		value: TrajectoryPrediction,
+		prediction_aim_key: StringName = &"",
+		wind_schedule_identity: StringName = &"",
+		launch_wind_tick: int = -1
+) -> void:
 	var was_valid := is_aim_valid()
 	_prediction = value
 	_prediction_aim_key = prediction_aim_key if not prediction_aim_key.is_empty() else aim_key()
+	_prediction_wind_identity = wind_schedule_identity
+	_prediction_launch_wind_tick = launch_wind_tick
 	prediction_changed.emit(_prediction)
 	var is_valid := is_aim_valid()
 	if was_valid != is_valid:
@@ -85,6 +107,14 @@ func aim_key() -> StringName:
 
 func prediction_key() -> StringName:
 	return _prediction_aim_key
+
+
+func prediction_wind_identity() -> StringName:
+	return _prediction_wind_identity
+
+
+func prediction_launch_wind_tick() -> int:
+	return _prediction_launch_wind_tick
 
 
 func prediction_matches_current_aim() -> bool:
@@ -132,5 +162,5 @@ func get_launch_velocity() -> Vector3:
 func _apply_visuals() -> void:
 	if not is_node_ready():
 		return
-	_yaw_pivot.rotation.y = deg_to_rad(yaw_degrees)
+	_yaw_pivot.rotation.y = -deg_to_rad(yaw_degrees)
 	_elevation_pivot.rotation.x = deg_to_rad(elevation_degrees)

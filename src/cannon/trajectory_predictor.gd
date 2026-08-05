@@ -10,7 +10,10 @@ const REST_PROBE_DISTANCE := 0.01
 static func predict(
 		space_state: PhysicsDirectSpaceState3D,
 		cannon: CannonController,
-		stage_bounds: AABB
+		stage_bounds: AABB,
+		wind_profile: WindProfile = null,
+		wind_schedule_seed: int = 0,
+		launch_wind_tick: int = 0
 ) -> TrajectoryPrediction:
 	return predict_motion(
 		space_state,
@@ -18,7 +21,12 @@ static func predict(
 		cannon.get_launch_velocity(),
 		cannon.projectile_data.radius,
 		cannon.projectile_data.linear_damp,
-		stage_bounds
+		stage_bounds,
+		COLLISION_MASK,
+		true,
+		wind_profile,
+		wind_schedule_seed,
+		launch_wind_tick
 	)
 
 
@@ -30,7 +38,10 @@ static func predict_motion(
 		linear_damp: float,
 		stage_bounds: AABB,
 		collision_mask: int = COLLISION_MASK,
-		capture_sampled_points: bool = true
+		capture_sampled_points: bool = true,
+		wind_profile: WindProfile = null,
+		wind_schedule_seed: int = 0,
+		launch_wind_tick: int = 0
 ) -> TrajectoryPrediction:
 	# Exhaustive offline certification needs collision identity and endpoint only;
 	# gameplay keeps the default so its visible trajectory preview is unchanged.
@@ -54,6 +65,14 @@ static func predict_motion(
 	for step_index in range(MAXIMUM_STEPS):
 		velocity *= maxf(1.0 - linear_damp * PHYSICS_STEP, 0.0)
 		velocity += gravity * PHYSICS_STEP
+		if wind_profile != null:
+			var wind := WindController.sample_for_tick(
+				wind_profile,
+				wind_schedule_seed,
+				maxi(0, launch_wind_tick) + step_index
+			)
+			if wind != null:
+				velocity += wind.acceleration * PHYSICS_STEP
 		var next_position := position + velocity * PHYSICS_STEP
 		var motion := next_position - position
 		var bounds_fraction := _bounds_exit_fraction(position, next_position, stage_bounds)
