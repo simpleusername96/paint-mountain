@@ -18,7 +18,7 @@ const SOURCE_STAGE_PATHS := [
 func _initialize() -> void:
 	var write := "--write" in OS.get_cmdline_user_args()
 	var catalog = _build_catalog()
-	if catalog == null or not catalog.is_valid():
+	if catalog == null or not catalog.is_valid(false):
 		push_error("Stage catalog build failed validation.")
 		quit(1)
 		return
@@ -104,7 +104,7 @@ func _manifest_stage_descriptor(stage: StageData) -> String:
 		loadout_kinds.append(mechanism.kind if mechanism != null else -1)
 	var stage_line := "|".join([
 		str(stage.stage_id), str(stage.stage_number), str(stage.stage_version), str(stage.terrain_seed),
-		str(stage.terrain_size), str(stage.target_coverage), str(stage.maximum_shots),
+		str(stage.terrain_center), str(stage.terrain_size), str(stage.target_coverage), str(stage.maximum_shots),
 		str(profile.profile_id), str(profile.profile_version), str(profile.nominal_peak),
 		str(profile.accepted_height_range), str(profile.ridge_count), str(profile.basin_count),
 		str(profile.pass_count), str(profile.undulation_amplitude), str(profile.route_width),
@@ -135,6 +135,15 @@ func _materialize_stage(source: StageData, stage_number: int) -> StageData:
 	)
 	stage.terrain_seed = StageProgressionData.requested_seed_for(stage_number)
 	stage.terrain_size = StageProgressionData.terrain_size_for(stage_number)
+	# Keep the rear edge of every persisted terrain at the fixed wall join while
+	# the stage grows toward the cannon. Leaving the StageData default here makes
+	# Stage 02/03 apron geometry use a one/two-metre-shifted join and fail closed
+	# before reachability can even be evaluated.
+	stage.terrain_center = Vector3(
+		0.0,
+		-2.0,
+		-172.0 + stage.terrain_size.y * 0.5
+	)
 	stage.generation_profile = _materialize_profile(
 		stage.generation_profile,
 		stage_number,

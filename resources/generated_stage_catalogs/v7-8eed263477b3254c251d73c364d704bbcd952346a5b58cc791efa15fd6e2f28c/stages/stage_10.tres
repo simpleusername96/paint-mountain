@@ -1,0 +1,106 @@
+[gd_resource type="Resource" script_class="StageData" format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_contract.gd" id="1_5v2ta"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_route_profile.gd" id="2_5w0c1"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_generation_profile.gd" id="3_n7irt"]
+[ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="4_myy4q"]
+[ext_resource type="Script" path="res://src/stage/stage_data.gd" id="5_8q2wa"]
+
+[sub_resource type="Resource" id="Resource_p8wql"]
+script = ExtResource("1_5v2ta")
+cell_count = Vector2i(80, 52)
+local_bounds = Rect2(-99, -66, 198, 132)
+maximum_top_triangle_count = 8320
+route_station_z = PackedFloat32Array(-50, -37.5, -25, -12.5, 0, 12.5, 25, 37.5, 50)
+
+[sub_resource type="Resource" id="Resource_fqqe4"]
+script = ExtResource("2_5w0c1")
+role = 1
+endpoint_x = -35.64
+width = 29.0
+grade_signs = PackedInt32Array(-1, -1, -1, -1, 1, 1, 1, 1)
+drop_range = Vector2(5.965517, 7.62069)
+rise_range = Vector2(2.9655173, 4.62069)
+lateral_bend_range = Vector2(-5.0689654, 5.0689654)
+mechanism_kinds = PackedInt32Array(1, 0)
+mechanism_pad_ts = PackedFloat32Array(0.55, 0.9)
+mechanism_pad_radii = PackedFloat32Array(10, 8)
+
+[sub_resource type="Resource" id="Resource_tf07e"]
+script = ExtResource("2_5w0c1")
+role = 2
+endpoint_x = 35.64
+width = 25.0
+grade_signs = PackedInt32Array(-1, -1, -1, -1, 1, 1, 1, 1)
+drop_range = Vector2(5.965517, 7.62069)
+rise_range = Vector2(2.9655173, 4.62069)
+lateral_bend_range = Vector2(-5.0689654, 5.0689654)
+mechanism_kinds = PackedInt32Array(2)
+mechanism_pad_ts = PackedFloat32Array(0.68)
+mechanism_pad_radii = PackedFloat32Array(9)
+
+[sub_resource type="Resource" id="Resource_s2h8w"]
+script = ExtResource("3_n7irt")
+profile_id = &"stage_10_v7"
+profile_version = 7
+base_seed = 1357223582
+fallback_seed = 1357469071
+generation_contract = SubResource("Resource_p8wql")
+nominal_peak = 89.0
+accepted_height_range = Vector2(85, 99)
+ridge_count = 4
+basin_count = 1
+pass_count = 1
+undulation_amplitude = 3.9000000000000004
+route_width = 25.0
+routes = Array[ExtResource("2_5w0c1")]([SubResource("Resource_fqqe4"), SubResource("Resource_tf07e")])
+target_ratio_range = Vector2(0.18, 0.72)
+target_mean_slope_range = Vector2(12, 45)
+target_p95_slope_max = 60.0
+target_maximum_slope = 68.0
+route_core_p95_slope_max = 60.0
+corridor_lip_maximum_slope = 50.0
+
+[sub_resource type="Resource" id="Resource_bgvfe"]
+script = ExtResource("4_myy4q")
+kind = 1
+display_name_key = &"mechanism.splitter"
+description_key = &"mechanism.splitter.description"
+maximum_charges = 0
+cooldown_seconds = 0.3
+child_target_route_roles = PackedInt32Array(1, 2, 1)
+
+[sub_resource type="Resource" id="Resource_q5uah"]
+script = ExtResource("4_myy4q")
+kind = 2
+display_name_key = &"mechanism.bumper"
+description_key = &"mechanism.bumper.description"
+maximum_charges = 0
+cooldown_seconds = 0.8
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[sub_resource type="Resource" id="Resource_5jvba"]
+script = ExtResource("4_myy4q")
+child_target_route_roles = PackedInt32Array(1, 2, 3)
+
+[resource]
+script = ExtResource("5_8q2wa")
+stage_id = &"stage_10"
+display_name_key = &"stage.generated_10.name"
+stage_number = 10
+target_coverage = 8.5
+maximum_shots = 5
+star_thresholds = Vector3(8.5, 11, 13.5)
+objective_key = &"stage.generated_10.objective"
+generation_profile = SubResource("Resource_s2h8w")
+terrain_seed = 1357223582
+terrain_center = Vector3(0, -2, -106)
+terrain_size = Vector2(198, 132)
+cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.875, 5)
+mechanism_loadout = Array[ExtResource("4_myy4q")]([SubResource("Resource_bgvfe"), SubResource("Resource_q5uah"), SubResource("Resource_5jvba")])
+briefing_camera_target = Vector3(0, 24, -106)
+aiming_camera_position = Vector3(28, 24, 58)
+aiming_camera_target = Vector3(0, 10, -50.56)
+wide_camera_target = Vector3(0, 22, -106)
+result_camera_target = Vector3(0, 22, -106)
+follow_camera_max_distance = 140.0

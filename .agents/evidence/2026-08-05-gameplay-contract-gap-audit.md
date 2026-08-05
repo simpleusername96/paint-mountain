@@ -442,6 +442,26 @@ Evidence after this correction:
   not promote a thirty-stage certificate bundle; stages 02–30 still require the
   same worker and catalog promotion gate.
 
+## Recovery checkpoint 9 (2026-08-05)
+
+The first Stage 02 worker run found a catalog materialization defect before
+reachability: the growing terrain kept the StageData default center, so its
+rear edge no longer met the fixed `-172` wall join. The offline catalog builder
+now derives `terrain_center = (0, -2, -172 + terrain_size.y / 2)` for every
+stage and includes that value in the content manifest. The corrected catalog
+was promoted with manifest `8eed263477b3254c251d73c364d704bbcd952346a5b58cc791efa15fd6e2f28c`;
+Stage 02/03 now use `-111` and their apron/backstop setup passes.
+
+The corrected Stage 02 summit proof passes (`region=16`, predictor checksum
+`1210864223`, rigid-body checksum `3096683672`, height margin `0.078 m`). Its
+target-wide worker run still rejects one physical witness: aim `-69:329:76`
+was predicted on `terrain/top` cell `42,14` triangle `1`, but the production
+rigid sphere first contacted cell `42,19` triangle `0`. Because that contact is
+not within the target's authoritative `2.10 m` mark, the certificate is
+correctly not promoted. This is an actionable physical reachability failure,
+not a catalog or logging success; Stage 02 remains open for candidate/route
+correction before the all-thirty bundle can be built.
+
 ## Limitations
 
 - This audit does not claim fresh runtime reproduction; it explains the user's

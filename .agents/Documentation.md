@@ -46,7 +46,9 @@ checked tasks while claiming major phases were implemented.
   RMS, bounded scale deltas, unique checksums, summit identity, containment,
   macro counts, mechanism pads, route slope bounds, and decoration counts for
   all thirty persisted layouts. The current bundle manifest is
-  `71bbf219aec5688f3515230aa3384b2adfc6909ccdbb09877ff668dd4bff9072`.
+  `8eed263477b3254c251d73c364d704bbcd952346a5b58cc791efa15fd6e2f28c`.
+  StageData now derives the rear-wall-aligned terrain center from each persisted
+  size; Stage 02/03 no longer inherit a shifted default center.
 - Reachability: runtime derives one legal first hit near the target centroid.
   It now exposes a stable summit-region identity, a real predictor/rigid-body
   summit witness path, and optional summit fields on
@@ -62,11 +64,13 @@ checked tasks while claiming major phases were implemented.
   `2,432` physical witnesses; its certificate table is rebuilt from actual
   contact points inside the authoritative `2.10 m` impact mark. A reusable
   offline certificate worker is present, but no thirty-stage target-wide
-  certificate bundle has been promoted yet. Target witnesses use the
-  authoritative 2.10 m impact footprint. A candidate front-envelope raster
-  filter was rolled back after its generation-cost and no-target-deletion
-  implications were measured. The all-thirty certificate/preview gate remains
-  open.
+  certificate bundle has been promoted yet. Stage 02's summit proof passes, but
+  its target-wide worker currently rejects one physical witness that contacts a
+  different top facet before the predicted target; no seed/candidate correction
+  has been promoted. Target witnesses use the authoritative 2.10 m impact
+  footprint. A candidate front-envelope raster filter was rolled back after
+  its generation-cost and no-target-deletion implications were measured. The
+  all-thirty certificate/preview gate remains open.
 - Repeat Fire: StageController keeps the board in AIMING while two root families
   are active and after the final paint drain, rejects a third without side
   effects, and publishes activity/readiness to the HUD. The old serial result

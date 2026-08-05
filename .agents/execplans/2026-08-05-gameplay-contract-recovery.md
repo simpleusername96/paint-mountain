@@ -752,8 +752,13 @@ Rules:
   The complete Stage 01 target-wide predictor/rigid-body pass now passes all
   `67,729` target texels with `2,432` physical witnesses after reconciling
   target assignments to actual contact points. The dedicated offline worker
-  and physical-contact certificate path are in place, but target-wide proofs
-  for stages 02–30 and the complete certificate/preview bundle are still open.
+  and physical-contact certificate path are in place. Catalog materialization
+  now derives the rear-wall-aligned center for every persisted terrain; the
+  corrected pointer is manifest `8eed263477b3254c251d73c364d704bbcd952346a5b58cc791efa15fd6e2f28c`.
+  Stage 02 summit proof passes, but its target-wide worker currently rejects a
+  physical witness that hits a different top facet before the predicted target,
+  so target-wide proofs for stages 02–30 and the complete certificate/preview
+  bundle are still open.
   A candidate front-envelope raster filter was measured but rolled back because
   it added unacceptable generation cost and would have weakened the
   no-target-deletion rule; the unchanged thirty-layout generation gate then

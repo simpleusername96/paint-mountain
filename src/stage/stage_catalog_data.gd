@@ -18,7 +18,7 @@ extends Resource
 }
 
 
-func is_valid() -> bool:
+func is_valid(require_bundle: bool = true) -> bool:
 	if catalog_version != StageGenerationContract.CONTRACT_VERSION:
 		return false
 	if progression == null \
@@ -43,7 +43,7 @@ func is_valid() -> bool:
 		seen[stage_id] = true
 	return not manifest_sha256.is_empty() \
 			and bundle_manifest_path == "res://resources/generated_stage_catalogs/v7-%s/manifest.json" % manifest_sha256 \
-			and FileAccess.file_exists(bundle_manifest_path) \
+			and (not require_bundle or FileAccess.file_exists(bundle_manifest_path)) \
 			and legacy_aliases.get("first_descent", "") == "stage_01" \
 			and legacy_aliases.get("burst_basin", "") == "stage_02" \
 			and legacy_aliases.get("split_ridge", "") == "stage_03"
