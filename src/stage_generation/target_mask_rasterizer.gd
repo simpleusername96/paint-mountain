@@ -1,8 +1,9 @@
 class_name TargetMaskRasterizer
 extends RefCounted
 
-## Builds the immutable scoreable footprint from route geometry. Slope never
-## removes a pixel; exact target structure is validated separately.
+## Builds the immutable scoreable footprint from route geometry. Slope and
+## ballistic difficulty never remove an included pixel; exact target structure
+## and reachability are validated separately, and failures reject the candidate.
 
 # The raster is sampled at roughly 0.4 m while the mountain can rise several
 # metres between neighboring pixels on a steep face. A 6 m 3D step keeps those
@@ -19,7 +20,8 @@ static func build(
 		graph: GeneratedRouteGraph,
 		topology: TerrainTopTopology,
 		contract: StageGenerationContract,
-		profile: StageGenerationProfile
+		profile: StageGenerationProfile,
+		range_constraint: ProjectileRangeConstraint = null
 ) -> Dictionary:
 	if graph == null or not graph.is_valid() or topology == null \
 			or not topology.is_valid() or contract == null or not contract.is_valid() \
@@ -68,7 +70,8 @@ static func build(
 				)
 				var distance := local_xz.distance_to(edge_starts[edge_index] + delta * t)
 				var core_radius := core_radii[edge_index]
-				included = included or distance <= core_radius + contract.target_shoulder_distance
+				included = included or distance <= core_radius \
+						+ contract.target_shoulder_distance
 				in_route_core = in_route_core or distance <= core_radius
 				in_corridor_lip = in_corridor_lip or (
 					distance >= core_radius \
@@ -88,6 +91,21 @@ static func build(
 			var pixel_index := pixel_y * contract.mask_size + pixel_x
 			var surface_position: Vector3 = sample.point
 			var surface_normal: Vector3 = sample.normal
+			if range_constraint != null:
+				var range_result := range_constraint.evaluate_local_surface(
+					surface_position,
+					surface_normal
+				)
+				if not bool(range_result.get("valid", false)):
+					return {
+						"valid": false,
+						"rejection": "projectile_range",
+						"ballistic_rejection": range_result.get("rejection", &"unknown"),
+						"ballistic_failure_pixel": Vector2i(pixel_x, pixel_y),
+						"ballistic_failure_local_xz": local_xz,
+						"ballistic_failure_surface": surface_position,
+						"ballistic_failure_details": range_result,
+					}
 			var slope := rad_to_deg(acos(clampf(surface_normal.y, -1.0, 1.0)))
 			target_mask[pixel_index] = 255
 			surface_positions[pixel_index] = surface_position
@@ -119,7 +137,7 @@ static func build(
 			and target_ratio <= profile.target_ratio_range.y \
 			and int(connectivity.component_count) == 1 \
 			and bool(connectivity.graph_nodes_reachable)
-	return {
+	var result := {
 		"valid": structurally_ready,
 		"rejection": "" if structurally_ready else "target_structure",
 		"bytes": target_mask,
@@ -135,6 +153,9 @@ static func build(
 		"connected_target_count": connectivity.connected_target_count,
 		"graph_nodes_reachable": connectivity.graph_nodes_reachable,
 	}
+	if range_constraint != null:
+		result.merge(range_constraint.target_metrics(), true)
+	return result
 
 
 static func byte_checksum(bytes: PackedByteArray) -> int:

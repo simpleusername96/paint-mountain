@@ -168,6 +168,39 @@ func matches_stage_identity(stage: StageData) -> bool:
 			and route_graph.node_by_id(GeneratedRouteNode.summit_id(stage.stage_id)) != null
 
 
+## Creates the active-scene view of an accepted layout. Large structural owners
+## remain shared and read-only; mutable runtime annotations and packed masks are
+## isolated so gameplay cannot change the preparer's retained source layout.
+func copy_for_runtime() -> GeneratedStageLayout:
+	if not is_valid() or not has_valid_target_mask():
+		return null
+	var result := GeneratedStageLayout.new()
+	result.profile_id = profile_id
+	result.profile_version = profile_version
+	result.layout_version = layout_version
+	result.terrain_seed = terrain_seed
+	result.accepted_seed = accepted_seed
+	result.generation_attempt = generation_attempt
+	result.cell_count = cell_count
+	result.local_bounds = local_bounds
+	result.heights = heights.duplicate()
+	result.top_topology = top_topology
+	result.route_graph = route_graph
+	result.containment = containment
+	result.reachability_certificate = reachability_certificate
+	result.generated_default_aim = generated_default_aim
+	result.metrics = metrics.duplicate(true)
+	result.checksum = checksum
+	for placement in mechanism_placements:
+		result.mechanism_placements.append(placement)
+	for placement in decoration_placements:
+		result.decoration_placements.append(placement)
+	if not result.install_footprint(_footprint_cells) \
+			or not result.install_target_mask(_target_mask, _target_mask_checksum):
+		return null
+	return result
+
+
 func target_centroid_local_xz() -> Vector2:
 	if not has_valid_target_mask() or _target_pixel_indices.is_empty():
 		return Vector2(INF, INF)

@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, replay, and verification
 source: source-brief.md
@@ -14,6 +14,7 @@ related:
   - ../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
+  - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
 ---
 
 # Technical Architecture
@@ -39,6 +40,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
 | `StageCatalogBuilder` | Offline deterministic candidate search, complete validation, certificate/preview/resource emission, and atomic catalog promotion | Runtime search, hand-authored repair, or partial catalog activation |
 | `SeededStageGenerator` | Pure one-profile/one-accepted-seed route-graph and layout reconstruction plus identity verification | Candidate search, physics-world solving, stage transitions, paint state, or hand-authored production repair |
+| `ProjectileRangeConstraint` | Pure legal yaw, fixed-step damped horizon, and lower/upper height-envelope admission for every target sample and the Summit Region | Physics queries, terrain occlusion, first-hit certification, target deletion, or runtime aim assistance |
 | `DirectReachabilityValidator`, `DefaultAimSolver` | Offline exact first-hit target-wide and summit certification, centroid default selection, and certificate emission | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
 | `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target and summit identities, full certificate, default aim, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
 | `MechanismPlacementGenerator` | Exact role-owned centerline shelf transform and candidate validation | Placement scoring, alternate cells, activation behavior, or stage outcomes |
@@ -59,7 +61,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `BumperNode` | Cooldown-limited directional impulse and feedback | Direct coverage changes |
 | `CameraDirector` | Explicit CANNON/FOLLOW/WIDE modes, bookmarks, safe interpolation, follow framing | Fire-driven automatic Board Phase or game rules |
 | `HUDController` and screen controllers | Display Board Phase/readiness/activity and emit typed aim, fire, and game-menu intents | Reconstruct Fire admission, authoritative state mutation, direct pause/settings mutation, or alternate coverage |
-| `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, and navigation/return layering | Stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
+| `StageLayoutPreparer` | One worker job, urgent/prefetch ordering, accepted-layout identity checks, and a three-entry LRU | Scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
+| `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, layout-preparation scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
 | `ReplayRecorder` | Format-7 layout identities, shot-family action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
 | `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
@@ -81,6 +84,12 @@ This architecture covers the single-process desktop game. It does not define a b
   `GeneratedStageLayout`; stage scenes do not own terrain formulas, default aim,
   or production mechanism coordinates.
 - Runtime state is recreated from immutable configuration on restart. Mechanisms expose one physical `struck(projectile, contact)` entry plus shared eligibility and reset; their compound collision matches visible primitives.
+- `StageLayoutPreparer` publishes only a completed accepted layout after its
+  worker joins. AppRoot never synchronously reconstructs a cold layout during
+  navigation. Gameplay receives `GeneratedStageLayout.copy_for_runtime()` so
+  runtime default-aim and diagnostic annotations cannot mutate the preparer's
+  retained source. Meshes, textures, Nodes, physics objects, and paint state are
+  never built or accessed by the worker.
 - `GeneratedStageLayout` carries one sampled height per in-bounds XZ plus the one
   fixed cell diagonal. `TerrainGeometryFactory` emits the indexed top triangles
   once. Render mesh, top `ConcavePolygonShape3D`, hit identity, height/normal
@@ -89,9 +98,10 @@ This architecture covers the single-process desktop game. It does not define a b
   bilinear interpolation, independently triangulated collision, visual
   displacement, and query-only playable geometry are prohibited.
 - `target_mask` is immutable scoring eligibility derived from the shared top
-  triangles and copied once into `PaintSystem`; `PaintSystem` remains the sole
-  mutable paint/coverage representation. It cannot remove target texels because
-  of slope, decoration, visibility, or shot difficulty.
+  triangles through the configured target-shoulder boundary and copied once
+  into `PaintSystem`; `PaintSystem` remains the sole mutable paint/coverage
+  representation. It cannot remove target texels because of slope, decoration,
+  visibility, shot difficulty, or ballistic failure.
 - `TerrainGeometry` carries the render mesh, exact concave top shape, identical
   skirt/bottom faces, triangle/cell identity, bounds, cell/base dimensions, and
   parity counts derived by `TerrainGeometryFactory`.
@@ -187,7 +197,7 @@ Human / Replay / GameplayAgentApi actions
   Never discard a simultaneous mechanism/terrain contact by selecting one global
   primary contact or infer contact from projectile center minus world up.
 - Calculate preview positions with the exact launch transform, velocity conversion, gravity, replace-mode linear damping, fixed `1/60 s` recurrence, projectile radius, and terrain/mechanism masks used by the rigid body. Terminate at the first sphere-cast collision or bounds exit; never show post-impact behavior.
-- The canonical power curve is linear `32..150 m/s` over integer power `0..100`.
+- The canonical power curve is linear `32..160 m/s` over integer power `0..100`.
   Direct/summit certification and the continuous containment envelope consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
   reject or admit the version-7 board.
@@ -216,6 +226,12 @@ Human / Replay / GameplayAgentApi actions
 
 - `scripts/verify.ps1` is the repository smoke entry for import and main-scene runtime.
 - Each subsystem adds focused headless tests or deterministic test scenes beside its owner; no third-party test plugin is required.
+- `projectile_range_constraint_test.gd` checks the shared recurrence, both height
+  bounds, yaw/horizon rejection, whole-candidate raster rejection, Summit Region
+  admission, Stage 01/30 reconstruction, and runtime-copy isolation without a
+  scene or physics world. `stage_layout_preparer_test.gd` separately checks the
+  worker boundary, identity publication, non-blocking request, and three-entry
+  LRU with a pure injected layout strategy.
 - Final validation includes production export/start, thirty committed reliable
   solutions/certificates, adjacent progression evidence, summit first-hit proof,
   changed-aim repeat Fire, scale/contact evidence, save/replay restart,

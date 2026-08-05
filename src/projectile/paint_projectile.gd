@@ -390,8 +390,12 @@ func _deactivate_from_state(state: PhysicsDirectBodyState3D, reason: StringName)
 
 func _contains_backstop_contact(contacts: Array[ProjectileContact]) -> bool:
 	for contact in contacts:
-		if contact.contact_owner_id == ContainmentSpec.BACKSTOP_OWNER_ID \
-				and contact.contact_shape_id == ContainmentSpec.BACKSTOP_SHAPE_ID:
+		if (contact.contact_owner_id == ContainmentSpec.BACKSTOP_OWNER_ID \
+				and contact.contact_shape_id == ContainmentSpec.BACKSTOP_SHAPE_ID) \
+				or ContainmentSpec.is_side_wall_contact(
+					contact.contact_owner_id,
+					contact.contact_shape_id
+				):
 			return true
 	return false
 

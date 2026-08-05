@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -12,6 +12,7 @@ related:
   - execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
   - execplans/2026-08-05-runtime-grounded-interface.md
   - execplans/2026-08-05-gameplay-contract-recovery.md
+  - execplans/2026-08-06-ballistic-terrain-preparation.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -19,12 +20,47 @@ related:
 
 # Project Record
 
-## Active Recovery Sequence (2026-08-05)
+## Completed Ballistic Terrain Preparation (2026-08-06)
+
+The user stopped the exhaustive physical-recovery session and made two outcomes
+the immediate priority: terrain generation itself must reject projectile-domain
+misses, and navigation must not synchronously reconstruct a cold layout. The
+completed execution record is
+[`execplans/2026-08-06-ballistic-terrain-preparation.md`](execplans/2026-08-06-ballistic-terrain-preparation.md).
+
+- `ProjectileRangeConstraint` uses the shared cannon muzzle transform and exact
+  60 Hz damp-then-gravity recurrence to build a cached radial lower/upper height
+  envelope from the canonical `AimTuple` and `ProjectileData` domain over the
+  720-step prediction horizon. Target rasterization checks the projectile
+  center for every included sample and rejects the whole candidate on yaw,
+  horizontal horizon,
+  lower-height, or upper-height failure. It also requires one Summit Region
+  sample. This is analytic range admission, not terrain-occlusion or first-hit
+  certification; the latter remains a separate unfinished release guarantee.
+- Repeated final non-rendered runs rebuilt persisted Stage 01 in about
+  `3.7..4.6 s` and Stage 30 in about `11.1..13.3 s`, verified legal and synthetic
+  rejection cases, and
+  proved that an out-of-range raster fails as a whole. The envelope uses
+  `0.25 m` radial samples plus bounded `0.30 m` range and `0.50 m` height
+  discretization tolerance.
+- `StageLayoutPreparer` owns one RefCounted worker job and a three-entry LRU.
+  AppRoot urgently prepares the selected stage, keeps the current page visible
+  with localized preparation truth, starts only from a ready matching layout,
+  and then requests exactly the next numeric stage at low priority. Preview
+  artifacts remain main-thread-only and are bounded to one.
+- Gameplay now receives a runtime copy of the prepared layout. Runtime default
+  aim and Summit diagnostics therefore do not mutate the preparer's retained
+  source layout. The focused worker/identity/LRU check passed in `1.8 s`.
+- No foreground gameplay or rendered capture was used for this change.
+  `scripts/verify.ps1` passed its headless import/parser and three-second
+  main-scene start, including real worker startup and clean exit joining.
+
+## Superseded Recovery Sequence (2026-08-05)
 
 The user's foreground QA invalidated four completion claims made after commit
 `f13927a`. A static audit confirmed the reports and is preserved at
 [`evidence/2026-08-05-gameplay-contract-gap-audit.md`](evidence/2026-08-05-gameplay-contract-gap-audit.md).
-The sole active execution authority is now
+Its execution authority is preserved as superseded history at
 [`execplans/2026-08-05-gameplay-contract-recovery.md`](execplans/2026-08-05-gameplay-contract-recovery.md).
 
 The physical, rapid-fire/progression, and runtime-interface plans dated
@@ -32,7 +68,7 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-05 recovery checkpoint 9)
+## Current Implemented Truth (2026-08-06 recovery checkpoint 14)
 
 - Terrain/paint foundation: the selected gameplay layout is a closed row-solid
   3D top/shell mass with shared render/collision topology. PaintSystem remains
@@ -59,18 +95,14 @@ checked tasks while claiming major phases were implemented.
   ballistic vector and yaw nomination now use the same sign convention as the
   visual muzzle; `projectile_contact_test.gd` guards that contract. Summit
   certificates now store a dedicated summit aim tuple instead of requiring the
-  summit to alias a target witness. The Stage 01 target-wide predictor and
-  production-Rigidbody proof now passes all `67,729` scoreable texels with
-  `2,432` physical witnesses; its certificate table is rebuilt from actual
-  contact points inside the authoritative `2.10 m` impact mark. A reusable
-  offline certificate worker is present, but no thirty-stage target-wide
-  certificate bundle has been promoted yet. Stage 02's summit proof passes, but
-  its target-wide worker currently rejects one physical witness that contacts a
-  different top facet before the predicted target; no seed/candidate correction
-  has been promoted. Target witnesses use the authoritative 2.10 m impact
-  footprint. A candidate front-envelope raster filter was rolled back after
-  its generation-cost and no-target-deletion implications were measured. The
-  all-thirty certificate/preview gate remains open.
+  summit to alias a target witness. The stopped recovery session produced
+  predictor/rigid-body diagnostics for eight stages only after temporarily
+  narrowing the scoreable footprint to the bank-blend boundary. That narrowing
+  is not promoted: the configured target shoulder is scoreable again, and the
+  new ballistic gate rejects a whole candidate rather than changing its mask.
+  Those worker outputs remain historical diagnostics, not current full-target
+  certification. The complete thirty-stage target and Summit first-hit bundle
+  therefore remains open.
 - Repeat Fire: StageController keeps the board in AIMING while two root families
   are active and after the final paint drain, rejects a third without side
   effects, and publishes activity/readiness to the HUD. The old serial result

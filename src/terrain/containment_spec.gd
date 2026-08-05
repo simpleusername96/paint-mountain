@@ -17,6 +17,9 @@ const APRON_OWNER_ID := &"world/apron"
 const APRON_SHAPE_ID := &"ApronShape"
 const BACKSTOP_OWNER_ID := &"world/backstop"
 const BACKSTOP_SHAPE_ID := &"BackstopWall"
+const SIDE_WALL_OWNER_ID := &"world/side_wall"
+const SIDE_WALL_LEFT_SHAPE_ID := &"SideWallLeft"
+const SIDE_WALL_RIGHT_SHAPE_ID := &"SideWallRight"
 
 var contract_version: int:
 	get:
@@ -122,6 +125,29 @@ func backstop_bottom_y() -> float:
 
 func backstop_bounds() -> AABB:
 	return AABB(_backstop_center - _backstop_size * 0.5, _backstop_size)
+
+
+## Side walls are implicit in the fixed containment bounds. They close the
+## horizontal aiming fan without changing the rear wall contract or scoring
+## any non-terrain contact.
+func side_wall_center(side: int) -> Vector3:
+	var x := _containment_bounds.position.x + 1.5 if side < 0 else _containment_bounds.end.x - 1.5
+	return Vector3(x, _backstop_center.y, _apron_xz_bounds.position.y + _apron_xz_bounds.size.y * 0.5)
+
+
+func side_wall_size() -> Vector3:
+	return Vector3(3.0, _backstop_size.y, _apron_xz_bounds.size.y)
+
+
+func side_wall_bounds(side: int) -> AABB:
+	var center := side_wall_center(side)
+	return AABB(center - side_wall_size() * 0.5, side_wall_size())
+
+
+static func is_side_wall_contact(owner_id: StringName, shape_id: StringName) -> bool:
+	return owner_id == SIDE_WALL_OWNER_ID and (
+			shape_id == SIDE_WALL_LEFT_SHAPE_ID or shape_id == SIDE_WALL_RIGHT_SHAPE_ID
+	)
 
 
 func apron_bottom_y() -> float:

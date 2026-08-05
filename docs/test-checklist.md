@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -17,6 +17,7 @@ related:
   - ../.agents/execplans/2026-08-05-rapid-fire-thirty-stage-progression.md
   - ../.agents/execplans/2026-08-05-runtime-grounded-interface.md
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
+  - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
 ---
 
 # Test Checklist
@@ -24,12 +25,36 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-The recovery gate below is current. Older checked sections are historical
+The 2026-08-06 preparation gate below is current. Older checked sections are historical
 evidence for earlier builds and must not be read as proof of the recovery.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
+
+## Current ballistic-terrain preparation gate (2026-08-06)
+
+- [x] The shared fixed-60-Hz damped recurrence and fixed muzzle transform admit a
+  known legal trajectory and reject synthetic yaw, horizon, too-high, and
+  too-low samples without creating a scene or physics world.
+- [x] Target rasterization evaluates every included projectile-center surface
+  sample and rejects the entire candidate on the first analytic-domain failure;
+  it never edits target-mask bytes to pass.
+- [x] Persisted Stage 01 and Stage 30 seeds rebuild with all target samples and
+  at least one Summit Region sample inside the analytic envelope. Their retained
+  source layouts remain unchanged when runtime annotations are written to a
+  gameplay copy.
+- [x] A cold layout request returns without blocking, uses a RefCounted worker
+  job rather than a scene-tree object, publishes only matching identities, and
+  retains at most three layouts under the LRU test strategy.
+- [x] AppRoot has no synchronous `SeededStageGenerator.generate()` navigation
+  fallback. Preparing/failure labels are localized, Start remains disabled until
+  readiness is true, next-stage prefetch is low priority, and preview artifacts
+  retain at most one stage.
+- [x] `scripts/verify.ps1` passes the final headless import and main-scene start,
+  including real background Stage 01 generation and clean worker joining.
+- [x] Per the user's direction for this change, no foreground gameplay or
+  rendered-game test is used as acceptance evidence.
 
 ## Current gameplay-contract recovery gate (2026-08-05)
 
@@ -38,7 +63,7 @@ Run narrow checks throughout development, then complete this full checklist agai
   RMS is `1.0..18.0 m`, and Stage 04/05 pass their exact distinctness canary.
 - [ ] Every stage has a full certificate for every scoreable target triangle and
   a separate legal predictor/rigid-body first hit on the global Summit Region;
-  power endpoints are `32/150 m/s` and the damped full-domain containment proof
+  power endpoints are `32/160 m/s` and the damped full-domain containment proof
   passes with no hidden collision.
 - [ ] While ball 1 remains active, human input changes the next aim, a matching
   trajectory remains visible from the cannon view, and ball 2 fires at that new
@@ -210,10 +235,10 @@ Authority and deterministic target terrain:
   match exactly and deterministic engine-ray points differ by no more than
   `0.01 m`; no `HeightMapShape3D`, bilinear query, independent triangulation,
   visual displacement, or query-only playable geometry remains.
-- [ ] The immutable filled `target_mask` is one connected route-graph footprint.
-  Only the outer non-target band, apron/shell/bottom, and dilated physical
-  mechanism footprints are excluded; slope, decoration, visibility, and expected
-  difficulty remove no target texel.
+- [ ] The immutable filled `target_mask` is one connected route-graph footprint
+  through the configured target-shoulder boundary. After generation, slope,
+  decoration, visibility, expected difficulty, and ballistic failure remove no
+  included target texel.
 - [ ] First Descent, Burst Basin, and Split Ridge prove the frozen route/reversal,
   slope, lip, spacing, shelf, edge, target-ratio, and mechanism-placement gates.
   Failed candidates are rejected rather than repaired with authored coordinates.

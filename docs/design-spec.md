@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -13,6 +13,7 @@ related:
   - ../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../.agents/execplans/2026-08-03-core-interaction-redesign.md
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
+  - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
 ---
 
 # Paint Mountain Design Specification
@@ -22,7 +23,7 @@ related:
 Define the compact working interpretation of the effective `source-brief.md`
 for a polished thirty-stage 3D gravity-driven paintball puzzle game. Its dated
 supersessions replace finite-payload/flow behavior, locked progression, serial
-Fire, rejected paint scale, and the original aiming-HUD placement while
+Fire, rejected paint scale, synchronous navigation generation, and the original aiming-HUD placement while
 preserving manual launch planning, measured physical contacts, Korean-first
 presentation, and the rest of the baseline directive.
 
@@ -94,7 +95,7 @@ exactly three mechanism types.
 - The parent ball uses one `0.90 m` visible/collision/prediction radius. Continuous
   and settlement paint use `1.50 m`; first impact uses `2.10 m`. Splitter children
   scale both physical and paint radii uniformly by `0.78`.
-- Power `0..100` maps linearly to `32..150 m/s`. Generated summit height/range,
+- Power `0..100` maps linearly to `32..160 m/s`. Generated summit height/range,
   predictor, rigid body, and containment use that same curve; maximum-power
   rescue through a second velocity constant is forbidden.
 - Airborne travel uses no paint. A verified target-top first contact may create a
@@ -104,9 +105,15 @@ exactly three mechanism types.
   same-surface and clearance checks; real airborne gaps remain blank.
 - One 512×512 paint mask is the mutable visual and scoring source. One immutable
   512×512 `target_mask`, rasterized from the accepted shared terrain triangles,
-  defines every scoreable top texel. It excludes only the non-target outer band,
-  apron/shell/bottom, and physical mechanism footprints; slope, decorations,
-  camera visibility, and expected difficulty never cut scoring holes.
+  defines every configured scoreable top texel through the target-shoulder
+  boundary. After generation, slope, decorations, camera visibility, expected
+  difficulty, and ballistic failure never cut holes in that footprint.
+- During that target raster pass, every included sample must also remain inside
+  the shared projectile-center yaw, damped horizontal-horizon, and lower/upper
+  reachable-height envelope. One failure rejects the whole seed candidate; it
+  never removes a target pixel. At least one canonical Summit Region sample
+  must pass the same pure analytic gate. Exact terrain occlusion and first-hit
+  proof remain the separate certificate contract.
 - Persistent paint is written only by verified target-top surface sweeps and the
   defined impact, settle, and Burst radial marks reconstructed on the exact
   rendered/collidable triangle. Visual paint and scored paint cannot diverge.
@@ -134,7 +141,7 @@ exactly three mechanism types.
   deterministic route graph, canonical stage ID/version, fixed accepted seed,
   and complete typed progression profile. Stage 01 begins at `180 × 120 m` and
   `72 × 48` cells; Stage 30 ends at `240 × 160 m` and `96 × 64` cells, with
-  bounded adjacent steps and the exact formulas in the active ExecPlan. The
+  bounded adjacent steps and the exact typed progression formulas. The
   resulting surface has exactly one playable top height per XZ and
   may form broad rollable slopes, terraces, ridges, valleys, and pads, never
   caves, overhangs, tunnels, stacked tops, detached pieces, or literal stairs.
@@ -173,7 +180,7 @@ exactly three mechanism types.
   target mask, reachability certificate, default aim, decorations, and resolved
   placements.
 - Every accepted stage passes direct target-wide reachability, containment, and
-  the deterministic reliable-solution search defined in the active ExecPlan; no
+  the deterministic reliable-solution search defined by the active specs; no
   manual terrain repair, hidden target deletion, or balance choice is deferred
   to implementation.
 
@@ -222,6 +229,11 @@ exactly three mechanism types.
 ### Performance and automation
 
 - Target stable 60 FPS at 1920×1080 on modest Windows hardware, restart under one second, and load preferably under three seconds.
+- Page navigation never performs a cold terrain reconstruction synchronously.
+  AppRoot schedules one pure layout worker, keeps the initiating page responsive
+  with a truthful preparing state, retains at most three accepted layouts for
+  selected/current/next use, and materializes scene/render/physics state only on
+  the main thread. Heavy preview artifacts retain at most one stage.
 - Use one low-poly principal terrain mesh (preferably under ~50k triangles), batched mask updates, effect pooling, lightweight shadows, at most eight balls, and one split generation.
 - Provide a UI-independent in-process observation/action/event interface with stage/aim/terrain/mechanism/previous-shot data and set aim/fire/restart/camera/next-stage actions.
 
@@ -243,11 +255,11 @@ superseded implementation. They do not establish conformance with the physical
 contact, closed-terrain, manual-aim, mechanism-body, replay-format-7, or rebuilt-UI
 contracts above.
 
-The sole active implementation contract is
-`.agents/execplans/2026-08-05-gameplay-contract-recovery.md`. It supersedes the
-three contradictory 2026-08-05 physical/progression/interface plans where their
-progress claims or contracts differ. `.agents/Documentation.md` remains the
-implemented-truth boundary.
+The 2026-08-05 gameplay-recovery plan is superseded history. The completed
+`.agents/execplans/2026-08-06-ballistic-terrain-preparation.md` records the
+generation-range and responsive-preparation change; this specification and the
+source brief remain requirement authorities, while `.agents/Documentation.md`
+remains the implemented-truth boundary.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.

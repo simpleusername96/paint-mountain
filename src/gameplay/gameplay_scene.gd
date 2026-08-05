@@ -176,7 +176,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_stage_world() -> bool:
 	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
-	_generated_layout = _prepared_layout if _prepared_layout_matches_stage() else null
+	_generated_layout = _prepared_layout.copy_for_runtime() \
+			if _prepared_layout_matches_stage() else null
 	if _generated_layout == null:
 		_generated_layout = SeededStageGenerator.generate(
 			stage_data.generation_profile,

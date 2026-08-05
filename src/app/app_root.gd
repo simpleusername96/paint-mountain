@@ -6,6 +6,7 @@ const ENVIRONMENT_DRESSING_SCRIPT := preload("res://src/terrain/environment_dres
 const MAIN_MENU_SCENE := preload("res://scenes/ui/screens/main_menu.tscn")
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
+const STAGE_LAYOUT_PREPARER_SCRIPT := preload("res://src/app/stage_layout_preparer.gd")
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
@@ -13,13 +14,19 @@ var _main_menu: MainMenuScreen
 var _stage_select: StageSelectScreen
 var _settings: SettingsScreen
 var _gameplay: Node3D
+var _layout_preparer: StageLayoutPreparer
 var _settings_return: StringName = &"main_menu"
-var _stage_layout_cache: Dictionary = {}
 var _preview_artifact_cache: Dictionary = {}
 var _active_preview_stage_id: StringName = &""
+var _pending_start_stage_id: StringName = &""
 
 
 func _ready() -> void:
+	_layout_preparer = STAGE_LAYOUT_PREPARER_SCRIPT.new()
+	_layout_preparer.name = "StageLayoutPreparer"
+	add_child(_layout_preparer)
+	_layout_preparer.layout_ready.connect(_on_layout_ready)
+	_layout_preparer.layout_failed.connect(_on_layout_failed)
 	_build_preview_world()
 	_main_menu = MAIN_MENU_SCENE.instantiate()
 	_main_menu.name = "MainMenu"
@@ -41,29 +48,32 @@ func _connect_screens() -> void:
 	_main_menu.quit_requested.connect(func() -> void: get_tree().quit())
 	_stage_select.back_requested.connect(_show_main_menu)
 	_stage_select.start_requested.connect(_start_stage)
-	# Stage Select is intentionally a cheap catalog surface. Selecting a card
-	# updates only its typed detail panel; it never regenerates a terrain mesh on
-	# the navigation path. Gameplay owns generation when Start is pressed.
+	_stage_select.selection_changed.connect(_on_stage_selection_changed)
 	_settings.close_requested.connect(_on_settings_closed)
 
 
 func _show_main_menu() -> void:
 	_audio_ui()
+	_pending_start_stage_id = &""
 	_remove_gameplay()
 	_preview_world.visible = true
 	_main_menu.visible = true
 	_stage_select.visible = false
-	_set_preview_stage(StageCatalog.get_stage(&"first_descent"))
+	var game_state := get_node("/root/GameState")
+	_request_user_stage(StageCatalog.get_stage(game_state.selected_stage_id))
+	_request_menu_preview()
 	_main_menu.focus_primary.call_deferred()
 
 
 func _show_stage_select() -> void:
 	_audio_ui()
+	_pending_start_stage_id = &""
 	_remove_gameplay()
 	_preview_world.visible = true
 	_main_menu.visible = false
 	_stage_select.visible = true
 	_stage_select.refresh()
+	_request_user_stage(StageCatalog.get_stage(_stage_select.selected_stage_id()))
 	_stage_select.focus_primary.call_deferred()
 
 
@@ -77,7 +87,21 @@ func _start_stage(stage_id: StringName) -> void:
 	if not game_state.select_stage(stage_id):
 		return
 	var selected_stage := StageCatalog.get_stage(stage_id)
-	var cached_layout := _layout_for_stage(selected_stage)
+	var cached_layout := _layout_preparer.ready_layout(selected_stage)
+	if cached_layout == null:
+		_pending_start_stage_id = selected_stage.stage_id
+		_set_stage_preparation_state(selected_stage, false)
+		_layout_preparer.request_layout(selected_stage, true)
+		return
+	_enter_stage(selected_stage, cached_layout)
+
+
+func _enter_stage(selected_stage: StageData, cached_layout: GeneratedStageLayout) -> void:
+	if selected_stage == null or not _layout_matches_stage(cached_layout, selected_stage):
+		if selected_stage != null:
+			_set_stage_preparation_state(selected_stage, false, true)
+		return
+	_pending_start_stage_id = &""
 	_audio_ui()
 	_remove_gameplay()
 	_preview_world.visible = false
@@ -89,6 +113,84 @@ func _start_stage(stage_id: StringName) -> void:
 	if _gameplay.has_signal("navigation_requested"):
 		_gameplay.navigation_requested.connect(_on_gameplay_navigation)
 	add_child(_gameplay)
+	_prefetch_next_stage(selected_stage.stage_id)
+
+
+func _on_stage_selection_changed(stage: StageData) -> void:
+	if stage == null:
+		return
+	if not _pending_start_stage_id.is_empty() and _pending_start_stage_id != stage.stage_id:
+		_pending_start_stage_id = &""
+	_request_user_stage(stage)
+
+
+func _request_user_stage(stage: StageData) -> void:
+	if stage == null:
+		return
+	var ready := _layout_preparer.ready_layout(stage) != null
+	_set_stage_preparation_state(stage, ready)
+	if not ready:
+		_layout_preparer.request_layout(stage, true)
+
+
+func _set_stage_preparation_state(
+		stage: StageData,
+		ready: bool,
+		failed: bool = false
+) -> void:
+	if stage == null:
+		return
+	var game_state := get_node_or_null("/root/GameState")
+	if _main_menu != null and game_state != null \
+			and game_state.selected_stage_id == stage.stage_id:
+		_main_menu.set_play_preparation_state(ready, failed)
+	if _stage_select != null:
+		_stage_select.set_stage_preparation_state(stage.stage_id, ready, failed)
+
+
+func _on_layout_ready(stage_id: StringName, layout: GeneratedStageLayout) -> void:
+	var stage := StageCatalog.get_stage(stage_id)
+	if stage == null or not _layout_matches_stage(layout, stage):
+		_on_layout_failed(stage_id)
+		return
+	_set_stage_preparation_state(stage, true)
+	if _pending_start_stage_id == stage_id:
+		_enter_stage(stage, layout)
+		return
+	if stage_id == &"stage_01" and _preview_world.visible:
+		_set_menu_preview_if_visible.call_deferred(stage)
+
+
+func _on_layout_failed(stage_id: StringName) -> void:
+	var stage := StageCatalog.get_stage(stage_id)
+	if stage != null:
+		_set_stage_preparation_state(stage, false, true)
+	if _pending_start_stage_id == stage_id:
+		_pending_start_stage_id = &""
+
+
+func _prefetch_next_stage(stage_id: StringName) -> void:
+	var next_stage_id := StageCatalog.next_stage_id(stage_id)
+	if next_stage_id.is_empty():
+		return
+	var next_stage := StageCatalog.get_stage(next_stage_id)
+	if next_stage != null:
+		_layout_preparer.request_layout(next_stage, false)
+
+
+func _request_menu_preview() -> void:
+	var preview_stage := StageCatalog.get_stage(&"stage_01")
+	if preview_stage == null:
+		return
+	if _layout_preparer.ready_layout(preview_stage) != null:
+		_set_menu_preview_if_visible.call_deferred(preview_stage)
+	else:
+		_layout_preparer.request_layout(preview_stage, false)
+
+
+func _set_menu_preview_if_visible(stage: StageData) -> void:
+	if _preview_world.visible and _main_menu.visible:
+		_set_preview_stage(stage)
 
 
 func _on_gameplay_navigation(destination: StringName) -> void:
@@ -118,6 +220,7 @@ func _remove_gameplay() -> void:
 
 func _show_settings(return_to: StringName) -> void:
 	_audio_ui()
+	_pending_start_stage_id = &""
 	_settings_return = return_to
 	if return_to == &"main_menu":
 		_main_menu.visible = false
@@ -182,7 +285,6 @@ func _build_preview_world() -> void:
 	ground.mesh = ground_mesh
 	ground.position = Vector3(0.0, -2.7, -100.0)
 	_preview_world.add_child(ground)
-	_set_preview_stage(StageCatalog.get_stage(&"first_descent"))
 
 
 func _set_preview_stage(stage: StageData) -> void:
@@ -194,7 +296,6 @@ func _set_preview_stage(stage: StageData) -> void:
 		return
 	var artifact := _preview_artifact_for_stage(stage)
 	if artifact.is_empty():
-		push_error("Could not build preview layout for %s." % stage.stage_id)
 		return
 	for entry in _preview_artifact_cache.values():
 		var cached_dressing := entry.get("dressing") as Node3D
@@ -215,12 +316,10 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	var cached: Dictionary = _preview_artifact_cache.get(stage.stage_id, {})
 	if _preview_artifact_matches_stage(cached, stage):
 		return cached
-	var stale_dressing := cached.get("dressing") as Node3D
-	if stale_dressing != null and is_instance_valid(stale_dressing):
-		stale_dressing.queue_free()
-	var layout := _layout_for_stage(stage)
+	var layout := _layout_preparer.ready_layout(stage)
 	if not _layout_matches_stage(layout, stage):
 		return {}
+	_clear_preview_artifact_cache()
 	var geometry := TerrainGeometryFactory.build(layout)
 	var paint_texture := _preview_paint_texture(stage.stage_number)
 	var target_texture := _preview_target_texture(layout)
@@ -244,7 +343,6 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 		"terrain_seed": stage.terrain_seed,
 		"layout_checksum": layout.checksum,
 		"paint_color": stage.paint_color,
-		"layout": layout,
 		"mesh": geometry.render_mesh,
 		"material": material,
 		"paint_texture": paint_texture,
@@ -255,27 +353,18 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	return artifact
 
 
-func _layout_for_stage(stage: StageData) -> GeneratedStageLayout:
-	if stage == null or stage.generation_profile == null:
-		return null
-	var cached := _stage_layout_cache.get(stage.stage_id) as GeneratedStageLayout
-	if _layout_matches_stage(cached, stage):
-		return cached
-	var layout := SeededStageGenerator.generate(
-		stage.generation_profile,
-		stage.terrain_seed,
-		stage
-	)
-	if not _layout_matches_stage(layout, stage):
-		return null
-	_stage_layout_cache[stage.stage_id] = layout
-	return layout
+func _clear_preview_artifact_cache() -> void:
+	for entry in _preview_artifact_cache.values():
+		var cached_dressing := entry.get("dressing") as Node3D
+		if cached_dressing != null and is_instance_valid(cached_dressing):
+			cached_dressing.queue_free()
+	_preview_artifact_cache.clear()
+	_active_preview_stage_id = &""
 
 
 func _preview_artifact_matches_stage(artifact: Dictionary, stage: StageData) -> bool:
 	if artifact.is_empty() or stage == null or stage.generation_profile == null:
 		return false
-	var layout := artifact.get("layout") as GeneratedStageLayout
 	var dressing := artifact.get("dressing") as Node3D
 	return artifact.get("stage_id", &"") == stage.stage_id \
 			and int(artifact.get("stage_version", -1)) == stage.stage_version \
@@ -283,14 +372,13 @@ func _preview_artifact_matches_stage(artifact: Dictionary, stage: StageData) -> 
 			and int(artifact.get("profile_version", -1)) \
 					== stage.generation_profile.profile_version \
 			and int(artifact.get("terrain_seed", -1)) == stage.terrain_seed \
-			and int(artifact.get("layout_checksum", 0)) == (layout.checksum if layout != null else 0) \
+			and int(artifact.get("layout_checksum", 0)) != 0 \
 			and artifact.get("paint_color", Color.TRANSPARENT) == stage.paint_color \
 			and artifact.get("mesh") is ArrayMesh \
 			and artifact.get("material") is ShaderMaterial \
 			and artifact.get("paint_texture") is ImageTexture \
 			and artifact.get("target_texture") is ImageTexture \
-			and dressing != null and is_instance_valid(dressing) \
-			and _layout_matches_stage(layout, stage)
+			and dressing != null and is_instance_valid(dressing)
 
 
 func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bool:

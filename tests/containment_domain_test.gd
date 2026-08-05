@@ -19,7 +19,7 @@ func _run_checks() -> void:
 	var result: Dictionary = CONTAINMENT_DOMAIN_PROOF.evaluate(cannon, ContainmentSpec.new())
 	_assert_true(bool(result.get("valid", false)), "continuous aim envelope must fit the physical containment: %s" % str(result))
 	_assert_true(int(result.get("exact_lattice_candidate_count", -1)) == 0, "a passing continuous proof must dominate the complete canonical lattice")
-	_assert_true(float(result.get("rear_lateral_clearance", -INF)) >= 0.0, "the sphere envelope must fit inside the wall width")
+	_assert_true(float(result.get("rear_lateral_clearance", -INF)) >= 0.0, "the sphere muzzle envelope must fit inside the side-wall width")
 	_assert_true(float(result.get("upper_clearance", -INF)) >= 0.0, "the no-damping apex must stay below the wall top")
 	_assert_true(float(result.get("wall_bottom_overlap", -INF)) >= 0.0, "the wall and apron catch volumes must overlap vertically")
 	_assert_true(float(result.get("lower_clearance", -INF)) >= 0.0, "the apron must catch a sphere before the lower bound")

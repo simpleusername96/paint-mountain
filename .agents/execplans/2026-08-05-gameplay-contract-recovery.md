@@ -1,8 +1,9 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-05
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
+superseded_by: 2026-08-06-ballistic-terrain-preparation.md
 scope: truthful thirty-stage terrain progression, summit reachability, usable immediate re-aiming, and projectile-to-paint scale recovery
 source: source brief plus user QA and corrections through 2026-08-05
 supersedes:
@@ -23,10 +24,13 @@ related:
 
 # Gameplay Contract Recovery - Execution Contract
 
-This is the sole active Paint Mountain ExecPlan. It replaces three plans whose
-progress prose and implementation diverged from their unchecked tasks. Execute
-the phases in order. Do not preserve a shortcut merely because commit `f13927a`
-described it as complete.
+This plan was superseded on 2026-08-06 when the user stopped the exhaustive
+gameplay-recovery session and prioritized generation-time ballistic admission
+plus responsive stage preparation. Its unfinished physical-certification work
+remains useful evidence, but it is no longer the active execution contract. Its
+temporary bank-blend target narrowing was not promoted; the configured target
+shoulder is scoreable again, so its narrowed-mask worker tables are historical
+diagnostics only.
 
 ## Purpose
 
@@ -128,12 +132,12 @@ Out of scope:
   authoritative `2.10 m` impact mark of a Summit Region sample, with contact
   height no more than `1.0 m` below the global maximum. The stable Summit
   Region identity remains separate from the centroid default witness.
-- **Target Reachability** remains the stronger scoreability rule: every target
-  texel maps to a Playable Top first-hit witness whose `2.10 m` impact mark
-  covers that texel. Exact sampled-triangle identity is not required when the
-  adjacent-facet contact is still inside the authoritative impact footprint.
-  The target rasterizer remains unchanged; any occlusion or unreachable target
-  must reject the candidate rather than silently deleting scoreable pixels.
+- **Target Reachability** remains the stronger scoreability rule from the source
+  brief: every configured target-shoulder texel requires the named first-hit
+  evidence, and no runtime or certificate pass may delete it to hide occlusion.
+  This stopped plan temporarily tried a bank-blend-only footprint and adjacent-
+  facet impact coverage; that interpretation was withdrawn on 2026-08-06 and
+  its worker outputs are not current acceptance evidence.
 - **Board Phase** is a mutually exclusive StageController phase. Shot motion is
   not a Board Phase.
 - **Aim Editable** means human/replay/agent/debug origin rules permit changing

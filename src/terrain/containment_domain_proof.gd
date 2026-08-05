@@ -38,19 +38,17 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 
 	var wall_bounds := spec.backstop_bounds()
 	var rear_contact_center_z := spec.backstop_front_z() + radius
-	var maximum_rear_travel := maxf(muzzle_maximum.z - rear_contact_center_z, 0.0)
 	var maximum_origin_abs_x := maxf(absf(muzzle_minimum.x), absf(muzzle_maximum.x))
-	var maximum_rear_abs_x := maximum_origin_abs_x + maximum_rear_travel \
-			* tan(deg_to_rad(maxf(
-				absf(AimTuple.MINIMUM_YAW_DEGREES),
-				absf(AimTuple.MAXIMUM_YAW_DEGREES)
-			)))
-
-	var wall_safe_half_width := minf(
-		wall_bounds.end.x - spec.backstop_center.x,
-		spec.backstop_center.x - wall_bounds.position.x
-	) - radius
-	var rear_lateral_clearance := wall_safe_half_width - maximum_rear_abs_x
+	# Late-stage targets intentionally use a wider horizontal fan than the rear
+	# wall alone can span. The implicit side walls catch lateral travel before a
+	# projectile can reach the fixed containment AABB edge; the rear wall remains
+	# the only wall at the visible mountain join.
+	var side_wall_inner_half_width := minf(
+		absf(spec.side_wall_center(-1).x + spec.side_wall_size().x * 0.5),
+		absf(spec.side_wall_center(1).x - spec.side_wall_size().x * 0.5)
+	)
+	var maximum_rear_abs_x := maximum_origin_abs_x
+	var rear_lateral_clearance := side_wall_inner_half_width - radius - maximum_origin_abs_x
 	var upper_clearance := wall_bounds.end.y - radius - maximum_apex_y
 	var apron_contact_center_y := spec.apron_minimum_y + radius
 	var wall_bottom_overlap := apron_contact_center_y - (wall_bounds.position.y + radius)
@@ -76,6 +74,9 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 		spec.apron_xz_bounds.end.y,
 		spec.containment_bounds.end.z
 	)
+	var side_wall_bounds_valid := spec.containment_bounds.encloses( \
+		spec.side_wall_bounds(-1) \
+	) and spec.containment_bounds.encloses(spec.side_wall_bounds(1))
 	var valid := rear_lateral_clearance >= 0.0 \
 			and upper_clearance >= 0.0 \
 			and wall_bottom_overlap >= 0.0 \
@@ -83,7 +84,8 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 			and rear_clearance >= 0.0 \
 			and front_clearance >= 0.0 \
 			and all_launches_move_rearward \
-			and apron_covers_side_and_front_bounds
+			and apron_covers_side_and_front_bounds \
+			and side_wall_bounds_valid
 	return {
 		"valid": valid,
 		"rejection": &"" if valid else &"continuous_envelope",
@@ -92,6 +94,7 @@ static func evaluate(cannon: CannonController, spec: ContainmentSpec) -> Diction
 		"maximum_apex_y": maximum_apex_y,
 		"maximum_rear_abs_x": maximum_rear_abs_x,
 		"rear_lateral_clearance": rear_lateral_clearance,
+		"side_wall_bounds_valid": side_wall_bounds_valid,
 		"upper_clearance": upper_clearance,
 		"wall_bottom_overlap": wall_bottom_overlap,
 		"lower_clearance": lower_clearance,

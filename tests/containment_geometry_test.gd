@@ -82,6 +82,8 @@ func _assert_environment_scene(spec: ContainmentSpec, expected_apron: ApronGeome
 	_assert_true(wall_shape != null and wall_shape.size == spec.backstop_size, "the wall collider must exactly match the BoxMesh")
 	_assert_true(wall_mesh_node.position == spec.backstop_center and wall_body.position == spec.backstop_center, "wall render and collision centers must match")
 	_assert_contact_contract(wall_body, wall_shape_node, ContainmentSpec.BACKSTOP_OWNER_ID, ContainmentSpec.BACKSTOP_SHAPE_ID, spec)
+	_assert_side_wall(environment, "SideWallLeft", -1, ContainmentSpec.SIDE_WALL_LEFT_SHAPE_ID, spec)
+	_assert_side_wall(environment, "SideWallRight", 1, ContainmentSpec.SIDE_WALL_RIGHT_SHAPE_ID, spec)
 
 	var apron_mesh_node := environment.get_node("ApronMesh") as MeshInstance3D
 	var apron_body := environment.get_node("ApronBody") as StaticBody3D
@@ -128,6 +130,24 @@ func _assert_contact_contract(
 	_assert_true(body.collision_layer == spec.collision_layer and body.collision_mask == spec.collision_mask, "%s must use collision layer/mask 1/2" % owner_id)
 	_assert_true(body.get_meta(ContainmentSpec.CONTACT_OWNER_META, &"") == owner_id, "%s must expose its stable owner metadata" % owner_id)
 	_assert_true(shape.get_meta(ContainmentSpec.CONTACT_SHAPE_META, &"") == shape_id, "%s must expose its stable shape metadata" % shape_id)
+
+
+func _assert_side_wall(
+		environment: BackstopEnvironment,
+		shape_name: String,
+		side: int,
+		shape_id: StringName,
+		spec: ContainmentSpec
+) -> void:
+	var mesh_node := environment.get_node("%sMesh" % shape_name) as MeshInstance3D
+	var body := environment.get_node("%sBody" % shape_name) as StaticBody3D
+	var shape_node := environment.get_node("%sBody/%s" % [shape_name, shape_name]) as CollisionShape3D
+	var mesh := mesh_node.mesh as BoxMesh
+	var shape := shape_node.shape as BoxShape3D
+	_assert_true(mesh != null and mesh.size == spec.side_wall_size(), "%s mesh must match the fixed side-wall size" % shape_name)
+	_assert_true(shape != null and shape.size == spec.side_wall_size(), "%s collider must match the side-wall mesh" % shape_name)
+	_assert_true(mesh_node.position == spec.side_wall_center(side) and body.position == spec.side_wall_center(side), "%s render and collision centers must match" % shape_name)
+	_assert_contact_contract(body, shape_node, ContainmentSpec.SIDE_WALL_OWNER_ID, shape_id, spec)
 
 
 func _assert_flat_facets(geometry: ApronGeometry) -> void:

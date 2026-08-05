@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -10,6 +10,7 @@ related:
   - design-spec.md
   - technical-architecture.md
   - test-checklist.md
+  - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/Plan.md
 ---
 
@@ -1568,6 +1569,34 @@ optional polish:
   controller support cannot be reported as completion of a stronger ExecPlan.
   Implemented-status records and plan checkboxes must match the actual code and
   production-style evidence.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-06): Range-Aware Generation and Responsive Preparation
+
+The user stopped the prior long-running recovery session and explicitly changed
+the immediate implementation priority. These clauses extend the terrain and
+navigation requirements without weakening the separate first-physical-hit
+certification contract:
+
+- **Generation-time ballistic admission:** terrain generation must include the
+  cannon's legal projectile domain as a candidate constraint. Every scoreable
+  target sample must be inside the legal yaw fan, damped horizontal horizon, and
+  reachable-height envelope derived from the stage cannon transform, projectile
+  tuning, fixed 60 Hz step, and prediction horizon. A failing sample rejects the
+  whole terrain candidate; generation must not shrink or otherwise redefine the
+  configured scoreable footprint to pass.
+- **Summit domain admission:** every accepted terrain must have at least one
+  canonical highest-region sample inside the same analytic projectile domain.
+  This fast code-level gate is not by itself a claim that terrain occlusion or
+  first physical contact has been certified.
+- **Responsive stage preparation:** a cold layout must not be generated
+  synchronously during page navigation or Start. The application must prepare
+  deterministic seed-derived layouts away from the main navigation path, retain
+  only a small bounded set for the selected/current/next stages, and keep
+  scene/render/physics world construction on the main thread. While a requested
+  layout is not ready, the visible page must remain responsive and state that
+  preparation is in progress truthfully.
 
 All earlier requirements not contradicted here remain in force.
 

@@ -26,6 +26,22 @@ cast_shadow = 1
 
 [node name="BackstopWall" type="CollisionShape3D" parent="BackstopBody"]
 
+[node name="SideWallLeftMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("Material_backstop")
+cast_shadow = 1
+
+[node name="SideWallLeftBody" type="StaticBody3D" parent="."]
+
+[node name="SideWallLeft" type="CollisionShape3D" parent="SideWallLeftBody"]
+
+[node name="SideWallRightMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("Material_backstop")
+cast_shadow = 1
+
+[node name="SideWallRightBody" type="StaticBody3D" parent="."]
+
+[node name="SideWallRight" type="CollisionShape3D" parent="SideWallRightBody"]
+
 [node name="ApronMesh" type="MeshInstance3D" parent="."]
 material_override = SubResource("Material_apron")
 cast_shadow = 1

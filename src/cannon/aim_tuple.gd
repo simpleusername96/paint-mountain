@@ -1,8 +1,11 @@
 class_name AimTuple
 extends RefCounted
 
-const MINIMUM_YAW_DEGREES := -45.0
-const MAXIMUM_YAW_DEGREES := 45.0
+# The version-7 target footprint reaches 76.3° from the cannon at the widest
+# late-stage route. Keep a small margin so every scoreable surface remains in
+# the legal horizontal aiming fan instead of relying on an unreachable pixel.
+const MINIMUM_YAW_DEGREES := -80.0
+const MAXIMUM_YAW_DEGREES := 80.0
 const MINIMUM_ELEVATION_DEGREES := 10.0
 const MAXIMUM_ELEVATION_DEGREES := 68.0
 const MINIMUM_POWER_PERCENT := 0

@@ -11,7 +11,7 @@ extends Resource
 
 @export_category("Launch")
 @export_range(1.0, 100.0, 0.5) var minimum_launch_speed: float = 32.0
-@export_range(1.0, 150.0, 0.5) var maximum_launch_speed: float = 150.0
+@export_range(1.0, 200.0, 0.5) var maximum_launch_speed: float = 160.0
 
 @export_category("Lifetime")
 @export_range(1.0, 60.0, 0.25) var maximum_lifetime: float = 18.0

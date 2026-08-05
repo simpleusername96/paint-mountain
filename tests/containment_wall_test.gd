@@ -11,6 +11,7 @@ const LOCKED_AIMS := [
 	Vector3(0.0, 46.0, 100.0),
 	Vector3(-28.0, 42.0, 100.0),
 	Vector3(28.0, 42.0, 100.0),
+	Vector3(80.0, 10.0, 100.0),
 ]
 
 var _failed := false
@@ -56,7 +57,7 @@ func _run_checks() -> void:
 	host.queue_free()
 	await physics_frame
 	if not _failed:
-		print("Containment checks passed: three locked aims terminated on the closed apron/backstop boundary without paint commands or escape.")
+		print("Containment checks passed: four locked aims terminated on the closed apron/backstop/side-wall boundary without paint commands or escape.")
 	quit(1 if _failed else 0)
 
 
@@ -81,9 +82,10 @@ func _assert_wall_launch(
 	_assert_true(prediction.hit_identity != null, "%s predictor must expose a containment identity" % aim)
 	var predicted_backstop := _is_backstop_identity(prediction.hit_identity)
 	var predicted_apron := _is_apron_identity(prediction.hit_identity)
+	var predicted_side_wall := _is_side_wall_identity(prediction.hit_identity)
 	_assert_true(
-		predicted_backstop or predicted_apron,
-		"%s predictor must first identify the closed apron/backstop boundary" % aim
+		predicted_backstop or predicted_apron or predicted_side_wall,
+		"%s predictor must first identify the closed containment boundary" % aim
 	)
 	var observed := {
 		"contacts": [],
@@ -120,9 +122,11 @@ func _assert_wall_launch(
 		budget -= 1
 	var observed_backstop: bool = observed.contacts.size() == 1 and _is_backstop_contact(observed.contacts[0])
 	var observed_apron: bool = observed.contacts.size() == 1 and _is_apron_contact(observed.contacts[0])
-	_assert_true(observed_backstop or observed_apron, "%s runtime must report a closed apron/backstop contact" % aim)
+	var observed_side_wall: bool = observed.contacts.size() == 1 and _is_side_wall_contact(observed.contacts[0])
+	_assert_true(observed_backstop or observed_apron or observed_side_wall, "%s runtime must report a closed containment contact" % aim)
 	_assert_true(
 		(observed_backstop and observed.reason == ProjectileSettlementReason.BACKSTOP) \
+				or (observed_side_wall and observed.reason == ProjectileSettlementReason.BACKSTOP) \
 				or (observed_apron and observed.reason == &"settled"),
 		"%s must use the matching containment settlement reason" % aim
 	)
@@ -130,19 +134,22 @@ func _assert_wall_launch(
 	if observed.contacts.size() == 1:
 		var contact: ProjectileContact = observed.contacts[0]
 		_assert_true(
-			_is_backstop_contact(contact) or _is_apron_contact(contact),
+			_is_backstop_contact(contact) or _is_apron_contact(contact) or _is_side_wall_contact(contact),
 			"%s runtime shape must be a closed containment shape" % aim
 		)
 		_assert_true(not contact.impulse_was_measured, "%s speculative CCD wall contact must retain estimated-impulse provenance" % aim)
 		_assert_true(contact.impulse.length() > 0.0, "%s wall contact must preserve its deterministic fallback impulse" % aim)
 		if _is_backstop_contact(contact):
 			_assert_true(contact.normal.dot(Vector3.BACK) >= cos(deg_to_rad(1.0)), "%s wall normal must be within one degree of +Z" % aim)
+		elif _is_side_wall_contact(contact):
+			_assert_true(absf(contact.normal.x) >= cos(deg_to_rad(1.0)), "%s side-wall normal must be within one degree of horizontal X" % aim)
 		else:
 			_assert_true(contact.normal.dot(Vector3.UP) >= cos(deg_to_rad(1.0)), "%s apron normal must be within one degree of +Y" % aim)
 		_assert_true(contact.world_position.distance_to(prediction.endpoint) <= 0.25, "%s predictor/runtime wall points must agree within 0.25 m" % aim)
 	_assert_true(observed.commands == 0, "%s containment boundary must emit no paint command" % aim)
 	_assert_true(
 		(observed_backstop and observed.stop_tick == observed.contact_tick) \
+				or (observed_side_wall and observed.stop_tick == observed.contact_tick) \
 				or (observed_apron and observed.stop_tick >= observed.contact_tick),
 		"%s must stop no later than the contact tick for a wall or after roll-down for an apron" % aim
 	)
@@ -171,6 +178,13 @@ func _is_apron_identity(identity: TrajectoryHitIdentity) -> bool:
 			and identity.contact_shape_id == ContainmentSpec.APRON_SHAPE_ID
 
 
+func _is_side_wall_identity(identity: TrajectoryHitIdentity) -> bool:
+	return identity != null and ContainmentSpec.is_side_wall_contact(
+		identity.contact_owner_id,
+		identity.contact_shape_id
+	)
+
+
 func _is_backstop_contact(contact: ProjectileContact) -> bool:
 	return contact != null \
 			and contact.contact_owner_id == ContainmentSpec.BACKSTOP_OWNER_ID \
@@ -181,6 +195,13 @@ func _is_apron_contact(contact: ProjectileContact) -> bool:
 	return contact != null \
 			and contact.contact_owner_id == ContainmentSpec.APRON_OWNER_ID \
 			and contact.contact_shape_id == ContainmentSpec.APRON_SHAPE_ID
+
+
+func _is_side_wall_contact(contact: ProjectileContact) -> bool:
+	return contact != null and ContainmentSpec.is_side_wall_contact(
+		contact.contact_owner_id,
+		contact.contact_shape_id
+	)
 
 
 func _assert_true(condition: bool, message: String) -> void:

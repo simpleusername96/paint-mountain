@@ -265,7 +265,13 @@ static func _finalize_layout(
 		stage_data: StageData,
 		layout: GeneratedStageLayout
 ) -> bool:
+	var range_constraint: ProjectileRangeConstraint = null
 	if stage_data != null:
+		range_constraint = ProjectileRangeConstraint.new(stage_data)
+		if not range_constraint.is_valid():
+			layout.metrics["rejection"] = "projectile_range_configuration"
+			layout.metrics["ballistic_rejection"] = range_constraint.configuration_rejection()
+			return false
 		if not stage_data.mechanism_loadout.is_empty():
 			layout.mechanism_placements = MechanismPlacementGenerator.generate(stage_data, layout)
 			if layout.mechanism_placements.size() != stage_data.mechanism_loadout.size():
@@ -275,7 +281,8 @@ static func _finalize_layout(
 		layout.route_graph,
 		layout.top_topology,
 		profile.generation_contract,
-		profile
+		profile,
+		range_constraint
 	)
 	for key in target_result:
 		if key not in ["bytes", "checksum", "valid", "rejection"]:
@@ -283,6 +290,26 @@ static func _finalize_layout(
 	if not bool(target_result.get("valid", false)):
 		layout.metrics["rejection"] = target_result.get("rejection", "target_mask")
 		return false
+	if range_constraint != null:
+		var summit_result := range_constraint.evaluate_summit(layout)
+		layout.metrics["ballistic_summit_sample_count"] = int(
+			summit_result.get("summit_sample_count", 0)
+		)
+		layout.metrics["ballistic_summit_triangle_id"] = int(
+			summit_result.get("summit_triangle_id", -1)
+		)
+		layout.metrics["ballistic_summit_range_margin"] = float(
+			summit_result.get("range_margin", -INF)
+		)
+		layout.metrics["ballistic_summit_height_margin"] = float(
+			summit_result.get("height_margin", -INF)
+		)
+		if not bool(summit_result.get("valid", false)):
+			layout.metrics["rejection"] = "projectile_range_summit"
+			layout.metrics["ballistic_rejection"] = summit_result.get(
+				"rejection", &"unknown"
+			)
+			return false
 	if not layout.install_target_mask(
 		target_result.get("bytes", PackedByteArray()),
 		int(target_result.get("checksum", 0))

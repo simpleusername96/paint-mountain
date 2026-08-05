@@ -50,9 +50,9 @@ func _run_checks() -> void:
 func _assert_scale_contract() -> void:
 	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 0.90), "physical projectile radius must be 0.90 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.minimum_launch_speed, 32.0), "minimum launch speed must be 32 m/s")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.maximum_launch_speed, 150.0), "maximum launch speed must be 150 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.maximum_launch_speed, 160.0), "maximum launch speed must be 160 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(0.0), 32.0), "zero power must map to 32 m/s")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(100.0), 150.0), "full power must map to 150 m/s")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(100.0), 160.0), "full power must map to 160 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 1.50), "sweep paint radius must be 1.50 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 2.10), "impact paint radius must be 2.10 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.settle_paint_radius, 1.50), "settle paint radius must be 1.50 m")

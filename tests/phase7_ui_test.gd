@@ -43,9 +43,14 @@ func _run_checks() -> void:
 	_assert_true(stage_select.visible, "closing settings must return to its calling screen")
 
 	app._start_stage(&"first_descent")
-	await process_frame
-	await process_frame
-	var gameplay := app.get_node("ActiveGameplay")
+	var gameplay := await _wait_for_child(app, ^"ActiveGameplay")
+	_assert_true(gameplay != null, "stage start must complete after asynchronous layout preparation")
+	if gameplay == null:
+		game_state.persistence_enabled = true
+		app.queue_free()
+		await process_frame
+		quit(1)
+		return
 	var controller: StageController = gameplay.get_node("StageController")
 	var hud_root := gameplay.get_node("HUD/HUDRoot") as Control
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
@@ -80,6 +85,16 @@ func _run_checks() -> void:
 	await process_frame
 	await process_frame
 	quit(1 if _failed else 0)
+
+
+func _wait_for_child(parent: Node, path: NodePath, timeout_ms: int = 60000) -> Node:
+	var deadline := Time.get_ticks_msec() + timeout_ms
+	while Time.get_ticks_msec() < deadline:
+		var child := parent.get_node_or_null(path)
+		if child != null:
+			return child
+		await create_timer(0.01).timeout
+	return null
 
 
 func _assert_true(condition: bool, message: String) -> void:

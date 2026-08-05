@@ -8,6 +8,8 @@ ui.settings,SETTINGS,설정
 ui.quit,QUIT,종료
 ui.back,BACK,뒤로
 ui.start_stage,START STAGE,스테이지 시작
+ui.preparing_stage,PREPARING...,지형 준비 중…
+ui.stage_unavailable,STAGE UNAVAILABLE,스테이지 준비 실패
 ui.start_aiming,START AIMING,조준 시작
 ui.restart,RESTART,다시 시작
 ui.fire,FIRE,발사

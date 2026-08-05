@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-05
+last_reviewed: 2026-08-06
 source: ../docs/source-brief.md
 scope: repository purpose and non-negotiable product constraints
 related:
@@ -11,6 +11,7 @@ related:
   - ../docs/technical-architecture.md
   - execplans/2026-08-03-gameplay-visual-reset.md
   - execplans/2026-08-05-gameplay-contract-recovery.md
+  - execplans/2026-08-06-ballistic-terrain-preparation.md
 ---
 
 # Paint Mountain Project Brief
@@ -44,12 +45,20 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
   the stage-start/restart aim from the certified hit nearest the target centroid;
   separately prove that the global highest playable top region has a legal first
   physical hit; never expose either certificate as auto-aim.
+- Reject a terrain seed during generation when any scoreable projectile-center
+  sample lies outside the shared analytic yaw/horizon/height envelope; never
+  delete target pixels to force admission. Keep this fast range gate distinct
+  from the stronger first-hit certificate.
 - Keep the next yaw/elevation/power aim and trajectory usable after Fire while up
   to two root-shot families move; motion is not an input-blocking stage phase.
 - Use one `0.90 m` parent physical radius with `1.50 m` traversed/settlement and
   `2.10 m` impact paint radii, all reconstructed through the authoritative mask;
-  map power `0..100` linearly to `32..150 m/s` so accepted summits are reachable.
+  map power `0..100` linearly to `32..160 m/s` so accepted summits and rear
+  high-face targets are reachable.
 - Keep repeated launches effectively deterministic and the initial trajectory preview consistent with real launch physics.
+- Keep menu and stage-select navigation responsive: generate cold deterministic
+  layouts on one pure worker, retain only selected/current/next layouts, and
+  create scene, render, physics, preview, and paint state on the main thread.
 - Keep the human UI independent from an in-process observation/action API suitable for later AI play and automated testing.
 - Validate the finished project by running it, testing at least one reliable solution per stage, and capturing seven separate full-resolution screenshots from the actual game.
 

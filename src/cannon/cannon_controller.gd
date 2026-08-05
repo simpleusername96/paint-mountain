@@ -21,6 +21,14 @@ var _prediction_aim_key: StringName = &""
 
 
 func _ready() -> void:
+	assert(
+		_yaw_pivot.position.is_equal_approx(CannonBallistics.YAW_PIVOT_OFFSET) \
+				and _elevation_pivot.position.is_equal_approx(
+					CannonBallistics.ELEVATION_PIVOT_OFFSET
+				) \
+				and _muzzle.position.is_equal_approx(CannonBallistics.MUZZLE_OFFSET),
+		"Cannon scene offsets must match the shared ballistic geometry contract."
+	)
 	power_percent = default_power
 	_apply_visuals()
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
@@ -105,12 +113,11 @@ func get_launch_origin() -> Vector3:
 
 
 func get_launch_origin_for(requested_yaw: float, requested_elevation: float) -> Vector3:
-	var yaw_basis := Basis(Vector3.UP, deg_to_rad(requested_yaw))
-	var elevation_basis := Basis(Vector3.RIGHT, deg_to_rad(requested_elevation))
-	var local_origin := _yaw_pivot.position + yaw_basis * (
-		_elevation_pivot.position + elevation_basis * _muzzle.position
+	return CannonBallistics.launch_origin_for_transform(
+		global_transform,
+		requested_yaw,
+		requested_elevation
 	)
-	return global_transform * local_origin
 
 
 func get_launch_velocity() -> Vector3:

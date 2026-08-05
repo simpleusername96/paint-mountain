@@ -14,6 +14,9 @@ var _page_label: Label
 var _previous_page: Button
 var _next_page: Button
 var _cards_container: GridContainer
+var _preparation_stage_id: StringName = &""
+var _preparation_ready := false
+var _preparation_failed := false
 @onready var _preview_title: Label = %PreviewTitle
 @onready var _preview_objective: Label = %PreviewObjective
 @onready var _preview_stats: Label = %PreviewStats
@@ -92,6 +95,19 @@ func selected_stage_id() -> StringName:
 	return _selected_stage.stage_id if _selected_stage != null else &""
 
 
+func set_stage_preparation_state(
+		stage_id: StringName,
+		ready: bool,
+		failed: bool = false
+) -> void:
+	if _selected_stage == null or _selected_stage.stage_id != stage_id:
+		return
+	_preparation_stage_id = stage_id
+	_preparation_ready = ready
+	_preparation_failed = failed
+	_apply_start_preparation_state()
+
+
 func set_page_for_capture(page: int) -> void:
 	_set_page(page)
 	var stages := StageCatalog.all_stages()
@@ -157,8 +173,22 @@ func _update_preview() -> void:
 	_preview_best.text = "%s %.1f%%  %s" % [
 		tr("stage.best"), float(best.get("coverage", 0.0)), _stars_text(int(best.get("stars", 0)))
 	]
-	_start_button.disabled = false
+	_apply_start_preparation_state()
 	_set_page(_page_index)
+
+
+func _apply_start_preparation_state() -> void:
+	var state_matches := _selected_stage != null \
+			and _preparation_stage_id == _selected_stage.stage_id
+	var ready := state_matches and _preparation_ready
+	var failed := state_matches and _preparation_failed
+	_start_button.disabled = not ready
+	if failed:
+		_start_button.text = tr("ui.stage_unavailable")
+	elif not ready:
+		_start_button.text = tr("ui.preparing_stage")
+	else:
+		_start_button.text = tr("ui.start_stage")
 
 
 func _display_name(stage: StageData) -> String:
