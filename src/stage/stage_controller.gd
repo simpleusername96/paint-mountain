@@ -63,7 +63,7 @@ var _projectile_manager: ProjectileManager
 var _paint_system: PaintSystem
 var _terrain_surface: TerrainSurface
 var _generated_layout: GeneratedStageLayout
-var _mechanisms: Array[GimmickBase] = []
+var _mechanisms: Array[TerrainGlyphMechanism] = []
 var _state_before_pause: State = State.BRIEFING
 var _decision_generation: int = 0
 var _shot_observation: ShotObservation
@@ -98,7 +98,7 @@ func configure(
 		projectile_manager: ProjectileManager,
 		paint_system: PaintSystem,
 		terrain_surface: TerrainSurface,
-		mechanisms: Array[GimmickBase] = []
+		mechanisms: Array[TerrainGlyphMechanism] = []
 ) -> bool:
 	if data == null or cannon == null or projectile_manager == null \
 			or paint_system == null or terrain_surface == null:
@@ -311,6 +311,10 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin):
 		return false
+	# Wind-aware previews carry an intended launch tick. Refresh synchronously at
+	# the admission boundary so human, replay, and agent Fire use the same current
+	# schedule sample instead of launching an older preview.
+	_cannon.refresh_prediction_for_fire()
 	var readiness := fire_readiness_snapshot(origin)
 	if not bool(readiness.get("fireable", false)):
 		# Fire is admitted only from this snapshot. In particular, a prediction
@@ -787,7 +791,7 @@ func _emit_fire_readiness() -> void:
 
 
 func _on_mechanism_activated(
-		mechanism: GimmickBase,
+		mechanism: TerrainGlyphMechanism,
 		projectile: PaintProjectile,
 		kind: MechanismData.Kind
 ) -> void:

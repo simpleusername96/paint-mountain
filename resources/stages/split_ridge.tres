@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://src/stage/stage_data.gd" id="1_stage"]
 [ext_resource type="Resource" path="res://resources/stage_generation/split_ridge_profile.tres" id="2_profile"]
 [ext_resource type="Resource" path="res://resources/mechanisms/splitter_node.tres" id="3_splitter"]
-[ext_resource type="Resource" path="res://resources/mechanisms/bumper_node.tres" id="4_bumper"]
+[ext_resource type="Resource" path="res://resources/mechanisms/uphill_rebound_node.tres" id="4_uphill"]
 
 [resource]
 script = ExtResource("1_stage")
@@ -21,7 +21,7 @@ terrain_seed = 671737323
 terrain_center = Vector3(0, -2, -112)
 terrain_size = Vector2(180, 120)
 cannon_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.875, 5)
-mechanism_loadout = Array[ExtResource("3_splitter")]([ExtResource("3_splitter"), ExtResource("4_bumper")])
+mechanism_loadout = Array[ExtResource("3_splitter")]([ExtResource("3_splitter"), ExtResource("4_uphill")])
 reliable_solution = Array[Vector3]([])
 briefing_camera_position = Vector3(96, 66, 18)
 briefing_camera_target = Vector3(0, 26, -112)

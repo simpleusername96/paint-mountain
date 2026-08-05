@@ -11,7 +11,7 @@ var _paint_system: PaintSystem
 var _projectile_manager: ProjectileManager
 var _camera_director: CameraDirector
 var _wind_controller: WindController
-var _mechanisms: Array[GimmickBase] = []
+var _mechanisms: Array[TerrainGlyphMechanism] = []
 var _previous_shot: Dictionary = {}
 
 
@@ -22,7 +22,7 @@ func configure(
 		paint_system: PaintSystem,
 		projectile_manager: ProjectileManager,
 		camera_director: CameraDirector,
-		mechanisms: Array[GimmickBase],
+		mechanisms: Array[TerrainGlyphMechanism],
 		generated_layout: GeneratedStageLayout = null,
 		wind_controller: WindController = null
 ) -> void:

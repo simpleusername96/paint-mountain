@@ -104,10 +104,9 @@ func _evaluate_shot(shot: Vector3) -> Dictionary:
 	if prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT:
 		return {}
 	var collider := prediction.collider as Node
-	var is_mechanism := collider != null and collider.get_parent() is GimmickBase
-	if not _terrain.is_top_collider(collider) and not is_mechanism:
-		# Nonpaintable ground/shell first contacts cannot be an intentional
-		# high-value landing and are excluded from the reliable-solution lattice.
+	if not _terrain.is_top_collider(collider):
+		# Flat glyphs are resolved after a valid terrain-top traversal. A first hit
+		# on any other collider cannot produce authoritative paint or activation.
 		return {}
 	if not _agent.fire():
 		return {}

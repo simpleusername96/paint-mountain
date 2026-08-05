@@ -9,7 +9,7 @@ const BACKSTOP_SCENE := preload("res://scenes/gameplay/backstop_environment.tscn
 const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
-const BUMPER_SCENE := preload("res://scenes/mechanisms/bumper_node.tscn")
+const UPHILL_REBOUND_SCENE := preload("res://scenes/mechanisms/uphill_rebound_node.tscn")
 const STAGE_PATHS := {
 	&"first_descent": "res://resources/stages/first_descent.tres",
 	&"burst_basin": "res://resources/stages/burst_basin.tres",
@@ -245,7 +245,7 @@ func _materialize(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
 		if packed_scene == null:
 			await _free_materialized(certification_root)
 			return {"valid": false, "rejection": &"mechanism_scene"}
-		var mechanism := packed_scene.instantiate() as GimmickBase
+		var mechanism := packed_scene.instantiate() as TerrainGlyphMechanism
 		mechanism.name = "CertificationMechanism%02d" % placement_index
 		mechanism.data = placement.mechanism_data
 		mechanism.transform = placement.local_transform
@@ -273,8 +273,8 @@ func _mechanism_scene(kind: MechanismData.Kind) -> PackedScene:
 			return BURST_SCENE
 		MechanismData.Kind.SPLITTER:
 			return SPLITTER_SCENE
-		MechanismData.Kind.BUMPER:
-			return BUMPER_SCENE
+		MechanismData.Kind.UPHILL_REBOUND:
+			return UPHILL_REBOUND_SCENE
 	return null
 
 

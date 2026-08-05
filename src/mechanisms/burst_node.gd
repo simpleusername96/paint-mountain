@@ -1,5 +1,5 @@
 class_name BurstNode
-extends GimmickBase
+extends TerrainGlyphMechanism
 
 
 func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> bool:

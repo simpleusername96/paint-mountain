@@ -1,5 +1,5 @@
 class_name SplitterNode
-extends GimmickBase
+extends TerrainGlyphMechanism
 
 var _route_targets := PackedVector3Array()
 var _owning_route_downhill_tangent := Vector3.ZERO

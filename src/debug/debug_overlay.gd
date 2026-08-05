@@ -12,7 +12,7 @@ var _projectiles: ProjectileManager
 var _paint: PaintSystem
 var _trajectory: TrajectoryPreview
 var _camera: CameraDirector
-var _mechanisms: Array[GimmickBase] = []
+var _mechanisms: Array[TerrainGlyphMechanism] = []
 var _replay: ReplayRecorder
 var _root: Control
 var _metrics: Label
@@ -43,7 +43,7 @@ func configure(
 		paint: PaintSystem,
 		trajectory: TrajectoryPreview,
 		camera: CameraDirector,
-		mechanisms: Array[GimmickBase],
+		mechanisms: Array[TerrainGlyphMechanism],
 		replay: ReplayRecorder,
 		generated_layout: GeneratedStageLayout
 ) -> void:

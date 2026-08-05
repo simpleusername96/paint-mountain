@@ -161,11 +161,6 @@ func set_label_visible(value: bool) -> void:
 		_label.visible = value
 
 
-func mechanism_body() -> StaticBody3D:
-	# Compatibility query for callers migrating from physical mechanisms.
-	return null
-
-
 func selection_body() -> CollisionObject3D:
 	return _selection_area
 

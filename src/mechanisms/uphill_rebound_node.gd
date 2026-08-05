@@ -1,5 +1,5 @@
 class_name UphillReboundNode
-extends GimmickBase
+extends TerrainGlyphMechanism
 
 var _uphill_tangent := Vector3.ZERO
 
