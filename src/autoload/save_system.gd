@@ -1,6 +1,6 @@
 extends Node
 
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 
 
@@ -41,6 +41,8 @@ func load_data(path: String = DEFAULT_SAVE_PATH) -> Dictionary:
 		return default_data()
 	if int(parsed.get("version", -1)) == 1 or int(parsed.get("version", -1)) == 2:
 		parsed = _migrate_v1(parsed)
+	elif int(parsed.get("version", -1)) == 3:
+		parsed = _migrate_v3(parsed)
 	elif int(parsed.get("version", -1)) != SAVE_VERSION:
 		_preserve_invalid(path)
 		return default_data()
@@ -100,6 +102,14 @@ func _migrate_v1(data: Dictionary) -> Dictionary:
 		"burst_basin": selected = "stage_02"
 		"split_ridge": selected = "stage_03"
 	migrated["selected_stage_id"] = selected
+	migrated["version"] = SAVE_VERSION
+	return migrated
+
+
+func _migrate_v3(data: Dictionary) -> Dictionary:
+	# Version 4 adds optional best-run metadata. Existing coverage and stars are
+	# already authoritative, so migration only advances the envelope version.
+	var migrated := data.duplicate(true)
 	migrated["version"] = SAVE_VERSION
 	return migrated
 

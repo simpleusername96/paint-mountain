@@ -33,14 +33,29 @@ func select_stage(stage_id: StringName) -> bool:
 	return true
 
 
-func complete_stage(stage_id: StringName, coverage: float, stars: int, persist: bool = true) -> void:
+func complete_stage(
+		stage_id: StringName,
+		coverage: float,
+		stars: int,
+		persist: bool = true,
+		result_metadata: Dictionary = {}
+) -> void:
 	var key := String(StageCatalog.canonical_id(stage_id))
 	var previous: Dictionary = best_results.get(key, {})
-	best_results[key] = {
-		"coverage": maxf(coverage, float(previous.get("coverage", 0.0))),
-		"stars": maxi(stars, int(previous.get("stars", 0))),
-	}
-	var next_id := StageCatalog.next_stage_id(StringName(key))
+	var is_strictly_better := not best_results.has(key) \
+			or coverage > float(previous.get("coverage", 0.0))
+	if is_strictly_better:
+		var best_result := {
+			"coverage": coverage,
+			"stars": stars,
+		}
+		if not result_metadata.is_empty():
+			best_result["metadata"] = {
+				"elapsed_seconds": maxf(float(result_metadata.get("elapsed_seconds", 0.0)), 0.0),
+				"shots_used": maxi(int(result_metadata.get("shots_used", 0)), 0),
+				"finish_reason": String(result_metadata.get("finish_reason", "")),
+			}
+		best_results[key] = best_result
 	progression_changed.emit()
 	if persist and persistence_enabled:
 		save_now()
@@ -68,7 +83,7 @@ func save_now() -> Error:
 
 func export_data() -> Dictionary:
 	return {
-		"version": 3,
+		"version": 4,
 		"selected_stage_id": String(selected_stage_id),
 		"best_results": best_results.duplicate(true),
 		"settings": settings.duplicate(true),
