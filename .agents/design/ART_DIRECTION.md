@@ -107,17 +107,23 @@ owned by `UIUX_GUIDELINES.md`.
   agreement.
 - Burst uses a radial explosion icon, Splitter three readable arrow spokes, and
   Uphill Rebound one explicit uphill arrow. Color is supplementary.
-- Glyphs must be large enough to identify from the aiming and inspection cameras
-  and placed on meaningful route nodes with clear sightlines. Larger stages may
-  carry more glyphs; small stages may have few or none.
+- Glyphs must be large enough to identify from the aiming and inspection cameras.
+  The shared generator searches actual visible playable top surface, keeps each
+  full circle inside the terrain with boundary and inter-glyph spacing, and may
+  retain nearby route identity only for mechanism behavior. It does not use a
+  stage-specific world coordinate or require the visible center to be a
+  pre-authored route pad. Larger stages may carry more glyphs; small stages may
+  have few or none.
 - The predicted trajectory uses blue depth-tested marks and ends at the first
   real collision with a readable impact ring.
 - A ball's valid playable-top contact produces a continuous blue route over its
   real traversal, including outside the scoreable mask. Only target-mask overlap
   affects coverage. Airborne travel remains unpainted.
-- Small pooled leaves or debris move with the current wind as a restrained depth
-  cue. They never hide the trajectory, paint, or glyphs, and reduced decorative
-  motion can suppress them without hiding the HUD wind rule.
+- Small pooled leaves or debris move with the current wind as a restrained but
+  readable depth cue at the authored distant view. They never hide the
+  trajectory, paint, or glyphs, and reduced decorative motion can suppress them
+  without hiding the HUD wind rule. Merely spawning close-up-scale particles
+  that disappear at gameplay distance does not satisfy this cue.
 - Muzzle, contact, mechanism, Finish, and timeout effects are brief and bounded.
   They explain cause and effect rather than covering it.
 

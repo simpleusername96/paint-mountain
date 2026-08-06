@@ -1,9 +1,9 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-06
 last_reviewed: 2026-08-06
-scope: truthful initial-launch Fire capacity, baked deterministic stage-layout loading, and bounded baseline UI repair
+scope: truthful initial-launch Fire capacity, visible-surface glyph placement, baked deterministic stage-layout loading, visible wind cues, and bounded baseline UI repair
 source: user-reported disabled Fire, excessive stage preparation latency, and baseline UI quality defects diagnosed against the 2026-08-06 repository state
 related:
   - ../PLANS.md
@@ -22,16 +22,16 @@ related:
 # Fast Stage Entry, Truthful Fire Capacity, and Baseline UI Repair - Execution Contract
 
 Paint Mountain will keep its two concurrent initial-launch limit, but a
-Splitter child or wind-woken resident will no longer hold that Fire slot. Stage
-entry will stop rebuilding terrain and searching for default/summit aims at
-runtime; it will asynchronously load one validated, content-addressed baked
-layout instead. The current Stage 30 placement failure will be resolved by the
-offline catalog builder selecting and persisting the first fully valid candidate
-from the existing deterministic candidate domain, never by weakening placement
-rules at runtime. The same execution will repair the running-build UI defects
-that currently hide twenty stages, erase the power-step glyphs, obstruct the
-launch origin with onboarding help, and stack Pause beneath Settings; it will not
-turn into a new screen design or camera-composition program.
+Splitter child or wind-woken resident will no longer hold that Fire slot. One
+shared deterministic generator will place flat mechanism glyphs by searching
+the actual visible terrain surface rather than relying on fixed route-pad
+positions. Stage entry will stop rebuilding terrain and searching for
+default/summit aims at runtime; it will asynchronously load one validated,
+content-addressed baked layout instead. The same execution will finish the
+running-build UI repairs that expose all thirty stages, restore HUD and modal
+legibility, and make the existing wind debris readable at the distant gameplay
+scale. It will not add a new screen, mechanism kind, asset pack, camera model,
+or bespoke stage coordinate.
 
 ## Purpose
 
@@ -42,16 +42,18 @@ turn into a new screen design or camera-composition program.
 - Deliverable: separated launch-slot and shot-observation lifecycles, one baked
   layout resource/codec, a format-4 content-addressed catalog bundle, a threaded
   runtime layout repository, bounded offline default/summit witnesses, truthful
-  loading/failure UI, bounded baseline interface repairs, and focused regression
-  evidence.
+  loading/failure UI, one general visible-surface glyph placement policy,
+  readable procedural wind debris, bounded baseline interface repairs, and
+  focused regression evidence.
 - Completion state: ammunition is consumed only by an accepted Fire; descendants
   and reawakened residents never occupy a released launch slot; normal app,
   gameplay, and delivery paths contain no terrain generation or aim solving;
   all 30 catalog entries load their exact baked layouts; representative cold
   Stage 01 and Stage 30 entry complete within three seconds on the current
   Windows test machine; all thirty stages are visibly reachable; the repaired
-  HUD and nested settings flow are legible and non-overlapping at 1280x720; and
-  the production build starts with the baked bundle.
+  HUD and nested settings flow are legible and non-overlapping at 1280x720; wind
+  debris renders and moves in the same direction as the HUD without relying on
+  gameplay judgment; and the production build starts with the baked bundle.
 
 ## Scope and Boundaries
 
@@ -63,19 +65,24 @@ In scope:
 - Lossless baked persistence of accepted `GeneratedStageLayout` data.
 - Offline candidate selection, two bounded real first-hit entry witnesses, and
   atomic generated-catalog publication.
+- Deterministic glyph candidate search over actual playable top-surface cells,
+  common footprint/visibility/separation eligibility, and kind-specific scoring
+  or direction metadata without stage-specific coordinates.
 - Asynchronous selected/prefetch loading, three-layout LRU retention, explicit
   load failure/retry, and runtime fallback removal.
 - Bounded 1280x720 repairs for Stage Select pagination, power-step icon contrast,
   first-session-hint placement, Pause-to-Settings presentation/focus, localized
   Settings option state, and low-cost main-menu/Pause layout residue.
+- Procedural wind-debris size, density, placement, and distance readability
+  using the existing `WindDebrisField` and reduced-motion behavior.
 - Focused code checks, one explicit all-stage artifact build, representative
-  runtime timing/render evidence, docs, and production export/start.
+  runtime timing/render-smoke evidence, docs, and production export/start.
 
 Out of scope:
 
 - Raising or removing the two concurrent initial-launch limit.
-- Deleting terrain-resident paintballs, changing ammunition, wind, paint,
-  scoring, stage duration, glyph effects, or camera interaction.
+- Deleting terrain-resident paintballs, changing ammunition, wind schedule or
+  physics, paint, scoring, stage duration, glyph effects, or camera interaction.
 - New screens, new assets, a new global theme, wholesale HUD/menu redesign,
   Stage 01 or cross-stage camera/framing tuning, or replacing the existing
   ten-card pagination model.
@@ -86,6 +93,8 @@ Out of scope:
   target-wide certificate exists.
 - Weakening target, range, route, slope, glyph-kind, placement, containment, or
   summit validators to make a candidate pass.
+- New mechanism kinds or implementation of the nine previously deferred
+  mechanism ideas.
 - Serializing meshes, collision shapes, scene nodes, textures, mutable paint,
   preview artifacts, or runtime physics state.
 - A broad live-generation sweep, exhaustive per-pixel physics run, multi-
@@ -102,17 +111,21 @@ data migration is required.
 | --- | --- | --- | --- | --- |
 | Fire is disabled while shots remain | The captured Stage 04 state shows `남은 탄 2` with disabled Fire and `포탄 2개 진행 중`. `StageController.fire_readiness_snapshot()` correctly checks ammunition separately from `ProjectileManager.active_root_count()` | `ProjectileManager` retains one launch slot while **any** non-resting projectile with the same `shot_id` exists. Splitter children keep their root `shot_id`, so descendant motion is incorrectly counted as root-launch capacity | Keep the two-slot policy and make capacity depend only on each root's one-time initial launch | 1.1-1.3 |
 | A simple slot fix could truncate shot records | `shot_family_finished` currently drives `ShotObservation` sealing after paint queues drain | One dictionary and one completion signal currently represent two different lifecycles: root launch admission and all first-flight family bodies | Maintain separate initial-root and unsettled-family registries. Release Fire from the first; keep observation completion on the second | 1.1-1.3 |
+| Persistent terrain residents expose a second capacity trap | The focused rapid-fire test retained active projectiles after both shots reached terrain, matching the user's stage-long resident requirement, but a rest/empty-manager wait exhausted its budget and left Fire/observation assertions stale | Rest or deletion cannot define first-flight completion when a valid projectile may keep rolling and painting for the stage | End the root slot on its first authoritative valid-top traversal; end the family observation after every current family body reaches valid top or terminates; never delete a resident to free Fire | 1.1-1.3 |
 | Cold preparation exceeds the entry target and grows with later stages | Repeated final non-rendered runs recorded Stage 01 at `3.7..4.6 s` and Stage 30 at `11.1..13.3 s` in `.agents/Documentation.md` | The worker removes a main-thread freeze but still performs full height synthesis, 512x512 route/target scans, connected-component work, placement, decoration, and ballistic-domain sampling on every cold process | Persist accepted immutable outputs once and load them; do not tune the runtime loops as the primary solution | 2.1-4.4 |
-| Stage 30 does not merely load slowly | The same current run rejected Stage 30 after 11,370 ms with `UPHILL_REBOUND`, `mechanism_placement`, and `kind_suitability` | The hand-maintained accepted-candidate index is stale after the version-8 keyed sampler/glyph contract changed | Search the fixed candidate indices 0-31 only in the explicit offline build, persist the first full-valid seed/index, and fail publication if none passes | 3.1-3.3 |
+| Stage 05 blocks format-4 publication | The explicit build tested candidate indices 0-31; all 32 passed structural generation and failed `mechanism_placement/kind_suitability/UPHILL_REBOUND` before witness or codec work | Placement only searches route-authored pad anchors. A valid circular surface elsewhere on the generated mountain is never considered, and Uphill uses a hard 3 m / 0.5 m rise gate as eligibility instead of ranking the best local ascent | Search canonical playable top cells, apply common surface/visibility/spacing eligibility, then rank Uphill by local maximum ascent without a map-invalidating rise threshold. Keep Splitter's functional branch metadata requirement and never special-case a stage | 3.0-3.3 |
 | An urgent selected stage can wait behind irrelevant work | `StageLayoutPreparer` has one active `Thread`; a running menu preview or next-stage prefetch cannot be preempted | Urgent and speculative work share one serial generation worker | Replace preparation with independent threaded resource requests: at most one current selection and one prefetch may be pending, and selected loading starts immediately | 4.1-4.2 |
 | Prepared layout is not a complete runtime handoff | `GameplayScene` regenerates synchronously when preparation identity fails, searches for a default aim when missing, and always searches for a summit aim | Runtime still owns recovery generation and bounded physics solving | Fail closed before scene entry and consume baked layout/default/summit data only | 2.1-4.3 |
 | Current bundle cannot supply the handoff | Active format-3 manifest `v8-1170.../manifest.json` has no layout paths and no certificates | The content-addressed bundle persists inputs, not accepted layout outputs | Add binary baked layouts and positional paths to format 4 while keeping generation contract version 8 | 2.1-3.3 |
+| The first screen still says `지형 준비 중…` and disables Play | The registered Windows executable predates the current source and still runs `StageLayoutPreparer`; the current worktree instead rejects the active format-3 catalog because no format-4 layouts exist | Source, generated artifacts, and exported executable are at three different checkpoints | Finish and publish format 4, fail invalid catalogs into an explicit retry state, then rebuild the canonical executable once | 3.3-4.4, 6.2-6.3 |
 | Disabled-state wording is ambiguous | `fire.capacity` says `포탄 2개 진행 중`, which can look like ammunition exhaustion beside the remaining-shot count | The UI does not name the initial-root-launch rule; calling it a general flight limit would also be false while descendants or reawakened residents move | Report `초기 발사 동시 한도 2/2` / `INITIAL LAUNCH LIMIT 2/2`; retain the authoritative remaining-shot display | 1.2, 4.4 |
 | Only ten stages appear selectable | Fresh page-1/page-2 captures show Stages 01-10 and 11-20, but neither shows page controls even though the catalog has 30 stages | The runtime pager combines center-bottom anchors with absolute position `(310, 664)`, placing it outside the 1280x720 viewport | Keep ten-card pages; move localized Previous/Next plus an explicit `1-10 / 30` range into a scene-owned `CardsPanel` footer | 5.1 |
 | Power decrease/increase look like blank buttons | Fresh Aim Lock evidence and source-asset inspection show two white-only icons on light button surfaces | `AimControls` does not apply the navy icon tint already used by the gear button | Apply shared navy normal/hover/pressed/focus tint, muted disabled tint, and localized tooltips without changing input behavior | 5.2 |
 | First-session help hides the launch origin | The four-second center-bottom hint covers the cannon/muzzle and lower trajectory and touches Fire | The hint uses a fixed 600x48 center-bottom rectangle instead of the available left rail | Keep its copy and duration but place a compact wrapped hint below the mode toggle and above coverage | 5.2 |
 | Settings visually stacks on Pause | Fresh Settings evidence shows Pause text through the panel and two stacked scrims; the gameplay return branches in `AppRoot` are `pass` | The parent Pause presentation is never suspended while the child Settings screen owns input | Hide only the Pause presentation, keep simulation paused, close Settings on Escape, then restore Pause with focus on Settings | 5.3 |
 | Small menu/settings residue makes otherwise functional surfaces look unfinished | Fresh evidence shows an orphaned Korean subtitle line, a developer milestone footer, a 150 px empty Pause tail, and raw `MEDIUM`/`1920X1080` option text | Fixed widths/heights and generic `.to_upper()` display formatting bypass the Korean-first surface contract | Widen the subtitle content, remove milestone copy, make Pause content-height-driven, localize quality display, and make fullscreen resolution state explicit | 5.3-5.4 |
+| Wind debris is effectively absent at gameplay scale | `WindDebrisField` spreads only 24 boxes sized about 0.22 x 0.42 m across mountains up to 230 x 154 m; reduced motion is false in the current user settings, so suppression is not the cause | The procedural cue is dimensioned as a close-up object while the camera reads a distant mountain | Keep it restrained and procedural, but scale count/size and bias placement toward visible playable surface so motion is readable without covering trajectory or glyphs | 5.5 |
+| Stage/UI repairs do not appear in the user's executable | Pager, translations, AppRoot, HUD, Pause, and Settings changes exist only in the dirty worktree; the registered executable was built before those edits | A source-only change was described as implemented before artifact, tests, and export were integrated | Treat source presence as partial progress only; complete the named checks and one canonical export before calling the feature implemented | 4.4, 5.1-5.5, 6.2-6.4 |
 
 Readiness statement:
 
@@ -121,44 +134,56 @@ Readiness statement:
   target work, runtime fallback, and two physics aim searches on the entry path.
 - Removing or raising Fire capacity is rejected because it hides the lifecycle
   error and weakens the planning rule.
-- The fresh running-build audit separates captured cold-loading surfaces from
-  settled UI defects; blank loading previews remain owned by baked loading, while
-  the verified pagination, HUD, and nested-modal defects receive bounded repairs.
-- The remaining implementation choices are local encoding and integration work;
-  they do not require a product decision.
+- The user's latest feedback reopens the visible wind cue and rejects fixed-pad
+  glyph placement. Those decisions are now closed by the general surface-search
+  policy above; no Stage 05-only coordinate or new art asset is permitted.
+- Gameplay feel, balance, and visual approval remain user-owned. The agent runs
+  code checks, build/start checks, and background render-smoke inspection only.
+- The remaining implementation choices are local mechanics under this contract;
+  they do not require another product decision.
 
 ## Domain Alignment and Ownership
 
 | Term | Exact meaning in this plan | Owner |
 | --- | --- | --- |
-| Initial root launch | The one-time period from admission of a generation-0 root until that root first rests on valid terrain or terminates | `ProjectileManager` |
+| Initial root launch | The one-time period from admission of a generation-0 root until that root first traverses authoritative valid top after ordinary base-paint processing, or terminates | `ProjectileManager` |
 | Initial-launch slot | One of two admission slots occupied only by an active initial root launch | `ProjectileManager`; read by `StageController` |
 | Descendant | A Splitter-created projectile with `split_generation > 0` and the parent's `shot_id`; never a launch-slot owner | `ProjectileManager` and Splitter |
 | Resident | Any still-present projectile, moving or resting, including descendants and wind-woken bodies | `ProjectileManager` |
-| Unsettled shot family | Same-`shot_id` bodies whose first-flight observation still has a non-resting member | `ProjectileManager`; consumed by `StageController` observation sealing |
+| Unsettled shot family | Same-`shot_id` bodies whose first-flight observation still has a member that has not reached authoritative valid top or terminated | `ProjectileManager`; consumed by `StageController` observation sealing |
 | Accepted candidate | The first candidate in deterministic index order 0-31 that passes the existing complete structural/layout validators and this plan's two bounded entry-witness checks | Offline catalog builder |
 | Baked layout | Schema-versioned immutable primitive payload reconstructed into one runtime `GeneratedStageLayout` without generation or physics search | `BakedStageLayoutData` and `StageLayoutBakeCodec` |
 | Runtime-ready layout | A hydrated layout whose stage identity, structural data, target mask, checksums, and bounded default/summit witnesses validate | `GeneratedStageLayout` and codec |
 | Layout repository | App-owned asynchronous loader and three-entry hydrated-layout cache; it never generates | `StageLayoutRepository` |
+| Glyph-eligible surface | A canonical playable top-surface sample whose full circular footprint fits, is readable from the authored gameplay views, and respects boundary and glyph separation; eligibility is independent of mechanism kind | `MechanismLoadoutPlanner` |
+| Kind-specific placement metadata | Data derived after generic eligibility: Burst needs no direction, Uphill records the best local ascent direction and uses rise as a ranking score, and Splitter must still resolve its required route-readable child targets | `MechanismLoadoutPlanner` and mechanism Resources |
 | Visible stage page | Ten Stage Select cards plus a localized Previous/Next footer and explicit inclusive range over all 30 catalog entries | `StageSelectScreen` scene/script |
 | Parent-overlay suspension | Hiding Pause presentation while Settings owns input without changing the paused stage state | `AppRoot` through a narrow `GameplayScene`/HUD interface |
+| Render-smoke evidence | Background production capture used only to detect missing, clipped, overlapped, or non-rendering task-owned output; it is not gameplay, balance, aesthetic, or user-acceptance QA | Delivery capture runner and implementing agent |
 
 Invariants:
 
 1. `StageController` remains the only Fire admission and ammunition owner.
 2. `ProjectileManager` remains the only initial-launch/resident lifecycle owner.
 3. A rejected Fire action consumes zero ammunition.
-4. A root launch releases its slot permanently at first valid-terrain rest or any
-   terminal stop. Later root wake cannot reacquire it.
+4. A root launch releases its slot permanently at its first authoritative valid-
+   top paint traversal or any terminal stop. Continued rolling and later wake
+   cannot retain or reacquire it.
 5. Descendants never add, retain, or reacquire an initial-launch slot.
 6. Shot-family observation completion remains later than or equal to the last
-   first-flight family member's rest/termination; releasing Fire must not seal a
-   moving Splitter child's observation.
+   first-flight family member's first authoritative valid-top traversal or
+   termination; releasing Fire must not seal a Splitter child that has not yet
+   reached terrain.
 7. Current stages remain within the hard 21-resident bound before admission.
 8. Runtime uses exactly the accepted seed and baked artifact referenced by the
    active catalog. It never searches, substitutes, repairs, or regenerates.
 9. `PaintSystem`, terrain geometry, target mask, and gameplay state ownership do
    not change.
+10. Glyph placement never uses a stage ID branch or hand-authored world X/Z.
+    Generic eligibility is common; mechanism-specific behavior only ranks or
+    annotates eligible candidates.
+11. Reduced motion may hide wind debris but never changes wind physics or the HUD
+    cue. Normal motion must produce a readable cue at the authored distant view.
 10. A missing, malformed, mismatched, or corrupt artifact fails closed and leaves
     the current page usable; it never triggers a generator fallback.
 11. Every one of the 30 all-open stages is reachable through visible mouse and
@@ -178,9 +203,10 @@ Invariants:
   `_unsettled_shot_family_ids` for observation completion.
 - Generation-0 spawn adds the `shot_id` to both registries. Child spawn adds no
   capacity entry and continues under the existing family entry.
-- When a generation-0 projectile first enters `RESTING_ON_TERRAIN`, remove its
-  capacity entry, emit one `initial_root_launch_finished(shot_id)` signal, and
-  publish activity/readiness. Waking that root does not add it again.
+- When a generation-0 projectile first emits an authoritative
+  `valid_top_traversed` event after ordinary base-paint processing, remove its capacity
+  entry, emit one `initial_root_launch_finished(shot_id)` signal, and publish
+  activity/readiness. Continued rolling, resting, or waking does not add it again.
 - When a generation-0 projectile stops for any reason, perform the same permanent
   release. Splitter consumes the parent before admitting children, so both the
   root-stop activity publication and the family-completion refresh occur at one
@@ -188,8 +214,9 @@ Invariants:
   but family completion must scan the three already-admitted children and must
   not emit between parent consumption and child spawn.
 - Independently scan all same-`shot_id` bodies for first-flight family
-  completion. `shot_family_finished(shot_id)` retains its current observation
-  meaning and fires only when no family body remains non-resting.
+  completion. `shot_family_finished(shot_id)` fires only when every current
+  family body has reached authoritative valid top or terminated. A Splitter
+  parent's deferred stop refresh must see all admitted children first.
 - Invalid-instance pruning refreshes both registries using their different
   predicates. Cleanup clears both without re-enabling Fire after terminal entry.
 - Keep `StageController.fire_readiness_snapshot()` as the canonical gate. Its
@@ -265,7 +292,31 @@ Invariants:
 - Continue to use `copy_for_runtime()` so cached immutable source layouts cannot
   receive mutable gameplay annotations.
 
-### C. Make the catalog builder the only generation/search/solve path
+### C. Search the generated surface for glyph placement
+
+- Build deterministic candidate anchors from canonical active top cells in
+  stable row-major order rather than from `route_graph.pad_nodes()` alone.
+- A common eligibility pass requires the full glyph circle plus edge margin to
+  remain on playable top, bounded slope/normal variation, authored-view projected
+  readability, and configured separation from already selected glyphs. Candidate
+  generation may retain the nearest route identity as metadata, but route pads
+  are not the candidate domain.
+- Keep surface eligibility independent of mechanism kind. Burst ranks stable
+  candidates without extra geometry. Uphill samples local directions, stores the
+  direction with the greatest height gain, and ranks by that gain; it does not
+  reject the entire layout because the best gain is below the old 0.5 m threshold.
+  Splitter still requires three distinct route-readable child targets because
+  those targets are functional behavior, not visual placement policy.
+- Prefer candidates with a clear height-field line from the cannon side and
+  sufficient projected size in the aiming and briefing views. Do not create a
+  physics scene or runtime query during generation.
+- Use deterministic score then canonical position/triangle identity as the tie
+  break. Keep the existing backtracking assignment and pairwise glyph separation.
+- Remove the Stage 04/05/08-style implication that a route-relative pad location
+  is the mechanism's authored placement. Profiles may still own mechanism counts
+  and kinds, but not a final glyph coordinate.
+
+### D. Make the catalog builder the only generation/search/solve path
 
 - Bump only `BUNDLE_FORMAT_VERSION` from 3 to 4. Keep the current generation and
   replay contract versions unchanged because persistence transport alone does
@@ -290,9 +341,9 @@ Invariants:
   assert `generation_attempt == 0` and
   `stage.terrain_seed == profile.base_seed == terrain_seed == accepted_seed ==
   candidate_seed_for(stage, index)`.
-- Do not alter `kind_suitability` or special-case Stage 30. If Stage 30's current
-  index 6 fails, the next full-valid candidate wins by the same rule as every
-  other stage.
+- Apply the common visible-surface placement policy to every candidate and every
+  stage. Do not special-case Stage 05 or Stage 30. If a candidate fails another
+  unchanged validator, the next full-valid candidate wins by the same rule.
 - After layout acceptance, construct one temporary physics fixture and produce:
   1. a target-mask first-hit aim selected nearest the target centroid; and
   2. a separate first-hit aim for the canonical highest terrain band.
@@ -315,7 +366,7 @@ Invariants:
   artifacts directly, and never materializes candidate data, generates,
   searches, or opens a physics fixture.
 
-### D. Load baked layouts without a serialized priority bottleneck
+### E. Load baked layouts without a serialized priority bottleneck
 
 - Rename `StageLayoutPreparer` to `StageLayoutRepository`; update AppRoot, tests,
   and architecture terms together.
@@ -331,7 +382,10 @@ Invariants:
   Retain at most one main-thread preview artifact as today.
 - Load completion validates the Resource script/schema, path/stage identity,
   payload hash, hydrated layout, and both baked witnesses before emitting
-  `layout_ready`. Any mismatch emits `layout_failed` and is never cached.
+  `layout_ready`. Any authoritative selected-request mismatch emits
+  `layout_failed` and is never cached. A speculative prefetch mismatch is also
+  never cached but remains non-blocking and does not replace the selected page
+  with an error.
 - AppRoot keeps the visible page interactive while loading. The selected Start/
   Play action reports loading; on failure it becomes an explicit retry action.
 - `GameplayScene` requires the exact prepared layout. Remove its synchronous
@@ -342,7 +396,7 @@ Invariants:
   `src/app`, `src/gameplay`, and `src/delivery` code may not call generation or
   aim solving.
 
-### E. Keep the UI change small and truthful
+### F. Keep the UI change small and truthful
 
 The loading/capacity portion is UIUX Level 2: existing primary actions and
 readiness surfaces change state/copy, but no new screen or interaction model is
@@ -359,7 +413,7 @@ introduced.
   in Korean. One focused production capture per changed surface is sufficient;
   do not create a broad visual regression matrix.
 
-### F. Repair the verified baseline UI defects without redesign
+### G. Repair the verified baseline UI defects without redesign
 
 The 2026-08-06 running-build audit raises the combined UI work to UIUX Level 3
 because it covers several existing screens and gameplay states. The design
@@ -428,18 +482,22 @@ absorbing unrelated worktree changes or reopening superseded plans.
 Source owners: this plan, current git state, `.agents/Documentation.md`, effective
 product/spec documents
 
-- [ ] **0.1** Record the implementation baseline and protect unrelated changes.
+- [x] **0.1** Record the implementation baseline and protect unrelated changes.
   - Change: inspect `git status --short`, the active catalog pointer/manifest,
     the current `trajectory_predictor` and reachability-validator edits, and the
     latest implementation record before touching overlapping files. Stage and
     commit only task-owned files.
   - Accept: no unrelated evidence, screenshot, probe, generated bundle, or user
     hunk is reverted, staged, or claimed.
-- [ ] **0.2** Align current docs with this bounded repair.
+- [x] **0.2** Align current docs with this bounded repair.
   - Change: record baked runtime loading and the two separate projectile
     lifecycles without marking target-wide certification complete.
   - Accept: source brief remains authoritative; design, architecture, status,
     checklist, and this plan use the same definitions.
+  - Evidence (2026-08-06): source brief, design, architecture, implementation
+    record, checklist, and this plan now agree on the format-4 loader,
+    initial-root/family lifecycles, generic surface glyphs, and the still-open
+    target-wide certification gap.
 
 Batch gate:
 
@@ -455,15 +513,19 @@ Source owners: `src/projectile/projectile_manager.gd`,
 `src/stage/stage_controller.gd`, `src/stage/stage_catalog_data.gd`, translations,
 projectile/rapid-fire tests
 
-- [ ] **1.1** Split launch-slot and family-observation tracking.
+- [x] **1.1** Split launch-slot and family-observation tracking.
   - Change: add the two registries and distinct completion paths described in
-    Locked Design A; release capacity once on root rest/stop; retain
-    `shot_family_finished` until all first-flight family bodies rest/terminate.
+    Locked Design A; release capacity once on the root's first valid-top paint
+    traversal/stop; retain `shot_family_finished` until all first-flight family
+    bodies reach valid top or terminate.
   - Accept: a consumed root with moving Splitter children frees one Fire slot,
     while that shot observation stays open for later child events; no
     `shot_family_finished` or observation seal occurs between parent consumption
     and admission of all three children.
-- [ ] **1.2** Keep authoritative Fire admission and resident capacity truthful.
+  - Evidence (2026-08-06): the focused family-capacity and two-family runtime
+    contracts pass with persistent terrain residents and deferred Splitter
+    children.
+- [x] **1.2** Keep authoritative Fire admission and resident capacity truthful.
   - Change: keep StageController's existing gate, publish the updated count in
     readiness/activity snapshots, move Splitter's runtime expansion arithmetic
     behind the manager-owned capacity API, add the same current-policy
@@ -471,12 +533,18 @@ projectile/rapid-fire tests
   - Accept: two active roots reject a third Fire without spending ammunition;
     one released root makes Fire ready as soon as the current prediction permits;
     resident/wind activity never reacquires capacity.
-- [ ] **1.3** Replace the regression that currently codifies the defect.
+  - Evidence (2026-08-06): two initial roots reject a third without spending
+    ammunition; first valid-top traversal restores capacity; the 21-resident
+    catalog bound and terminal release checks pass.
+- [x] **1.3** Replace the regression that currently codifies the defect.
   - Change: update `projectile_family_capacity_test.gd` and the existing rapid-
-    fire contract test for root rest/wake, Splitter-child motion, capacity
-    rejection/no-ammo-consumption, and one representative terminal root.
+    fire contract test for root first-contact/continued residence, Splitter-child
+    motion, capacity rejection/no-ammo-consumption, and one representative
+    terminal root.
   - Accept: these focused contracts pass and `shot_observation_test.gd` still
     seals only after its proper family boundary.
+  - Evidence (2026-08-06): `projectile_family_capacity_test.gd`,
+    `rapid_fire_contract_test.gd`, and `shot_observation_test.gd` passed.
 
 Batch gate:
 
@@ -494,25 +562,29 @@ new `src/stage_generation/stage_entry_aim_witness.gd`,
 `src/stage_generation/generated_stage_layout.gd`, route/topology/placement data,
 `src/stage/stage_catalog_data.gd`, new codec test
 
-- [ ] **2.1** Implement the schema-1 primitive payload and codec.
+- [x] **2.1** Implement the schema-1 primitive payload and codec.
   - Change: encode the exact fields in Locked Design B, compute the canonical
     semantic SHA-256, save binary `.res`, hydrate runtime graph/topology/
     placements, and reject malformed or mismatched payloads.
   - Accept: a fixture layout round-trips with identical core arrays, route IDs,
     target/height/placement/containment checksums, decorations, and witness
     tuples; one corrupted payload fails closed.
-- [ ] **2.2** Make runtime readiness include the two bounded witnesses.
+- [x] **2.2** Make runtime readiness include the two bounded witnesses.
   - Change: add the generated summit witness alongside the current generated
     default aim, reconstruct both full `StageEntryAimWitness` identities, copy
     both through runtime isolation, apply the explicit absent/valid/invalid
     certificate policy, and validate their stored target/summit top identities.
   - Accept: a hydrated layout missing either witness cannot enter gameplay; a
     future complete certificate can still override/validate the same roles.
-- [ ] **2.3** Add lazy artifact paths to catalog identity.
+- [x] **2.3** Add lazy artifact paths to catalog identity.
   - Change: add and validate one canonical positional layout path for every
     ordered stage without eagerly loading the Resources.
   - Accept: duplicate, missing, noncanonical, wrong-stage, or out-of-bundle paths
     invalidate the catalog/artifact handoff.
+  - Evidence (2026-08-06): `baked_stage_layout_test.gd` and
+    `stage_progression_candidate_test.gd` passed; the active 30-stage bundle
+    save/reload/hydration verifier also passed every schema, witness, payload,
+    and canonical positional-path check.
 
 Batch gate:
 
@@ -521,23 +593,46 @@ Batch gate:
 
 ### Phase 3: Produce and atomically publish the accepted bundle
 
-Goal: all generation, candidate search, and entry-witness solving happen once in
-the explicit offline build, including a valid replacement for Stage 30's stale
-candidate.
+Goal: common surface-based glyph placement, candidate search, and entry-witness
+solving happen once in the explicit offline build for all thirty stages.
 
-Source owners: `scripts/build_stage_catalog.gd`,
-`src/stage_generation/stage_progression_data.gd`, offline aim/validator helpers,
-generated catalog resources and manifest, catalog/progression tests
+Source owners: `src/stage_generation/mechanism_loadout_planner.gd`,
+`src/stage_generation/mechanism_glyph_anchor.gd`,
+`scripts/build_stage_catalog.gd`, `src/stage_generation/stage_progression_data.gd`,
+offline aim/validator helpers, generated catalog resources and manifest,
+mechanism/catalog/progression tests
 
-- [ ] **3.1** Replace the stale accepted map with bounded build-time selection.
+- [x] **3.0** Replace fixed-pad glyph placement with deterministic visible-surface
+  search.
+  - Change: generate common anchors from canonical playable top cells; validate
+    full footprint, boundary, slope/normal variation, authored-view readability,
+    cannon-side height-field visibility, and pairwise separation; derive nearest
+    route metadata only after the surface point exists. Rank Uphill by its best
+    local ascent without the old minimum-rise rejection, keep Splitter's required
+    branch targets, and use no stage ID or hand-authored world coordinate.
+  - Accept: focused placement checks prove candidates can move away from legacy
+    pads, the same layout produces the same placement checksum, circles fit and
+    remain separated, Uphill stores the locally highest direction, Splitter keeps
+    distinct targets, and Stage 05 candidate indices 0-31 no longer all fail the
+    old Uphill `kind_suitability` reason.
+  - Guard: source inspection finds no `stage_05`, `stage_30`, or equivalent
+    stage-specific placement branch in the planner.
+  - Evidence (2026-08-06): `tests/mechanism_placement_test.gd` passed. The
+    explicit `--diagnose-stage stage_05` build accepted candidate 0 with seed
+    `1352223567`; source inspection found no stage-specific placement branch.
+
+- [x] **3.1** Replace the stale accepted map with bounded build-time selection.
   - Change: use the exact one-candidate generator for indices 0-31 in
     deterministic order, persist the first full-valid seed/index, assert the
     exact candidate identity/attempt, and remove runtime/StageProgressionData
     reliance on a hand-maintained accepted map.
-  - Accept: Stage 30 no longer attempts the rejected index-6 layout; the selected
-    candidate passes the unchanged `UPHILL_REBOUND` kind-suitability and all
-    existing finalization checks. No valid candidate means no publication.
-- [ ] **3.2** Bake one real default and one real summit witness per stage.
+  - Accept: Stage 05 and Stage 30 select the first fully valid candidate under
+    the common surface policy and all unchanged non-placement validators. No
+    valid candidate means no publication.
+  - Evidence (2026-08-06): the explicit all-stage build accepted all 30 stages;
+    the active manifest records Stage 05 candidate 0 and Stage 30 candidate 9,
+    with every accepted index inside the locked 0-31 domain.
+- [x] **3.2** Bake one real default and one real summit witness per stage.
   - Change: after structural acceptance, use one temporary fixture to select and
     validate only the two bounded first-hit witnesses, then encode their stable
     identities with the layout.
@@ -545,7 +640,10 @@ generated catalog resources and manifest, catalog/progression tests
     each summit aim first-hits the canonical highest band; predictor and real
     body identities/impacts agree under the existing functional contract. No
     target-wide validator or certificate-builder path runs.
-- [ ] **3.3** Publish format 4 as one transaction.
+  - Evidence (2026-08-06): the staged bundle contains 30 default and 30 summit
+    predictor/body identity summaries; save/reload/hydrate and runtime-ready
+    validation passed for every layout.
+- [x] **3.3** Publish format 4 as one transaction.
   - Change: generate all 30 layouts once under `--write`, save/reload/hydrate and
     validate every staged artifact, compute the bundle hash, write manifest and
     catalog paths, promote the immutable bundle, then promote the root pointer.
@@ -554,11 +652,18 @@ generated catalog resources and manifest, catalog/progression tests
     takes its early load-only branch without catalog materialization, generation,
     search, or physics; old bundles remain recoverable and are not rewritten in
     place.
+  - Evidence (2026-08-06): format 4 manifest
+    `ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`
+    is active. The staged verifier exposed and then passed after correcting JSON
+    integer/float witness comparison; verified recovery promotion preserved the
+    old pointer until final validation. The no-argument load-only check passed
+    for 30 stages in 30.198 seconds and did not enter generation or physics.
 
 Batch gate:
 
-- One complete format-4 bundle is active, every artifact hydrates, Stage 30 is
-  valid under unchanged rules, and the normal check path performs no generation.
+- One complete format-4 bundle is active, every artifact hydrates, Stage 05 and
+  Stage 30 are valid under the common placement rule, and the normal check path
+  performs no generation.
 
 ### Phase 4: Replace runtime preparation with bounded artifact loading
 
@@ -569,33 +674,49 @@ Source owners: renamed `src/app/stage_layout_repository.gd`, `src/app/app_root.g
 `src/gameplay/gameplay_scene.gd`, `src/delivery/delivery_capture_runner.gd`, main
 menu/stage-select scripts, translations, renamed repository test
 
-- [ ] **4.1** Implement threaded artifact requests and the three-entry LRU.
+- [x] **4.1** Implement threaded artifact requests and the three-entry LRU.
   - Change: replace the generator worker with `ResourceLoader` threaded requests,
     independently track current selection and one prefetch, validate/hydrate
     completed data, and retain at most three source layouts.
   - Accept: a selected request starts while a deliberately delayed prefetch is
     pending; wrong/obsolete results cannot enter another stage; missing/corrupt
-    resources emit failure; retention never exceeds three.
-- [ ] **4.2** Integrate AppRoot loading, preview, failure, and retry.
+    selected resources emit failure while speculative prefetch failure stays
+    non-blocking; retention never exceeds three.
+  - Evidence (2026-08-06): `stage_layout_repository_test.gd` passed independent
+    selected/prefetch requests, identity rejection, retry, and the three-entry
+    LRU bound.
+- [x] **4.2** Integrate AppRoot loading, preview, failure, and retry.
   - Change: route selected/menu-preview/next-stage requests through the repository,
-    retain the one-preview-artifact bound, show the exact loading/failure copy,
-    and let the failed primary action retry the same artifact.
+    retain the one-preview-artifact bound, convert invalid/missing catalog or
+    artifact identity into the exact failure copy instead of an endless loading
+    state, and let the failed primary action retry the same artifact.
   - Accept: navigation remains usable during a cold request, Start cannot enter
-    with a mismatched layout, and retry never invokes generation.
-- [ ] **4.3** Remove every production generation/solver fallback.
+    with a mismatched layout, an invalid active catalog reaches failure rather
+    than staying disabled forever, and retry never invokes generation.
+  - Evidence (2026-08-06): AppRoot now requires runtime readiness and both Main
+    Menu and Stage Select expose localized retry. Repository and Phase 7 UI
+    contracts passed against the active format-4 bundle.
+- [x] **4.3** Remove every production generation/solver fallback.
   - Change: require prepared runtime-ready data in gameplay and delivery capture;
     consume baked default/summit aims; delete calls to `SeededStageGenerator` and
     `DefaultAimSolver` from app/gameplay/delivery paths.
   - Accept: a source guard finds no such call in those production subtrees, and
     missing data produces a truthful load failure before gameplay construction.
-- [ ] **4.4** Prove the changed runtime boundary and visible states.
+  - Evidence (2026-08-06): source guard found no `SeededStageGenerator`,
+    `DefaultAimSolver`, or stale preparer use in `src/app`, `src/gameplay`, or
+    `src/delivery`; GameplayScene validates readiness before world construction.
+- [x] **4.4** Prove the changed runtime boundary and visible states.
   - Change: replace the old injectable-generation preparer test with a repository
     test; run representative Stage 01/30 entry timing; capture Korean loading or
     failure and two-flight capacity states at 1280x720.
   - Accept: both representative cold entries meet the existing under-three-
-    second target on the current Windows machine; the implementing agent inspects
-    the focused captures for copy fit, remaining-shot clarity, clipping, and
-    button state.
+    second target on the current Windows machine; focused background captures
+    show correct copy, remaining-shot clarity, clipping, and button state. They
+    are render-smoke checks, not gameplay or aesthetic approval.
+  - Evidence (2026-08-06): the final exported build recorded Stage 01 at
+    `1035.5 ms` and Stage 30 at `2068.4 ms`. The `two_family` capture shows two
+    shots remaining beside `INITIAL LAUNCH LIMIT 2/2`; all final capture
+    processes exited 0 with empty stderr.
 
 Batch gate:
 
@@ -604,9 +725,10 @@ Batch gate:
 
 ### Phase 5: Repair the bounded baseline UI defects
 
-Goal: make every stage discoverable and remove the confirmed legibility,
-overlap, nested-modal, localization, and content-fit defects without redesigning
-the product or altering gameplay.
+Goal: make every stage discoverable, make the existing wind cue render at the
+authored scale, and remove the confirmed legibility, overlap, nested-modal,
+localization, and content-fit defects without redesigning the product or
+altering gameplay.
 
 Source owners: `scenes/ui/screens/stage_select.tscn`,
 `src/ui/screens/stage_select_screen.gd`, `scenes/ui/hud/hud.tscn`,
@@ -615,9 +737,9 @@ Source owners: `scenes/ui/screens/stage_select.tscn`,
 `scenes/ui/screens/settings.tscn`, `src/ui/screens/settings_screen.gd`,
 `scenes/ui/screens/main_menu.tscn`, `src/app/app_root.gd`,
 `src/gameplay/gameplay_scene.gd`, the narrow HUD presentation delegate,
-translations, and focused UI/localization tests
+`src/wind/wind_debris_field.gd`, translations, and focused UI/localization tests
 
-- [ ] **5.1** Make all thirty Stage Select entries visibly navigable.
+- [x] **5.1** Make all thirty Stage Select entries visibly navigable.
   - Change: add `ui.previous` in both locales; put a localized Previous/range/
     Next footer inside `CardsPanel`; keep ten-card pages; update the range from
     the authoritative catalog count; and remove the off-screen runtime position
@@ -625,7 +747,11 @@ translations, and focused UI/localization tests
   - Accept: page 1, 2, and 3 visibly report `1-10 / 30`, `11-20 / 30`, and
     `21-30 / 30`; edge buttons disable correctly; mouse and keyboard can select
     a card on every page; no control clips or leaves the 1280x720 panel.
-- [ ] **5.2** Restore HUD control legibility and clear the launch origin.
+  - Evidence (2026-08-06): `phase7_ui_test.gd` passed all three page ranges and
+    edge states; final page-1/page-2 exported captures show the footer inside
+    the panel without clipping. The structural contract covers page 3 as
+    planned.
+- [x] **5.2** Restore HUD control legibility and clear the launch origin.
   - Change: add `hud.power_decrease` and `hud.power_increase` in both locales;
     tint the existing minus/plus icons in every interaction state; apply those
     translated tooltips; and place the unchanged four-second first-session help
@@ -634,7 +760,10 @@ translations, and focused UI/localization tests
     shared two-pixel treatment; the hint does not intersect Fire, the cannon/
     muzzle, trajectory, coverage, or run status; Aim/Map visibility rules remain
     unchanged.
-- [ ] **5.3** Correct the Pause-to-Settings child-modal and display states.
+  - Evidence (2026-08-06): `shot_feedback_test.gd` passed icon-state and
+    translated-tooltip checks. The final `first_hint` capture shows readable
+    navy minus/plus icons and the hint contained in the left rail.
+- [x] **5.3** Correct the Pause-to-Settings child-modal and display states.
   - Change: suspend/restore Pause presentation through one narrow gameplay/HUD
     interface while keeping the stage paused; make Escape close Settings and
     restore focus to Pause's Settings action; add all three `settings.quality_*`
@@ -647,7 +776,10 @@ translations, and focused UI/localization tests
     Korean shows `낮음/보통/높음`; fullscreen exposes no inert resolution action;
     defaults and locale changes refresh the final display state once without
     changing stored option metadata.
-- [ ] **5.4** Remove the verified menu/Pause residue and inspect only changed
+  - Evidence (2026-08-06): `phase7_ui_test.gd` and
+    `localization_ui_test.gd` passed. Final Pause/Settings captures show one
+    modal owner, Korean `보통`, `1280 × 720`, and no Pause panel bleed-through.
+- [x] **5.4** Remove the verified menu/Pause residue and inspect only changed
   surfaces.
   - Change: widen main-menu subtitle content to at least 420 px, remove the
     developer milestone footer, make Pause height content-driven, update the
@@ -663,14 +795,35 @@ translations, and focused UI/localization tests
     identical screenshot, proves page 3.
   - Accept: the subtitle has no orphan syllable line; Pause has no large empty
     tail; all changed labels fit; every captured action/state is functional and
-    visible; the implementing agent compares each fresh image to the audit and
-    records any remaining limitation. No broad screenshot matrix is added.
+    visible; the implementing agent checks only missing output, clipping,
+    overlap, focus/state, and gross regression, then records any limitation for
+    the user's gameplay QA. No broad screenshot matrix is added.
+  - Evidence (2026-08-06): all named UI tests passed. Eight final exported
+    1280x720 images were inspected individually; the changed surfaces have no
+    missing output, clipping, overlap, or gross obstruction. Gameplay feel and
+    aesthetic acceptance remain user-owned.
+- [x] **5.5** Make the existing procedural wind debris readable without turning
+  it into gameplay or a dense effect.
+  - Change: scale count and mesh size from the accepted terrain bounds, seed
+    placements over visible playable top instead of the whole rectangular paint
+    bounds, keep motion driven only by `WindController`, preserve the strong-gust
+    pulse and reduced-motion hide path, and keep collision/paint disabled.
+  - Accept: one background production capture plus a short deterministic capture
+    interval shows debris present at normal motion and displaced in the same HUD
+    push direction; it does not cover the trajectory or glyphs. Reduced motion
+    hides it while the wind HUD remains. This is render-smoke evidence only; the
+    user owns final gameplay and aesthetic QA.
+  - Evidence (2026-08-06): `wind_debris_field_test.gd` passed density,
+    playable-top placement, windward displacement, visual-only ownership, and
+    reduced-motion isolation. Final Stage 01/30 images show restrained debris
+    without hiding trajectory or glyphs.
 
 Batch gate:
 
 - All thirty stages are visibly reachable, Aim Lock controls are legible, the
   first-session help preserves the decision chain, Pause/Settings renders one
-  modal owner, and the changed Korean surfaces are clean at 1280x720.
+  modal owner, and wind debris plus the changed Korean surfaces render without
+  clipping or disappearance at 1280x720.
 
 ### Phase 6: Audit, verify, export, and close the plan
 
@@ -681,7 +834,7 @@ Source owners: all task-owned code/resources/tests/docs,
 `scripts/verify.ps1`, export preset, `.agents/Documentation.md`,
 `docs/test-checklist.md`, this plan
 
-- [ ] **6.1** Run the cross-module quality audit and make only scoped fixes.
+- [x] **6.1** Run the cross-module quality audit and make only scoped fixes.
   - Change: invoke `codebase-quality-auditor` over slot/family ownership, artifact
     codec/catalog boundaries, runtime fallback removal, failure handling, and
     stale preparer terminology, plus pager ownership, nested-modal presentation,
@@ -689,12 +842,21 @@ Source owners: all task-owned code/resources/tests/docs,
   - Accept: no competing capacity, generation, layout cache, or default-aim
     owner remains; Stage Select, HUD, and Pause/Settings retain narrow owners; no
     catch-all file absorbs unrelated work.
-- [ ] **6.2** Run focused checks and the mandatory repository gate once.
+  - Evidence (2026-08-06): the audit found and the implementation corrected one
+    stale queued-gameplay delivery path and one direct third-root admission
+    path. `ProjectileManager` now owns the two-root constant and guard. No other
+    must-fix ownership defect remained; duplicate legacy alias data is recorded
+    as non-blocking pre-existing debt.
+- [x] **6.2** Run focused checks and the mandatory repository gate once.
   - Change: run the named task tests while implementing, then the fast catalog
     check and `scripts/verify.ps1` once after integration.
   - Accept: all pass without changing validators, adding dependencies, or
     absorbing unrelated files.
-- [ ] **6.3** Export and inspect the production boundary.
+  - Evidence (2026-08-06): the named lifecycle, codec, repository, placement,
+    progression, UI/localization, feedback, and wind tests passed. The final
+    generation-free 30-stage catalog check retained manifest `ac0a370...`, and
+    the final `scripts/verify.ps1` import/parser/main-scene gate passed.
+- [x] **6.3** Export and inspect the production boundary.
   - Change: export `builds/windows/PaintMountain.exe`, start only that executable
     through the existing background capture path, enter representative Stage 01
     and Stage 30, and capture the corrected Fire-capacity and six bounded UI
@@ -702,13 +864,22 @@ Source owners: all task-owned code/resources/tests/docs,
   - Accept: the exported build contains/loads the format-4 artifacts, starts
     cleanly, meets the coarse entry target, and the focused running-game evidence
     matches the behavioral and visual checks.
-- [ ] **6.4** Close status and plan truthfully.
+  - Evidence (2026-08-06): `builds/windows/PaintMountain.exe` exported with all
+    format-4 layouts. Eight final hidden-window processes exited 0, wrote exact
+    1280x720 PNGs under `.agents/evidence/fast-stage-entry-and-fire-capacity/`,
+    and left empty stderr logs. Stage 01/30 entry measured `1035.5/2068.4 ms`.
+- [x] **6.4** Close status and plan truthfully.
   - Change: record exact artifact hash, timing, tests, capture paths, and known
     remaining target-wide certification gap; mark this plan `done` only after all
     required work passes.
   - Accept: implementation status and checklist distinguish this completed
     repair from the unimplemented exhaustive certificate; the final commits
     contain only task-owned changes.
+  - Evidence (2026-08-06): implementation commit `04f4693` contains the scoped
+    runtime, resource, UI, wind, and focused-test changes. Current-truth docs and
+    the eight final capture/log sets record the exact format-4 bundle hash,
+    Stage 01/30 timing, validation boundary, and remaining target-wide
+    certification gap. Unrelated dirty work was not staged.
 
 ## Validation and Rework Controls
 
@@ -727,11 +898,14 @@ Focused checks:
 & $paintMountainGodot --headless --path . --script res://tests/projectile_family_capacity_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/rapid_fire_contract_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/shot_observation_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/mechanism_placement_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/baked_stage_layout_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/stage_layout_repository_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/stage_progression_candidate_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/phase7_ui_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/localization_ui_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/shot_feedback_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/wind_debris_field_test.gd
 ```
 
 Artifact production and final gates:
@@ -770,8 +944,9 @@ Cadence and stopping rules:
   relevant artifact input changes.
 - The no-argument catalog check must stay fast and generation-free.
 - Run `scripts/verify.ps1`, export, production start, and the eight focused
-  captures once after integration. Explain their cost and stopping condition
-  before starting the broad gate.
+  background captures once after integration. They prove startup and render
+  integrity only; gameplay feel, balance, and aesthetic acceptance stay with the
+  user. Explain their cost and stopping condition before starting the broad gate.
 - Do not add a per-pixel target certificate, exhaustive trajectory grid, every-
   stage live playthrough, repeated performance sampling, fine numeric tolerance
   matrix, or redundant screenshot set to this plan.
@@ -781,7 +956,7 @@ Cadence and stopping rules:
 
 | Trigger | Required response | Forbidden shortcut |
 | --- | --- | --- |
-| No candidate 0-31 passes for a stage | Stop bundle publication, retain the active pointer, report per-validator rejection counts, and request a separate generation-policy decision | Loosening validators, cropping target, hand-authoring X/Z, or runtime substitution |
+| No candidate 0-31 passes after the common visible-surface placement task | Stop bundle publication, retain the active pointer, report per-validator rejection counts, and identify the exact unchanged rule that exhausted the domain | Stage-specific placement, loosening target/range/containment rules, cropping target, hand-authoring X/Z, or runtime substitution |
 | Default or summit witness cannot be physically validated | Reject that candidate and continue the same bounded candidate order; if the domain exhausts, stop as above | Persisting a guessed/default tuple or running a runtime solver |
 | Baked load/hydration still exceeds three seconds | Profile load, hydration, topology, mesh, and collider stages once; optimize only the measured owner while preserving the baked boundary | Restoring runtime generation or eager-loading all 30 layouts |
 | Artifact missing/corrupt/mismatched | Keep the current screen usable, show load failure, log stable identity details, and allow explicit retry | Entering gameplay with partial data or silently using another seed |
@@ -792,37 +967,39 @@ Cadence and stopping rules:
 | Korean or English no longer fits a repaired control at 1280x720 | Reflow within the named existing container and preserve the minimum target/focus contract | Shrinking below 16 px body text, adding another screen, or hiding labels |
 | Suspending Pause presentation resumes simulation or leaks input | Keep `StageController` paused, repair the narrow presentation delegate, and repeat the focused Pause/Settings flow | Toggling pause state to make the overlay disappear or stacking a third scrim |
 
-Any change to ammunition, the two-slot policy, resident cap, target mask,
-generation validator thresholds, candidate-domain size, full-certification scope,
+The common surface candidate domain and removal of Uphill's minimum-rise
+eligibility threshold are authorized by this revision. Any further change to
+ammunition, the two-slot policy, resident cap, target mask, non-placement
+generation validators, candidate-domain size, full-certification scope,
 dependencies, or external assets requires an explicit plan update before code.
 
-## Progress
+## Progress and Next Steps
 
-- [x] Confirmed the Fire-disabled symptom against the running-game evidence and
-  traced the authoritative readiness path.
-- [x] Confirmed descendant-retained capacity and the existing test that encodes
-  the wrong behavior.
-- [x] Confirmed current generation timings, Stage 30's exact placement rejection,
-  serialized worker bottleneck, gameplay fallback, and runtime aim searches.
-- [x] Compared the current format-3 bundle, catalog builder, progression seed
-  map, layout data model, export policy, and relevant product/design contracts.
-- [x] Locked the split lifecycle and baked-layout architecture.
-- [x] Captured and personally inspected fresh Korean 1280x720 production-style
-  main-menu, Stage Select, briefing, Aim Lock, Map Inspection, Pause, and Settings
-  evidence; traced the confirmed UI defects to their current owners.
-- [x] Added the bounded UI repair decisions without treating transient cold-load
-  previews or deferred camera framing as settled UI defects.
-- [ ] Implementation complete.
-- [ ] Focused checks, artifact build/check, repository verification, and quality
-  audit pass.
-- [ ] Production export/start, representative timing, rendered evidence, docs,
-  and scoped commits complete.
+- Canonical progress: the phase task checkboxes in this contract. Source presence
+  alone is not completion.
+- Current phase: complete. Phases 0-6 and every task in this contract passed.
+- Next task: user-owned gameplay, balance, feel, and aesthetic QA. The
+  target-wide exact first-hit certificate remains a separate release gap rather
+  than unfinished work in this repair plan.
+- Last completed evidence: Task 6.4 aligned current-truth docs with implementation
+  commit `04f4693`, the production export, Stage 01/30 timing, and eight final
+  render-smoke capture/log sets while preserving unrelated dirty work.
+- Current artifact state: the active pointer and final Windows executable use
+  the verified format-4 bundle `ac0a370...`; integrated source, export, timing,
+  and bounded rendered evidence pass.
+- User-owned boundary: the user performs gameplay, balance, feel, and aesthetic
+  QA after handoff. Agent evidence is limited to focused code checks, build/start,
+  timing, and background render blockers.
+- Update rule: check a task only after its acceptance passes and advance this
+  pointer in the same plan edit.
 
 ## Stop Conditions
 
 Stop and report rather than broadening this plan if candidate indices 0-31 are
-exhausted for any stage, either bounded witness cannot be obtained, binary
-artifacts cannot be loaded in the Windows export, a required dirty hunk has
-conflicting ownership, or completion would require a validator change,
-target-wide certificate, dependency, asset, save migration, gameplay-rule
-change, or destructive cleanup.
+still exhausted after the authorized common surface placement, either bounded
+witness cannot be obtained, binary artifacts cannot be loaded in the Windows
+export, a required dirty hunk has conflicting ownership, or completion would
+require a non-placement validator change, target-wide certificate, dependency,
+asset, save migration, gameplay-rule change, or destructive cleanup. Do not stop
+for implementation-local placement, loading, UI, or procedural-debris mechanics
+already fixed by this contract.

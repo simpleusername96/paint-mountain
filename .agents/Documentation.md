@@ -14,6 +14,7 @@ related:
   - execplans/2026-08-05-gameplay-contract-recovery.md
   - execplans/2026-08-06-ballistic-terrain-preparation.md
   - execplans/2026-08-06-wind-driven-coverage-loop.md
+  - execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
@@ -21,13 +22,15 @@ related:
 
 # Project Record
 
-## Completed Ballistic Terrain Preparation (2026-08-06)
+## Current Implementation: Fast Stage Entry and Fire Capacity (2026-08-06)
 
-The user stopped the exhaustive physical-recovery session and made two outcomes
-the immediate priority: terrain generation itself must reject projectile-domain
-misses, and navigation must not synchronously reconstruct a cold layout. The
-completed execution record is
-[`execplans/2026-08-06-ballistic-terrain-preparation.md`](execplans/2026-08-06-ballistic-terrain-preparation.md).
+The completed execution record is
+[`execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md`](execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md).
+The effective source brief remains the product requirement authority. The
+implementation below is current code truth. Final repository verification,
+Windows release export, entry-time measurement, and background running-game
+capture validation completed on 2026-08-06. This is implementation evidence,
+not the user's gameplay, balance, feel, or aesthetic approval.
 
 - `ProjectileRangeConstraint` uses the shared cannon muzzle transform and exact
   60 Hz damp-then-gravity recurrence to build a cached radial lower/upper height
@@ -44,17 +47,45 @@ completed execution record is
   proved that an out-of-range raster fails as a whole. The envelope uses
   `0.25 m` radial samples plus bounded `0.30 m` range and `0.50 m` height
   discretization tolerance.
-- `StageLayoutPreparer` owns one RefCounted worker job and a three-entry LRU.
-  AppRoot urgently prepares the selected stage, keeps the current page visible
-  with localized preparation truth, starts only from a ready matching layout,
-  and then requests exactly the next numeric stage at low priority. Preview
-  artifacts remain main-thread-only and are bounded to one.
-- Gameplay now receives a runtime copy of the prepared layout. Runtime default
-  aim and Summit diagnostics therefore do not mutate the preparer's retained
-  source layout. The focused worker/identity/LRU check passed in `1.8 s`.
-- No foreground gameplay or rendered capture was used for this change.
-  `scripts/verify.ps1` passed its headless import/parser and three-second
-  main-scene start, including real worker startup and clean exit joining.
+- The active catalog pointer is `resources/stages/catalog.tres`. It selects the
+  format-4 persisted bundle
+  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
+  The bundle contains all 30 accepted stages and their default/summit witnesses.
+- `StageLayoutRepository` replaces the deleted `StageLayoutPreparer`. It loads
+  persisted layouts asynchronously, gives the selected stage urgent priority,
+  prefetches without blocking, keeps a three-entry LRU, and never falls back to
+  runtime terrain generation or aim solving. Gameplay receives a runtime copy
+  only after the selected identity is ready.
+- Glyph placement searches generic visible playable-top surface with deterministic
+  spacing. It uses no authored per-stage coordinates. Small terrain may have no
+  glyphs or one or two; larger terrain has more eligible opportunities.
+- The initial Fire slot releases on its generation-0 root body’s first
+  authoritative valid-top traversal or terminal event. Observation seals only after every
+  current family body reaches valid top or terminates. Terrain residents persist
+  for the stage and may move again; they do not consume Fire capacity forever.
+  `ProjectileManager`, rather than the HUD, enforces the two-root Fire cap.
+- The UI and wind-debris changes are implemented: selected-stage loading fails
+  closed with a localized retry state, Fire capacity is represented separately
+  from resident bodies, and terrain-contained debris uses the shared wind truth.
+  The focused wind contract proves direction, motion, and reduced-motion
+  behavior; the exported render shows visible debris.
+- Final validation passed: `scripts/verify.ps1`; Windows release export at
+  `builds/windows/PaintMountain.exe`; and eight 1280x720 capture runs, each exit
+  0 with empty final stderr. Exported entry readiness measured `1035.5 ms` for
+  Stage 01 and `2068.4 ms` for Stage 30. The captures and stdout/stderr logs are
+  under `.agents/evidence/fast-stage-entry-and-fire-capacity/` for
+  `stage_30_aiming`, `two_family`, `main_menu`, `stage_select`,
+  `stage_select_page_2`, `first_hint`, `pause`, and `settings`.
+- Render review found no clipping, overlap, or gross terrain obstruction. Stage
+  select pages 1 and 2 retain their footer; the structural UI contract covers
+  page 3. Settings is exactly 1280x720. The temporary timing probe found that
+  hoisting the summit-vertex snapshot out of the triangle loop reduced profile
+  hydration from `1091.2 ms` to `599.5 ms`; caching successful immutable
+  readiness reduces repeat readiness from roughly `250..320 ms` to `0`. The
+  probe was not retained as a test.
+- The unresolved target-wide exact first-hit certification gap remains a release
+  limitation. Default and summit witnesses do not close it. Gameplay, balance,
+  feel, and aesthetic QA remain the user's responsibility.
 
 ## Superseded Recovery Sequence (2026-08-05)
 
@@ -69,9 +100,9 @@ The physical, rapid-fire/progression, and runtime-interface plans dated
 progress prose is not current implementation evidence: each still had zero
 checked tasks while claiming major phases were implemented.
 
-## Current Implemented Truth (2026-08-06 wind-driven coverage loop)
+## Historical wind-driven coverage-loop record (2026-08-06)
 
-### Completed wind-driven coverage loop
+### Prior wind-driven coverage-loop record (implementation superseded by current validation state)
 
 The effective `docs/source-brief.md` remains the product requirement authority.
 The current implementation now realizes its 2026-08-06 wind-loop supersession;
@@ -102,21 +133,9 @@ camera-preset behavior is historical only.
   three route-readable children, and Uphill Rebound uses stored local ascent.
   Stage 04's reviewed uphill glyph uses the natural route at `t = 0.30` with no
   artificial shelf.
-- Stage catalog: the active version-8 bundle structurally materializes all 30
-  persisted stages under manifest
-  `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
-  The catalog carries the common timed-result, wind, glyph, and 21-resident-ball
-  contracts; legacy version-7 bundles remain historical artifacts only.
-- Delivery: the final `scripts/verify.ps1` run passed with the explicit Godot
-  path, and the current Windows production export succeeded. Eight inspected
-  exported-build captures at 1280×720 and 1920×1080 are stored under
-  `.agents/evidence/wind-driven-coverage-loop/`; they cover aim return, map
-  inspection, wind HUD, contact scale, representative glyphs, and both manual
-  and timeout results.
-- Validation was intentionally bounded by user direction. Completion uses
-  structural materialization for all 30 stages plus representative live and
-  glyph checks. It does not claim a full live-generation sweep of all 30 stages
-  or an exhaustive micro-tolerance matrix.
+- This historical closeout's manifest, export, and capture claims no longer
+  describe the active format-4 bundle. Its historical evidence remains retained,
+  but it is not acceptance evidence for the current implementation.
 
 Historical sections below describe earlier builds and are retained for
 traceability only. They must not be used as current implementation evidence.

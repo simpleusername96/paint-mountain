@@ -15,6 +15,7 @@ related:
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../.agents/execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
 ---
 
 # Paint Mountain Design Specification
@@ -84,6 +85,10 @@ exactly three mechanism types.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
   invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
   controls remain editable while prior families move.
+- An initial Fire slot releases when its generation-0 root first authoritatively
+  traverses valid playable top or terminates. Family observation waits until every current
+  body has reached valid top or terminated; resident terrain balls may therefore
+  remain physically active without permanently exhausting Fire capacity.
 - Family coverage feedback is nonmodal. Reaching target coverage or spending all
   shots neither clears nor fails the run. After the first shot, Finish may end
   the run; otherwise the stage duration ends it. Final unique target coverage is
@@ -176,10 +181,11 @@ exactly three mechanism types.
   05 are explicit distinctness canaries.
 - Small stages may have no glyph or one or two glyphs. Larger stages contain
   more glyph opportunities, using only Burst, Splitter, and Uphill Rebound.
-- Glyphs use deterministic valid-top route anchors and must pass footprint,
-  separation, slope presentation, visibility, and effect-usefulness checks. A
-  failed placement rejects or changes the candidate through the generation
-  contract; production resources contain no hand-authored X/Z repair fallback.
+- Glyphs use a deterministic generic search of visible playable-top surface and
+  must pass footprint, spacing, slope presentation, visibility, and
+  effect-usefulness checks. A failed placement rejects or changes the candidate
+  through the generation contract; production resources contain no hand-authored
+  X/Z repair fallback.
 - Every target-mask texel must have a certified legal manual aim whose first
   physical hit is the same target-top triangle. The certificate is fairness
   evidence and is never exposed as auto-aim. Stage start and restart use the
@@ -273,8 +279,11 @@ exactly three mechanism types.
 
 - The complete observable checklist is `test-checklist.md`.
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
-- The wind-loop handoff uses the eight inspected exported-build captures listed
-  in `test-checklist.md`; older screenshot sets remain historical evidence.
+- The active implementation has passed its production-style verification,
+  Windows release export, entry-time measurements, and running-game captures as
+  listed in `test-checklist.md`; older screenshot sets remain historical
+  evidence. This does not replace user-owned gameplay, balance, feel, or
+  aesthetic QA.
 
 ## Historical Evidence and Current Implementation
 
@@ -289,11 +298,21 @@ generation-range and responsive-preparation change; this specification and the
 source brief remain requirement authorities, while `.agents/Documentation.md`
 remains the implemented-truth boundary.
 
-The wind-driven coverage loop is implemented across the active version-8
-thirty-stage catalog. Its current manifest is
-`1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
-Stage 04 places Uphill Rebound on its natural route at `t = 0.30`; it does not
-add an artificial support shelf.
+The active catalog pointer is `resources/stages/catalog.tres`. It selects the
+format-4 persisted thirty-stage bundle at
+`resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
+Each accepted layout carries default and summit witnesses. Runtime loads this
+bundle through `StageLayoutRepository`; it asynchronously serves the selected
+layout, may prefetch nearby work, retains three entries, and never substitutes
+runtime generation or aim solving.
+
+Glyph placement uses a generic deterministic search of visible playable-top
+surface and spacing, not authored stage coordinates. The fast-entry, Fire-capacity,
+localized loading/retry, and wind-debris implementations passed final production
+verification and rendered evidence. The Fire owner itself enforces the two-root
+cap; resident terrain bodies do not hold that capacity. Wind debris uses the
+shared wind truth, and focused validation proves direction, movement, and
+reduced-motion behavior.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.
@@ -301,8 +320,11 @@ Its exact HUD placement, literal geometry, seed/silhouette, mechanism positions,
 and painted still states are not runtime or acceptance authority.
 
 The prior Windows release and screenshots remain historical evidence only. The
-current production export passed. Eight representative exported-build
-background captures are stored under `.agents/evidence/wind-driven-coverage-loop/`.
-Per user direction, thirty-stage structural materialization plus representative
-live/glyph checks replaces a full 30-stage live-generation sweep and an
-exhaustive micro-tolerance matrix for this closeout.
+current format-4 implementation passed `scripts/verify.ps1`, exported
+`builds/windows/PaintMountain.exe`, and produced eight reviewed 1280x720
+background running-game captures with exit-0 runs and empty final stderr logs
+under `.agents/evidence/fast-stage-entry-and-fire-capacity/`. Exported entry
+readiness was `1035.5 ms` for Stage 01 and `2068.4 ms` for Stage 30. The render
+review found no clipping, overlap, or gross terrain obstruction; Settings is
+exactly 1280x720. The target-wide first-hit certification gap remains unresolved;
+persisted default/summit witnesses do not claim to close it.

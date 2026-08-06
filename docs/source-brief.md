@@ -1659,6 +1659,27 @@ game. These clauses override only the conflicting earlier clauses:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-06): General Surface Glyph Placement
+
+The user clarified that flat mechanism glyphs must not depend on a fixed
+per-stage route-pad coordinate. This clause overrides only the earlier placement
+interpretation:
+
+- **General visible-surface search:** the shared generator searches actual
+  playable mountain-top surface visible from the cannon/gameplay view, requires
+  each full circular footprint to fit with an appropriate boundary and minimum
+  inter-glyph distance, and places the requested count deterministically. It
+  must not hand-author a world X/Z or add a stage-specific placement branch.
+  Mechanism-specific data is derived after common surface eligibility: Uphill
+  Rebound uses the locally highest direction, while Splitter retains the branch
+  targets needed for its useful three-way effect.
+- **Visible wind support:** leaves or debris count as implemented only when their
+  motion is readable at the authored distant gameplay scale. They remain
+  restrained, supplementary to the HUD, non-colliding, and suppressible by the
+  reduced-motion setting.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

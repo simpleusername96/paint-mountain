@@ -26,67 +26,82 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-The completed preparation gate and older checked sections are historical evidence for
-earlier builds. The first gate below records the completed wind-driven loop and
-its bounded final evidence.
+The completed preparation gate and older checked sections are historical evidence
+for earlier builds. The first gate below records completed production validation
+of the implemented fast-entry and wind/UI work; the remaining unchecked rows
+are user-owned gameplay/feel review or the explicit certification gap.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
 
-## Completed wind-driven coverage loop gate (2026-08-06)
+## Active fast-stage-entry and wind/UI validation gate (2026-08-06)
 
 These are behavior-level acceptance checks for the completed successor plan. They
 intentionally avoid treating small numerical tolerances or individual physics
-ticks as product requirements.
+ticks as product requirements. The retained unchecked rows require user gameplay
+review or the separate target-wide certificate; prior exports and captures remain
+historical unless named below.
 
-- [x] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
+- [ ] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
   whole mountain. In `AIM_LOCKED`, drag and wheel adjust aim and power without
   moving the camera; rightward aim input moves both preview and actual landing
   point right on screen.
-- [x] A ball that reaches playable mountain top remains present for the stage,
+- [ ] A ball that reaches playable mountain top remains present for the stage,
   keeps its physical presence while naturally resting, paints again when it
   later moves, and does not disappear from ordinary terrain contact.
-- [x] Ground contact on representative slopes and joins does not produce the
+- [ ] Ground contact on representative slopes and joins does not produce the
   one-mark-then-disappear failure. A genuine invalid geometry condition is
   diagnosable without being confused with ordinary play.
-- [x] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
+- [ ] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
   projectile motion, HUD direction/strength/countdown, replay, and decorative
   debris agree; pausing does not advance the run.
-- [x] Strong wind can restart an eligible resting ball. The player can see why
+- [ ] Strong wind can restart an eligible resting ball. The player can see why
   it moves, and resting balls do not produce repeated stationary paint.
-- [x] A run begins with the first shot and ends only through Finish or time
+- [ ] A run begins with the first shot and ends only through Finish or time
   expiry. Its result uses final unique painted coverage, not automatic
   clear/failure or hidden time/wind bonuses.
-- [x] Burst, Splitter, and Uphill Rebound are readable terrain-conforming
+- [ ] Burst, Splitter, and Uphill Rebound are readable terrain-conforming
   glyphs with effects that match their markings: Burst consumes after painting,
   Splitter visibly divides toward its marked routes, and Uphill Rebound sends a
   ball uphill.
-- [x] The active HUD leaves the mountain readable and offers no ambiguous
+- [ ] The active HUD leaves the mountain readable and offers no ambiguous
   Follow/Wide/Cannon rail. Gear and Escape remain one pause/settings entry.
-- [x] Production-style captures at common desktop sizes show the aiming and map
+- [ ] Production-style captures at common desktop sizes show the aiming and map
   modes, live ball/paint scale, wind HUD, representative glyphs, and timed-result
   states without obscuring the terrain. Focused runtime contracts separately
   cover persistence, recovery, and wind wake behavior that a still frame cannot
   prove.
 
-Completion evidence:
+Implemented code/structural evidence:
 
-- The active version-8 catalog structurally materializes `stage_01` through
-  `stage_30` with manifest
-  `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
-  Representative glyph checks cover Burst, Splitter routes, and natural-terrain
-  Uphill Rebound placement; Stage 04 stores its uphill route at `t = 0.30`.
-- The final `scripts/verify.ps1` run passed with an explicit Godot executable,
-  and the current Windows production export succeeded.
-- Eight inspected exported-build captures under
-  `.agents/evidence/wind-driven-coverage-loop/` cover Aim Lock return, Map
-  Inspection, wind status, real ball/paint scale, representative glyphs, manual
-  Finish, and timeout at 1280×720 and 1920×1080.
-- Per user direction, this closeout does not include a full live-generation run
-  of all 30 stages or an exhaustive micro-tolerance matrix. Thirty-stage
-  structural materialization and representative live/glyph checks are the
-  accepted bounded substitute; no broader sweep is implied.
+- [x] `resources/stages/catalog.tres` selects the format-4 persisted bundle
+  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`,
+  containing `stage_01` through `stage_30` and default/summit witnesses.
+- [x] `StageLayoutRepository` is the runtime owner. It asynchronously loads the
+  selected layout, supports non-blocking prefetch, retains three entries, and
+  does not fall back to generation or aim solving.
+- [x] Generic glyph placement searches spaced visible playable-top surface; it
+  uses no authored stage coordinates.
+- [x] Focused code contracts cover repository loading, two-family Fire capacity,
+  family observation sealing, localized loading/retry state, and wind debris
+  setup. They do not replace the unchecked production-style rows above.
+- [x] `scripts/verify.ps1` and Windows release export/start passed for
+  `builds/windows/PaintMountain.exe`. Exported Stage 01/30 entry readiness was
+  `1035.5 ms` / `2068.4 ms`. Eight final 1280x720 capture PNGs with stdout/stderr
+  logs under `.agents/evidence/fast-stage-entry-and-fire-capacity/` passed with
+  exit 0 and empty final stderr: `stage_30_aiming`, `two_family`, `main_menu`,
+  `stage_select`, `stage_select_page_2`, `first_hint`, `pause`, and `settings`.
+  Render review found no clipping, overlap, or gross terrain obstruction; stage
+  select pages 1/2 retain their footer, page 3 is structurally covered, wind
+  debris is visible, and Settings is exactly 1280x720.
+- [x] Focused wind-debris validation proves shared wind direction, movement, and
+  reduced-motion behavior. A temporary timing probe found profile hydration
+  `1091.2 ms -> 599.5 ms` after hoisting the summit snapshot from the triangle
+  loop, and cached successful immutable readiness reduces repeats from roughly
+  `250..320 ms` to `0`; it is not a retained test.
+- [ ] The open target-wide exact first-hit certificate gap is resolved. Default
+  and summit witnesses do not by themselves satisfy this release criterion.
 
 ## Completed ballistic-terrain preparation gate (2026-08-06, historical baseline)
 

@@ -65,8 +65,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `WindController` | One stage-seeded fixed-tick current/next wind schedule and strong-episode identity | Camera projection, HUD layout, stage terminal decisions, or duplicated physics rules |
 | `CameraDirector` | `AIM_LOCKED`/`MAP_INSPECTION` interaction mode, authored aim pose, safe inspection orbit/refocus/zoom, and transitions | Board Phase, aim values, Fire admission, or game rules |
 | `HUDController` and screen controllers | Display Board Phase/readiness/activity and emit typed aim, fire, and game-menu intents | Reconstruct Fire admission, authoritative state mutation, direct pause/settings mutation, or alternate coverage |
-| `StageLayoutPreparer` | One worker job, urgent/prefetch ordering, accepted-layout identity checks, and a three-entry LRU | Scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
-| `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, layout-preparation scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
+| `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
+| `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, fail-closed repository scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
 | `ReplayRecorder` | Format-8 layout and wind identities, fixed-tick aim/Fire/Finish action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
 | `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
@@ -91,12 +91,13 @@ This architecture covers the single-process desktop game. It does not define a b
   mechanisms expose one resolver-invoked valid-top activation entry plus shared
   eligibility and reset. Their visible footprint matches their activation
   footprint and never becomes a projectile collision body.
-- `StageLayoutPreparer` publishes only a completed accepted layout after its
-  worker joins. AppRoot never synchronously reconstructs a cold layout during
-  navigation. Gameplay receives `GeneratedStageLayout.copy_for_runtime()` so
-  runtime default-aim and diagnostic annotations cannot mutate the preparer's
-  retained source. Meshes, textures, Nodes, physics objects, and paint state are
-  never built or accessed by the worker.
+- `StageLayoutRepository` publishes only an identity-matching persisted layout
+  after asynchronous load. AppRoot never synchronously reconstructs a cold
+  layout and never falls back to `SeededStageGenerator` or `DefaultAimSolver`
+  during navigation. Gameplay receives `GeneratedStageLayout.copy_for_runtime()`
+  so runtime annotations cannot mutate the retained source. Meshes, textures,
+  Nodes, physics objects, and paint state are never built or accessed by the
+  repository worker.
 - `GeneratedStageLayout` carries one sampled height per in-bounds XZ plus the one
   fixed cell diagonal. `TerrainGeometryFactory` emits the indexed top triangles
   once. Render mesh, top `ConcavePolygonShape3D`, hit identity, height/normal
@@ -171,11 +172,11 @@ Human / Replay / GameplayAgentApi actions
 - Restart first blocks new actions, cancels camera and wind transitions, frees
   managed temporary objects, resets mechanisms and timers, clears paint/effects,
   reapplies immutable data, then enters `BRIEFING` or the chosen retry state.
-- Gameplay construction rebuilds and verifies the certified accepted layout
-  before briefing. `StageController` alone applies its generated default aim on
-  first entry and restart. Certificate, generation, placement, reachability, or
-  containment failure blocks briefing and is a verification/export error, never
-  an authored-coordinate or hidden-target fallback.
+- Gameplay construction loads and verifies the persisted accepted layout before
+  briefing. `StageController` alone applies its stored default witness on first
+  entry and restart. Repository identity, placement, reachability, or containment
+  failure blocks briefing and is a verification/export error, never a generation,
+  aim-solving, authored-coordinate, or hidden-target fallback.
 - Gear and Escape request the same `StageController` pause transition.
   `PauseOverlay` captures all pointer/keyboard/gameplay input while the scene tree
   remains stopped and focuses Continue. Settings opens above that paused menu;
@@ -213,6 +214,11 @@ Human / Replay / GameplayAgentApi actions
   materials/damping, and a bounded miss lifetime only before first valid-top
   contact. A terrain-resident ball may sleep naturally but remains present until
   result/restart or an explicit terminal reason.
+- `ProjectileManager` releases an initial-root Fire slot when the generation-0
+  root first traverses valid top or terminates. It seals
+  observation only when every current family body reached valid top or terminated;
+  resident terrain bodies remain eligible to move without permanently consuming
+  capacity.
 - Extract every begun contact from `PhysicsDirectBodyState3D`, identify and sort
   by stable collider/shape key, and debounce each key until absent for two ticks.
   Never discard a simultaneous mechanism/terrain contact by selecting one global
@@ -257,13 +263,16 @@ Human / Replay / GameplayAgentApi actions
 - `projectile_range_constraint_test.gd` checks the shared recurrence, both height
   bounds, yaw/horizon rejection, whole-candidate raster rejection, Summit Region
   admission, Stage 01/30 reconstruction, and runtime-copy isolation without a
-  scene or physics world. `stage_layout_preparer_test.gd` separately checks the
-  worker boundary, identity publication, non-blocking request, and three-entry
-  LRU with a pure injected layout strategy.
-- Final validation includes production export/start, committed stage admission,
-  screen-correct aim, persistent/recovered contact, one ordinary and one Splitter
-  gameplay run, wind/Finish/timeout behavior, save/retry/replay, and running-game
-  UI review at the supported desktop resolutions.
+  scene or physics world. `stage_layout_repository_test.gd` separately checks
+  persisted async loading, identity publication, non-blocking selected/prefetch
+  requests, and the three-entry LRU with a pure injected layout strategy.
+- Final repository verification and release delivery validation passed:
+  `scripts/verify.ps1`, Windows release export at
+  `builds/windows/PaintMountain.exe`, and eight background 1280x720 capture
+  runs with empty final stderr logs. Exported entry readiness measured
+  `1035.5 ms` for Stage 01 and `2068.4 ms` for Stage 30. These automated and
+  rendered checks do not replace user-owned gameplay, balance, feel, or
+  aesthetic QA.
 - Certification rejects any layout unless every target-mask texel has an exact
   runtime-predictor and real-rigid-body first-hit witness on the same shared top
   triangle, the global highest top region has a matching legal first-hit witness,
@@ -309,15 +318,26 @@ Human / Replay / GameplayAgentApi actions
   `DeliveryCaptureRunner`, including a real paused-game-menu state; normal
   launches do nothing with this node, and the debug overlay remains unavailable
   in release builds.
-- The active version-8 catalog structurally materializes all 30 stages under
-  manifest `1170c9db2002828a9f719f16ddc36b7b89ee9af17a24526586a2a2ee78317ca7`.
-  Stage 04's Uphill Rebound uses its natural route at `t = 0.30` without an
-  artificial shelf.
-- The final `scripts/verify.ps1` run passed with the explicit Godot path, the
-  current Windows production export succeeded, and eight inspected
-  exported-build captures cover representative wind-loop states at 1280×720 and
-  1920×1080.
-- By user direction, final validation is bounded to 30-stage structural
-  materialization plus representative live and glyph checks. It does not claim
-  a full live-generation sweep of all 30 stages or an exhaustive
-  micro-tolerance matrix.
+- `resources/stages/catalog.tres` points at the format-4 persisted bundle
+  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
+  It contains all 30 layouts and their default/summit witnesses.
+- Generic glyph placement searches visible playable-top surface with spacing;
+  it has no authored per-stage coordinates. UI/retry and wind-debris changes
+  passed final verify/export/timing/rendered validation. The focused wind
+  contract proves shared direction, motion, and reduced-motion behavior.
+- `ProjectileManager` is the capacity authority: it admits no more than two
+  root families and releases a generation-0 slot on the first valid-top
+  traversal or terminal event. Resident terrain bodies remain physically alive
+  without indefinitely consuming Fire capacity.
+- Layout profile hydration snapshots summit vertices once before its triangle
+  loop, and the repository caches successful immutable readiness. A temporary
+  timing probe measured hydration `1091.2 ms -> 599.5 ms` and repeat readiness
+  roughly `250..320 ms -> 0`; the probe is not a retained test contract.
+- The eight reviewed captures and stdout/stderr logs are in
+  `.agents/evidence/fast-stage-entry-and-fire-capacity/`. They cover Stage 30
+  aiming, two-family capacity, menu, stage-select pages 1/2, first hint, pause,
+  and Settings. Review found no clipping, overlap, or gross terrain obstruction;
+  the structural UI contract covers page 3 and Settings is exactly 1280x720.
+- The target-wide exact first-hit certificate remains an open release gap. The
+  persisted default/summit witnesses are runtime-entry data, not a claim of
+  complete target-wide certification.
