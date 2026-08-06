@@ -11,6 +11,7 @@ extends Resource
 @export var progression: StageProgressionData
 @export var stage_ids: Array[StringName] = []
 @export var stages: Array[StageData] = []
+@export var layout_paths: Array[String] = []
 @export var legacy_aliases: Dictionary = {
 	"first_descent": "stage_01",
 	"burst_basin": "stage_02",
@@ -35,7 +36,8 @@ func is_valid(require_bundle: bool = true) -> bool:
 			or progression.progression_version != catalog_version \
 			or progression.stage_count != StageProgressionData.STAGE_COUNT:
 		return false
-	if stage_ids.is_empty() or stage_ids.size() != stages.size():
+	if stage_ids.is_empty() or stage_ids.size() != stages.size() \
+			or layout_paths.size() != stages.size():
 		return false
 	var seen := {}
 	for index in range(stage_ids.size()):
@@ -47,6 +49,13 @@ func is_valid(require_bundle: bool = true) -> bool:
 				or stage.stage_number != index + 1:
 			return false
 		if stage.stage_id != stage_id or stage.stage_version != catalog_version:
+			return false
+		var expected_layout_path := "%s/layouts/%s_layout.res" % [
+			generated_bundle_root(manifest_sha256), String(stage_id)
+		]
+		if layout_paths[index] != expected_layout_path or not layout_paths[index].begins_with(
+				generated_bundle_root(manifest_sha256) + "/layouts/"
+		):
 			return false
 		if stage.generation_profile == null or not stage.generation_profile.is_valid():
 			return false
@@ -74,6 +83,11 @@ static func _stage_mechanism_contract_is_valid(stage: StageData) -> bool:
 		if mechanism == null or not mechanism.is_valid():
 			return false
 		loadout_kinds.append(int(mechanism.canonical_kind()))
+	if not ProjectileManager.stage_resident_capacity_is_valid(
+		stage.maximum_shots,
+		stage.mechanism_loadout
+	):
+		return false
 	var slot_kinds := PackedInt32Array()
 	for route in stage.generation_profile.routes:
 		for slot in route.mechanism_slots():
@@ -112,3 +126,11 @@ func get_stage(stage_id: StringName) -> StageData:
 
 func ordered_stages() -> Array[StageData]:
 	return stages.duplicate()
+
+
+func get_layout_path(stage_id: StringName) -> String:
+	var stage := get_stage(stage_id)
+	if stage == null:
+		return ""
+	var index := stage_ids.find(stage.stage_id)
+	return layout_paths[index] if index >= 0 and index < layout_paths.size() else ""

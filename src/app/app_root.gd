@@ -6,7 +6,7 @@ const ENVIRONMENT_DRESSING_SCRIPT := preload("res://src/terrain/environment_dres
 const MAIN_MENU_SCENE := preload("res://scenes/ui/screens/main_menu.tscn")
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
-const STAGE_LAYOUT_PREPARER_SCRIPT := preload("res://src/app/stage_layout_preparer.gd")
+const STAGE_LAYOUT_REPOSITORY_SCRIPT := preload("res://src/app/stage_layout_repository.gd")
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
@@ -14,7 +14,7 @@ var _main_menu: MainMenuScreen
 var _stage_select: StageSelectScreen
 var _settings: SettingsScreen
 var _gameplay: Node3D
-var _layout_preparer: StageLayoutPreparer
+var _layout_repository: StageLayoutRepository
 var _settings_return: StringName = &"main_menu"
 var _preview_artifact_cache: Dictionary = {}
 var _active_preview_stage_id: StringName = &""
@@ -22,11 +22,11 @@ var _pending_start_stage_id: StringName = &""
 
 
 func _ready() -> void:
-	_layout_preparer = STAGE_LAYOUT_PREPARER_SCRIPT.new()
-	_layout_preparer.name = "StageLayoutPreparer"
-	add_child(_layout_preparer)
-	_layout_preparer.layout_ready.connect(_on_layout_ready)
-	_layout_preparer.layout_failed.connect(_on_layout_failed)
+	_layout_repository = STAGE_LAYOUT_REPOSITORY_SCRIPT.new()
+	_layout_repository.name = "StageLayoutRepository"
+	add_child(_layout_repository)
+	_layout_repository.layout_ready.connect(_on_layout_ready)
+	_layout_repository.layout_failed.connect(_on_layout_failed)
 	_build_preview_world()
 	_main_menu = MAIN_MENU_SCENE.instantiate()
 	_main_menu.name = "MainMenu"
@@ -85,13 +85,17 @@ func _start_selected_stage() -> void:
 func _start_stage(stage_id: StringName) -> void:
 	var game_state := get_node("/root/GameState")
 	if not game_state.select_stage(stage_id):
+		_set_catalog_load_failed()
 		return
 	var selected_stage := StageCatalog.get_stage(stage_id)
-	var cached_layout := _layout_preparer.ready_layout(selected_stage)
+	if selected_stage == null:
+		_set_catalog_load_failed()
+		return
+	var cached_layout := _layout_repository.ready_layout(selected_stage)
 	if cached_layout == null:
 		_pending_start_stage_id = selected_stage.stage_id
 		_set_stage_preparation_state(selected_stage, false)
-		_layout_preparer.request_layout(selected_stage, true)
+		_layout_repository.request_layout(selected_stage, StageCatalog.get_layout_path(stage_id), true)
 		return
 	_enter_stage(selected_stage, cached_layout)
 
@@ -126,11 +130,22 @@ func _on_stage_selection_changed(stage: StageData) -> void:
 
 func _request_user_stage(stage: StageData) -> void:
 	if stage == null:
+		_set_catalog_load_failed()
 		return
-	var ready := _layout_preparer.ready_layout(stage) != null
+	var ready := _layout_repository.ready_layout(stage) != null
 	_set_stage_preparation_state(stage, ready)
 	if not ready:
-		_layout_preparer.request_layout(stage, true)
+		_layout_repository.request_layout(stage, StageCatalog.get_layout_path(stage.stage_id), true)
+
+
+## A missing catalog has no stage identity for the repository to report, but it
+## must still leave the player with the same explicit retry state as a failed
+## selected layout. Retry only re-reads the catalog/artifact; it never generates.
+func _set_catalog_load_failed() -> void:
+	if _main_menu != null:
+		_main_menu.set_play_preparation_state(false, true)
+	if _stage_select != null:
+		_stage_select.set_catalog_load_failed()
 
 
 func _set_stage_preparation_state(
@@ -175,17 +190,17 @@ func _prefetch_next_stage(stage_id: StringName) -> void:
 		return
 	var next_stage := StageCatalog.get_stage(next_stage_id)
 	if next_stage != null:
-		_layout_preparer.request_layout(next_stage, false)
+		_layout_repository.request_layout(next_stage, StageCatalog.get_layout_path(next_stage.stage_id), false)
 
 
 func _request_menu_preview() -> void:
 	var preview_stage := StageCatalog.get_stage(&"stage_01")
 	if preview_stage == null:
 		return
-	if _layout_preparer.ready_layout(preview_stage) != null:
+	if _layout_repository.ready_layout(preview_stage) != null:
 		_set_menu_preview_if_visible.call_deferred(preview_stage)
 	else:
-		_layout_preparer.request_layout(preview_stage, false)
+		_layout_repository.request_layout(preview_stage, StageCatalog.get_layout_path(preview_stage.stage_id), false)
 
 
 func _set_menu_preview_if_visible(stage: StageData) -> void:
@@ -227,9 +242,8 @@ func _show_settings(return_to: StringName) -> void:
 	elif return_to == &"stage_select":
 		_stage_select.visible = false
 	elif return_to == &"gameplay":
-		# Gameplay owns the paused scrim; the full settings screen is only entered
-		# from the explicit pause panel, so keep the parent hidden while it opens.
-		pass
+		if _gameplay != null and _gameplay.has_method(&"set_pause_overlay_suspended"):
+			_gameplay.call(&"set_pause_overlay_suspended", true)
 	_settings.open()
 
 
@@ -239,7 +253,10 @@ func _on_settings_closed() -> void:
 			_stage_select.visible = true
 			_stage_select.focus_primary.call_deferred()
 		&"gameplay":
-			pass
+			if _gameplay != null and _gameplay.has_method(&"set_pause_overlay_suspended"):
+				_gameplay.call(&"set_pause_overlay_suspended", false)
+				if _gameplay.has_method(&"focus_pause_settings"):
+					_gameplay.call_deferred(&"focus_pause_settings")
 		_:
 			_main_menu.visible = true
 			_main_menu.focus_primary.call_deferred()
@@ -316,7 +333,7 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	var cached: Dictionary = _preview_artifact_cache.get(stage.stage_id, {})
 	if _preview_artifact_matches_stage(cached, stage):
 		return cached
-	var layout := _layout_preparer.ready_layout(stage)
+	var layout := _layout_repository.ready_layout(stage)
 	if not _layout_matches_stage(layout, stage):
 		return {}
 	_clear_preview_artifact_cache()
@@ -382,7 +399,7 @@ func _preview_artifact_matches_stage(artifact: Dictionary, stage: StageData) -> 
 
 
 func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bool:
-	return layout != null and layout.matches_stage_identity(stage)
+	return layout != null and layout.matches_stage_identity(stage) and layout.is_runtime_ready()
 
 
 func _preview_target_texture(layout: GeneratedStageLayout) -> ImageTexture:

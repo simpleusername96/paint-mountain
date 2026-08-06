@@ -1,6 +1,7 @@
 extends SceneTree
 
-const APP_SCENE := preload("res://scenes/app/app.tscn")
+const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
+const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const MIGRATION_PATH := "user://paint_mountain_localization_v1.json"
 
 var _failed := false
@@ -33,31 +34,57 @@ func _run() -> void:
 	_assert_true(tr("ui.play") == "플레이", "Korean translations must be available")
 	_assert_translation_contract("ko")
 
-	var app := APP_SCENE.instantiate()
-	root.add_child(app)
+	var stage_select := STAGE_SELECT_SCENE.instantiate() as StageSelectScreen
+	var settings := SETTINGS_SCENE.instantiate() as SettingsScreen
+	root.add_child(stage_select)
+	root.add_child(settings)
 	await process_frame
 	await process_frame
-	var stage_select: StageSelectScreen = app.get_node("StageSelect")
-	var settings: SettingsScreen = app.get_node("Settings")
-	app._show_stage_select()
+	stage_select.visible = true
+	stage_select.refresh()
 	await process_frame
-	_assert_true("첫 번째 하강" in stage_select._cards[0].text, "stage cards must render in Korean")
+	_assert_true(not stage_select._cards.is_empty(), "stage select must build its card controls")
+	if not stage_select._cards.is_empty():
+		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "stage cards must render in Korean")
 
 	game_state.update_setting(&"language", "en", false)
 	await process_frame
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
 	_assert_translation_contract("en")
-	_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
+	if not stage_select._cards.is_empty():
+		_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
 	var language_option: OptionButton = settings._controls.get(&"language")
 	_assert_true(language_option.get_item_text(0) == "KOREAN" and language_option.get_item_text(1) == "ENGLISH", "language option labels must update immediately")
+	var quality_option: OptionButton = settings._controls.get(&"quality")
+	var resolution_option: OptionButton = settings._controls.get(&"resolution")
+	_assert_true(quality_option.get_item_text(1) == "MEDIUM", "quality display text must localize without changing metadata")
+	_assert_true(quality_option.get_item_metadata(1) == "medium", "quality metadata must remain stable")
+	_assert_true(resolution_option.get_item_text(0) == "1280 × 720" and resolution_option.get_item_metadata(0) == "1280x720", "resolution display formatting must preserve stored metadata")
 
 	game_state.update_setting(&"language", "ko", false)
 	await process_frame
-	_assert_true("첫 번째 하강" in stage_select._cards[0].text, "switching back to Korean must refresh dynamic UI")
+	if not stage_select._cards.is_empty():
+		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "switching back to Korean must refresh dynamic UI")
+	_assert_true(quality_option.get_item_text(1) == "보통", "Korean quality display must refresh immediately")
+	game_state.update_setting(&"resolution", "1600x900", false)
+	game_state.update_setting(&"fullscreen", true, false)
+	settings._apply_setting(&"fullscreen", true)
+	await process_frame
+	_assert_true(resolution_option.disabled, "Resolution must disable while fullscreen is stored")
+	game_state.update_setting(&"fullscreen", false, false)
+	settings._apply_setting(&"fullscreen", false)
+	await process_frame
+	_assert_true(not resolution_option.disabled, "Resolution must re-enable after returning to windowed mode")
+	if DisplayServer.get_name() != "headless":
+		_assert_true(DisplayServer.window_get_size() == Vector2i(1600, 900), "leaving fullscreen must reapply the stored windowed resolution")
+	else:
+		_assert_true(game_state.settings.resolution == "1600x900", "headless display checks must preserve the requested windowed resolution")
+	game_state.update_setting(&"resolution", "1280x720", false)
 	_assert_control_inside_viewport(settings.get_node("SettingsRoot/Panel"), "settings panel")
 
 	_cleanup_fixture()
-	app.queue_free()
+	stage_select.queue_free()
+	settings.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
@@ -106,6 +133,8 @@ func _assert_translation_contract(locale: String) -> void:
 		"result.completed", "result.time_expired", "result.grade", "result.elapsed",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
 		"settings.reduced_motion",
+		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
+		"hud.power_decrease", "hud.power_increase", "ui.previous", "ui.loading_stage", "ui.stage_load_failed", "ui.retry_stage_load",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
 		"replay.incompatible_format",
 	]

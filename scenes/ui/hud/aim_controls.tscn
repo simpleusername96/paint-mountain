@@ -71,6 +71,12 @@ offset_bottom = 98.0
 icon = ExtResource("2")
 expand_icon = true
 focus_mode = 2
+tooltip_text = "hud.power_decrease"
+theme_override_colors/icon_normal_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_hover_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_pressed_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_focus_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)
 
 [node name="PowerValue" type="Label" parent="Content"]
 unique_name_in_owner = true
@@ -95,3 +101,9 @@ offset_bottom = 98.0
 icon = ExtResource("3")
 expand_icon = true
 focus_mode = 2
+tooltip_text = "hud.power_increase"
+theme_override_colors/icon_normal_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_hover_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_pressed_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_focus_color = Color(0.0901961, 0.145098, 0.219608, 1)
+theme_override_colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)

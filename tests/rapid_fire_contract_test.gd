@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 var _failed := false
 
@@ -13,8 +13,13 @@ func _run_checks() -> void:
 	Engine.time_scale = 3.0
 	var game_state := root.get_node("/root/GameState") as GameState
 	game_state.persistence_enabled = false
-	game_state.select_stage(&"first_descent")
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	game_state.select_stage(&"stage_01")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
+	_assert(gameplay != null, "rapid-fire contract requires the baked Stage 01 layout")
+	if gameplay == null:
+		Engine.time_scale = 1.0
+		quit(1)
+		return
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
@@ -63,26 +68,25 @@ func _run_checks() -> void:
 	_assert(not third, "third fire must be rejected only at the two-family capacity")
 	var capacity_snapshot := controller.fire_readiness_snapshot()
 	_assert(not bool(capacity_snapshot.get("fireable", true)) and capacity_snapshot.get("reason_key", "") == "capacity", "capacity must disable only Fire with the canonical reason")
+	_assert(capacity_snapshot.get("reason", "") == "초기 발사 동시 한도 2/2", "capacity copy must name the occupied initial-launch slots")
 	_assert(int(capacity_snapshot.get("fire_capacity", -1)) == 0, "readiness capacity must report remaining root slots, not the fixed maximum")
 	_assert(controller.shots_remaining == 2, "each accepted family must consume one payload")
 	_assert(manager.active_root_count() <= 2, "active root family count must stay bounded")
 	var budget := 60 * 30
-	while manager.active_count() > 0 and budget > 0:
-		await physics_frame
-		budget -= 1
-	_assert(budget > 0, "rapid-fire families must settle inside the bounded physics window")
 	while controller.sealed_shot_observations().size() < 2 and budget > 0:
 		await physics_frame
 		budget -= 1
 	var sealed := controller.sealed_shot_observations()
-	_assert(sealed.size() == 2, "each accepted family must seal its own observation")
-	_assert(controller.current_state == StageController.State.AIMING, "settlement must return directly to the editable AIMING board")
-	_assert(int(controller.activity_snapshot().get("fire_capacity", -1)) == 2, "all root slots must be available after both families settle")
+	_assert(budget > 0, "rapid-fire families must finish their first terrain traversal inside the bounded physics window")
+	_assert(sealed.size() == 2, "each accepted family must seal after its first-flight bodies finish")
+	_assert(controller.current_state == StageController.State.AIMING, "first-flight completion must keep the editable AIMING board")
+	_assert(manager.active_count() > 0, "first-flight completion must not delete terrain residents")
+	_assert(int(controller.activity_snapshot().get("fire_capacity", -1)) == 2, "all root slots must be available after both first flights finish")
 	if sealed.size() == 2:
 		_assert(sealed[0].shot_id == 1 and sealed[1].shot_id == 2, "sealed family observations must retain ordered shot IDs")
 		_assert(not is_equal_approx(sealed[0].commanded_yaw, sealed[1].commanded_yaw), "the two sealed families must retain distinct aim tuples")
 	if not _failed:
-		print("rapid_fire_contract_test passed: two immediate families accepted, third rejected at capacity, and both settled")
+		print("rapid_fire_contract_test passed: two immediate families accepted, third rejected at capacity, and both first flights completed while residents remained active.")
 	Engine.time_scale = 1.0
 	gameplay.queue_free()
 	quit(1 if _failed else 0)

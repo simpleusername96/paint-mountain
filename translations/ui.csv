@@ -17,13 +17,17 @@ ui.finish,FINISH,완료
 fire.not_editable,AIMING SCREEN ONLY,조준 화면에서만 발사할 수 있습니다
 fire.pending,CALCULATING TRAJECTORY,궤적 계산 중
 fire.invalid,AIM AT THE TERRAIN,지형을 조준하세요
-fire.capacity,TWO BALLS IN FLIGHT,포탄 2개 진행 중
+fire.capacity,INITIAL LAUNCH LIMIT %d/%d,초기 발사 동시 한도 %d/%d
 fire.empty,NO SHOTS LEFT,남은 탄 없음
 fire.terminal,RESOLVING RESULT,결과 계산 중
 ui.pause,PAUSE,일시정지
 ui.resume,RESUME,계속
 ui.next,NEXT,다음
+ui.previous,PREVIOUS,이전
 ui.retry,RETRY,재도전
+ui.loading_stage,LOADING STAGE...,스테이지 불러오는 중…
+ui.stage_load_failed,STAGE LOAD FAILED,스테이지 불러오기 실패
+ui.retry_stage_load,RETRY LOAD,다시 불러오기
 ui.close,CLOSE,닫기
 ui.restore_defaults,RESTORE DEFAULTS,기본값 복원
 ui.main_menu,QUIT TO MAIN MENU,메인 메뉴로
@@ -70,6 +74,8 @@ hud.direction_left,LEFT,왼쪽
 hud.direction_right,RIGHT,오른쪽
 hud.direction_center,CENTER,중앙
 hud.power,POWER,파워
+hud.power_decrease,DECREASE POWER,파워 낮추기
+hud.power_increase,INCREASE POWER,파워 높이기
 hud.total,TOTAL,누적
 hud.coverage_format,Current %.1f%% / Target %.1f%%,현재 %.1f%% / 목표 %.1f%%
 hud.summary_split,Split %d×,분열 %d회
@@ -127,6 +133,9 @@ settings.trajectory,TRAJECTORY PREVIEW,궤적 미리 보기
 settings.fullscreen,FULLSCREEN,전체 화면
 settings.resolution,RESOLUTION,해상도
 settings.quality,GRAPHICS QUALITY,그래픽 품질
+settings.quality_low,LOW,낮음
+settings.quality_medium,MEDIUM,보통
+settings.quality_high,HIGH,높음
 settings.interface_language,INTERFACE LANGUAGE,인터페이스 언어
 settings.language_note,Korean is the default. You can switch between Korean and English.,한국어가 기본값입니다. 한국어와 영어를 언제든 바꿀 수 있습니다.
 settings.korean,KOREAN,한국어

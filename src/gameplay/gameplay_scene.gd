@@ -50,32 +50,11 @@ func _ready() -> void:
 	var selected_stage := StageCatalog.get_stage(game_state.selected_stage_id if game_state != null else stage_data.stage_id)
 	if selected_stage != null:
 		stage_data = selected_stage
+	if not _prepared_layout_matches_stage():
+		push_error("GameplayScene requires a prepared runtime-ready baked layout.")
+		return
 	if not _build_stage_world():
 		return
-	if _generated_layout.default_aim == null:
-		# Newly assigned concave shapes enter the physics space at the next fixed
-		# boundary. The one derived aim is stable runtime metadata on the cached
-		# layout, so repeat entries do not repeat the bounded physics search.
-		await get_tree().physics_frame
-		_generated_layout.generated_default_aim = DefaultAimSolver.find_runtime_aim(
-			get_world_3d().direct_space_state,
-			_cannon,
-			_terrain_surface,
-			_generated_layout
-		)
-	if not _generated_layout.is_runtime_ready():
-		push_error("GameplayScene could not derive a bounded center-target default aim.")
-		return
-	var summit_aim := DefaultAimSolver.find_runtime_summit_aim(
-		get_world_3d().direct_space_state,
-		_cannon,
-		_terrain_surface,
-		_generated_layout
-	)
-	if summit_aim == null:
-		push_error("GameplayScene rejected a stage whose highest terrain band is unreachable on the legal aim domain.")
-		return
-	_generated_layout.metrics["summit_reachability_aim"] = summit_aim.stable_key()
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface)
 	_trajectory_preview.configure(_cannon)
@@ -188,19 +167,21 @@ func _unhandled_input(event: InputEvent) -> void:
 				_stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN)
 
 
+func set_pause_overlay_suspended(suspended: bool) -> void:
+	_hud.set_pause_overlay_suspended(suspended)
+
+
+func focus_pause_settings() -> void:
+	_hud.focus_pause_settings()
+
+
 func _build_stage_world() -> bool:
 	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
 	_generated_layout = _prepared_layout.copy_for_runtime() \
 			if _prepared_layout_matches_stage() else null
-	if _generated_layout == null:
-		_generated_layout = SeededStageGenerator.generate(
-			stage_data.generation_profile,
-			stage_data.terrain_seed,
-			stage_data
-		)
 	if not _layout_matches_stage(_generated_layout, stage_data):
-		push_error("Stage generation must produce a validated layout before briefing.")
+		push_error("GameplayScene cannot construct a stage without its prepared baked layout.")
 		return false
 	_terrain_surface.configure(_generated_layout)
 	_backstop_environment.configure(
@@ -261,7 +242,8 @@ func _prepared_layout_matches_stage() -> bool:
 			and _prepared_layout != null \
 			and _prepared_layout_checksum != 0 \
 			and _prepared_layout.checksum == _prepared_layout_checksum \
-			and _layout_matches_stage(_prepared_layout, stage_data)
+			and _layout_matches_stage(_prepared_layout, stage_data) \
+			and _prepared_layout.is_runtime_ready()
 
 
 func _layout_matches_stage(layout: GeneratedStageLayout, selected_stage: StageData) -> bool:

@@ -1,10 +1,13 @@
 class_name WindDebrisField
 extends Node3D
 
-const DEBRIS_COUNT := 24
-const MIN_HEIGHT_ABOVE_TERRAIN := 1.5
-const HEIGHT_SPAN := 7.0
+const MIN_DEBRIS_COUNT := 36
+const MAX_DEBRIS_COUNT := 60
+const SQUARE_METERS_PER_DEBRIS := 520.0
+const MIN_HEIGHT_ABOVE_TERRAIN := 1.4
+const HEIGHT_SPAN := 8.6
 const GUST_CUE_SECONDS := 0.8
+const MAX_PLACEMENT_ATTEMPTS := 48
 
 var _terrain_surface: TerrainSurface
 var _wind_controller: WindController
@@ -12,9 +15,11 @@ var _world_bounds := Rect2()
 var _positions: Array[Vector3] = []
 var _height_offsets := PackedFloat32Array()
 var _phases := PackedFloat32Array()
+var _scales := PackedFloat32Array()
 var _multimesh: MultiMesh
 var _visual_time := 0.0
 var _gust_cue_remaining := 0.0
+var _placement_random := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -42,6 +47,12 @@ func configure(
 		_on_settings_changed(game_state.settings)
 
 
+## Returns copies of the current per-instance visual positions for
+## deterministic contracts without exposing the mutable multimesh resource.
+func instance_positions_read_only() -> Array[Vector3]:
+	return _positions.duplicate()
+
+
 func _physics_process(delta: float) -> void:
 	if not visible or _multimesh == null or _wind_controller == null or _terrain_surface == null:
 		return
@@ -61,13 +72,16 @@ func _physics_process(delta: float) -> void:
 		_positions[index] += (direction * travel_speed + lateral) * delta
 		_positions[index] = _wrap_position(_positions[index])
 		var world_xz := Vector2(_positions[index].x, _positions[index].z)
+		if not _terrain_surface.contains_world_xz(world_xz):
+			_positions[index] = _sample_playable_position()
+			world_xz = Vector2(_positions[index].x, _positions[index].z)
 		var terrain_y := _terrain_surface.world_surface_point(world_xz).y
 		_positions[index].y = terrain_y + _height_offsets[index] \
 				+ sin(_visual_time * 2.1 + phase) * 0.35
 		var yaw := atan2(direction.x, direction.z) + sin(_visual_time * 2.8 + phase) * 0.35
 		var flutter := sin(_visual_time * 4.2 + phase) * 0.55
 		var basis := Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, flutter)
-		basis = basis.scaled(Vector3.ONE * (1.0 + gust_weight * 0.25))
+		basis = basis.scaled(Vector3.ONE * _scales[index] * (1.0 + gust_weight * 0.25))
 		_multimesh.set_instance_transform(index, Transform3D(basis, _positions[index]))
 
 
@@ -78,31 +92,49 @@ func _build_visuals(schedule_seed: int) -> void:
 	_visual_time = 0.0
 	_height_offsets = PackedFloat32Array()
 	_phases = PackedFloat32Array()
-	var random := RandomNumberGenerator.new()
-	random.seed = schedule_seed ^ 0x51A7D3
+	_scales = PackedFloat32Array()
+	_placement_random.seed = schedule_seed ^ 0x51A7D3
+	var debris_count := clampi(
+		roundi(_world_bounds.get_area() / SQUARE_METERS_PER_DEBRIS),
+		MIN_DEBRIS_COUNT,
+		MAX_DEBRIS_COUNT
+	)
+	var terrain_scale := clampf(
+		maxf(_world_bounds.size.x, _world_bounds.size.y) / 200.0,
+		0.85,
+		1.25
+	)
 	_multimesh = MultiMesh.new()
 	_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	_multimesh.use_colors = true
-	_multimesh.instance_count = DEBRIS_COUNT
+	_multimesh.instance_count = debris_count
 	var leaf_mesh := BoxMesh.new()
-	leaf_mesh.size = Vector3(0.22, 0.035, 0.42)
+	# These remain small leaves in world space, but are large enough to read as
+	# a pooled wind layer across the game's 180-240 m mountain span.
+	leaf_mesh.size = Vector3(0.72, 0.055, 1.55) * terrain_scale
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
 	material.roughness = 0.92
 	leaf_mesh.material = material
 	_multimesh.mesh = leaf_mesh
-	for index in range(DEBRIS_COUNT):
-		var position := Vector3(
-			random.randf_range(_world_bounds.position.x, _world_bounds.end.x),
-			0.0,
-			random.randf_range(_world_bounds.position.y, _world_bounds.end.y)
-		)
+	for index in range(debris_count):
+		var position := _sample_playable_position()
 		_positions.append(position)
-		_height_offsets.append(random.randf_range(
+		_height_offsets.append(_placement_random.randf_range(
 			MIN_HEIGHT_ABOVE_TERRAIN,
 			MIN_HEIGHT_ABOVE_TERRAIN + HEIGHT_SPAN
 		))
-		_phases.append(random.randf_range(0.0, TAU))
+		_phases.append(_placement_random.randf_range(0.0, TAU))
+		_scales.append(_placement_random.randf_range(0.78, 1.28))
+		var initial_position := position
+		initial_position.y += _height_offsets[index]
+		_multimesh.set_instance_transform(
+			index,
+			Transform3D(
+				Basis.IDENTITY.scaled(Vector3.ONE * _scales[index]),
+				initial_position
+			)
+		)
 		_multimesh.set_instance_color(
 			index,
 			Color("A68B55") if index % 3 == 0 else Color("66724B")
@@ -111,12 +143,40 @@ func _build_visuals(schedule_seed: int) -> void:
 	instance.name = "WindLeaves"
 	instance.multimesh = _multimesh
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	instance.visibility_range_end = 280.0
+	instance.visibility_range_end = 420.0
 	instance.custom_aabb = AABB(
 		Vector3(_world_bounds.position.x, -20.0, _world_bounds.position.y),
 		Vector3(_world_bounds.size.x, 180.0, _world_bounds.size.y)
 	)
 	add_child(instance)
+
+
+func _sample_playable_position() -> Vector3:
+	# The generated mountain is an irregular footprint within this rectangle.
+	# Bias toward its central mass, then reject gaps and support-only space.
+	var center := _world_bounds.get_center()
+	for _attempt in range(MAX_PLACEMENT_ATTEMPTS):
+		var candidate := Vector2(
+			_placement_random.randf_range(_world_bounds.position.x, _world_bounds.end.x),
+			_placement_random.randf_range(_world_bounds.position.y, _world_bounds.end.y)
+		).lerp(center, _placement_random.randf_range(0.10, 0.38))
+		if _terrain_surface.contains_world_xz(candidate):
+			var surface := _terrain_surface.world_surface_point(candidate)
+			return Vector3(candidate.x, surface.y, candidate.y)
+	# Every generated stage has playable top cells; retain a safe fallback for a
+	# malformed external layout without querying a non-top surface each frame.
+	if _terrain_surface.contains_world_xz(center):
+		return _terrain_surface.world_surface_point(center)
+	for z_index in range(1, 8):
+		for x_index in range(1, 10):
+			var candidate := _world_bounds.position + Vector2(
+				_world_bounds.size.x * float(x_index) / 10.0,
+				_world_bounds.size.y * float(z_index) / 8.0
+			)
+			if _terrain_surface.contains_world_xz(candidate):
+				return _terrain_surface.world_surface_point(candidate)
+	push_error("WindDebrisField requires at least one playable terrain-top position.")
+	return Vector3(center.x, _terrain_surface.global_position.y, center.y)
 
 
 func _wrap_position(position: Vector3) -> Vector3:

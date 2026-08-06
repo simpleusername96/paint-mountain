@@ -9,8 +9,6 @@ var route_index: int
 var route_role: StageRouteProfile.Role
 var route_t: float
 var route_tangent: Vector3
-var support_radius: float
-var legacy_kind_hint: int
 
 
 func _init(
@@ -21,9 +19,7 @@ func _init(
 		anchor_route_index: int,
 		anchor_route_role: StageRouteProfile.Role,
 		anchor_route_t: float,
-		anchor_route_tangent: Vector3,
-		anchor_support_radius: float,
-		anchor_legacy_kind_hint: int
+		anchor_route_tangent: Vector3
 ) -> void:
 	id = anchor_id
 	local_xz = anchor_local_xz
@@ -33,8 +29,6 @@ func _init(
 	route_role = anchor_route_role
 	route_t = anchor_route_t
 	route_tangent = anchor_route_tangent.normalized()
-	support_radius = anchor_support_radius
-	legacy_kind_hint = anchor_legacy_kind_hint
 
 
 func is_valid() -> bool:
@@ -42,4 +36,4 @@ func is_valid() -> bool:
 			and surface_point.is_finite() and surface_normal.is_finite() \
 			and not surface_normal.is_zero_approx() and route_index >= 0 \
 			and route_t >= 0.0 and route_t <= 1.0 \
-			and not route_tangent.is_zero_approx() and support_radius > 0.0
+			and not route_tangent.is_zero_approx()

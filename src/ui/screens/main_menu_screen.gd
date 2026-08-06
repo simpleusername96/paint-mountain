@@ -35,13 +35,16 @@ func focus_primary() -> void:
 
 
 func _apply_play_preparation_state() -> void:
-	%Play.disabled = not _play_ready
+	%Play.disabled = not _play_ready and not _play_failed
 	if _play_failed:
-		%Play.text = tr("ui.stage_unavailable")
+		%Play.text = tr("ui.retry_stage_load")
+		%Play.tooltip_text = tr("ui.stage_load_failed")
 	elif not _play_ready:
-		%Play.text = tr("ui.preparing_stage")
+		%Play.text = tr("ui.loading_stage")
+		%Play.tooltip_text = ""
 	else:
 		%Play.text = tr("ui.play")
+		%Play.tooltip_text = ""
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:

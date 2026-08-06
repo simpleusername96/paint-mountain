@@ -14,17 +14,6 @@ const STAGE_COUNT := 30
 @export var progression_version: int = StageGenerationContract.CONTRACT_VERSION
 @export var stage_count: int = STAGE_COUNT
 
-# Candidate indices from the last accepted catalog seed map. The v8 offline
-# artifact rebuild must replace any entry rejected by the new keyed sampler;
-# runtime still never searches or substitutes a mountain after stage entry.
-const ACCEPTED_CANDIDATE_INDEX_BY_STAGE := {
-	3: 3,
-	4: 0, 5: 0, 6: 15, 7: 0, 8: 0, 9: 1, 10: 0,
-	11: 1, 12: 0, 13: 0, 14: 1, 15: 0, 16: 3, 17: 1,
-	18: 1, 19: 1, 20: 0, 21: 0, 22: 1, 23: 8, 24: 1,
-	25: 2, 26: 0, 27: 3, 28: 19, 29: 2, 30: 6,
-}
-
 
 static func target_for(stage_number: int) -> float:
 	var n := clampi(stage_number, 1, STAGE_COUNT)
@@ -64,12 +53,7 @@ static func nominal_peak_for(stage_number: int) -> float:
 
 
 static func requested_seed_for(stage_number: int) -> int:
-	return candidate_seed_for(stage_number, accepted_candidate_index_for(stage_number))
-
-
-static func accepted_candidate_index_for(stage_number: int) -> int:
-	var n := clampi(stage_number, 1, STAGE_COUNT)
-	return int(ACCEPTED_CANDIDATE_INDEX_BY_STAGE.get(n, 0))
+	return candidate_seed_for(stage_number, 0)
 
 
 static func candidate_seed_for(stage_number: int, candidate_index: int = 0) -> int:

@@ -22,7 +22,7 @@ func _effect_can_activate(projectile: PaintProjectile, _contact: ProjectileConta
 	return projectile.split_generation < data.maximum_split_generation \
 			and _route_targets.size() == data.child_count \
 			and not _owning_route_downhill_tangent.is_zero_approx() \
-			and _projectile_manager.active_count() - 1 + data.child_count <= ProjectileManager.MAXIMUM_ACTIVE_PROJECTILES
+			and _projectile_manager.can_replace_resident_with_children(projectile, data.child_count)
 
 
 func _apply_effect(projectile: PaintProjectile, contact: ProjectileContact) -> bool:

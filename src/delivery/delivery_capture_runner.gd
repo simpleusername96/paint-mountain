@@ -57,7 +57,7 @@ func _run_capture() -> void:
 	_configure_capture_window()
 	var game_state := get_node("/root/GameState")
 	game_state.persistence_enabled = false
-	game_state.initialize_from_data(get_node("/root/SaveSystem").default_data())
+	_initialize_capture_game_state(game_state, get_node("/root/SaveSystem").default_data())
 	match _screen:
 		"main_menu":
 			_app._show_main_menu()
@@ -150,6 +150,12 @@ func _run_capture() -> void:
 		return
 	var error := image.save_png(absolute_path)
 	print("Delivery capture %s -> %s (%dx%d, %s)" % [_screen, absolute_path, image.get_width(), image.get_height(), error_string(error)])
+	# Paused captures can retain one deferred RefCounted object when the process
+	# quits in the same frame. Tear down gameplay on the normal AppRoot boundary
+	# and allow that queue to drain after the image has been saved.
+	if _app != null:
+		_app._remove_gameplay()
+	await get_tree().process_frame
 	get_tree().quit(0 if error == OK else 1)
 
 
@@ -177,7 +183,7 @@ func _run_responsiveness_probe() -> void:
 	var game_state := get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	var data: Dictionary = get_node("/root/SaveSystem").default_data()
-	game_state.initialize_from_data(data)
+	_initialize_capture_game_state(game_state, data)
 	for _frame in range(RESPONSIVENESS_WARMUP_FRAMES):
 		await get_tree().process_frame
 
@@ -431,17 +437,34 @@ func _frame_stats(samples: PackedFloat64Array) -> Dictionary:
 
 
 func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
+	var started_at_usec := Time.get_ticks_usec()
 	var game_state := get_node("/root/GameState")
 	var data: Dictionary = get_node("/root/SaveSystem").default_data()
 	data.selected_stage_id = stage_id
-	game_state.initialize_from_data(data)
+	_initialize_capture_game_state(game_state, data)
+	_configure_capture_window()
 	_app._start_stage(stage_id)
 	var gameplay := await _wait_for_active_gameplay(stage_id)
 	if gameplay == null:
 		return null
+	var elapsed_ms := float(Time.get_ticks_usec() - started_at_usec) / 1000.0
+	print("Delivery stage entry ready: stage=%s elapsed_ms=%.1f" % [
+		StageCatalog.canonical_id(stage_id), elapsed_ms,
+	])
 	if begin_aiming:
 		gameplay.get_node("StageController").begin_aiming()
 	return gameplay
+
+
+func _initialize_capture_game_state(game_state: GameState, data: Dictionary) -> void:
+	if _background_capture:
+		# SettingsScreen reapplies the initialized display preference when it opens.
+		# Keep that preference aligned with the requested off-screen capture size.
+		var settings := Dictionary(data.get("settings", {})).duplicate(true)
+		settings["fullscreen"] = false
+		settings["resolution"] = "%dx%d" % [_capture_size.x, _capture_size.y]
+		data["settings"] = settings
+	game_state.initialize_from_data(data)
 
 
 func _wait_for_active_gameplay(stage_id: StringName) -> Node3D:
@@ -449,7 +472,10 @@ func _wait_for_active_gameplay(stage_id: StringName) -> Node3D:
 	var deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
 	while Time.get_ticks_msec() < deadline:
 		var gameplay := _app.get_node_or_null("ActiveGameplay") as Node3D
-		if gameplay != null:
+		var active_stage := gameplay.get("stage_data") as StageData \
+				if gameplay != null and not gameplay.is_queued_for_deletion() else null
+		if active_stage != null \
+				and StageCatalog.canonical_id(active_stage.stage_id) == canonical_stage_id:
 			return gameplay
 		await get_tree().process_frame
 	_fail_capture("stage %s did not finish background preparation" % canonical_stage_id)
@@ -602,12 +628,7 @@ func _capture_summit_hit() -> void:
 			if contact != null and terrain.is_top_collider(contact.collider):
 				contact_state.seen = true
 	)
-	var summit_aim := DefaultAimSolver.find_runtime_summit_aim(
-		gameplay.get_world_3d().direct_space_state,
-		cannon,
-		terrain,
-		layout
-	)
+	var summit_aim := layout.generated_summit_aim
 	if summit_aim == null:
 		_fail_capture("summit capture could not resolve a legal summit aim")
 		return

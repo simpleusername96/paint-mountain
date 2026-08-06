@@ -48,6 +48,7 @@ var _resident_total := 0
 var _moving_residents := 0
 var _resting_residents := 0
 var _has_resident_breakdown := false
+var _pause_overlay_suspended := false
 
 
 func update_activity(
@@ -173,7 +174,7 @@ func show_state(state: StageController.State) -> void:
 	_apply_finish_availability()
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state == StageController.State.RESULT and not _replay_active
-	_pause.visible = state == StageController.State.PAUSED and not _replay_active
+	_pause.visible = state == StageController.State.PAUSED and not _replay_active and not _pause_overlay_suspended
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
 	elif state == StageController.State.AIMING and not _replay_active:
@@ -255,6 +256,15 @@ func set_replay_active(active: bool) -> void:
 	show_state(_current_state)
 
 
+func set_pause_overlay_suspended(suspended: bool) -> void:
+	_pause_overlay_suspended = suspended
+	show_state(_current_state)
+
+
+func focus_pause_settings() -> void:
+	_pause.focus_settings.call_deferred()
+
+
 func _connect_components() -> void:
 	%Start.pressed.connect(func() -> void: begin_aiming_requested.emit())
 	%Back.pressed.connect(func() -> void: stage_select_requested.emit())
@@ -281,6 +291,7 @@ func _connect_components() -> void:
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:
+	_aim.refresh_locale()
 	if _stage_data != null:
 		_top.configure(_stage_data)
 		_top.update_mode(_current_state)

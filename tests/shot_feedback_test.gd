@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 var _failed := false
 
@@ -12,8 +12,12 @@ func _initialize() -> void:
 func _run() -> void:
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
-	game_state.selected_stage_id = &"first_descent"
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	game_state.select_stage(&"stage_01")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
+	_assert_true(gameplay != null, "shot feedback requires the baked Stage 01 layout")
+	if gameplay == null:
+		quit(1)
+		return
 	root.add_child(gameplay)
 	await physics_frame
 	await process_frame
@@ -23,6 +27,20 @@ func _run() -> void:
 	_assert_true(controller.begin_aiming(), "feedback fixture must enter aiming")
 	await process_frame
 	_assert_true(hud_root.get_node("FirstSessionHint").visible and is_equal_approx(hud_root.get_node("FirstSessionHint/HintTimer").wait_time, 4.0), "Stage 1 must show one four-second aiming hint")
+	var hint := hud_root.get_node("FirstSessionHint") as Control
+	var fire := hud_root.get_node("ActionButtons/FireButton") as Button
+	var aim_controls := hud_root.get_node("AimControls") as Control
+	var coverage_panel := hud_root.get_node("CoverageMeter") as Control
+	_assert_true(
+			not hint.get_global_rect().intersects(fire.get_global_rect()) \
+					and not hint.get_global_rect().intersects(aim_controls.get_global_rect()) \
+					and not hint.get_global_rect().intersects(coverage_panel.get_global_rect()),
+			"first-session help must remain in the left rail without covering Fire, aim controls, or coverage"
+	)
+	var power_decrease := hud_root.get_node("AimControls/Content/PowerDecrease") as Button
+	var power_increase := hud_root.get_node("AimControls/Content/PowerIncrease") as Button
+	_assert_true(power_decrease.tooltip_text == "파워 낮추기" and power_increase.tooltip_text == "파워 높이기", "power controls must expose localized tooltips")
+	_assert_true(power_decrease.get_theme_color("icon_normal_color").is_equal_approx(Color("172538")), "power glyphs must use the navy icon tint")
 	hud.update_aim(-7.5, 41.0, 72.0)
 	_assert_true("왼쪽" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim panel must expose direction and elevation independently")
 	var interaction_control := hud_root.get_node("CameraInteractionControl") as CameraInteractionControl

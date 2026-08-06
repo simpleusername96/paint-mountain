@@ -42,7 +42,6 @@ enum State {
 	RESULT,
 }
 
-const MAX_CONCURRENT_ROOT_SHOTS := 2
 const SETTLEMENT_OBSERVER_PRIORITY := 1100
 const CONTAINMENT_DOMAIN_PROOF := preload("res://src/terrain/containment_domain_proof.gd")
 const FINISH_REASON_MANUAL := &"manual"
@@ -154,7 +153,10 @@ func configure(
 func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dictionary:
 	var active_roots := _projectile_manager.active_root_count() if _projectile_manager != null else 0
 	var active_bodies := _projectile_manager.active_count() if _projectile_manager != null else 0
-	var remaining_capacity := maxi(MAX_CONCURRENT_ROOT_SHOTS - active_roots, 0)
+	var remaining_capacity := maxi(
+		ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES - active_roots,
+		0
+	)
 	var editable := _cannon != null and _cannon.input_enabled \
 			and current_state == State.AIMING and _origin_allowed(origin)
 	var prediction := _cannon.current_prediction() if _cannon != null else null
@@ -164,7 +166,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	var reason := ""
 	var reason_key := "ready"
 	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
-			and active_roots < MAX_CONCURRENT_ROOT_SHOTS \
+			and active_roots < ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES \
 			and prediction_status == &"fireable" and prediction != null \
 			and _cannon.is_aim_valid() and prediction_key == key
 	if not editable:
@@ -182,9 +184,12 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	elif prediction_status == &"invalid":
 		reason_key = "invalid"
 		reason = tr("fire.invalid")
-	elif active_roots >= MAX_CONCURRENT_ROOT_SHOTS:
+	elif active_roots >= ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES:
 		reason_key = "capacity"
-		reason = tr("fire.capacity")
+		reason = tr("fire.capacity") % [
+			active_roots,
+			ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES,
+		]
 	return {
 		"phase": state_name(),
 		"editable": editable,
@@ -195,7 +200,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		"active_root_count": active_roots,
 		"active_body_count": active_bodies,
 		"fire_capacity": remaining_capacity,
-		"max_fire_capacity": MAX_CONCURRENT_ROOT_SHOTS,
+		"max_fire_capacity": ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES,
 		"shots_remaining": shots_remaining,
 		"terminal_pending": _terminal_pending,
 		"action_lock": _locked_action_origin,
@@ -212,13 +217,16 @@ func activity_snapshot() -> Dictionary:
 		return {
 			"active_shot_ids": PackedInt64Array(),
 			"active_projectiles": 0,
-			"fire_capacity": MAX_CONCURRENT_ROOT_SHOTS,
+			"fire_capacity": ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES,
 		}
 	return {
 		"active_shot_ids": _projectile_manager.active_shot_ids(),
 		"active_projectiles": _projectile_manager.active_count(),
 		"active_root_count": active_root_count,
-		"fire_capacity": maxi(MAX_CONCURRENT_ROOT_SHOTS - active_root_count, 0),
+		"fire_capacity": maxi(
+			ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES - active_root_count,
+			0
+		),
 		"terminal_pending": _terminal_pending,
 	}
 
@@ -573,8 +581,9 @@ func _on_shot_family_finished(shot_id: int) -> void:
 
 func _physics_process(_delta: float) -> void:
 	# Initial-flight families and resident paintballs have separate lifecycles.
-	# Once a family first rests or terminates, only its observation waits for the
-	# authoritative paint queues to stay drained for two complete physics ticks.
+	# Once every current family body has reached valid top or terminated, only its
+	# observation waits for authoritative paint queues to stay drained for two
+	# complete physics ticks.
 	if current_state == State.AIMING:
 		var paint_intents_inactive := _projectile_manager.pending_intent_count() == 0
 		var paint_inactive := _paint_system.pending_work_count() == 0
@@ -746,7 +755,11 @@ func _on_projectile_activity_changed(
 	shot_family_activity_changed.emit(
 		active_shot_ids,
 		active_projectiles,
-		maxi(MAX_CONCURRENT_ROOT_SHOTS - _projectile_manager.active_root_count(), 0)
+		maxi(
+			ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES \
+					- _projectile_manager.active_root_count(),
+			0
+		)
 	)
 	_emit_fire_readiness()
 

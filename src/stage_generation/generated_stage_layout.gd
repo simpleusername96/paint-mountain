@@ -9,6 +9,7 @@ var profile_version: int
 var layout_version: int
 var terrain_seed: int
 var accepted_seed: int
+var candidate_index: int = -1
 var generation_attempt: int
 var cell_count: Vector2i
 var local_bounds: Rect2
@@ -18,6 +19,12 @@ var route_graph: GeneratedRouteGraph
 var containment: ContainmentSpec
 var reachability_certificate: DirectReachabilityCertificate
 var generated_default_aim: AimTuple
+var generated_default_witness: StageEntryAimWitness
+var generated_summit_witness: StageEntryAimWitness
+var generated_summit_aim: AimTuple:
+	get:
+		return generated_summit_witness.aim if generated_summit_witness != null \
+				and generated_summit_witness.is_valid(true) else null
 var metrics: Dictionary = {}
 var checksum: int = 0
 var mechanism_placements: Array[MechanismPlacement] = []
@@ -31,10 +38,10 @@ var target_mask_checksum: int:
 var default_aim: AimTuple:
 	get:
 		if reachability_certificate != null:
-			return reachability_certificate.default_aim \
-					if reachability_certificate.is_valid() else null
-		return generated_default_aim if generated_default_aim != null \
-				and generated_default_aim.is_valid() else null
+			return reachability_certificate.default_aim if is_certified() else null
+		return generated_default_witness.aim if generated_default_witness != null \
+				and generated_default_witness.is_valid() else generated_default_aim \
+				if generated_default_aim != null and generated_default_aim.is_valid() else null
 
 var _target_mask := PackedByteArray()
 var _target_mask_checksum: int = 0
@@ -42,6 +49,10 @@ var _target_pixel_indices := PackedInt32Array()
 var _target_centroid_local_xz := Vector2(INF, INF)
 var _target_pixel_nearest_centroid: int = -1
 var _footprint_cells := PackedByteArray()
+# Accepted repository layouts are immutable for their process lifetime. Cache
+# only a successful full readiness proof; an incomplete layout may still gain
+# its build-time witnesses and be checked again.
+var _runtime_readiness_verified := false
 
 
 func sample_size() -> Vector2i:
@@ -144,12 +155,21 @@ func is_certified() -> bool:
 					== reachable_target_checksum(
 						reachability_certificate.target_witness_indices
 					) \
-			and default_aim != null and default_aim.is_valid()
+			and reachability_certificate.default_aim != null \
+			and reachability_certificate.default_aim.is_valid()
 
 
 func is_runtime_ready() -> bool:
-	return is_valid() and has_valid_target_mask() \
-			and default_aim != null and default_aim.is_valid()
+	if _runtime_readiness_verified:
+		return true
+	if not is_valid() or not has_valid_target_mask() \
+			or not _default_witness_matches_layout() \
+			or not _summit_witness_matches_layout():
+		return false
+	# A certificate remains optional. Once present, it is an authority and an
+	# incomplete or stale proof must not silently fall back to generated witnesses.
+	_runtime_readiness_verified = reachability_certificate == null or is_certified()
+	return _runtime_readiness_verified
 
 
 ## Cheap identity check for already accepted process-lifetime caches. Generation
@@ -173,7 +193,7 @@ func matches_stage_identity(stage: StageData) -> bool:
 ## remain shared and read-only; mutable runtime annotations and packed masks are
 ## isolated so gameplay cannot change the preparer's retained source layout.
 func copy_for_runtime() -> GeneratedStageLayout:
-	if not is_valid() or not has_valid_target_mask():
+	if not is_runtime_ready():
 		return null
 	var result := GeneratedStageLayout.new()
 	result.profile_id = profile_id
@@ -181,6 +201,7 @@ func copy_for_runtime() -> GeneratedStageLayout:
 	result.layout_version = layout_version
 	result.terrain_seed = terrain_seed
 	result.accepted_seed = accepted_seed
+	result.candidate_index = candidate_index
 	result.generation_attempt = generation_attempt
 	result.cell_count = cell_count
 	result.local_bounds = local_bounds
@@ -190,6 +211,10 @@ func copy_for_runtime() -> GeneratedStageLayout:
 	result.containment = containment
 	result.reachability_certificate = reachability_certificate
 	result.generated_default_aim = generated_default_aim
+	result.generated_default_witness = generated_default_witness.copy() \
+			if generated_default_witness != null else null
+	result.generated_summit_witness = generated_summit_witness.copy() \
+			if generated_summit_witness != null else null
 	result.metrics = metrics.duplicate(true)
 	result.checksum = checksum
 	for placement in mechanism_placements:
@@ -200,6 +225,36 @@ func copy_for_runtime() -> GeneratedStageLayout:
 			or not result.install_target_mask(_target_mask, _target_mask_checksum):
 		return null
 	return result
+
+
+func _default_witness_matches_layout() -> bool:
+	if generated_default_witness == null or not generated_default_witness.is_valid():
+		return false
+	var sample := target_sample_nearest_centroid()
+	if sample.is_empty() or generated_default_witness.target_pixel_index \
+			!= int(sample.target_pixel_index):
+		return false
+	return _witness_matches_sample(generated_default_witness, sample)
+
+
+func _summit_witness_matches_layout() -> bool:
+	if generated_summit_witness == null or not generated_summit_witness.is_valid(true):
+		return false
+	if generated_summit_witness.summit_region_checksum != summit_region_checksum():
+		return false
+	var region := summit_region()
+	for sample in region:
+		if _witness_matches_sample(generated_summit_witness, sample):
+			return true
+	return false
+
+
+func _witness_matches_sample(witness: StageEntryAimWitness, sample: Dictionary) -> bool:
+	var identity := witness.predicted_identity
+	return identity != null and identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
+			and identity.terrain_cell == sample.cell and identity.terrain_triangle == int(sample.triangle) \
+			and witness.physical_identity != null \
+			and witness.physical_identity.has_same_surface_address(identity)
 
 
 func target_centroid_local_xz() -> Vector2:
@@ -219,8 +274,11 @@ func summit_region(maximum_height_tolerance: float = 0.25) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if top_topology == null or not top_topology.is_valid():
 		return result
+	# This immutable snapshot is shared across the scan. Duplicating the full
+	# vertex array once per triangle makes late-stage runtime validation quadratic.
+	var vertices := top_topology.canonical_vertices_read_only()
 	var maximum_height := -INF
-	for vertex in top_topology.canonical_vertices_read_only():
+	for vertex in vertices:
 		maximum_height = maxf(maximum_height, vertex.y)
 	var seen: Dictionary = {}
 	for cell_z in range(cell_count.y):
@@ -233,7 +291,6 @@ func summit_region(maximum_height_tolerance: float = 0.25) -> Array[Dictionary]:
 				if triangle_id < 0 or seen.has(triangle_id):
 					continue
 				var indices := top_topology.triangle_vertex_indices(cell, triangle_in_cell)
-				var vertices := top_topology.canonical_vertices_read_only()
 				var a := vertices[indices.x]
 				var b := vertices[indices.y]
 				var c := vertices[indices.z]

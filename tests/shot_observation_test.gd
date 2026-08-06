@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 var _failed := false
 
@@ -22,8 +22,12 @@ func _run() -> void:
 	)
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
-	game_state.selected_stage_id = &"first_descent"
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	game_state.select_stage(&"stage_01")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
+	_assert_true(gameplay != null, "shot observation requires the baked Stage 01 layout")
+	if gameplay == null:
+		quit(1)
+		return
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame

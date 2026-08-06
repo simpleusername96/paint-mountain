@@ -15,10 +15,12 @@ signal projectile_terrain_recovered(projectile: PaintProjectile, physics_tick: i
 signal all_projectiles_settled
 signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
 signal shot_family_finished(shot_id: int)
+signal initial_root_launch_finished(shot_id: int)
 signal activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int)
 signal resident_activity_changed(moving_projectiles: int, resting_projectiles: int)
 
 const MAXIMUM_ACTIVE_PROJECTILES := 21
+const MAXIMUM_ACTIVE_ROOT_LAUNCHES := 2
 const COMMAND_CANONICALIZATION_PRIORITY := 900
 const DEFAULT_PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
 
@@ -33,7 +35,13 @@ var _pending_intents: Array[Dictionary] = []
 var _next_spawn_ordinal: int = 0
 var _next_shot_id: int = 1
 var _next_sequence_by_ordinal: Dictionary = {}
-var _initial_flight_shot_ids: Dictionary = {}
+# Fire capacity and observation complete on different lifecycle boundaries.
+# The first ends when a generation-0 launch reaches playable terrain; the
+# second ends when every current family body has done so or has terminated.
+# Terrain residents can continue moving for the stage without holding either.
+var _active_initial_launch_shot_ids: Dictionary = {}
+var _unsettled_shot_family_ids: Dictionary = {}
+var _shot_ids_pending_post_stop_refresh: Dictionary = {}
 
 
 func _init() -> void:
@@ -74,6 +82,15 @@ func spawn_projectile(
 	_prune_invalid()
 	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
 		return null
+	if split_generation == 0 \
+			and _active_initial_launch_shot_ids.size() >= MAXIMUM_ACTIVE_ROOT_LAUNCHES:
+		return null
+	if split_generation == 0 and requested_shot_id > 0:
+		# Initial root identity is manager-owned. Accepting a caller-provided root
+		# ID could merge two launches into one capacity slot.
+		return null
+	if split_generation > 0 and requested_shot_id <= 0:
+		return null
 	# Spawn ordinals stay monotonic for the complete attempt. This is important
 	# when a new root is fired while the previous family's paint commands are
 	# still queued: command identity must never collide across families.
@@ -81,12 +98,8 @@ func spawn_projectile(
 	_next_spawn_ordinal += 1
 	var assigned_shot_id := requested_shot_id
 	if split_generation == 0:
-		if assigned_shot_id <= 0:
-			assigned_shot_id = _next_shot_id
-			_next_shot_id += 1
-	else:
-		if assigned_shot_id <= 0:
-			return null
+		assigned_shot_id = _next_shot_id
+		_next_shot_id += 1
 	var projectile := PaintProjectile.new()
 	projectile.name = "PaintProjectile%02d" % (assigned_ordinal + 1)
 	projectile.configure(
@@ -116,7 +129,8 @@ func spawn_projectile(
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
 	if split_generation == 0:
-		_initial_flight_shot_ids[assigned_shot_id] = true
+		_active_initial_launch_shot_ids[assigned_shot_id] = true
+		_unsettled_shot_family_ids[assigned_shot_id] = true
 		shot_family_started.emit(assigned_shot_id, projectile)
 	_emit_activity_changed()
 	return projectile
@@ -171,20 +185,54 @@ func active_shot_ids() -> PackedInt64Array:
 
 func active_root_count() -> int:
 	_prune_invalid()
-	return _initial_flight_shot_ids.size()
+	return _active_initial_launch_shot_ids.size()
 
 
 func initial_flight_shot_ids() -> PackedInt64Array:
 	_prune_invalid()
 	var ids := PackedInt64Array()
-	for shot_id in _initial_flight_shot_ids:
+	for shot_id in _active_initial_launch_shot_ids:
 		ids.append(int(shot_id))
 	ids.sort()
 	return ids
 
 
-func root_capacity_available(maximum_roots: int = 2) -> bool:
+func root_capacity_available(maximum_roots: int = MAXIMUM_ACTIVE_ROOT_LAUNCHES) -> bool:
 	return active_root_count() < maxi(1, maximum_roots)
+
+
+## Admits a Splitter replacement without exposing resident-count arithmetic to
+## mechanism nodes. The consumed parent must still be a managed resident.
+func can_replace_resident_with_children(parent: PaintProjectile, child_count: int) -> bool:
+	_prune_invalid()
+	return parent != null and is_instance_valid(parent) and _active.has(parent) \
+			and child_count > 0 and _active.size() - 1 + child_count \
+			<= MAXIMUM_ACTIVE_PROJECTILES
+
+
+## Current catalog policy bound, not a general branching simulator. A valid
+## Splitter can replace one body per generation with its configured children.
+static func maximum_residents_for_stage(
+		maximum_shots: int,
+		mechanisms: Array[MechanismData]
+) -> int:
+	var per_root := 1
+	for mechanism in mechanisms:
+		if mechanism == null or not mechanism.is_valid() \
+				or mechanism.canonical_kind() != MechanismData.Kind.SPLITTER:
+			continue
+		per_root = maxi(
+			per_root,
+			int(pow(float(mechanism.child_count), float(mechanism.maximum_split_generation)))
+		)
+	return maxi(maximum_shots, 0) * per_root
+
+
+static func stage_resident_capacity_is_valid(
+		maximum_shots: int,
+		mechanisms: Array[MechanismData]
+) -> bool:
+	return maximum_residents_for_stage(maximum_shots, mechanisms) <= MAXIMUM_ACTIVE_PROJECTILES
 
 
 func submit_radial_paint_intent(intent: RadialPaintMark) -> bool:
@@ -206,7 +254,9 @@ func cleanup() -> void:
 	_pending_intents.clear()
 	_begin_shot_ordering()
 	_next_shot_id = 1
-	_initial_flight_shot_ids.clear()
+	_active_initial_launch_shot_ids.clear()
+	_unsettled_shot_family_ids.clear()
+	_shot_ids_pending_post_stop_refresh.clear()
 	for projectile in _active:
 		if is_instance_valid(projectile):
 			projectile.queue_free()
@@ -297,6 +347,12 @@ func _on_valid_top_traversed(
 		base_paint_committed: bool
 ) -> void:
 	valid_top_traversed.emit(projectile, contact, base_paint_committed)
+	if projectile == null:
+		return
+	if projectile.split_generation == 0:
+		_release_initial_root_launch(projectile.shot_id)
+	_refresh_unsettled_shot_family(projectile.shot_id)
+	_emit_activity_changed()
 
 
 func _on_valid_top_exited(projectile: PaintProjectile) -> void:
@@ -312,7 +368,6 @@ func _on_projectile_motion_state_changed(
 	if projectile == null:
 		return
 	if current_state == PaintProjectile.MotionState.RESTING_ON_TERRAIN:
-		_refresh_initial_flight_family(projectile.shot_id)
 		_wake_projectile_for_current_strong(projectile)
 	_emit_activity_changed()
 
@@ -351,11 +406,11 @@ func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> 
 	projectile_stopped.emit(projectile, reason)
 	var shot_id := projectile.shot_id
 	# Splitter consumes its root before it adds children in the same call stack.
-	# Defer the family check so that transient zero-member state cannot free a
-	# Fire slot while the first-flight descendants are being created.
+	# Defer both lifecycle boundaries so family completion cannot occur between
+	# parent consumption and admission of all replacement children.
 	if shot_id > 0:
-		_refresh_initial_flight_family.call_deferred(shot_id)
-	_emit_activity_changed()
+		_shot_ids_pending_post_stop_refresh[shot_id] = true
+		_refresh_lifecycles_after_stop.call_deferred(shot_id, projectile.split_generation == 0)
 	if _active.is_empty() and not _settlement_check_queued:
 		_settlement_check_queued = true
 		_emit_settled_if_still_empty.call_deferred()
@@ -375,8 +430,12 @@ func _prune_invalid() -> void:
 	for index in range(_active.size() - 1, -1, -1):
 		if not is_instance_valid(_active[index]):
 			_active.remove_at(index)
-	for shot_id in _initial_flight_shot_ids.keys():
-		_refresh_initial_flight_family_without_prune(int(shot_id))
+	for shot_id in _active_initial_launch_shot_ids.keys():
+		_refresh_initial_root_launch_without_prune(int(shot_id))
+	for shot_id in _unsettled_shot_family_ids.keys():
+		if _shot_ids_pending_post_stop_refresh.has(shot_id):
+			continue
+		_refresh_unsettled_shot_family_without_prune(int(shot_id))
 
 
 func _has_active_shot_id(shot_id: int) -> bool:
@@ -386,19 +445,46 @@ func _has_active_shot_id(shot_id: int) -> bool:
 	return false
 
 
-func _refresh_initial_flight_family(shot_id: int) -> void:
+func _refresh_lifecycles_after_stop(shot_id: int, stopped_root: bool) -> void:
+	_shot_ids_pending_post_stop_refresh.erase(shot_id)
 	_prune_invalid()
-	_refresh_initial_flight_family_without_prune(shot_id)
+	if stopped_root:
+		_release_initial_root_launch(shot_id)
+	_refresh_unsettled_shot_family(shot_id)
+	_emit_activity_changed()
 
 
-func _refresh_initial_flight_family_without_prune(shot_id: int) -> void:
-	if shot_id <= 0 or not _initial_flight_shot_ids.has(shot_id):
+func _release_initial_root_launch(shot_id: int) -> void:
+	if shot_id <= 0 or not _active_initial_launch_shot_ids.has(shot_id):
+		return
+	_active_initial_launch_shot_ids.erase(shot_id)
+	initial_root_launch_finished.emit(shot_id)
+
+
+func _refresh_initial_root_launch_without_prune(shot_id: int) -> void:
+	if shot_id <= 0 or not _active_initial_launch_shot_ids.has(shot_id):
 		return
 	for projectile in _active:
 		if is_instance_valid(projectile) and projectile.shot_id == shot_id \
-				and not projectile.is_resting_on_terrain():
+				and projectile.split_generation == 0 \
+				and not projectile.has_reached_playable_top():
 			return
-	_initial_flight_shot_ids.erase(shot_id)
+	_release_initial_root_launch(shot_id)
+
+
+func _refresh_unsettled_shot_family(shot_id: int) -> void:
+	_prune_invalid()
+	_refresh_unsettled_shot_family_without_prune(shot_id)
+
+
+func _refresh_unsettled_shot_family_without_prune(shot_id: int) -> void:
+	if shot_id <= 0 or not _unsettled_shot_family_ids.has(shot_id):
+		return
+	for projectile in _active:
+		if is_instance_valid(projectile) and projectile.shot_id == shot_id \
+				and not projectile.has_reached_playable_top():
+			return
+	_unsettled_shot_family_ids.erase(shot_id)
 	shot_family_finished.emit(shot_id)
 
 

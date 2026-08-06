@@ -25,7 +25,8 @@ func _run_checks() -> void:
 	if placements.size() == 3 and repeated_placements.size() == 3:
 		_assert_placement_contract(first, placements, repeated_placements)
 		_assert_placement_checksum_contract(first, placements)
-	_assert_flat_uphill_is_rejected()
+	_assert_surface_candidates_are_not_legacy_pads(first, placements)
+	_assert_gentle_uphill_is_ranked_without_a_minimum_rise_gate()
 	_assert_count_cap()
 	print("Phase 4 generic glyph placement passed")
 	quit(1 if _failed else 0)
@@ -52,7 +53,7 @@ func _assert_placement_contract(
 	for index in range(placements.size()):
 		var placement := placements[index]
 		by_kind[int(placement.mechanism_data.canonical_kind())] = placement
-		_assert_true(not String(placement.anchor_id).is_empty(), "placement must retain its generic anchor identity")
+		_assert_true(String(placement.anchor_id).begins_with("surface/"), "placement must retain its canonical surface anchor identity")
 		_assert_true(placement.local_transform.is_equal_approx(repeated[index].local_transform), "same layout must repeat the same transform")
 		var radius := placement.mechanism_data.glyph_radius
 		_assert_true(layout.local_bounds.grow(-radius).has_point(placement.local_xz), "glyph footprint must remain inside terrain bounds")
@@ -73,9 +74,7 @@ func _assert_placement_contract(
 	var uphill := by_kind.get(int(MechanismData.Kind.UPHILL_REBOUND)) as MechanismPlacement
 	_assert_true(uphill != null and not uphill.uphill_tangent.is_zero_approx(), "Uphill Rebound must store an authoritative ascent tangent")
 	if uphill != null:
-		var start_height := layout.height_at_local(uphill.local_xz.x, uphill.local_xz.y)
-		var probe := uphill.local_xz + Vector2(uphill.uphill_tangent.x, uphill.uphill_tangent.z).normalized() * UPHILL_DATA.uphill_sample_distance
-		_assert_true(layout.height_at_local(probe.x, probe.y) > start_height, "stored uphill tangent must point toward higher terrain")
+		_assert_uphill_tangent_is_local_maximum(layout, uphill)
 
 
 func _assert_placement_checksum_contract(
@@ -114,12 +113,50 @@ func _assert_placement_checksum_contract(
 	_assert_true(layout.placement_checksum() == baseline, "restored glyph placement data must restore the checksum")
 
 
-func _assert_flat_uphill_is_rejected() -> void:
-	var fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.FLAT)
+func _assert_surface_candidates_are_not_legacy_pads(
+		layout: GeneratedStageLayout,
+		placements: Array[MechanismPlacement]
+) -> void:
+	var legacy_pads := layout.route_graph.pad_nodes()
+	for placement in placements:
+		for pad in legacy_pads:
+			_assert_true(
+				not placement.local_xz.is_equal_approx(Vector2(pad.position.x, pad.position.z)),
+				"canonical surface anchors must not reuse legacy pad coordinates"
+			)
+
+
+func _assert_gentle_uphill_is_ranked_without_a_minimum_rise_gate() -> void:
+	var fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.RAMP)
 	var stage := fixture.stage as StageData
-	stage.mechanism_loadout = [UPHILL_DATA]
-	var rejected := MechanismPlacementGenerator.generate(stage, fixture.layout)
-	_assert_true(rejected.is_empty(), "flat terrain must not receive Uphill Rebound")
+	var layout := fixture.layout as GeneratedStageLayout
+	var gentle_uphill := UPHILL_DATA.duplicate() as MechanismData
+	gentle_uphill.uphill_sample_distance = 0.25
+	stage.mechanism_loadout = [gentle_uphill]
+	var placements := MechanismPlacementGenerator.generate(stage, layout)
+	_assert_true(placements.size() == 1, "Uphill Rebound must rank a positive local ascent below its legacy minimum rise")
+	if placements.size() == 1:
+		_assert_uphill_tangent_is_local_maximum(layout, placements[0], 0.25)
+
+
+func _assert_uphill_tangent_is_local_maximum(
+		layout: GeneratedStageLayout,
+		uphill: MechanismPlacement,
+		sample_distance: float = UPHILL_DATA.uphill_sample_distance
+) -> void:
+	var start_height := layout.height_at_local(uphill.local_xz.x, uphill.local_xz.y)
+	var tangent_direction := Vector2(uphill.uphill_tangent.x, uphill.uphill_tangent.z).normalized()
+	var tangent_height := layout.height_at_local(
+		uphill.local_xz.x + tangent_direction.x * sample_distance,
+		uphill.local_xz.y + tangent_direction.y * sample_distance
+	)
+	var highest_height := -INF
+	for sample_index in range(12):
+		var angle := TAU * float(sample_index) / 12.0
+		var probe := uphill.local_xz + Vector2.from_angle(angle) * sample_distance
+		highest_height = maxf(highest_height, layout.height_at_local(probe.x, probe.y))
+	_assert_true(tangent_height > start_height, "stored uphill tangent must point toward higher terrain")
+	_assert_true(is_equal_approx(tangent_height, highest_height), "stored uphill tangent must point toward the locally highest ascent")
 
 
 func _assert_count_cap() -> void:
@@ -138,6 +175,7 @@ func _three_route_fixture(kind: TerrainTestFixtureFactory.Kind) -> Dictionary:
 	var stage := StageData.new()
 	stage.stage_id = &"generic_glyph_fixture"
 	stage.terrain_center = Vector3.ZERO
+	stage.cannon_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 30.0, 25.0))
 	stage.aiming_camera_position = Vector3(34, 32, 34)
 	stage.aiming_camera_target = Vector3.ZERO
 	stage.briefing_camera_position = Vector3(-34, 38, 34)

@@ -87,6 +87,65 @@ static func generate_structural_sequence(
 	return null
 
 
+## Offline catalog-builder entry point. It performs exactly one candidate
+## materialization and finalization; outer publication owns bounded selection.
+static func generate_candidate_once(
+		stage_data: StageData,
+		candidate_seed: int
+) -> GeneratedStageLayout:
+	var diagnostic := generate_candidate_diagnostic(stage_data, candidate_seed)
+	return diagnostic.get("layout") as GeneratedStageLayout if bool(diagnostic.get("valid", false)) else null
+
+
+## Offline-only candidate evidence. It preserves the normal one-candidate
+## materialization path while retaining the validator phase and stable reason.
+static func generate_candidate_diagnostic(
+		stage_data: StageData,
+		candidate_seed: int
+) -> Dictionary:
+	if stage_data == null or stage_data.generation_profile == null \
+			or candidate_seed <= 0:
+		return {"valid": false, "phase": "structural", "reason": "invalid_candidate_input"}
+	var profile := stage_data.generation_profile
+	var layout := _build_attempt(stage_data.stage_id, profile, candidate_seed, candidate_seed, 0)
+	if not _validate(profile, layout):
+		return {
+			"valid": false,
+			"phase": "structural",
+			"reason": _diagnostic_rejection_reason(layout, "structural_validation"),
+		}
+	if not _finalize_layout(profile, stage_data, layout):
+		return {
+			"valid": false,
+			"phase": "finalization",
+			"reason": _diagnostic_rejection_reason(layout, "layout_finalization"),
+		}
+	var valid_identity := layout.generation_attempt == 0 and layout.terrain_seed == candidate_seed \
+			and layout.accepted_seed == candidate_seed
+	return {
+		"valid": valid_identity,
+		"phase": "finalization",
+		"reason": "" if valid_identity else "candidate_identity",
+		"layout": layout if valid_identity else null,
+	}
+
+
+static func _diagnostic_rejection_reason(layout: GeneratedStageLayout, fallback: String) -> String:
+	if layout != null and layout.metrics != null:
+		var rejection := String(layout.metrics.get("rejection", ""))
+		if not rejection.is_empty():
+			if rejection == "mechanism_placement":
+				var placement_rejection := String(
+					layout.metrics.get("placement_rejection", "unspecified")
+				)
+				var failed_kind := String(layout.metrics.get("placement_failed_kind", ""))
+				if not failed_kind.is_empty():
+					return "%s/%s/%s" % [rejection, placement_rejection, failed_kind]
+				return "%s/%s" % [rejection, placement_rejection]
+			return rejection
+	return fallback
+
+
 static func _attempt_index_for_accepted_seed(
 		profile: StageGenerationProfile,
 		requested_seed: int,

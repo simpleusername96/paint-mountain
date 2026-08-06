@@ -5,8 +5,11 @@ extends SceneTree
 ## runtime then consumes only the serialized result.
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
-const BUNDLE_FORMAT_VERSION := 3
+const BUNDLE_FORMAT_VERSION := 4
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
+const TERRAIN_SCENE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
+const BACKSTOP_SCENE := preload("res://scenes/gameplay/backstop_environment.tscn")
+const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 const BURST_DATA: MechanismData = preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitter_node.tres")
 const UPHILL_REBOUND_DATA: MechanismData = preload(
@@ -20,10 +23,58 @@ const SOURCE_STAGE_PATHS := [
 
 
 func _initialize() -> void:
+	var promotion_root := _bundle_promotion_argument()
+	if not promotion_root.is_empty():
+		var promotion_catalog := load("%s/catalog.tres" % promotion_root) as StageCatalogData
+		if promotion_catalog == null:
+			push_error("Bundle promotion could not load catalog: %s" % promotion_root)
+			quit(1)
+			return
+		if not _promote_staged_bundle(promotion_catalog, promotion_root) \
+				or not _publish_catalog_pointer(promotion_catalog):
+			quit(1)
+			return
+		print("Stage bundle and catalog pointer promoted: manifest=%s" % promotion_catalog.manifest_sha256)
+		quit()
+		return
+	var verification_root := _bundle_verification_argument()
+	if not verification_root.is_empty():
+		var verification_catalog := load("%s/catalog.tres" % verification_root) as StageCatalogData
+		if verification_catalog == null:
+			push_error("Bundle verification could not load catalog: %s" % verification_root)
+			quit(1)
+			return
+		var verification_passed := _verify_catalog_bundle(
+			verification_catalog, verification_root
+		)
+		if verification_passed:
+			print("Stage bundle verification passed: %s" % verification_root)
+		quit(0 if verification_passed else 1)
+		return
+	var diagnostic_stage := _diagnostic_stage_argument()
+	if not diagnostic_stage.is_empty():
+		var diagnostic_passed := await _diagnose_stage_candidates(diagnostic_stage)
+		quit(0 if diagnostic_passed else 3)
+		return
 	var write := "--write" in OS.get_cmdline_user_args()
 	var dry_build := "--dry-build" in OS.get_cmdline_user_args()
-	var catalog = _build_catalog()
-	if catalog == null or not catalog.is_valid(false):
+	if not write and not dry_build:
+		_check_active_catalog()
+		return
+	var build = await _build_catalog()
+	var catalog: StageCatalogData = build.get("catalog") if build is Dictionary else null
+	var layouts: Array[BakedStageLayoutData] = []
+	if build is Dictionary:
+		var raw_layouts: Variant = build.get("layouts")
+		if raw_layouts is Array:
+			for value in raw_layouts:
+				var baked := value as BakedStageLayoutData
+				if baked == null:
+					push_error("Stage catalog build returned a non-baked layout.")
+					quit(1)
+					return
+				layouts.append(baked)
+	if catalog == null or not catalog.is_valid(false) or layouts.size() != catalog.stages.size():
 		push_error("Stage catalog build failed validation.")
 		quit(1)
 		return
@@ -33,39 +84,113 @@ func _initialize() -> void:
 		])
 		quit()
 		return
-	if not write:
-		var existing = load(CATALOG_PATH)
-		if existing == null or not existing.is_valid() \
-				or existing.manifest_sha256 != catalog.manifest_sha256:
-			push_error("Serialized catalog pointer is missing or differs from the deterministic build.")
-			quit(1)
-			return
-		print("Stage catalog check passed: %d stages manifest=%s" % [catalog.stages.size(), catalog.manifest_sha256])
-		quit()
-		return
-	if not _write_bundle_manifest(catalog):
+	if not _write_bundle_manifest(catalog, layouts):
 		push_error("Could not promote the content-addressed stage bundle.")
 		quit(1)
 		return
-	var staging_path := _catalog_staging_path()
-	var staging_error := ResourceSaver.save(catalog, staging_path)
-	if staging_error != OK:
-		push_error("Could not write catalog staging resource: %s" % staging_error)
-		quit(1)
-		return
-	var promoted := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(staging_path),
-		ProjectSettings.globalize_path(CATALOG_PATH)
-	)
-	if promoted != OK:
-		push_error("Could not promote catalog resource: %s" % promoted)
+	if not _publish_catalog_pointer(catalog):
 		quit(1)
 		return
 	print("Stage catalog written: %s manifest=%s" % [CATALOG_PATH, catalog.manifest_sha256])
 	quit()
 
 
-func _build_catalog():
+## Offline/no-publish diagnostic for one exact canonical stage. It deliberately
+## uses the locked 0..31 domain and does not materialize other stages.
+func _diagnose_stage_candidates(stage_id: String) -> bool:
+	var existing := load(CATALOG_PATH) as StageCatalogData
+	if existing == null:
+		push_error("Offline candidate diagnostic requires the current source catalog.")
+		return false
+	var source_stage := existing.get_stage(StringName(stage_id)) as StageData
+	if source_stage == null:
+		push_error("Offline candidate diagnostic requested unknown stage: %s" % stage_id)
+		return false
+	var stage := _materialize_stage(source_stage, source_stage.stage_number)
+	if stage == null:
+		push_error("Offline candidate diagnostic could not materialize %s." % stage_id)
+		return false
+	var counts := {
+		"structural": {}, "finalization": {}, "default_predictor": {},
+		"default_body": {}, "summit_predictor": {}, "summit_body": {}, "bake_codec": {},
+	}
+	var evidence: Dictionary = {}
+	for candidate_index in range(32):
+		var candidate_seed := StageProgressionData.candidate_seed_for(stage.stage_number, candidate_index)
+		var candidate_stage := stage.duplicate(true) as StageData
+		candidate_stage.terrain_seed = candidate_seed
+		candidate_stage.generation_profile.base_seed = candidate_seed
+		var generated := SeededStageGenerator.generate_candidate_diagnostic(candidate_stage, candidate_seed)
+		if not bool(generated.get("valid", false)):
+			_diagnostic_record(counts, evidence, String(generated.get("phase", "structural")), String(generated.get("reason", "unknown")), candidate_index)
+			continue
+		var layout := generated.get("layout") as GeneratedStageLayout
+		layout.candidate_index = candidate_index
+		var witness := await _install_entry_witnesses_diagnostic(candidate_stage, layout)
+		if not bool(witness.get("valid", false)):
+			_diagnostic_record(counts, evidence, String(witness.get("phase", "default_predictor")), String(witness.get("reason", "unknown")), candidate_index)
+			continue
+		var baked := StageLayoutBakeCodec.bake(layout, candidate_stage)
+		if baked == null or StageLayoutBakeCodec.hydrate(baked, candidate_stage) == null:
+			_diagnostic_record(counts, evidence, "bake_codec", "bake_or_hydrate", candidate_index)
+			continue
+		print("Stage candidate diagnostic accepted: stage=%s candidate=%d seed=%d" % [stage_id, candidate_index, candidate_seed])
+		_print_diagnostic_counts(stage_id, counts, evidence)
+		return true
+	print("Stage candidate diagnostic rejected all locked candidates: stage=%s domain=0..31" % stage_id)
+	_print_diagnostic_counts(stage_id, counts, evidence)
+	return false
+
+
+func _diagnostic_stage_argument() -> String:
+	var arguments := OS.get_cmdline_user_args()
+	var index := arguments.find("--diagnose-stage")
+	return String(arguments[index + 1]) if index >= 0 and index + 1 < arguments.size() else ""
+
+
+func _bundle_verification_argument() -> String:
+	var arguments := OS.get_cmdline_user_args()
+	var index := arguments.find("--verify-bundle")
+	return String(arguments[index + 1]) if index >= 0 and index + 1 < arguments.size() else ""
+
+
+func _bundle_promotion_argument() -> String:
+	var arguments := OS.get_cmdline_user_args()
+	var index := arguments.find("--promote-bundle")
+	return String(arguments[index + 1]) if index >= 0 and index + 1 < arguments.size() else ""
+
+
+func _diagnostic_record(counts: Dictionary, evidence: Dictionary, phase: String, reason: String, candidate_index: int) -> void:
+	var phase_counts: Dictionary = counts.get(phase, {})
+	phase_counts[reason] = int(phase_counts.get(reason, 0)) + 1
+	counts[phase] = phase_counts
+	var evidence_key := "%s/%s" % [phase, reason]
+	if not evidence.has(evidence_key):
+		evidence[evidence_key] = candidate_index
+
+
+func _print_diagnostic_counts(stage_id: String, counts: Dictionary, evidence: Dictionary) -> void:
+	print("Stage candidate diagnostic counts: stage=%s" % stage_id)
+	for phase in ["structural", "finalization", "default_predictor", "default_body", "summit_predictor", "summit_body", "bake_codec"]:
+		var phase_counts: Dictionary = counts[phase]
+		var reasons: Array[String] = []
+		for reason in phase_counts:
+			reasons.append(String(reason))
+		reasons.sort()
+		for reason in reasons:
+			print("  %s reason=%s count=%d first_candidate=%d" % [phase, reason, phase_counts[reason], evidence["%s/%s" % [phase, reason]]])
+
+
+func _check_active_catalog() -> void:
+	var existing := load(CATALOG_PATH) as StageCatalogData
+	if existing == null or not _verify_catalog_bundle(existing):
+		push_error("Serialized format-4 catalog pointer is missing or invalid.")
+		quit(1); return
+	print("Stage catalog check passed: %d stages manifest=%s" % [existing.stages.size(), existing.manifest_sha256])
+	quit()
+
+
+func _build_catalog() -> Dictionary:
 	var result = CATALOG_DATA_SCRIPT.new()
 	result.catalog_version = StageGenerationContract.CONTRACT_VERSION
 	result.progression = load(_progression_path()) as StageProgressionData
@@ -80,21 +205,168 @@ func _build_catalog():
 				source_stages.append(legacy_stage)
 		if source_stages.size() < StageProgressionData.STAGE_COUNT:
 			push_error("The offline builder needs the reviewed thirty-stage source catalog.")
-			return null
+			return {}
 	var manifest_parts: Array[String] = []
+	var layouts: Array[BakedStageLayoutData] = []
 	for source_index in range(StageProgressionData.STAGE_COUNT):
 		var stage := _materialize_stage(source_stages[source_index], source_index + 1)
 		if stage == null:
-			return null
+			return {}
+		var accepted := await _select_and_bake(stage)
+		if accepted.is_empty():
+			return {}
+		stage = accepted.stage as StageData
+		var baked := accepted.baked as BakedStageLayoutData
+		var hydrated := StageLayoutBakeCodec.hydrate(baked, stage)
+		if hydrated == null:
+			return {}
 		result.stage_ids.append(stage.stage_id)
 		result.stages.append(stage.duplicate(true) as StageData)
 		manifest_parts.append(_manifest_stage_descriptor(stage))
+		manifest_parts.append("layout=%s|%s" % [
+			"layouts/%s_layout.res" % stage.stage_id, baked.payload_sha256
+		])
+		manifest_parts.append("candidate_index=%d" % baked.candidate_index)
+		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
+			hydrated.generated_default_witness
+		))
+		manifest_parts.append("summit_witness=%s" % _witness_manifest_descriptor(
+			hydrated.generated_summit_witness
+		))
+		layouts.append(baked)
 	manifest_parts.append("bundle_format=%d" % BUNDLE_FORMAT_VERSION)
+	manifest_parts.append("baked_schema=%d" % BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION)
 	result.manifest_sha256 = _sha256("\n".join(manifest_parts))
 	result.bundle_manifest_path = CATALOG_DATA_SCRIPT.generated_bundle_manifest_path(
 		result.manifest_sha256
 	)
-	return result
+	for stage_id in result.stage_ids:
+		result.layout_paths.append("%s/layouts/%s_layout.res" % [
+			CATALOG_DATA_SCRIPT.generated_bundle_root(result.manifest_sha256), stage_id
+		])
+	return {"catalog": result, "layouts": layouts}
+
+
+## Bounded offline admission: no nested structural sequence and no fallback.
+func _select_and_bake(stage: StageData) -> Dictionary:
+	for candidate_index in range(32):
+		var candidate_seed := StageProgressionData.candidate_seed_for(
+			stage.stage_number, candidate_index
+		)
+		var candidate_stage := stage.duplicate(true) as StageData
+		candidate_stage.terrain_seed = candidate_seed
+		candidate_stage.generation_profile.base_seed = candidate_seed
+		var layout := SeededStageGenerator.generate_candidate_once(candidate_stage, candidate_seed)
+		if layout == null:
+			continue
+		layout.candidate_index = candidate_index
+		if layout.generation_attempt != 0 or layout.terrain_seed != candidate_seed \
+				or layout.accepted_seed != candidate_seed \
+				or candidate_stage.terrain_seed != candidate_seed \
+				or candidate_stage.generation_profile.base_seed != candidate_seed:
+			push_error("Candidate identity mismatch for %s index %d." % [stage.stage_id, candidate_index])
+			return {}
+		if not await _install_entry_witnesses(candidate_stage, layout):
+			continue
+		var baked := StageLayoutBakeCodec.bake(layout, candidate_stage)
+		if baked == null:
+			continue
+		return {"stage": candidate_stage, "baked": baked}
+	push_error("No fully valid candidate in 0-31 for %s." % stage.stage_id)
+	return {}
+
+
+## Exactly two predictor/real-body checks: target-centroid and summit band.
+func _install_entry_witnesses(stage: StageData, layout: GeneratedStageLayout) -> bool:
+	return bool((await _install_entry_witnesses_diagnostic(stage, layout)).get("valid", false))
+
+
+## The production caller consumes only validity. The offline diagnostic retains
+## the first failed predictor/body boundary without changing either validator.
+func _install_entry_witnesses_diagnostic(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
+	var fixture := Node3D.new()
+	root.add_child(fixture)
+	var terrain := TERRAIN_SCENE.instantiate() as TerrainSurface
+	terrain.position = stage.terrain_center
+	fixture.add_child(terrain)
+	terrain.configure(layout)
+	var backstop := BACKSTOP_SCENE.instantiate() as BackstopEnvironment
+	fixture.add_child(backstop)
+	backstop.configure(layout.containment, stage.paint_world_bounds(), stage.terrain_center.y)
+	var cannon := CANNON_SCENE.instantiate() as CannonController
+	fixture.add_child(cannon)
+	cannon.global_transform = stage.cannon_transform
+	await physics_frame
+	var default_sample := layout.target_sample_nearest_centroid()
+	var default_result := _single_target_result(cannon, terrain, layout, default_sample)
+	if not bool(default_result.get("valid", false)):
+		var default_predictor_reason := _diagnostic_result_reason(default_result, "invalid_default_prediction")
+		fixture.queue_free()
+		await physics_frame
+		return {"valid": false, "phase": "default_predictor", "reason": default_predictor_reason}
+	var default_body := await DirectReachabilityValidator.validate_rigidbody_batches(
+		self, fixture, cannon, terrain, layout, layout.containment.containment_bounds, default_result, 1
+	)
+	if not bool(default_body.get("valid", false)):
+		var default_body_reason := _diagnostic_result_reason(default_body, "default_rigidbody_parity")
+		fixture.queue_free()
+		await physics_frame
+		return {"valid": false, "phase": "default_body", "reason": default_body_reason}
+	var summit_result := DirectReachabilityValidator.validate_summit(
+		root.get_world_3d().direct_space_state, cannon, terrain, layout, layout.containment.containment_bounds
+	)
+	if not bool(summit_result.get("valid", false)):
+		var summit_predictor_reason := _diagnostic_result_reason(summit_result, "invalid_summit_prediction")
+		fixture.queue_free()
+		await physics_frame
+		return {"valid": false, "phase": "summit_predictor", "reason": summit_predictor_reason}
+	var summit_body := await DirectReachabilityValidator.validate_rigidbody_batches(
+		self, fixture, cannon, terrain, layout, layout.containment.containment_bounds, summit_result, 1
+	)
+	if not bool(summit_body.get("valid", false)):
+		var summit_body_reason := _diagnostic_result_reason(summit_body, "summit_rigidbody_parity")
+		fixture.queue_free()
+		await physics_frame
+		return {"valid": false, "phase": "summit_body", "reason": summit_body_reason}
+	layout.generated_default_witness = _witness_from_results(default_result, default_body, terrain, default_sample, 0)
+	layout.generated_summit_witness = _witness_from_results(summit_result, summit_body, terrain, {}, layout.summit_region_checksum())
+	var valid := layout.generated_default_witness != null and layout.generated_summit_witness != null
+	fixture.queue_free()
+	await physics_frame
+	return {"valid": valid, "phase": "summit_body", "reason": "invalid_witness_payload" if not valid else ""}
+
+
+func _diagnostic_result_reason(result: Dictionary, fallback: String) -> String:
+	var rejection := String(result.get("rejection", ""))
+	return rejection if not rejection.is_empty() else fallback
+
+
+func _single_target_result(cannon: CannonController, terrain: TerrainSurface, layout: GeneratedStageLayout, sample: Dictionary) -> Dictionary:
+	if sample.is_empty(): return {"valid": false}
+	var target := terrain.to_global(sample.point as Vector3)
+	var normal := (terrain.global_transform.basis.inverse().transposed() * (sample.normal as Vector3)).normalized()
+	var solved := DirectReachabilityValidator.solve_one_target(root.get_world_3d().direct_space_state, cannon, layout, layout.containment.containment_bounds, target, normal, sample)
+	if not bool(solved.get("valid", false)): return solved
+	var prediction := solved.prediction as TrajectoryPrediction
+	return {"valid": prediction != null and prediction.hit_identity != null, "witnesses": [solved.aim], "witness_identities": [prediction.hit_identity], "witness_impacts": PackedVector3Array([prediction.endpoint]), "target_points": PackedVector3Array([target]), "target_witness_indices": PackedInt32Array([0]), "minimum_distance_margins": PackedFloat32Array([maxf(DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE - prediction.endpoint.distance_to(target), 0.0)]), "minimum_range_margins": PackedFloat32Array([float(solved.get("range_margin", 0.0))])}
+
+
+func _witness_from_results(predictor: Dictionary, body: Dictionary, terrain: TerrainSurface, sample: Dictionary, summit_checksum: int) -> StageEntryAimWitness:
+	var outcomes: Array = body.get("outcomes", [])
+	var identities: Array = predictor.get("witness_identities", [])
+	var impacts: PackedVector3Array = predictor.get("witness_impacts", PackedVector3Array())
+	var physical: PackedVector3Array = body.get("physical_witness_impacts", PackedVector3Array())
+	var aims: Array = predictor.get("witnesses", [])
+	var targets: PackedVector3Array = predictor.get("target_points", PackedVector3Array())
+	if aims.size() != 1 or identities.size() != 1 or outcomes.size() != 1 \
+			or impacts.size() != 1 or physical.size() != 1 or targets.size() != 1: return null
+	var outcome: Dictionary = outcomes[0]
+	var witness := StageEntryAimWitness.new()
+	witness.aim = aims[0] as AimTuple; witness.predicted_identity = identities[0] as TrajectoryHitIdentity; witness.physical_identity = outcome.get("identity") as TrajectoryHitIdentity
+	witness.predicted_local_impact = terrain.to_local(impacts[0]); witness.physical_local_impact = terrain.to_local(physical[0]); witness.target_local_point = sample.get("point", terrain.to_local(targets[0]))
+	witness.target_pixel_index = int(sample.get("target_pixel_index", -1)); witness.summit_region_checksum = summit_checksum
+	witness.distance_margin = float((body.get("minimum_distance_margins", PackedFloat32Array([0.0])) as PackedFloat32Array)[0]); witness.range_margin = float((predictor.get("minimum_range_margins", PackedFloat32Array([0.0])) as PackedFloat32Array)[0]); witness.height_margin = float(predictor.get("minimum_height_margin", 0.0))
+	return witness if witness.is_valid(summit_checksum != 0) else null
 
 
 func _manifest_stage_descriptor(stage: StageData) -> String:
@@ -459,30 +731,36 @@ func _sha256(value: String) -> String:
 	return context.finish().hex_encode()
 
 
-func _write_bundle_manifest(catalog) -> bool:
+func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStageLayoutData]) -> bool:
+	if layouts.size() != catalog.stages.size():
+		return false
 	var bundle_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
 	var final_absolute := ProjectSettings.globalize_path(bundle_root)
-	var final_manifest_path := "%s/manifest.json" % bundle_root
 	# A matching immutable bundle is already the desired output. Never rewrite it
 	# in place: the catalog pointer can continue to refer to the old bundle if a
 	# later write fails.
 	if DirAccess.dir_exists_absolute(final_absolute):
-		if FileAccess.file_exists(ProjectSettings.globalize_path(final_manifest_path)):
+		if _verify_catalog_bundle(catalog, bundle_root):
 			return true
-		push_error("Refusing to overwrite an incomplete content-addressed bundle: %s" % bundle_root)
+		push_error("Refusing to overwrite an invalid content-addressed bundle: %s" % bundle_root)
 		return false
-	var staging_root := "res://resources/generated_stage_catalogs/.%s-%s.staging" % [
-		StageGenerationContract.version_tag(), catalog.manifest_sha256,
+	var staging_root := "res://resources/generated_stage_catalogs/.%s-%s.%d.staging" % [
+		StageGenerationContract.version_tag(),
+		catalog.manifest_sha256,
+		Time.get_ticks_usec(),
 	]
 	var staging_absolute := ProjectSettings.globalize_path(staging_root)
 	DirAccess.make_dir_recursive_absolute(staging_absolute)
 	var bundle_catalog := "%s/catalog.tres" % staging_root
 	if ResourceSaver.save(catalog, bundle_catalog) != OK:
 		return false
-	for subdirectory in ["stages", "profiles", "certificates", "previews"]:
+	for subdirectory in ["stages", "profiles", "layouts", "certificates", "previews"]:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("%s/%s" % [staging_root, subdirectory]))
 	var certificate_paths: Array[String] = []
 	var preview_paths: Array[String] = []
+	var candidate_indices: Array[int] = []
+	var default_witnesses: Array[Dictionary] = []
+	var summit_witnesses: Array[Dictionary] = []
 	for index in range(catalog.stages.size()):
 		var stage: StageData = catalog.stages[index]
 		var numeric_id := "stage_%02d" % maxi(stage.stage_number, index + 1)
@@ -490,19 +768,35 @@ func _write_bundle_manifest(catalog) -> bool:
 			return false
 		if ResourceSaver.save(stage.generation_profile, "%s/profiles/%s_profile.tres" % [staging_root, numeric_id]) != OK:
 			return false
+		var layout_path := "%s/layouts/%s_layout.res" % [staging_root, numeric_id]
+		if ResourceSaver.save(layouts[index], layout_path, ResourceSaver.FLAG_COMPRESS) != OK:
+			return false
+		var reloaded := load(layout_path) as BakedStageLayoutData
+		var hydrated := StageLayoutBakeCodec.hydrate(reloaded, stage)
+		if hydrated == null:
+			return false
+		candidate_indices.append(reloaded.candidate_index)
+		default_witnesses.append(_witness_manifest_summary(hydrated.generated_default_witness))
+		summit_witnesses.append(_witness_manifest_summary(hydrated.generated_summit_witness))
 		if stage.reachability_certificate != null:
 			var certificate_path := "%s/certificates/%s_certificate.tres" % [staging_root, numeric_id]
 			if ResourceSaver.save(stage.reachability_certificate, certificate_path) != OK:
 				return false
-			certificate_paths.append(certificate_path.trim_prefix("res://"))
+			certificate_paths.append("%s/certificates/%s_certificate.tres" % [bundle_root, numeric_id])
 	var manifest := {
 		"catalog_version": catalog.catalog_version,
 		"bundle_format": BUNDLE_FORMAT_VERSION,
+		"baked_schema": BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION,
 		"manifest_sha256": catalog.manifest_sha256,
 		"bundle_manifest_path": catalog.bundle_manifest_path,
 		"stage_ids": catalog.stage_ids,
 		"accepted_seeds": catalog.stages.map(func(stage: StageData) -> int: return stage.terrain_seed),
 		"profile_ids": catalog.stages.map(func(stage: StageData) -> String: return String(stage.generation_profile.profile_id)),
+		"layout_paths": catalog.layout_paths,
+		"layout_payload_sha256": layouts.map(func(layout: BakedStageLayoutData) -> String: return layout.payload_sha256),
+		"accepted_candidate_indices": candidate_indices,
+		"default_witnesses": default_witnesses,
+		"summit_witnesses": summit_witnesses,
 		"certificate_paths": certificate_paths,
 		"preview_paths": preview_paths,
 		"previews_ready": false,
@@ -516,10 +810,340 @@ func _write_bundle_manifest(catalog) -> bool:
 	# Promote the complete bundle only after every resource and manifest write has
 	# succeeded. A failed run leaves the last catalog pointer and final bundle
 	# untouched; the positively named staging directory is safe to inspect.
+	if not _verify_catalog_bundle(catalog, staging_root):
+		push_error("Stage-bundle staging validation failed: %s" % staging_root)
+		return false
 	if DirAccess.rename_absolute(staging_absolute, final_absolute) != OK:
 		push_error("Could not promote stage bundle %s" % bundle_root)
 		return false
-	return FileAccess.file_exists(ProjectSettings.globalize_path(final_manifest_path))
+	return _verify_catalog_bundle(catalog, bundle_root)
+
+
+func _promote_staged_bundle(catalog: StageCatalogData, staging_root: String) -> bool:
+	if catalog == null or staging_root.is_empty():
+		return _bundle_validation_failure("staged-bundle promotion input is empty")
+	var final_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
+	var expected_prefix := "res://resources/generated_stage_catalogs/.%s-%s." % [
+		StageGenerationContract.version_tag(), catalog.manifest_sha256,
+	]
+	if not staging_root.begins_with(expected_prefix) or not staging_root.ends_with(".staging"):
+		return _bundle_validation_failure(
+			"promotion path is not the matching content-addressed staging directory"
+		)
+	if not _verify_catalog_bundle(catalog, staging_root):
+		return false
+	var staging_absolute := ProjectSettings.globalize_path(staging_root)
+	var final_absolute := ProjectSettings.globalize_path(final_root)
+	if DirAccess.dir_exists_absolute(final_absolute):
+		if _verify_catalog_bundle(catalog, final_root):
+			return true
+		return _bundle_validation_failure("matching final bundle exists but is invalid")
+	if DirAccess.rename_absolute(staging_absolute, final_absolute) != OK:
+		return _bundle_validation_failure("could not promote verified staging directory")
+	if _verify_catalog_bundle(catalog, final_root):
+		return true
+	var rollback_error := DirAccess.rename_absolute(final_absolute, staging_absolute)
+	if rollback_error != OK:
+		push_error("Invalid promoted bundle remains recoverable at %s" % final_root)
+	return _bundle_validation_failure("promoted bundle failed final-path verification")
+
+
+func _publish_catalog_pointer(catalog: StageCatalogData) -> bool:
+	if catalog == null or not _verify_catalog_bundle(catalog):
+		push_error("Refusing to publish a catalog pointer for an invalid final bundle.")
+		return false
+	var staging_path := _catalog_staging_path()
+	var staging_error := ResourceSaver.save(catalog, staging_path)
+	if staging_error != OK:
+		push_error("Could not write catalog staging resource: %s" % staging_error)
+		return false
+	var promoted := _replace_catalog_pointer(staging_path, CATALOG_PATH)
+	if promoted != OK:
+		push_error("Could not promote catalog resource: %s" % promoted)
+		return false
+	return true
+
+
+func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "") -> bool:
+	if catalog == null:
+		return _bundle_validation_failure("catalog is null")
+	if not catalog.is_valid(false):
+		return _bundle_validation_failure("catalog failed StageCatalogData.is_valid(false)")
+	if catalog.layout_paths.size() != catalog.stages.size():
+		return _bundle_validation_failure("layout-path count differs from stage count")
+	var resolved_root := bundle_root if not bundle_root.is_empty() \
+		else CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
+	var manifest_path := "%s/manifest.json" % resolved_root
+	var file := FileAccess.open(manifest_path, FileAccess.READ)
+	if file == null:
+		return _bundle_validation_failure("manifest is unreadable: %s" % manifest_path)
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return _bundle_validation_failure("manifest JSON is not a Dictionary")
+	var manifest: Dictionary = parsed
+	if int(manifest.get("bundle_format", -1)) != BUNDLE_FORMAT_VERSION \
+			or int(manifest.get("baked_schema", -1)) \
+					!= BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION \
+			or int(manifest.get("catalog_version", -1)) != catalog.catalog_version \
+			or String(manifest.get("manifest_sha256", "")) != catalog.manifest_sha256 \
+			or String(manifest.get("bundle_manifest_path", "")) != catalog.bundle_manifest_path:
+		return _bundle_validation_failure("manifest header does not match catalog identity")
+	if not _manifest_array_matches(manifest.get("stage_ids", []), _catalog_stage_ids(catalog)):
+		return _bundle_validation_failure("manifest stage IDs differ from catalog")
+	if not _manifest_array_matches(manifest.get("accepted_seeds", []), _catalog_seeds(catalog)):
+		return _bundle_validation_failure("manifest accepted seeds differ from catalog")
+	if not _manifest_array_matches(manifest.get("profile_ids", []), _catalog_profile_ids(catalog)):
+		return _bundle_validation_failure("manifest profile IDs differ from catalog")
+	if not _manifest_array_matches(manifest.get("layout_paths", []), catalog.layout_paths):
+		return _bundle_validation_failure("manifest layout paths differ from catalog")
+	var payload_hashes: Array = manifest.get("layout_payload_sha256", [])
+	var candidate_indices: Array = manifest.get("accepted_candidate_indices", [])
+	var default_witnesses: Array = manifest.get("default_witnesses", [])
+	var summit_witnesses: Array = manifest.get("summit_witnesses", [])
+	if payload_hashes.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest payload-hash count differs from stage count")
+	if candidate_indices.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest candidate-index count differs from stage count")
+	if default_witnesses.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest default-witness count differs from stage count")
+	if summit_witnesses.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest summit-witness count differs from stage count")
+	if not _manifest_optional_paths_are_valid(manifest, catalog):
+		return _bundle_validation_failure("manifest optional artifact paths are invalid")
+	var bundled_catalog := load("%s/catalog.tres" % resolved_root) as StageCatalogData
+	if bundled_catalog == null:
+		return _bundle_validation_failure("bundled catalog cannot be loaded")
+	if not _catalog_identity_matches(catalog, bundled_catalog):
+		return _bundle_validation_failure("bundled catalog identity differs from expected catalog")
+	var manifest_parts: Array[String] = []
+	for index in range(catalog.stages.size()):
+		var stage: StageData = catalog.stages[index]
+		var stage_id := String(catalog.stage_ids[index])
+		var baked := load("%s/layouts/%s_layout.res" % [resolved_root, stage_id]) as BakedStageLayoutData
+		if baked == null:
+			return _bundle_validation_failure("%s layout cannot be loaded" % stage_id)
+		if baked.payload_sha256 != String(payload_hashes[index]):
+			return _bundle_validation_failure("%s payload hash differs from manifest" % stage_id)
+		if baked.payload_sha256 != StageLayoutBakeCodec.payload_sha256(baked):
+			return _bundle_validation_failure("%s serialized payload hash is not reproducible" % stage_id)
+		var hydrated := StageLayoutBakeCodec.hydrate(baked, stage)
+		if hydrated == null:
+			return _bundle_validation_failure("%s layout hydration failed" % stage_id)
+		if not hydrated.is_runtime_ready():
+			return _bundle_validation_failure("%s hydrated layout is not runtime-ready" % stage_id)
+		if baked.candidate_index != int(candidate_indices[index]):
+			return _bundle_validation_failure("%s candidate index differs from manifest" % stage_id)
+		if baked.candidate_index < 0 or baked.candidate_index > 31:
+			return _bundle_validation_failure("%s candidate index is outside 0..31" % stage_id)
+		if baked.terrain_seed != StageProgressionData.candidate_seed_for(
+			stage.stage_number, baked.candidate_index
+		):
+			return _bundle_validation_failure("%s candidate seed identity is invalid" % stage_id)
+		if not _witness_manifest_matches(
+			default_witnesses[index], hydrated.generated_default_witness
+		):
+			return _bundle_validation_failure(
+				"%s default witness differs from manifest: stored=%s hydrated=%s" % [
+					stage_id,
+					JSON.stringify(default_witnesses[index]),
+					JSON.stringify(_witness_manifest_summary(hydrated.generated_default_witness)),
+				]
+			)
+		if not _witness_manifest_matches(
+			summit_witnesses[index], hydrated.generated_summit_witness
+		):
+			return _bundle_validation_failure(
+				"%s summit witness differs from manifest: stored=%s hydrated=%s" % [
+					stage_id,
+					JSON.stringify(summit_witnesses[index]),
+					JSON.stringify(_witness_manifest_summary(hydrated.generated_summit_witness)),
+				]
+			)
+		manifest_parts.append(_manifest_stage_descriptor(stage))
+		manifest_parts.append("layout=%s|%s" % [
+			"layouts/%s_layout.res" % stage.stage_id,
+			baked.payload_sha256,
+		])
+		manifest_parts.append("candidate_index=%d" % baked.candidate_index)
+		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
+			hydrated.generated_default_witness
+		))
+		manifest_parts.append("summit_witness=%s" % _witness_manifest_descriptor(
+			hydrated.generated_summit_witness
+		))
+	manifest_parts.append("bundle_format=%d" % BUNDLE_FORMAT_VERSION)
+	manifest_parts.append(
+		"baked_schema=%d" % BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION
+	)
+	if _sha256("\n".join(manifest_parts)) != catalog.manifest_sha256:
+		return _bundle_validation_failure("reconstructed bundle manifest hash differs from catalog")
+	return true
+
+
+func _bundle_validation_failure(reason: String) -> bool:
+	push_error("Stage-bundle validation failed: %s" % reason)
+	return false
+
+
+func _catalog_identity_matches(expected: StageCatalogData, bundled: StageCatalogData) -> bool:
+	if expected == null or bundled == null or not bundled.is_valid(false) \
+			or bundled.manifest_sha256 != expected.manifest_sha256 \
+			or bundled.bundle_manifest_path != expected.bundle_manifest_path \
+			or bundled.catalog_version != expected.catalog_version \
+			or not _manifest_array_matches(_catalog_stage_ids(bundled), _catalog_stage_ids(expected)) \
+			or not _manifest_array_matches(bundled.layout_paths, expected.layout_paths):
+		return false
+	for index in range(expected.stages.size()):
+		if _manifest_stage_descriptor(bundled.stages[index]) \
+				!= _manifest_stage_descriptor(expected.stages[index]):
+			return false
+	return true
+
+
+func _manifest_optional_paths_are_valid(manifest: Dictionary, catalog: StageCatalogData) -> bool:
+	var certificate_paths: Array = manifest.get("certificate_paths", [])
+	var preview_paths: Array = manifest.get("preview_paths", [])
+	if not certificate_paths is Array or not preview_paths is Array:
+		return false
+	var expected_certificates: Array[String] = []
+	var final_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
+	for index in range(catalog.stages.size()):
+		if catalog.stages[index].reachability_certificate != null:
+			expected_certificates.append("%s/certificates/%s_certificate.tres" % [
+				final_root, String(catalog.stage_ids[index]),
+			])
+	return _manifest_array_matches(certificate_paths, expected_certificates) \
+			and preview_paths.is_empty() and not bool(manifest.get("previews_ready", true))
+
+
+func _catalog_stage_ids(catalog: StageCatalogData) -> Array[String]:
+	var ids: Array[String] = []
+	for stage_id in catalog.stage_ids:
+		ids.append(String(stage_id))
+	return ids
+
+
+func _catalog_seeds(catalog: StageCatalogData) -> Array[int]:
+	var seeds: Array[int] = []
+	for stage in catalog.stages:
+		seeds.append(stage.terrain_seed)
+	return seeds
+
+
+func _catalog_profile_ids(catalog: StageCatalogData) -> Array[String]:
+	var ids: Array[String] = []
+	for stage in catalog.stages:
+		ids.append(String(stage.generation_profile.profile_id))
+	return ids
+
+
+func _manifest_array_matches(actual: Variant, expected: Array) -> bool:
+	if not actual is Array or actual.size() != expected.size():
+		return false
+	for index in range(expected.size()):
+		if actual[index] != expected[index]:
+			return false
+	return true
+
+
+func _witness_manifest_descriptor(witness: StageEntryAimWitness) -> String:
+	return JSON.stringify(_witness_manifest_summary(witness))
+
+
+func _witness_manifest_summary(witness: StageEntryAimWitness) -> Dictionary:
+	if witness == null:
+		return {}
+	return {
+		"predicted": _identity_manifest_summary(witness.predicted_identity),
+		"physical": _identity_manifest_summary(witness.physical_identity),
+	}
+
+
+func _identity_manifest_summary(identity: TrajectoryHitIdentity) -> Dictionary:
+	if identity == null:
+		return {}
+	return {
+		"owner": String(identity.contact_owner_id),
+		"shape": String(identity.contact_shape_id),
+		"body_shape": identity.body_shape_index,
+		"cell_x": identity.terrain_cell.x,
+		"cell_y": identity.terrain_cell.y,
+		"triangle": identity.terrain_triangle,
+	}
+
+
+func _witness_manifest_matches(value: Variant, witness: StageEntryAimWitness) -> bool:
+	if not value is Dictionary:
+		return false
+	if witness == null:
+		return value.is_empty()
+	if value.size() != 2 or not value.has("predicted") or not value.has("physical"):
+		return false
+	return _identity_manifest_matches(value.get("predicted", {}), witness.predicted_identity) \
+			and _identity_manifest_matches(value.get("physical", {}), witness.physical_identity)
+
+
+func _identity_manifest_matches(value: Variant, identity: TrajectoryHitIdentity) -> bool:
+	if not value is Dictionary:
+		return false
+	if identity == null:
+		return value.is_empty()
+	if value.size() != 6:
+		return false
+	return String(value.get("owner", "")) == String(identity.contact_owner_id) \
+			and String(value.get("shape", "")) == String(identity.contact_shape_id) \
+			and _manifest_integer_matches(
+				value.get("body_shape"), identity.body_shape_index
+			) \
+			and _manifest_integer_matches(value.get("cell_x"), identity.terrain_cell.x) \
+			and _manifest_integer_matches(value.get("cell_y"), identity.terrain_cell.y) \
+			and _manifest_integer_matches(value.get("triangle"), identity.terrain_triangle)
+
+
+func _manifest_integer_matches(value: Variant, expected: int) -> bool:
+	if not value is int and not value is float:
+		return false
+	return float(value) == float(expected)
+
+
+func _replace_catalog_pointer(staging_path: String, destination_path: String) -> Error:
+	var staging_absolute := ProjectSettings.globalize_path(staging_path)
+	var destination_absolute := ProjectSettings.globalize_path(destination_path)
+	if not FileAccess.file_exists(staging_absolute):
+		return ERR_FILE_NOT_FOUND
+	if not FileAccess.file_exists(destination_absolute):
+		return DirAccess.rename_absolute(staging_absolute, destination_absolute)
+	# Windows does not replace an existing destination with rename. Preserve the
+	# live pointer until the staging resource is ready, then restore it on failure.
+	var backup_absolute := "%s.%d.previous" % [destination_absolute, Time.get_ticks_usec()]
+	var backup_error := DirAccess.rename_absolute(destination_absolute, backup_absolute)
+	if backup_error != OK:
+		return backup_error
+	var replace_error := DirAccess.rename_absolute(staging_absolute, destination_absolute)
+	if replace_error != OK:
+		var restore_error := _restore_catalog_pointer(backup_absolute, destination_absolute)
+		return restore_error if restore_error != OK else replace_error
+	DirAccess.remove_absolute(backup_absolute)
+	return OK
+
+
+static func _restore_catalog_pointer(backup_absolute: String, destination_absolute: String) -> Error:
+	if FileAccess.file_exists(destination_absolute):
+		return OK
+	var rename_error := DirAccess.rename_absolute(backup_absolute, destination_absolute)
+	if rename_error == OK and FileAccess.file_exists(destination_absolute):
+		return OK
+	# Keep the recoverable backup when rename cannot restore it. A verified copy
+	# is the last safe fallback that leaves the live pointer present on Windows.
+	var copy_error := DirAccess.copy_absolute(backup_absolute, destination_absolute)
+	if copy_error == OK and FileAccess.file_exists(destination_absolute):
+		return OK
+	push_error(
+		"Catalog pointer restore failed; recoverable backup remains at %s." \
+				% backup_absolute
+	)
+	return copy_error if copy_error != OK else rename_error
 
 
 static func _catalog_staging_path() -> String:

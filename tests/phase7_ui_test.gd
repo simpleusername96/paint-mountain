@@ -25,14 +25,35 @@ func _run_checks() -> void:
 	_assert_true(ProjectSettings.get_setting("display/window/size/viewport_width") == 1280 and ProjectSettings.get_setting("display/window/size/viewport_height") == 720, "UI must use the 1280x720 logical viewport")
 	_assert_theme_contract()
 	_assert_true(main_menu.visible and not stage_select.visible and not settings.visible, "app must open on a separate main-menu screen")
+	app._set_catalog_load_failed()
+	await process_frame
+	var retry_load := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
+	_assert_true(
+		not retry_load.disabled and retry_load.text == "다시 불러오기",
+		"a missing catalog must expose an enabled retry action instead of endless loading"
+	)
 
 	app._show_stage_select()
 	await process_frame
 	_assert_true(stage_select.visible and not main_menu.visible, "stage select must replace the main menu")
+	app._set_catalog_load_failed()
+	await process_frame
+	var stage_retry := stage_select._start_button
+	_assert_true(
+		not stage_retry.disabled and stage_retry.text == "다시 불러오기",
+		"a missing catalog on Stage Select must expose an enabled localized retry action"
+	)
 	for card in stage_select._cards:
 		_assert_true(not card.disabled, "unlocked stage cards must be keyboard-selectable")
+	_assert_true(stage_select._page_label.text == "1-10 / 30", "stage select must show the inclusive first-page range")
+	stage_select.set_page_for_capture(1)
+	_assert_true(stage_select._page_label.text == "11-20 / 30", "stage select must show the inclusive second-page range")
+	stage_select.set_page_for_capture(2)
+	_assert_true(stage_select._page_label.text == "21-30 / 30", "stage select must show the inclusive third-page range")
+	_assert_true(stage_select._next_page.disabled and not stage_select._previous_page.disabled, "page edge controls must disable only the unavailable direction")
+	stage_select.set_page_for_capture(0)
 	stage_select._cards[1].pressed.emit()
-	_assert_true(stage_select.selected_stage_id() == &"burst_basin" and stage_select._cards[1].button_pressed, "stage selection must expose a visible selected state")
+	_assert_true(stage_select.selected_stage_id() == &"stage_02" and stage_select._cards[1].button_pressed, "stage selection must expose a visible selected state")
 
 	app._show_settings(&"stage_select")
 	await process_frame
@@ -61,12 +82,23 @@ func _run_checks() -> void:
 	_assert_true(controller.toggle_pause(), "pause must be reachable from gameplay")
 	var pause_overlay := hud_root.get_node("PauseOverlay") as Control
 	_assert_true(pause_overlay.visible, "pause overlay must expose its own screen")
-	_assert_true(pause_overlay.get_node_or_null("Panel/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
+	_assert_true(pause_overlay.get_node_or_null("Center/Panel/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
 	app._on_gameplay_navigation(&"settings")
 	await process_frame
 	_assert_true(settings.visible, "paused gameplay must be able to open full settings")
-	settings.visible = false
-	settings.close_requested.emit()
+	_assert_true(not pause_overlay.visible, "Settings must suspend the Pause presentation instead of stacking scrims")
+	_assert_true(controller.current_state == StageController.State.PAUSED and paused, "opening Settings must preserve the paused stage and tree")
+	var cancel := InputEventAction.new()
+	cancel.action = &"ui_cancel"
+	cancel.pressed = true
+	settings._unhandled_input(cancel)
+	await process_frame
+	await process_frame
+	_assert_true(pause_overlay.visible, "closing Settings must restore the Pause presentation")
+	_assert_true(controller.current_state == StageController.State.PAUSED and paused, "closing Settings must not resume the stage or tree")
+	_assert_true(pause_overlay.get_node("Center/Panel/Margin/Column/Settings").has_focus(), "Settings close must restore focus to Pause Settings")
+	var shots_before_blocked_fire := controller.shots_remaining
+	_assert_true(not controller.request_fire() and controller.shots_remaining == shots_before_blocked_fire, "the paused child-modal flow must keep gameplay input blocked")
 	controller.toggle_pause()
 	controller.force_finish_debug()
 	await process_frame
@@ -118,7 +150,14 @@ func _assert_theme_contract() -> void:
 
 
 func _assert_aiming_hud_contract(hud_root: Control) -> void:
-	var hud_rect := hud_root.get_global_rect()
+	var rendered_hud_rect := hud_root.get_global_rect()
+	var logical_size := Vector2(
+		float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),
+		float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	)
+	# Headless canvas-items/expand can report a square expanded root. Authored HUD
+	# offsets and the delivery contract use the fixed logical 1280x720 rectangle.
+	var hud_rect := Rect2(rendered_hud_rect.position, logical_size)
 	var hud_center := hud_rect.get_center()
 	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
 	var coverage_value := coverage.get_node_or_null("Content/CoverageValue") as Label
@@ -134,7 +173,18 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var fire_rect := fire.get_global_rect()
 	_assert_true(actions.find_children("*", "Button", true, false).size() == 1, "Fire must be the sole aiming action")
 	_assert_true(actions.find_child("Restart", true, false) == null, "Restart must be absent from the aiming actions")
-	_assert_true(fire.is_visible_in_tree() and fire_rect.get_center().x > hud_rect.size.x * 0.35 and fire_rect.get_center().x < hud_rect.size.x * 0.65 and fire_rect.position.y >= hud_rect.size.y * 0.75, "Fire must remain in the lower central action area")
+	_assert_true(fire.is_visible_in_tree(), "Fire must remain visible while aiming")
+	_assert_true(
+		fire_rect.get_center().x > hud_rect.position.x + hud_rect.size.x * 0.35 \
+				and fire_rect.get_center().x < hud_rect.position.x + hud_rect.size.x * 0.65,
+		"Fire must remain horizontally centered in the aiming action area"
+	)
+	_assert_true(
+		fire_rect.position.y >= hud_rect.position.y + hud_rect.size.y * 0.75,
+		"Fire must remain in the lower aiming action area: fire_y=%.1f hud_y=%.1f hud_h=%.1f" % [
+			fire_rect.position.y, hud_rect.position.y, hud_rect.size.y,
+		]
+	)
 	_assert_true(not (hud_root.get_node("PauseOverlay") as Control).visible, "the paused-menu Restart must stay hidden during aiming")
 
 	var status := hud_root.get_node("RunStatusCard") as RunStatusCard

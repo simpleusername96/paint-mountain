@@ -19,6 +19,12 @@ func _ready() -> void:
 	%PowerIncrease.button_down.connect(_begin_hold.bind(1.0))
 	%PowerDecrease.button_up.connect(_end_hold)
 	%PowerIncrease.button_up.connect(_end_hold)
+	refresh_locale()
+
+
+func refresh_locale() -> void:
+	%PowerDecrease.tooltip_text = tr("hud.power_decrease")
+	%PowerIncrease.tooltip_text = tr("hud.power_increase")
 
 
 func _process(delta: float) -> void:

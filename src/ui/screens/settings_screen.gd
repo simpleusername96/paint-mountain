@@ -44,7 +44,7 @@ func _setup_options() -> void:
 func _add_options(option: OptionButton, values: Array[String]) -> void:
 	option.clear()
 	for value in values:
-		option.add_item(value.to_upper())
+		option.add_item(value)
 		option.set_item_metadata(option.item_count - 1, value)
 
 
@@ -74,16 +74,21 @@ func _sync_from_state() -> void:
 					control.select(index)
 					break
 	_syncing = false
+	_sync_display_state_from_settings()
 
 
 func _store(key: StringName, value) -> void:
 	if _syncing:
 		return
 	var game_state := get_node("/root/GameState")
+	_syncing = true
 	if key == &"language":
 		game_state.update_setting(&"language_user_selected", true, false)
-	if game_state.update_setting(key, value):
+	var changed: bool = game_state.update_setting(key, value)
+	_syncing = false
+	if changed:
 		_apply_setting(key, value)
+		_sync_from_state()
 
 
 func _apply_setting(key: StringName, value) -> void:
@@ -91,12 +96,6 @@ func _apply_setting(key: StringName, value) -> void:
 		&"master_volume": _set_bus_volume("Master", float(value))
 		&"music_volume": _set_bus_volume("Music", float(value))
 		&"sfx_volume": _set_bus_volume("SFX", float(value))
-		&"fullscreen": DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(value) else DisplayServer.WINDOW_MODE_WINDOWED)
-		&"resolution":
-			if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
-				var parts := String(value).split("x")
-				if parts.size() == 2:
-					DisplayServer.window_set_size(Vector2i(int(parts[0]), int(parts[1])))
 		&"quality": get_viewport().scaling_3d_scale = 0.75 if value == "low" else (1.0 if value == "medium" else 1.15)
 
 
@@ -110,11 +109,13 @@ func _set_bus_volume(bus_name: String, normalized: float) -> void:
 func _restore_defaults() -> void:
 	var game_state := get_node("/root/GameState")
 	var defaults: Dictionary = get_node("/root/SaveSystem").default_data().settings
+	_syncing = true
 	for key in defaults:
 		game_state.update_setting(StringName(key), defaults[key], false)
-		_apply_setting(StringName(key), defaults[key])
+	_syncing = false
+	for key in [&"master_volume", &"music_volume", &"sfx_volume", &"quality"]:
+		_apply_setting(key, game_state.settings[String(key)])
 	game_state.save_now()
-	_refresh_language_option_labels()
 	_sync_from_state()
 
 
@@ -125,8 +126,42 @@ func _refresh_language_option_labels() -> void:
 		%Language.set_item_text(index, tr("settings.korean") if %Language.get_item_metadata(index) == "ko" else tr("settings.english"))
 
 
-func _on_settings_changed(_settings: Dictionary) -> void:
+func _sync_display_state_from_settings() -> void:
+	var settings: Dictionary = get_node("/root/GameState").settings
 	_refresh_language_option_labels()
+	for index in range(%Quality.item_count):
+		%Quality.set_item_text(index, tr("settings.quality_%s" % %Quality.get_item_metadata(index)))
+	for index in range(%Resolution.item_count):
+		var value := String(%Resolution.get_item_metadata(index))
+		%Resolution.set_item_text(index, value.replace("x", " × "))
+	var fullscreen := bool(settings.get("fullscreen", false))
+	%Resolution.disabled = fullscreen
+	var desired_mode := DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen \
+			else DisplayServer.WINDOW_MODE_WINDOWED
+	if DisplayServer.window_get_mode() != desired_mode:
+		DisplayServer.window_set_mode(desired_mode)
+	if not fullscreen:
+		_apply_windowed_resolution(String(settings.get("resolution", "1280x720")))
+
+
+func _apply_windowed_resolution(value: String) -> void:
+	var parts := value.split("x")
+	if parts.size() == 2:
+		DisplayServer.window_set_size(Vector2i(int(parts[0]), int(parts[1])))
+
+
+func _on_settings_changed(_settings: Dictionary) -> void:
+	if not _syncing:
+		_sync_from_state()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or not event.is_action_pressed(&"ui_cancel"):
+		return
+	if event is InputEventKey and event.echo:
+		return
+	get_viewport().set_input_as_handled()
+	_close()
 
 
 func _close() -> void:

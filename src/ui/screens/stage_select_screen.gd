@@ -25,12 +25,19 @@ var _preparation_failed := false
 
 
 func _ready() -> void:
-	_cards_container = get_node("Root/CardsPanel/Margin/Cards") as GridContainer
+	_cards_container = %Cards
+	_page_label = %PageRange
+	_previous_page = %PreviousPage
+	_next_page = %NextPage
 	_build_pager()
 	%Back.pressed.connect(func() -> void: back_requested.emit())
 	_start_button.pressed.connect(func() -> void:
 		if _selected_stage != null:
 			start_requested.emit(_selected_stage.stage_id)
+		elif _preparation_failed:
+			var retry_stage_ids := StageCatalog.all_stage_ids()
+			if not retry_stage_ids.is_empty():
+				start_requested.emit(retry_stage_ids[0])
 	)
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null:
@@ -52,26 +59,6 @@ func _build_pager() -> void:
 		_cards_container.add_child(card)
 		_cards.append(card)
 		card.pressed.connect(_on_card_pressed.bind(index))
-	var pager := HBoxContainer.new()
-	pager.name = "PageControls"
-	pager.add_theme_constant_override("separation", 10)
-	pager.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	pager.position = Vector2(310.0, 664.0)
-	pager.size = Vector2(300.0, 40.0)
-	get_node("Root").add_child(pager)
-	_previous_page = Button.new()
-	_previous_page.text = "‹"
-	_previous_page.custom_minimum_size = Vector2(48.0, 40.0)
-	pager.add_child(_previous_page)
-	_page_label = Label.new()
-	_page_label.custom_minimum_size = Vector2(150.0, 40.0)
-	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	pager.add_child(_page_label)
-	_next_page = Button.new()
-	_next_page.text = "›"
-	_next_page.custom_minimum_size = Vector2(48.0, 40.0)
-	pager.add_child(_next_page)
 	_previous_page.pressed.connect(func() -> void: _set_page(_page_index - 1))
 	_next_page.pressed.connect(func() -> void: _set_page(_page_index + 1))
 
@@ -108,6 +95,15 @@ func set_stage_preparation_state(
 	_apply_start_preparation_state()
 
 
+## Catalog failures have no repository stage identity. Reuse the selected
+## stage's existing retry control so Stage Select remains actionable.
+func set_catalog_load_failed() -> void:
+	_preparation_stage_id = _selected_stage.stage_id if _selected_stage != null else &""
+	_preparation_ready = false
+	_preparation_failed = true
+	_apply_start_preparation_state()
+
+
 func set_page_for_capture(page: int) -> void:
 	_set_page(page)
 	var stages := StageCatalog.all_stages()
@@ -122,6 +118,13 @@ func _set_page(requested_page: int) -> void:
 	var total_pages := maxi(1, ceili(float(StageCatalog.all_stages().size()) / float(PAGE_SIZE)))
 	_page_index = clampi(requested_page, 0, total_pages - 1)
 	var stages := StageCatalog.all_stages()
+	var first_stage_index := _page_index * PAGE_SIZE
+	var selected_changed := _selected_stage != null and (
+			_selected_stage.stage_number < first_stage_index + 1
+			or _selected_stage.stage_number > first_stage_index + PAGE_SIZE
+	)
+	if selected_changed:
+		_selected_stage = stages[first_stage_index]
 	for slot in range(_cards.size()):
 		var stage_index := _page_index * PAGE_SIZE + slot
 		var card := _cards[slot]
@@ -143,9 +146,18 @@ func _set_page(requested_page: int) -> void:
 		]
 		card.set_pressed_no_signal(stage == _selected_stage)
 	if _page_label != null:
-		_page_label.text = "%d / %d" % [_page_index + 1, total_pages]
+		var first_stage := _page_index * PAGE_SIZE + 1
+		var last_stage := mini(first_stage + PAGE_SIZE - 1, stages.size())
+		_page_label.text = "%d-%d / %d" % [first_stage, last_stage, stages.size()]
 		_previous_page.disabled = _page_index <= 0
 		_next_page.disabled = _page_index >= total_pages - 1
+		if _previous_page.has_focus() and _previous_page.disabled:
+			_next_page.grab_focus.call_deferred()
+		elif _next_page.has_focus() and _next_page.disabled:
+			_previous_page.grab_focus.call_deferred()
+	if selected_changed:
+		_update_preview()
+		selection_changed.emit(_selected_stage)
 
 
 func _on_card_pressed(slot: int) -> void:
@@ -181,14 +193,17 @@ func _apply_start_preparation_state() -> void:
 	var state_matches := _selected_stage != null \
 			and _preparation_stage_id == _selected_stage.stage_id
 	var ready := state_matches and _preparation_ready
-	var failed := state_matches and _preparation_failed
-	_start_button.disabled = not ready
+	var failed := _preparation_failed and (_selected_stage == null or state_matches)
+	_start_button.disabled = not ready and not failed
 	if failed:
-		_start_button.text = tr("ui.stage_unavailable")
+		_start_button.text = tr("ui.retry_stage_load")
+		_start_button.tooltip_text = tr("ui.stage_load_failed")
 	elif not ready:
-		_start_button.text = tr("ui.preparing_stage")
+		_start_button.text = tr("ui.loading_stage")
+		_start_button.tooltip_text = ""
 	else:
 		_start_button.text = tr("ui.start_stage")
+		_start_button.tooltip_text = ""
 
 
 func _display_name(stage: StageData) -> String:

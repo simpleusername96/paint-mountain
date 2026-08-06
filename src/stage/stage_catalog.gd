@@ -33,6 +33,11 @@ static func get_stage(stage_id: StringName) -> StageData:
 	return stage
 
 
+static func get_layout_path(stage_id: StringName) -> String:
+	var catalog := _catalog()
+	return catalog.get_layout_path(canonical_id(stage_id)) if catalog != null else ""
+
+
 static func all_stages() -> Array[StageData]:
 	var catalog := _catalog()
 	if catalog == null:

@@ -21,62 +21,60 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.035, 0.055, 0.08, 0.62)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -190.0
-offset_top = -260.0
-offset_right = 190.0
-offset_bottom = 260.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 24
 
-[node name="Column" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Column" type="VBoxContainer" parent="Center/Panel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="Panel/Margin/Column"]
+[node name="Title" type="Label" parent="Center/Panel/Margin/Column"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "ui.pause"
 
-[node name="Resume" type="Button" parent="Panel/Margin/Column"]
+[node name="Resume" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "ui.resume"
 
-[node name="Restart" type="Button" parent="Panel/Margin/Column"]
+[node name="Restart" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "ui.restart"
 
-[node name="Settings" type="Button" parent="Panel/Margin/Column"]
+[node name="Settings" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "ui.settings"
 
-[node name="Stages" type="Button" parent="Panel/Margin/Column"]
+[node name="Stages" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "ui.stage_select"
 
-[node name="MainMenu" type="Button" parent="Panel/Margin/Column"]
+[node name="MainMenu" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2

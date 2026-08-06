@@ -9,6 +9,8 @@ const GLYPH_EDGE_MARGIN := 0.75
 const GLYPH_SEPARATION_MARGIN := 1.0
 const MINIMUM_AIMING_DIAMETER_PIXELS := 12.0
 const MINIMUM_BRIEFING_DIAMETER_PIXELS := 16.0
+const CANNON_VISIBILITY_CLEARANCE := 0.5
+const FOOTPRINT_RING_FRACTIONS := [0.0, 0.5, 1.0]
 
 
 static func plan(
@@ -72,31 +74,51 @@ static func plan(
 
 static func _build_generic_anchors(layout: GeneratedStageLayout) -> Array[MechanismGlyphAnchor]:
 	var anchors: Array[MechanismGlyphAnchor] = []
-	for pad in layout.route_graph.pad_nodes():
-		var route_t := layout.route_graph.route_normalized_t_for_node(pad.route_index, pad.id)
-		var local_xz := Vector2(pad.position.x, pad.position.z)
-		var sample := layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
-		var tangent := layout.route_graph.route_tangent(pad.route_index, route_t)
-		if route_t < 0.0 or sample.is_empty() or tangent.is_zero_approx():
-			continue
-		var anchor := MechanismGlyphAnchor.new(
-			pad.id,
-			local_xz,
-			sample.point,
-			sample.normal,
-			pad.route_index,
-			layout.route_graph.route_role(pad.route_index) as StageRouteProfile.Role,
-			route_t,
-			tangent,
-			maxf(pad.pad_radius, layout.route_graph.route_width(pad.route_index) * 0.5),
-			pad.mechanism_kind
-		)
-		if anchor.is_valid():
-			anchors.append(anchor)
-	anchors.sort_custom(func(a: MechanismGlyphAnchor, b: MechanismGlyphAnchor) -> bool:
-		return String(a.id) < String(b.id)
-	)
+	var cell_size := layout.local_bounds.size / Vector2(layout.cell_count)
+	for cell_z in range(layout.cell_count.y):
+		for cell_x in range(layout.cell_count.x):
+			var cell := Vector2i(cell_x, cell_z)
+			if not layout.top_topology.is_cell_active(cell):
+				continue
+			var local_xz := layout.local_bounds.position + (Vector2(cell) + Vector2(0.5, 0.5)) * cell_size
+			var sample := layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
+			var route_metadata := _nearest_route_metadata(layout.route_graph, local_xz)
+			if sample.is_empty() or route_metadata.is_empty():
+				continue
+			var anchor := MechanismGlyphAnchor.new(
+				StringName("surface/%04d/%04d/%d" % [cell_z, cell_x, int(sample.source_triangle_id)]),
+				local_xz,
+				sample.point,
+				sample.normal,
+				int(route_metadata.route_index),
+				int(route_metadata.route_role) as StageRouteProfile.Role,
+				float(route_metadata.route_t),
+				route_metadata.route_tangent
+			)
+			if anchor.is_valid():
+				anchors.append(anchor)
 	return anchors
+
+
+static func _nearest_route_metadata(route_graph: GeneratedRouteGraph, local_xz: Vector2) -> Dictionary:
+	var nearest := route_graph.nearest_edge(local_xz)
+	var edge := nearest.edge as GeneratedRouteEdge
+	if edge == null:
+		return {}
+	var start_t := route_graph.route_normalized_t_for_node(edge.route_index, edge.from_node_id)
+	var end_t := route_graph.route_normalized_t_for_node(edge.route_index, edge.to_node_id)
+	if start_t < 0.0 or end_t < start_t:
+		return {}
+	var route_t := lerpf(start_t, end_t, float(nearest.edge_t))
+	var tangent := route_graph.route_tangent(edge.route_index, route_t)
+	if tangent.is_zero_approx():
+		return {}
+	return {
+		"route_index": edge.route_index,
+		"route_role": route_graph.route_role(edge.route_index),
+		"route_t": route_t,
+		"route_tangent": tangent,
+	}
 
 
 static func _candidate_for(
@@ -123,7 +145,7 @@ static func _candidate_for(
 			uphill_tangent = witness.tangent
 			kind_score = float(witness.rise)
 		_:
-			kind_score = anchor.support_radius - mechanism_data.glyph_radius
+			kind_score = 0.0
 	var forward := uphill_tangent if not uphill_tangent.is_zero_approx() else anchor.route_tangent
 	var local_z_axis := -forward
 	var local_x_axis := anchor.surface_normal.cross(local_z_axis).normalized()
@@ -144,10 +166,9 @@ static func _candidate_for(
 	placement.downstream_tangent = forward
 	placement.splitter_route_targets = split_targets
 	placement.uphill_tangent = uphill_tangent
-	var legacy_hint_bonus := 0.25 if anchor.legacy_kind_hint == int(mechanism_data.kind) else 0.0
 	return {
 		"anchor_id": anchor.id,
-		"score": kind_score + legacy_hint_bonus,
+		"score": kind_score,
 		"placement": placement,
 	}
 
@@ -159,20 +180,22 @@ static func _generic_suitability(
 		anchor: MechanismGlyphAnchor
 ) -> bool:
 	var radius := mechanism_data.glyph_radius
-	if anchor.support_radius < radius + GLYPH_EDGE_MARGIN:
-		return false
 	if not layout.local_bounds.grow(-(radius + GLYPH_EDGE_MARGIN)).has_point(anchor.local_xz):
 		return false
 	var center_slope := rad_to_deg(acos(clampf(anchor.surface_normal.y, -1.0, 1.0)))
 	if center_slope > MAXIMUM_CENTER_SLOPE_DEGREES:
 		return false
 	var minimum_normal_dot := cos(deg_to_rad(MAXIMUM_NORMAL_VARIATION_DEGREES))
-	for sample_index in range(FOOTPRINT_SAMPLE_COUNT):
-		var angle := TAU * float(sample_index) / float(FOOTPRINT_SAMPLE_COUNT)
-		var point := anchor.local_xz + Vector2.from_angle(angle) * radius
-		var sample := layout.surface_sample_at_local(point.x, point.y, false)
-		if sample.is_empty() or anchor.surface_normal.dot(Vector3(sample.normal)) < minimum_normal_dot:
-			return false
+	for ring_fraction in FOOTPRINT_RING_FRACTIONS:
+		var radius_fraction := float(ring_fraction)
+		for sample_index in range(FOOTPRINT_SAMPLE_COUNT):
+			var angle := TAU * float(sample_index) / float(FOOTPRINT_SAMPLE_COUNT)
+			var point: Vector2 = anchor.local_xz + Vector2.from_angle(angle) * radius * radius_fraction
+			var sample := layout.surface_sample_at_local(point.x, point.y, false)
+			if sample.is_empty() or anchor.surface_normal.dot(Vector3(sample.normal)) < minimum_normal_dot:
+				return false
+	if not _has_cannon_side_visibility(stage_data, layout, anchor):
+		return false
 	var diameter := radius * 2.0
 	var world_point := stage_data.terrain_center + anchor.surface_point
 	if _projected_horizontal_pixels(
@@ -188,6 +211,29 @@ static func _generic_suitability(
 		world_point,
 		diameter
 	) >= MINIMUM_BRIEFING_DIAMETER_PIXELS
+
+
+static func _has_cannon_side_visibility(
+		stage_data: StageData,
+		layout: GeneratedStageLayout,
+		anchor: MechanismGlyphAnchor
+) -> bool:
+	var muzzle_world := stage_data.cannon_transform * Vector3(0.0, 1.5, -1.5)
+	var muzzle_local := muzzle_world - stage_data.terrain_center
+	var start_xz := Vector2(muzzle_local.x, muzzle_local.z)
+	var distance := start_xz.distance_to(anchor.local_xz)
+	var cell_size := layout.local_bounds.size / Vector2(layout.cell_count)
+	var sample_count := maxi(1, ceili(distance / maxf(cell_size.length() * 0.5, 0.001)))
+	for sample_index in range(1, sample_count):
+		var t := float(sample_index) / float(sample_count)
+		var point_xz := start_xz.lerp(anchor.local_xz, t)
+		var sample := layout.surface_sample_at_local(point_xz.x, point_xz.y, false)
+		if sample.is_empty():
+			continue
+		var line_height := lerpf(muzzle_local.y, anchor.surface_point.y, t)
+		if float(sample.point.y) > line_height + CANNON_VISIBILITY_CLEARANCE:
+			return false
+	return true
 
 
 static func _splitter_route_targets(
@@ -238,8 +284,6 @@ static func _uphill_witness(
 		if rise > best_rise:
 			best_rise = rise
 			best_point = sample.point
-	if best_rise < mechanism_data.minimum_uphill_rise:
-		return {}
 	var delta := best_point - anchor.surface_point
 	var tangent := delta - anchor.surface_normal * delta.dot(anchor.surface_normal)
 	if tangent.is_zero_approx():

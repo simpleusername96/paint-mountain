@@ -18,3 +18,7 @@ func _ready() -> void:
 
 func focus_resume() -> void:
 	%Resume.grab_focus()
+
+
+func focus_settings() -> void:
+	%Settings.grab_focus()
