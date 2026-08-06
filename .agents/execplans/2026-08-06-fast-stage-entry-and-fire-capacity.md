@@ -3,8 +3,8 @@ type: plan
 status: active
 created: 2026-08-06
 last_reviewed: 2026-08-06
-scope: truthful initial-launch Fire capacity and baked deterministic stage-layout loading
-source: user-reported disabled Fire with ammunition remaining and excessive stage preparation latency, diagnosed against the 2026-08-06 repository state
+scope: truthful initial-launch Fire capacity, baked deterministic stage-layout loading, and bounded baseline UI repair
+source: user-reported disabled Fire, excessive stage preparation latency, and baseline UI quality defects diagnosed against the 2026-08-06 repository state
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -14,11 +14,12 @@ related:
   - ../../docs/technical-architecture.md
   - ../../docs/test-checklist.md
   - ../design/DESIGN.md
+  - ../evidence/2026-08-06-ui-quality-audit.md
   - 2026-08-06-ballistic-terrain-preparation.md
   - 2026-08-06-wind-driven-coverage-loop.md
 ---
 
-# Fast Stage Entry and Truthful Fire Capacity - Execution Contract
+# Fast Stage Entry, Truthful Fire Capacity, and Baseline UI Repair - Execution Contract
 
 Paint Mountain will keep its two concurrent initial-launch limit, but a
 Splitter child or wind-woken resident will no longer hold that Fire slot. Stage
@@ -27,23 +28,30 @@ runtime; it will asynchronously load one validated, content-addressed baked
 layout instead. The current Stage 30 placement failure will be resolved by the
 offline catalog builder selecting and persisting the first fully valid candidate
 from the existing deterministic candidate domain, never by weakening placement
-rules at runtime.
+rules at runtime. The same execution will repair the running-build UI defects
+that currently hide twenty stages, erase the power-step glyphs, obstruct the
+launch origin with onboarding help, and stack Pause beneath Settings; it will not
+turn into a new screen design or camera-composition program.
 
 ## Purpose
 
 - Objective: make Fire availability match the intended initial-root-launch rule
-  and reduce cold stage entry from the current roughly 10-11 seconds to the
-  existing under-three-second product target.
+  and reduce cold stage entry from the documented non-rendered Stage 01
+  `3.7..4.6 s` and Stage 30 `11.1..13.3 s` rebuilds to the existing under-three-
+  second product target.
 - Deliverable: separated launch-slot and shot-observation lifecycles, one baked
   layout resource/codec, a format-4 content-addressed catalog bundle, a threaded
   runtime layout repository, bounded offline default/summit witnesses, truthful
-  loading/failure UI, and focused regression evidence.
+  loading/failure UI, bounded baseline interface repairs, and focused regression
+  evidence.
 - Completion state: ammunition is consumed only by an accepted Fire; descendants
   and reawakened residents never occupy a released launch slot; normal app,
   gameplay, and delivery paths contain no terrain generation or aim solving;
   all 30 catalog entries load their exact baked layouts; representative cold
   Stage 01 and Stage 30 entry complete within three seconds on the current
-  Windows test machine; and the production build starts with the baked bundle.
+  Windows test machine; all thirty stages are visibly reachable; the repaired
+  HUD and nested settings flow are legible and non-overlapping at 1280x720; and
+  the production build starts with the baked bundle.
 
 ## Scope and Boundaries
 
@@ -57,6 +65,9 @@ In scope:
   atomic generated-catalog publication.
 - Asynchronous selected/prefetch loading, three-layout LRU retention, explicit
   load failure/retry, and runtime fallback removal.
+- Bounded 1280x720 repairs for Stage Select pagination, power-step icon contrast,
+  first-session-hint placement, Pause-to-Settings presentation/focus, localized
+  Settings option state, and low-cost main-menu/Pause layout residue.
 - Focused code checks, one explicit all-stage artifact build, representative
   runtime timing/render evidence, docs, and production export/start.
 
@@ -65,6 +76,9 @@ Out of scope:
 - Raising or removing the two concurrent initial-launch limit.
 - Deleting terrain-resident paintballs, changing ammunition, wind, paint,
   scoring, stage duration, glyph effects, or camera interaction.
+- New screens, new assets, a new global theme, wholesale HUD/menu redesign,
+  Stage 01 or cross-stage camera/framing tuning, or replacing the existing
+  ten-card pagination model.
 - Proving a first-hit witness for every target-mask texel. The stronger
   target-wide `DirectReachabilityCertificate` requirement remains a separately
   recorded unfinished guarantee; this plan produces only the default and summit
@@ -88,12 +102,17 @@ data migration is required.
 | --- | --- | --- | --- | --- |
 | Fire is disabled while shots remain | The captured Stage 04 state shows `남은 탄 2` with disabled Fire and `포탄 2개 진행 중`. `StageController.fire_readiness_snapshot()` correctly checks ammunition separately from `ProjectileManager.active_root_count()` | `ProjectileManager` retains one launch slot while **any** non-resting projectile with the same `shot_id` exists. Splitter children keep their root `shot_id`, so descendant motion is incorrectly counted as root-launch capacity | Keep the two-slot policy and make capacity depend only on each root's one-time initial launch | 1.1-1.3 |
 | A simple slot fix could truncate shot records | `shot_family_finished` currently drives `ShotObservation` sealing after paint queues drain | One dictionary and one completion signal currently represent two different lifecycles: root launch admission and all first-flight family bodies | Maintain separate initial-root and unsettled-family registries. Release Fire from the first; keep observation completion on the second | 1.1-1.3 |
-| Cold preparation takes about ten seconds | Current focused execution measured Stage 01 generation at 10,242 ms | The worker removes a main-thread freeze but still performs full height synthesis, 512x512 route/target scans, connected-component work, placement, decoration, and ballistic-domain sampling on every cold process | Persist accepted immutable outputs once and load them; do not tune the runtime loops as the primary solution | 2.1-4.4 |
+| Cold preparation exceeds the entry target and grows with later stages | Repeated final non-rendered runs recorded Stage 01 at `3.7..4.6 s` and Stage 30 at `11.1..13.3 s` in `.agents/Documentation.md` | The worker removes a main-thread freeze but still performs full height synthesis, 512x512 route/target scans, connected-component work, placement, decoration, and ballistic-domain sampling on every cold process | Persist accepted immutable outputs once and load them; do not tune the runtime loops as the primary solution | 2.1-4.4 |
 | Stage 30 does not merely load slowly | The same current run rejected Stage 30 after 11,370 ms with `UPHILL_REBOUND`, `mechanism_placement`, and `kind_suitability` | The hand-maintained accepted-candidate index is stale after the version-8 keyed sampler/glyph contract changed | Search the fixed candidate indices 0-31 only in the explicit offline build, persist the first full-valid seed/index, and fail publication if none passes | 3.1-3.3 |
 | An urgent selected stage can wait behind irrelevant work | `StageLayoutPreparer` has one active `Thread`; a running menu preview or next-stage prefetch cannot be preempted | Urgent and speculative work share one serial generation worker | Replace preparation with independent threaded resource requests: at most one current selection and one prefetch may be pending, and selected loading starts immediately | 4.1-4.2 |
 | Prepared layout is not a complete runtime handoff | `GameplayScene` regenerates synchronously when preparation identity fails, searches for a default aim when missing, and always searches for a summit aim | Runtime still owns recovery generation and bounded physics solving | Fail closed before scene entry and consume baked layout/default/summit data only | 2.1-4.3 |
 | Current bundle cannot supply the handoff | Active format-3 manifest `v8-1170.../manifest.json` has no layout paths and no certificates | The content-addressed bundle persists inputs, not accepted layout outputs | Add binary baked layouts and positional paths to format 4 while keeping generation contract version 8 | 2.1-3.3 |
 | Disabled-state wording is ambiguous | `fire.capacity` says `포탄 2개 진행 중`, which can look like ammunition exhaustion beside the remaining-shot count | The UI does not name the initial-root-launch rule; calling it a general flight limit would also be false while descendants or reawakened residents move | Report `초기 발사 동시 한도 2/2` / `INITIAL LAUNCH LIMIT 2/2`; retain the authoritative remaining-shot display | 1.2, 4.4 |
+| Only ten stages appear selectable | Fresh page-1/page-2 captures show Stages 01-10 and 11-20, but neither shows page controls even though the catalog has 30 stages | The runtime pager combines center-bottom anchors with absolute position `(310, 664)`, placing it outside the 1280x720 viewport | Keep ten-card pages; move localized Previous/Next plus an explicit `1-10 / 30` range into a scene-owned `CardsPanel` footer | 5.1 |
+| Power decrease/increase look like blank buttons | Fresh Aim Lock evidence and source-asset inspection show two white-only icons on light button surfaces | `AimControls` does not apply the navy icon tint already used by the gear button | Apply shared navy normal/hover/pressed/focus tint, muted disabled tint, and localized tooltips without changing input behavior | 5.2 |
+| First-session help hides the launch origin | The four-second center-bottom hint covers the cannon/muzzle and lower trajectory and touches Fire | The hint uses a fixed 600x48 center-bottom rectangle instead of the available left rail | Keep its copy and duration but place a compact wrapped hint below the mode toggle and above coverage | 5.2 |
+| Settings visually stacks on Pause | Fresh Settings evidence shows Pause text through the panel and two stacked scrims; the gameplay return branches in `AppRoot` are `pass` | The parent Pause presentation is never suspended while the child Settings screen owns input | Hide only the Pause presentation, keep simulation paused, close Settings on Escape, then restore Pause with focus on Settings | 5.3 |
+| Small menu/settings residue makes otherwise functional surfaces look unfinished | Fresh evidence shows an orphaned Korean subtitle line, a developer milestone footer, a 150 px empty Pause tail, and raw `MEDIUM`/`1920X1080` option text | Fixed widths/heights and generic `.to_upper()` display formatting bypass the Korean-first surface contract | Widen the subtitle content, remove milestone copy, make Pause content-height-driven, localize quality display, and make fullscreen resolution state explicit | 5.3-5.4 |
 
 Readiness statement:
 
@@ -102,6 +121,9 @@ Readiness statement:
   target work, runtime fallback, and two physics aim searches on the entry path.
 - Removing or raising Fire capacity is rejected because it hides the lifecycle
   error and weakens the planning rule.
+- The fresh running-build audit separates captured cold-loading surfaces from
+  settled UI defects; blank loading previews remain owned by baked loading, while
+  the verified pagination, HUD, and nested-modal defects receive bounded repairs.
 - The remaining implementation choices are local encoding and integration work;
   they do not require a product decision.
 
@@ -118,6 +140,8 @@ Readiness statement:
 | Baked layout | Schema-versioned immutable primitive payload reconstructed into one runtime `GeneratedStageLayout` without generation or physics search | `BakedStageLayoutData` and `StageLayoutBakeCodec` |
 | Runtime-ready layout | A hydrated layout whose stage identity, structural data, target mask, checksums, and bounded default/summit witnesses validate | `GeneratedStageLayout` and codec |
 | Layout repository | App-owned asynchronous loader and three-entry hydrated-layout cache; it never generates | `StageLayoutRepository` |
+| Visible stage page | Ten Stage Select cards plus a localized Previous/Next footer and explicit inclusive range over all 30 catalog entries | `StageSelectScreen` scene/script |
+| Parent-overlay suspension | Hiding Pause presentation while Settings owns input without changing the paused stage state | `AppRoot` through a narrow `GameplayScene`/HUD interface |
 
 Invariants:
 
@@ -137,6 +161,13 @@ Invariants:
    not change.
 10. A missing, malformed, mismatched, or corrupt artifact fails closed and leaves
     the current page usable; it never triggers a generator fallback.
+11. Every one of the 30 all-open stages is reachable through visible mouse and
+    keyboard controls at the 1280x720 baseline.
+12. Opening Settings from Pause renders exactly one active modal/scrim and never
+    changes `StageController.current_state == PAUSED` or `SceneTree.paused ==
+    true`; closing it restores Pause and deterministic Settings-button focus.
+13. The power-step glyphs and temporary onboarding help remain legible without
+    covering Fire, the cannon/muzzle, trajectory, coverage, or right status.
 
 ## Locked Technical Design
 
@@ -313,8 +344,8 @@ Invariants:
 
 ### E. Keep the UI change small and truthful
 
-This is UIUX Level 2: existing primary actions and readiness surfaces change
-state/copy, but no new screen, theme, HUD composition, or interaction model is
+The loading/capacity portion is UIUX Level 2: existing primary actions and
+readiness surfaces change state/copy, but no new screen or interaction model is
 introduced.
 
 - Replace `ui.preparing_stage` semantics with `ui.loading_stage`:
@@ -327,6 +358,65 @@ introduced.
 - Verify the affected loading/failure and aiming-capacity surfaces at 1280x720
   in Korean. One focused production capture per changed surface is sufficient;
   do not create a broad visual regression matrix.
+
+### F. Repair the verified baseline UI defects without redesign
+
+The 2026-08-06 running-build audit raises the combined UI work to UIUX Level 3
+because it covers several existing screens and gameplay states. The design
+direction, shared Theme, screen ownership, and input model stay unchanged.
+
+- Keep `PAGE_SIZE == 10`. Replace the dynamically positioned pager with a
+  scene-owned footer inside `CardsPanel`, below the grid. It contains localized
+  `Previous` (`ui.previous`: `PREVIOUS` / `이전`) and existing `Next` (`ui.next`)
+  buttons with at least 40 px height and a centered
+  inclusive range label formatted from catalog count: `1-10 / 30`,
+  `11-20 / 30`, or `21-30 / 30`. The unavailable edge action is disabled; page
+  changes preserve a visible selected card and focus stays on an enabled pager
+  action so repeated keyboard navigation does not jump off-screen.
+- In `AimControls`, preserve the approved white minus/plus textures and 40 px
+  targets, but tint normal/hover/pressed/focus icons with the existing navy token
+  and disabled icons with the existing muted token. Add translated power-decrease
+  and power-increase tooltips under `hud.power_decrease` and
+  `hud.power_increase`.
+- Preserve the Stage 01 first-session help and four-second duration. Move it into
+  a left-edge container immediately below `CameraInteractionControl` and above
+  `CoverageMeter`; wrap it at 14-16 px rather than spanning the launch origin.
+  Aim Lock and Map Inspection behavior do not change.
+- Add one narrow gameplay presentation interface so `AppRoot` can suspend the
+  Pause overlay while the full Settings screen is open:
+  `GameplayScene.set_pause_overlay_suspended(bool)` delegates to
+  `HUDController.set_pause_overlay_suspended(bool)`. HUD stores
+  `_pause_overlay_suspended` and presents Pause only when the stage is paused,
+  replay is inactive, and suspension is false. A separate
+  `GameplayScene.focus_pause_settings()` delegates through HUD to
+  `PauseOverlay.focus_settings()`.
+- `SettingsScreen._unhandled_input()` handles a non-echo `ui_cancel`, marks the
+  viewport input handled, and calls the existing `_close()` path exactly once.
+  On `close_requested`, `AppRoot` clears suspension, then defers
+  `focus_pause_settings()` by one frame. It never calls `toggle_pause()` in this
+  open/close path. From Settings open through focus restoration,
+  `StageController.current_state == PAUSED` and `SceneTree.paused == true`.
+  Do not hide the defect by changing the global panel alpha.
+- Keep Settings metadata stable. Translate only the displayed quality labels to
+  `LOW/MEDIUM/HIGH` and `낮음/보통/높음` through
+  `settings.quality_low`, `settings.quality_medium`, and
+  `settings.quality_high`; resolution metadata stays `1280x720` while display
+  text becomes `1280 × 720` etc. One
+  `SettingsScreen._sync_display_state_from_settings()` owner refreshes localized
+  Quality/Language/Resolution text, Resolution enabled state, and the final
+  windowed size. Call it after open-state sync, locale changes, fullscreen
+  changes, and once after all Restore Defaults values are stored. Fullscreen-on
+  disables Resolution but retains the stored value; fullscreen-off enables it
+  and immediately applies that stored windowed size. Defaults may not depend on
+  Dictionary iteration order.
+- Give the main-menu subtitle at least 420 px of content width so the current
+  Korean copy does not orphan `세요.`; remove `VERTICAL SLICE · GODOT 4` from the
+  player-facing build. Replace Pause's fixed 520 px height with a full-screen
+  `CenterContainer` holding a content-driven 380 px-wide panel.
+- Preserve the shared two-pixel focus treatment, Korean-first copy, 24 px safe
+  edge, existing primary hierarchy, and all current control functions. Do not
+  add assets, screen categories/tabs, new HUD cards, camera framing changes,
+  per-pixel layout tolerances, or a multi-resolution screenshot matrix.
 
 ## Tasks
 
@@ -512,7 +602,77 @@ Batch gate:
 - Stage requests load independently, runtime fallback is absent, representative
   entry latency meets the product target, and the changed UI states are truthful.
 
-### Phase 5: Audit, verify, export, and close the plan
+### Phase 5: Repair the bounded baseline UI defects
+
+Goal: make every stage discoverable and remove the confirmed legibility,
+overlap, nested-modal, localization, and content-fit defects without redesigning
+the product or altering gameplay.
+
+Source owners: `scenes/ui/screens/stage_select.tscn`,
+`src/ui/screens/stage_select_screen.gd`, `scenes/ui/hud/hud.tscn`,
+`scenes/ui/hud/aim_controls.tscn`, `src/ui/hud_controller.gd`,
+`scenes/ui/screens/pause_overlay.tscn`, `src/ui/screens/pause_overlay.gd`,
+`scenes/ui/screens/settings.tscn`, `src/ui/screens/settings_screen.gd`,
+`scenes/ui/screens/main_menu.tscn`, `src/app/app_root.gd`,
+`src/gameplay/gameplay_scene.gd`, the narrow HUD presentation delegate,
+translations, and focused UI/localization tests
+
+- [ ] **5.1** Make all thirty Stage Select entries visibly navigable.
+  - Change: add `ui.previous` in both locales; put a localized Previous/range/
+    Next footer inside `CardsPanel`; keep ten-card pages; update the range from
+    the authoritative catalog count; and remove the off-screen runtime position
+    path.
+  - Accept: page 1, 2, and 3 visibly report `1-10 / 30`, `11-20 / 30`, and
+    `21-30 / 30`; edge buttons disable correctly; mouse and keyboard can select
+    a card on every page; no control clips or leaves the 1280x720 panel.
+- [ ] **5.2** Restore HUD control legibility and clear the launch origin.
+  - Change: add `hud.power_decrease` and `hud.power_increase` in both locales;
+    tint the existing minus/plus icons in every interaction state; apply those
+    translated tooltips; and place the unchanged four-second first-session help
+    in the left rail beneath the interaction toggle.
+  - Accept: both glyphs are visible on the light buttons; focus remains the
+    shared two-pixel treatment; the hint does not intersect Fire, the cannon/
+    muzzle, trajectory, coverage, or run status; Aim/Map visibility rules remain
+    unchanged.
+- [ ] **5.3** Correct the Pause-to-Settings child-modal and display states.
+  - Change: suspend/restore Pause presentation through one narrow gameplay/HUD
+    interface while keeping the stage paused; make Escape close Settings and
+    restore focus to Pause's Settings action; add all three `settings.quality_*`
+    keys in both locales and use them for display; format resolution with `×`;
+    disable it in fullscreen and apply the stored windowed size on exit from
+    fullscreen.
+  - Accept: Settings renders one scrim with no Pause text bleeding through;
+    input cannot reach gameplay; `StageController` and `SceneTree` remain paused;
+    close and Escape return to visible Pause with the Settings button focused;
+    Korean shows `낮음/보통/높음`; fullscreen exposes no inert resolution action;
+    defaults and locale changes refresh the final display state once without
+    changing stored option metadata.
+- [ ] **5.4** Remove the verified menu/Pause residue and inspect only changed
+  surfaces.
+  - Change: widen main-menu subtitle content to at least 420 px, remove the
+    developer milestone footer, make Pause height content-driven, update the
+    three focused UI tests: `phase7_ui_test` proves all three page ranges plus
+    one visible modal/scrim, Pause/Settings suspension, controller/tree paused
+    state, Escape, Settings-button focus return, and paused input barrier;
+    `localization_ui_test` proves immediate Korean/English Quality refresh while
+    metadata stays stable, `×` formatting, fullscreen Resolution disabling, and
+    stored-size reapplication; `shot_feedback_test` proves icon state, translated
+    tooltips, and non-overlapping help. Then capture Main Menu, Stage
+    Select pages 1 and 2, first-hint Aim Lock, Pause, and Settings from the
+    production build at Korean 1280x720. The structural test, not a third nearly
+    identical screenshot, proves page 3.
+  - Accept: the subtitle has no orphan syllable line; Pause has no large empty
+    tail; all changed labels fit; every captured action/state is functional and
+    visible; the implementing agent compares each fresh image to the audit and
+    records any remaining limitation. No broad screenshot matrix is added.
+
+Batch gate:
+
+- All thirty stages are visibly reachable, Aim Lock controls are legible, the
+  first-session help preserves the decision chain, Pause/Settings renders one
+  modal owner, and the changed Korean surfaces are clean at 1280x720.
+
+### Phase 6: Audit, verify, export, and close the plan
 
 Goal: hand off one coherent implementation and current evidence without turning
 this repair into an exhaustive certification or visual program.
@@ -521,25 +681,28 @@ Source owners: all task-owned code/resources/tests/docs,
 `scripts/verify.ps1`, export preset, `.agents/Documentation.md`,
 `docs/test-checklist.md`, this plan
 
-- [ ] **5.1** Run the cross-module quality audit and make only scoped fixes.
+- [ ] **6.1** Run the cross-module quality audit and make only scoped fixes.
   - Change: invoke `codebase-quality-auditor` over slot/family ownership, artifact
     codec/catalog boundaries, runtime fallback removal, failure handling, and
-    stale preparer terminology.
+    stale preparer terminology, plus pager ownership, nested-modal presentation,
+    and shared HUD/theme-state reuse.
   - Accept: no competing capacity, generation, layout cache, or default-aim
-    owner remains; no catch-all file absorbs unrelated work.
-- [ ] **5.2** Run focused checks and the mandatory repository gate once.
+    owner remains; Stage Select, HUD, and Pause/Settings retain narrow owners; no
+    catch-all file absorbs unrelated work.
+- [ ] **6.2** Run focused checks and the mandatory repository gate once.
   - Change: run the named task tests while implementing, then the fast catalog
     check and `scripts/verify.ps1` once after integration.
   - Accept: all pass without changing validators, adding dependencies, or
     absorbing unrelated files.
-- [ ] **5.3** Export and inspect the production boundary.
+- [ ] **6.3** Export and inspect the production boundary.
   - Change: export `builds/windows/PaintMountain.exe`, start only that executable
     through the existing background capture path, enter representative Stage 01
-    and Stage 30, and capture the corrected Fire-capacity state.
+    and Stage 30, and capture the corrected Fire-capacity and six bounded UI
+    states named in Task 5.4.
   - Accept: the exported build contains/loads the format-4 artifacts, starts
     cleanly, meets the coarse entry target, and the focused running-game evidence
-    matches the behavioral checks.
-- [ ] **5.4** Close status and plan truthfully.
+    matches the behavioral and visual checks.
+- [ ] **6.4** Close status and plan truthfully.
   - Change: record exact artifact hash, timing, tests, capture paths, and known
     remaining target-wide certification gap; mark this plan `done` only after all
     required work passes.
@@ -566,6 +729,9 @@ Focused checks:
 & $paintMountainGodot --headless --path . --script res://tests/shot_observation_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/baked_stage_layout_test.gd
 & $paintMountainGodot --headless --path . --script res://tests/stage_layout_repository_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/phase7_ui_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/localization_ui_test.gd
+& $paintMountainGodot --headless --path . --script res://tests/shot_feedback_test.gd
 ```
 
 Artifact production and final gates:
@@ -579,8 +745,21 @@ Artifact production and final gates:
 
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -GodotPath $paintMountainGodot
 & $paintMountainGodot --headless --path . --export-release 'Windows Desktop' 'builds\windows\PaintMountain.exe'
-& '.\builds\windows\PaintMountain.exe' --capture-background --capture-screen=progression_aiming --capture-stage=stage_30 --capture-size=1280x720 --capture-output=res://.agents/evidence/fast-stage-entry-and-fire-capacity/stage_30_aiming-1280x720.png
-& '.\builds\windows\PaintMountain.exe' --capture-background --capture-screen=two_family --capture-size=1280x720 --capture-output=res://.agents/evidence/fast-stage-entry-and-fire-capacity/two_family-1280x720.png
+$paintMountainExport = (Resolve-Path -LiteralPath '.\builds\windows\PaintMountain.exe').Path
+$captureEvidence = [System.IO.Path]::GetFullPath(
+    (Join-Path (Get-Location) '.agents\evidence\fast-stage-entry-and-fire-capacity')
+).Replace('\', '/')
+# The exported capture runner reads OS.get_cmdline_user_args(); keep the `--`
+# separator and absolute output path. Without them the app runs normally or
+# writes beneath builds/windows instead of the repository evidence directory.
+& $paintMountainExport -- --capture-background --capture-screen=progression_aiming --capture-stage=stage_30 --capture-size=1280x720 "--capture-output=$captureEvidence/stage_30_aiming-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=two_family --capture-size=1280x720 "--capture-output=$captureEvidence/two_family-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=main_menu --capture-size=1280x720 "--capture-output=$captureEvidence/main_menu-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=stage_select --capture-size=1280x720 "--capture-output=$captureEvidence/stage_select-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=stage_select_page_2 --capture-size=1280x720 "--capture-output=$captureEvidence/stage_select_page_2-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=progression_aiming --capture-stage=stage_01 --capture-size=1280x720 "--capture-output=$captureEvidence/first_hint-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=pause --capture-stage=stage_01 --capture-size=1280x720 "--capture-output=$captureEvidence/pause-1280x720.png"
+& $paintMountainExport -- --capture-background --capture-screen=settings --capture-stage=stage_01 --capture-size=1280x720 "--capture-output=$captureEvidence/settings-1280x720.png"
 ```
 
 Cadence and stopping rules:
@@ -590,9 +769,9 @@ Cadence and stopping rules:
   inner-loop test. Run it only after its inputs stabilize; rerun only after a
   relevant artifact input changes.
 - The no-argument catalog check must stay fast and generation-free.
-- Run `scripts/verify.ps1`, export, production start, and focused captures once
-  after integration. Explain their cost and stopping condition before starting
-  the broad gate.
+- Run `scripts/verify.ps1`, export, production start, and the eight focused
+  captures once after integration. Explain their cost and stopping condition
+  before starting the broad gate.
 - Do not add a per-pixel target certificate, exhaustive trajectory grid, every-
   stage live playthrough, repeated performance sampling, fine numeric tolerance
   matrix, or redundant screenshot set to this plan.
@@ -610,6 +789,8 @@ Cadence and stopping rules:
 | A complete target-wide certificate already exists for a stage | Attach and validate it against the baked layout; keep the bounded generated witnesses consistent | Claiming absent certificates were produced by this plan |
 | Payload shape changes after schema 1 ships | Bump the baked schema and bundle format, rebuild atomically, and keep old bundle recovery | Reinterpreting old bytes under the same schema |
 | Task implementation overlaps an unrelated dirty hunk | Preserve and merge around the user-owned hunk; stop and ask only if intent truly conflicts | Revert, reset, blanket staging, or claiming the unrelated change |
+| Korean or English no longer fits a repaired control at 1280x720 | Reflow within the named existing container and preserve the minimum target/focus contract | Shrinking below 16 px body text, adding another screen, or hiding labels |
+| Suspending Pause presentation resumes simulation or leaks input | Keep `StageController` paused, repair the narrow presentation delegate, and repeat the focused Pause/Settings flow | Toggling pause state to make the overlay disappear or stacking a third scrim |
 
 Any change to ammunition, the two-slot policy, resident cap, target mask,
 generation validator thresholds, candidate-domain size, full-certification scope,
@@ -626,6 +807,11 @@ dependencies, or external assets requires an explicit plan update before code.
 - [x] Compared the current format-3 bundle, catalog builder, progression seed
   map, layout data model, export policy, and relevant product/design contracts.
 - [x] Locked the split lifecycle and baked-layout architecture.
+- [x] Captured and personally inspected fresh Korean 1280x720 production-style
+  main-menu, Stage Select, briefing, Aim Lock, Map Inspection, Pause, and Settings
+  evidence; traced the confirmed UI defects to their current owners.
+- [x] Added the bounded UI repair decisions without treating transient cold-load
+  previews or deferred camera framing as settled UI defects.
 - [ ] Implementation complete.
 - [ ] Focused checks, artifact build/check, repository verification, and quality
   audit pass.
