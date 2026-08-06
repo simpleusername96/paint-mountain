@@ -39,11 +39,11 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, wind generation, camera transforms, or HUD layout |
 | `StageData` | Typed stage configuration, translation keys, generation profile/seed, stage duration, wind profile, and content references | Mutable runtime or accepted generated layout state |
 | `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
-| `StageCatalogBuilder` | Offline deterministic candidate search, complete validation, certificate/preview/resource emission, and atomic catalog promotion | Runtime search, hand-authored repair, or partial catalog activation |
+| `StageCatalogBuilder` | Offline deterministic candidate search, complete validation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, hand-authored repair, or partial catalog activation |
 | `SeededStageGenerator` | Pure one-profile/one-accepted-seed route-graph and layout reconstruction plus identity verification | Candidate search, physics-world solving, stage transitions, paint state, or hand-authored production repair |
 | `ProjectileRangeConstraint` | Pure legal yaw, fixed-step damped horizon, and lower/upper height-envelope admission for every target sample and the Summit Region | Physics queries, terrain occlusion, first-hit certification, target deletion, or runtime aim assistance |
-| `DirectReachabilityValidator`, `DefaultAimSolver` | Offline exact first-hit target-wide and summit certification, centroid default selection, and certificate emission | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
-| `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target and summit identities, full certificate, default aim, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
+| `DirectReachabilityValidator`, `DefaultAimSolver` | Offline bounded real first-hit validation for generated default and summit aims, plus optional diagnostic certificate work | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
+| `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target and summit identities, bounded default/summit witnesses, optional certificate metadata, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
 | `MechanismPlacementGenerator` | Exact role-owned centerline shelf transform and candidate validation | Placement scoring, alternate cells, activation behavior, or stage outcomes |
 | `TerrainGeometryFactory` | One exact indexed top-triangle list plus closed shell render/collision resources from the accepted layout | Independent triangulation, height interpolation, stage generation, orchestration, or paint state |
 | `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/bounds queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
@@ -121,11 +121,11 @@ This architecture covers the single-process desktop game. It does not define a b
   `RadialPaintMark` carries verified impact or Burst center/radius.
   Neither carries amount, payload, or flow. `ProjectileManager` assigns stable
   per-shot ordinals and sequence; `PaintSystem` alone validates/rasterizes them.
-- `DirectReachabilityCertificate` stores target-triangle witness assignments,
-  every target-texel mapping, summit-region IDs/checksum/witness, predictor and
-  rigid-body first-hit identities/margins, containment identities, and generated
-  centroid-near default aim for one accepted layout. Runtime validates the
-  certificate but never exposes witness tuples as player or agent aim assistance.
+- `DirectReachabilityCertificate`, when present, is optional diagnostic QA
+  metadata. Runtime may validate a present matching certificate, but catalog
+  admission and release do not require exhaustive target-texel witness mappings.
+  Generated default and summit aims remain the bounded runtime-entry witnesses
+  and are never exposed as player or agent aim assistance.
 - `StageMvpPermit` is legacy development evidence only and is absent from the
   active version-8 runtime admission path.
 - Replay format 8 carries canonical stage/profile/layout/certificate versions,
@@ -273,10 +273,10 @@ Human / Replay / GameplayAgentApi actions
   `1035.5 ms` for Stage 01 and `2068.4 ms` for Stage 30. These automated and
   rendered checks do not replace user-owned gameplay, balance, feel, or
   aesthetic QA.
-- Certification rejects any layout unless every target-mask texel has an exact
-  runtime-predictor and real-rigid-body first-hit witness on the same shared top
-  triangle, the global highest top region has a matching legal first-hit witness,
-  and the default witness is the certified hit nearest target centroid.
+- Stage admission rejects a layout when its configured target falls outside the
+  analytic yaw/horizon/height envelope or when its bounded generated default or
+  summit aim fails the required real first-hit check. It does not enumerate a
+  first-hit witness for every target texel.
 - Structural render/collider/query/target/paint triangle parity is exact before
   engine conversion; deterministic engine ray positions may differ by at most
   0.01 m.
@@ -295,10 +295,10 @@ Human / Replay / GameplayAgentApi actions
 - Visual paint and coverage remain views of one authoritative mask, every
   persistent painted texel traces to a verified playable-top command, and only
   target-mask overlap contributes to coverage.
-- Every target texel is directly first-hit reachable in the legal manual aim
-  domain; the global highest top region is separately first-hit reachable;
-  restart applies the generated centroid-near witness; legal shots cannot escape
-  the collider-matched wall/apron containment.
+- The configured target lies inside the legal analytic aim domain; the generated
+  centroid-near default and global-highest-region aims first-hit valid playable
+  top; restart applies the default witness; legal shots cannot escape the
+  collider-matched wall/apron containment.
 - Active Shot Families and camera interaction modes do not replace `AIMING` as
   Board Phase. Aim remains stored at capacity; one authoritative readiness
   snapshot disables only Fire and states the prediction/capacity/shot/result
@@ -338,6 +338,6 @@ Human / Replay / GameplayAgentApi actions
   aiming, two-family capacity, menu, stage-select pages 1/2, first hint, pause,
   and Settings. Review found no clipping, overlap, or gross terrain obstruction;
   the structural UI contract covers page 3 and Settings is exactly 1280x720.
-- The target-wide exact first-hit certificate remains an open release gap. The
-  persisted default/summit witnesses are runtime-entry data, not a claim of
-  complete target-wide certification.
+- Persisted default/summit witnesses and analytic range admission are the active
+  validation boundary. Exhaustive target-wide first-hit certification is
+  optional diagnostic work, not an open release gap.

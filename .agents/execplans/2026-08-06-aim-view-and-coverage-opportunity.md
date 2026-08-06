@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: archived
 created: 2026-08-06
 last_reviewed: 2026-08-06
 scope: cannon-anchored Aim View and coverage-opportunity-budgeted late-stage progression
@@ -20,6 +20,12 @@ related:
 ---
 
 # Cannon-Anchored Aim View and Coverage-Opportunity Progression - Execution Contract
+
+> Archived on 2026-08-06 after the user rejected the non-UI coverage-budget and
+> exhaustive-validation framing. Do not execute this contract. The user retained
+> only the need for a substantially better UI layout; that direction is being
+> selected from current-runtime-grounded visual concepts before a new
+> implementation contract is written.
 
 Paint Mountain will keep the aiming camera at its authored cannon-side position
 while allowing the player to look across and upward through the late-stage

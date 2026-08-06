@@ -1680,6 +1680,30 @@ interpretation:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-06): Practical Stage Validation
+
+The user explicitly retired two validation requirements that no longer match
+the current Paint Mountain loop. These clauses override the earlier
+target-wide reachability and authored-solution language only:
+
+- **Bounded aim validation:** an exhaustive predictor-plus-rigid-body
+  first-hit witness for every target texel is not a product requirement,
+  release gate, or standing test obligation. Keep the fast analytic
+  yaw/horizon/height admission for the configured target and retain bounded
+  real first-hit witnesses for the generated default aim and highest playable
+  region. Ordinary trajectory, collision, containment, and reported gameplay
+  defects remain valid regression scope. A complete
+  `DirectReachabilityCertificate` may remain optional diagnostic metadata, but
+  its absence is not an implementation gap.
+- **No authored success-route contract:** stages do not require a pre-authored
+  successful solution route, a solver clear, or an all-stage manual
+  playthrough. Generated routes remain terrain-construction and readability
+  metadata; they are not prescribed player solutions. Validate representative
+  gameplay behavior and investigate concrete play defects without maintaining
+  a per-stage success-path checklist.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

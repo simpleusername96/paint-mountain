@@ -127,8 +127,9 @@ exactly three mechanism types.
   the shared projectile-center yaw, damped horizontal-horizon, and lower/upper
   reachable-height envelope. One failure rejects the whole seed candidate; it
   never removes a target pixel. At least one canonical Summit Region sample
-  must pass the same pure analytic gate. Exact terrain occlusion and first-hit
-  proof remain the separate certificate contract.
+  must pass the same pure analytic gate. Bounded generated default and summit
+  aims receive real first-hit checks; exhaustive per-target-texel certification
+  is not a product or release requirement.
 - Persistent paint is written only by verified playable-top surface sweeps and
   defined impact and Burst radial marks reconstructed on the exact
   rendered/collidable triangle. Visual paint and scored paint cannot diverge;
@@ -186,23 +187,21 @@ exactly three mechanism types.
   effect-usefulness checks. A failed placement rejects or changes the candidate
   through the generation contract; production resources contain no hand-authored
   X/Z repair fallback.
-- Every target-mask texel must have a certified legal manual aim whose first
-  physical hit is the same target-top triangle. The certificate is fairness
-  evidence and is never exposed as auto-aim. Stage start and restart use the
-  certified witness whose impact is nearest the target-mask centroid.
-- Every accepted stage also has a separately certified legal first physical hit
-  on its global highest playable top region. This summit witness does not replace
-  target-wide proof and is not used as the default aim.
+- Stage start and restart use one generated legal default aim whose real first
+  hit reaches playable target top near the target-mask centroid. Every accepted
+  stage also carries a separate generated legal first hit on its global highest
+  playable top region. Neither witness is exposed as auto-aim.
 - Each StageData includes identity and translation keys, generation profile/seed,
   cannon transform, camera bookmarks, target/shots/color, mechanism loadout,
   containment, star thresholds, best data, and tutorial keys. The generated
   layout owns the route graph, height samples, fixed triangle identities,
-  target mask, reachability certificate, default aim, decorations, and resolved
-  placements.
-- Every accepted stage passes direct target-wide reachability, containment, and
-  the deterministic reliable-solution search defined by the active specs; no
-  manual terrain repair, hidden target deletion, or balance choice is deferred
-  to implementation.
+  target mask, bounded default/summit witnesses, optional diagnostic certificate
+  metadata, decorations, and resolved placements.
+- Stages do not require a prescribed successful route, solver clear, exhaustive
+  target-wide first-hit proof, or all-stage manual playthrough. Generated route
+  data shapes terrain and supports readability without defining a player
+  solution. Containment, analytic range admission, bounded witnesses, and
+  representative gameplay regressions remain required.
 
 ### Results, persistence, and replay
 
@@ -326,5 +325,6 @@ background running-game captures with exit-0 runs and empty final stderr logs
 under `.agents/evidence/fast-stage-entry-and-fire-capacity/`. Exported entry
 readiness was `1035.5 ms` for Stage 01 and `2068.4 ms` for Stage 30. The render
 review found no clipping, overlap, or gross terrain obstruction; Settings is
-exactly 1280x720. The target-wide first-hit certification gap remains unresolved;
-persisted default/summit witnesses do not claim to close it.
+exactly 1280x720. Persisted default/summit witnesses and the analytic range gate
+are the current stage-admission baseline; exhaustive target-wide certification
+is not a release gap.

@@ -31,36 +31,36 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
 ## Requirements
 
 - Deliver thirty all-open, gradually harder stages, the full menu-to-result loop,
-  inspection/aim/follow/result
-  cameras, continuous physical-contact paint, target-mask coverage, saving,
-  replay, debug tools, audio/visual feedback, and exactly Burst, Splitter, and
-  Bumper mechanisms.
+  Aim Lock/Map Inspection/result cameras, continuous physical-contact paint,
+  target-mask coverage, saving, replay, debug tools, audio/visual feedback, and
+  exactly Burst, Splitter, and Uphill Rebound mechanisms.
 - Use Godot 4.x and GDScript with no backend, Docker, or unnecessary external dependencies.
 - Make visual paint and calculated coverage share one authoritative mask.
 - Generate a thick, collidable, one-height-per-XZ route-graph mountain whose
   render, top collision, queries, target rasterization, and paint reconstruction
   consume one exact triangle list. A visible collidable rear wall and faceted
   apron contain the current board.
-- Prove that every target-mask texel has a legal manual first-hit aim and derive
-  the stage-start/restart aim from the certified hit nearest the target centroid;
-  separately prove that the global highest playable top region has a legal first
-  physical hit; never expose either certificate as auto-aim.
+- Generate and verify one legal stage-start/restart aim near the target centroid
+  and one separate legal first hit for the global highest playable region. Do
+  not expose either witness as auto-aim. Exhaustive first-hit certification for
+  every target texel is optional diagnostic QA, not a release requirement.
 - Reject a terrain seed during generation when any scoreable projectile-center
   sample lies outside the shared analytic yaw/horizon/height envelope; never
-  delete target pixels to force admission. Keep this fast range gate distinct
-  from the stronger first-hit certificate.
+  delete target pixels to force admission.
 - Keep the next yaw/elevation/power aim and trajectory usable after Fire while up
   to two root-shot families move; motion is not an input-blocking stage phase.
-- Use one `0.90 m` parent physical radius with `1.50 m` traversed/settlement and
-  `2.10 m` impact paint radii, all reconstructed through the authoritative mask;
-  map power `0..100` linearly to `32..160 m/s` so accepted summits and rear
-  high-face targets are reachable.
+- Use the current `1.20 m` parent physical radius with `1.40 m` continuous and
+  `1.75 m` impact paint radii, all reconstructed through the authoritative mask;
+  map power `0..100` linearly to `32..160 m/s`.
 - Keep repeated launches effectively deterministic and the initial trajectory preview consistent with real launch physics.
-- Keep menu and stage-select navigation responsive: generate cold deterministic
-  layouts on one pure worker, retain only selected/current/next layouts, and
-  create scene, render, physics, preview, and paint state on the main thread.
+- Keep menu and stage-select navigation responsive: load validated baked layouts
+  asynchronously, retain only a bounded selected/nearby set, and create scene,
+  render, physics, preview, and paint state on the main thread.
 - Keep the human UI independent from an in-process observation/action API suitable for later AI play and automated testing.
-- Validate the finished project by running it, testing at least one reliable solution per stage, and capturing seven separate full-resolution screenshots from the actual game.
+- Validate the finished project with focused physics and interaction regressions,
+  production-style representative gameplay captures, and user-directed play
+  checks for concrete issues. Do not require a prescribed solution route or an
+  all-stage manual playthrough.
 
 ## Non-Goals
 

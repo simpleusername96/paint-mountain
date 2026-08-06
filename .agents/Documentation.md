@@ -83,9 +83,11 @@ not the user's gameplay, balance, feel, or aesthetic approval.
   hydration from `1091.2 ms` to `599.5 ms`; caching successful immutable
   readiness reduces repeat readiness from roughly `250..320 ms` to `0`. The
   probe was not retained as a test.
-- The unresolved target-wide exact first-hit certification gap remains a release
-  limitation. Default and summit witnesses do not close it. Gameplay, balance,
-  feel, and aesthetic QA remain the user's responsibility.
+- The user retired exhaustive target-wide exact first-hit certification as a
+  product and release requirement. Analytic target-range admission plus bounded
+  default/summit first-hit witnesses remain the active baseline. Gameplay,
+  balance, feel, and aesthetic QA remain user-directed rather than an inferred
+  all-stage solution-route obligation.
 
 ## Superseded Recovery Sequence (2026-08-05)
 
@@ -478,7 +480,7 @@ the static-audit correction above.
 - Phase 7 application UI and presentation: complete.
 - Phase 8 debugging, delivery, and final QA: complete.
 
-## Current Redesign Risks
+## Historical Redesign Risks (2026-08-03)
 
 - Godot is not currently on PATH. The user approved the discovered Godot 4.7.1
   console executable for Paint Mountain headless verification/export commands

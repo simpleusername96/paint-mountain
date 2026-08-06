@@ -29,7 +29,7 @@ Define the observable checks required before the game may be reported complete.
 The completed preparation gate and older checked sections are historical evidence
 for earlier builds. The first gate below records completed production validation
 of the implemented fast-entry and wind/UI work; the remaining unchecked rows
-are user-owned gameplay/feel review or the explicit certification gap.
+are user-directed gameplay/feel review.
 
 ## Scope
 
@@ -38,10 +38,10 @@ Run narrow checks throughout development, then complete this full checklist agai
 ## Active fast-stage-entry and wind/UI validation gate (2026-08-06)
 
 These are behavior-level acceptance checks for the completed successor plan. They
-intentionally avoid treating small numerical tolerances or individual physics
-ticks as product requirements. The retained unchecked rows require user gameplay
-review or the separate target-wide certificate; prior exports and captures remain
-historical unless named below.
+intentionally avoid treating small numerical tolerances, individual physics
+ticks, exhaustive target-texel first-hit enumeration, or prescribed solution
+routes as product requirements. The retained unchecked rows require user
+gameplay review; prior exports and captures remain historical unless named below.
 
 - [ ] In `MAP_INSPECTION`, the player can drag and wheel-zoom to inspect the
   whole mountain. In `AIM_LOCKED`, drag and wheel adjust aim and power without
@@ -100,9 +100,6 @@ Implemented code/structural evidence:
   `1091.2 ms -> 599.5 ms` after hoisting the summit snapshot from the triangle
   loop, and cached successful immutable readiness reduces repeats from roughly
   `250..320 ms` to `0`; it is not a retained test.
-- [ ] The open target-wide exact first-hit certificate gap is resolved. Default
-  and summit witnesses do not by themselves satisfy this release criterion.
-
 ## Completed ballistic-terrain preparation gate (2026-08-06, historical baseline)
 
 - [x] The shared fixed-60-Hz damped recurrence and fixed muzzle transform admit a
@@ -129,13 +126,13 @@ Implemented code/structural evidence:
 
 ## Gameplay-contract recovery gate (2026-08-05, historical and incomplete)
 
+This gate is retained only as historical evidence. Its exhaustive target-wide
+certificate and per-stage solution expectations were withdrawn by the later
+user supersession and are not current work.
+
 - [ ] Stage 01–30 use committed version-7 per-stage profiles/layout identities;
   all 29 difficulty-score deltas are `0.35..5.00`, adjacent normalized height
   RMS is `1.0..18.0 m`, and Stage 04/05 pass their exact distinctness canary.
-- [ ] Every stage has a full certificate for every scoreable target triangle and
-  a separate legal predictor/rigid-body first hit on the global Summit Region;
-  power endpoints are `32/160 m/s` and the damped full-domain containment proof
-  passes with no hidden collision.
 - [ ] While ball 1 remains active, human input changes the next aim, a matching
   trajectory remains visible from the cannon view, and ball 2 fires at that new
   tuple before ball 1 settles; capacity disables only Fire.
@@ -169,9 +166,9 @@ evidence and does not satisfy this gate.
   the continuous-paint runner records a real sweep intent before the settled
   body is removed, so the ball/mark frame is reproducible without a foreground
   Godot window.
-- These observations still do not check the full target-wide certificate bundle,
-  certificate-linked previews, or controlled rendered-width measurement; the
-  active recovery gate remains open for those items.
+- These observations did not check the then-planned exhaustive certificate or
+  controlled rendered-width measurement. The certificate item is now retired;
+  this historical recovery gate is not active work.
 
 ## Historical vertical-slice baseline evidence
 
@@ -223,9 +220,6 @@ and legacy screenshot statements.
 
 ### Stages and composition
 
-- [x] First Descent teaches forgiving impact/roll/coverage and has a recorded reliable clear.
-- [x] Burst Basin rewards the upper Burst route and has a recorded reliable clear.
-- [x] Split Ridge offers safe/inefficient and difficult/high-value routes, uses Splitter plus Bumper, targets about 70%, and has a recorded reliable clear.
 - [x] Stage values are loaded from StageData resources, not stage-specific global code.
 - [x] Aiming camera keeps the cannon in the lower foreground at about 15–20% or less of the frame.
 - [x] Mountain dominates the middle/upper frame and reads as a distant large landform.
@@ -287,8 +281,6 @@ and legacy screenshot statements.
   coverage.
 - [x] Rejected authoritative paint commands are recorded in `ShotObservation`
   and force `STAGE_FAILED`; they cannot be silently sealed as a normal result.
-- [ ] Stage 1 has the target-wide `DirectReachabilityCertificate` required for
-  release. The MVP permit intentionally does not satisfy this item.
 - [ ] The user-coordinated running-game visual gate has passed. No headless test
   or concept image may satisfy this item.
 
@@ -319,18 +311,12 @@ Authority and deterministic target terrain:
   slope, lip, spacing, shelf, edge, target-ratio, and mechanism-placement gates.
   Failed candidates are rejected rather than repaired with authored coordinates.
 
-Reachability, aim, and containment:
+Aim and containment:
 
-- [ ] Every target-mask texel has a certificate witness in the canonical manual
-  yaw/elevation/power domain whose predictor and real rigid body first contact
-  the same `terrain/top` cell/triangle within `0.50 m` surface distance. No
-  mechanism-first, shell, apron, wall, bounds, or timeout result is accepted.
-- [ ] Three fresh verification processes reproduce the reachability and real-body
-  checksums exactly. Witness tuples remain certification evidence and are absent
-  from player/agent aim assistance.
-- [ ] First entry and every restart apply the certified witness whose target-top
-  impact is closest to the target-mask centroid and within `8 m`; no StageData,
-  scene, or HUD owner hand-authors a replacement aim.
+- [ ] First entry and every restart apply the generated bounded witness whose
+  target-top impact is near the target-mask centroid; the separate summit
+  witness reaches the global highest playable region. Neither becomes player
+  aim assistance.
 - [ ] Manual play retains independent yaw/elevation/power, empty-playfield drag,
   A/D/W/S, wheel and power buttons, Space/Fire parity, `R` restart, Tab inspect,
   and a depth-tested arc ending at the real first collision. Bounds exit/timeout
@@ -363,11 +349,6 @@ Physical contact, continuous paint, and mechanisms:
   activation neighborhoods. Burst emits one authoritative radial mark, Splitter
   creates exactly three generation-one children with smaller footprints, and
   Bumper follows its displayed tangent/cooldown; no fourth feature exists.
-- [ ] Full solutions clear `4/27/70%` within `4/5/6` shots, Stage 2 requires Burst,
-  Stage 3 requires both Splitter and Bumper, and safe-route-only Stage 3 remains
-  below 70%. No target reduction, hidden target hole, extra shot, or invented
-  special surface is used to pass.
-
 Korean HUD, game menu, visual direction, and approved assets:
 
 - [ ] The logical baseline is 1280×720 with safe-area containers. Rendered
