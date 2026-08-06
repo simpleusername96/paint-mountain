@@ -23,6 +23,9 @@ enum InteractionMode {
 const CAMERA_CLEARANCE := 1.5
 const CORRECTION_SMOOTH_TIME := 0.20
 const SPLIT_FRAME_MARGIN := 1.15
+const AIM_FRAME_MARGIN := 1.15
+const AIM_SUMMIT_HEADROOM := 8.0
+const AIM_SUMMIT_HEIGHT_TOLERANCE := 0.25
 const FOLLOW_RELEASE_RATIO := 0.85
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
@@ -40,6 +43,7 @@ var _camera: Camera3D
 var _stage_data: StageData
 var _projectile_manager: ProjectileManager
 var _terrain_surface: TerrainSurface
+var _cannon_controller: CannonController
 var _desired_position := Vector3.ZERO
 var _desired_focus := Vector3.ZERO
 var _safe_position := Vector3.ZERO
@@ -75,12 +79,14 @@ func configure(
 		camera: Camera3D,
 		stage_data: StageData,
 		projectile_manager: ProjectileManager,
-		terrain_surface: TerrainSurface
+		terrain_surface: TerrainSurface,
+		cannon_controller: CannonController = null
 ) -> void:
 	_camera = camera
 	_stage_data = stage_data
 	_projectile_manager = projectile_manager
 	_terrain_surface = terrain_surface
+	_cannon_controller = cannon_controller
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	set_mode(Mode.BRIEFING, true)
 
@@ -310,17 +316,14 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 			authored = [_stage_data.wide_camera_position, _stage_data.wide_camera_target]
 		Mode.RESULT:
 			authored = [_stage_data.result_camera_position, _stage_data.result_camera_target]
+		Mode.AIMING:
+			authored = [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
 		Mode.CANNON:
 			return [_stage_data.aiming_camera_position + Vector3(7.0, 2.0, 2.0), _stage_data.aiming_camera_target]
 		_:
-			return [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
-	# The aiming composition is deliberately authored. Framing the entire closed
-	# terrain AABB here pushes the cannon too far into the foreground and turns the
-	# target into a flat white wall at the 1280px delivery viewport. Wide/follow
-	# modes still use the safety framer below; planning always keeps the cannon and
-	# the complete mountain silhouette in one readable shot.
-	if mode in [Mode.AIMING, Mode.CANNON]:
-		return authored
+			authored = [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
+	if mode == Mode.AIMING:
+		return _safe_aiming_bookmark(authored)
 	if _terrain_surface == null or _camera == null:
 		return authored
 	var bounds := _terrain_surface.render_world_aabb()
@@ -340,6 +343,61 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 		_camera.fov,
 		aspect_ratio
 	)
+
+
+func _safe_aiming_bookmark(authored: Array[Vector3]) -> Array[Vector3]:
+	if _terrain_surface == null or _camera == null:
+		return authored
+	var interest_points := _aiming_interest_points()
+	if interest_points.is_empty():
+		return authored
+	var viewport_size := _camera.get_viewport().get_visible_rect().size
+	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
+	var focus := _safe_focus(authored[1])
+	if TerrainCameraFramer.pose_fits_points(
+			interest_points,
+			authored[0],
+			focus,
+			_camera.fov,
+			aspect_ratio,
+			AIM_FRAME_MARGIN
+	):
+		return [authored[0], focus]
+	return TerrainCameraFramer.framed_pose_around_points(
+		interest_points,
+		focus,
+		authored[0],
+		authored[1],
+		_camera.fov,
+		aspect_ratio,
+		AIM_FRAME_MARGIN
+	)
+
+
+func _aiming_interest_points() -> PackedVector3Array:
+	if _terrain_surface == null:
+		return PackedVector3Array()
+	var interest := _terrain_surface.playable_top_world_points()
+	if interest.is_empty():
+		return interest
+	var maximum_height := -INF
+	for point in interest:
+		maximum_height = maxf(maximum_height, point.y)
+	var top_point_count := interest.size()
+	for point_index in range(top_point_count):
+		var point := interest[point_index]
+		if point.y >= maximum_height - AIM_SUMMIT_HEIGHT_TOLERANCE:
+			interest.append(point + Vector3.UP * AIM_SUMMIT_HEADROOM)
+	var layout := _terrain_surface.layout_read_only()
+	if layout != null:
+		for summit in layout.summit_region(AIM_SUMMIT_HEIGHT_TOLERANCE):
+			var summit_point := _terrain_surface.to_global(summit.point as Vector3)
+			interest.append(summit_point)
+			interest.append(summit_point + Vector3.UP * AIM_SUMMIT_HEADROOM)
+	if _cannon_controller != null:
+		interest.append(_cannon_controller.global_position)
+		interest.append(_cannon_controller.get_launch_origin())
+	return interest
 
 
 func _move_to(position: Vector3, target: Vector3, immediate: bool) -> void:
@@ -503,6 +561,13 @@ func _update_rendered_camera(delta: float) -> void:
 	if current_mode == Mode.FOLLOW and not view_ray_is_clear(
 			corrected, target_focus, _focus_is_terrain(target_focus)
 	):
+		corrected = safe_position_for(corrected, target_focus, _focus_is_terrain(target_focus))
+	elif not corrected.is_equal_approx(target_position) and not view_ray_is_clear(
+			corrected, target_focus, _focus_is_terrain(target_focus)
+	):
+		# Safe fixed-mode endpoints can still interpolate through a ridge after
+		# Aim Lock has backed away substantially. Correct only transitional
+		# frames; settled poses retain the 15 Hz cached safety path above.
 		corrected = safe_position_for(corrected, target_focus, _focus_is_terrain(target_focus))
 	_camera.global_position = corrected
 	if not corrected.is_equal_approx(target_focus):

@@ -28,6 +28,8 @@ func _run() -> void:
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
 		"Target coverage must have one owner in the left coverage meter"
 	)
+	var coverage_caption := hud_root.get_node("CoverageMeter/Content/CoverageCaption") as Label
+	_assert_true(coverage_caption.text == "hud.coverage", "CoverageMeter must retain the shared target-area caption key")
 
 	hud.show_state(StageController.State.AIMING)
 	_assert_true(not replay.visible and actions.visible and status.visible, "normal Aiming must expose Fire and edge status without replay controls")

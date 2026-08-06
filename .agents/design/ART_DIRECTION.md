@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 canonical_for: Paint Mountain world art style, visual composition, and gameplay-object legibility
 scope: procedural mountain, wall, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
 source: ../../docs/source-brief.md
@@ -13,6 +13,7 @@ related:
   - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
 ---
 
 # Paint Mountain Art Direction
@@ -61,6 +62,11 @@ owned by `UIUX_GUIDELINES.md`.
 ### Composition and depth
 
 - The mountain dominates the middle and upper frame from the aiming view.
+- Aim Lock starts from its authored pose. When the playable top, summit
+  headroom, cannon, and muzzle do not fit its safe frame, project the exact
+  playable-top points and move only farther along that authored view direction
+  at the same FOV; never frame the support shell, follow the prediction, widen
+  FOV, or add per-stage camera repairs.
 - Show several front-to-back route layers and enough top, front, and side area
   to communicate volume.
 - Perspective, occlusion, face-value changes, cast shadows, and camera parallax
@@ -77,6 +83,9 @@ owned by `UIUX_GUIDELINES.md`.
 
 - Rear wall: warm bright off-white.
 - Dry mountain: slightly darker warm off-white with flat-shaded facets.
+- Dry Target Area: a perceptible but neutral surface distinction on playable
+  top, subordinate to blue paint, the trajectory, and mechanisms; it explains
+  score eligibility without reading as a second paint state or an outline.
 - Support faces: visibly separated in value from playable upper faces so the
   mass reads as thick.
 - Paint: saturated glossy blue, surface-bound, readable at distance, and not

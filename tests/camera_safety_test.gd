@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 var _failed := false
 
@@ -31,13 +31,17 @@ func _run() -> void:
 		var stage := catalog[stage_index]
 		print("Camera safety fixture started for %s." % stage.stage_id)
 		game_state.selected_stage_id = stage.stage_id
-		var gameplay := GAMEPLAY_SCENE.instantiate()
+		var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(stage.stage_id)
+		_assert_true(gameplay != null, "%s must instantiate from its accepted baked layout" % stage.stage_id)
+		if gameplay == null:
+			continue
 		root.add_child(gameplay)
 		await physics_frame
 		await physics_frame
 		var camera: Camera3D = gameplay.get_node("Camera")
 		var director: CameraDirector = gameplay.get_node("CameraDirector")
 		var terrain: TerrainSurface = gameplay.get_node("TerrainSurface")
+		var cannon: CannonController = gameplay.get_node("Cannon")
 		print("Camera safety: briefing fixtures.")
 		_assert_true(
 			director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
@@ -51,6 +55,7 @@ func _run() -> void:
 		for mode in [CameraDirector.Mode.AIMING, CameraDirector.Mode.RESULT]:
 			director.set_mode(mode)
 			await _sample_camera(camera, director, terrain, 6, "%s bookmark %s" % [stage.stage_id, CameraDirector.Mode.keys()[mode]])
+		_assert_safe_aiming_frame(stage, camera, director, terrain, cannon)
 		print("Camera safety: bookmarks complete.")
 		for mechanism in gameplay.get_node("Mechanisms").get_children():
 			director.set_mode(CameraDirector.Mode.BRIEFING, true)
@@ -118,6 +123,83 @@ func _assert_clearance(position: Vector3, terrain: TerrainSurface, label: String
 		return
 	var surface_y := terrain.world_surface_point(Vector2(position.x, position.z)).y
 	_assert_true(position.y - surface_y >= 1.5 - 0.001, "%s camera clearance is %.3fm" % [label, position.y - surface_y])
+
+
+func _assert_safe_aiming_frame(
+		stage: StageData,
+		camera: Camera3D,
+		director: CameraDirector,
+		terrain: TerrainSurface,
+		cannon: CannonController
+) -> void:
+	director.set_mode(CameraDirector.Mode.AIMING, true)
+	var focus := director.camera_focus_position()
+	var interest_points := _safe_top_points(terrain)
+	interest_points.append(cannon.global_position)
+	interest_points.append(cannon.get_launch_origin())
+	_assert_true(
+		TerrainCameraFramer.pose_fits_points(
+			interest_points,
+			camera.global_position,
+			focus,
+			camera.fov,
+			16.0 / 9.0,
+			CameraDirector.AIM_FRAME_MARGIN
+		),
+		"%s Aim Lock must retain the playable top and summit headroom in its safe frame" % stage.stage_id
+	)
+	_assert_points_inside_frustum(
+		"%s cannon landmarks" % stage.stage_id,
+		[cannon.global_position, cannon.get_launch_origin()],
+		camera.global_position,
+		focus,
+		camera.fov
+	)
+	_assert_true(
+		is_equal_approx(camera.fov, 48.0),
+		"%s Aim Lock must retain the authored 48-degree FOV" % stage.stage_id
+	)
+
+
+func _assert_points_inside_frustum(
+		label: String,
+		points,
+		camera_position: Vector3,
+		focus: Vector3,
+		vertical_fov_degrees: float
+) -> void:
+	var forward := (focus - camera_position).normalized()
+	var reference_up := Vector3.FORWARD if absf(forward.dot(Vector3.UP)) > 0.98 else Vector3.UP
+	var right := forward.cross(reference_up).normalized()
+	var up := right.cross(forward).normalized()
+	var vertical_tangent := tan(deg_to_rad(vertical_fov_degrees * 0.5))
+	var horizontal_tangent := vertical_tangent * (16.0 / 9.0)
+	for point_value in points:
+		var point: Vector3 = point_value
+		var relative: Vector3 = point - camera_position
+		var depth: float = relative.dot(forward)
+		_assert_true(depth > 0.0, "%s point must remain in front of the camera" % label)
+		_assert_true(absf(relative.dot(right)) <= depth * horizontal_tangent + 0.002, "%s point must fit horizontally" % label)
+		_assert_true(absf(relative.dot(up)) <= depth * vertical_tangent + 0.002, "%s point must fit vertically" % label)
+
+
+func _safe_top_points(terrain: TerrainSurface) -> PackedVector3Array:
+	var result := terrain.playable_top_world_points()
+	var maximum_height := -INF
+	for point in result:
+		maximum_height = maxf(maximum_height, point.y)
+	var top_point_count := result.size()
+	for point_index in range(top_point_count):
+		var point := result[point_index]
+		if point.y >= maximum_height - CameraDirector.AIM_SUMMIT_HEIGHT_TOLERANCE:
+			result.append(point + Vector3.UP * CameraDirector.AIM_SUMMIT_HEADROOM)
+	var layout := terrain.layout_read_only()
+	if layout != null:
+		for summit in layout.summit_region(CameraDirector.AIM_SUMMIT_HEIGHT_TOLERANCE):
+			var summit_point := terrain.to_global(summit.point as Vector3)
+			result.append(summit_point)
+			result.append(summit_point + Vector3.UP * CameraDirector.AIM_SUMMIT_HEADROOM)
+	return result
 
 
 func _assert_true(condition: bool, message: String) -> void:

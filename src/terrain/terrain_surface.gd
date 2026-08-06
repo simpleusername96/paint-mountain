@@ -10,12 +10,14 @@ const NORMAL_TERRAIN_PHYSICS_MATERIAL := preload(
 
 var _layout: GeneratedStageLayout
 var _geometry: TerrainGeometry
+var _playable_top_world_points := PackedVector3Array()
 
 
 func configure(layout: GeneratedStageLayout) -> void:
 	assert(layout != null and layout.is_valid(), "TerrainSurface requires a valid generated layout.")
 	_layout = layout
 	_geometry = TerrainGeometryFactory.build(layout)
+	_playable_top_world_points = _build_playable_top_world_points()
 	var terrain_mesh := get_node_or_null("TerrainMesh") as MeshInstance3D
 	var top_body := get_node_or_null("TerrainTopBody") as StaticBody3D
 	var top_collision := get_node_or_null("TerrainTopBody/CollisionShape3D") as CollisionShape3D
@@ -84,6 +86,33 @@ func render_world_aabb() -> AABB:
 	if _geometry == null or _geometry.render_mesh == null:
 		return AABB()
 	return global_transform * _geometry.render_mesh.get_aabb()
+
+
+## Canonical active-top vertices for exact projection checks. The packed array
+## is duplicated so callers cannot mutate TerrainSurface's cached geometry.
+func playable_top_world_points() -> PackedVector3Array:
+	return _playable_top_world_points.duplicate()
+
+
+func _build_playable_top_world_points() -> PackedVector3Array:
+	if _layout == null or _layout.top_topology == null:
+		return PackedVector3Array()
+	var topology := _layout.top_topology
+	var seen_source_indices: Dictionary = {}
+	var result := PackedVector3Array()
+	for cell_z in range(_layout.cell_count.y):
+		for cell_x in range(_layout.cell_count.x):
+			var cell := Vector2i(cell_x, cell_z)
+			if not topology.is_cell_active(cell):
+				continue
+			for triangle_in_cell in range(TerrainTopTopology.TRIANGLES_PER_CELL):
+				var indices := topology.triangle_vertex_indices(cell, triangle_in_cell)
+				for source_index in [indices.x, indices.y, indices.z]:
+					if seen_source_indices.has(source_index):
+						continue
+					seen_source_indices[source_index] = true
+					result.append(to_global(topology.vertex_at(source_index)))
+	return result
 
 
 func classify_top_hit(

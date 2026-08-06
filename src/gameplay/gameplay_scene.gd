@@ -56,7 +56,7 @@ func _ready() -> void:
 	if not _build_stage_world():
 		return
 	_connect_systems()
-	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface)
+	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface, _cannon)
 	_trajectory_preview.configure(_cannon)
 	_hud.configure(stage_data)
 	if not _stage_controller.configure(

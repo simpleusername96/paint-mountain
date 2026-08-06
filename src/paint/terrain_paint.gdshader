@@ -38,21 +38,20 @@ void fragment() {
 	)) {
 		discard;
 	}
-	vec2 texel = vec2(1.0 / 512.0);
 	float target = step(0.5, texture(target_mask, UV).r) * paintable_surface;
 	// Every physically traversed mountain-top texel stays visibly painted. The
 	// target mask classifies scoreable coverage; it does not erase valid paint.
 	float center = texture(paint_mask, UV).r * paintable_surface;
-	float neighbor = max(
-		max(texture(paint_mask, UV + vec2(texel.x * 1.5, 0.0)).r, texture(paint_mask, UV - vec2(texel.x * 1.5, 0.0)).r),
-		max(texture(paint_mask, UV + vec2(0.0, texel.y * 1.5)).r, texture(paint_mask, UV - vec2(0.0, texel.y * 1.5)).r)
-	) * paintable_surface;
-	float painted = smoothstep(0.08, 0.32, center);
-	float dark_rim = clamp(smoothstep(0.06, 0.24, neighbor) - painted, 0.0, 1.0);
-	float wet_core = smoothstep(0.34, 0.72, center);
+	// PaintSystem only counts texels at or above 0.5. Match that boundary in
+	// the visible fill so filtered edge samples cannot form an unscored blue halo.
+	float painted = step(0.5, center);
+	float wet_core = smoothstep(0.5, 0.72, center);
 	float rock_luma = dot(rock_color.rgb, vec3(0.2126, 0.7152, 0.0722));
-	vec3 nontarget_rock = mix(rock_color.rgb, vec3(rock_luma), 0.08) * 0.97;
-	vec3 classified_rock = mix(nontarget_rock, rock_color.rgb, target);
+	// Target Area is a neutral value cue: it remains quieter than blue paint,
+	// trajectory, and mechanisms while being identifiable before the first shot.
+	vec3 nontarget_rock = mix(rock_color.rgb, vec3(rock_luma), 0.22) * 0.92;
+	vec3 target_rock = rock_color.rgb * 1.06;
+	vec3 classified_rock = mix(nontarget_rock, target_rock, target);
 	// Vertex color is the canonical geometry classification: white is the
 	// paintable mountain top and black is the support shell/bottom. A steep but
 	// rollable top must not collapse to the same dark value as a vertical skirt.
@@ -62,7 +61,7 @@ void fragment() {
 		* mix(0.965, 1.035, facet_tone);
 	vec3 dry_rock = mix(support_rock, top_rock, paintable_surface);
 	vec3 painted_color = mix(paint_color.rgb * 0.58, paint_color.rgb, painted);
-	ALBEDO = mix(dry_rock, painted_color, max(painted, dark_rim));
+	ALBEDO = mix(dry_rock, painted_color, painted);
 	ROUGHNESS = mix(0.88, 0.24, painted);
 	SPECULAR = mix(0.32, 0.72, wet_core);
 	METALLIC = 0.0;

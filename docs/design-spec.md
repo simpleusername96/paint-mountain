@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -16,6 +16,7 @@ related:
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../.agents/execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
+  - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
 ---
 
 # Paint Mountain Design Specification
@@ -56,7 +57,13 @@ exactly three mechanism types.
 
 - Cannon length is roughly 2–3 m; target distance 70–150 m; mountain width 120–250 m and height 60–140 m.
 - In the perspective aiming view, the cannon stays in the lower foreground at no more than about 15–20% of the frame; the mountain dominates the middle and upper frame.
-- Briefing begins in map inspection with a limited three-quarter orbit/zoom; Aim Lock restores the authored aiming camera; result uses a restrained three-quarter reveal.
+- Briefing begins in map inspection with a limited three-quarter orbit/zoom. Aim
+  Lock uses its authored pose when the exact playable-top points, summit
+  headroom, cannon, and muzzle fit its safe frame; otherwise it retains the
+  authored focus and applies one deterministic same-direction, same-FOV
+  distance correction. It never frames the support shell, follows prediction
+  changes, widens FOV, or relies on manual per-stage repairs. Result uses a
+  restrained three-quarter reveal.
 - Map inspection must keep the whole mountain explorable without terrain clipping or rapid cuts. It does not follow projectiles or switch to preset camera views.
 
 ### Controls and information
@@ -135,8 +142,10 @@ exactly three mechanism types.
   rendered/collidable triangle. Visual paint and scored paint cannot diverge;
   paint outside the target mask remains visible but does not increase coverage.
 - Coverage is target-mask texels at or above the paint threshold divided by all
-  target-mask texels. Overlap counts once and the UI presents that authoritative
-  percentage without a second coverage representation.
+  target-mask texels. Overlap counts once. Dry Target Area terrain is
+  perceptibly but neutrally distinguished before firing, while `목표 영역`/`TARGET
+  AREA` names the authoritative HUD/result percentage without a second coverage
+  representation.
 
 ### Mechanisms
 

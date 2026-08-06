@@ -123,14 +123,14 @@ func _assert_control_inside_viewport(control: Control, label: String) -> void:
 func _assert_translation_contract(locale: String) -> void:
 	var required := [
 		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
-		"hud.coverage_format", "hud.summary_split", "hud.summary_balls",
+		"hud.coverage", "hud.coverage_format", "hud.summary_split", "hud.summary_balls",
 		"hud.summary_direct", "hud.first_hint", "hud.aim_lock", "hud.map_inspection",
 		"hud.switch_to_map_inspection", "hud.switch_to_aim_lock", "mechanism.burst.description",
 		"hud.time", "hud.resident_balls", "hud.resident_activity_format", "hud.resident_total_format", "hud.wind",
 		"hud.wind_right", "hud.wind_into_screen", "hud.wind_out_of_screen",
 		"hud.wind_strength_format", "hud.wind_change_format", "hud.wind_next_format",
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
-		"result.completed", "result.time_expired", "result.grade", "result.elapsed",
+		"result.completed", "result.time_expired", "result.final", "result.grade", "result.elapsed",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
 		"settings.reduced_motion",
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
@@ -141,11 +141,20 @@ func _assert_translation_contract(locale: String) -> void:
 	for key in required:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
 	if locale == "ko":
+		_assert_true(tr("hud.coverage") == "목표 영역", "Korean coverage caption must name the target area")
+		_assert_true(tr("hud.coverage_format") == "목표 영역 %.1f%% / 목표 %.1f%%", "Korean coverage format must distinguish the target area from its goal")
+		_assert_true(tr("hud.finish_tooltip") == "목표 영역 칠함으로 완료 (F)", "Korean Finish tooltip must state that it scores target-area coverage")
+		_assert_true(tr("result.final") == "최종 목표 영역", "Korean result caption must name target coverage")
 		_assert_true(tr("stage.first_descent.objective") == "넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.", "First Descent Korean copy must describe rolling contact paint")
 		_assert_true(tr("stage.split_ridge.objective") == "분열과 오르막 반동 문양으로 세 갈래 경로를 모두 공략하세요.", "Split Ridge Korean copy must name the surface glyphs")
 		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 목표 표면에 넓은 자국을 칠합니다.", "Burst Korean copy must match continuous-paint terminology")
 		_assert_true(tr("mechanism.splitter.description") == "각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.", "Splitter Korean copy must describe independent painters")
 		_assert_true(tr("mechanism.uphill_rebound.description") == "공을 지형에서 가장 높은 오르막 방향으로 다시 튕겨 보냅니다.", "Uphill Rebound Korean copy must explain its useful direction")
+	else:
+		_assert_true(tr("hud.coverage") == "TARGET AREA", "English coverage caption must name the target area")
+		_assert_true(tr("hud.coverage_format") == "Target area %.1f%% / Goal %.1f%%", "English coverage format must distinguish the target area from its goal")
+		_assert_true(tr("hud.finish_tooltip") == "Finish and score target-area coverage (F)", "English Finish tooltip must state that it scores target-area coverage")
+		_assert_true(tr("result.final") == "FINAL TARGET COVERAGE", "English result caption must name target coverage")
 
 
 func _assert_true(condition: bool, message: String) -> void:

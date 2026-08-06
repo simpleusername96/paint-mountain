@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, replay, and verification
 source: source-brief.md
@@ -16,6 +16,7 @@ related:
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
 ---
 
 # Technical Architecture
@@ -46,7 +47,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target and summit identities, bounded default/summit witnesses, optional certificate metadata, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
 | `MechanismPlacementGenerator` | Exact role-owned centerline shelf transform and candidate validation | Placement scoring, alternate cells, activation behavior, or stage outcomes |
 | `TerrainGeometryFactory` | One exact indexed top-triangle list plus closed shell render/collision resources from the accepted layout | Independent triangulation, height interpolation, stage generation, orchestration, or paint state |
-| `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/bounds queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
+| `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/playable-top point queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
 | `BackstopEnvironment` | Collider-matched visible rear wall, faceted apron, stable contact IDs, and containment construction | Scoring, hidden kill planes, bank-shot behavior, or stage outcomes |
 | `AimInputController` | Interaction-mode-aware mouse/keyboard mapping to yaw/elevation/power, Fire, inspection orbit/refocus, and zoom intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
 | `TrajectoryPredictor` | Read-only complete pre-impact sphere prediction using the authoritative wind schedule through first collision/bounds exit | Device input, post-impact behavior, mechanisms, or coverage prediction |
@@ -63,7 +64,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `UphillReboundNode` | Redirect a retained ball toward a stored meaningful local ascent with cooldown | Direct coverage changes |
 | `WindProfile` | Typed wind cadence, transition, strength, and wake tuning | Runtime phase, random state, HUD formatting, or projectile mutation |
 | `WindController` | One stage-seeded fixed-tick current/next wind schedule and strong-episode identity | Camera projection, HUD layout, stage terminal decisions, or duplicated physics rules |
-| `CameraDirector` | `AIM_LOCKED`/`MAP_INSPECTION` interaction mode, authored aim pose, safe inspection orbit/refocus/zoom, and transitions | Board Phase, aim values, Fire admission, or game rules |
+| `CameraDirector` | `AIM_LOCKED`/`MAP_INSPECTION` interaction mode, authored-first safe Aim Lock pose, safe inspection orbit/refocus/zoom, and transitions | Board Phase, aim values, Fire admission, prediction-driven framing, or game rules |
 | `HUDController` and screen controllers | Display Board Phase/readiness/activity and emit typed aim, fire, and game-menu intents | Reconstruct Fire admission, authoritative state mutation, direct pause/settings mutation, or alternate coverage |
 | `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, fail-closed repository scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
@@ -113,6 +114,10 @@ This architecture covers the single-process desktop game. It does not define a b
 - `TerrainGeometry` carries the render mesh, exact concave top shape, identical
   skirt/bottom faces, triangle/cell identity, bounds, cell/base dimensions, and
   parity counts derived by `TerrainGeometryFactory`.
+- `TerrainSurface` caches deduplicated world points from canonical playable-top
+  vertices only. Aim Lock projects that exact point set, not independent AABB
+  extrema, and excludes the skirt, shell, bottom, apron, wall, mechanisms, and
+  decoration from its framing input.
 - `ProjectileContact` carries each real begun direct-body contact point, world
   normal, incoming velocity, relative normal speed, impulse plus measured/
   estimated provenance, stable owner/shape identity, runtime shapes, tick, and
@@ -169,6 +174,13 @@ Human / Replay / GameplayAgentApi actions
   `AIM_LOCKED` and `MAP_INSPECTION`. Only Aim Lock forwards aim/Fire input. Map
   Inspection forwards click-refocus, orbit, and zoom. Switching modes preserves
   the current aim and prediction.
+- `CameraDirector` tests the exact authored Aim Lock pose against canonical
+  playable-top points, summit points and headroom, cannon, and muzzle. If they
+  do not fit, it retains the authored focus and applies a deterministic
+  distance-only correction along the authored view direction at the unchanged
+  FOV; it never reads live prediction, render-shell bounds, or per-stage repair
+  coordinates. Fixed-mode transition frames reuse the existing terrain-ray
+  safety correction so interpolation cannot cross a ridge.
 - Restart first blocks new actions, cancels camera and wind transitions, frees
   managed temporary objects, resets mechanisms and timers, clears paint/effects,
   reapplies immutable data, then enters `BRIEFING` or the chosen retry state.
@@ -190,7 +202,9 @@ Human / Replay / GameplayAgentApi actions
   readback or second coverage representation is used during play.
 - Maintain a read-only `target_mask` in the same UV/world XZ mapping. Coverage is
   painted target texels divided by all target texels and therefore counts overlap
-  once without recurring scans.
+  once without recurring scans. The terrain shader may use that same immutable
+  classification to neutrally distinguish dry Target Area terrain, but it does
+  not create another paint or coverage representation.
 - Queue surface sweeps and radial marks during physics, canonicalize them through
   stable tick/spawn/source/sequence order, drain at one late fixed-physics
   boundary, reconstruct candidates on the exact shared triangle, and upload at

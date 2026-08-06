@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -15,6 +15,7 @@ related:
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-06-command-columns-hud.md
+  - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -60,7 +61,7 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Stage card | Upper-left | Primary stage identity |
 | Interaction-mode chip and toggle | Below Stage | Shows `Aim Lock` or `Map Inspection`; the focusable toggle and Tab switch modes |
 | Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Readable run state without covering the mountain; Gear remains the menu action |
-| Coverage gauge | Left edge | Sole coverage owner; absolute coverage fills bottom-to-top and shows target |
+| Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
 | Aim and power | Lower-left | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
@@ -83,8 +84,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Gameplay remains in the aiming Board Phase while the player switches between
   `Aim Lock` and `Map Inspection`; this is a presentation/input state, not a
   separate stage flow.
-- In Aim Lock, the authored aiming view is restored. Left drag adjusts
-  yaw/elevation, the wheel adjusts power, keyboard aiming and Fire are enabled.
+- In Aim Lock, the authored aiming view is restored when its safe frame already
+  contains the exact playable-top points, summit headroom, cannon, and muzzle.
+  Otherwise the camera receives one deterministic same-direction, same-FOV
+  distance correction while retaining the authored focus; prediction changes
+  never move it. Left drag adjusts yaw/elevation, the wheel adjusts power,
+  keyboard aiming and Fire are enabled.
 - In Map Inspection, terrain click changes the inspection focus, left drag
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
@@ -116,8 +121,10 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Time, resident-ball activity, wind, interaction mode, and Finish availability
   are displayed from their authoritative owners. The HUD does not run a second
   timer, wind schedule, or camera/input state machine.
-- Coverage always means absolute painted eligible area. Its percentage, rail,
-  and target label must agree.
+- Target Coverage means unique painted Target Area texels divided by all Target
+  Area texels. Valid non-target top paint remains visible but is not scored; the
+  dry Target Area cue and HUD copy `목표 영역`/`TARGET AREA` make that boundary
+  clear. Its percentage, rail, and target marker must agree.
 - Shots, target, angle, power, and Fire validity update from their authoritative
   owners without duplicated formulas.
 - Icons supplement meaning. Rare, destructive, or menu actions retain visible
