@@ -11,8 +11,10 @@ related:
   - ART_DIRECTION.md
   - VISUAL_REFERENCES.md
   - ../../docs/design-spec.md
+  - ../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../execplans/2026-08-06-command-columns-hud.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -43,6 +45,13 @@ state.
 ## Requirements
 
 ### Aiming HUD hierarchy
+
+The user-selected `command-columns-hud.png` is the current aiming-HUD visual
+direction. Use its narrow left command column, narrow right status column,
+restrained warm surfaces, centered Fire action, and compact typography rhythm.
+The generated still does not remove real controls or state: Gear remains beside
+the right rail, and direction, power steps, dynamic wind detail, focus, disabled
+states, and Map Inspection remain supported.
 
 At the 1280x720 logical baseline, preserve this relative hierarchy:
 
@@ -116,6 +125,13 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   treatment.
 - Disabled, hover, pressed, focused, selected, paused, clear, and failed states
   remain visually stable. Do not communicate a state by color alone.
+- Repeated presentational structures use shared component scenes. A scene that
+  composes a component may set its supplied text, value, visibility, and layout;
+  it must not copy the component's font, color, radius, border, or interaction
+  state styling.
+- `HUDController` owns whole-HUD state presentation and signal coordination.
+  Child component scripts own only their displayed structure and narrow intent;
+  no component reads a gameplay singleton to reconstruct authoritative state.
 
 ### Layout and tokens
 
@@ -127,8 +143,16 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Panels use the established restrained 12 px radius; primary actions use 16 px.
   Do not add nested bordered/background containers beyond two visible levels
   without a clear containment reason.
-- Base text is 16 px and the primary action is 20 px at the logical baseline.
-  Scale hierarchy intentionally rather than shrinking text to fit.
+- Pretendard Variable weight and size roles are Theme-owned semantic type
+  variations: `HudCaption` is 14 px/500, `HudBody` 16 px/500, `HudSection`
+  18 px/600, `HudValue` 22 px/600, `HudMetric` 28 px/600,
+  `PrimaryButton` 20 px/600, and `ScreenTitle` 32 px/700 at the logical
+  baseline. Default body copy remains at least 16 px. Scale hierarchy
+  intentionally rather than shrinking text to fit.
+- Theme variations own reusable font, weight, size, color, panel, button,
+  separator, icon-state, and focus decisions. Scene-level overrides are for
+  layout-only margins, gaps, anchors, and exceptional geometry; do not repeat
+  palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
 - Keyboard focus uses the shared visible 2 px accent treatment.
@@ -180,6 +204,8 @@ record any capture limitation instead of claiming visual conformance.
 - UI-owned game rules, paint calculations, trajectory simulation, or stage
   progression.
 - One-off fonts, colors, panels, or icons that bypass shared project resources.
+- Literal copying of generated world pixels, fake state, omitted real controls,
+  or accidental artifacts from `command-columns-hud.png`.
 
 ## Related
 

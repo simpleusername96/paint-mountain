@@ -2,7 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-06
 topic: Paint Mountain visual references and anti-references
 scope: provenance, authority, and permitted interpretation of project visual evidence
 source: ../../docs/handoffs/gameplay-visual-reset-2026-08-03/source-map.md
@@ -49,6 +49,26 @@ concepts, or asset previews from silently becoming product requirements.
 - Do not use as: a runtime screenshot, feasibility proof, literal geometry,
   exact HUD contract, stage seed, mechanism placement, or acceptance evidence.
 
+### Selected aiming-HUD direction
+
+![Selected Command Columns HUD](../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+
+- Image: [Command Columns HUD](../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+- Provenance: generated from the current Stage 30 running render and selected by
+  the user on 2026-08-06 for implementation.
+- SHA-256:
+  `1B4AF8DDFF91D5A23238296EC3C886F17CA18E2FC00F2FA93811B50EEEEDCA0F`.
+- Use for: the aiming HUD's narrow left command column, narrow right segmented
+  status rail, bottom-left aim group, bottom-center Fire action, warm restrained
+  panel treatment, and compact Korean typography rhythm.
+- Preserve from runtime/spec even when omitted or simplified in the image:
+  focusable Gear, direction value, power-step controls, Aim Lock/Map Inspection,
+  dynamic wind detail, disabled/readiness states, and authoritative live values.
+- Do not use as: world-render authority, literal stage/mechanism placement,
+  runtime proof, a reason to fake state, or permission to remove functionality.
+- The sibling `quiet-edge-hud.png` and `instrument-rail-hud.png` remain rejected
+  alternatives for this implementation, not active directions.
+
 ### Historical anti-reference
 
 ![Rejected historical build capture](../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/02-current-build.png)
@@ -89,8 +109,8 @@ concepts, or asset previews from silently becoming product requirements.
 - Blue paint and trajectory provide the strongest saturated gameplay contrast;
   environment and UI stay restrained.
 - The HUD is visually secondary and edge-aligned, but its current canonical
-  layout comes from later user decisions in `UIUX_GUIDELINES.md`, not the
-  primary image's literal controls.
+  layout comes from the user-selected Command Columns direction as interpreted
+  by `UIUX_GUIDELINES.md`, not the primary image's literal controls.
 - Existing screenshots and scenes can be useful implementation evidence while
   still being wrong as design direction.
 
