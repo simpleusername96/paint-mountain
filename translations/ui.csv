@@ -35,12 +35,12 @@ ui.replay,REPLAY ATTEMPT,플레이 다시 보기
 ui.stages,STAGES,스테이지
 ui.choose_mountain,CHOOSE A MOUNTAIN,산을 선택하세요
 hud.stage,STAGE,스테이지
-hud.target,TARGET COVERAGE,목표 면적
+hud.target,TARGET,목표
 hud.coverage,COVERAGE,칠한 면적
 hud.shots,SHOTS LEFT,남은 탄
 hud.time,TIME,남은 시간
-hud.resident_balls,BALLS,공 상태
-hud.resident_activity_format,Moving %d · Resting %d,움직임 %d · 멈춤 %d
+hud.resident_balls,BALLS,공 움직임
+hud.resident_activity_format,%d · Resting %d,%d · 멈춤 %d
 hud.resident_total_format,Resident %d,지형 위 공 %d
 hud.wind,WIND,바람
 hud.wind_waiting,WIND READY,바람 준비

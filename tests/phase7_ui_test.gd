@@ -147,6 +147,18 @@ func _assert_theme_contract() -> void:
 	_assert_true(primary.corner_radius_top_left == 16, "primary radius must be 16px")
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
+	for variation in [
+		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"ScreenTitle",
+	]:
+		_assert_true(theme.is_type_variation(variation, &"Label"), "%s must be a shared Label variation" % variation)
+	for variation in [&"HudModeButton", &"HudIconButton", &"HudFinishButton", &"PrimaryButton"]:
+		_assert_true(theme.is_type_variation(variation, &"Button"), "%s must be a shared Button variation" % variation)
+	var caption_font := theme.get_font(&"font", &"HudCaption") as FontVariation
+	var section_font := theme.get_font(&"font", &"HudSection") as FontVariation
+	var title_font := theme.get_font(&"font", &"ScreenTitle") as FontVariation
+	_assert_true(caption_font != null and int(caption_font.variation_opentype.get("weight", 0)) == 500, "HUD captions must use Theme-owned Pretendard weight 500")
+	_assert_true(section_font != null and int(section_font.variation_opentype.get("weight", 0)) == 600, "HUD sections must use Theme-owned Pretendard weight 600")
+	_assert_true(title_font != null and int(title_font.variation_opentype.get("weight", 0)) == 700, "screen titles must use Theme-owned Pretendard weight 700")
 
 
 func _assert_aiming_hud_contract(hud_root: Control) -> void:
@@ -193,6 +205,6 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var settings_rect := settings.get_global_rect()
 	_assert_true(status_rect.get_center().x > hud_center.x and status_rect.size.x < hud_rect.size.x * 0.25, "run state must stay in one compact right-edge card")
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
-	_assert_true(status_rect.position.y >= settings_rect.end.y, "settings and run status must remain separate, ordered controls")
+	_assert_true(settings_rect.end.x <= status_rect.position.x, "settings must remain separate and immediately precede the right status rail")
 	for control in [coverage, fire, status, settings]:
 		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

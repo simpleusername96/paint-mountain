@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-06
 scope: shared Godot UI theme/component consolidation and Command Columns aiming HUD implementation
 related:
@@ -182,7 +182,7 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
 `scenes/ui/components/hud_metric.tscn`, `src/ui/components/hud_metric.gd`,
 `tests/phase7_ui_test.gd`
 
-- [ ] **1.1** Theme-owned semantic typography and control styles
+- [x] **1.1** Theme-owned semantic typography and control styles
   - Change: add the locked Pretendard weight resources and semantic Theme type
     variations for HUD labels, values, panels, segmented surfaces, icon buttons,
     separators, and primary actions. Preserve the existing global theme path and
@@ -191,15 +191,22 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
     of its base control, and affected HUD scenes need no local color/font/icon
     state styling.
   - Guard: base Button/Panel behavior and the existing DebugPanel remain valid.
-- [ ] **1.2** Reusable metric component
+  - Evidence (2026-08-06): Godot 4.7.1 loaded the Theme; the focused Theme
+    contract verified semantic Label/Button variations and 500/600/700 weights.
+- [x] **1.2** Reusable metric component
   - Change: add one typed, presentational `HudMetric` component with caption and
     value setters plus theme variations; it must not translate arbitrary runtime
     values, own a timer, or read gameplay singletons.
   - Accept: three instances can carry independent captions/values and expose no
     gameplay mutation signal.
-- [ ] **1.3** Foundation parse/import checkpoint
+  - Evidence (2026-08-06): `HudMetric` is presentational only; the status tests
+    updated and read independent Time, Shots, and Activity instances.
+- [x] **1.3** Foundation parse/import checkpoint
   - Change: run one Godot editor import/parse check after 1.1 and 1.2 are merged.
   - Accept: the command exits zero with no `SCRIPT ERROR` or `ERROR:` line.
+  - Evidence (2026-08-06): the editor import/parse command exited 0 and
+    registered `HudMetric`, `CameraInteractionControl`, `CoverageMeter`, and
+    `RunStatusCard` without script/runtime errors.
 
 Phase gate:
 
@@ -220,14 +227,17 @@ Preconditions:
 Source owners: `scenes/ui/hud/*.tscn`, `src/ui/hud/*.gd`,
 `src/ui/hud_controller.gd`, focused HUD tests
 
-- [ ] **2.1** Upper-left command and coverage column
+- [x] **2.1** Upper-left command and coverage column
   - Change: restyle and arrange Stage, interaction mode, and absolute vertical
     coverage as one narrow upper-left command column. Use the existing target
     icon for the mode control and Theme-owned component variations.
   - Accept: Stage and mode read as one coherent command group; the mode remains
     focusable and Tab-switchable; coverage remains the sole current/target owner
     and fills bottom-to-top.
-- [ ] **2.2** Compact lower-left aim and centered Fire
+  - Evidence (2026-08-06): the 1280x720 Stage 30 capture shows the joined Stage
+    and Aim Lock command card, target-icon mode action, and absolute 0-100
+    bottom-to-top coverage rail with the configured 15% target marker.
+- [x] **2.2** Compact lower-left aim and centered Fire
   - Change: arrange direction, elevation, power, and existing power steps in the
     compact lower-left group; resize the one Fire action to the selected
     restrained bottom-center proportion; remove the persistent first-session
@@ -236,24 +246,34 @@ Source owners: `scenes/ui/hud/*.tscn`, `src/ui/hud/*.gd`,
   - Accept: aim values and both power actions remain readable and operable; Fire
     is the only aiming primary action and its readiness state remains truthful;
     no component intersects the cannon/trajectory area at 1280x720.
-- [ ] **2.3** Segmented right status rail using `HudMetric`
+  - Evidence (2026-08-06): direction, elevation, power, both step actions, and
+    the sole Fire action are readable in the final Aim Lock capture; the bounded
+    first-session hint stays on the left rail and the world center stays open.
+- [x] **2.3** Segmented right status rail using `HudMetric`
   - Change: replace handwritten time/shots/activity pairs with shared metric
     instances and compose wind, countdown/forecast, and Finish into the selected
     narrow segmented rail. Keep the focusable Gear adjacent to its top edge.
   - Accept: authoritative clock, shots, resident breakdown, wind direction and
     strength, forecast, Finish gating, shortcut, tooltip, and Settings intent all
     update through their existing public interfaces.
-- [ ] **2.4** State, locale, and focus integration
+  - Evidence (2026-08-06): the right rail renders independent `HudMetric`
+    instances for Time, Shots, and Activity, plus text-backed wind, forecast,
+    disabled Finish, and the adjacent Gear action without clipping.
+- [x] **2.4** State, locale, and focus integration
   - Change: update component paths and focused tests only where the new scene
     composition requires it; preserve Aim Lock/Map Inspection visibility,
     Korean/English refresh, replay exclusion, pause flow, and result replacement.
   - Accept: existing component signals reach `HUDController`; Korean and English
     labels fit; focus order follows Stage/mode, Gear/status Finish, aim steps, and
     Fire without an invisible focus target.
-- [ ] **2.5** One focused integration checkpoint
+  - Evidence (2026-08-06): focused UI flow, HUD truth, wind/result, and shot
+    feedback contracts passed with the component interfaces and shared styles.
+- [x] **2.5** One focused integration checkpoint
   - Change: after 2.1-2.4 are merged, run the four existing HUD behavior/layout
     scripts once as a batch. Do not run them after individual spacing edits.
   - Accept: all four commands exit zero without script/runtime errors.
+  - Evidence (2026-08-06): all four declared commands exited 0 in one batch;
+    no broad suite or per-spacing checks were run.
 
 Phase gate:
 
@@ -282,7 +302,7 @@ Preconditions:
 Source owners: runtime HUD, `design-qa.md`, task evidence,
 `.agents/Documentation.md`, `docs/test-checklist.md`, this contract
 
-- [ ] **3.1** Same-state rendered design comparison
+- [x] **3.1** Same-state rendered design comparison
   - Change: create one 1280x720 Korean Stage 30 Aim Lock capture using the
     task-owned background path, compare it beside the selected reference, and
     write `design-qa.md`. Inspect alignment, typography, font weight, radii,
@@ -293,19 +313,34 @@ Source owners: runtime HUD, `design-qa.md`, task evidence,
     are fixed; any remaining P3 is recorded without repeated polish loops.
   - Guard: source and implementation captures use the same 1280x720 viewport and
     Aim Lock state.
-- [ ] **3.2** One final repository and production gate
+  - Evidence (2026-08-06): `design-qa.md` records the source and final runtime
+    capture at the same 1280x720 Korean Stage 30 Aim Lock state, no P0/P1/P2
+    finding, and `final result: passed`; the named Map Inspection and main-menu
+    regression captures are stored beside it.
+- [x] **3.2** One final repository and production gate
   - Change: run `scripts/verify.ps1` once, export the Windows release once, and
     start the exported executable through the production entry path. Rerun only
     if a relevant source or export input changes.
   - Accept: verify, export, and exported start exit cleanly without Godot script
     or runtime errors.
-- [ ] **3.3** Quality audit and truthful documentation
+  - Evidence (2026-08-06): the strengthened shot-feedback contract,
+    `scripts/verify.ps1`, Windows release export, exported hidden start, and
+    exported Stage 30 background capture all exited 0 without Godot script or
+    runtime errors. The executable is `builds/windows/PaintMountain.exe` and the
+    final image is under the task evidence directory; ignored local start and
+    capture logs were reviewed separately.
+- [x] **3.3** Quality audit and truthful documentation
   - Change: run `$codebase-quality-auditor` once across the integrated multi-file
     change; make only small task-scoped corrections; update implemented truth,
     checklist evidence, this progress pointer, and plan status.
   - Accept: no competing style owner, catch-all HUD responsibility, duplicated
     gameplay calculation, or stale completion claim remains; the plan is `done`
     only after every named gate passes.
+  - Evidence (2026-08-06): the diff-scoped quality audit moved the last
+    briefing font/color overrides to shared semantic Theme roles, found no stale
+    metric consumer or script-constructed style, and confirmed that `HudMetric`
+    remains presentational. `.agents/Documentation.md`, `docs/test-checklist.md`,
+    and `design-qa.md` now record the final implementation and release evidence.
 
 Final gate:
 
@@ -360,17 +395,18 @@ acceptance.
 ## Progress
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 1 - Shared UI foundation.
-- Next task: 1.1 Theme-owned semantic typography and control styles.
-- Last completed gate: Discovery Closure Gate.
+- Current phase: Complete.
+- Next task: none inside this contract; further visible tuning requires user
+  review of the exported capture.
+- Last completed gate: Phase 3 final repository/export and quality closeout.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 
 ## Next Steps
 
-Commit this contract and its selected-reference/spec updates, then delegate the
-three disjoint implementation surfaces: shared Theme, left/bottom HUD, and right
-status/component work.
+No implementation task remains. Preserve this record as the completed contract
+for the shared Command Columns HUD and use the exported capture for any later
+user-directed polish request.
 
 ## Completion and Stop Conditions
 

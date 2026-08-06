@@ -1,6 +1,24 @@
-[gd_resource type="Theme" load_steps=15 format=3]
+[gd_resource type="Theme" load_steps=27 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
+
+[sub_resource type="FontVariation" id="FontWeight500"]
+base_font = ExtResource("1_font")
+variation_opentype = {
+"weight": 500.0
+}
+
+[sub_resource type="FontVariation" id="FontWeight600"]
+base_font = ExtResource("1_font")
+variation_opentype = {
+"weight": 600.0
+}
+
+[sub_resource type="FontVariation" id="FontWeight700"]
+base_font = ExtResource("1_font")
+variation_opentype = {
+"weight": 700.0
+}
 
 [sub_resource type="StyleBoxFlat" id="Panel"]
 bg_color = Color(1, 0.992157, 0.988235, 0.96)
@@ -8,6 +26,19 @@ corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
+shadow_color = Color(0.09, 0.145, 0.22, 0.14)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="HudStagePanel"]
+bg_color = Color(1, 0.992157, 0.988235, 0.96)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.85098, 0.866667, 0.890196, 1)
 shadow_color = Color(0.09, 0.145, 0.22, 0.14)
 shadow_size = 8
 shadow_offset = Vector2(0, 3)
@@ -80,6 +111,46 @@ expand_margin_top = 2.0
 expand_margin_right = 2.0
 expand_margin_bottom = 2.0
 
+[sub_resource type="StyleBoxFlat" id="HudModeNormal"]
+bg_color = Color(1, 0.992157, 0.988235, 0.98)
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+border_width_left = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.85098, 0.866667, 0.890196, 1)
+
+[sub_resource type="StyleBoxFlat" id="HudModeHover"]
+bg_color = Color(0.921569, 0.952941, 1, 1)
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+border_width_left = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.439216, 0.666667, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="HudModePressed"]
+bg_color = Color(0.823529, 0.886275, 1, 1)
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="HudModeDisabled"]
+bg_color = Color(0.831373, 0.839216, 0.85098, 0.82)
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="HudModeFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.439216, 0.666667, 1, 1)
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+expand_margin_left = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
 [sub_resource type="StyleBoxFlat" id="PrimaryNormal"]
 bg_color = Color(0.145098, 0.517647, 1, 1)
 corner_radius_top_left = 16
@@ -125,6 +196,17 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxLine" id="HorizontalSeparator"]
+color = Color(0.85098, 0.866667, 0.890196, 1)
+
+[sub_resource type="StyleBoxLine" id="VerticalSeparator"]
+color = Color(0.85098, 0.866667, 0.890196, 1)
+vertical = true
+
+[sub_resource type="StyleBoxLine" id="TargetMarker"]
+color = Color(0.145098, 0.517647, 1, 1)
+thickness = 2
+
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 16
@@ -147,11 +229,14 @@ Label/font_sizes/font_size = 16
 PanelContainer/styles/panel = SubResource("Panel")
 ProgressBar/styles/background = SubResource("ProgressBackground")
 ProgressBar/styles/fill = SubResource("ProgressFill")
+HSeparator/styles/separator = SubResource("HorizontalSeparator")
+VSeparator/styles/separator = SubResource("VerticalSeparator")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_pressed_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_focus_color = Color(1, 1, 1, 1)
+PrimaryButton/fonts/font = SubResource("FontWeight600")
 PrimaryButton/font_sizes/font_size = 20
 PrimaryButton/styles/normal = SubResource("PrimaryNormal")
 PrimaryButton/styles/hover = SubResource("PrimaryHover")
@@ -165,3 +250,82 @@ DangerButton/base_type = &"Button"
 DangerButton/colors/font_color = Color(1, 1, 1, 1)
 DangerButton/styles/normal = SubResource("Danger")
 DangerButton/styles/focus = SubResource("Focus")
+HudCaption/base_type = &"Label"
+HudCaption/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+HudCaption/fonts/font = SubResource("FontWeight500")
+HudCaption/font_sizes/font_size = 14
+HudBody/base_type = &"Label"
+HudBody/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudBody/fonts/font = SubResource("FontWeight500")
+HudBody/font_sizes/font_size = 16
+HudSection/base_type = &"Label"
+HudSection/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudSection/fonts/font = SubResource("FontWeight600")
+HudSection/font_sizes/font_size = 18
+HudValue/base_type = &"Label"
+HudValue/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudValue/fonts/font = SubResource("FontWeight600")
+HudValue/font_sizes/font_size = 22
+HudMetric/base_type = &"Label"
+HudMetric/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudMetric/fonts/font = SubResource("FontWeight600")
+HudMetric/font_sizes/font_size = 28
+HudAccentSection/base_type = &"Label"
+HudAccentSection/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+HudAccentSection/fonts/font = SubResource("FontWeight600")
+HudAccentSection/font_sizes/font_size = 18
+HudAccentValue/base_type = &"Label"
+HudAccentValue/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+HudAccentValue/fonts/font = SubResource("FontWeight600")
+HudAccentValue/font_sizes/font_size = 22
+ScreenTitle/base_type = &"Label"
+ScreenTitle/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+ScreenTitle/fonts/font = SubResource("FontWeight700")
+ScreenTitle/font_sizes/font_size = 32
+HudStagePanel/base_type = &"PanelContainer"
+HudStagePanel/styles/panel = SubResource("HudStagePanel")
+HudRailPanel/base_type = &"PanelContainer"
+HudRailPanel/styles/panel = SubResource("Panel")
+HudModeButton/base_type = &"Button"
+HudModeButton/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudModeButton/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudModeButton/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudModeButton/colors/icon_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudModeButton/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudModeButton/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)
+HudModeButton/fonts/font = SubResource("FontWeight600")
+HudModeButton/font_sizes/font_size = 16
+HudModeButton/styles/normal = SubResource("HudModeNormal")
+HudModeButton/styles/hover = SubResource("HudModeHover")
+HudModeButton/styles/pressed = SubResource("HudModePressed")
+HudModeButton/styles/disabled = SubResource("HudModeDisabled")
+HudModeButton/styles/focus = SubResource("HudModeFocus")
+HudModeButtonCompact/base_type = &"HudModeButton"
+HudModeButtonCompact/font_sizes/font_size = 14
+HudIconButton/base_type = &"Button"
+HudIconButton/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudIconButton/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudIconButton/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudIconButton/colors/icon_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudIconButton/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudIconButton/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)
+HudIconButton/styles/normal = SubResource("ButtonNormal")
+HudIconButton/styles/hover = SubResource("ButtonHover")
+HudIconButton/styles/pressed = SubResource("ButtonPressed")
+HudIconButton/styles/disabled = SubResource("ButtonDisabled")
+HudIconButton/styles/focus = SubResource("Focus")
+HudFinishButton/base_type = &"Button"
+HudFinishButton/fonts/font = SubResource("FontWeight600")
+HudFinishButton/font_sizes/font_size = 16
+HudFinishButton/styles/normal = SubResource("ButtonNormal")
+HudFinishButton/styles/hover = SubResource("ButtonHover")
+HudFinishButton/styles/pressed = SubResource("ButtonPressed")
+HudFinishButton/styles/disabled = SubResource("ButtonDisabled")
+HudFinishButton/styles/focus = SubResource("Focus")
+HudCoverageProgress/base_type = &"ProgressBar"
+HudCoverageProgress/styles/background = SubResource("ProgressBackground")
+HudCoverageProgress/styles/fill = SubResource("ProgressFill")
+HudModePanel/base_type = &"PanelContainer"
+HudModePanel/styles/panel = SubResource("HudModeNormal")
+HudTargetMarker/base_type = &"HSeparator"
+HudTargetMarker/styles/separator = SubResource("TargetMarker")

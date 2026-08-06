@@ -15,14 +15,56 @@ related:
   - execplans/2026-08-06-ballistic-terrain-preparation.md
   - execplans/2026-08-06-wind-driven-coverage-loop.md
   - execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
+  - execplans/2026-08-06-command-columns-hud.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
+  - ../design-qa.md
   - ../docs/design-spec.md
   - ../docs/technical-architecture.md
 ---
 
 # Project Record
 
-## Current Implementation: Fast Stage Entry and Fire Capacity (2026-08-06)
+## Current UI Implementation: Shared Command Columns HUD (2026-08-06)
+
+The completed execution record is
+[`execplans/2026-08-06-command-columns-hud.md`](execplans/2026-08-06-command-columns-hud.md).
+The user-selected
+[`command-columns-hud.png`](../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+is the current aiming-HUD visual authority. This UI record does not add or
+restore target-wide first-hit certification, prescribed stage success routes,
+camera redesign, gameplay approval, or balance approval.
+
+- `resources/ui/paint_mountain_theme.tres` remains the single shared visual
+  system. It now owns Pretendard 500/600/700 font variations, semantic HUD label
+  roles, command/status panels, mode and icon buttons, Finish, separators,
+  absolute coverage progress, target marker, focus, disabled, and icon states.
+  The affected HUD scenes contain no local font, color, icon, or StyleBox
+  presentation overrides; their remaining overrides are layout-only.
+- `HudMetric` is a reusable presentational caption/value component. Time, shots,
+  and resident activity instantiate it independently inside `RunStatusCard`;
+  the component does not read gameplay state or own timers.
+- The 1280x720 Aim Lock composition now uses the joined Stage/mode command card,
+  absolute vertical coverage rail, compact lower-left direction/elevation/power
+  group, sole centered Fire action, adjacent Gear action, and segmented right
+  status rail. Supported real controls omitted by the generated concept remain
+  functional.
+- Coverage progress displays authoritative 0..100 coverage and positions the
+  configured target as a separate marker. It no longer normalizes progress by
+  the target threshold.
+- Map Inspection keeps the command/status rails and hides aim-only controls.
+  Korean and English copy, focus, Finish gating, wind text, Settings intent, and
+  existing HUD signals remain connected to their prior owners.
+- Focused HUD, localization, wind/result, and shot-feedback checks passed. The
+  final `scripts/verify.ps1`, Windows release export, exported hidden start, and
+  exported Stage 30 capture passed with Godot
+  `4.7.1.stable.official.a13da4feb`.
+- The exported 1280x720 capture is
+  `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png`.
+  [`design-qa.md`](../design-qa.md) compares it with the selected reference at
+  the same viewport/state and records no P0, P1, or P2 finding and
+  `final result: passed`.
+
+## Current Gameplay Implementation: Fast Stage Entry and Fire Capacity (2026-08-06)
 
 The completed execution record is
 [`execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md`](execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md).

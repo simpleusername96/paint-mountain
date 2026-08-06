@@ -72,7 +72,12 @@ func _run() -> void:
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")
 	hud.update_coverage(2.0)
 	await process_frame
-	_assert_true(is_equal_approx(coverage.progress.max_value, 100.0) and "목표 면적" in coverage.target_label.text, "coverage must use an absolute 0..100 scale with a visible target label")
+	_assert_true(
+		is_equal_approx(coverage.progress.max_value, 100.0)
+		and is_equal_approx(coverage.progress.value, 2.0)
+		and "목표" in coverage.target_label.text,
+		"coverage must show the authoritative absolute 0..100 value with a visible target label"
+	)
 	var observation := ShotObservation.new()
 	observation.configure(1, -7.5, 41.0, 72.0, 12.0)
 	observation.record_mechanism_activation(

@@ -4,9 +4,11 @@ extends Button
 signal interaction_mode_requested(mode: int)
 
 var _interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
+var _mode_icon: Texture2D
 
 
 func _ready() -> void:
+	_mode_icon = icon
 	pressed.connect(_request_other_mode)
 	_refresh_copy()
 
@@ -32,9 +34,12 @@ func _request_other_mode() -> void:
 
 
 func _refresh_copy() -> void:
+	var compact_english := TranslationServer.get_locale().to_lower().begins_with("en")
+	theme_type_variation = &"HudModeButtonCompact" if compact_english else &"HudModeButton"
+	icon = null if compact_english else _mode_icon
 	if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
-		text = "%s  ·  TAB" % tr("hud.aim_lock")
+		text = tr("hud.aim_lock")
 		tooltip_text = tr("hud.switch_to_map_inspection")
 	else:
-		text = "%s  ·  TAB" % tr("hud.map_inspection")
+		text = tr("hud.map_inspection")
 		tooltip_text = tr("hud.switch_to_aim_lock")

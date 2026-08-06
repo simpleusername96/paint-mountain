@@ -19,6 +19,8 @@ related:
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../.agents/execplans/2026-08-06-command-columns-hud.md
+  - ../design-qa.md
 ---
 
 # Test Checklist
@@ -34,6 +36,43 @@ are user-directed gameplay/feel review.
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
+
+## Active shared Command Columns HUD validation gate (2026-08-06)
+
+This gate supersedes earlier HUD geometry and target-normalized coverage rows.
+It validates the user-selected aiming layout and shared design system only; it
+does not require all-stage solution routes, exhaustive target-wide first-hit
+certification, camera redesign, or inferred gameplay/feel approval.
+
+- [x] The selected 1280x720 reference is registered at
+  `docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`; the
+  implementation keeps its left-command, bottom-action, and right-status
+  hierarchy while retaining supported real controls omitted from the concept.
+- [x] `resources/ui/paint_mountain_theme.tres` is the single reusable visual
+  owner for Pretendard 500/600/700 typography, semantic label roles, panels,
+  buttons, separators, progress/target, focus, disabled, and icon states. The
+  affected HUD scenes have no local font/color/icon/StyleBox presentation
+  overrides.
+- [x] `HudMetric` is a state-free reusable component instantiated for time,
+  shots, and resident activity. `RunStatusCard` remains the runtime formatter;
+  `HUDController` remains a coordinator rather than a gameplay owner.
+- [x] Stage/mode, absolute coverage and target, yaw/elevation/power and step
+  controls, sole Fire, Gear, time, shots, activity, wind, forecast, and Finish
+  remain visible or state-gated through their established interfaces.
+- [x] The coverage bar displays the authoritative absolute 0..100 value; its
+  target is a separate marker. Focused shot feedback verifies that 2.0%
+  coverage renders as 2.0 rather than as target-normalized progress.
+- [x] The declared Phase 7 UI, HUD truth, wind/result, shot-feedback, and
+  localization checks passed after integration. A code-quality audit found no
+  competing style owner, catch-all gameplay responsibility, or stale component
+  consumer.
+- [x] The same-state visual comparison in `design-qa.md` passed at 1280x720 with
+  no P0/P1/P2 finding. Separate Map Inspection and main-menu regression captures
+  are under `.agents/evidence/command-columns-hud-2026-08-06/`.
+- [x] `scripts/verify.ps1`, Windows release export to
+  `builds/windows/PaintMountain.exe`, exported hidden start, and exported Stage
+  30 background capture passed. Final running-release evidence is
+  `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png`.
 
 ## Active fast-stage-entry and wind/UI validation gate (2026-08-06)
 

@@ -109,9 +109,9 @@ func focus_finish() -> void:
 
 
 func refresh_locale() -> void:
-	%TimeLabel.text = tr("hud.time")
-	%ShotsLabel.text = tr("hud.shots")
-	%ActivityLabel.text = tr("hud.resident_balls")
+	%TimeMetric.set_caption_key("hud.time")
+	%ShotsMetric.set_caption_key("hud.shots")
+	%ActivityMetric.set_caption_key("hud.resident_balls")
 	%WindLabel.text = tr("hud.wind")
 	%Finish.text = "%s  [F]" % tr("ui.finish")
 	_refresh_values()
@@ -126,19 +126,19 @@ func _refresh_values() -> void:
 
 func _refresh_clock() -> void:
 	var shown_seconds := _remaining_seconds if _clock_started else _duration_seconds
-	%TimeValue.text = _format_duration(shown_seconds) if shown_seconds > 0.0 else "--:--"
-	%TimeValue.tooltip_text = tr("hud.timer_starts_on_first_shot") if not _clock_started else ""
+	%TimeMetric.set_value(_format_duration(shown_seconds) if shown_seconds > 0.0 else "--:--")
+	%TimeMetric.tooltip_text = tr("hud.timer_starts_on_first_shot") if not _clock_started else ""
 
 
 func _refresh_activity() -> void:
-	%ShotsValue.text = str(_shots_remaining)
+	%ShotsMetric.set_value(str(_shots_remaining))
 	if _has_resident_breakdown:
-		%ActivityValue.text = tr("hud.resident_activity_format") % [
+		%ActivityMetric.set_value(tr("hud.resident_activity_format") % [
 			_moving_residents,
 			_resting_residents,
-		]
+		])
 	else:
-		%ActivityValue.text = tr("hud.resident_total_format") % _resident_total
+		%ActivityMetric.set_value(tr("hud.resident_total_format") % _resident_total)
 
 
 func _refresh_wind() -> void:

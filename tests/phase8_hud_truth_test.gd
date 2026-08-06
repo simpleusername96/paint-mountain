@@ -38,9 +38,10 @@ func _run() -> void:
 
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	_assert_true(settings.icon != null, "Settings must keep the approved icon asset")
+	_assert_true(settings.theme_type_variation == &"HudIconButton", "Settings must use the shared icon-button variation")
 	for state_name in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color"]:
-		_assert_true(settings.has_theme_color_override(state_name), "Settings icon must own %s" % state_name)
-		_assert_true(settings.get_theme_color(state_name).is_equal_approx(NAVY), "Settings %s must use the navy token" % state_name)
+		_assert_true(not settings.has_theme_color_override(state_name), "Settings must not duplicate shared %s styling" % state_name)
+		_assert_true(settings.get_theme_color(state_name).is_equal_approx(NAVY), "Shared Settings %s must use the navy token" % state_name)
 	_assert_true(hud_root.get_node_or_null("TopStatusBar/ShotsChip") == null, "remaining shots must have one owner in the run-status card")
 
 	hud.queue_free()
