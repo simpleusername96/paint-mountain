@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -20,6 +20,8 @@ related:
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../.agents/execplans/2026-08-06-command-columns-hud.md
+  - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
 
@@ -36,6 +38,40 @@ are user-directed gameplay/feel review.
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
+
+## Active target-coverage and safe Aim Lock validation gate (2026-08-07)
+
+This gate validates the current target-only score presentation and cannon-view
+framing. It does not change coverage balance, require whole-terrain scoring,
+restore exhaustive first-hit certification, prescribe stage solution routes, or
+claim user gameplay/feel approval.
+
+- [x] `PaintSystem` remains the sole mutable paint and coverage owner. The
+  focused paint contract proves valid non-target top paint remains visible but
+  does not increase unique painted Target Area coverage.
+- [x] Saturated shader paint begins at mask threshold `0.5`, matching the CPU
+  count boundary, and the former filtered neighbor halo is absent. Dry Target
+  Area remains a neutral lower-salience surface cue rather than a second paint
+  state.
+- [x] Korean and English coverage caption, formatted value, Finish tooltip, and
+  result label name `목표 영역` / `TARGET AREA`; localization and HUD truth
+  checks pass without adding a second metric or component owner.
+- [x] Aim Lock projects deduplicated canonical playable-top points, summit
+  samples with 8 m headroom, cannon, and muzzle. It retains authored focus,
+  direction, and 48-degree FOV and applies only the distance correction needed
+  for a 1.15 safe margin; it does not use the support shell, live prediction,
+  stage-ID branches, or manual camera coordinates.
+- [x] Active catalog Stages 01, 10, 20, and 30 pass point containment, summit,
+  default first-impact, cannon/muzzle, clearance, focus-ray, fixed-mode
+  transition, and Map Inspection return contracts using accepted baked layouts.
+- [x] The diff-scoped quality audit removed the rejected merged-AABB path and
+  its unused API, added missing summit-region headroom, and found no competing
+  coverage, geometry, frustum, or camera-transform owner after correction.
+- [x] `scripts/verify.ps1`, Windows release export to
+  `builds/windows/PaintMountain.exe`, and exactly three exported hidden
+  1280x720 captures passed. Native-size evidence and the Level 3 `Result:
+  passed` report are under
+  `.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/`.
 
 ## Active shared Command Columns HUD validation gate (2026-08-06)
 

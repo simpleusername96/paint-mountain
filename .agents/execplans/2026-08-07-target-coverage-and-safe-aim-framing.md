@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-07
 scope: truthful target-only coverage presentation and stage-aware Aim Lock framing
 source: user-requested root-cause analysis, alternative comparison, planning, and implementation on 2026-08-07
@@ -56,12 +56,12 @@ In scope:
   threshold so a saturated visual halo does not imply additional scored area.
 - Change the compact HUD/result copy from generic painted area to target-area
   coverage while preserving the selected Command Columns layout and Theme.
-- Add a cached world AABB for canonical playable-top triangles only.
-- Keep the authored Aim Lock pose when all interest bounds already fit a
-  15-percent safe margin; otherwise fit the same bounds by moving only along
-  the authored view direction at the unchanged gameplay FOV.
+- Cache exact world points for canonical playable-top triangles only.
+- Keep the authored Aim Lock pose when all interest points already fit a
+  15-percent safe margin; otherwise fit those points by moving only along the
+  authored view direction at the unchanged gameplay FOV.
 - Frame the playable top, its summit with `8.0 m` vertical headroom, cannon
-  base, and current muzzle. The complete playable-top bounds already contain
+  base, and current muzzle. The complete playable-top point set already contains
   every valid terrain impact, so prediction changes do not drive the camera.
 - Update focused camera, paint, localization, design, architecture, checklist,
   evidence, and implemented-truth records.
@@ -118,9 +118,9 @@ Exact actions requiring owner or user approval:
 | Visible Paint | Persistent paint on every verified playable-top traversal, including outside the scoreable target | `PaintSystem` mask and terrain shader |
 | Target Area | The immutable route-and-pad target mask that classifies scoreable top texels | `GeneratedStageLayout` / `TargetMaskRasterizer` |
 | Target Coverage | Unique painted Target Area texels divided by all Target Area texels | `PaintSystem` |
-| Playable Top Bounds | World AABB of canonical top triangles only; it excludes skirt, shell, bottom, apron, wall, mechanisms, and decoration | `TerrainSurface` |
+| Playable Top Frame Set | Deduplicated world vertices of canonical top triangles; it excludes skirt, shell, bottom, apron, wall, mechanisms, and decoration | `TerrainSurface` |
 | Authored Aim Pose | `StageData`'s baseline camera position, target, direction, and scale | `StageData` consumed by `CameraDirector` |
-| Safe Aim Pose | The Authored Aim Pose when it contains all interest bounds, otherwise a deterministic same-direction/same-FOV distance correction | `CameraDirector` using `TerrainCameraFramer` |
+| Safe Aim Pose | The Authored Aim Pose when it contains all interest points, otherwise a deterministic same-direction/same-FOV distance correction with the authored focus retained | `CameraDirector` using `TerrainCameraFramer` |
 
 The generic Korean label `칠한 면적` is retired for this screen because it
 suggests all Visible Paint. The compact caption becomes `목표 영역` (`TARGET
@@ -139,7 +139,7 @@ target-area coverage explicitly.
 | Camera | Frame the complete render AABB | Reuses the existing framer | Includes skirt/shell/bottom, backs away excessively, and makes the mountain a small wall | Reject |
 | Camera | Widen FOV or globally move/raise the camera | Simple | Distorts scale or breaks good early-stage composition | Reject |
 | Camera | Restore orientation-only Aim View | Lets a player search manually | Leaves the default view clipped and shifts correction work to the player | Reject |
-| Camera | Authored-first playable-top safe framing | Preserves good authored views and corrects only bounds that fail | Adds one bounded geometry/frustum contract | Select |
+| Camera | Authored-first playable-top safe framing | Preserves good authored views and corrects only point sets that fail | Adds one bounded geometry/frustum contract | Select |
 
 ## Discovery Closure
 
@@ -148,8 +148,8 @@ target-area coverage explicitly.
 | Visible paint looks larger than coverage | `_write_paint_value` persists every active-top write but increments only a target byte's first threshold crossing; the shader makes target/non-target dry rock differ by only a few percent and renders paint below the CPU threshold | `src/paint/paint_system.gd:482-503,607-610`; `src/paint/terrain_paint.gdshader:42-65`; `tests/paint_queue_determinism_test.gd:172-188` | Preserve the formula; strengthen target classification, align shader fill threshold, and correct copy | 1.1-1.3 |
 | Generic copy implies whole terrain | `hud.coverage` is `COVERAGE/칠한 면적`; Finish and result copy repeat the generic meaning | `translations/ui.csv:37-40,68,80,99`; `scenes/ui/hud/coverage_meter.tscn`; `src/ui/hud/coverage_meter.gd` | Use `TARGET AREA/목표 영역` and target-specific Finish/result wording without changing layout ownership | 1.2-1.3 |
 | Whole-top scoring would be a migration | Target thresholds are 4-15%, stars compare the same percentage, and saves retain best coverage without a metric version; surface samples are intentionally lazy | `src/stage_generation/stage_progression_data.gd:18-25`; `src/gameplay/gameplay_scene.gd:404-423,545-550`; `src/autoload/game_state.gd:36-55`; `src/paint/paint_system.gd:857-899` | Do not change denominator, target data, save version, or result/replay schemas | all |
-| Stage 30 upper terrain is clipped | AIMING returns the authored bookmark before terrain framing; Stage 30 grew to 240x160 with a peak near 126 while its camera stayed near the common late-stage bookmark | `src/camera/camera_director.gd:304-323`; `resources/stages/catalog.tres:3181-3201`; `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png` | Use canonical playable-top bounds and authored-first safe framing | 2.1-2.3 |
-| Existing full-AABB framer is too broad | `render_world_aabb()` includes top plus support shell/bottom; `TerrainCameraFramer` can preserve authored direction but currently consumes all eight render-AABB corners | `src/terrain/terrain_geometry_factory.gd:13-75`; `src/terrain/terrain_surface.gd:83-86`; `src/camera/terrain_camera_framer.gd` | Add cached playable-top bounds and shared frustum-fit helpers; never feed the closed render AABB to Aim Lock | 2.1-2.2 |
+| Stage 30 upper terrain is clipped | AIMING returns the authored bookmark before terrain framing; Stage 30 grew to 240x160 with a peak near 126 while its camera stayed near the common late-stage bookmark | `src/camera/camera_director.gd:304-323`; `resources/stages/catalog.tres:3181-3201`; `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png` | Use canonical playable-top points and authored-first safe framing | 2.1-2.3 |
+| Existing full-AABB framer is too broad | `render_world_aabb()` includes top plus support shell/bottom, while merging a top-only AABB with cannon landmarks also invents independent extrema and backs away too far | `src/terrain/terrain_geometry_factory.gd:13-75`; `src/terrain/terrain_surface.gd`; exploratory Stage 30 render on 2026-08-07 | Cache deduplicated playable-top points and project exact interest points | 2.1-2.2 |
 | Existing tests protect the defect | The composition test checks three legacy stages at 55 degrees and caps distance at 1.35x; Stage 30 safety checks only clearance/ray behavior | `tests/phase8_aiming_composition_test.gd`; `tests/camera_safety_test.gd` | Use the gameplay 48-degree FOV, remove the distance cap, and assert safe-frustum landmarks for Stage 01/10/20/30 | 2.3 |
 | Prior plans cannot own the fix | The Aim View plan is archived and conflicts with the selected camera/coverage direction; the completed HUD plan explicitly excluded camera and paint | `.agents/execplans/2026-08-06-aim-view-and-coverage-opportunity.md:3,24-27`; `.agents/execplans/2026-08-06-command-columns-hud.md:57-63` | Keep both historical; execute this one new active contract | all |
 | Validation must remain bounded | The repository requires `scripts/verify.ps1`, a production-style build, and rendered evidence; the user rejected repeated micro-QA | `AGENTS.md`; `scripts/verify.ps1`; existing background capture runner | Run one focused batch after integration and one final verify/export/three-capture gate | 1.3, 2.3, 3.1-3.3 |
@@ -180,7 +180,7 @@ Source owners: `src/paint/terrain_paint.gdshader`, `translations/ui.csv`,
 generated translation resources, `tests/localization_ui_test.gd`,
 `tests/paint_queue_determinism_test.gd`, `tests/phase8_hud_truth_test.gd`
 
-- [ ] **1.1** Distinguishable target footprint and threshold-aligned paint
+- [x] **1.1** Distinguishable target footprint and threshold-aligned paint
   - Change: retain the target texture as classification only, make dry target
     and non-target playable top visibly distinct at aiming distance, and move
     saturated paint-fill activation to the authoritative `0.5` threshold.
@@ -190,14 +190,14 @@ generated translation resources, `tests/localization_ui_test.gd`,
     PaintSystem texture remains the sole mutable visual source.
   - Guard: `paint_queue_determinism_test.gd` continues proving that valid
     non-target top paint persists but does not increase target coverage.
-- [ ] **1.2** Target-specific HUD and result language
+- [x] **1.2** Target-specific HUD and result language
   - Change: update Korean/English coverage caption, coverage-format, Finish
     tooltip, and final-result copy to name the target area. Preserve existing
     translation keys, meter component, target line, values, signals, and Theme.
   - Accept: `TARGET AREA/목표 영역` fits the existing narrow meter at 1280x720;
     Korean and English state that Finish/results score target-area coverage and
     do not imply whole-terrain paint.
-- [ ] **1.3** Coverage contract integration
+- [x] **1.3** Coverage contract integration
   - Change: update only focused localization/HUD assertions needed for the new
     words and owner semantics. Do not add pixel-by-pixel visual tests.
   - Accept: the focused paint, localization, and HUD truth scripts pass together
@@ -218,34 +218,39 @@ Source owners: `src/terrain/terrain_surface.gd`,
 `src/gameplay/gameplay_scene.gd`, `tests/phase8_aiming_composition_test.gd`,
 `tests/camera_safety_test.gd`
 
-- [ ] **2.1** Canonical playable-top bounds and shared frustum math
-  - Change: cache a world AABB from canonical playable-top vertices during
-    `TerrainSurface.configure`; add `TerrainCameraFramer` helpers that evaluate
-    and solve bounds with the same authored basis/FOV/aspect math.
-  - Accept: the top AABB contains every canonical top vertex and excludes the
-    skirt, shell, bottom, wall, apron, mechanisms, and decorations; the fit
-    helper reports the same pass/fail used by the solver and tests.
-- [ ] **2.2** Conditional Aim Lock distance correction
+- [x] **2.1** Canonical playable-top points and shared frustum math
+  - Change: cache deduplicated world points from canonical playable-top
+    vertices during `TerrainSurface.configure`; add `TerrainCameraFramer`
+    helpers that evaluate and solve exact point sets with the same authored
+    basis/FOV/aspect math. Keep the pre-existing AABB wrappers for their existing
+    wide/result consumers, but do not add a second top-only AABB API.
+  - Accept: the point set contains every canonical active-top vertex and
+    excludes the skirt, shell, bottom, wall, apron, mechanisms, and decorations;
+    the fit helper reports the same pass/fail used by the solver and tests.
+- [x] **2.2** Conditional Aim Lock distance correction
   - Change: give `CameraDirector.configure` an optional read-only
-    `CannonController`, build interest bounds from playable top, `8.0 m`
-    headroom, summit samples, cannon base, and muzzle, and first test the exact
-    authored AIMING pose with margin `1.15`. If it fails, use the nearest-target
-    sample as a real terrain focus and call `framed_pose_around` while preserving
-    authored forward direction and camera FOV. Pass the cannon from
-    `GameplayScene`; do not subscribe to prediction changes.
+    `CannonController`, build an exact interest-point set from playable top,
+    `8.0 m` summit headroom, summit samples, cannon base, and muzzle, and first
+    test the exact authored AIMING pose with margin `1.15`. If it fails, retain
+    the authored focus and call the point-set framer while preserving authored
+    forward direction and camera FOV. Pass the cannon from `GameplayScene`; do
+    not subscribe to prediction changes. The authored focus is retained because
+    the explored nearest-target focus triggered terrain-occlusion lifting and
+    broke the same-direction final fit on Stages 10 and 20.
   - Accept: authored-safe stages return the unchanged StageData pose; corrected
     stages change only camera position/focus through CameraDirector and retain
     clearance, a clear focus ray, 48-degree FOV, Map Inspection state, and all
     cannon/trajectory behavior.
   - Guard: AIMING never uses `render_world_aabb`, live prediction, stage-ID
     branches, manual coordinates, or a wider FOV.
-- [ ] **2.3** Representative composition contracts
+- [x] **2.3** Representative composition contracts
   - Change: replace the stale 55-degree/1.35x-distance assertion with actual
     48-degree safe-frustum assertions. Cover cannon base, muzzle, playable-top
-    bounds, summit, default first impact, clearance, and focus ray for early
-    authored fixtures and active catalog Stages 01, 10, 20, and 30.
-  - Accept: the composition and camera-safety scripts pass; Stage 01 remains
-    authored when it fits, and Stage 30 requires and passes the correction.
+    points, summit, default first impact, clearance, and focus ray for active
+    catalog Stages 01, 10, 20, and 30.
+  - Accept: the composition and camera-safety scripts pass; Stage 01 applies
+    only the small correction its current geometry requires, and Stage 30
+    requires and passes the larger correction.
 
 Combined focused gate, run once after Tasks 1.1-2.3 are integrated:
 
@@ -277,7 +282,7 @@ Source owners: all task-owned code/tests, `.agents/design/ART_DIRECTION.md`,
 `docs/technical-architecture.md`, `.agents/Documentation.md`,
 `docs/test-checklist.md`, task evidence, this contract
 
-- [ ] **3.1** Cross-module quality audit and durable contracts
+- [x] **3.1** Cross-module quality audit and durable contracts
   - Change: run `$codebase-quality-auditor` once over paint/target presentation,
     camera/framer responsibility, GameplayScene wiring, tests, and docs. Make
     only safe task-scoped corrections. Update the design/architecture wording
@@ -285,7 +290,7 @@ Source owners: all task-owned code/tests, `.agents/design/ART_DIRECTION.md`,
   - Accept: no second coverage owner, duplicated frustum formula, camera-owned
     gameplay decision, catch-all module, stale authored-distance lock, or false
     whole-terrain label remains.
-- [ ] **3.2** One repository, export, and rendered UIUX gate
+- [x] **3.2** One repository, export, and rendered UIUX gate
   - Change: announce cost/stopping condition, run `scripts/verify.ps1` once,
     export Windows once, then use the existing hidden background runner for
     exactly three 1280x720 captures: Stage 01 Aim Lock, Stage 30 Aim Lock, and a
@@ -298,7 +303,7 @@ Source owners: all task-owned code/tests, `.agents/design/ART_DIRECTION.md`,
     focus, control, or container clips.
   - Guard: no foreground window, exhaustive resolution matrix, repeated visual
     polish loop, gameplay/balance approval, or whole-stage playthrough.
-- [ ] **3.3** Truthful documentation and plan closeout
+- [x] **3.3** Truthful documentation and plan closeout
   - Change: record exact checks, build, capture paths, selected/rejected
     alternatives, and remaining owner-only visual/feel approval in
     `.agents/Documentation.md`, `docs/test-checklist.md`, the task evidence
@@ -358,7 +363,7 @@ Validation rules:
 | --- | --- | --- |
 | A verified material fact contradicts this contract | Stop the affected branch, update the contract, and obtain any required approval before resuming | Do not let an executor choose a new product, architecture, data, UX, or validation contract |
 | Strong target tint competes with paint/trajectory/mechanisms | Adjust only neutral dry-surface contrast inside the existing target texture path and recollect the three final captures | Do not add an outline asset, second material state, or new HUD explanation panel |
-| Authored Stage 01 fails the safe bounds | Accept the deterministic correction only if it remains close, keeps the cannon below 20% of the frame, and passes the same composition criteria | Do not special-case Stage 01 or weaken Stage 30 bounds |
+| Authored Stage 01 fails the safe point set | Accept the deterministic correction only if it remains close, keeps the cannon below 20% of the frame, and passes the same composition criteria | Do not special-case Stage 01 or weaken Stage 30 points |
 | Safety correction moves the camera into/behind terrain | Let the existing CameraDirector clearance/occlusion solver correct the position, then verify final frustum fit | Do not bypass safety or change collision/terrain data |
 | Symmetric margin still allows HUD occlusion | Increase only the shared aiming margin or apply one documented asymmetric safe-rect offset in `TerrainCameraFramer` | Do not move HUD components or author stage coordinates |
 | A required target/camera source overlaps unrelated dirty work | Stop that file branch and report the exact hunk | Do not stage, revert, or rewrite the unrelated change |
@@ -371,9 +376,24 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 1.
-- Next task: 1.1 Distinguishable target footprint and threshold-aligned paint.
-- Last completed gate: Discovery Closure Gate.
+- Current phase: complete.
+- Next task: none. Future gameplay-feel or aesthetic changes require a new user
+  request and contract; they are not unfinished implementation work here.
+- Last completed gate: repository verify, Windows release export, three
+  exported background captures, native-size visual inspection, evidence/docs
+  closeout, and `git diff --check` on 2026-08-07.
+- Focused evidence: paint authority, localization/HUD truth, exact-point Aim
+  Lock composition for Stages 01/10/20/30, and lifecycle camera safety pass.
+- Audit corrections: replaced false-corner AABB fitting with deduplicated exact
+  top points, added summit-region headroom, retained the authored focus after
+  rejecting an occlusion-prone target-centroid focus, removed the unused
+  top-only AABB API, and kept fixed-mode interpolation terrain-safe.
+- Final evidence: `.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/`
+  contains Stage 01 Aim Lock, Stage 30 Aim Lock, painted-contact PNGs, and the
+  Level 3 `design-qa.md` report with `Result: passed`. The existing
+  `projectile_and_continuous_paint` delivery scenario is fixed to Stage 01, so
+  the painted-contact image truthfully records Stage 01 even though the command
+  line also supplied a Stage 04 selector.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 
@@ -398,6 +418,6 @@ Replan when:
 
 Do not replan or stop for:
 
-- Shader constants, AABB iteration details, or frustum helper implementation
+- Shader constants, point-cache iteration details, or frustum helper implementation
   mechanics that stay inside the locked rendered and behavioral contracts.
 - A passing check whose relevant inputs have not changed.

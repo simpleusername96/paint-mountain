@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -16,6 +16,8 @@ related:
   - execplans/2026-08-06-wind-driven-coverage-loop.md
   - execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
   - execplans/2026-08-06-command-columns-hud.md
+  - execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../design-qa.md
   - ../docs/design-spec.md
@@ -23,6 +25,41 @@ related:
 ---
 
 # Project Record
+
+## Current Target Coverage and Safe Aim Framing (2026-08-07)
+
+The completed execution record is
+[`execplans/2026-08-07-target-coverage-and-safe-aim-framing.md`](execplans/2026-08-07-target-coverage-and-safe-aim-framing.md).
+This work fixes coverage meaning and cannon-view visibility without changing
+paint, scoring, stage balance, saves, replay, trajectories, generation, or the
+catalog.
+
+- Root-cause inspection found no dropped-paint counting defect. `PaintSystem`
+  visibly preserves all valid top-surface paint but scores only unique painted
+  Target Area texels. Generic `칠한 면적` copy and a nearly invisible dry target
+  footprint made that intended target-only denominator look incorrect.
+- The terrain shader now gives dry Target Area a restrained neutral value cue
+  and begins saturated blue fill at the same `0.5` mask threshold used by the
+  authoritative coverage count. Valid non-target paint remains visible and
+  unscored. The HUD, Finish tooltip, and result say `목표 영역` / `TARGET AREA`.
+- `TerrainSurface` caches deduplicated world points from canonical active-top
+  triangles. `CameraDirector` tests the authored Aim Lock pose against those
+  exact points, summit points with 8 m headroom, cannon, and muzzle. When they
+  do not fit a 1.15 safe margin, `TerrainCameraFramer` moves only along the
+  authored view direction, retains the authored focus and 48-degree FOV, and
+  never reads live prediction or stage-specific repair data.
+- An explored nearest-target focus was rejected because terrain-occlusion
+  lifting changed the final direction and broke the safe fit on Stages 10 and
+  20. A merged top/cannon AABB was also rejected after its invented extrema
+  made Stage 30 unnecessarily small. Exact point projection retains the full
+  Stage 30 top while keeping Stage 01 close to its authored scale.
+- Paint authority, localization/HUD truth, Stage 01/10/20/30 point-set framing,
+  camera lifecycle safety, `scripts/verify.ps1`, Windows release export, and
+  three final exported background captures passed with Godot 4.7.1.
+- Final evidence is under
+  [`evidence/target-coverage-and-safe-aim-framing-2026-08-07/`](evidence/target-coverage-and-safe-aim-framing-2026-08-07/).
+  The Level 3 report records `Result: passed`. User gameplay feel and aesthetic
+  approval remain explicitly separate from implementation completion.
 
 ## Current UI Implementation: Shared Command Columns HUD (2026-08-06)
 
