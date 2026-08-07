@@ -2,12 +2,10 @@ class_name StageProgressionData
 extends Resource
 
 ## Single source of truth for the thirty-stage geometry ladder. Runtime stage
-## entry consumes one accepted seed from the catalog; it never chooses a
-## template or searches for a replacement seed.
+## entry consumes the one canonical terrain-family seed from the catalog; it
+## never chooses or searches for a replacement seed.
 
-const FIRST_STAGE_SEED := 1347223552
-const STAGE_SEED_STRIDE := 1000003
-const CANDIDATE_STRIDE := 7919
+const CANONICAL_TERRAIN_SEED := 1347223552
 const STAGE_COUNT := 30
 
 @export_category("Versioned progression")
@@ -49,22 +47,20 @@ static func normalized_t(stage_number: int) -> float:
 
 
 static func nominal_peak_for(stage_number: int) -> float:
-	return snappedf(72.0 + 54.0 * normalized_t(stage_number), 0.5)
+	return snappedf(64.0 + 28.0 * normalized_t(stage_number), 0.5)
 
 
-static func requested_seed_for(stage_number: int) -> int:
-	return candidate_seed_for(stage_number, 0)
-
-
-static func candidate_seed_for(stage_number: int, candidate_index: int = 0) -> int:
-	var n := clampi(stage_number, 1, STAGE_COUNT)
-	return int((FIRST_STAGE_SEED + n * STAGE_SEED_STRIDE + maxi(0, candidate_index) * CANDIDATE_STRIDE) & 0x7fffffff)
+static func terrain_seed_for(stage_number: int) -> int:
+	# Keep the argument so callers remain explicit about stage identity even
+	# though the terrain-family seed is intentionally shared.
+	clampi(stage_number, 1, STAGE_COUNT)
+	return CANONICAL_TERRAIN_SEED
 
 
 static func terrain_size_for(stage_number: int) -> Vector2:
 	var t := normalized_t(stage_number)
 	return Vector2(
-		float(roundi((180.0 + 60.0 * t) / 2.0) * 2),
+		float(roundi((210.0 + 70.0 * t) / 2.0) * 2),
 		float(roundi((120.0 + 40.0 * t) / 2.0) * 2)
 	)
 
@@ -72,7 +68,7 @@ static func terrain_size_for(stage_number: int) -> Vector2:
 static func cell_count_for(stage_number: int) -> Vector2i:
 	var t := normalized_t(stage_number)
 	return Vector2i(
-		roundi((72.0 + 24.0 * t) / 2.0) * 2,
+		roundi((84.0 + 12.0 * t) / 2.0) * 2,
 		roundi((48.0 + 16.0 * t) / 2.0) * 2
 	)
 
@@ -138,9 +134,8 @@ static func difficulty_score_for(stage_number: int) -> float:
 	# Stage 03's wide three-route fan is a Splitter teaching witness, not the
 	# late-game route-density tier. Keep the authored difficulty ladder gradual.
 	var difficulty_route_count := 1 if n == 3 else route_count_for(n)
-	return 0.05 * (size.x - 180.0) \
+	return 0.05 * (size.x - 210.0) \
 			+ 0.05 * (size.y - 120.0) \
-			+ 0.10 * (nominal_peak_for(n) - 72.0) \
 			+ 4.0 * (difficulty_route_count - 1) \
 			+ 2.0 * reversal_count_for(n) \
 			+ 0.8 * (ridge_count_for(n) - 3) \

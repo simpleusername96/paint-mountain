@@ -4,8 +4,7 @@ extends Resource
 @export_category("Identity")
 @export var profile_id: StringName = profile_id_for_stage(&"stage_01")
 @export_range(1, 99, 1) var profile_version: int = StageGenerationContract.CONTRACT_VERSION
-@export var base_seed: int = 845479992
-@export var fallback_seed: int = 1820876501
+@export var base_seed: int = StageProgressionData.CANONICAL_TERRAIN_SEED
 @export var generation_contract: StageGenerationContract
 
 @export_category("Stage shape")
@@ -46,7 +45,8 @@ func is_valid() -> bool:
 		return false
 	if generation_contract == null or not generation_contract.is_valid() or routes.is_empty():
 		return false
-	if String(profile_id).is_empty() or base_seed <= 0 or fallback_seed <= 0:
+	if String(profile_id).is_empty() \
+			or base_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
 		return false
 	if nominal_peak <= 0.0 or accepted_height_range.x > accepted_height_range.y:
 		return false

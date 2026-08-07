@@ -5,6 +5,7 @@ const ROUTE_GRAPH_RESOLVER := preload("res://src/stage_generation/route_graph_re
 const ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER := preload(
 	"res://src/stage_generation/route_graph_mountain_synthesizer.gd"
 )
+const KEYED_STAGE_SAMPLER := preload("res://src/stage_generation/keyed_stage_sampler.gd")
 const DECORATION_MODEL_CYCLE: Array[StringName] = [
 	&"tree_pineSmallA", &"tree_pineSmallB", &"rock_smallA", &"tree_pineTallA", &"rock_largeA",
 ]
@@ -20,48 +21,22 @@ static func generate(
 		return null
 	var stage_id := stage_data.stage_id if stage_data != null \
 			else StageGenerationProfile.stage_id_from_profile_id(profile.profile_id)
-	# Legacy authored IDs are accepted only at this migration boundary. Once a
-	# canonical catalog entry exists, generation uses that serialized profile and
-	# seed so old save/test fixtures cannot reintroduce runtime template search.
-	if stage_data != null and stage_id in [&"first_descent", &"burst_basin", &"split_ridge"]:
-		var canonical_stage := StageCatalog.get_stage(StageCatalog.canonical_id(stage_id))
-		if canonical_stage != null and canonical_stage.stage_id != stage_id:
-			return generate(
-				canonical_stage.generation_profile,
-				canonical_stage.terrain_seed,
-				canonical_stage
-			)
-	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
-	if stage_data == null:
-		push_error("Production stage generation requires StageData.")
+	var exact_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
+	if stage_data == null or exact_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
+		push_error("Exact v9 generation requires StageData and the canonical terrain seed.")
 		return null
-	# Generated progression entries use their persisted accepted seed. The three
-	# legacy resources predate the catalog builder, so they retain the bounded
-	# migration search until their content-addressed replacements are checked in.
-	if String(stage_id).begins_with("stage_"):
-		var accepted := _build_attempt(stage_id, profile, requested_seed, requested_seed, 0)
-		if _validate(profile, accepted) and _finalize_layout(profile, stage_data, accepted):
-			accepted.reachability_certificate = stage_data.reachability_certificate
-			return accepted
-		var failure_metrics := accepted.metrics if accepted != null else {"rejection": "route_graph"}
-		push_error(
-			"Generated stage %s failed its persisted accepted seed: %s" \
-					% [stage_id, str(failure_metrics)]
-		)
-		return null
-	for attempt_index in range(profile.generation_contract.attempt_count):
-		var attempt_seed := int((requested_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)
-		var candidate := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
-		if _validate(profile, candidate) and _finalize_layout(profile, stage_data, candidate):
-			return candidate
-		push_error("Legacy stage %s failed its migration attempts." % stage_id)
+	var layout := _build_exact(stage_id, profile, exact_seed)
+	if _validate(profile, layout) and _finalize_layout(profile, stage_data, layout):
+		layout.reachability_certificate = stage_data.reachability_certificate
+		return layout
+	var failure_metrics := layout.metrics if layout != null else {"rejection": "route_graph"}
+	push_error("Exact v9 generation failed for %s: %s" % [stage_id, str(failure_metrics)])
 	return null
 
 
-## Offline structural helper for the certifier and deterministic generation
-## tests. Gameplay and presentation code must call generate(), which fails
-## closed unless it can rebuild the one persisted accepted seed.
-static func generate_structural_sequence(
+## Offline catalog-builder entry point. One exact identity either validates or
+## fails; there is no candidate, attempt, or fallback path.
+static func generate_exact(
 		profile: StageGenerationProfile,
 		terrain_seed: int = 0,
 		stage_data: StageData = null
@@ -69,113 +44,38 @@ static func generate_structural_sequence(
 	if profile == null or not profile.is_valid():
 		push_error("Stage generation profile is invalid.")
 		return null
-	var contract := profile.generation_contract
 	var stage_id := stage_data.stage_id if stage_data != null \
 			else StageGenerationProfile.stage_id_from_profile_id(profile.profile_id)
-	var requested_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
-	for attempt_index in range(contract.attempt_count):
-		var attempt_seed := int((requested_seed + attempt_index * contract.attempt_seed_stride) & 0x7fffffff)
-		var layout := _build_attempt(stage_id, profile, requested_seed, attempt_seed, attempt_index)
-		if _validate(profile, layout) and _finalize_layout(profile, stage_data, layout):
-			return layout
-	var fallback := _build_attempt(stage_id, profile, requested_seed, profile.fallback_seed, -1)
-	if _validate(profile, fallback) and _finalize_layout(profile, stage_data, fallback):
-		push_warning("Stage generation used validated fallback seed %d for %s." % [profile.fallback_seed, profile.profile_id])
-		return fallback
-	var failure_metrics := fallback.metrics if fallback != null else {"rejection": "route_graph"}
-	push_error("Stage generation failed every deterministic attempt and fallback for %s: %s" % [profile.profile_id, str(failure_metrics)])
-	return null
-
-
-## Offline catalog-builder entry point. It performs exactly one candidate
-## materialization and finalization; outer publication owns bounded selection.
-static func generate_candidate_once(
-		stage_data: StageData,
-		candidate_seed: int
-) -> GeneratedStageLayout:
-	var diagnostic := generate_candidate_diagnostic(stage_data, candidate_seed)
-	return diagnostic.get("layout") as GeneratedStageLayout if bool(diagnostic.get("valid", false)) else null
-
-
-## Offline-only candidate evidence. It preserves the normal one-candidate
-## materialization path while retaining the validator phase and stable reason.
-static func generate_candidate_diagnostic(
-		stage_data: StageData,
-		candidate_seed: int
-) -> Dictionary:
-	if stage_data == null or stage_data.generation_profile == null \
-			or candidate_seed <= 0:
-		return {"valid": false, "phase": "structural", "reason": "invalid_candidate_input"}
-	var profile := stage_data.generation_profile
-	var layout := _build_attempt(stage_data.stage_id, profile, candidate_seed, candidate_seed, 0)
+	var exact_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
+	if stage_data == null or exact_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
+		return null
+	var layout := _build_exact(stage_id, profile, exact_seed)
 	if not _validate(profile, layout):
-		return {
-			"valid": false,
-			"phase": "structural",
-			"reason": _diagnostic_rejection_reason(layout, "structural_validation"),
-		}
+		push_error("Exact v9 structural generation failed for %s: %s" % [
+			stage_id,
+			str(layout.metrics) if layout != null else "missing_layout",
+		])
+		return null
 	if not _finalize_layout(profile, stage_data, layout):
-		return {
-			"valid": false,
-			"phase": "finalization",
-			"reason": _diagnostic_rejection_reason(layout, "layout_finalization"),
-		}
-	var valid_identity := layout.generation_attempt == 0 and layout.terrain_seed == candidate_seed \
-			and layout.accepted_seed == candidate_seed
-	return {
-		"valid": valid_identity,
-		"phase": "finalization",
-		"reason": "" if valid_identity else "candidate_identity",
-		"layout": layout if valid_identity else null,
-	}
+		push_error("Exact v9 layout finalization failed for %s: %s" % [
+			stage_id,
+			str(layout.metrics),
+		])
+		return null
+	return layout
 
 
-static func _diagnostic_rejection_reason(layout: GeneratedStageLayout, fallback: String) -> String:
-	if layout != null and layout.metrics != null:
-		var rejection := String(layout.metrics.get("rejection", ""))
-		if not rejection.is_empty():
-			if rejection == "mechanism_placement":
-				var placement_rejection := String(
-					layout.metrics.get("placement_rejection", "unspecified")
-				)
-				var failed_kind := String(layout.metrics.get("placement_failed_kind", ""))
-				if not failed_kind.is_empty():
-					return "%s/%s/%s" % [rejection, placement_rejection, failed_kind]
-				return "%s/%s" % [rejection, placement_rejection]
-			return rejection
-	return fallback
-
-
-static func _attempt_index_for_accepted_seed(
-		profile: StageGenerationProfile,
-		requested_seed: int,
-		accepted_seed: int
-) -> int:
-	var contract := profile.generation_contract
-	for attempt_index in range(contract.attempt_count):
-		var derived_seed := int((
-			requested_seed + attempt_index * contract.attempt_seed_stride
-		) & 0x7fffffff)
-		if derived_seed == accepted_seed:
-			return attempt_index
-	if accepted_seed == profile.fallback_seed:
-		return -1
-	return -2
-
-
-static func _build_attempt(
+static func _build_exact(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
-		requested_seed: int,
-		attempt_seed: int,
-		attempt_index: int
+		terrain_seed: int
 ) -> GeneratedStageLayout:
-	var graph: GeneratedRouteGraph = ROUTE_GRAPH_RESOLVER.resolve(stage_id, profile, attempt_seed)
+	var graph: GeneratedRouteGraph = ROUTE_GRAPH_RESOLVER.resolve(stage_id, profile, terrain_seed)
 	if graph == null:
 		return null
 	var contract := profile.generation_contract
 	var mountain: Dictionary = ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER.build(
-		stage_id, profile, graph, attempt_seed
+		stage_id, profile, graph, terrain_seed
 	)
 	var heights: PackedFloat32Array = mountain.get("heights", PackedFloat32Array())
 	var footprint: PackedByteArray = mountain.get("footprint", PackedByteArray())
@@ -184,9 +84,7 @@ static func _build_attempt(
 	layout.profile_id = profile.profile_id
 	layout.profile_version = profile.profile_version
 	layout.layout_version = contract.layout_version
-	layout.terrain_seed = requested_seed
-	layout.accepted_seed = attempt_seed
-	layout.generation_attempt = attempt_index
+	layout.terrain_seed = terrain_seed
 	layout.cell_count = contract.cell_count
 	layout.local_bounds = contract.local_bounds
 	layout.heights = heights
@@ -195,7 +93,7 @@ static func _build_attempt(
 		layout.cell_count, layout.local_bounds, heights, footprint
 	)
 	layout.route_graph = graph
-	layout.containment = ContainmentSpec.new()
+	layout.play_bounds = PlayBoundsSpec.new()
 	layout.checksum = _height_checksum(heights)
 	return layout
 
@@ -393,7 +291,11 @@ static func _generate_decorations(stage_data: StageData, layout: GeneratedStageL
 			var local_xz := Vector2(local_x, local_z)
 			candidates.append(local_xz)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = int((layout.accepted_seed ^ 0x5A17D3C1) & 0x7fffffff)
+	# Stage identity is part of the key so all stages can share one terrain seed
+	# without sharing decoration placement.
+	rng.seed = KEYED_STAGE_SAMPLER.fnv1a32(
+		KEYED_STAGE_SAMPLER.versioned_key(stage_data.stage_id, layout.terrain_seed, "decorations")
+	) & 0x7fffffff
 	for index in range(candidates.size() - 1, 0, -1):
 		var swap_index := rng.randi_range(0, index)
 		var temporary := candidates[index]

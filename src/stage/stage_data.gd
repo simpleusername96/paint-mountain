@@ -26,7 +26,6 @@ const DEFAULT_WIND_PROFILE: WindProfile = preload("res://resources/wind/standard
 @export var cannon_transform := Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 5.0))
 @export var reachability_certificate: DirectReachabilityCertificate
 @export var mechanism_loadout: Array[MechanismData] = []
-@export var reliable_solution: Array[Vector3] = []
 
 @export_category("Camera Bookmarks")
 @export var briefing_camera_position := Vector3(92.0, 62.0, 24.0)

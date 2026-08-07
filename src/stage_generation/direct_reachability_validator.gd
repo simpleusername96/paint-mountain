@@ -312,9 +312,13 @@ static func validate_summit(
 	var distance_margins := PackedFloat32Array()
 	var range_margins := PackedFloat32Array()
 	var maximum_height := -INF
+	var summit_addresses: Dictionary = {}
+	for sample in region:
+		summit_addresses[_triangle_key(sample.cell as Vector2i, int(sample.triangle))] = true
 	for height in layout.heights:
 		maximum_height = maxf(maximum_height, height)
 	var best: Dictionary = {}
+	var nearest_height_margin := INF
 	for summit in region:
 		var world_point := terrain_surface.to_global(summit.point as Vector3)
 		var world_normal := (terrain_surface.global_transform.basis.inverse().transposed() \
@@ -326,33 +330,58 @@ static func validate_summit(
 			stage_bounds,
 			world_point,
 			world_normal,
-			summit
+			summit,
+			true
 		)
 		if not bool(solved.get("valid", false)):
 			continue
 		var prediction := solved.prediction as TrajectoryPrediction
+		if prediction == null or prediction.hit_identity == null \
+				or prediction.hit_identity.contact_owner_id \
+						!= TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
+			continue
+		if not summit_addresses.has(_triangle_key(
+			prediction.hit_identity.terrain_cell,
+			prediction.hit_identity.terrain_triangle
+		)):
+			continue
+		# The witness must describe a shot that reaches terrain before the same
+		# never-contacted cleanup used by live projectiles.
+		if prediction.duration >= cannon.projectile_data.never_contacted_timeout:
+			continue
 		var world_offset_y := world_point.y - float(summit.point.y)
 		var height_margin := maxf(
 			(world_offset_y + maximum_height) - prediction.endpoint.y,
 			0.0
 		)
-		if best.is_empty() or height_margin < float(best.height_margin):
+		nearest_height_margin = minf(nearest_height_margin, height_margin)
+		# A summit witness must remain inside the one-metre summit band. Within
+		# that band, prefer a triangle-interior contact so the rigid body does not
+		# straddle a faceted edge on the next physics tick.
+		if height_margin > 1.0:
+			continue
+		var barycentric := prediction.hit_identity.barycentric
+		var interior_margin := minf(barycentric.x, minf(barycentric.y, barycentric.z))
+		if best.is_empty() or interior_margin > float(best.interior_margin) + 0.0001 \
+				or (is_equal_approx(interior_margin, float(best.interior_margin)) \
+				and height_margin < float(best.height_margin)):
 			best = {
 				"aim": solved.aim,
 				"prediction": prediction,
+				"prediction_duration": prediction.duration,
 				"world_point": world_point,
 				"height_margin": height_margin,
+				"interior_margin": interior_margin,
 				"range_margin": float(solved.get("range_margin", 0.0)),
 			}
 	if best.is_empty():
-		return {"valid": false, "rejection": &"summit_unreachable"}
-	var minimum_height_margin := float(best.height_margin)
-	if minimum_height_margin > 1.0:
 		return {
 			"valid": false,
-			"rejection": &"summit_contact_below_global_max",
-			"minimum_height_margin": minimum_height_margin,
+			"rejection": &"summit_contact_below_global_max" \
+					if is_finite(nearest_height_margin) else &"summit_unreachable",
+			"minimum_height_margin": nearest_height_margin,
 		}
+	var minimum_height_margin := float(best.height_margin)
 	witnesses.append(best.aim as AimTuple)
 	var best_prediction: TrajectoryPrediction = best.prediction
 	witness_impacts.append(best_prediction.endpoint)
@@ -383,6 +412,7 @@ static func validate_summit(
 			witness_impacts
 		),
 		"minimum_height_margin": minimum_height_margin,
+		"prediction_duration": float(best.prediction_duration),
 		"checksum": _summit_checksum(region, witnesses),
 	}
 
@@ -743,11 +773,10 @@ static func build_certificate(
 		stage_id,
 		layout.profile_version,
 		layout.terrain_seed,
-		layout.accepted_seed,
 		layout.checksum,
 		layout.target_mask_checksum,
 		layout.placement_checksum(),
-		layout.containment.checksum(),
+		layout.play_bounds.checksum(),
 		layout.reachable_target_checksum(certificate_target_indices),
 		int(predictor_result.predictor_reachability_checksum),
 		int(rigidbody_result.rigidbody_reachability_checksum),
@@ -822,12 +851,11 @@ static func certificate_matches(
 				and is_equal_approx(expected.summit_minimum_height_margin, actual.summit_minimum_height_margin)
 	return expected.stage_id == actual.stage_id \
 			and expected.profile_version == actual.profile_version \
-			and expected.requested_seed == actual.requested_seed \
-			and expected.accepted_seed == actual.accepted_seed \
+			and expected.terrain_seed == actual.terrain_seed \
 			and expected.height_checksum == actual.height_checksum \
 			and expected.target_checksum == actual.target_checksum \
 			and expected.placement_checksum == actual.placement_checksum \
-			and expected.containment_checksum == actual.containment_checksum \
+			and expected.play_bounds_checksum == actual.play_bounds_checksum \
 			and expected.reachable_target_checksum == actual.reachable_target_checksum \
 			and expected.predictor_reachability_checksum == actual.predictor_reachability_checksum \
 			and expected.rigidbody_reachability_checksum == actual.rigidbody_reachability_checksum \
@@ -849,7 +877,8 @@ static func solve_one_target(
 		stage_bounds: AABB,
 		target_world_point: Vector3,
 		target_world_normal: Vector3,
-		target_sample: Dictionary
+		target_sample: Dictionary,
+		prefer_short_flight: bool = false
 ) -> Dictionary:
 	if space_state == null or cannon == null or layout == null \
 			or not target_world_point.is_finite() \
@@ -864,7 +893,9 @@ static func solve_one_target(
 		target_world_normal,
 		target_sample,
 		{},
-		_build_solver_cache(cannon)
+		_build_solver_cache(cannon),
+		TARGET_DISTANCE_TOLERANCE,
+		prefer_short_flight
 	)
 
 
@@ -878,7 +909,8 @@ static func _solve_target(
 		target_sample: Dictionary,
 		prediction_cache: Dictionary,
 		solver_cache: Dictionary = {},
-		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
+		maximum_distance: float = TARGET_DISTANCE_TOLERANCE,
+		prefer_short_flight: bool = false
 ) -> Dictionary:
 	if solver_cache.is_empty():
 		solver_cache = _build_solver_cache(cannon)
@@ -970,7 +1002,9 @@ static func _solve_target(
 				has_previous = true
 				previous_height_error = current.x
 
-	nominations.sort_custom(_nomination_precedes)
+	nominations.sort_custom(
+		_short_flight_nomination_precedes if prefer_short_flight else _nomination_precedes
+	)
 	var predictor_calls := 0
 	var diagnostics := _new_prediction_diagnostics()
 	for nomination in nominations:
@@ -1293,6 +1327,11 @@ static func _append_elevation_neighborhood(
 			"aim": aim,
 			"endpoint_error": float(endpoint.endpoint_error),
 			"perpendicular_miss": float(endpoint.perpendicular_miss),
+			"flight_duration": _damped_duration_at_horizontal_range_cached(
+				float(solver_cache.speeds[aim.power_percent]) * cos(deg_to_rad(aim.elevation_degrees)),
+				float(endpoint.projected_range),
+				solver_cache
+			),
 		}
 		if not nomination_by_key.has(key):
 			nomination_by_key[key] = nominations.size()
@@ -1326,6 +1365,37 @@ static func _nomination_precedes(first: Dictionary, second: Dictionary) -> bool:
 		if first_key[index] > second_key[index]:
 			return false
 	return false
+
+
+static func _short_flight_nomination_precedes(first: Dictionary, second: Dictionary) -> bool:
+	var first_duration := float(first.get("flight_duration", INF))
+	var second_duration := float(second.get("flight_duration", INF))
+	if not is_equal_approx(first_duration, second_duration):
+		return first_duration < second_duration
+	return _nomination_precedes(first, second)
+
+
+static func _damped_duration_at_horizontal_range_cached(
+		horizontal_speed: float,
+		projected_range: float,
+		solver_cache: Dictionary
+) -> float:
+	if horizontal_speed <= 0.000001 or projected_range <= 0.0:
+		return INF
+	var step: float = solver_cache.step
+	var damping: float = solver_cache.damping
+	if damping <= 0.0:
+		return INF
+	var step_count := 0
+	if is_equal_approx(damping, 1.0):
+		step_count = ceili(projected_range / maxf(horizontal_speed * step, 0.000001))
+	else:
+		var asymptotic_range := horizontal_speed * float(solver_cache.asymptotic_factor)
+		if projected_range >= asymptotic_range:
+			return INF
+		var remaining_ratio := 1.0 - projected_range / asymptotic_range
+		step_count = ceili(log(remaining_ratio) / float(solver_cache.log_damping))
+	return float(clampi(step_count, 1, TrajectoryPredictor.MAXIMUM_STEPS)) * step
 
 
 static func _prediction_witnesses_target(
@@ -1524,7 +1594,7 @@ static func _runtime_contact_identity(
 	if collision_object == null:
 		return null
 	var owner_id := StringName(collision_object.get_meta(
-		ContainmentSpec.CONTACT_OWNER_META,
+		PlayBoundsSpec.CONTACT_OWNER_META,
 		&""
 	))
 	var shape_owner_id := collision_object.shape_find_owner(contact.collider_shape_index)
@@ -1533,7 +1603,7 @@ static func _runtime_contact_identity(
 	var shape_owner := collision_object.shape_owner_get_owner(shape_owner_id)
 	if shape_owner == null:
 		return null
-	var shape_id := StringName(shape_owner.get_meta(ContainmentSpec.CONTACT_SHAPE_META, &""))
+	var shape_id := StringName(shape_owner.get_meta(PlayBoundsSpec.CONTACT_SHAPE_META, &""))
 	if owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
 		return terrain_surface.classify_top_physics_hit(
 			contact.world_position,

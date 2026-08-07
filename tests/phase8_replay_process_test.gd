@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 const FIXTURE_PATH := "user://paint_mountain_phase8_replay.json"
 
 var _failed: bool = false
@@ -22,9 +22,15 @@ func _run() -> void:
 		print("Phase 8 replay fixture cleaned.")
 		quit(0)
 		return
-	root.get_node("/root/GameState").persistence_enabled = false
-	root.get_node("/root/GameState").initialize_from_data(root.get_node("/root/SaveSystem").default_data())
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	var game_state := root.get_node("/root/GameState") as GameState
+	game_state.persistence_enabled = false
+	game_state.initialize_from_data(root.get_node("/root/SaveSystem").default_data())
+	game_state.select_stage(&"stage_01")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
+	_assert_true(gameplay != null, "replay process fixture requires baked Stage 01")
+	if gameplay == null:
+		quit(1)
+		return
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
@@ -43,7 +49,12 @@ func _run() -> void:
 	if mode == "record":
 		controller.begin_aiming()
 		controller.set_aim(0.0, 38.0, 68.0)
-		controller.request_fire()
+		var readiness_budget := 120
+		while not bool(controller.fire_readiness_snapshot().get("fireable", false)) \
+				and readiness_budget > 0:
+			await physics_frame
+			readiness_budget -= 1
+		_assert_true(readiness_budget > 0 and controller.request_fire(), "record Fire requires the current scheduled prediction")
 		await _wait_for_settlement(controller)
 		var observation := controller.last_sealed_shot_observation()
 		var fixture := {
@@ -104,7 +115,7 @@ func _run() -> void:
 			_assert_true(presentation.active, "replay input lock must remain active until explicit exit")
 			print("Phase 8 replay passed across a fresh process: impact Δ %.5fm, coverage Δ %.5f%%." % [impact_delta, coverage_delta])
 	Engine.time_scale = 1.0
-	root.get_node("/root/GameState").persistence_enabled = true
+	game_state.persistence_enabled = true
 	gameplay.queue_free()
 	await process_frame
 	await process_frame

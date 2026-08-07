@@ -69,6 +69,18 @@ func sample_at_offset(offset_ticks: int) -> WindSnapshot:
 	return sample_at_tick(_elapsed_ticks + maxi(0, offset_ticks))
 
 
+## Stable intervals reuse one prediction. Any horizon that contains a wind
+## change advances in small fixed buckets so Fire never performs the query.
+func prediction_epoch(maximum_steps: int, changing_bucket_ticks: int = 3) -> int:
+	return prediction_epoch_for(
+		_profile,
+		_schedule_seed,
+		_elapsed_ticks,
+		maximum_steps,
+		changing_bucket_ticks
+	)
+
+
 func _physics_process(_delta: float) -> void:
 	if not _running or _profile == null:
 		return
@@ -124,6 +136,126 @@ static func sample_for_tick(
 		transition_progress,
 		_schedule_identity(profile, schedule_seed)
 	)
+
+
+static func prediction_epoch_for(
+		profile: WindProfile,
+		schedule_seed: int,
+		elapsed_ticks: int,
+		maximum_steps: int,
+		changing_bucket_ticks: int = 3,
+		physics_ticks_per_second: int = 60
+) -> int:
+	var safe_tick := maxi(elapsed_ticks, 0)
+	var bucket_ticks := maxi(changing_bucket_ticks, 1)
+	if profile == null or not profile.is_valid() or maximum_steps < 0:
+		return safe_tick / bucket_ticks
+	if _acceleration_is_constant_through(
+		profile,
+		schedule_seed,
+		safe_tick,
+		safe_tick + maximum_steps,
+		physics_ticks_per_second
+	):
+		return -1 - safe_tick / profile.interval_ticks(physics_ticks_per_second)
+	return safe_tick / bucket_ticks
+
+
+static func _acceleration_is_constant_through(
+		profile: WindProfile,
+		schedule_seed: int,
+		start_tick: int,
+		end_tick: int,
+		physics_ticks_per_second: int
+) -> bool:
+	var interval_ticks := profile.interval_ticks(physics_ticks_per_second)
+	var transition_ticks := profile.transition_ticks(physics_ticks_per_second)
+	var reference := _acceleration_for_tick(
+		profile,
+		schedule_seed,
+		start_tick,
+		physics_ticks_per_second
+	)
+	var first_keyframe := start_tick / interval_ticks
+	var last_keyframe := end_tick / interval_ticks
+	for keyframe_index in range(first_keyframe, last_keyframe + 1):
+		var boundary_tick := (keyframe_index + 1) * interval_ticks
+		var transition_start := boundary_tick - transition_ticks
+		if transition_ticks > 0 and _candidate_acceleration_differs(
+			profile,
+			schedule_seed,
+			transition_start + 1,
+			start_tick,
+			end_tick,
+			physics_ticks_per_second,
+			reference
+		):
+			return false
+		if _candidate_acceleration_differs(
+			profile,
+			schedule_seed,
+			boundary_tick - 1,
+			start_tick,
+			end_tick,
+			physics_ticks_per_second,
+			reference
+		):
+			return false
+		if _candidate_acceleration_differs(
+			profile,
+			schedule_seed,
+			boundary_tick,
+			start_tick,
+			end_tick,
+			physics_ticks_per_second,
+			reference
+		):
+			return false
+	return _acceleration_for_tick(
+		profile,
+		schedule_seed,
+		end_tick,
+		physics_ticks_per_second
+	).is_equal_approx(reference)
+
+
+static func _candidate_acceleration_differs(
+		profile: WindProfile,
+		schedule_seed: int,
+		candidate_tick: int,
+		start_tick: int,
+		end_tick: int,
+		physics_ticks_per_second: int,
+		reference: Vector3
+) -> bool:
+	if candidate_tick < start_tick or candidate_tick > end_tick:
+		return false
+	return not _acceleration_for_tick(
+		profile,
+		schedule_seed,
+		candidate_tick,
+		physics_ticks_per_second
+	).is_equal_approx(reference)
+
+
+static func _acceleration_for_tick(
+		profile: WindProfile,
+		schedule_seed: int,
+		physics_tick: int,
+		physics_ticks_per_second: int
+) -> Vector3:
+	var safe_tick := maxi(physics_tick, 0)
+	var interval_ticks := profile.interval_ticks(physics_ticks_per_second)
+	var transition_ticks := profile.transition_ticks(physics_ticks_per_second)
+	var keyframe_index := safe_tick / interval_ticks
+	var local_tick := safe_tick % interval_ticks
+	var current_target := _keyframe_acceleration(profile, schedule_seed, keyframe_index)
+	if transition_ticks <= 0 or local_tick < interval_ticks - transition_ticks:
+		return current_target
+	var next_target := _keyframe_acceleration(profile, schedule_seed, keyframe_index + 1)
+	var progress := float(local_tick - (interval_ticks - transition_ticks)) \
+			/ float(transition_ticks)
+	return current_target.lerp(next_target, smoothstep(0.0, 1.0, progress))
 
 
 static func _keyframe_acceleration(

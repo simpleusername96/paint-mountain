@@ -8,13 +8,17 @@ var first_collision_position := Vector3.ZERO
 var has_first_collision := false
 var _cannon: CannonController
 var _prediction: TrajectoryPrediction
-var _dots: Array[MeshInstance3D] = []
+var _dot_instances: MultiMeshInstance3D
+var _dot_multimesh: MultiMesh
+var _visible_sample_count := 0
 var _impact_marker: MeshInstance3D
 var _exit_marker: Node3D
 
 
 func _ready() -> void:
 	_build_visuals()
+	visibility_changed.connect(_update_process_enabled)
+	_update_process_enabled()
 
 
 func _process(_delta: float) -> void:
@@ -46,11 +50,7 @@ func current_prediction() -> TrajectoryPrediction:
 
 
 func visible_sample_count() -> int:
-	var result := 0
-	for dot in _dots:
-		if dot.visible:
-			result += 1
-	return result
+	return _visible_sample_count
 
 
 func refresh() -> void:
@@ -59,15 +59,19 @@ func refresh() -> void:
 	var display_points := PackedVector3Array()
 	if _prediction != null:
 		display_points = _display_points(_prediction.sampled_points)
-	for index in range(_dots.size()):
-		var visible_dot := index < display_points.size()
-		_dots[index].visible = visible_dot
-		if visible_dot:
-			_dots[index].global_position = display_points[index]
+	_visible_sample_count = mini(display_points.size(), MAXIMUM_DOTS)
+	_dot_multimesh.visible_instance_count = _visible_sample_count
+	for index in range(_visible_sample_count):
+		_dot_multimesh.set_instance_transform(
+			index,
+			Transform3D(Basis.IDENTITY, to_local(display_points[index]))
+		)
+	_update_dot_bounds(display_points)
 	has_first_collision = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.COLLISION
 	first_collision_position = _prediction.endpoint if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
 	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
+	_update_process_enabled()
 	if _prediction == null:
 		return
 	if has_first_collision:
@@ -124,14 +128,16 @@ func _build_visuals() -> void:
 	dot_mesh.radial_segments = 8
 	dot_mesh.rings = 4
 	dot_mesh.material = dot_material
-	for index in range(MAXIMUM_DOTS):
-		var dot := MeshInstance3D.new()
-		dot.name = "TrajectoryDot%02d" % index
-		dot.mesh = dot_mesh
-		dot.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		dot.visible = false
-		add_child(dot)
-		_dots.append(dot)
+	_dot_multimesh = MultiMesh.new()
+	_dot_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	_dot_multimesh.mesh = dot_mesh
+	_dot_multimesh.instance_count = MAXIMUM_DOTS
+	_dot_multimesh.visible_instance_count = 0
+	_dot_instances = MultiMeshInstance3D.new()
+	_dot_instances.name = "TrajectoryDots"
+	_dot_instances.multimesh = _dot_multimesh
+	_dot_instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_dot_instances)
 	var marker_mesh := TorusMesh.new()
 	marker_mesh.inner_radius = 0.68
 	marker_mesh.outer_radius = 1.0
@@ -165,6 +171,27 @@ func _set_marker_scale(marker: Node3D, endpoint: Vector3) -> void:
 	var marker_scale := clampf(active_camera.global_position.distance_to(endpoint) / 80.0, 1.0, 2.5) \
 			if active_camera != null else 1.0
 	marker.scale = Vector3.ONE * marker_scale
+
+
+func _update_dot_bounds(points: PackedVector3Array) -> void:
+	if points.is_empty():
+		_dot_instances.custom_aabb = AABB(Vector3.ZERO, Vector3.ONE * 0.01)
+		return
+	var minimum := Vector3(INF, INF, INF)
+	var maximum := Vector3(-INF, -INF, -INF)
+	for index in range(mini(points.size(), MAXIMUM_DOTS)):
+		var local_point := to_local(points[index])
+		minimum = minimum.min(local_point)
+		maximum = maximum.max(local_point)
+	var radius := Vector3.ONE * 0.25
+	_dot_instances.custom_aabb = AABB(minimum - radius, maximum - minimum + radius * 2.0)
+
+
+func _update_process_enabled() -> void:
+	set_process(
+		is_visible_in_tree() and _prediction != null \
+				and (_impact_marker.visible or _exit_marker.visible)
+	)
 
 
 func _unshaded_material(color: Color) -> StandardMaterial3D:

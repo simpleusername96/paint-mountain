@@ -1,7 +1,7 @@
 class_name BakedStageLayoutData
 extends Resource
 
-const BAKED_LAYOUT_SCHEMA_VERSION := 1
+const BAKED_LAYOUT_SCHEMA_VERSION := 2
 
 @export_storage var schema_version := BAKED_LAYOUT_SCHEMA_VERSION
 @export_storage var payload_sha256 := ""
@@ -9,9 +9,6 @@ const BAKED_LAYOUT_SCHEMA_VERSION := 1
 @export_storage var profile_version := 0
 @export_storage var layout_version := 0
 @export_storage var terrain_seed := 0
-@export_storage var accepted_seed := 0
-@export_storage var candidate_index := -1
-@export_storage var generation_attempt := -1
 @export_storage var cell_count := Vector2i.ZERO
 @export_storage var local_bounds := Rect2()
 @export_storage var heights := PackedFloat32Array()
@@ -33,7 +30,7 @@ const BAKED_LAYOUT_SCHEMA_VERSION := 1
 @export_storage var route_edge_indices := PackedInt32Array()
 @export_storage var route_edge_roles := PackedInt32Array()
 @export_storage var route_edge_widths := PackedFloat64Array()
-@export_storage var containment_checksum := 0
+@export_storage var play_bounds_checksum := 0
 @export_storage var mechanism_loadout_indices := PackedInt32Array()
 @export_storage var mechanism_anchor_ids: Array[StringName] = []
 @export_storage var mechanism_local_xz := PackedVector2Array()

@@ -5,24 +5,22 @@ const LOOP_VERTEX_COUNT := 8
 
 
 static func build(
-		spec: ContainmentSpec,
+		spec: PlayBoundsSpec,
 		terrain_world_bounds: Rect2,
 		terrain_world_join_y: float
 ) -> ApronGeometry:
-	assert(spec != null and spec.is_valid(), "Apron geometry requires a valid containment specification.")
+	assert(spec != null and spec.is_valid(), "Apron geometry requires valid play bounds.")
 	assert(
-		spec.supports_terrain_join(terrain_world_bounds, terrain_world_join_y),
-		"Apron geometry requires a terrain boundary that matches the visible top join."
+		spec.supports_terrain(terrain_world_bounds, terrain_world_join_y),
+		"Apron geometry requires terrain inside its open-ground limits."
 	)
 
-	var outer_top := _rectangle_loop(spec.apron_xz_bounds, spec.apron_minimum_y)
+	var outer_top := _rectangle_loop(spec.apron_xz_bounds, spec.apron_y)
 	var inner_top := _rectangle_loop(terrain_world_bounds, terrain_world_join_y)
-	# A half-depth inset closes the volume without making its rear side coplanar
-	# with either the backstop front or the terrain's rear join edge.
-	var bottom_inset := spec.rear_transition_depth * 0.5
+	var bottom_inset := 0.5
 	var outer_bottom_bounds := spec.apron_xz_bounds.grow(-bottom_inset)
 	assert(outer_bottom_bounds.encloses(terrain_world_bounds), "The inset apron bottom must still enclose the terrain join.")
-	var outer_bottom := _rectangle_loop(outer_bottom_bounds, spec.apron_bottom_y())
+	var outer_bottom := _rectangle_loop(outer_bottom_bounds, spec.apron_bottom_y)
 
 	var faces := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -31,7 +29,7 @@ static func build(
 	# makes a distant 3D mass read as a dark open slab.
 	_append_filled_rectangle(
 		spec.apron_xz_bounds,
-		spec.apron_minimum_y,
+		spec.apron_y,
 		Vector3.UP,
 		faces,
 		normals
@@ -40,7 +38,7 @@ static func build(
 	_append_wall(outer_top, outer_bottom, true, faces, normals)
 	_append_filled_rectangle(
 		outer_bottom_bounds,
-		spec.apron_bottom_y(),
+		spec.apron_bottom_y,
 		Vector3.DOWN,
 		faces,
 		normals

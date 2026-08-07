@@ -22,15 +22,13 @@ enum InteractionMode {
 
 const CAMERA_CLEARANCE := 1.5
 const CORRECTION_SMOOTH_TIME := 0.20
-const SPLIT_FRAME_MARGIN := 1.15
-const AIM_FRAME_MARGIN := 1.15
 const AIM_SUMMIT_HEADROOM := 8.0
 const AIM_SUMMIT_HEIGHT_TOLERANCE := 0.25
-const FOLLOW_RELEASE_RATIO := 0.85
+const FOLLOW_IMPACT_HOLD_TICKS := 48
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
-const FOLLOW_DIRECTION := Vector3(52.0, 34.0, 74.0)
+const FOLLOW_DIRECTION := Vector3(18.0, 10.0, 24.0)
 const INSPECTION_ORBIT_DEGREES_PER_PIXEL := Vector2(0.18, 0.14)
 const INSPECTION_MIN_PITCH_DEGREES := 12.0
 const INSPECTION_MAX_PITCH_DEGREES := 78.0
@@ -57,7 +55,6 @@ var _safety_solve_count := 0
 var _camera_velocity := Vector3.ZERO
 var _briefing_yaw_offset: float = 0.0
 var _briefing_zoom_offset: float = 0.0
-var _follow_wide_latched: bool = false
 var _shake_remaining: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_phase: float = 0.0
@@ -73,6 +70,15 @@ var _inspection_pose_initialized := false
 var _inspection_drag_active := false
 var _inspection_press_position := Vector2.ZERO
 var _inspection_drag_distance := 0.0
+var _queued_inspection_pick := false
+var _queued_inspection_screen_position := Vector2.ZERO
+var _aim_pose_key := ""
+var _aim_pose: Array[Vector3] = []
+var _aim_interest_points := PackedVector3Array()
+var _aim_interest_build_count := 0
+var _follow_projectile: PaintProjectile
+var _follow_impact_hold_ticks := 0
+var _follow_impact_focus := Vector3.ZERO
 
 
 func configure(
@@ -88,14 +94,21 @@ func configure(
 	_terrain_surface = terrain_surface
 	_cannon_controller = cannon_controller
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	if not _projectile_manager.shot_family_started.is_connected(_on_shot_family_started):
+		_projectile_manager.shot_family_started.connect(_on_shot_family_started)
+	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
+		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
 	set_mode(Mode.BRIEFING, true)
 
 
 func _physics_process(delta: float) -> void:
 	if _camera == null or _stage_data == null:
 		return
+	if _queued_inspection_pick:
+		_queued_inspection_pick = false
+		_focus_inspection_from_screen(_queued_inspection_screen_position)
 	if current_mode == Mode.FOLLOW:
-		_update_follow_target()
+		_update_follow_state()
 	_safety_solve_elapsed += delta
 	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= SAFETY_SOLVE_INTERVAL):
 		_resolve_safe_pose()
@@ -134,7 +147,8 @@ func _unhandled_input(event: InputEvent) -> void:
 					button.position.distance_to(_inspection_press_position)
 				)
 				if _inspection_drag_distance <= INSPECTION_CLICK_DRAG_THRESHOLD:
-					_focus_inspection_from_screen(button.position)
+					_queued_inspection_screen_position = button.position
+					_queued_inspection_pick = true
 			get_viewport().set_input_as_handled()
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP:
 			zoom_inspection(1.0)
@@ -167,7 +181,6 @@ func set_mode(mode: Mode, immediate: bool = false) -> void:
 	elif mode == Mode.AIMING:
 		_set_interaction_mode(InteractionMode.AIM_LOCKED, immediate)
 	elif mode == Mode.FOLLOW:
-		_follow_wide_latched = false
 		_update_follow_target()
 	else:
 		var bookmark := _bookmark_for(mode)
@@ -265,7 +278,20 @@ func camera_focus_position() -> Vector3:
 
 
 func follow_wide_is_latched() -> bool:
-	return _follow_wide_latched
+	return false
+
+
+func return_to_aim_view(immediate: bool = false) -> bool:
+	if current_mode != Mode.FOLLOW:
+		return false
+	_follow_projectile = null
+	_follow_impact_hold_ticks = 0
+	set_mode(Mode.AIMING, immediate)
+	return true
+
+
+func aiming_interest_build_count() -> int:
+	return _aim_interest_build_count
 
 
 func safety_solve_count() -> int:
@@ -323,7 +349,7 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 		_:
 			authored = [_stage_data.aiming_camera_position, _stage_data.aiming_camera_target]
 	if mode == Mode.AIMING:
-		return _safe_aiming_bookmark(authored)
+		return _composed_aiming_bookmark(authored)
 	if _terrain_surface == null or _camera == null:
 		return authored
 	var bounds := _terrain_surface.render_world_aabb()
@@ -345,33 +371,32 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 	)
 
 
-func _safe_aiming_bookmark(authored: Array[Vector3]) -> Array[Vector3]:
+func _composed_aiming_bookmark(authored: Array[Vector3]) -> Array[Vector3]:
 	if _terrain_surface == null or _camera == null:
-		return authored
-	var interest_points := _aiming_interest_points()
-	if interest_points.is_empty():
 		return authored
 	var viewport_size := _camera.get_viewport().get_visible_rect().size
 	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
-	var focus := _safe_focus(authored[1])
-	if TerrainCameraFramer.pose_fits_points(
-			interest_points,
-			authored[0],
-			focus,
-			_camera.fov,
-			aspect_ratio,
-			AIM_FRAME_MARGIN
-	):
-		return [authored[0], focus]
-	return TerrainCameraFramer.framed_pose_around_points(
-		interest_points,
-		focus,
-		authored[0],
-		authored[1],
+	var layout := _terrain_surface.layout_read_only()
+	var checksum := layout.checksum if layout != null else 0
+	var cannon_transform := _cannon_controller.global_transform \
+			if _cannon_controller != null else _stage_data.cannon_transform
+	var key := "%d|%s|%.3f|%.6f" % [checksum, str(cannon_transform), _camera.fov, aspect_ratio]
+	if key == _aim_pose_key and _aim_pose.size() == 2:
+		return _aim_pose
+	_aim_interest_points = _aiming_interest_points()
+	_aim_interest_build_count += 1
+	var composed := AimCameraComposer.compose(
+		_aim_interest_points,
+		_terrain_surface.render_world_aabb(),
+		cannon_transform,
 		_camera.fov,
-		aspect_ratio,
-		AIM_FRAME_MARGIN
+		aspect_ratio
 	)
+	if composed.is_empty():
+		return authored
+	_aim_pose_key = key
+	_aim_pose = [composed.position, composed.focus]
+	return _aim_pose
 
 
 func _aiming_interest_points() -> PackedVector3Array:
@@ -404,11 +429,13 @@ func _move_to(position: Vector3, target: Vector3, immediate: bool) -> void:
 	_set_desired_pose(position, target)
 	if not immediate:
 		return
-	_resolve_safe_pose()
-	_camera.global_position = _safe_position
+	# An immediate presentation cut may originate from ready/input code. Apply
+	# the requested pose now, then let the next fixed-physics callback resolve
+	# terrain safety; direct-space queries never run from this call path.
+	_camera.global_position = position
 	_camera_velocity = Vector3.ZERO
-	if not _camera.global_position.is_equal_approx(_safe_cached_focus):
-		_look_at_focus(_safe_cached_focus)
+	if not _camera.global_position.is_equal_approx(target):
+		_look_at_focus(target)
 
 
 func _apply_briefing_orbit() -> void:
@@ -491,51 +518,54 @@ func _update_follow_target() -> void:
 	_set_desired_pose(_computed_follow_position, _computed_follow_focus)
 
 
-func _compute_follow_pose(use_interpolated_transform: bool, update_latch: bool) -> bool:
-	if _projectile_manager == null:
+func _update_follow_state() -> void:
+	if _follow_impact_hold_ticks > 0:
+		_follow_impact_hold_ticks -= 1
+		_computed_follow_focus = _follow_impact_focus
+		_set_desired_pose(_computed_follow_position, _computed_follow_focus)
+		if _follow_impact_hold_ticks == 0:
+			return_to_aim_view()
+		return
+	if _follow_projectile == null or not is_instance_valid(_follow_projectile):
+		return_to_aim_view()
+		return
+	_update_follow_target()
+
+
+func _compute_follow_pose(use_interpolated_transform: bool, _update_latch: bool) -> bool:
+	if _follow_projectile == null or not is_instance_valid(_follow_projectile):
 		return false
-	var active := _projectile_manager.active_projectiles()
-	if active.is_empty():
-		return false
-	var average := Vector3.ZERO
-	var fastest_position := Vector3.ZERO
-	var fastest_speed := -1.0
-	var total_speed := 0.0
-	for projectile in active:
-		var projectile_position := projectile.get_global_transform_interpolated().origin \
-				if use_interpolated_transform else projectile.global_position
-		average += projectile_position
-		var speed := projectile.linear_velocity.length()
-		total_speed += speed
-		if speed > fastest_speed:
-			fastest_position = projectile_position
-			fastest_speed = speed
-	average /= float(active.size())
-	var fastest_weight := minf(0.35, fastest_speed / maxf(total_speed, 0.001))
-	var focus := average.lerp(fastest_position, fastest_weight)
-	var bounding_radius := 0.0
-	for projectile in active:
-		var radius_position := projectile.get_global_transform_interpolated().origin \
-				if use_interpolated_transform else projectile.global_position
-		bounding_radius = maxf(bounding_radius, radius_position.distance_to(focus))
-	var framed_radius := bounding_radius * SPLIT_FRAME_MARGIN
-	var required_distance := maxf(FOLLOW_DIRECTION.length(), framed_radius / tan(deg_to_rad(_camera.fov * 0.5)))
-	if update_latch:
-		if required_distance > _stage_data.follow_camera_max_distance:
-			_follow_wide_latched = true
-		elif _follow_wide_latched and bounding_radius * 2.0 < _stage_data.follow_camera_max_distance * FOLLOW_RELEASE_RATIO:
-			_follow_wide_latched = false
-	if _follow_wide_latched:
-		var wide_bookmark := _bookmark_for(Mode.WIDE)
-		_computed_follow_position = wide_bookmark[0]
-		_computed_follow_focus = focus
-	else:
-		_computed_follow_position = focus + FOLLOW_DIRECTION.normalized() * minf(
-			required_distance,
-			_stage_data.follow_camera_max_distance
-		)
-		_computed_follow_focus = focus
+	var focus := _follow_projectile.get_global_transform_interpolated().origin \
+			if use_interpolated_transform else _follow_projectile.global_position
+	_computed_follow_position = focus + FOLLOW_DIRECTION
+	_computed_follow_focus = focus
 	return true
+
+
+func _on_shot_family_started(_shot_id: int, root_projectile: PaintProjectile) -> void:
+	if root_projectile == null or not is_instance_valid(root_projectile):
+		return
+	_follow_projectile = root_projectile
+	_follow_impact_hold_ticks = 0
+	set_mode(Mode.FOLLOW)
+
+
+func _on_projectile_contact_reported(
+		projectile: PaintProjectile,
+		contact: ProjectileContact
+) -> void:
+	if current_mode != Mode.FOLLOW or projectile != _follow_projectile \
+			or _follow_impact_hold_ticks > 0:
+		return
+	if not _terrain_surface.is_top_collider(contact.collider) \
+			and not _terrain_surface.is_skirt_collider(contact.collider):
+		return
+	_follow_impact_focus = contact.world_position
+	_follow_impact_hold_ticks = FOLLOW_IMPACT_HOLD_TICKS
+	if not _compute_follow_pose(false, false):
+		_computed_follow_position = _follow_impact_focus + FOLLOW_DIRECTION
+	_computed_follow_focus = _follow_impact_focus
+	_set_desired_pose(_computed_follow_position, _computed_follow_focus)
 
 
 func _update_rendered_camera(delta: float) -> void:
@@ -543,32 +573,13 @@ func _update_rendered_camera(delta: float) -> void:
 		return
 	var target_position := _safe_position
 	var target_focus := _safe_cached_focus
-	if current_mode == Mode.FOLLOW and _compute_follow_pose(true, false):
+	if current_mode == Mode.FOLLOW and _follow_impact_hold_ticks == 0 \
+			and _compute_follow_pose(true, false):
 		target_position = _computed_follow_position \
 				+ (_safe_position - _safe_source_position)
 		target_focus = _computed_follow_focus \
 				+ (_safe_cached_focus - _safe_source_focus)
-		# Render interpolation can move the projectile a few centimetres past the
-		# last 15 Hz safety solve. Re-check only this follow path and lift the
-		# target pose when the interpolated line would cut through the mountain.
-		if not view_ray_is_clear(target_position, target_focus, _focus_is_terrain(target_focus)):
-			target_position = safe_position_for(
-				target_position,
-				target_focus,
-				_focus_is_terrain(target_focus)
-			)
 	var corrected := _smooth_damp(_camera.global_position, target_position, delta)
-	if current_mode == Mode.FOLLOW and not view_ray_is_clear(
-			corrected, target_focus, _focus_is_terrain(target_focus)
-	):
-		corrected = safe_position_for(corrected, target_focus, _focus_is_terrain(target_focus))
-	elif not corrected.is_equal_approx(target_position) and not view_ray_is_clear(
-			corrected, target_focus, _focus_is_terrain(target_focus)
-	):
-		# Safe fixed-mode endpoints can still interpolate through a ridge after
-		# Aim Lock has backed away substantially. Correct only transitional
-		# frames; settled poses retain the 15 Hz cached safety path above.
-		corrected = safe_position_for(corrected, target_focus, _focus_is_terrain(target_focus))
 	_camera.global_position = corrected
 	if not corrected.is_equal_approx(target_focus):
 		_look_at_focus(target_focus)

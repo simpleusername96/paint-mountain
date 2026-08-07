@@ -282,10 +282,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if contact.relative_normal_speed >= IMPACT_SPEED_THRESHOLD:
 			transient_splash_requested.emit(self, contact)
 
-	if _contains_backstop_contact(current_contacts):
-		_deactivate_from_state(state, ProjectileSettlementReason.BACKSTOP)
-		return
-
 	_recover_terrain_embedding(state, _current_top_contact)
 	if _deactivated:
 		return
@@ -583,18 +579,6 @@ func _deactivate_from_state(state: PhysicsDirectBodyState3D, reason: StringName)
 	angular_velocity = Vector3.ZERO
 	stopped.emit(self, reason)
 	queue_free()
-
-
-func _contains_backstop_contact(contacts: Array[ProjectileContact]) -> bool:
-	for contact in contacts:
-		if (contact.contact_owner_id == ContainmentSpec.BACKSTOP_OWNER_ID \
-				and contact.contact_shape_id == ContainmentSpec.BACKSTOP_SHAPE_ID) \
-				or ContainmentSpec.is_side_wall_contact(
-					contact.contact_owner_id,
-					contact.contact_shape_id
-				):
-			return true
-	return false
 
 
 func _first_top_contact(contacts: Array[ProjectileContact]) -> ProjectileContact:

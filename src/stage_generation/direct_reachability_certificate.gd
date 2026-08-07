@@ -10,12 +10,11 @@ const CONTRACT_VERSION := StageGenerationContract.CONTRACT_VERSION
 @export_storage var serialized_contract_version: int = CONTRACT_VERSION
 @export_storage var serialized_stage_id: StringName
 @export_storage var serialized_profile_version: int = CONTRACT_VERSION
-@export_storage var serialized_requested_seed: int = -1
-@export_storage var serialized_accepted_seed: int = -1
+@export_storage var serialized_terrain_seed: int = -1
 @export_storage var serialized_height_checksum: int = 0
 @export_storage var serialized_target_checksum: int = 0
 @export_storage var serialized_placement_checksum: int = 0
-@export_storage var serialized_containment_checksum: int = 0
+@export_storage var serialized_play_bounds_checksum: int = 0
 @export_storage var serialized_reachable_target_checksum: int = 0
 @export_storage var serialized_predictor_reachability_checksum: int = 0
 @export_storage var serialized_rigidbody_reachability_checksum: int = 0
@@ -44,12 +43,9 @@ var stage_id: StringName:
 var profile_version: int:
 	get:
 		return serialized_profile_version
-var requested_seed: int:
+var terrain_seed: int:
 	get:
-		return serialized_requested_seed
-var accepted_seed: int:
-	get:
-		return serialized_accepted_seed
+		return serialized_terrain_seed
 var height_checksum: int:
 	get:
 		return serialized_height_checksum
@@ -59,9 +55,9 @@ var target_checksum: int:
 var placement_checksum: int:
 	get:
 		return serialized_placement_checksum
-var containment_checksum: int:
+var play_bounds_checksum: int:
 	get:
-		return serialized_containment_checksum
+		return serialized_play_bounds_checksum
 var reachable_target_checksum: int:
 	get:
 		return serialized_reachable_target_checksum
@@ -127,12 +123,11 @@ var witnesses: Array[AimTuple]:
 static func create(
 		certificate_stage_id: StringName,
 		certificate_profile_version: int,
-		certificate_requested_seed: int,
-		certificate_accepted_seed: int,
+		certificate_terrain_seed: int,
 		certificate_height_checksum: int,
 		certificate_target_checksum: int,
 		certificate_placement_checksum: int,
-		certificate_containment_checksum: int,
+		certificate_play_bounds_checksum: int,
 		certificate_reachable_target_checksum: int,
 		certificate_predictor_reachability_checksum: int,
 		certificate_rigidbody_reachability_checksum: int,
@@ -154,12 +149,11 @@ static func create(
 	var certificate := DirectReachabilityCertificate.new()
 	certificate.serialized_stage_id = certificate_stage_id
 	certificate.serialized_profile_version = certificate_profile_version
-	certificate.serialized_requested_seed = certificate_requested_seed
-	certificate.serialized_accepted_seed = certificate_accepted_seed
+	certificate.serialized_terrain_seed = certificate_terrain_seed
 	certificate.serialized_height_checksum = certificate_height_checksum
 	certificate.serialized_target_checksum = certificate_target_checksum
 	certificate.serialized_placement_checksum = certificate_placement_checksum
-	certificate.serialized_containment_checksum = certificate_containment_checksum
+	certificate.serialized_play_bounds_checksum = certificate_play_bounds_checksum
 	certificate.serialized_reachable_target_checksum = certificate_reachable_target_checksum
 	certificate.serialized_predictor_reachability_checksum = certificate_predictor_reachability_checksum
 	certificate.serialized_rigidbody_reachability_checksum = certificate_rigidbody_reachability_checksum
@@ -207,10 +201,10 @@ func is_valid() -> bool:
 	if serialized_contract_version != CONTRACT_VERSION \
 			or String(serialized_stage_id).is_empty() \
 			or serialized_profile_version != CONTRACT_VERSION \
-			or serialized_requested_seed < 0 or serialized_accepted_seed < 0:
+			or serialized_terrain_seed < 0:
 		return false
 	if serialized_height_checksum == 0 or serialized_target_checksum == 0 \
-			or serialized_placement_checksum == 0 or serialized_containment_checksum == 0 \
+			or serialized_placement_checksum == 0 or serialized_play_bounds_checksum == 0 \
 			or serialized_reachable_target_checksum == 0 \
 			or serialized_predictor_reachability_checksum == 0 \
 			or serialized_rigidbody_reachability_checksum == 0:

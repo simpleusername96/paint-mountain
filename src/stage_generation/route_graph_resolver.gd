@@ -9,7 +9,7 @@ const KEYED_STAGE_SAMPLER := preload("res://src/stage_generation/keyed_stage_sam
 static func resolve(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
-		attempt_seed: int
+		terrain_seed: int
 ) -> GeneratedRouteGraph:
 	if profile == null or not profile.is_valid() or String(stage_id).is_empty():
 		return null
@@ -27,7 +27,7 @@ static func resolve(
 				var draw_range := route_profile.drop_range if grade_sign < 0 else route_profile.rise_range
 				var magnitude: float = KEYED_STAGE_SAMPLER.sample_range(
 					stage_id,
-					attempt_seed,
+					terrain_seed,
 					"route/%d/edge/%d/grade" % [route_index, edge_index],
 					draw_range
 				)
@@ -37,13 +37,20 @@ static func resolve(
 			if station_index > 0 and station_index < contract.route_station_z.size() - 1:
 				lateral_offset = KEYED_STAGE_SAMPLER.sample_range(
 					stage_id,
-					attempt_seed,
+					terrain_seed,
 					"route/%d/node/%d/x" % [route_index, station_index],
 					route_profile.lateral_bend_range
 				)
 			var x := _smoothstep01(station_t) * route_profile.endpoint_x + lateral_offset
-			if not chain.is_empty() and absf(x - chain[-1].x) > contract.maximum_station_x_delta:
-				return null
+			if not chain.is_empty():
+				# Canonical keyed samples can land just outside the shared lateral
+				# smoothness envelope. Clamp the segment delta deterministically so
+				# the one exact seed remains valid without a rescue-seed search.
+				x = chain[-1].x + clampf(
+					x - chain[-1].x,
+					-contract.maximum_station_x_delta,
+					contract.maximum_station_x_delta
+				)
 			chain.append(Vector3(x, height, contract.route_station_z[station_index]))
 			maximum_node_height = maxf(maximum_node_height, height)
 		chains.append(chain)
@@ -73,6 +80,9 @@ static func resolve(
 			var slot: Dictionary = route_profile.mechanism_slots()[slot_index]
 			var split := _pad_split(chain, float(slot.t))
 			if int(split.edge_index) < 0 or float(split.edge_t) <= 0.0 or float(split.edge_t) >= 1.0:
+				push_error("Route graph mechanism slot cannot split a route edge: stage=%s route=%d slot=%d" % [
+					stage_id, route_index, slot_index,
+				])
 				return null
 			pad_splits.append({
 				"edge_index": int(split.edge_index),
@@ -125,8 +135,10 @@ static func resolve(
 
 	var graph := GeneratedRouteGraph.new(nodes, edges)
 	if not graph.is_valid():
+		push_error("Resolved route graph is invalid: stage=%s" % stage_id)
 		return null
 	if not _pads_do_not_overlap(graph):
+		push_error("Resolved route graph mechanism pads overlap: stage=%s" % stage_id)
 		return null
 	return graph
 

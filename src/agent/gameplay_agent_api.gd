@@ -81,8 +81,7 @@ func get_observation() -> Dictionary:
 	return {
 		"schema_version": AttemptObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
-		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else _stage_data.stage_number * 1000 + _stage_data.stage_version,
-		"accepted_seed": _generated_layout.accepted_seed if _generated_layout != null else 0,
+		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else 0,
 		"height_grid_checksum": _generated_layout.checksum if _generated_layout != null else 0,
 		"layout": _layout_metadata(),
 		"target_coverage": _stage_data.target_coverage,
@@ -99,8 +98,8 @@ func get_observation() -> Dictionary:
 			"power": _cannon.power_percent,
 		},
 		"terrain_bounds": (
-			_generated_layout.containment.containment_bounds
-			if _generated_layout != null and _generated_layout.containment != null
+			_generated_layout.play_bounds.bounds
+			if _generated_layout != null and _generated_layout.play_bounds != null
 			else AABB()
 		),
 		"terrain_height_grid": _height_grid(13, 9),
@@ -304,9 +303,9 @@ func _layout_metadata() -> Dictionary:
 			if certificate != null and certificate.is_valid()
 			else 0
 		),
-		"containment_checksum": (
-			_generated_layout.containment.checksum()
-			if _generated_layout.containment != null
+		"play_bounds_checksum": (
+			_generated_layout.play_bounds.checksum()
+			if _generated_layout.play_bounds != null
 			else 0
 		),
 		"placement_checksum": _generated_layout.placement_checksum(),

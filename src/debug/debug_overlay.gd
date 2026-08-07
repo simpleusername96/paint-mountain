@@ -82,7 +82,7 @@ func _process(_delta: float) -> void:
 	for mechanism in _mechanisms:
 		var snapshot := mechanism.state_snapshot()
 		mechanism_lines.append("%s charge=%s cd=%.2f" % [snapshot.kind, snapshot.remaining_charges, snapshot.cooldown])
-	var seed := int(_replay.attempt.get("accepted_seed", 0)) if _replay != null else 0
+	var seed := int(_replay.attempt.get("terrain_seed", 0)) if _replay != null else 0
 	_metrics.text = "STATE  %s\nFPS  %d\nPROJECTILES  %d / %d\nVELOCITY  %s\nPAINT COMMANDS  %d (PENDING %d)\nLAST DRAIN TICK  %d\nMASK CHECKSUM  %d\nCOVERAGE  %.3f%%\nSHOT GAIN  %.3f%%\nTRAJECTORY SAMPLES  %d\nFIRST COLLISION  %s\nMECHANISMS\n%s\nSEED  %d\nBOUNDS  %s\nCAMERA  %s\nRESTART  %.3f ms" % [
 		_controller.state_name(),
 		Engine.get_frames_per_second(),
@@ -99,7 +99,7 @@ func _process(_delta: float) -> void:
 		str(_trajectory.first_collision_position) if _trajectory.has_first_collision else "NONE",
 		"\n".join(mechanism_lines) if not mechanism_lines.is_empty() else "NONE",
 		seed,
-		_generated_layout.containment.containment_bounds,
+		_generated_layout.play_bounds.bounds,
 		_camera.mode_name(),
 		_last_restart_ms,
 	]

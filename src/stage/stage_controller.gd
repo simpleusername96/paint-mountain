@@ -43,7 +43,6 @@ enum State {
 }
 
 const SETTLEMENT_OBSERVER_PRIORITY := 1100
-const CONTAINMENT_DOMAIN_PROOF := preload("res://src/terrain/containment_domain_proof.gd")
 const FINISH_REASON_MANUAL := &"manual"
 const FINISH_REASON_TIMEOUT := &"timeout"
 const FINISH_REASON_DEBUG := &"debug"
@@ -104,15 +103,8 @@ func configure(
 	if generated_layout == null or not generated_layout.is_runtime_ready():
 		push_error("StageController requires a runtime-ready GeneratedStageLayout before briefing.")
 		return false
-	var containment_proof: Dictionary = CONTAINMENT_DOMAIN_PROOF.evaluate(
-		cannon,
-		generated_layout.containment
-	)
-	if not bool(containment_proof.get("valid", false)):
-		push_error(
-			"StageController rejected the generated layout's aim-domain containment: %s" \
-					% str(containment_proof)
-		)
+	if generated_layout.play_bounds == null or not generated_layout.play_bounds.is_valid():
+		push_error("StageController requires valid open play bounds.")
 		return false
 	var default_aim := generated_layout.default_aim
 	if default_aim == null or not default_aim.is_valid():
@@ -127,7 +119,7 @@ func configure(
 	_mechanisms = mechanisms
 	if not _cannon.prediction_changed.is_connected(_on_prediction_changed):
 		_cannon.prediction_changed.connect(_on_prediction_changed)
-	_projectile_manager.stage_bounds = _generated_layout.containment.containment_bounds
+	_projectile_manager.stage_bounds = _generated_layout.play_bounds.bounds
 	if not _projectile_manager.shot_family_finished.is_connected(_on_shot_family_finished):
 		_projectile_manager.shot_family_finished.connect(_on_shot_family_finished)
 	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
@@ -162,7 +154,8 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	var prediction := _cannon.current_prediction() if _cannon != null else null
 	var prediction_status: StringName = _cannon.prediction_status() if _cannon != null else &"pending"
 	var prediction_key: StringName = _cannon.prediction_key() if _cannon != null else &""
-	var key := _aim_key()
+	var prediction_aim_key: StringName = _cannon.prediction_aim_key() if _cannon != null else &""
+	var key: StringName = _cannon.expected_prediction_context_key() if _cannon != null else &""
 	var reason := ""
 	var reason_key := "ready"
 	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
@@ -196,7 +189,8 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		"prediction": prediction,
 		"prediction_status": prediction_status,
 		"prediction_key": key,
-		"prediction_aim_key": prediction_key,
+		"prediction_context_key": prediction_key,
+		"prediction_aim_key": prediction_aim_key,
 		"active_root_count": active_roots,
 		"active_body_count": active_bodies,
 		"fire_capacity": remaining_capacity,
@@ -317,10 +311,6 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if not _origin_allowed(origin):
 		return false
-	# Wind-aware previews carry an intended launch tick. Refresh synchronously at
-	# the admission boundary so human, replay, and agent Fire use the same current
-	# schedule sample instead of launching an older preview.
-	_cannon.refresh_prediction_for_fire()
 	var readiness := fire_readiness_snapshot(origin)
 	if not bool(readiness.get("fireable", false)):
 		# Fire is admitted only from this snapshot. In particular, a prediction

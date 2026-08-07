@@ -19,13 +19,13 @@ static func build(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
-		attempt_seed: int,
+		terrain_seed: int,
 		footprint: PackedByteArray
 ) -> PackedFloat32Array:
 	var contract := profile.generation_contract
 	var noise := FastNoiseLite.new()
 	noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		KEYED_STAGE_SAMPLER.versioned_key(stage_id, attempt_seed, "range/noise")
+		KEYED_STAGE_SAMPLER.versioned_key(stage_id, terrain_seed, "range/noise")
 	) & 0x7fffffff
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = contract.noise_frequency
@@ -33,7 +33,7 @@ static func build(
 	noise.fractal_octaves = contract.noise_octaves
 	noise.fractal_lacunarity = contract.noise_lacunarity
 	noise.fractal_gain = contract.noise_gain
-	var parameters := _build_range_parameters(stage_id, profile, graph, attempt_seed)
+	var parameters := _build_range_parameters(stage_id, profile, graph, terrain_seed)
 	var ordered_pads := graph.pad_nodes()
 	var footprint_blends: PackedFloat32Array = FOOTPRINT_HEIGHT_BLEND.build(
 		contract.cell_count,
@@ -129,30 +129,30 @@ static func _build_range_parameters(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
-		attempt_seed: int
+		terrain_seed: int
 ) -> Dictionary:
 	var level := clampi(graph.route_count(), 1, 3)
 	var range_angle := _sample_range(
-		stage_id, attempt_seed, "range/angle", Vector2(-0.12, 0.12)
+		stage_id, terrain_seed, "range/angle", Vector2(-0.12, 0.12)
 	)
 	var direction := Vector2(cos(range_angle), sin(range_angle))
 	var perpendicular := Vector2(-direction.y, direction.x)
 	var ridges: Array[Dictionary] = [{
 		"center": Vector2(
-			_sample_range(stage_id, attempt_seed, "range/backbone/x", Vector2(-0.04, 0.04)),
-			_sample_range(stage_id, attempt_seed, "range/backbone/z", Vector2(-0.34, -0.20))
+			_sample_range(stage_id, terrain_seed, "range/backbone/x", Vector2(-0.04, 0.04)),
+			_sample_range(stage_id, terrain_seed, "range/backbone/z", Vector2(-0.34, -0.20))
 		),
 		"angle": range_angle + _sample_range(
-			stage_id, attempt_seed, "range/backbone/angle", Vector2(-0.08, 0.08)
+			stage_id, terrain_seed, "range/backbone/angle", Vector2(-0.08, 0.08)
 		),
 		"height": _sample_range(
-			stage_id, attempt_seed, "range/backbone/height", Vector2(0.47, 0.54)
+			stage_id, terrain_seed, "range/backbone/height", Vector2(0.47, 0.54)
 		),
 		"length_spread": _sample_range(
-			stage_id, attempt_seed, "range/backbone/length", Vector2(0.58, 0.78)
+			stage_id, terrain_seed, "range/backbone/length", Vector2(0.58, 0.78)
 		),
 		"width_spread": _sample_range(
-			stage_id, attempt_seed, "range/backbone/width", Vector2(0.11, 0.17)
+			stage_id, terrain_seed, "range/backbone/width", Vector2(0.11, 0.17)
 		),
 	}]
 	var secondary_count := maxi(1, profile.ridge_count - 1)
@@ -160,26 +160,26 @@ static func _build_range_parameters(
 		var key := "range/ridge/%d" % index
 		var progress := float(index + 1) / float(secondary_count + 1)
 		var along := lerpf(-0.66, 0.66, progress) + _sample_range(
-			stage_id, attempt_seed, key + "/along", Vector2(-0.07, 0.07)
+			stage_id, terrain_seed, key + "/along", Vector2(-0.07, 0.07)
 		)
 		var cross_limit := 0.10 + float(profile.ridge_count - 3) * 0.014
 		var across := _sample_range(
-			stage_id, attempt_seed, key + "/across", Vector2(-cross_limit, cross_limit)
+			stage_id, terrain_seed, key + "/across", Vector2(-cross_limit, cross_limit)
 		)
 		ridges.append({
 			"center": Vector2(0.0, -0.25) + direction * along + perpendicular * across,
 			"angle": range_angle + _sample_range(
-				stage_id, attempt_seed, key + "/angle", Vector2(-0.20, 0.20)
+				stage_id, terrain_seed, key + "/angle", Vector2(-0.20, 0.20)
 			),
 			"height": _sample_range(
-				stage_id, attempt_seed, key + "/height",
+				stage_id, terrain_seed, key + "/height",
 				Vector2(0.20 + float(profile.ridge_count - 3) * 0.015, 0.28 + float(profile.ridge_count - 3) * 0.020)
 			),
 			"length_spread": _sample_range(
-				stage_id, attempt_seed, key + "/length", Vector2(0.22, 0.40)
+				stage_id, terrain_seed, key + "/length", Vector2(0.22, 0.40)
 			),
 			"width_spread": _sample_range(
-				stage_id, attempt_seed, key + "/width", Vector2(0.050, 0.095)
+				stage_id, terrain_seed, key + "/width", Vector2(0.050, 0.095)
 			),
 		})
 	var summits: Array[Dictionary] = []
@@ -190,14 +190,14 @@ static func _build_range_parameters(
 			"center": ridge.center,
 			"angle": ridge.angle,
 			"height": _sample_range(
-				stage_id, attempt_seed, key + "/height",
+				stage_id, terrain_seed, key + "/height",
 				Vector2(0.16 + float(level) * 0.010, 0.22 + float(level) * 0.010)
 			),
 			"length_spread": _sample_range(
-				stage_id, attempt_seed, key + "/length", Vector2(0.035, 0.065)
+				stage_id, terrain_seed, key + "/length", Vector2(0.035, 0.065)
 			),
 			"width_spread": _sample_range(
-				stage_id, attempt_seed, key + "/width", Vector2(0.070, 0.120)
+				stage_id, terrain_seed, key + "/width", Vector2(0.070, 0.120)
 			),
 		})
 
@@ -211,16 +211,16 @@ static func _build_range_parameters(
 			"center": first_center.lerp(second_center, 0.5) \
 					+ perpendicular * 0.25,
 			"angle": range_angle + _sample_range(
-				stage_id, attempt_seed, "range/basin/%d/angle" % basin_index, Vector2(-0.45, 0.45)
+				stage_id, terrain_seed, "range/basin/%d/angle" % basin_index, Vector2(-0.45, 0.45)
 			),
 			"height": _sample_range(
-				stage_id, attempt_seed, "range/basin/depth", Vector2(0.035, 0.055)
+				stage_id, terrain_seed, "range/basin/depth", Vector2(0.035, 0.055)
 			),
 			"length_spread": _sample_range(
-				stage_id, attempt_seed, "range/basin/length", Vector2(0.10, 0.16)
+				stage_id, terrain_seed, "range/basin/length", Vector2(0.10, 0.16)
 			),
 			"width_spread": _sample_range(
-				stage_id, attempt_seed, "range/basin/width", Vector2(0.10, 0.17)
+				stage_id, terrain_seed, "range/basin/width", Vector2(0.10, 0.17)
 			),
 		})
 
@@ -229,21 +229,21 @@ static func _build_range_parameters(
 		var key := "range/pass/%d" % index
 		var progress := float(index + 1) / float(profile.pass_count + 1)
 		var along := lerpf(-0.46, 0.46, progress) + _sample_range(
-			stage_id, attempt_seed, key + "/along", Vector2(-0.04, 0.04)
+			stage_id, terrain_seed, key + "/along", Vector2(-0.04, 0.04)
 		)
 		passes.append({
 			"center": Vector2(0.0, -0.25) + direction * along,
 			"angle": range_angle + PI * 0.5 + _sample_range(
-				stage_id, attempt_seed, key + "/angle", Vector2(-0.18, 0.18)
+				stage_id, terrain_seed, key + "/angle", Vector2(-0.18, 0.18)
 			),
 			"height": _sample_range(
-				stage_id, attempt_seed, key + "/depth", Vector2(0.025, 0.045)
+				stage_id, terrain_seed, key + "/depth", Vector2(0.025, 0.045)
 			),
 			"length_spread": _sample_range(
-				stage_id, attempt_seed, key + "/length", Vector2(0.14, 0.22)
+				stage_id, terrain_seed, key + "/length", Vector2(0.14, 0.22)
 			),
 			"width_spread": _sample_range(
-				stage_id, attempt_seed, key + "/width", Vector2(0.028, 0.050)
+				stage_id, terrain_seed, key + "/width", Vector2(0.028, 0.050)
 			),
 		})
 
@@ -253,9 +253,9 @@ static func _build_range_parameters(
 		waves.append({
 			"angular_frequency": 2.0 + float(index),
 			"radial_frequency": 1.0 + float(index % 2),
-			"phase": _sample_range(stage_id, attempt_seed, key + "/phase", Vector2(0.0, TAU)),
+			"phase": _sample_range(stage_id, terrain_seed, key + "/phase", Vector2(0.0, TAU)),
 			"amplitude": _sample_range(
-				stage_id, attempt_seed, key + "/amplitude",
+				stage_id, terrain_seed, key + "/amplitude",
 				Vector2(0.008, 0.014 + profile.undulation_amplitude * 0.0015)
 			),
 		})
@@ -477,11 +477,11 @@ static func _cross_section_sample(
 
 static func _sample_range(
 		stage_id: StringName,
-		attempt_seed: int,
+		terrain_seed: int,
 		key: String,
 		value_range: Vector2
 ) -> float:
-	return KEYED_STAGE_SAMPLER.sample_range(stage_id, attempt_seed, key, value_range)
+	return KEYED_STAGE_SAMPLER.sample_range(stage_id, terrain_seed, key, value_range)
 
 
 static func _smoothstep01(value: float) -> float:

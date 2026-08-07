@@ -18,11 +18,11 @@ static func build(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
-		attempt_seed: int
+		terrain_seed: int
 ) -> Dictionary:
-	var footprint := _build_footprint(stage_id, profile, graph, attempt_seed)
+	var footprint := _build_footprint(stage_id, profile, graph, terrain_seed)
 	var heights: PackedFloat32Array = HEIGHT_FIELD_BUILDER.build(
-		stage_id, profile, graph, attempt_seed, footprint
+		stage_id, profile, graph, terrain_seed, footprint
 	)
 	return {
 		"heights": heights,
@@ -41,38 +41,38 @@ static func _build_footprint(
 		stage_id: StringName,
 		profile: StageGenerationProfile,
 		graph: GeneratedRouteGraph,
-		attempt_seed: int
+		terrain_seed: int
 ) -> PackedByteArray:
 	var contract := profile.generation_contract
 	var cells := PackedByteArray()
 	cells.resize(contract.cell_count.x * contract.cell_count.y)
 	var contour_noise := FastNoiseLite.new()
 	contour_noise.seed = KEYED_STAGE_SAMPLER.fnv1a32(
-		KEYED_STAGE_SAMPLER.versioned_key(stage_id, attempt_seed, "footprint")
+		KEYED_STAGE_SAMPLER.versioned_key(stage_id, terrain_seed, "footprint")
 	) & 0x7fffffff
 	contour_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	contour_noise.frequency = 0.055
 
 	var cell_size := contract.local_bounds.size / Vector2(contract.cell_count)
 	var contour_phase := KEYED_STAGE_SAMPLER.sample_range(
-		stage_id, attempt_seed, "range/footprint/phase", Vector2(0.0, TAU)
+		stage_id, terrain_seed, "range/footprint/phase", Vector2(0.0, TAU)
 	)
 	var bend_phase := KEYED_STAGE_SAMPLER.sample_range(
-		stage_id, attempt_seed, "range/footprint/bend", Vector2(0.0, TAU)
+		stage_id, terrain_seed, "range/footprint/bend", Vector2(0.0, TAU)
 	)
 	for cell_z in range(contract.cell_count.y):
+		# Keep one empty sample band at both depth limits. The generated Support
+		# Shell closes these contours; no wall or apron is needed to close the mass.
+		if cell_z == 0 or cell_z == contract.cell_count.y - 1:
+			continue
 		for cell_x in range(contract.cell_count.x):
 			var center := contract.local_bounds.position + Vector2(
 				(float(cell_x) + 0.5) * cell_size.x,
 				(float(cell_z) + 0.5) * cell_size.y
 			)
 			var depth_t := (float(cell_z) + 0.5) / float(contract.cell_count.y)
-			var arch := pow(maxf(0.0, sin(depth_t * PI)), 0.68)
-			var half_width := lerpf(
-				contract.local_bounds.size.x * 0.235,
-				contract.local_bounds.size.x * 0.19,
-				depth_t
-			) + arch * contract.local_bounds.size.x * 0.11
+			var arch := pow(maxf(0.0, sin(depth_t * PI)), 0.72)
+			var half_width := contract.local_bounds.size.x * (0.08 + arch * 0.30)
 			var center_bend := sin(depth_t * TAU * 0.72 + bend_phase) * 5.5
 			var irregularity := contour_noise.get_noise_2d(
 				center.y * 0.65 + cos(contour_phase) * 20.0,
@@ -98,7 +98,7 @@ static func _build_footprint(
 	var solid_cells := _solidify_row_spans(cells, contract.cell_count)
 	assert(
 		_has_solid_mass_contract(solid_cells, contract.cell_count),
-		"Mountain footprint must be one row-solid mass joined to the rear wall."
+		"Mountain footprint must be one lower/wider independently closed row-solid mass."
 	)
 	return solid_cells
 
@@ -203,11 +203,44 @@ static func _has_solid_mass_contract(
 			continue
 		if saw_gap_after_mass:
 			return false
-		if not saw_occupied_row and cell_z != 0:
-			return false
 		if previous_left >= 0 and (left > previous_right or right < previous_left):
 			return false
 		saw_occupied_row = true
 		previous_left = left
 		previous_right = right
-	return saw_occupied_row
+	if not saw_occupied_row:
+		return false
+	var metrics := footprint_contract_metrics(cells, cell_count)
+	return int(metrics.widest_span) >= ceili(float(cell_count.x) * 0.72) \
+			and int(metrics.widest_span) - int(metrics.narrowest_span) >= 4 \
+			and float(metrics.occupied_ratio) < 0.85 \
+			and int(metrics.first_row) > 0 \
+			and int(metrics.last_row) < cell_count.y - 1
+
+
+static func footprint_contract_metrics(cells: PackedByteArray, cell_count: Vector2i) -> Dictionary:
+	var widest_span := 0
+	var narrowest_span := cell_count.x + 1
+	var occupied_count := 0
+	var first_row := -1
+	var last_row := -1
+	for cell_z in range(cell_count.y):
+		var row_span := 0
+		for cell_x in range(cell_count.x):
+			if cells[cell_z * cell_count.x + cell_x] != 0:
+				row_span += 1
+				occupied_count += 1
+		if row_span <= 0:
+			continue
+		if first_row < 0:
+			first_row = cell_z
+		last_row = cell_z
+		widest_span = maxi(widest_span, row_span)
+		narrowest_span = mini(narrowest_span, row_span)
+	return {
+		"widest_span": widest_span,
+		"narrowest_span": 0 if narrowest_span > cell_count.x else narrowest_span,
+		"occupied_ratio": float(occupied_count) / float(maxi(1, cell_count.x * cell_count.y)),
+		"first_row": first_row,
+		"last_row": last_row,
+	}

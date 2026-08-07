@@ -6,22 +6,22 @@ const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const UPHILL_REBOUND_SCENE := preload("res://scenes/mechanisms/uphill_rebound_node.tscn")
 const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
-const PREDICTION_REFRESH_INTERVAL_SECONDS := 1.0 / 20.0
 
 @export var stage_data: StageData
 
 @onready var _camera: Camera3D = %Camera
 @onready var _terrain_surface: TerrainSurface = %TerrainSurface
 @onready var _terrain_mesh: MeshInstance3D = %TerrainMesh
-@onready var _backstop_environment: BackstopEnvironment = %BackstopEnvironment
+@onready var _open_play_environment: OpenPlayEnvironment = %OpenPlayEnvironment
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
+@onready var _prediction_scheduler: TrajectoryPredictionScheduler = %TrajectoryPredictionScheduler
 @onready var _aim_input: AimInputController = %AimInputController
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
 @onready var _paint_system: PaintSystem = %PaintSystem
 @onready var _stage_controller: StageController = %StageController
 @onready var _wind_controller: WindController = %WindController
-@onready var _wind_debris: WindDebrisField = %WindDebrisField
+@onready var _wind_flag: CannonWindFlag = %CannonWindFlag
 @onready var _camera_director: CameraDirector = %CameraDirector
 @onready var _hud: HUDController = %HUD
 @onready var _mechanism_root: Node3D = %Mechanisms
@@ -38,9 +38,6 @@ var _generated_layout: GeneratedStageLayout
 var _prepared_layout: GeneratedStageLayout
 var _prepared_stage_id: StringName = &""
 var _prepared_layout_checksum: int = 0
-var _prediction_dirty := false
-var _prediction_refresh_cooldown_seconds := 0.0
-var _prediction_compute_count := 0
 var _wind_transition_was_active := false
 
 
@@ -77,11 +74,19 @@ func _ready() -> void:
 		_wind_controller
 	)
 	_aim_input.configure(_cannon, _stage_controller, _camera_director)
-	_cannon.configure_prediction_refresh(_recompute_prediction)
-	_recompute_prediction()
+	if not _prediction_scheduler.configure(
+		_cannon,
+		_wind_controller,
+		_generated_layout.play_bounds.bounds,
+		stage_data.wind_profile,
+		_generated_layout.terrain_seed
+	):
+		push_error("GameplayScene could not configure trajectory prediction scheduling.")
+		return
+	_update_prediction_consumers()
 	_replay_recorder.start_attempt(
 		stage_data,
-		_generated_layout.accepted_seed,
+		_generated_layout.terrain_seed,
 		_generated_layout,
 		_wind_controller.schedule_identity()
 	)
@@ -131,26 +136,13 @@ func terrain_layout_read_only() -> GeneratedStageLayout:
 
 
 func prediction_compute_count() -> int:
-	return _prediction_compute_count
+	return _prediction_scheduler.prediction_compute_count()
 
 
 ## Delivery-only frame hold used to capture the real pending-readiness surface
 ## before the coalesced predictor publishes the latest aim key.
 func hold_prediction_refresh_for_delivery(duration_seconds: float = 0.15) -> void:
-	_prediction_dirty = true
-	_prediction_refresh_cooldown_seconds = maxf(
-		_prediction_refresh_cooldown_seconds,
-		duration_seconds
-	)
-
-
-func _process(delta: float) -> void:
-	_prediction_refresh_cooldown_seconds = maxf(
-		0.0,
-		_prediction_refresh_cooldown_seconds - delta
-	)
-	if _prediction_dirty and _prediction_refresh_cooldown_seconds <= 0.0:
-		_recompute_prediction()
+	_prediction_scheduler.hold_refresh_for_seconds(duration_seconds)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -184,31 +176,25 @@ func _build_stage_world() -> bool:
 		push_error("GameplayScene cannot construct a stage without its prepared baked layout.")
 		return false
 	_terrain_surface.configure(_generated_layout)
-	_backstop_environment.configure(
-		_generated_layout.containment,
+	_open_play_environment.configure(
+		_generated_layout.play_bounds,
 		stage_data.paint_world_bounds(),
 		stage_data.terrain_center.y
 	)
 	_projectile_manager.configure_terrain(_terrain_surface)
 	if stage_data.wind_profile == null or not _wind_controller.configure(
 		stage_data.wind_profile,
-		_generated_layout.accepted_seed
+		_generated_layout.terrain_seed
 	):
 		push_error("GameplayScene requires a valid stage wind profile.")
 		return false
 	_projectile_manager.configure_wind(_wind_controller, stage_data.wind_profile)
-	_wind_debris.configure(
-		stage_data,
-		_terrain_surface,
-		_wind_controller,
-		_generated_layout.accepted_seed
-	)
 	_cannon.global_transform = stage_data.cannon_transform
+	_wind_flag.configure(_cannon, _wind_controller)
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
-	# The mountain must read as a faceted 3D mass against the bright wall. Keep
-	# the wall/apron materials bright, but reserve this cooler mid-value range
-	# for terrain so daylight does not clip the top faces to white.
+	# The mountain must read as a faceted 3D mass against the open sky and quiet
+	# apron. Reserve this cooler mid-value range for terrain relief.
 	paint_material.set_shader_parameter("rock_color", Color("74839A"))
 	paint_material.set_shader_parameter("shadow_tint", Color("46546A"))
 	paint_material.set_shader_parameter("support_floor_y", stage_data.terrain_center.y)
@@ -281,6 +267,10 @@ func _connect_systems() -> void:
 	_stage_controller.stage_clock_changed.connect(_on_stage_clock_changed)
 	_stage_controller.stage_finished.connect(_on_stage_finished)
 	_wind_controller.snapshot_changed.connect(_on_wind_snapshot_changed)
+	_camera_director.mode_changed.connect(func(mode: int) -> void:
+		_hud.set_camera_mode(mode as CameraDirector.Mode)
+		_update_prediction_consumers()
+	)
 	_camera_director.interaction_mode_changed.connect(_on_interaction_mode_changed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
@@ -294,6 +284,7 @@ func _connect_systems() -> void:
 	_hud.next_stage_requested.connect(func() -> void: _request_navigation(&"next_stage"))
 	_hud.replay_requested.connect(_start_replay)
 	_hud.interaction_mode_requested.connect(_on_interaction_mode_requested)
+	_hud.return_to_cannon_requested.connect(func() -> void: _camera_director.return_to_aim_view())
 	_hud.replay_speed_requested.connect(_replay_presentation.set_speed)
 	_hud.replay_pause_requested.connect(_replay_presentation.set_paused)
 	_hud.replay_restart_requested.connect(_replay_presentation.restart_playback)
@@ -304,28 +295,7 @@ func _connect_systems() -> void:
 
 func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
 	_hud.update_aim(yaw, elevation, power)
-	_prediction_dirty = true
-
-
-func _recompute_prediction() -> void:
-	_prediction_compute_count += 1
-	var prediction_aim_key := _cannon.aim_key()
-	var prediction := TrajectoryPredictor.predict(
-		get_world_3d().direct_space_state,
-		_cannon,
-		_generated_layout.containment.containment_bounds,
-		stage_data.wind_profile,
-		_generated_layout.accepted_seed,
-		_wind_controller.elapsed_ticks()
-	)
-	_cannon.set_prediction(
-		prediction,
-		prediction_aim_key,
-		_wind_controller.schedule_identity(),
-		_wind_controller.elapsed_ticks()
-	)
-	_prediction_dirty = false
-	_prediction_refresh_cooldown_seconds = PREDICTION_REFRESH_INTERVAL_SECONDS
+	_prediction_scheduler.request_latest()
 
 
 func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
@@ -379,7 +349,7 @@ func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void
 
 
 func _on_wind_snapshot_changed(snapshot: WindSnapshot) -> void:
-	_prediction_dirty = true
+	_prediction_scheduler.request_latest()
 	if snapshot == null:
 		return
 	var current_projection := _wind_hud_projection(snapshot.acceleration)
@@ -453,6 +423,7 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 		StageController.State.FINISHING, StageController.State.RESULT:
 			Engine.time_scale = 1.0
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
+	_update_prediction_consumers()
 
 
 func _on_interaction_mode_requested(mode: int) -> void:
@@ -465,8 +436,23 @@ func _on_interaction_mode_requested(mode: int) -> void:
 
 func _on_interaction_mode_changed(mode: int) -> void:
 	_hud.set_interaction_mode(mode as CameraDirector.InteractionMode)
+	_update_prediction_consumers()
 	if not _replay_presentation.active and not _stage_controller.action_origin_is_locked():
 		_replay_recorder.record_camera(mode)
+
+
+func _update_prediction_consumers() -> void:
+	if _prediction_scheduler == null or not _prediction_scheduler.is_node_ready():
+		return
+	var fire_can_consume := _stage_controller != null \
+			and _stage_controller.current_state == StageController.State.AIMING \
+			and _camera_director.current_mode == CameraDirector.Mode.AIMING \
+			and _camera_director.aim_is_locked() \
+			and _cannon.input_enabled \
+			and not _stage_controller.action_origin_is_locked()
+	_prediction_scheduler.set_consumers_enabled(
+		(_trajectory_preview != null and _trajectory_preview.visible) or fire_can_consume
+	)
 
 
 func _spawn_mechanisms() -> void:
@@ -560,7 +546,7 @@ func _start_replay() -> void:
 func _on_replay_exited() -> void:
 	_replay_recorder.start_attempt(
 		stage_data,
-		_generated_layout.accepted_seed,
+		_generated_layout.terrain_seed,
 		_generated_layout,
 		_wind_controller.schedule_identity()
 	)

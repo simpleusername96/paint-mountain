@@ -3,14 +3,13 @@ extends Resource
 
 ## Owns the generation-wide version and constants consumed by production.
 
-const CONTRACT_VERSION := 8
-const REQUIRED_CELL_COUNT := Vector2i(72, 48)
-const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-90.0, -60.0), Vector2(180.0, 120.0))
-const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 6912
+const CONTRACT_VERSION := 9
+const REQUIRED_CELL_COUNT := Vector2i(84, 48)
+const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-105.0, -60.0), Vector2(210.0, 120.0))
+const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 8064
 const REQUIRED_MASK_SIZE := 512
-const REQUIRED_ATTEMPT_COUNT := 32
-const REQUIRED_ATTEMPT_SEED_STRIDE := 7919
 const REQUIRED_ROUTE_STATION_Z := [-44.0, -32.0, -20.0, -8.0, 4.0, 16.0, 30.0, 44.0]
+const FIXED_CANNON_STANDOFF := 75.0
 
 
 static func version_tag() -> String:
@@ -34,8 +33,6 @@ enum CellDiagonal {
 
 @export_category("Generation")
 @export_range(1, 2048, 1) var mask_size: int = REQUIRED_MASK_SIZE
-@export_range(1, 256, 1) var attempt_count: int = REQUIRED_ATTEMPT_COUNT
-@export var attempt_seed_stride: int = REQUIRED_ATTEMPT_SEED_STRIDE
 
 @export_category("Route graph")
 @export var route_station_z := PackedFloat32Array(REQUIRED_ROUTE_STATION_Z)
@@ -61,9 +58,9 @@ func is_valid() -> bool:
 	return generation_version == CONTRACT_VERSION \
 			and profile_version == CONTRACT_VERSION \
 			and layout_version == CONTRACT_VERSION \
-			and cell_count.x >= 72 and cell_count.x <= 96 and cell_count.x % 2 == 0 \
+			and cell_count.x >= 84 and cell_count.x <= 96 and cell_count.x % 2 == 0 \
 			and cell_count.y >= 48 and cell_count.y <= 64 and cell_count.y % 2 == 0 \
-			and local_bounds.size.x >= 180.0 and local_bounds.size.x <= 240.0 \
+			and local_bounds.size.x >= 210.0 and local_bounds.size.x <= 280.0 \
 			and local_bounds.size.y >= 120.0 and local_bounds.size.y <= 160.0 \
 			and local_bounds.size.x / float(cell_count.x) >= 2.0 \
 			and local_bounds.size.x / float(cell_count.x) <= 3.0 \
@@ -72,8 +69,6 @@ func is_valid() -> bool:
 			and maximum_top_triangle_count == cell_count.x * cell_count.y * 2 \
 			and cell_diagonal == CellDiagonal.P01_TO_P10 \
 			and mask_size == REQUIRED_MASK_SIZE \
-			and attempt_count == REQUIRED_ATTEMPT_COUNT \
-			and attempt_seed_stride == REQUIRED_ATTEMPT_SEED_STRIDE \
 			and route_station_z.size() >= 8 and route_station_z.size() <= 10 \
 			and route_station_z[0] <= -44.0 and route_station_z[-1] >= 44.0 \
 			and _station_spacing_is_valid() \

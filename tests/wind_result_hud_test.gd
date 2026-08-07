@@ -54,6 +54,32 @@ func _run() -> void:
 	_assert_true(status.get_node("Margin/Content/WindBox/WindArrow").text == "→", "wind arrow must show projectile push direction")
 	_assert_true("오른쪽" in status.get_node("Margin/Content/WindBox/WindText/WindDirection").text, "wind must also state its direction in plain text")
 	_assert_true(status.get_node("Margin/Content/WindForecast").visible, "the final transition window must reveal the next wind")
+	var same_display_wind := WindSnapshot.new(
+		1621,
+		wind.acceleration,
+		wind.next_acceleration,
+		wind.normalized_strength,
+		wind.next_normalized_strength,
+		wind.seconds_until_change,
+		wind.transition_progress,
+		wind.schedule_identity
+	)
+	_assert_true(
+		RunStatusCard.wind_display_key(
+			wind,
+			Vector2.RIGHT,
+			RunStatusCard.DepthCue.NONE,
+			Vector2.UP,
+			RunStatusCard.DepthCue.NONE
+		) == RunStatusCard.wind_display_key(
+			same_display_wind,
+			Vector2.RIGHT,
+			RunStatusCard.DepthCue.NONE,
+			Vector2.UP,
+			RunStatusCard.DepthCue.NONE
+		),
+		"physics-tick-only wind changes must reuse the same pure HUD display key"
+	)
 
 	var finish_state := {"emitted": false}
 	hud.finish_requested.connect(func() -> void: finish_state.emitted = true)

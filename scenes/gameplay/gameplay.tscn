@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -17,9 +17,10 @@
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
 [ext_resource type="Script" path="res://src/replay/replay_presentation_controller.gd" id="17_replay_presentation"]
-[ext_resource type="PackedScene" path="res://scenes/gameplay/backstop_environment.tscn" id="18_containment"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/open_play_environment.tscn" id="18_open_environment"]
 [ext_resource type="Script" path="res://src/wind/wind_controller.gd" id="19_wind"]
-[ext_resource type="Script" path="res://src/wind/wind_debris_field.gd" id="20_wind_debris"]
+[ext_resource type="Script" path="res://src/wind/cannon_wind_flag.gd" id="20_wind_flag"]
+[ext_resource type="Script" path="res://src/cannon/trajectory_prediction_scheduler.gd" id="21_prediction_scheduler"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.78, 0.84, 0.91, 1)
@@ -68,7 +69,8 @@ current = true
 fov = 48.0
 far = 460.0
 
-[node name="BackstopEnvironment" parent="." instance=ExtResource("18_containment")]
+[node name="OpenPlayEnvironment" parent="." instance=ExtResource("18_open_environment")]
+unique_name_in_owner = true
 unique_name_in_owner = true
 
 [node name="TerrainSurface" type="Node3D" parent="."]
@@ -105,6 +107,10 @@ unique_name_in_owner = true
 visible = false
 script = ExtResource("4_preview")
 
+[node name="TrajectoryPredictionScheduler" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("21_prediction_scheduler")
+
 [node name="AimInputController" type="Node3D" parent="."]
 unique_name_in_owner = true
 script = ExtResource("15_aim_input")
@@ -125,9 +131,9 @@ script = ExtResource("7_stage_controller")
 unique_name_in_owner = true
 script = ExtResource("19_wind")
 
-[node name="WindDebrisField" type="Node3D" parent="."]
+[node name="CannonWindFlag" type="Node3D" parent="."]
 unique_name_in_owner = true
-script = ExtResource("20_wind_debris")
+script = ExtResource("20_wind_flag")
 
 [node name="CameraDirector" type="Node" parent="."]
 unique_name_in_owner = true

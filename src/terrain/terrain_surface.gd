@@ -29,10 +29,10 @@ func configure(layout: GeneratedStageLayout) -> void:
 	top_collision.shape = _geometry.top_shape
 	top_collision.scale = Vector3.ONE
 	shell_collision.shape = _geometry.skirt_shape
-	top_body.set_meta(ContainmentSpec.CONTACT_OWNER_META, TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID)
-	top_collision.set_meta(ContainmentSpec.CONTACT_SHAPE_META, TOP_SHAPE_ID)
-	shell_body.set_meta(ContainmentSpec.CONTACT_OWNER_META, SHELL_OWNER_ID)
-	shell_collision.set_meta(ContainmentSpec.CONTACT_SHAPE_META, SHELL_SHAPE_ID)
+	top_body.set_meta(PlayBoundsSpec.CONTACT_OWNER_META, TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID)
+	top_collision.set_meta(PlayBoundsSpec.CONTACT_SHAPE_META, TOP_SHAPE_ID)
+	shell_body.set_meta(PlayBoundsSpec.CONTACT_OWNER_META, SHELL_OWNER_ID)
+	shell_collision.set_meta(PlayBoundsSpec.CONTACT_SHAPE_META, SHELL_SHAPE_ID)
 	top_body.collision_layer = 1
 	top_body.collision_mask = 0
 	top_body.physics_material_override = NORMAL_TERRAIN_PHYSICS_MATERIAL

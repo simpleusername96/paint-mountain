@@ -81,12 +81,14 @@ hud.coverage_format,Target area %.1f%% / Goal %.1f%%,목표 영역 %.1f%% / 목�
 hud.summary_split,Split %d×,분열 %d회
 hud.summary_balls,%d balls,공 %d개
 hud.summary_direct,Direct route,직접 경로
-hud.first_hint,Aim: drag or A·D·W·S · Wheel power · Space fire · Tab inspect,조준: 드래그/A·D·W·S · 휠 파워 · Space 발사 · Tab 맵 보기
+hud.first_hint,Aim: drag or A·D·W·S · Wheel power · Space fire · Tab Map View,조준: 드래그/A·D·W·S · 휠 파워 · Space 발사 · Tab 지도 보기
 hud.camera_hint,LEFT-DRAG ORBIT · WHEEL ZOOM,왼쪽 드래그 회전 · 휠 확대
-hud.aim_lock,AIM LOCK,조준 고정
-hud.map_inspection,MAP INSPECTION,맵 둘러보기
-hud.switch_to_map_inspection,Switch to Map Inspection (Tab) · Drag orbit · Wheel zoom,맵 둘러보기로 전환 (Tab) · 드래그 회전 · 휠 확대/축소
-hud.switch_to_aim_lock,Switch to Aim Lock (Tab) · Drag aim · Wheel power,조준 고정으로 전환 (Tab) · 드래그 조준 · 휠 파워
+hud.aim_lock,AIM VIEW,조준
+hud.map_inspection,MAP VIEW,지도 보기
+hud.switch_to_map_inspection,Switch to Map View (Tab) · Drag orbit · Wheel zoom,지도 보기로 전환 (Tab) · 드래그 회전 · 휠 확대/축소
+hud.switch_to_aim_lock,Switch to Aim View (Tab) · Drag aim · Wheel power,조준으로 전환 (Tab) · 드래그 조준 · 휠 파워
+hud.return_to_cannon,RETURN TO CANNON,대포로 돌아가기
+hud.return_to_cannon_hint,Return camera to Aim View (Tab); the paintball keeps moving.,조준 화면으로 돌아갑니다(Tab). 페인트볼은 계속 움직입니다.
 hud.briefing,BRIEFING,지형 확인
 hud.aiming,AIMING,조준
 hud.in_flight,IN FLIGHT,비행 중

@@ -8,15 +8,12 @@ var profile_id: StringName
 var profile_version: int
 var layout_version: int
 var terrain_seed: int
-var accepted_seed: int
-var candidate_index: int = -1
-var generation_attempt: int
 var cell_count: Vector2i
 var local_bounds: Rect2
 var heights: PackedFloat32Array
 var top_topology: TerrainTopTopology
 var route_graph: GeneratedRouteGraph
-var containment: ContainmentSpec
+var play_bounds: PlayBoundsSpec
 var reachability_certificate: DirectReachabilityCertificate
 var generated_default_aim: AimTuple
 var generated_default_witness: StageEntryAimWitness
@@ -68,7 +65,7 @@ func is_valid() -> bool:
 			and top_topology != null and top_topology.is_valid() \
 			and top_topology.matches_height_grid(cell_count, local_bounds, heights) \
 			and route_graph != null and route_graph.is_valid() \
-			and containment != null and containment.is_valid()
+			and play_bounds != null and play_bounds.is_valid()
 
 
 func install_target_mask(bytes: PackedByteArray, mask_checksum: int) -> bool:
@@ -145,12 +142,11 @@ func is_certified() -> bool:
 			and reachability_certificate.stage_id \
 					== StageGenerationProfile.stage_id_from_profile_id(profile_id) \
 			and reachability_certificate.profile_version == profile_version \
-			and reachability_certificate.requested_seed == terrain_seed \
-			and reachability_certificate.accepted_seed == accepted_seed \
+			and reachability_certificate.terrain_seed == terrain_seed \
 			and reachability_certificate.height_checksum == checksum \
 			and reachability_certificate.target_checksum == _target_mask_checksum \
 			and reachability_certificate.placement_checksum == placement_checksum() \
-			and reachability_certificate.containment_checksum == containment.checksum() \
+			and reachability_certificate.play_bounds_checksum == play_bounds.checksum() \
 			and reachability_certificate.reachable_target_checksum \
 					== reachable_target_checksum(
 						reachability_certificate.target_witness_indices
@@ -170,6 +166,16 @@ func is_runtime_ready() -> bool:
 	# incomplete or stale proof must not silently fall back to generated witnesses.
 	_runtime_readiness_verified = reachability_certificate == null or is_certified()
 	return _runtime_readiness_verified
+
+
+func runtime_readiness_diagnostic() -> Dictionary:
+	return {
+		"layout_valid": is_valid(),
+		"target_valid": has_valid_target_mask(),
+		"default_matches": _default_witness_matches_layout(),
+		"summit_matches": _summit_witness_matches_layout(),
+		"certificate_valid": reachability_certificate == null or is_certified(),
+	}
 
 
 ## Cheap identity check for already accepted process-lifetime caches. Generation
@@ -200,15 +206,12 @@ func copy_for_runtime() -> GeneratedStageLayout:
 	result.profile_version = profile_version
 	result.layout_version = layout_version
 	result.terrain_seed = terrain_seed
-	result.accepted_seed = accepted_seed
-	result.candidate_index = candidate_index
-	result.generation_attempt = generation_attempt
 	result.cell_count = cell_count
 	result.local_bounds = local_bounds
 	result.heights = heights.duplicate()
 	result.top_topology = top_topology
 	result.route_graph = route_graph
-	result.containment = containment
+	result.play_bounds = play_bounds
 	result.reachability_certificate = reachability_certificate
 	result.generated_default_aim = generated_default_aim
 	result.generated_default_witness = generated_default_witness.copy() \
@@ -230,11 +233,18 @@ func copy_for_runtime() -> GeneratedStageLayout:
 func _default_witness_matches_layout() -> bool:
 	if generated_default_witness == null or not generated_default_witness.is_valid():
 		return false
-	var sample := target_sample_nearest_centroid()
-	if sample.is_empty() or generated_default_witness.target_pixel_index \
-			!= int(sample.target_pixel_index):
+	var pixel_index := generated_default_witness.target_pixel_index
+	if pixel_index < 0 or pixel_index >= _target_mask.size() \
+			or _target_mask[pixel_index] < 128:
 		return false
-	return _witness_matches_sample(generated_default_witness, sample)
+	var identity := generated_default_witness.predicted_identity
+	return identity != null \
+			and identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
+			and identity.terrain_cell.x >= 0 and identity.terrain_cell.x < cell_count.x \
+			and identity.terrain_cell.y >= 0 and identity.terrain_cell.y < cell_count.y \
+			and identity.terrain_triangle in [0, 1] \
+			and generated_default_witness.physical_identity != null \
+			and generated_default_witness.physical_identity.has_same_surface_address(identity)
 
 
 func _summit_witness_matches_layout() -> bool:

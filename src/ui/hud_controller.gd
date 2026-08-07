@@ -12,6 +12,7 @@ signal next_stage_requested
 signal replay_requested
 signal finish_requested
 signal interaction_mode_requested(mode: int)
+signal return_to_cannon_requested
 signal replay_speed_requested(speed: float)
 signal power_step_requested(direction: float)
 signal replay_pause_requested(paused: bool)
@@ -26,6 +27,7 @@ static var _first_session_hint_seen := false
 @onready var _actions: ActionButtons = %ActionButtons
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
+@onready var _return_to_cannon: Button = %ReturnToCannon
 @onready var _shot_summary: ShotSummary = %ShotSummary
 @onready var _result: ResultPanel = %ResultPanel
 @onready var _replay: ReplayBar = %ReplayBar
@@ -42,6 +44,7 @@ var _hint_pending := false
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
+var _current_camera_mode := CameraDirector.Mode.BRIEFING
 var _run_started := false
 var _clock_finished := false
 var _resident_total := 0
@@ -97,6 +100,7 @@ func update_wind(
 func _ready() -> void:
 	_replay_active = false
 	_replay.hide()
+	_return_to_cannon.hide()
 	_connect_components()
 	_hint_timer.timeout.connect(func() -> void: _first_hint.visible = false)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
@@ -203,6 +207,11 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 	_apply_interaction_presentation(true)
 
 
+func set_camera_mode(mode: CameraDirector.Mode) -> void:
+	_current_camera_mode = mode
+	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW and not _replay_active
+
+
 func show_shot_result(_gain: float, _total: float) -> void:
 	# ShotSummary consumes the sealed ShotObservation; this remains for the legacy signal connection.
 	pass
@@ -251,6 +260,8 @@ func show_coverage_result_snapshot(result: Dictionary, star_count: int, previous
 func set_replay_active(active: bool) -> void:
 	_replay_active = active
 	_replay.visible = active
+	_return_to_cannon.visible = _current_camera_mode == CameraDirector.Mode.FOLLOW \
+			and not _replay_active
 	if active:
 		_replay.reset_controls()
 	show_state(_current_state)
@@ -275,6 +286,7 @@ func _connect_components() -> void:
 	_interaction.interaction_mode_requested.connect(
 		func(mode: int) -> void: interaction_mode_requested.emit(mode)
 	)
+	_return_to_cannon.pressed.connect(func() -> void: return_to_cannon_requested.emit())
 	_result.retry_requested.connect(func() -> void: restart_requested.emit())
 	_result.next_requested.connect(func() -> void: next_stage_requested.emit())
 	_result.stages_requested.connect(func() -> void: stage_select_requested.emit())
@@ -305,6 +317,8 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		%BriefingObjective.text = tr(String(_stage_data.objective_key))
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)
 		_interaction.refresh_locale()
+		_return_to_cannon.text = tr("hud.return_to_cannon")
+		_return_to_cannon.tooltip_text = tr("hud.return_to_cannon_hint")
 		_result.refresh_locale()
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)

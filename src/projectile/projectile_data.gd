@@ -14,7 +14,7 @@ extends Resource
 @export_range(1.0, 200.0, 0.5) var maximum_launch_speed: float = 160.0
 
 @export_category("Miss Cleanup")
-@export_range(1.0, 120.0, 0.25) var never_contacted_timeout: float = 30.0
+@export_range(1.0, 120.0, 0.25) var never_contacted_timeout: float = 6.0
 
 @export_category("Paint Surface")
 @export_range(0.05, 8.0, 0.05) var paint_footprint_radius: float = 4.0

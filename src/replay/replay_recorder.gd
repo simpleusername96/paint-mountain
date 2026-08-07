@@ -3,7 +3,7 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 8
+const FORMAT_VERSION := 9
 const DEFAULT_WIND_SCHEDULE_VERSION := 1
 
 var attempt: Dictionary = {}
@@ -60,14 +60,13 @@ func start_attempt(
 		"stage_version": stage_data.stage_version,
 		"generation_profile_id": String(generated_layout.profile_id),
 		"generation_profile_version": generated_layout.profile_version,
-		"requested_seed": generated_layout.terrain_seed,
-		"accepted_seed": generated_layout.accepted_seed,
+		"terrain_seed": generated_layout.terrain_seed,
 		"height_grid_checksum": generated_layout.checksum,
 		"target_mask_checksum": generated_layout.target_mask_checksum,
 		"reachability_checksum": (
 			certificate.reachable_target_checksum if has_full_certificate else 0
 		),
-		"containment_checksum": generated_layout.containment.checksum(),
+		"play_bounds_checksum": generated_layout.play_bounds.checksum(),
 		"placement_checksum": generated_layout.placement_checksum(),
 		"layout_admission": "certificate" if has_full_certificate else "structural",
 		"generated_default_aim": {
@@ -211,12 +210,11 @@ func load_attempt(data: Dictionary) -> bool:
 			or not data.has("stage_version") \
 			or not data.has("generation_profile_id") \
 			or not data.has("generation_profile_version") \
-			or not data.has("requested_seed") \
-			or not data.has("accepted_seed") \
+			or not data.has("terrain_seed") \
 			or not data.has("height_grid_checksum") \
 			or not data.has("target_mask_checksum") \
 			or not data.has("reachability_checksum") \
-			or not data.has("containment_checksum") \
+			or not data.has("play_bounds_checksum") \
 			or not data.has("placement_checksum") \
 			or not data.has("layout_admission") \
 			or not data.get("generated_default_aim", {}) is Dictionary \
@@ -347,11 +345,11 @@ func _layout_metadata_is_valid(data: Dictionary) -> bool:
 			or String(data.get("generation_profile_id", "")).is_empty() \
 			or int(data.get("generation_profile_version", 0)) \
 					!= StageGenerationContract.CONTRACT_VERSION \
-			or int(data.get("requested_seed", -1)) < 0 \
-			or int(data.get("accepted_seed", -1)) < 0 \
+			or int(data.get("terrain_seed", -1)) \
+					!= StageProgressionData.CANONICAL_TERRAIN_SEED \
 			or int(data.get("height_grid_checksum", 0)) == 0 \
 			or int(data.get("target_mask_checksum", 0)) == 0 \
-			or int(data.get("containment_checksum", 0)) == 0 \
+			or int(data.get("play_bounds_checksum", 0)) == 0 \
 			or int(data.get("placement_checksum", 0)) == 0:
 		return false
 	var admission := String(data.get("layout_admission", ""))

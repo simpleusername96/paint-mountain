@@ -30,10 +30,11 @@ static func find_runtime_aim(
 		space_state,
 		cannon,
 		layout,
-		layout.containment.containment_bounds,
+		layout.play_bounds.bounds,
 		target_world_point,
 		target_world_normal,
-		target_sample
+		target_sample,
+		true
 	)
 	if not bool(solved.get("valid", false)):
 		return _bounded_center_fallback(
@@ -71,7 +72,7 @@ static func find_runtime_summit_aim(
 			space_state,
 			cannon,
 			layout,
-			layout.containment.containment_bounds,
+			layout.play_bounds.bounds,
 			world_point,
 			world_normal,
 			summit
@@ -109,7 +110,7 @@ static func _bounded_center_fallback(
 					velocity,
 					cannon.projectile_data.radius,
 					cannon.projectile_data.linear_damp,
-					layout.containment.containment_bounds,
+					layout.play_bounds.bounds,
 					TrajectoryPredictor.COLLISION_MASK,
 					false
 				)

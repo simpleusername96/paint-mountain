@@ -888,14 +888,35 @@ a task-specific `.agents/evidence/` directory.
 
 ## Progress
 
-- Completed: cleanup of abandoned text/catalog/runner artifacts; current-state
-  trace; domain alignment; comparator research; authority-doc updates; consumed
-  handoff; Godot 4.7 performance-guidance review; fixed-terrain runtime/code
-  trace; primary-source deterministic-level research; decision-complete plan.
-- In progress: none. This turn intentionally stops before player-facing Godot
-  implementation.
-- Next executable task: **1.0 Restore demand-driven prediction and constant-work
-  Fire**.
+- Completed in the current worktree: demand-driven prediction and constant-work
+  Fire; exact-seed version-9 generation; the 75 m fixed-cannon catalog; open
+  play bounds and apron; version-9 replay/layout identity; batched trajectory
+  dots; cannon-side wind flag; exact-root Shot Follow, impact hold, and early
+  return; removal of the active v8 bundle and obsolete wall/debris/candidate
+  artifacts; removal of the obsolete delivery responsiveness probe and its
+  timing-threshold test. The active v9 manifest is
+  `b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
+- Paused at Task 1.3's predetermined geometry stop. Development captures at
+  `.agents/evidence/cannon-shot-observation/dev_stage01_aim.png` and
+  `dev_stage30_aim.png` show the full mountain only by pushing the camera far
+  enough that the cannon is clipped or visually negligible. The exact
+  projection contract reports Stage 01 mountain/cannon ratios `0.386/0.153`
+  and Stage 30 ratios `0.315/0.082`, versus required `0.65..0.85` and
+  `0.20..0.30`.
+- A bounded Stage 30 camera-space diagnostic with the cannon shifted to the
+  maximum allowed 90 m standoff found no shared 48-degree-FOV pose satisfying
+  the complete playable surface and both ratios. A close 20 m rear camera still
+  projected the interest set to width `2.255` where the full normalized
+  viewport width is `2.0`. A real 90 m exact catalog rebuild then failed closed
+  at Stage 18 because predictor and rigid-body first contact selected adjacent
+  terrain cells; the active 75 m catalog pointer was not changed.
+- No final validation gate, release export, or production capture set has run.
+  The temporary geometry-search diagnostics were removed after recording these
+  facts; timing/FPS instrumentation was not added or invoked. A post-pass found
+  no new responsibility owner that should absorb the scheduler, flag, bounds,
+  or camera composer, but it did confirm that legacy broad-suite tests still
+  reference removed v4/v8 containment/candidate APIs and must be retired or
+  migrated before the task can be complete.
 - Preserved unrelated work: `src/cannon/trajectory_predictor.gd` and
   `tests/target_mask_test.gd` local modifications.
 - Known untracked residue: 27 obsolete binary PNGs under the two historical
@@ -903,17 +924,23 @@ a task-specific `.agents/evidence/` directory.
 
 ## Next Steps
 
-1. Resume at Task 1.0 and inspect the two preserved unrelated diffs before
-   staging anything.
-2. Complete Task 1.0 as a prediction/readiness checkpoint, then Tasks 1.1–1.5 as
-   one fixed-terrain, open-environment, standoff, camera-composition, and preview
-   checkpoint.
-3. Complete the flag and Shot Follow branches, then integrate them before the
-   quality audit.
-4. Announce and run the single bounded final gate only after the implementation
-   and focused contracts stabilize.
-5. Update implemented truth and mark this plan `done` only after every named
-   acceptance check passes.
+1. Obtain the user's decision on the Task 1.3 geometry conflict before changing
+   the 48-degree FOV, cannon asset scale, locked `3:4` projected ratio, or 90 m
+   standoff ceiling. The recommended amendment is to preserve the lower/wider
+   physical mountain and real cannon scale, treat `3:4` as a visual preference
+   rather than an exact playable-top projection gate, and permit the shared
+   standoff to move beyond 90 m until a close cannon camera contains Stage 30.
+2. After that decision, update this contract first, then regenerate the entire
+   v9 catalog and re-review Stage 01/30 Aim View captures. Do not loosen
+   predictor/rigid-body hit-identity parity merely to make the farther catalog
+   pass.
+3. Complete the remaining focused contracts, retire or migrate legacy tests
+   that still compile against removed containment/candidate APIs, reconcile the
+   metadata-only `ContainmentSpec` bridge after the preserved predictor diff is
+   owned, and update documentation truth.
+4. Announce and run the single bounded final gate only after implementation and
+   focused contracts stabilize; then mark this plan `done` if every accepted
+   criterion passes.
 
 ## Stop Conditions
 

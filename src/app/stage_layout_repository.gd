@@ -190,10 +190,5 @@ func _same_stage_identity(left: StageData, right: StageData) -> bool:
 
 func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bool:
 	return layout != null and layout.matches_stage_identity(stage) and layout.is_runtime_ready() \
-			and layout.candidate_index >= 0 and layout.candidate_index <= 31 \
-			and layout.generation_attempt == 0 \
-			and layout.accepted_seed == layout.terrain_seed \
-			and layout.terrain_seed == StageProgressionData.candidate_seed_for(
-				stage.stage_number,
-				layout.candidate_index
-			)
+			and layout.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED \
+			and stage.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED

@@ -30,7 +30,13 @@ func _run_checks() -> void:
 	var agent := gameplay.get_node("GameplayAgentApi") as GameplayAgentApi
 	var actions := gameplay.get_node("HUD/HUDRoot/ActionButtons") as ActionButtons
 	_assert(controller.begin_aiming(), "rapid-fire contract requires an aiming board")
+	var initial_prediction_budget := 120
+	while not bool(controller.fire_readiness_snapshot().get("fireable", false)) \
+			and initial_prediction_budget > 0:
+		await physics_frame
+		initial_prediction_budget -= 1
 	var initial_readiness := controller.fire_readiness_snapshot()
+	_assert(initial_prediction_budget > 0, "Aim View must publish its current prediction before Fire enables")
 	_assert(bool(initial_readiness.get("editable", false)), "beginning aim must refresh editable Fire readiness")
 	_assert(String(initial_readiness.get("prediction_status", "")) == "fireable", "initial readiness must use a matching prediction key")
 	_assert(not actions.get_node("FireButton").disabled, "HUD Fire must follow the authoritative ready snapshot")

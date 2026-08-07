@@ -22,6 +22,7 @@ var _wind_screen_direction := Vector2.RIGHT
 var _wind_depth_cue := DepthCue.NONE
 var _next_wind_screen_direction := Vector2.RIGHT
 var _next_wind_depth_cue := DepthCue.NONE
+var _wind_display_key: StringName = &""
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func reset_for_stage(maximum_shots: int, duration_seconds: float) -> void:
 	_remaining_seconds = _duration_seconds
 	_clock_started = false
 	_wind_snapshot = null
+	_wind_display_key = &""
 	set_finish_available(false)
 	_refresh_values()
 
@@ -91,6 +93,15 @@ func update_wind(
 	_next_wind_screen_direction = next_screen_direction \
 			if not next_screen_direction.is_zero_approx() else screen_direction
 	_next_wind_depth_cue = next_depth_cue
+	var next_display_key := wind_display_key(
+		snapshot,
+		screen_direction,
+		depth_cue,
+		_next_wind_screen_direction,
+		next_depth_cue
+	)
+	if next_display_key == _wind_display_key:
+		return
 	_refresh_wind()
 
 
@@ -109,6 +120,7 @@ func focus_finish() -> void:
 
 
 func refresh_locale() -> void:
+	_wind_display_key = &""
 	%TimeMetric.set_caption_key("hud.time")
 	%ShotsMetric.set_caption_key("hud.shots")
 	%ActivityMetric.set_caption_key("hud.resident_balls")
@@ -142,6 +154,13 @@ func _refresh_activity() -> void:
 
 
 func _refresh_wind() -> void:
+	_wind_display_key = wind_display_key(
+		_wind_snapshot,
+		_wind_screen_direction,
+		_wind_depth_cue,
+		_next_wind_screen_direction,
+		_next_wind_depth_cue
+	)
 	if _wind_snapshot == null:
 		%WindArrow.text = "—"
 		%WindDirection.text = tr("hud.wind_waiting")
@@ -168,6 +187,38 @@ func _refresh_wind() -> void:
 		var next_strength := tr(_strength_key(_wind_snapshot.next_normalized_strength))
 		%NextWindArrow.text = _direction_arrow(_next_wind_screen_direction, _next_wind_depth_cue)
 		%NextWindText.text = tr("hud.wind_next_format") % [next_direction, next_strength, next_percent]
+
+
+static func wind_display_key(
+		snapshot: WindSnapshot,
+		screen_direction: Vector2,
+		depth_cue: DepthCue,
+		next_screen_direction: Vector2,
+		next_depth_cue: DepthCue
+) -> StringName:
+	if snapshot == null:
+		return &"none"
+	var direction_bucket := _direction_bucket(screen_direction, depth_cue)
+	var next_direction_bucket := _direction_bucket(next_screen_direction, next_depth_cue)
+	return StringName("%d|%d|%d|%d|%d|%d" % [
+		direction_bucket,
+		clampi(roundi(snapshot.normalized_strength * 100.0), 0, 100),
+		maxi(ceili(snapshot.seconds_until_change), 0),
+		1 if snapshot.is_transitioning() else 0,
+		next_direction_bucket,
+		clampi(roundi(snapshot.next_normalized_strength * 100.0), 0, 100),
+	])
+
+
+static func _direction_bucket(screen_direction: Vector2, depth_cue: DepthCue) -> int:
+	match depth_cue:
+		DepthCue.INTO_SCREEN:
+			return 8
+		DepthCue.OUT_OF_SCREEN:
+			return 9
+	if screen_direction.is_zero_approx():
+		return 10
+	return posmod(roundi(screen_direction.angle() / (PI / 4.0)), 8)
 
 
 func _format_duration(seconds: float) -> String:

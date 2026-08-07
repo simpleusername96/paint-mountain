@@ -5,10 +5,10 @@ extends SceneTree
 ## runtime then consumes only the serialized result.
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
-const BUNDLE_FORMAT_VERSION := 4
+const BUNDLE_FORMAT_VERSION := 5
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
 const TERRAIN_SCENE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
-const BACKSTOP_SCENE := preload("res://scenes/gameplay/backstop_environment.tscn")
+const OPEN_ENVIRONMENT_SCENE := preload("res://scenes/gameplay/open_play_environment.tscn")
 const CANNON_SCENE := preload("res://scenes/gameplay/cannon.tscn")
 const BURST_DATA: MechanismData = preload("res://resources/mechanisms/burst_node.tres")
 const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitter_node.tres")
@@ -53,7 +53,7 @@ func _initialize() -> void:
 		return
 	var diagnostic_stage := _diagnostic_stage_argument()
 	if not diagnostic_stage.is_empty():
-		var diagnostic_passed := await _diagnose_stage_candidates(diagnostic_stage)
+		var diagnostic_passed := await _diagnose_stage(diagnostic_stage)
 		quit(0 if diagnostic_passed else 3)
 		return
 	var write := "--write" in OS.get_cmdline_user_args()
@@ -95,51 +95,30 @@ func _initialize() -> void:
 	quit()
 
 
-## Offline/no-publish diagnostic for one exact canonical stage. It deliberately
-## uses the locked 0..31 domain and does not materialize other stages.
-func _diagnose_stage_candidates(stage_id: String) -> bool:
+## Offline/no-publish diagnostic for one exact canonical stage.
+func _diagnose_stage(stage_id: String) -> bool:
 	var existing := load(CATALOG_PATH) as StageCatalogData
 	if existing == null:
-		push_error("Offline candidate diagnostic requires the current source catalog.")
+		push_error("Offline exact-stage diagnostic requires the current source catalog.")
 		return false
 	var source_stage := existing.get_stage(StringName(stage_id)) as StageData
 	if source_stage == null:
-		push_error("Offline candidate diagnostic requested unknown stage: %s" % stage_id)
+		push_error("Offline exact-stage diagnostic requested unknown stage: %s" % stage_id)
 		return false
 	var stage := _materialize_stage(source_stage, source_stage.stage_number)
 	if stage == null:
-		push_error("Offline candidate diagnostic could not materialize %s." % stage_id)
+		push_error("Offline exact-stage diagnostic could not materialize %s." % stage_id)
 		return false
-	var counts := {
-		"structural": {}, "finalization": {}, "default_predictor": {},
-		"default_body": {}, "summit_predictor": {}, "summit_body": {}, "bake_codec": {},
-	}
-	var evidence: Dictionary = {}
-	for candidate_index in range(32):
-		var candidate_seed := StageProgressionData.candidate_seed_for(stage.stage_number, candidate_index)
-		var candidate_stage := stage.duplicate(true) as StageData
-		candidate_stage.terrain_seed = candidate_seed
-		candidate_stage.generation_profile.base_seed = candidate_seed
-		var generated := SeededStageGenerator.generate_candidate_diagnostic(candidate_stage, candidate_seed)
-		if not bool(generated.get("valid", false)):
-			_diagnostic_record(counts, evidence, String(generated.get("phase", "structural")), String(generated.get("reason", "unknown")), candidate_index)
-			continue
-		var layout := generated.get("layout") as GeneratedStageLayout
-		layout.candidate_index = candidate_index
-		var witness := await _install_entry_witnesses_diagnostic(candidate_stage, layout)
-		if not bool(witness.get("valid", false)):
-			_diagnostic_record(counts, evidence, String(witness.get("phase", "default_predictor")), String(witness.get("reason", "unknown")), candidate_index)
-			continue
-		var baked := StageLayoutBakeCodec.bake(layout, candidate_stage)
-		if baked == null or StageLayoutBakeCodec.hydrate(baked, candidate_stage) == null:
-			_diagnostic_record(counts, evidence, "bake_codec", "bake_or_hydrate", candidate_index)
-			continue
-		print("Stage candidate diagnostic accepted: stage=%s candidate=%d seed=%d" % [stage_id, candidate_index, candidate_seed])
-		_print_diagnostic_counts(stage_id, counts, evidence)
-		return true
-	print("Stage candidate diagnostic rejected all locked candidates: stage=%s domain=0..31" % stage_id)
-	_print_diagnostic_counts(stage_id, counts, evidence)
-	return false
+	var result := await _generate_and_bake(stage)
+	if result.is_empty():
+		push_error("Exact-stage diagnostic rejected stage=%s seed=%d" % [
+			stage_id, StageProgressionData.CANONICAL_TERRAIN_SEED,
+		])
+		return false
+	print("Exact-stage diagnostic passed: stage=%s seed=%d" % [
+		stage_id, StageProgressionData.CANONICAL_TERRAIN_SEED,
+	])
+	return true
 
 
 func _diagnostic_stage_argument() -> String:
@@ -158,27 +137,6 @@ func _bundle_promotion_argument() -> String:
 	var arguments := OS.get_cmdline_user_args()
 	var index := arguments.find("--promote-bundle")
 	return String(arguments[index + 1]) if index >= 0 and index + 1 < arguments.size() else ""
-
-
-func _diagnostic_record(counts: Dictionary, evidence: Dictionary, phase: String, reason: String, candidate_index: int) -> void:
-	var phase_counts: Dictionary = counts.get(phase, {})
-	phase_counts[reason] = int(phase_counts.get(reason, 0)) + 1
-	counts[phase] = phase_counts
-	var evidence_key := "%s/%s" % [phase, reason]
-	if not evidence.has(evidence_key):
-		evidence[evidence_key] = candidate_index
-
-
-func _print_diagnostic_counts(stage_id: String, counts: Dictionary, evidence: Dictionary) -> void:
-	print("Stage candidate diagnostic counts: stage=%s" % stage_id)
-	for phase in ["structural", "finalization", "default_predictor", "default_body", "summit_predictor", "summit_body", "bake_codec"]:
-		var phase_counts: Dictionary = counts[phase]
-		var reasons: Array[String] = []
-		for reason in phase_counts:
-			reasons.append(String(reason))
-		reasons.sort()
-		for reason in reasons:
-			print("  %s reason=%s count=%d first_candidate=%d" % [phase, reason, phase_counts[reason], evidence["%s/%s" % [phase, reason]]])
 
 
 func _check_active_catalog() -> void:
@@ -212,11 +170,11 @@ func _build_catalog() -> Dictionary:
 		var stage := _materialize_stage(source_stages[source_index], source_index + 1)
 		if stage == null:
 			return {}
-		var accepted := await _select_and_bake(stage)
-		if accepted.is_empty():
+		var built := await _generate_and_bake(stage)
+		if built.is_empty():
 			return {}
-		stage = accepted.stage as StageData
-		var baked := accepted.baked as BakedStageLayoutData
+		stage = built.stage as StageData
+		var baked := built.baked as BakedStageLayoutData
 		var hydrated := StageLayoutBakeCodec.hydrate(baked, stage)
 		if hydrated == null:
 			return {}
@@ -226,7 +184,7 @@ func _build_catalog() -> Dictionary:
 		manifest_parts.append("layout=%s|%s" % [
 			"layouts/%s_layout.res" % stage.stage_id, baked.payload_sha256
 		])
-		manifest_parts.append("candidate_index=%d" % baked.candidate_index)
+		manifest_parts.append("play_bounds_checksum=%d" % baked.play_bounds_checksum)
 		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
 			hydrated.generated_default_witness
 		))
@@ -247,33 +205,51 @@ func _build_catalog() -> Dictionary:
 	return {"catalog": result, "layouts": layouts}
 
 
-## Bounded offline admission: no nested structural sequence and no fallback.
-func _select_and_bake(stage: StageData) -> Dictionary:
-	for candidate_index in range(32):
-		var candidate_seed := StageProgressionData.candidate_seed_for(
-			stage.stage_number, candidate_index
+## One exact canonical identity either builds completely or fails closed.
+func _generate_and_bake(stage: StageData) -> Dictionary:
+	var exact_stage := stage.duplicate(true) as StageData
+	exact_stage.terrain_seed = StageProgressionData.CANONICAL_TERRAIN_SEED
+	exact_stage.generation_profile.base_seed = StageProgressionData.CANONICAL_TERRAIN_SEED
+	_place_cannon_from_contract(exact_stage)
+	var layout := SeededStageGenerator.generate_exact(
+		exact_stage.generation_profile,
+		exact_stage.terrain_seed,
+		exact_stage
+	)
+	if layout == null or layout.terrain_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
+		push_error("Exact canonical generation failed for %s." % stage.stage_id)
+		return {}
+	var witness_result := await _install_entry_witnesses_diagnostic(exact_stage, layout)
+	if not bool(witness_result.get("valid", false)):
+		push_error("Bounded entry witnesses failed for %s: %s/%s." % [
+			stage.stage_id,
+			String(witness_result.get("phase", "unknown")),
+			String(witness_result.get("reason", "unknown")),
+		])
+		return {}
+	var baked := StageLayoutBakeCodec.bake(layout, exact_stage)
+	if baked == null:
+		push_error(
+			"Baking failed for %s: readiness=%s placement_count=%d placement_checksum=%d default=%s summit=%s." % [
+				stage.stage_id,
+				str(layout.runtime_readiness_diagnostic()),
+				layout.mechanism_placements.size(),
+				layout.placement_checksum(),
+				layout.generated_default_witness != null and layout.generated_default_witness.is_valid(),
+				layout.generated_summit_witness != null and layout.generated_summit_witness.is_valid(true),
+			]
 		)
-		var candidate_stage := stage.duplicate(true) as StageData
-		candidate_stage.terrain_seed = candidate_seed
-		candidate_stage.generation_profile.base_seed = candidate_seed
-		var layout := SeededStageGenerator.generate_candidate_once(candidate_stage, candidate_seed)
-		if layout == null:
-			continue
-		layout.candidate_index = candidate_index
-		if layout.generation_attempt != 0 or layout.terrain_seed != candidate_seed \
-				or layout.accepted_seed != candidate_seed \
-				or candidate_stage.terrain_seed != candidate_seed \
-				or candidate_stage.generation_profile.base_seed != candidate_seed:
-			push_error("Candidate identity mismatch for %s index %d." % [stage.stage_id, candidate_index])
-			return {}
-		if not await _install_entry_witnesses(candidate_stage, layout):
-			continue
-		var baked := StageLayoutBakeCodec.bake(layout, candidate_stage)
-		if baked == null:
-			continue
-		return {"stage": candidate_stage, "baked": baked}
-	push_error("No fully valid candidate in 0-31 for %s." % stage.stage_id)
-	return {}
+		return {}
+	return {"stage": exact_stage, "baked": baked}
+
+
+static func _place_cannon_from_contract(stage: StageData) -> void:
+	var front_world_z := stage.terrain_center.z \
+			+ stage.generation_profile.generation_contract.local_bounds.end.y
+	var origin := stage.cannon_transform.origin
+	origin.x = stage.terrain_center.x
+	origin.z = front_world_z + StageGenerationContract.FIXED_CANNON_STANDOFF
+	stage.cannon_transform = Transform3D(stage.cannon_transform.basis, origin)
 
 
 ## Exactly two predictor/real-body checks: target-centroid and summit band.
@@ -289,15 +265,16 @@ func _install_entry_witnesses_diagnostic(stage: StageData, layout: GeneratedStag
 	var terrain := TERRAIN_SCENE.instantiate() as TerrainSurface
 	terrain.position = stage.terrain_center
 	fixture.add_child(terrain)
+	await process_frame
 	terrain.configure(layout)
-	var backstop := BACKSTOP_SCENE.instantiate() as BackstopEnvironment
-	fixture.add_child(backstop)
-	backstop.configure(layout.containment, stage.paint_world_bounds(), stage.terrain_center.y)
+	var open_environment := OPEN_ENVIRONMENT_SCENE.instantiate() as OpenPlayEnvironment
+	fixture.add_child(open_environment)
+	open_environment.configure(layout.play_bounds, stage.paint_world_bounds(), stage.terrain_center.y)
 	var cannon := CANNON_SCENE.instantiate() as CannonController
 	fixture.add_child(cannon)
 	cannon.global_transform = stage.cannon_transform
 	await physics_frame
-	var default_sample := layout.target_sample_nearest_centroid()
+	var default_sample := _stable_default_sample(layout)
 	var default_result := _single_target_result(cannon, terrain, layout, default_sample)
 	if not bool(default_result.get("valid", false)):
 		var default_predictor_reason := _diagnostic_result_reason(default_result, "invalid_default_prediction")
@@ -305,15 +282,16 @@ func _install_entry_witnesses_diagnostic(stage: StageData, layout: GeneratedStag
 		await physics_frame
 		return {"valid": false, "phase": "default_predictor", "reason": default_predictor_reason}
 	var default_body := await DirectReachabilityValidator.validate_rigidbody_batches(
-		self, fixture, cannon, terrain, layout, layout.containment.containment_bounds, default_result, 1
+		self, fixture, cannon, terrain, layout, layout.play_bounds.bounds, default_result, 1
 	)
 	if not bool(default_body.get("valid", false)):
 		var default_body_reason := _diagnostic_result_reason(default_body, "default_rigidbody_parity")
+		default_body_reason += " predicted_duration=%.3f" % float(default_result.get("prediction_duration", -1.0))
 		fixture.queue_free()
 		await physics_frame
 		return {"valid": false, "phase": "default_body", "reason": default_body_reason}
 	var summit_result := DirectReachabilityValidator.validate_summit(
-		root.get_world_3d().direct_space_state, cannon, terrain, layout, layout.containment.containment_bounds
+		root.get_world_3d().direct_space_state, cannon, terrain, layout, layout.play_bounds.bounds
 	)
 	if not bool(summit_result.get("valid", false)):
 		var summit_predictor_reason := _diagnostic_result_reason(summit_result, "invalid_summit_prediction")
@@ -321,10 +299,11 @@ func _install_entry_witnesses_diagnostic(stage: StageData, layout: GeneratedStag
 		await physics_frame
 		return {"valid": false, "phase": "summit_predictor", "reason": summit_predictor_reason}
 	var summit_body := await DirectReachabilityValidator.validate_rigidbody_batches(
-		self, fixture, cannon, terrain, layout, layout.containment.containment_bounds, summit_result, 1
+		self, fixture, cannon, terrain, layout, layout.play_bounds.bounds, summit_result, 1
 	)
 	if not bool(summit_body.get("valid", false)):
 		var summit_body_reason := _diagnostic_result_reason(summit_body, "summit_rigidbody_parity")
+		summit_body_reason += " predicted_duration=%.3f" % float(summit_result.get("prediction_duration", -1.0))
 		fixture.queue_free()
 		await physics_frame
 		return {"valid": false, "phase": "summit_body", "reason": summit_body_reason}
@@ -333,22 +312,61 @@ func _install_entry_witnesses_diagnostic(stage: StageData, layout: GeneratedStag
 	var valid := layout.generated_default_witness != null and layout.generated_summit_witness != null
 	fixture.queue_free()
 	await physics_frame
-	return {"valid": valid, "phase": "summit_body", "reason": "invalid_witness_payload" if not valid else ""}
+	var reason := ""
+	if not valid:
+		reason = "invalid_default_witness" if layout.generated_default_witness == null \
+				else "invalid_summit_witness"
+	return {"valid": valid, "phase": "witness_payload", "reason": reason}
 
 
-func _diagnostic_result_reason(result: Dictionary, fallback: String) -> String:
+func _diagnostic_result_reason(result: Dictionary, default_reason: String) -> String:
 	var rejection := String(result.get("rejection", ""))
-	return rejection if not rejection.is_empty() else fallback
+	var reason := rejection if not rejection.is_empty() else default_reason
+	var failures: Array = result.get("failure_diagnostics", [])
+	return "%s %s" % [reason, JSON.stringify(failures)] if not failures.is_empty() else reason
 
 
 func _single_target_result(cannon: CannonController, terrain: TerrainSurface, layout: GeneratedStageLayout, sample: Dictionary) -> Dictionary:
 	if sample.is_empty(): return {"valid": false}
 	var target := terrain.to_global(sample.point as Vector3)
 	var normal := (terrain.global_transform.basis.inverse().transposed() * (sample.normal as Vector3)).normalized()
-	var solved := DirectReachabilityValidator.solve_one_target(root.get_world_3d().direct_space_state, cannon, layout, layout.containment.containment_bounds, target, normal, sample)
+	var solved := DirectReachabilityValidator.solve_one_target(
+		root.get_world_3d().direct_space_state,
+		cannon,
+		layout,
+		layout.play_bounds.bounds,
+		target,
+		normal,
+		sample,
+		true
+	)
 	if not bool(solved.get("valid", false)): return solved
 	var prediction := solved.prediction as TrajectoryPrediction
-	return {"valid": prediction != null and prediction.hit_identity != null, "witnesses": [solved.aim], "witness_identities": [prediction.hit_identity], "witness_impacts": PackedVector3Array([prediction.endpoint]), "target_points": PackedVector3Array([target]), "target_witness_indices": PackedInt32Array([0]), "minimum_distance_margins": PackedFloat32Array([maxf(DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE - prediction.endpoint.distance_to(target), 0.0)]), "minimum_range_margins": PackedFloat32Array([float(solved.get("range_margin", 0.0))])}
+	return {"valid": prediction != null and prediction.hit_identity != null, "prediction_duration": prediction.duration, "witnesses": [solved.aim], "witness_identities": [prediction.hit_identity], "witness_impacts": PackedVector3Array([prediction.endpoint]), "target_points": PackedVector3Array([target]), "target_witness_indices": PackedInt32Array([0]), "minimum_distance_margins": PackedFloat32Array([maxf(DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE - prediction.endpoint.distance_to(target), 0.0)]), "minimum_range_margins": PackedFloat32Array([float(solved.get("range_margin", 0.0))])}
+
+
+func _stable_default_sample(layout: GeneratedStageLayout) -> Dictionary:
+	var sample := layout.target_sample_nearest_centroid()
+	if sample.is_empty():
+		return sample
+	var indices := layout.top_topology.triangle_vertex_indices(
+		sample.cell as Vector2i,
+		int(sample.triangle)
+	)
+	var vertices := layout.top_topology.canonical_vertices_read_only()
+	if indices.x < 0 or indices.y < 0 or indices.z < 0 \
+			or indices.x >= vertices.size() or indices.y >= vertices.size() \
+			or indices.z >= vertices.size():
+		return {}
+	# Aim at the selected target triangle's interior, not a mask-pixel center that
+	# may sit exactly on the cell diagonal and make equivalent physics hits report
+	# adjacent triangle IDs.
+	sample["point"] = (vertices[indices.x] + vertices[indices.y] + vertices[indices.z]) / 3.0
+	sample["normal"] = layout.top_topology.triangle_normal(
+		sample.cell as Vector2i,
+		int(sample.triangle)
+	)
+	return sample
 
 
 func _witness_from_results(predictor: Dictionary, body: Dictionary, terrain: TerrainSurface, sample: Dictionary, summit_checksum: int) -> StageEntryAimWitness:
@@ -366,7 +384,18 @@ func _witness_from_results(predictor: Dictionary, body: Dictionary, terrain: Ter
 	witness.predicted_local_impact = terrain.to_local(impacts[0]); witness.physical_local_impact = terrain.to_local(physical[0]); witness.target_local_point = sample.get("point", terrain.to_local(targets[0]))
 	witness.target_pixel_index = int(sample.get("target_pixel_index", -1)); witness.summit_region_checksum = summit_checksum
 	witness.distance_margin = float((body.get("minimum_distance_margins", PackedFloat32Array([0.0])) as PackedFloat32Array)[0]); witness.range_margin = float((predictor.get("minimum_range_margins", PackedFloat32Array([0.0])) as PackedFloat32Array)[0]); witness.height_margin = float(predictor.get("minimum_height_margin", 0.0))
-	return witness if witness.is_valid(summit_checksum != 0) else null
+	if not witness.is_valid(summit_checksum != 0):
+		push_error("Witness payload invalid: summit=%s target_pixel=%d distance=%.4f range=%.4f height=%.4f predicted=%s physical=%s" % [
+			summit_checksum != 0,
+			witness.target_pixel_index,
+			witness.distance_margin,
+			witness.range_margin,
+			witness.height_margin,
+			str(witness.predicted_identity.terrain_cell if witness.predicted_identity != null else Vector2i(-1, -1)),
+			str(witness.physical_identity.terrain_cell if witness.physical_identity != null else Vector2i(-1, -1)),
+		])
+		return null
+	return witness
 
 
 func _manifest_stage_descriptor(stage: StageData) -> String:
@@ -436,17 +465,11 @@ static func _materialize_stage(source: StageData, stage_number: int) -> StageDat
 		stage.target_coverage + 2.5,
 		stage.target_coverage + 5.0
 	)
-	stage.terrain_seed = StageProgressionData.requested_seed_for(stage_number)
+	stage.terrain_seed = StageProgressionData.terrain_seed_for(stage_number)
 	stage.terrain_size = StageProgressionData.terrain_size_for(stage_number)
-	# Keep the rear edge of every persisted terrain at the fixed wall join while
-	# the stage grows toward the cannon. Leaving the StageData default here makes
-	# Stage 02/03 apron geometry use a one/two-metre-shifted join and fail closed
-	# before reachability can even be evaluated.
-	stage.terrain_center = Vector3(
-		0.0,
-		-2.0,
-		-172.0 + stage.terrain_size.y * 0.5
-	)
+	# One shared world anchor keeps the independent mountain distant while its
+	# depth expands in both directions instead of growing toward the cannon.
+	stage.terrain_center = Vector3(0.0, -2.0, -130.0)
 	stage.mechanism_loadout = _materialize_mechanisms(source.mechanism_loadout, stage_number)
 	if stage.mechanism_loadout.size() != StageProgressionData.mechanism_count_for(stage_number):
 		return null
@@ -477,7 +500,6 @@ static func _materialize_profile(
 	profile.profile_id = StageGenerationProfile.profile_id_for_stage(stage_id)
 	profile.profile_version = StageGenerationContract.CONTRACT_VERSION
 	profile.base_seed = terrain_seed
-	profile.fallback_seed = StageProgressionData.candidate_seed_for(stage_number, 31)
 	profile.nominal_peak = StageProgressionData.nominal_peak_for(stage_number)
 	profile.accepted_height_range = Vector2(
 		profile.nominal_peak - (12.0 if stage_number == 3 else 4.0),
@@ -618,7 +640,7 @@ static func _materialize_mechanisms(source: Array[MechanismData], stage_number: 
 
 	var route_count := StageProgressionData.route_count_for(stage_number)
 	var safe_early_kinds := [MechanismData.Kind.BURST, MechanismData.Kind.UPHILL_REBOUND]
-	var three_route_fallback_kinds := [
+	var three_route_default_kinds := [
 		MechanismData.Kind.BURST,
 		MechanismData.Kind.SPLITTER,
 		MechanismData.Kind.UPHILL_REBOUND,
@@ -630,7 +652,7 @@ static func _materialize_mechanisms(source: Array[MechanismData], stage_number: 
 		elif index < source.size() and source[index] != null and source[index].is_valid():
 			kind = source[index].canonical_kind()
 		else:
-			kind = three_route_fallback_kinds[index % three_route_fallback_kinds.size()]
+			kind = three_route_default_kinds[index % three_route_default_kinds.size()]
 		_append_canonical_mechanism(result, kind)
 	return result
 
@@ -758,7 +780,7 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("%s/%s" % [staging_root, subdirectory]))
 	var certificate_paths: Array[String] = []
 	var preview_paths: Array[String] = []
-	var candidate_indices: Array[int] = []
+	var play_bounds_checksums: Array[int] = []
 	var default_witnesses: Array[Dictionary] = []
 	var summit_witnesses: Array[Dictionary] = []
 	for index in range(catalog.stages.size()):
@@ -775,7 +797,7 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 		var hydrated := StageLayoutBakeCodec.hydrate(reloaded, stage)
 		if hydrated == null:
 			return false
-		candidate_indices.append(reloaded.candidate_index)
+		play_bounds_checksums.append(reloaded.play_bounds_checksum)
 		default_witnesses.append(_witness_manifest_summary(hydrated.generated_default_witness))
 		summit_witnesses.append(_witness_manifest_summary(hydrated.generated_summit_witness))
 		if stage.reachability_certificate != null:
@@ -790,11 +812,11 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 		"manifest_sha256": catalog.manifest_sha256,
 		"bundle_manifest_path": catalog.bundle_manifest_path,
 		"stage_ids": catalog.stage_ids,
-		"accepted_seeds": catalog.stages.map(func(stage: StageData) -> int: return stage.terrain_seed),
+		"terrain_seeds": catalog.stages.map(func(stage: StageData) -> int: return stage.terrain_seed),
 		"profile_ids": catalog.stages.map(func(stage: StageData) -> String: return String(stage.generation_profile.profile_id)),
 		"layout_paths": catalog.layout_paths,
 		"layout_payload_sha256": layouts.map(func(layout: BakedStageLayoutData) -> String: return layout.payload_sha256),
-		"accepted_candidate_indices": candidate_indices,
+		"play_bounds_checksums": play_bounds_checksums,
 		"default_witnesses": default_witnesses,
 		"summit_witnesses": summit_witnesses,
 		"certificate_paths": certificate_paths,
@@ -891,20 +913,20 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 		return _bundle_validation_failure("manifest header does not match catalog identity")
 	if not _manifest_array_matches(manifest.get("stage_ids", []), _catalog_stage_ids(catalog)):
 		return _bundle_validation_failure("manifest stage IDs differ from catalog")
-	if not _manifest_array_matches(manifest.get("accepted_seeds", []), _catalog_seeds(catalog)):
-		return _bundle_validation_failure("manifest accepted seeds differ from catalog")
+	if not _manifest_array_matches(manifest.get("terrain_seeds", []), _catalog_seeds(catalog)):
+		return _bundle_validation_failure("manifest terrain seeds differ from catalog")
 	if not _manifest_array_matches(manifest.get("profile_ids", []), _catalog_profile_ids(catalog)):
 		return _bundle_validation_failure("manifest profile IDs differ from catalog")
 	if not _manifest_array_matches(manifest.get("layout_paths", []), catalog.layout_paths):
 		return _bundle_validation_failure("manifest layout paths differ from catalog")
 	var payload_hashes: Array = manifest.get("layout_payload_sha256", [])
-	var candidate_indices: Array = manifest.get("accepted_candidate_indices", [])
+	var play_bounds_checksums: Array = manifest.get("play_bounds_checksums", [])
 	var default_witnesses: Array = manifest.get("default_witnesses", [])
 	var summit_witnesses: Array = manifest.get("summit_witnesses", [])
 	if payload_hashes.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest payload-hash count differs from stage count")
-	if candidate_indices.size() != catalog.stages.size():
-		return _bundle_validation_failure("manifest candidate-index count differs from stage count")
+	if play_bounds_checksums.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest play-bounds count differs from stage count")
 	if default_witnesses.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest default-witness count differs from stage count")
 	if summit_witnesses.size() != catalog.stages.size():
@@ -932,14 +954,11 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 			return _bundle_validation_failure("%s layout hydration failed" % stage_id)
 		if not hydrated.is_runtime_ready():
 			return _bundle_validation_failure("%s hydrated layout is not runtime-ready" % stage_id)
-		if baked.candidate_index != int(candidate_indices[index]):
-			return _bundle_validation_failure("%s candidate index differs from manifest" % stage_id)
-		if baked.candidate_index < 0 or baked.candidate_index > 31:
-			return _bundle_validation_failure("%s candidate index is outside 0..31" % stage_id)
-		if baked.terrain_seed != StageProgressionData.candidate_seed_for(
-			stage.stage_number, baked.candidate_index
-		):
-			return _bundle_validation_failure("%s candidate seed identity is invalid" % stage_id)
+		if baked.terrain_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
+			return _bundle_validation_failure("%s terrain seed identity is invalid" % stage_id)
+		if baked.play_bounds_checksum != int(play_bounds_checksums[index]) \
+				or baked.play_bounds_checksum != PlayBoundsSpec.new().checksum():
+			return _bundle_validation_failure("%s play bounds differ from manifest" % stage_id)
 		if not _witness_manifest_matches(
 			default_witnesses[index], hydrated.generated_default_witness
 		):
@@ -965,7 +984,7 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 			"layouts/%s_layout.res" % stage.stage_id,
 			baked.payload_sha256,
 		])
-		manifest_parts.append("candidate_index=%d" % baked.candidate_index)
+		manifest_parts.append("play_bounds_checksum=%d" % baked.play_bounds_checksum)
 		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
 			hydrated.generated_default_witness
 		))
@@ -1135,7 +1154,7 @@ static func _restore_catalog_pointer(backup_absolute: String, destination_absolu
 	if rename_error == OK and FileAccess.file_exists(destination_absolute):
 		return OK
 	# Keep the recoverable backup when rename cannot restore it. A verified copy
-	# is the last safe fallback that leaves the live pointer present on Windows.
+	# is the last safe recovery step that leaves the live pointer present on Windows.
 	var copy_error := DirAccess.copy_absolute(backup_absolute, destination_absolute)
 	if copy_error == OK and FileAccess.file_exists(destination_absolute):
 		return OK

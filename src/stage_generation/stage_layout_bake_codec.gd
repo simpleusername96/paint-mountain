@@ -1,7 +1,7 @@
 class_name StageLayoutBakeCodec
 extends RefCounted
 
-## Schema-1 primitive transport. The SHA-256 feed has one explicit field order;
+## Schema-2 primitive transport. The SHA-256 feed has one explicit field order;
 ## it never delegates semantic bytes to Variant or Resource serialization.
 static func bake(layout: GeneratedStageLayout, stage: StageData) -> BakedStageLayoutData:
 	if layout == null or stage == null or not layout.is_runtime_ready():
@@ -11,9 +11,6 @@ static func bake(layout: GeneratedStageLayout, stage: StageData) -> BakedStageLa
 	data.profile_version = layout.profile_version
 	data.layout_version = layout.layout_version
 	data.terrain_seed = layout.terrain_seed
-	data.accepted_seed = layout.accepted_seed
-	data.candidate_index = layout.candidate_index
-	data.generation_attempt = layout.generation_attempt
 	data.cell_count = layout.cell_count
 	data.local_bounds = layout.local_bounds
 	data.heights = layout.heights.duplicate()
@@ -21,7 +18,7 @@ static func bake(layout: GeneratedStageLayout, stage: StageData) -> BakedStageLa
 	data.height_checksum = layout.checksum
 	data.target_mask = layout.target_mask
 	data.target_checksum = layout.target_mask_checksum
-	data.containment_checksum = layout.containment.checksum()
+	data.play_bounds_checksum = layout.play_bounds.checksum()
 	for node in layout.route_graph.nodes:
 		data.route_node_ids.append(node.id)
 		data.route_node_positions.append(node.position)
@@ -87,21 +84,18 @@ static func hydrate(data: BakedStageLayoutData, stage: StageData) -> GeneratedSt
 	result.profile_version = data.profile_version
 	result.layout_version = data.layout_version
 	result.terrain_seed = data.terrain_seed
-	result.accepted_seed = data.accepted_seed
-	result.candidate_index = data.candidate_index
-	result.generation_attempt = data.generation_attempt
 	result.cell_count = data.cell_count
 	result.local_bounds = data.local_bounds
 	result.heights = data.heights.duplicate()
 	result.checksum = data.height_checksum
 	result.metrics = {"maximum_height": _maximum_height(result.heights)}
 	result.route_graph = GeneratedRouteGraph.new(nodes, edges)
-	result.containment = ContainmentSpec.new()
+	result.play_bounds = PlayBoundsSpec.new()
 	result.top_topology = TerrainTopTopology.build(data.cell_count, data.local_bounds, data.heights, data.footprint)
 	if result.top_topology == null or _height_checksum(result.heights) != data.height_checksum \
 			or not result.install_footprint(data.footprint) \
 			or not result.install_target_mask(data.target_mask, data.target_checksum) \
-			or result.containment.checksum() != data.containment_checksum:
+			or result.play_bounds.checksum() != data.play_bounds_checksum:
 		return null
 	if not _hydrate_placements(result, data, stage):
 		return null
@@ -123,9 +117,6 @@ static func payload_sha256(data: BakedStageLayoutData) -> String:
 	_append_i64(feed, data.profile_version)
 	_append_i64(feed, data.layout_version)
 	_append_i64(feed, data.terrain_seed)
-	_append_i64(feed, data.accepted_seed)
-	_append_i64(feed, data.candidate_index)
-	_append_i64(feed, data.generation_attempt)
 	_append_v2i(feed, data.cell_count)
 	_append_rect(feed, data.local_bounds)
 	_append_f32_array(feed, data.heights)
@@ -147,7 +138,7 @@ static func payload_sha256(data: BakedStageLayoutData) -> String:
 	_append_i32_array(feed, data.route_edge_indices)
 	_append_i32_array(feed, data.route_edge_roles)
 	_append_float_array_as_f64(feed, data.route_edge_widths)
-	_append_i64(feed, data.containment_checksum)
+	_append_i64(feed, data.play_bounds_checksum)
 	_append_i32_array(feed, data.mechanism_loadout_indices)
 	_append_string_array(feed, data.mechanism_anchor_ids)
 	_append_v2_array(feed, data.mechanism_local_xz)
@@ -280,6 +271,8 @@ static func _valid_payload(data: BakedStageLayoutData) -> bool:
 			or data.footprint.size() != data.cell_count.x * data.cell_count.y \
 			or data.target_mask.size() != StageGenerationContract.REQUIRED_MASK_SIZE * StageGenerationContract.REQUIRED_MASK_SIZE \
 			or data.height_checksum == 0 or data.target_checksum == 0 \
+			or data.terrain_seed != StageProgressionData.CANONICAL_TERRAIN_SEED \
+			or data.play_bounds_checksum != PlayBoundsSpec.new().checksum() \
 			or (not data.mechanism_loadout_indices.is_empty() and data.placement_checksum == 0) \
 			or TargetMaskRasterizer.byte_checksum(data.target_mask) != data.target_checksum:
 		return false
