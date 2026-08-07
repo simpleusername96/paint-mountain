@@ -39,10 +39,10 @@ This architecture covers the single-process desktop game. It does not define a b
 | `GameState` | Global progression, selected stage, settings, best results | Per-shot rules or scene node paths |
 | `SaveSystem` | Versioned serialization, load/default/migration, atomic local writes | UI or stage decisions |
 | `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, wind generation, camera transforms, or HUD layout |
-| `StageData` | Typed stage configuration, translation keys, generation profile/seed, stage duration, wind profile, and content references | Mutable runtime or accepted generated layout state |
-| `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
-| `StageCatalogBuilder` | Offline deterministic candidate search, complete validation, cannon-standoff derivation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, hand-authored repair, or partial catalog activation |
-| `SeededStageGenerator` | Pure one-profile/one-accepted-seed route-graph and layout reconstruction plus identity verification | Candidate search, physics-world solving, stage transitions, paint state, or hand-authored production repair |
+| `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, wind profile, and content references | Mutable runtime or accepted baked layout state |
+| `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
+| `StageCatalogBuilder` | Offline exact-seed generation, complete validation, cannon-standoff derivation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, candidate selection, hand-authored repair, or partial catalog activation |
+| `SeededStageGenerator` | Pure authoring-time one-profile/one-canonical-seed route-graph and layout reconstruction plus identity verification | Candidate search, runtime fallback, physics-world solving, stage transitions, paint state, or hand-authored production repair |
 | `ProjectileRangeConstraint` | Pure legal yaw, fixed-step damped horizon, and lower/upper height-envelope admission for every target sample and the Summit Region | Physics queries, terrain occlusion, first-hit certification, target deletion, or runtime aim assistance |
 | `DirectReachabilityValidator`, `DefaultAimSolver` | Offline bounded real first-hit validation for generated default and summit aims, plus optional diagnostic certificate work | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
 | `GeneratedStageLayout` | Accepted graph, one-height-per-XZ samples, fixed triangle IDs/diagonals, target and summit identities, bounded default/summit witnesses, optional certificate metadata, containment, checksums, decorations, and mechanism placements | Mutable paint, shot/save state, second height representation, or visual-only playable geometry |
@@ -84,7 +84,7 @@ This architecture covers the single-process desktop game. It does not define a b
   StageData, generation profiles/contracts, ProjectileData, WindProfile,
   certificates, and each mechanism's configuration.
 - StageData owns targets, shots, colors, camera bookmarks, duration, wind
-  profile, generation profile/seed/certificate reference, mechanism loadout,
+  profile, generation profile/canonical seed/certificate reference, mechanism loadout,
   thresholds, and translation keys. `ContainmentSpec` owns the fixed bounds and
   `GeneratedStageLayout` carries them to runtime consumers. Runtime
   construction consumes one accepted
@@ -105,6 +105,12 @@ This architecture covers the single-process desktop game. It does not define a b
   so runtime annotations cannot mutate the retained source. Meshes, textures,
   Nodes, physics objects, and paint state are never built or accessed by the
   repository worker.
+- The current catalog uses one canonical terrain-family seed path and exactly
+  one baked layout identity per stage. Offline building does not search a
+  candidate range or silently substitute a fallback seed. A missing, corrupt,
+  or identity-mismatched resource fails closed; retry and replay never regenerate
+  terrain. A future randomized mode must select only among separately versioned,
+  validated, persisted catalog variants and requires a new product contract.
 - `GeneratedStageLayout` carries one sampled height per in-bounds XZ plus the one
   fixed cell diagonal. `TerrainGeometryFactory` emits the indexed top triangles
   once. Render mesh, top `ConcavePolygonShape3D`, hit identity, height/normal

@@ -54,6 +54,14 @@ owned by `UIUX_GUIDELINES.md`.
   architecture decide the underlying surface representation.
 - Build the mountain around designed routes: broad slopes, terraces, shelves,
   stair-like transitions, valleys, basins, ridges, and meaningful branches.
+- Favor a lower, laterally spread mountain-range silhouette over a narrow central
+  tower. Several readable rises and secondary summits should carry the eye
+  across the target; later stages gain route and mechanism complexity without
+  continuously inflating the highest peak.
+- In the authored Aim View, use roughly `3:4` height-to-width as the initial
+  silhouette target. Treat it as a composition range to review with the actual
+  projected playable mass, not as a ratio for the rectangular height grid and
+  not as permission to flatten terraces, valleys, or support faces.
 - Stage 1 has the broadest, clearest path. Later stages add readable rises,
   drops, route reversals, narrower shelves, and mechanism opportunities without
   becoming visual noise.
@@ -157,6 +165,8 @@ owned by `UIUX_GUIDELINES.md`.
 A future visual review can call the world conformant only when:
 
 - the aiming view reads immediately as a thick, stepped 3D puzzle mountain;
+- the complete playable silhouette reads as a lower, wider mountain range with
+  several lateral rises rather than one dominant vertical spike;
 - camera movement changes overlap, side exposure, highlights, and shadows;
 - routes and stage difficulty are legible before firing;
 - cannon, trajectory, impact, ball contact, continuous paint, and mechanisms

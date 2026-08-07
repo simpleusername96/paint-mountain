@@ -56,9 +56,15 @@ exactly three mechanism types.
 
 ### Spatial and camera composition
 
-- Cannon length is roughly 2–3 m; mountain width is 120–250 m and height is
-  60–140 m. The nearest playable mountain front remains at least 70 m from the
+- Cannon length is roughly 2–3 m. The current terrain family widens from roughly
+  210 to 280 m across thirty stages while its nominal summit progression stays
+  within roughly 64 to 92 m. The nearest playable mountain front remains at least 70 m from the
   cannon across stage sizes instead of advancing toward it as the board grows.
+- The actual projected playable silhouette is a lower, wider mountain range,
+  not a narrow tower inside a wide empty grid. In Aim View, target roughly `3:4`
+  height-to-width with several lateral rises and readable route layers. This is
+  an approximate composition target; shared physical topology, depth, terraces,
+  valleys, and support faces remain mandatory.
 - In the perspective `Aim View`, the cannon is a substantial lower-foreground
   anchor at roughly 20–30% of viewport height. The complete playable mountain is
   a smaller distant subject in the middle and upper frame, with its silhouette,
@@ -124,6 +130,13 @@ exactly three mechanism types.
   the run; otherwise the stage duration ends it. Final unique target coverage is
   the sole score and star thresholds remain grades.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
+- The current catalog shares one canonical terrain-family seed. Stage and
+  profile identity still make the thirty stages distinct, and each stage has
+  one versioned persisted baked layout. Stage entry, retry, replay, and process
+  restart reuse that exact layout; gameplay performs no terrain seed roll,
+  candidate search, or reconstruction.
+  The offline generator is authoring infrastructure only. Future randomness may
+  be introduced only through separately baked and reviewed catalog variants.
 
 ### Projectile and paint
 

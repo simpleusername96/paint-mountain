@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-07
 last_reviewed: 2026-08-07
-scope: cannon-side wind flag, physical cannon standoff, Aim View composition, automatic Shot Follow, bounded structural performance work, and obsolete recovery cleanup
+scope: fixed baked mountain-range terrain, cannon-side wind flag, physical cannon standoff, Aim View composition, automatic Shot Follow, bounded structural performance work, and obsolete recovery cleanup
 source: user feedback on 2026-08-07 and docs/source-brief.md
 related:
   - ../PLANS.md
@@ -20,34 +20,37 @@ related:
   - 2026-08-07-target-coverage-and-safe-aim-framing.md
 ---
 
-# Cannon Standoff and Shot Observation - Execution Contract
+# Fixed Mountain Range, Cannon Standoff, and Shot Observation - Execution Contract
 
-Paint Mountain will frame a large, readable cannon in the foreground against a
-complete distant mountain, replace unclear wind debris with a cannon-side flag,
-and automatically follow each newly fired root paintball until its first terrain
-impact. The player can return to the cannon view at any time without changing
-the projectile. The same implementation restores constant-work Fire admission
-and removes verified redundant prediction, UI, camera, and trajectory-preview
-work without a timing or profiling pass. It does not restore exhaustive
-reachability or authored solution work.
+Paint Mountain will load one persisted canonical terrain layout per stage, lower
+and widen the generated mass into a readable mountain-range silhouette, and
+frame a large cannon in the foreground against that complete distant target. It
+will also replace unclear wind debris with a cannon-side flag and automatically
+follow each newly fired root paintball until its first terrain impact. The same
+implementation restores constant-work Fire admission and removes verified
+redundant prediction, UI, camera, and trajectory-preview work without a timing
+or profiling pass. It does not restore runtime terrain randomness, exhaustive
+reachability, or authored solution work.
 
 ## Purpose
 
-- Objective: make distance, wind, launch, flight, and impact readable as one
-  coherent physical sequence.
-- Deliverable: a versioned stage placement update, shared Aim View composition,
-  cannon-side wind flag, specific-projectile Shot Follow state, contextual return
-  control, bounded miss cleanup, a main-thread demand-driven prediction owner,
-  batched trajectory dots, focused contracts, production-build captures, and
-  current documentation.
+- Objective: make one stable lower/wider mountain, distance, wind, launch,
+  flight, and impact readable as one coherent planning sequence.
+- Deliverable: a version-9 fixed-seed baked catalog with a lower/wider terrain
+  family, versioned stage placement, shared Aim View composition, cannon-side
+  wind flag, specific-projectile Shot Follow state, contextual return control,
+  bounded miss cleanup, a main-thread demand-driven prediction owner, batched
+  trajectory dots, focused contracts, production-build captures, and current
+  documentation.
 - Completion state: Stages 01 and 30 both show a substantial cannon and complete
-  distant mountain; the cannon is at least 70 m from the nearest playable front;
-  the flag agrees with the authoritative wind; Fire follows the new root ball;
-  first terrain impact remains readable; button or Tab returns early while
-  physics continues; Fire performs no trajectory query; inactive presentation
-  performs no repeated prediction or marker work; no obsolete debris,
-  solution-route runner, inactive catalog, or competing active task document
-  remains.
+  distant lower/wider mountain range from the same persisted data on every
+  load; the cannon is at least 70 m from the nearest playable front; the flag
+  agrees with the authoritative wind; Fire follows the new root ball; first
+  terrain impact remains readable; button or Tab returns early while physics
+  continues; Fire performs no trajectory query; inactive presentation performs
+  no repeated prediction or marker work; no runtime terrain generation,
+  obsolete debris, candidate search, solution-route runner, inactive catalog,
+  or competing active task document remains.
 
 ## Scope and Boundaries
 
@@ -60,6 +63,18 @@ In scope:
   internal enum names may remain until a schema-neutral rename is convenient.
 - Replace `WindDebrisField` with one non-colliding cannon-side flag or streamer
   driven by the existing `WindController` snapshot.
+- Replace the version-8 candidate-seed contract with one canonical terrain-family
+  seed used by all current stage profiles and exactly one persisted baked layout
+  identity per stage. Runtime entry, retry, replay, and process restart load that
+  layout and never generate or select another terrain.
+- Lower the shared peak progression from the current `72..126 m` to `64..92 m`,
+  widen lateral terrain bounds from `180..240 m` to `210..280 m`, and require
+  the connected footprint to occupy at least 72% of its X bounds at its widest
+  row while retaining taper, valleys, terraces, and real support faces.
+- Treat projected playable-silhouette height:width `3:4` as the target center
+  with an accepted `0.65..0.85` band in the shared 1280x720 Aim View. This is a
+  visual composition contract, not an X:Z grid ratio or a reason to flatten the
+  mountain.
 - Derive each stage's cannon placement so the cannon origin is at least 70 m in
   front of the nearest playable terrain edge, then promote one coherent version-9
   catalog with new bounded default/summit witnesses.
@@ -106,6 +121,10 @@ Out of scope:
 - Changes to PaintSystem authority, score meaning, target masks, mechanism rules,
   stage timer/result rules, save progression, online services, dependencies,
   plugins, asset packs, or renderer choice.
+- Runtime terrain generation, seed rolls on retry/run entry, a terrain editor,
+  downloadable seeds, daily challenges, multiple current catalog variants, or
+  making all thirty stages share one identical topology. Future randomness is a
+  separate product revision and may use only prebuilt reviewed variants.
 - A fixed exactly-three-second flight rule. Legal shots are not rejected because
   their elapsed flight differs from the representative pacing target.
 
@@ -126,6 +145,9 @@ Constraints and invariants:
   camera never terminates or mutates a projectile.
 - The active v8 catalog remains loadable until the complete v9 bundle passes its
   atomic promotion checks. Only then may v8 be removed as recoverable Git history.
+- `StageLayoutRepository` remains a persisted-layout loader and fails closed on
+  missing, corrupt, or identity-mismatched v9 data. It never calls
+  `SeededStageGenerator`, chooses a seed, or repairs a layout.
 - The pre-existing local edits in `src/cannon/trajectory_predictor.gd` and
   `tests/target_mask_test.gd` are not task-owned and must not be staged, reverted,
   or reformatted by this plan.
@@ -153,6 +175,9 @@ Destructive or irreversible actions:
 | Shot Follow (`탄환 추적`) | Temporary presentation that tracks the one newly accepted generation-0 root through first terrain contact | `CameraDirector` |
 | Return to Cannon (`대포로 돌아가기`) | Camera-only intent that exits Shot Follow and restores Aim View; simulation and aim persist | HUD/input intent consumed by `CameraDirector` |
 | Cannon Standoff | World-space distance from cannon origin to the nearest playable terrain front; minimum 70 m | stage progression/catalog materialization |
+| Canonical Terrain Seed | The one current terrain-family seed supplied to every stage profile; stage ID and immutable profile still make stage layouts distinct | `StageProgressionData` and the v9 catalog builder |
+| Baked Layout | The persisted height grid, connected footprint, topology, target, mechanisms, decorations, witnesses, and checksums loaded as runtime terrain truth | `BakedStageLayoutData` through `StageLayoutRepository` |
+| Mountain-Range Silhouette | The projected playable mass in Aim View; lower and wider with several lateral rises, targeting height:width 0.75 inside a 0.65–0.85 band | generation contract plus `AimCameraComposer` validation |
 | Wind Flag | Non-colliding physical-looking presentation beside the cannon; free end points in projectile push direction | `CannonWindFlag` consuming `WindController` |
 | Prediction Context Key | Canonical aim key + wind schedule identity + bounded launch epoch used to decide whether one immutable prediction is ready | `TrajectoryPredictionScheduler` |
 | Constant-work Fire | Fire checks the current prediction context and capacity, then accepts or reports pending; it never computes a trajectory | `StageController` admission using scheduler-published cannon state |
@@ -168,6 +193,10 @@ move a camera with the stationary cannon body.
 | Concern | Current behavior | Evidence | Consequence |
 | --- | --- | --- | --- |
 | Later terrain approaches the cannon | Stage 01 terrain front is about 57 m from the fixed cannon; Stage 30 is about 17 m because the builder fixes the rear wall and grows terrain forward | `scripts/build_stage_catalog.gd:440-449`; `resources/stages/catalog.tres:3181-3200` | Derive cannon Z after profile bounds are known; do not use one transform for all stages |
+| Runtime terrain is already persisted | the active v8 pointer loads thirty compressed layout Resources; `StageLayoutRepository` hydrates them and never generates or solves | `resources/stages/catalog.tres`; active v8 `manifest.json`; `src/app/stage_layout_repository.gd:1-120`; `src/stage_generation/baked_stage_layout_data.gd:1-51` | Preserve the baked Resource boundary; migrate its identity rather than add a second terrain format |
+| Randomness remains in offline admission | the builder searches candidate indices `0..31`; current v8 accepted indices vary and eleven stages do not use candidate zero | `scripts/build_stage_catalog.gd:251-275`; active v8 `manifest.json`; `src/stage_generation/stage_progression_data.gd:7-69` | Version 9 removes the candidate range and fallback seed; one exact terrain-family seed either builds a valid stage or the shared generator/profile contract must be corrected |
+| Height progression dominates late shape | nominal peak grows from 72 m to 126 m while lateral bounds grow only from 180 m to 240 m | `src/stage_generation/stage_progression_data.gd:51-69`; `scripts/build_stage_catalog.gd:468-520` | Lower peak growth, widen X bounds, and shift difficulty toward routes, passes, basins, reversals, width, and mechanisms |
+| A wide grid does not prove a wide mountain | the footprint synthesizer may keep the real connected mass much narrower than `local_bounds`; no projected silhouette ratio exists | `src/stage_generation/route_graph_mountain_synthesizer.gd:40-103`; `tests/phase8_aiming_composition_test.gd` | Validate footprint span and the projected playable silhouette separately; never scale only the render mesh |
 | Cannon becomes tiny | the safe framer includes all playable-top points, cannon, and muzzle, then backs away at unchanged FOV | `src/camera/camera_director.gd:348-374`; `src/camera/terrain_camera_framer.gd` | Replace fit-only composition with a shared foreground-cannon composition and validate Stage 01/30 renders |
 | Aim Lock meaning | left drag changes yaw/elevation, wheel changes power; Map Inspection owns orbit/zoom/refocus | `src/input/aim_input_controller.gd:76-148`; `src/camera/camera_director.gd:18-21,466-485` | Preserve gestures; change player terminology and default composition, not the whole input model |
 | Follow exists but is inactive | legacy `Mode.FOLLOW` averages every active projectile and normal gameplay never selects it | `src/camera/camera_director.gd:7-16,94-99,488-538`; `src/gameplay/gameplay_scene.gd` | Reuse only safe transition/smoothing pieces; replace target selection with one root reference |
@@ -195,6 +224,21 @@ move a camera with the stationary cannon body.
 
 These references supply interaction patterns, not visual assets, control copies,
 or licensing inputs. No external game content enters the repository.
+
+## External Terrain References and Applied Decisions
+
+| Primary source | Relevant lesson | Paint Mountain decision |
+| --- | --- | --- |
+| [Into the Breach design postmortem](https://media.gdcvault.com/gdc2019/presentations/Into%20the%20Breach%20Postmortem%20Final.pdf) | Subset treats readability and reduced random chance as deliberate planning-game constraints | Keep retries and stage entry deterministic while the launch-planning loop is being established |
+| [Into the Breach official page](https://www.subsetgames.com/itb.html) | Run-level variety can coexist with deterministic readable decisions | Defer variety to an explicit future selection among reviewed baked catalogs; never reroll the active puzzle during retry |
+| [XCOM 2 procedural level design, GDC](https://www.gdcvault.com/play/1025213/Plot-and-Parcel-Procedural-Level) | Procedural layouts improve content volume but reduce artistic agency and require explicit spacing/visibility checks | Retain the generator as an offline authoring tool, then commit the reviewed output as one content-addressed runtime authority |
+| [Invisible Intuition, GDC](https://media.gdcvault.com/gdc2018/presentations/DShaver_Invisible_Intuition_GDC2018.pdf) | Landmarks, leading lines, framing, and composition make level flow readable | Judge the lower/wider range by lateral rises, route-leading lines, landmark visibility, and occlusion as well as numeric relief |
+| [Godot 4.7 Resources](https://docs.godotengine.org/en/4.7/tutorials/scripting/resources.html) and [ResourceSaver](https://docs.godotengine.org/en/4.7/classes/class_resourcesaver.html) | Typed Resources can persist generated data for later loading | Keep `BakedStageLayoutData` as the one saved layout payload; do not add JSON, a second mesh asset, or runtime regeneration |
+
+The `3:4` ratio comes from the user's composition preference, not an external
+standard. This contract defines it as projected playable-silhouette
+height:width and gives it a band so the executor does not reinterpret its
+orientation or apply it to the XZ grid.
 
 ## External Performance References and Decisions
 
@@ -276,11 +320,36 @@ because the affected counts do not justify that ownership cost.
     `visible_instance_count` equal to sampled dot count, and a refreshed
     `custom_aabb`. The preview and flag create no mesh/resource per frame and
     disable idle processing whenever no visible interpolation/facing work exists.
+18. Version 9 uses `CANONICAL_TERRAIN_SEED := 1347223552` for the current terrain
+    family. Every stage passes that same seed plus its stage ID and immutable
+    profile into keyed generation. Distinct profiles preserve the thirty-stage
+    route/mechanism ladder; the seed is not varied to rescue a failed stage.
+19. Remove current candidate/fallback identity from production: no
+    `CANDIDATE_STRIDE`, `candidate_seed_for()`, `fallback_seed`, 0..31 builder
+    loop, manifest candidate index, or repository candidate check remains in
+    the v9 path. If the exact seed fails, correct only shared generation/profile
+    inputs and rebuild; do not pick another seed or hand-author coordinates.
+20. `BakedStageLayoutData` remains the authoritative persisted payload and its
+    schema/version advances with the v9 catalog. The runtime repository loads
+    and verifies the exact payload/hash and has no generator fallback.
+21. Version 9 uses `terrain_size.x = 210..280 m`, keeps depth progression at
+    `120..160 m`, and uses nominal peak `64..92 m`. Footprint synthesis must
+    reach at least 72% of X bounds in its widest active row, remain row-solid,
+    join the rear wall, taper by at least four cells, and preserve one physical
+    top/shell source.
+22. The 1280x720 Aim View projects the playable mountain at height:width
+    `0.65..0.85`, targeting `0.75`, while retaining the 20–30% cannon, complete
+    silhouette, summit headroom, route layers, trajectory, and impact marker.
+    Difficulty growth uses route and mechanism structure rather than a taller
+    summit outside the locked peak range.
 
 ## Architecture and Data Ownership
 
 | Change | Owner | Narrow interface | Must not absorb |
 | --- | --- | --- | --- |
+| Fixed terrain identity | `StageProgressionData`, `StageData`, and `build_stage_catalog.gd` | one canonical family seed + stage/profile identity -> one content-addressed baked layout | runtime seed rolls, candidate history, fallback selection, identical thirty-stage topology |
+| Lower/wider range synthesis | `StageProgressionData`, `StageGenerationContract`, `RouteGraphMountainSynthesizer`, and `RouteGraphHeightSynthesizer` | stage number/profile -> bounded X/depth/relief and connected footprint | camera-only scaling, visual duplicate, per-stage coordinate repair |
+| Persisted terrain payload | `BakedStageLayoutData`, `StageLayoutBakeCodec`, and `StageLayoutRepository` | exact versioned payload/hash -> immutable runtime layout copy | generation, solver, scene/physics creation, silent repair |
 | Standoff formula | `StageProgressionData` plus `build_stage_catalog.gd` materialization | pure nearest-front/cannon transform calculation after profile bounds exist | camera pose, solver routes, runtime mutation |
 | Accepted placement/resources | `StageData` and promoted v9 catalog | serialized cannon transform, camera bookmark, bounded witnesses | live camera state or duplicated terrain bounds |
 | Aim composition | new responsibility-shaped `AimCameraComposer` beside `CameraDirector` | immutable exact top/summit points + cannon landmarks + FOV/aspect -> one cached pose | StageController state, trajectory solving, per-stage repair table, mode-toggle topology scans |
@@ -348,24 +417,59 @@ because the affected counts do not justify that ownership cost.
     unchanged stable context is reused, hidden Shot Follow does not recompute,
     and Fire never changes `prediction_compute_count()`.
 
-- [ ] **1.1 Version the physical standoff contract**
+- [ ] **1.1 Freeze and reshape the version-9 terrain family**
   - Bump `StageGenerationContract.CONTRACT_VERSION` and progression resources to
-    version 9. Add one pure progression/materialization helper that places the
-    cannon origin at `nearest_playable_front_z + 70.0` using the finalized local
-    bounds, preserving identity basis and cannon Y.
-  - Update shared camera bookmark derivation relative to the accepted cannon and
-    terrain; do not add 30 authored values.
-  - Add focused Stage 01/30 and all-catalog structural assertions for minimum
-    standoff, finite transforms, containment, distinct identities, and no
-    per-stage repair branch.
-  - Accept when every materialized stage has at least 70 m standoff before
-    witness generation and the current v8 pointer is still unchanged.
+    version 9. Add
+    `StageProgressionData.CANONICAL_TERRAIN_SEED := 1347223552` as the single
+    positive seed supplied to all thirty profiles. Keep stage ID and profile ID
+    in `KeyedStageSampler` keys so stages remain distinct without changing the
+    seed.
+  - Remove `CANDIDATE_STRIDE`, `candidate_seed_for()`, profile `fallback_seed`,
+    contract `attempt_count`/`attempt_seed_stride`, layout/bake `accepted_seed`,
+    `candidate_index`, and `generation_attempt`, builder candidate diagnostics/
+    search, manifest `accepted_seeds`/`accepted_candidate_indices`, and
+    repository candidate checks from the v9 path. Keep only `terrain_seed` for
+    persisted identity. Rename any remaining authoring API from accepted/
+    fallback terminology to exact canonical generation; do not leave a second
+    legacy path reachable by catalog production.
+  - Set `StageProgressionData.terrain_size_for()` endpoints to
+    `Vector2(210, 120)` and `Vector2(280, 160)`, cell-count endpoints to
+    `Vector2i(84, 48)` and `Vector2i(96, 64)`, and
+    `nominal_peak_for()` endpoints to `64.0` and `92.0`. Update the difficulty
+    formula/canaries so monotonic growth comes from routes, reversals, ridges,
+    basins, passes, width, undulation, and mechanisms rather than removed height.
+  - Update `StageGenerationContract` bounds and
+    `RouteGraphMountainSynthesizer` shared contour rules so every row-solid
+    footprint joins the rear wall, its widest active row covers at least 72% of
+    X cells, its row spans still vary by at least four cells, and its occupied
+    ratio stays below 0.85 to prevent a rectangular slab. Lower relief only in
+    `RouteGraphHeightSynthesizer`/profile inputs; never scale the rendered mesh
+    after baking.
+  - Replace stale `tests/stage_progression_candidate_test.gd` and
+    `tests/mountain_range_mvp_test.gd` with
+    `tests/fixed_mountain_catalog_test.gd`. Update
+    `tests/stage30_progression_test.gd`, `tests/stage_generation_test.gd`, and
+    decoration/glyph/bake fixtures for exact-seed v9 identity, lower/wider
+    endpoints, distinct stage checksums, footprint span/taper, and absence of
+    candidate or fallback production symbols. Rename
+    `tests/generation_v8_materialization_test.gd` to
+    `tests/generation_v9_materialization_test.gd` and make it assert one shared
+    seed plus thirty distinct payload checksums.
+  - Accept when one exact seed produces all thirty structurally valid layouts in
+    a dry build, repeated builds produce the same per-stage payload hashes, no
+    current source/test/resource expects a candidate/fallback seed, and the
+    active v8 pointer is still unchanged.
 
-- [ ] **1.2 Compose a near-cannon Aim View**
+- [ ] **1.2 Place the cannon and compose the lower/wider Aim View**
+  - After each exact layout exists, derive one cannon transform with the origin
+    at least 70 m in front of the nearest active footprint edge, preserving
+    identity basis and cannon Y. Update shared bookmark derivation relative to
+    that accepted cannon and terrain; do not add 30 authored values.
   - Replace the current fit-only fallback with a responsibility-shaped composer
     that uses exact playable-top points and cannon/muzzle landmarks. Keep 48 FOV
     and one shared set of constants; target a 25% cannon silhouette with an
-    accepted 20–30% band and require the complete mountain/summit safe frame.
+    accepted 20–30% band, projected mountain height:width `0.65..0.85` centered
+    on `0.75`, and the complete mountain/summit safe frame.
   - Build the interest-point set and final pose once per layout checksum, cannon
     transform, FOV, and viewport aspect. Invalidate only on one of those inputs;
     Aim/Map toggles consume the cached pose without calling
@@ -374,26 +478,45 @@ because the affected counts do not justify that ownership cost.
     Remove the superseded suggestion for independent Aim View navigation. Queue
     Map View click/refocus screen coordinates and resolve their direct-space ray
     in `_physics_process`, never inside `_unhandled_input`.
-  - Extend focused camera tests with Stage 01/30 projection assertions and a
-    cache-invalidation contract plus a rendered-evidence state; numeric projection
+  - Extend `tests/phase8_aiming_composition_test.gd` with Stage 01/30 standoff,
+    projected silhouette ratio, cannon ratio, projection containment, and cache
+    invalidation assertions plus a rendered-evidence state; numeric projection
     supports but does not replace runtime image review.
   - Accept when both endpoint stages meet the foreground/distance contract
-    without FOV widening or per-stage data, a mode toggle performs no topology
-    scan, and input/render callbacks perform no direct-space query.
+    and visibly read as a lateral range without FOV widening or per-stage camera
+    data, a mode toggle performs no topology scan, and input/render callbacks
+    perform no direct-space query.
 
 - [ ] **1.3 Promote the version-9 catalog atomically**
-  - Rebuild all 30 persisted stages using only the existing bounded default and
-    summit witness path. Do not invoke exhaustive certificate or success-route
-    workers.
-  - Verify manifest, baked hydration, target/range admission, bounded witnesses,
-    progression uniqueness, containment, and standoff. Point
-    `resources/stages/catalog.tres` to the complete content-addressed v9 bundle.
+  - Advance `BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION` to 2 and
+    `build_stage_catalog.gd` bundle format to 5 because candidate/attempt fields
+    leave the payload and manifest. Rebuild all 30 persisted stages from the
+    one canonical seed using only the bounded default and summit witness path;
+    do not invoke exhaustive certificate or success-route workers.
+  - Verify manifest and payload hashes, exact-seed identity, baked hydration,
+    target/range admission, bounded witnesses, distinct stage profiles/layout
+    checksums, footprint span/taper, containment, standoff, and repeat-build
+    equality. Point `resources/stages/catalog.tres` to the complete
+    content-addressed v9 bundle only after these checks pass.
+  - Extend `tests/baked_stage_layout_test.gd` and
+    `tests/stage_layout_repository_test.gd` to prove process reload/retry returns
+    the same immutable heights, footprint, placement, and checksums; corrupt or
+    missing payloads fail and never call `SeededStageGenerator`.
+  - Advance `ReplayRecorder.FORMAT_VERSION` from 8 to 9, replace its redundant
+    `accepted_seed` field with the one canonical `terrain_seed`, and rename
+    `tests/replay_recorder_v8_test.gd` to `tests/replay_recorder_v9_test.gd`.
+    Reject format 8 deterministically rather than silently guessing the new
+    identity contract; update replay/debug/agent consumers to use
+    `terrain_seed`.
   - Remove `StageData.reliable_solution` and its legacy serialized values. After
-    the v9 pointer passes import/start, remove the replaced active v8 bundle and
-    any now-empty obsolete catalog directories; Git remains the recovery path.
+    the v9 pointer passes import/start and exported-PCK loading, remove the
+    replaced active v8 bundle, version-8-only generation resources, stale
+    candidate tests, and any now-empty obsolete catalog directories; Git remains
+    the recovery path.
   - Accept when runtime loads every v9 ID through `StageLayoutRepository`, no
-    solution-route field remains, and exactly one active generated bundle is
-    referenced.
+    solution-route/candidate/fallback field remains, clean process load and
+    retry resolve identical hashes, the export contains every layout path, and
+    exactly one active generated bundle is referenced.
 
 - [ ] **1.4 Batch and suspend trajectory-preview presentation**
   - Replace `_dots: Array[MeshInstance3D]` with one `MultiMeshInstance3D` backed
@@ -509,6 +632,19 @@ because the affected counts do not justify that ownership cost.
 
 ## Acceptance Checks
 
+- Every v9 `StageData`, generation profile, baked payload, and manifest entry
+  records `terrain_seed = 1347223552`; none records an accepted, candidate,
+  attempt, or fallback seed.
+- All thirty v9 layouts have distinct payload checksums despite sharing that
+  seed. Retry and a clean process load return the exact same height, footprint,
+  placement, and payload checksums for each stage.
+- Runtime stage entry has no reachable generator or candidate-search fallback.
+  A missing or corrupt baked payload fails visibly instead of producing a new
+  mountain.
+- Stage 01/30 use X width `210/280 m`, depth `120/160 m`, nominal peak
+  `64/92 m`, and widest footprint span of at least 72% of X cells. Their
+  reviewed 1280x720 Aim View projections fall inside mountain height:width
+  `0.65..0.85`, targeting `0.75`, without render-only geometry scaling.
 - Stage 01 and Stage 30 report at least 70 m from cannon origin to the nearest
   playable front in accepted data.
 - `StageController.request_fire()` never invokes prediction; a stale current key
@@ -560,6 +696,9 @@ because the affected counts do not justify that ownership cost.
   Korean-first copy, Theme ownership, and common desktop layout support remain.
 - Catalog promotion is atomic; no partial v9 or runtime generation fallback is
   permitted.
+- The canonical terrain seed is one catalog-family constant, not a per-stage
+  tuning control. Stage variety comes from stage/profile identity, and all
+  runtime visual/collision/paint consumers use the same baked topology.
 - No production dependency, external asset, network service, plugin, Docker
   path, or hand-authored stage repair is added.
 
@@ -569,10 +708,16 @@ Use the configured Godot executable; do not invoke `scripts/test.ps1` because it
 includes an unrelated performance test and a much broader suite.
 
 ```powershell
-$paintMountainGodot = (Resolve-Path -LiteralPath $env:GODOT_BIN).Path
+$paintMountainGodot = (Resolve-Path -LiteralPath 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe').Path
 
 foreach ($testScript in @(
   'prediction_scheduler_test.gd',
+  'fixed_mountain_catalog_test.gd',
+  'stage_generation_test.gd',
+  'stage30_progression_test.gd',
+  'generation_v9_materialization_test.gd',
+  'baked_stage_layout_test.gd',
+  'stage_layout_repository_test.gd',
   'phase7_user_qa_contract_test.gd',
   'stage_cannon_standoff_test.gd',
   'phase8_aiming_composition_test.gd',
@@ -582,11 +727,15 @@ foreach ($testScript in @(
   'shot_follow_camera_test.gd',
   'phase7_ui_test.gd',
   'projectile_settling_test.gd',
+  'replay_recorder_v9_test.gd',
   'replay_presentation_test.gd'
 )) {
   & $paintMountainGodot --headless --path . --script "res://tests/$testScript"
   if ($LASTEXITCODE -ne 0) { throw "$testScript failed." }
 }
+
+& $paintMountainGodot --headless --path . --script res://scripts/build_stage_catalog.gd -- --dry-build
+if ($LASTEXITCODE -ne 0) { throw 'Exact-seed v9 catalog dry build failed.' }
 
 & .\scripts\verify.ps1 -GodotPath $paintMountainGodot
 & $paintMountainGodot --headless --path . --export-release 'Windows Desktop' 'builds\windows\PaintMountain.exe'
@@ -609,7 +758,10 @@ a task-specific `.agents/evidence/` directory.
 | A new task appears to require editing the preserved dirty `trajectory_predictor.gd` | Stop that subtask and establish provenance of the existing diff before changing it | Do not overwrite, stage, or work around collision-parity code silently |
 | MultiMesh trajectory dots cull incorrectly | Recompute one conservative `custom_aabb` from the displayed path plus dot radius and retain all-or-none path culling | Do not return to 96 independent draw nodes or disable culling globally |
 | Stage 30 mountain does not fit while cannon remains 20–30% at 48 FOV | Increase the shared minimum standoff in 5 m steps, rebuild v9, and stop at the first shared value up to 90 m that passes Stage 01/30; keep one value for all stages | Do not widen FOV, shrink the cannon asset, or add per-stage camera data |
-| A new standoff makes the bounded default or summit witness fail | Let the existing 32-candidate catalog search choose a valid persisted seed and bounded witness | Do not invoke target-wide certificate generation or authored solution search; stop and revise the product contract if no candidate passes |
+| The exact canonical seed fails a bounded default/summit witness or another structural contract | Adjust only shared generator/profile inputs within the locked width, depth, peak, and footprint ranges, rebuild all thirty stages from `1347223552`, and keep the first shared rule set that passes | Do not choose a rescue seed, restore candidate search, hand-author coordinates, or invoke exhaustive solution/certificate work |
+| Two stages built from the shared seed produce the same payload checksum | Correct the stage/profile identity fed into keyed sampling or the shared profile differentiation, then rebuild all stages | Do not vary the seed per stage merely to force a different checksum |
+| Aim View projected mountain ratio exceeds 0.85 | First widen the shared footprint contour while staying below 0.85 occupied ratio; if needed, lower the shared peak progression without going below the locked `64..92 m` endpoints | Do not hide the problem with FOV, camera roll, or render-only mesh scaling |
+| Aim View projected mountain ratio falls below 0.65 | Restore relief within the locked `64..92 m` range and verify the shared camera composer before changing contour width | Do not narrow the widest footprint below 72% or add per-stage camera tuning |
 | Representative default flight still feels prolonged | First adjust the shared generated default aim preference within the existing legal tuple and target-centroid neighborhood, then the shared launch-speed curve only if all bounded witnesses and preview/physics parity are regenerated | Do not add a flight-duration gate or per-stage speed |
 | Follow root is freed before a contact event | Treat invalidation as a terminal presentation event and return safely to Aim View | Do not keep a dangling node reference or infer a fake impact |
 | First contact is backstop rather than TerrainSurface | Return after the existing terminal feedback; do not apply the terrain-impact hold | Do not reclassify backstop as terrain or paint it |
@@ -622,7 +774,8 @@ a task-specific `.agents/evidence/` directory.
 
 - Completed: cleanup of abandoned text/catalog/runner artifacts; current-state
   trace; domain alignment; comparator research; authority-doc updates; consumed
-  handoff; Godot 4.7 performance-guidance review; decision-complete plan.
+  handoff; Godot 4.7 performance-guidance review; fixed-terrain runtime/code
+  trace; primary-source deterministic-level research; decision-complete plan.
 - In progress: none. This turn intentionally stops before player-facing Godot
   implementation.
 - Next executable task: **1.0 Restore demand-driven prediction and constant-work
@@ -637,7 +790,7 @@ a task-specific `.agents/evidence/` directory.
 1. Resume at Task 1.0 and inspect the two preserved unrelated diffs before
    staging anything.
 2. Complete Task 1.0 as a prediction/readiness checkpoint, then Tasks 1.1–1.4 as
-   one versioned stage-placement/camera/preview checkpoint.
+   one fixed-terrain, standoff, camera-composition, and preview checkpoint.
 3. Complete the flag and Shot Follow branches, then integrate them before the
    quality audit.
 4. Announce and run the single bounded final gate only after the implementation
@@ -652,9 +805,10 @@ a task-specific `.agents/evidence/` directory.
 - Stop before adding timing probes, FPS thresholds, profiler capture, worker-thread
   physics access, generalized server APIs, pooling, LOD, or occlusion work; none
   is needed to prove the named structural contracts.
-- Stop if v9 cannot preserve bounded default/summit witnesses within the existing
-  32 candidates and shared standoff contingency. Do not reopen exhaustive solver
-  work automatically.
+- Stop if the exact canonical seed cannot preserve bounded default/summit
+  witnesses after the predetermined shared generator/profile corrections. Do
+  not change seed, restore candidate search, or reopen exhaustive solver work
+  automatically.
 - Stop if runtime evidence cannot show both the full Stage 30 mountain and a
   20–30% cannon by 90 m shared standoff at FOV 48; report the geometric conflict
   with captures before changing FOV or asset scale.

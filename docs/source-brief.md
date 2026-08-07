@@ -1779,6 +1779,42 @@ Lock, and immediate cannon-return interpretations only:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-07): Fixed Baked Mountain-Range Terrain
+
+After reconsidering run-to-run terrain randomness and the current tall mountain
+silhouette, the user revised the terrain-authoring and shape requirements. These
+clauses override conflicting runtime-randomization, candidate-selection, and
+height-led progression interpretations only:
+
+- **Fixed current terrain authority:** the current terrain family shares one
+  canonical fixed seed. Stage and profile identity still make the thirty stages
+  distinct, and each stage has one persisted baked layout selected during
+  development. Stage entry, retry, replay, and a new process load the same saved
+  height, footprint, topology, target, placement, and checksum data. Runtime
+  never rolls a terrain seed, searches candidates, or regenerates a missing
+  layout.
+- **Offline generation only:** the seeded generator remains an authoring tool
+  that produces the versioned baked catalog; it is not a gameplay system. A
+  corrupt or missing baked layout fails closed. Future terrain variety requires
+  a later explicit revision and separately generated, reviewed, persisted
+  variants rather than hidden per-run generation.
+- **Lower, wider mountain range:** reduce the height-led progression and widen
+  the actual connected mountain footprint. The intended aiming-view silhouette
+  is a horizontally spread range with several readable rises, terraces, ridges,
+  valleys, and route layers rather than one dominant narrow tower. A roughly
+  `3:4` height-to-width silhouette is an initial composition reference, not a
+  universal geometric law or permission to flatten the playable mass.
+- **Difficulty without vertical inflation:** stages may remain distinct through
+  route count, branching, reversals, terraces, basins, passes, route width,
+  mechanism opportunities, and restrained relief changes. Later difficulty
+  must not depend on continually making the highest summit much taller.
+- **One physical source:** the persisted baked layout remains the single source
+  for render geometry, collision, surface queries, target eligibility, paint
+  reconstruction, replay identity, and camera framing. No visual-only widened
+  mountain or second terrain representation is permitted.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
