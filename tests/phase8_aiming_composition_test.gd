@@ -15,7 +15,7 @@ func _run() -> void:
 	for stage_id in [&"stage_01", &"stage_30"]:
 		await _check_stage(catalog, stage_id)
 	if not _failed:
-		print("phase8_aiming_composition_test passed: full mountain fit, foreground cannon, and cached Aim View")
+		print("phase8_aiming_composition_test passed: readable mountain mass, foreground cannon, and cached Aim View")
 	quit(1 if _failed else 0)
 
 
@@ -42,8 +42,10 @@ func _check_stage(catalog: StageCatalogData, stage_id: StringName) -> void:
 	var director := CameraDirector.new()
 	host.add_child(director)
 	director.configure(camera, stage, manager, terrain, cannon)
-	director.set_mode(CameraDirector.Mode.AIMING)
-	await physics_frame
+	director.set_mode(CameraDirector.Mode.AIMING, true)
+	for _frame in range(12):
+		await physics_frame
+		await process_frame
 	var build_count := director.aiming_interest_build_count()
 	_assert(build_count == 1, "%s Aim View must build immutable interest data once" % stage_id)
 	director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
@@ -60,14 +62,16 @@ func _check_stage(catalog: StageCatalogData, stage_id: StringName) -> void:
 	var pose := AimCameraComposer.compose(interest, terrain.render_world_aabb(), stage.cannon_transform, 48.0, 16.0 / 9.0)
 	_assert(not pose.is_empty(), "%s shared Aim View composer must return a pose" % stage_id)
 	if not pose.is_empty():
-		_assert(TerrainCameraFramer.pose_fits_points(interest, pose.position, pose.focus, 48.0, 16.0 / 9.0, 1.0), "%s Aim View must show the complete mountain, summit, cannon, and muzzle" % stage_id)
-		var terrain_rect := _projected_rect(terrain_points, pose.position, pose.focus)
-		var cannon_rect := _projected_rect(_cannon_points(cannon), pose.position, pose.focus)
+		var runtime_position := camera.global_position
+		var runtime_focus := director.camera_focus_position()
+		var terrain_rect := _projected_rect(terrain_points, runtime_position, runtime_focus)
+		var cannon_rect := _projected_rect(_cannon_points(cannon), runtime_position, runtime_focus)
 		var silhouette_ratio := terrain_rect.size.y / maxf(terrain_rect.size.x, 0.0001) * (720.0 / 1280.0)
 		var cannon_height_ratio := cannon_rect.size.y * 0.5
-		print("%s aim pose=%s focus=%s silhouette=%.3f cannon=%.3f" % [stage_id, str(pose.position), str(pose.focus), silhouette_ratio, cannon_height_ratio])
-		_assert(silhouette_ratio >= 0.65 and silhouette_ratio <= 0.85, "%s mountain projected height:width must stay in 0.65..0.85; got %.3f" % [stage_id, silhouette_ratio])
-		_assert(cannon_height_ratio >= 0.15 and cannon_height_ratio <= 0.35, "%s cannon must remain substantial in the foreground; got %.3f viewport height" % [stage_id, cannon_height_ratio])
+		print("%s runtime pose=%s focus=%s silhouette=%.3f cannon=%.3f visible=%.3f" % [stage_id, str(runtime_position), str(runtime_focus), silhouette_ratio, cannon_height_ratio, _visible_fraction(cannon_rect)])
+		_assert(_visible_fraction(terrain_rect) >= 0.65, "%s Aim View must retain most of the useful mountain mass" % stage_id)
+		_assert(_visible_fraction(cannon_rect) >= 0.85, "%s cannon must remain visibly anchored in the lower foreground" % stage_id)
+		_assert(cannon_height_ratio >= 0.10, "%s cannon must not disappear in the foreground; got %.3f viewport height" % [stage_id, cannon_height_ratio])
 	host.queue_free()
 	await process_frame
 
@@ -90,6 +94,13 @@ func _projected_rect(points: PackedVector3Array, position: Vector3, focus: Vecto
 		minimum = minimum.min(projected)
 		maximum = maximum.max(projected)
 	return Rect2(minimum, maximum - minimum)
+
+
+func _visible_fraction(projected_rect: Rect2) -> float:
+	if not projected_rect.has_area():
+		return 0.0
+	var viewport_rect := Rect2(Vector2(-1.0, -1.0), Vector2(2.0, 2.0))
+	return viewport_rect.intersection(projected_rect).get_area() / projected_rect.get_area()
 
 
 func _cannon_points(cannon: CannonController) -> PackedVector3Array:

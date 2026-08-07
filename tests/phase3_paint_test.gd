@@ -151,8 +151,6 @@ func _build_layout(kind: StringName) -> GeneratedStageLayout:
 	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
 	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
 	layout.terrain_seed = 1
-	layout.accepted_seed = 1
-	layout.generation_attempt = 0
 	layout.cell_count = Vector2i(64, 64)
 	layout.local_bounds = Rect2(Vector2(-32.0, -32.0), Vector2(64.0, 64.0))
 	layout.heights.resize(65 * 65)
@@ -186,7 +184,7 @@ func _build_layout(kind: StringName) -> GeneratedStageLayout:
 		summit_id, exit_id, 0, 0, StageRouteProfile.Role.PRIMARY, 16.0
 	)
 	layout.route_graph = GeneratedRouteGraph.new([summit, exit], [edge])
-	layout.containment = ContainmentSpec.new()
+	layout.play_bounds = PlayBoundsSpec.new()
 	var target_mask := PackedByteArray()
 	target_mask.resize(512 * 512)
 	target_mask.fill(255)

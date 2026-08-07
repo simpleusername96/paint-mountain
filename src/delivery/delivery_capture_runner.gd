@@ -60,6 +60,16 @@ func _run_capture() -> void:
 			await _capture_wind_aiming(_capture_stage)
 		"wind_aiming":
 			await _capture_wind_aiming(_capture_stage)
+		"wind_flag_weak":
+			await _capture_wind_flag(_capture_stage, false)
+		"wind_flag_strong":
+			await _capture_wind_flag(_capture_stage, true)
+		"shot_follow_midflight":
+			await _capture_shot_follow_midflight(_capture_stage)
+		"shot_follow_impact_hold":
+			await _capture_shot_follow_impact_hold(_capture_stage)
+		"shot_follow_returned":
+			await _capture_shot_follow_returned(_capture_stage)
 		"progression_aiming":
 			await _start_stage(_capture_stage, true)
 			await get_tree().create_timer(1.0).timeout
@@ -120,7 +130,14 @@ func _run_capture() -> void:
 		get_tree().quit(1)
 		return
 	var settle_frames := 42
-	if _screen in ["next_aim_pending", "next_aim_ready", "scale_contact"]:
+	if _screen in [
+		"next_aim_pending",
+		"next_aim_ready",
+		"scale_contact",
+		"shot_follow_midflight",
+		"shot_follow_impact_hold",
+		"shot_follow_returned",
+	]:
 		settle_frames = 0
 	elif _screen == "two_family":
 		settle_frames = 1
@@ -158,7 +175,6 @@ func _configure_capture_window() -> void:
 
 
 func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
-	var started_at_usec := Time.get_ticks_usec()
 	var game_state := get_node("/root/GameState")
 	var data: Dictionary = get_node("/root/SaveSystem").default_data()
 	data.selected_stage_id = stage_id
@@ -168,10 +184,7 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 	var gameplay := await _wait_for_active_gameplay(stage_id)
 	if gameplay == null:
 		return null
-	var elapsed_ms := float(Time.get_ticks_usec() - started_at_usec) / 1000.0
-	print("Delivery stage entry ready: stage=%s elapsed_ms=%.1f" % [
-		StageCatalog.canonical_id(stage_id), elapsed_ms,
-	])
+	print("Delivery stage entry ready: stage=%s" % StageCatalog.canonical_id(stage_id))
 	if begin_aiming:
 		gameplay.get_node("StageController").begin_aiming()
 	return gameplay
@@ -217,6 +230,114 @@ func _capture_wind_aiming(stage_id: StringName) -> void:
 		return
 	# Keep the first-session hint honest, then capture the stable current HUD.
 	await get_tree().create_timer(4.2).timeout
+
+
+func _capture_wind_flag(stage_id: StringName, strong: bool) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var snapshot := _seek_crosswind_snapshot(gameplay, strong)
+	if snapshot == null:
+		_fail_capture("could not find the requested deterministic crosswind snapshot")
+		return
+	# Match normal Aim captures: the one-time input hint must leave before the
+	# flag and fixed HUD are judged together.
+	await get_tree().create_timer(4.2).timeout
+	var flag := gameplay.get_node("CannonWindFlag") as CannonWindFlag
+	if not flag.displayed_direction().is_equal_approx(snapshot.push_direction()) \
+			or not is_equal_approx(flag.displayed_strength(), snapshot.normalized_strength):
+		_fail_capture("wind flag did not retain the selected authoritative snapshot")
+
+
+func _capture_shot_follow_midflight(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("mid-flight capture could not fire the default root")
+		return
+	for _tick in range(45):
+		await get_tree().physics_frame
+	if director.current_mode != CameraDirector.Mode.FOLLOW \
+			or director._follow_projectile == null \
+			or director._follow_impact_hold_ticks > 0:
+		_fail_capture("mid-flight capture did not retain the airborne root")
+
+
+func _capture_shot_follow_impact_hold(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("impact-hold capture could not fire the default root")
+		return
+	var budget := 360
+	while director._follow_impact_hold_ticks <= 0 and budget > 0:
+		await get_tree().physics_frame
+		budget -= 1
+	if budget <= 0 or director.current_mode != CameraDirector.Mode.FOLLOW:
+		_fail_capture("impact-hold capture did not observe first terrain contact")
+		return
+	await get_tree().process_frame
+
+
+func _capture_shot_follow_returned(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("returned-Aim capture could not fire the default root")
+		return
+	for _tick in range(30):
+		await get_tree().physics_frame
+	var residents_before := manager.active_count()
+	if not director.return_to_aim_view(true):
+		_fail_capture("returned-Aim capture could not leave Shot Follow")
+		return
+	for _frame in range(12):
+		await get_tree().process_frame
+	if director.current_mode != CameraDirector.Mode.AIMING \
+			or residents_before <= 0 or manager.active_count() <= 0:
+		_fail_capture("returning the camera changed projectile residency")
+
+
+func _seek_crosswind_snapshot(gameplay: Node3D, strong: bool) -> WindSnapshot:
+	var wind := gameplay.get_node("WindController") as WindController
+	var profile := gameplay.stage_data.wind_profile as WindProfile
+	var interval_ticks := profile.interval_ticks(Engine.physics_ticks_per_second)
+	var selected: WindSnapshot
+	for keyframe_index in range(64):
+		var tick := keyframe_index * interval_ticks
+		var candidate := wind.sample_at_tick(tick)
+		if candidate == null or absf(candidate.push_direction().x) < 0.72:
+			continue
+		if strong and candidate.normalized_strength < maxf(
+			profile.strong_wind_threshold,
+			0.80
+		):
+			continue
+		if not strong and candidate.normalized_strength > 0.35:
+			continue
+		selected = candidate
+		wind._elapsed_ticks = tick
+		wind._snapshot = candidate
+		wind._update_strong_state()
+		wind.snapshot_changed.emit(candidate)
+		break
+	return selected
 
 
 func _capture_map_inspection(stage_id: StringName) -> void:

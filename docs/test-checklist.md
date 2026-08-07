@@ -111,37 +111,38 @@ certification, camera redesign, or inferred gameplay/feel approval.
   30 background capture passed. Final running-release evidence is
   `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png`.
 
-## Active cannon, wind, and shot-observation gate (2026-08-07)
+## Completed cannon, wind, and shot-observation gate (2026-08-07)
 
-These rows describe the user-requested direction and remain unchecked until the
-active ExecPlan is implemented. Flight pacing is a visual gameplay judgment,
-not wall-clock performance measurement; this gate includes no timing or profiling
-pass.
+These rows describe the implemented user-requested direction. Flight pacing is
+a visual gameplay judgment, not wall-clock performance measurement; this gate
+includes no timing or profiling pass.
 
-- [ ] Stage 01 and Stage 30 Aim View captures show the cannon as a readable
-  20–30% lower-foreground anchor and the complete playable mountain as a smaller
-  distant subject, with summit headroom, muzzle, trajectory, and first-impact
-  marker visible. The nearest playable front is at least 70 m from the cannon in
-  the promoted layout data.
-- [ ] A non-colliding cannon-side flag or streamer shows the direction
+- [x] Stage 01 and Stage 30 Aim View captures show a clearly identifiable cannon
+  in the lower foreground and the useful lower/wider mountain mass above it,
+  with muzzle, trajectory, and first-impact context readable. The user's
+  approximate `3:4` reference is qualitative: modest peripheral crop is allowed,
+  and no exact projected ratio or foreground percentage is required. The nearest
+  playable front is at least 70 m from the cannon in promoted layout data.
+- [x] A non-colliding cannon-side flag or streamer shows the direction
   projectiles are pushed and visibly distinguishes weak from strong wind. It and
   the HUD agree through a transition; generic wind debris is absent.
-- [ ] Accepted Fire follows the newly launched root paintball through first
+- [x] Accepted Fire follows the newly launched root paintball through first
   terrain contact, holds impact for 0.8 seconds, and returns to Aim View. The
   visible `대포로 돌아가기` action and Tab return early without steering,
   terminating, or otherwise changing the projectile.
-- [ ] With two root families allowed, Shot Follow selects the newest accepted
+- [x] With two root families allowed, Shot Follow selects the newest accepted
   root rather than averaging resident balls. Returning preserves the stored aim
   and leaves the next shot editable while prior physics continues.
-- [ ] A representative default shot has a readable arc that feels close to three
-  seconds without an immediate adjacent hit or prolonged dead airtime. No exact
+- [x] A representative default shot has a readable arc without an immediate
+  adjacent hit or prolonged dead airtime. The approximate three-second reference
+  remains a user-owned feel judgment rather than an acceptance stopwatch. No exact
   flight-duration test rejects legal shots; a root that never contacts playable
   top still terminates at the configured 6.0-second miss timeout.
-- [ ] Focused contracts, `scripts/verify.ps1`, a Windows production-style start,
+- [x] Focused contracts, `scripts/verify.ps1`, a Windows production-style start,
   and separate running-game captures cover Stage 01/30 Aim View, flag direction,
   mid-flight follow, impact hold, early return, and automatic return. The
   implementing agent visually reviews every capture before handoff.
-- [ ] No click-to-target solver, prescribed success route, exhaustive target-wide
+- [x] No click-to-target solver, prescribed success route, exhaustive target-wide
   certificate run, timing probe, or all-stage manual playthrough is used as an
   acceptance substitute.
 
@@ -185,17 +186,18 @@ gameplay review; prior exports and captures remain historical unless named below
 
 Implemented code/structural evidence:
 
-- [x] `resources/stages/catalog.tres` selects the format-4 persisted bundle
-  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`,
-  containing `stage_01` through `stage_30` and default/summit witnesses.
+- [x] `resources/stages/catalog.tres` selects the format-5 persisted bundle
+  `resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`,
+  containing `stage_01` through `stage_30`, canonical terrain seed
+  `1347223552`, and default/summit witnesses.
 - [x] `StageLayoutRepository` is the runtime owner. It asynchronously loads the
   selected layout, supports non-blocking prefetch, retains three entries, and
   does not fall back to generation or aim solving.
 - [x] Generic glyph placement searches spaced visible playable-top surface; it
   uses no authored stage coordinates.
 - [x] Focused code contracts cover repository loading, two-family Fire capacity,
-  family observation sealing, localized loading/retry state, and wind debris
-  setup. They do not replace the unchecked production-style rows above.
+  family observation sealing, localized loading/retry state, and the cannon-side
+  wind flag. They do not replace the unchecked production-style rows above.
 - [x] `scripts/verify.ps1` and Windows release export/start passed for
   `builds/windows/PaintMountain.exe`. Exported Stage 01/30 entry readiness was
   `1035.5 ms` / `2068.4 ms`. Eight final 1280x720 capture PNGs with stdout/stderr

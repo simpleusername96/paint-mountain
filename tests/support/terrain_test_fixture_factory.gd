@@ -17,8 +17,6 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
 	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
 	layout.terrain_seed = int(kind) + 1
-	layout.accepted_seed = layout.terrain_seed
-	layout.generation_attempt = 0
 	layout.cell_count = CELL_COUNT
 	layout.local_bounds = BOUNDS
 	layout.heights = PackedFloat32Array()
@@ -66,7 +64,7 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 		10.0
 	)
 	layout.route_graph = GeneratedRouteGraph.new([summit, exit], [edge])
-	layout.containment = ContainmentSpec.new()
+	layout.play_bounds = PlayBoundsSpec.new()
 	return layout
 
 

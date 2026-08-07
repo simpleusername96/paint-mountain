@@ -116,11 +116,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _handle_key(event: InputEventKey) -> bool:
 	var keycode := event.physical_keycode if event.physical_keycode != 0 else event.keycode
 	if keycode == KEY_TAB and event.pressed and not event.echo:
+		if _stage_controller == null or _stage_controller.action_origin_is_locked():
+			return false
 		if _camera_director != null and _camera_director.current_mode == CameraDirector.Mode.FOLLOW:
 			return _camera_director.return_to_aim_view()
-		return _stage_controller != null \
-				and not _stage_controller.action_origin_is_locked() \
-				and _stage_controller.current_state == StageController.State.AIMING \
+		return _stage_controller.current_state == StageController.State.AIMING \
 				and _camera_director != null \
 				and _camera_director.toggle_interaction_mode()
 	if keycode == KEY_SPACE:
@@ -183,7 +183,9 @@ func _axis_for_key(keycode: Key) -> Vector2:
 
 func _can_adjust_aim() -> bool:
 	return _cannon != null and _stage_controller != null \
-			and _camera_director != null and _camera_director.aim_is_locked() \
+			and _camera_director != null \
+			and _camera_director.current_mode == CameraDirector.Mode.AIMING \
+			and _camera_director.aim_is_locked() \
 			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
 			and _stage_controller.current_state == StageController.State.AIMING

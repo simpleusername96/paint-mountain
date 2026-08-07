@@ -9,19 +9,17 @@ func _initialize() -> void:
 	if stage == null:
 		quit(1)
 		return
-	var layout := SeededStageGenerator._build_attempt(
-		stage.stage_id,
-		stage.generation_profile,
-		stage.terrain_seed,
-		stage.terrain_seed,
-		0
+	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
+	var layout := StageLayoutBakeCodec.hydrate(
+		load(catalog.get_layout_path(stage.stage_id)) as BakedStageLayoutData,
+		stage
 	)
 	_assert(
-		layout != null and SeededStageGenerator._validate(stage.generation_profile, layout),
-		"stage 08 persisted seed must retain its structural terrain contract"
+		layout != null and layout.is_runtime_ready(),
+		"stage 08 persisted v9 layout must retain its runtime terrain contract"
 	)
 	if layout != null:
-		var placements := MechanismPlacementGenerator.generate(stage, layout)
+		var placements := layout.mechanism_placements
 		var uphill_count := 0
 		for placement in placements:
 			if placement.mechanism_data.canonical_kind() == MechanismData.Kind.UPHILL_REBOUND \

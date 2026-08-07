@@ -148,7 +148,7 @@ This architecture covers the single-process desktop game. It does not define a b
   Generated default and summit aims remain the bounded runtime-entry witnesses
   and are never exposed as player or agent aim assistance.
 - `StageMvpPermit` is legacy development evidence only and is absent from the
-  active version-8 runtime admission path.
+  active version-9 runtime admission path.
 - Replay format 9 carries canonical stage/profile/layout/certificate versions,
   the canonical terrain seed, height/target/summit/reachability/open-play-bound
   checksums,
@@ -195,10 +195,11 @@ Human / Replay / GameplayAgentApi actions
   returning preserves the current aim and prediction.
 - The Aim View composer uses canonical Playable Terrain Surface points, summit
   headroom,
-  cannon, and muzzle to keep a roughly 20–30% foreground cannon and the complete
-  distant mountain at the unchanged 48-degree FOV. One shared composition may
-  adjust against the versioned physical standoff; it never reads live prediction,
-  frames render-shell bounds, or uses per-stage repair coordinates. Fixed-mode
+  cannon, and muzzle to keep the cannon identifiable in the lower foreground
+  and the mountain's main mass readable above it at the unchanged 48-degree
+  FOV. The shared composer may accept modest peripheral terrain cropping; it
+  never changes geometry to satisfy a ratio, reads live prediction, frames
+  render-shell bounds, or uses per-stage repair coordinates. Fixed-mode
   transition frames reuse the existing terrain-ray safety correction so
   interpolation cannot cross a ridge.
 - After `ProjectileManager.shot_family_started` publishes an accepted root,
@@ -376,14 +377,12 @@ Human / Replay / GameplayAgentApi actions
   `DeliveryCaptureRunner`, including a real paused-game-menu state; normal
   launches do nothing with this node, and the debug overlay remains unavailable
   in release builds.
-- `resources/stages/catalog.tres` points at the format-4 persisted bundle
-  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
+- `resources/stages/catalog.tres` points at the format-5 persisted bundle
+  `resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
   It contains all 30 layouts and their default/summit witnesses.
 - Generic glyph placement searches visible Playable Terrain Surface with spacing;
-  it has no authored per-stage coordinates. Prior UI/retry and wind-debris work
-  passed its historical checks, but debris is now superseded presentation. The
-  active plan replaces it with a cannon-side flag without changing
-  `WindController` authority.
+  it has no authored per-stage coordinates. `CannonWindFlag` replaces generic
+  debris without changing `WindController` authority.
 - `ProjectileManager` is the capacity authority: it admits no more than two
   root families and releases a generation-0 slot on the first Playable Terrain Surface
   traversal or terminal event. Resident terrain bodies remain physically alive

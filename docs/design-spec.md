@@ -64,15 +64,14 @@ exactly three mechanism types.
 - The actual projected playable silhouette is a lower, wider mountain range,
   not a narrow tower inside a wide empty grid. In Aim View, target roughly `3:4`
   height-to-width with several lateral rises and readable route layers. This is
-  an approximate composition target; shared physical topology, depth, terraces,
-  valleys, and support faces remain mandatory.
-- In the perspective `Aim View`, the cannon is a substantial lower-foreground
-  anchor at roughly 20–30% of viewport height. The complete playable mountain is
-  a smaller distant subject in the middle and upper frame, with its silhouette,
-  summit headroom, muzzle, trajectory, and first-impact marker inside the safe
-  view. Keep the authored 48-degree FOV unless runtime visual review proves the
-  shared bookmark itself must change; do not solve the composition with
-  per-stage camera repairs.
+  a loose visual reference, not a projection gate; shared physical topology,
+  depth, terraces, valleys, and support faces remain mandatory.
+- In the perspective `Aim View`, the cannon is a clearly identifiable
+  lower-foreground anchor and the mountain's main mass is readable across the
+  middle and upper frame. Minor peripheral terrain cropping is acceptable when
+  it keeps the cannon, muzzle, trajectory, major rises, and aiming context clear.
+  Keep the authored 48-degree FOV and one shared composition; do not solve the
+  view with per-stage camera repairs or geometry changes made only for a ratio.
 - Briefing begins in `Map View` with limited three-quarter orbit/zoom. `Aim View`
   uses one authored, recoverable cannon composition and the established aim
   controls; it does not add a second pointer gesture for independent camera
@@ -377,8 +376,8 @@ source brief remain requirement authorities, while `.agents/Documentation.md`
 remains the implemented-truth boundary.
 
 The active catalog pointer is `resources/stages/catalog.tres`. It selects the
-format-4 persisted thirty-stage bundle at
-`resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
+format-5 persisted thirty-stage bundle at
+`resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
 Each accepted layout carries default and summit witnesses. Runtime loads this
 bundle through `StageLayoutRepository`; it asynchronously serves the selected
 layout, may prefetch nearby work, retains three entries, and never substitutes
@@ -388,9 +387,9 @@ Glyph placement uses a generic deterministic search of visible Playable Terrain 
 surface and spacing, not authored stage coordinates. The fast-entry,
 Fire-capacity, and localized loading/retry implementations passed their prior
 production checks. The Fire owner itself enforces the two-root cap; resident
-terrain bodies do not hold that capacity. The currently implemented wind debris
-is superseded presentation and remains only until the cannon-side flag work in
-the active ExecPlan replaces it.
+terrain bodies do not hold that capacity. A non-colliding cannon-side flag now
+replaces generic wind debris and consumes the same wind snapshot as physics,
+prediction, and the HUD.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.

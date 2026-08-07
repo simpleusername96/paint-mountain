@@ -1855,6 +1855,27 @@ all-face-paint, and cannon-position-orbit interpretations only:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Clarification (2026-08-07): Approximate Aim Composition
+
+After reviewing the Stage 01 and Stage 30 captures, the user clarified that the
+`3:4` terrain ratio and earlier cannon percentages are visual references, not
+numeric acceptance gates. These clauses override only exact projected-ratio,
+exact foreground-percentage, and complete-silhouette interpretations:
+
+- Preserve the current lower, wider mountain-range result; its exact projected
+  height-to-width ratio does not need to equal `3:4` when the composition reads
+  approximately that way.
+- Aim View is acceptable when the cannon is clearly visible along the lower
+  foreground and the mountain's main mass, rises, and useful aiming context are
+  readable above it. Minor peripheral terrain cropping is acceptable.
+- Do not move the cannon, change terrain geometry, widen FOV, or regenerate the
+  baked catalog solely to satisfy an exact camera-composition number.
+- Runtime captures and direct visual review decide this composition. Projection
+  measurements may diagnose clipping or disappearance but do not pass or fail
+  the view by themselves.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

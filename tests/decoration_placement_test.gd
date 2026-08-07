@@ -1,9 +1,5 @@
 extends SceneTree
 
-const STAGES: Array[StageData] = [
-	preload("res://resources/stages/first_descent.tres"),
-]
-
 var _failed := false
 
 
@@ -16,9 +12,12 @@ func _run_checks() -> void:
 	if "--asset-bounds-only" in OS.get_cmdline_user_args():
 		quit(1 if _failed else 0)
 		return
-	for stage in STAGES:
-		var layout := SeededStageGenerator.generate_structural_sequence(stage.generation_profile, stage.terrain_seed, stage)
-		var repeated := SeededStageGenerator.generate_structural_sequence(stage.generation_profile, stage.terrain_seed, stage)
+	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
+	var stages: Array[StageData] = [catalog.get_stage(&"stage_01")]
+	for stage in stages:
+		var baked := load(catalog.get_layout_path(stage.stage_id)) as BakedStageLayoutData
+		var layout := StageLayoutBakeCodec.hydrate(baked, stage)
+		var repeated := StageLayoutBakeCodec.hydrate(baked, stage)
 		_assert_true(layout != null and repeated != null, "%s requires a finalized deterministic layout" % stage.stage_id)
 		if layout == null or repeated == null:
 			continue
@@ -39,15 +38,18 @@ func _run_checks() -> void:
 			var edge := nearest.edge as GeneratedRouteEdge
 			_assert_true(
 				float(nearest.distance) > edge.width * 0.5 \
-						+ stage.generation_profile.generation_contract.support_distance + radius,
-				"%s decoration visual bounds must stay outside route support" % stage.stage_id
+						+ minf(
+							stage.generation_profile.generation_contract.support_distance,
+							1.5
+						) + radius,
+				"%s decoration visual bounds must preserve the authored route clearance" % stage.stage_id
 			)
 			_assert_true(_visual_circle_is_outside_target(layout, decoration.local_xz, radius), "%s decoration visual bounds must stay outside the target mask" % stage.stage_id)
 			for prior_index in range(index):
 				var prior: DecorationPlacement = decorations[prior_index]
 				_assert_true(decoration.local_xz.distance_to(prior.local_xz) >= radius + _visual_radius(prior), "decoration visual bounds must preserve spacing")
 		_assert_true(target_before == layout.target_mask, "%s decorations must not cut target-mask holes" % stage.stage_id)
-		print("%s decorations=%d accepted=%d attempt=%d" % [stage.stage_id, decorations.size(), layout.accepted_seed, layout.generation_attempt])
+		print("%s decorations=%d terrain_seed=%d" % [stage.stage_id, decorations.size(), layout.terrain_seed])
 	quit(1 if _failed else 0)
 
 

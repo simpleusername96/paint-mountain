@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 
 func _initialize() -> void:
@@ -35,7 +35,11 @@ func _capture() -> void:
 	unlocked_data.settings.language = requested_locale
 	game_state.initialize_from_data(unlocked_data)
 	game_state.select_stage(requested_stage)
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(requested_stage)
+	if gameplay == null:
+		push_error("Could not prepare the persisted layout for %s." % requested_stage)
+		quit(1)
+		return
 	root.add_child(gameplay)
 	await process_frame
 	await process_frame

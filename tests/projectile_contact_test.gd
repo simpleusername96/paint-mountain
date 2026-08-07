@@ -260,10 +260,10 @@ func _box_contact_body(
 	body.position = body_position
 	body.collision_layer = 1
 	body.collision_mask = 2
-	body.set_meta(ContainmentSpec.CONTACT_OWNER_META, owner_id)
+	body.set_meta(PlayBoundsSpec.CONTACT_OWNER_META, owner_id)
 	var shape_node := CollisionShape3D.new()
 	shape_node.name = shape_id
-	shape_node.set_meta(ContainmentSpec.CONTACT_SHAPE_META, shape_id)
+	shape_node.set_meta(PlayBoundsSpec.CONTACT_SHAPE_META, shape_id)
 	var shape := BoxShape3D.new()
 	shape.size = size
 	shape_node.shape = shape

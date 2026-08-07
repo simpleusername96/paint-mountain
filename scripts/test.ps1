@@ -14,22 +14,27 @@ if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) {
 $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path
 
 $ordinaryTests = @(
-    'version4_contract_test.gd',
+    'prediction_scheduler_test.gd',
+    'fixed_mountain_catalog_test.gd',
     'stage_generation_test.gd',
-    'mountain_range_mvp_test.gd',
-    'phase8_front_transition_test.gd',
-    'stage_mvp_permit_test.gd',
+    'stage30_progression_test.gd',
+    'generation_v9_materialization_test.gd',
+    'baked_stage_layout_test.gd',
+    'stage_layout_repository_test.gd',
+    'play_bounds_test.gd',
+    'open_play_environment_test.gd',
+    'terrain_surface_paint_scope_test.gd',
+    'stage_cannon_standoff_test.gd',
     'mechanism_placement_test.gd',
     'decoration_placement_test.gd',
-    'phase2_test.gd',
-    'phase2_physics_test.gd',
-    'containment_wall_test.gd',
+    'stage2_burst_glyph_contract_test.gd',
+    'stage3_glyph_route_contract_test.gd',
+    'stage8_uphill_glyph_contract_test.gd',
     'projectile_contact_test.gd',
     'projectile_settling_test.gd',
     'phase3_paint_test.gd',
     'paint_queue_determinism_test.gd',
     'phase3_projectile_paint_test.gd',
-    'stage1_mvp_test.gd',
     'phase4_state_test.gd',
     'phase5_mechanism_test.gd',
     'phase6_content_test.gd',
@@ -37,13 +42,18 @@ $ordinaryTests = @(
     'shot_observation_test.gd',
     'camera_safety_test.gd',
     'phase8_aiming_composition_test.gd',
+    'trajectory_preview_efficiency_test.gd',
+    'cannon_wind_flag_test.gd',
+    'wind_result_hud_test.gd',
+    'shot_follow_camera_test.gd',
     'phase7_ui_test.gd',
+    'phase7_user_qa_contract_test.gd',
     'phase8_hud_truth_test.gd',
     'localization_ui_test.gd',
     'shot_feedback_test.gd',
+    'replay_recorder_v9_test.gd',
     'replay_presentation_test.gd',
-    'phase8_debug_test.gd',
-    'phase8_reliability_test.gd'
+    'phase8_debug_test.gd'
 )
 
 function Invoke-GodotTest {
@@ -71,7 +81,6 @@ try {
     foreach ($test in $ordinaryTests) {
         Invoke-GodotTest -ScriptName $test
     }
-    Invoke-GodotTest -ScriptName 'phase8_performance_test.gd'
 
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=cleanup')
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=write')

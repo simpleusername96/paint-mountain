@@ -210,6 +210,14 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_current_camera_mode = mode
 	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW and not _replay_active
+	if mode == CameraDirector.Mode.FOLLOW:
+		_first_hint.visible = false
+		_hint_timer.stop()
+	var aiming_surface := _current_state == StageController.State.AIMING \
+			and not _replay_active and mode == CameraDirector.Mode.AIMING
+	_interaction.visible = aiming_surface
+	_interaction.set_mode_switch_available(aiming_surface)
+	_apply_interaction_presentation(false)
 
 
 func show_shot_result(_gain: float, _total: float) -> void:
@@ -329,7 +337,9 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 
 func _apply_interaction_presentation(update_focus: bool) -> void:
 	var aim_locked := _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED
-	var aiming_surface := _current_state == StageController.State.AIMING and not _replay_active
+	var aiming_surface := _current_state == StageController.State.AIMING \
+			and not _replay_active \
+			and _current_camera_mode == CameraDirector.Mode.AIMING
 	_aim.visible = aiming_surface and aim_locked
 	_actions.visible = aiming_surface and aim_locked
 	if not aiming_surface:

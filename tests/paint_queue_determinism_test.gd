@@ -239,13 +239,11 @@ func _build_disconnected_layout() -> GeneratedStageLayout:
 	layout.profile_version = StageGenerationContract.CONTRACT_VERSION
 	layout.layout_version = StageGenerationContract.CONTRACT_VERSION
 	layout.terrain_seed = source.terrain_seed
-	layout.accepted_seed = source.accepted_seed
-	layout.generation_attempt = source.generation_attempt
 	layout.cell_count = source.cell_count
 	layout.local_bounds = source.local_bounds
 	layout.heights = source.heights.duplicate()
 	layout.route_graph = source.route_graph
-	layout.containment = source.containment
+	layout.play_bounds = source.play_bounds
 	var active_cells := PackedByteArray()
 	active_cells.resize(layout.cell_count.x * layout.cell_count.y)
 	active_cells.fill(1)

@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 const LOG_PATH := "user://paint_mountain_phase8_debug_log.json"
 
 var _failed: bool = false
@@ -15,7 +15,7 @@ func _run_checks() -> void:
 	game_state.persistence_enabled = false
 	game_state.initialize_from_data(root.get_node("/root/SaveSystem").default_data())
 	game_state.select_stage(&"stage_01")
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame
@@ -51,7 +51,11 @@ func _run_checks() -> void:
 		file.close()
 	_assert_true(parsed is Dictionary, "shot log must be valid JSON")
 	if parsed is Dictionary:
-		_assert_true(parsed.stage_id == "stage_01" and int(parsed.accepted_seed) > 0, "shot log must contain canonical stage and accepted seed")
+		_assert_true(
+			parsed.stage_id == "stage_01" \
+					and int(parsed.terrain_seed) == StageProgressionData.CANONICAL_TERRAIN_SEED,
+			"shot log must contain the canonical stage and fixed terrain seed"
+		)
 		_assert_true(_has_aim_and_fire(parsed.actions), "shot log must contain ordered aim/fire actions")
 		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
 		if parsed.expected_observations.size() == 1:

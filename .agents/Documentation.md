@@ -31,11 +31,10 @@ related:
 
 ## Current Open-Mountain Surface Direction (2026-08-07)
 
-The current implementation still constructs `BackstopEnvironment` with visible
-and collidable rear/side walls, joins the generated footprint to the rear wall,
-and records `BACKSTOP` settlement. The user has now superseded that behavior;
-the active execution contract owns its removal. Until that task passes, the
-running build is not evidence of the approved open-mountain direction.
+The current implementation uses `OpenPlayEnvironment`: it has a restrained
+non-target apron and explicit open exit bounds, but no visible, collidable, or
+hidden rear/side wall. `BACKSTOP` settlement has been removed. The mountain is
+an independently closed 3D mass rather than geometry joined to an enclosure.
 
 - The intended mountain retains real front-to-back depth as one independently
   closed 3D mass. Its perimeter Support Shell and bottom close the body without
@@ -55,38 +54,43 @@ running build is not evidence of the approved open-mountain direction.
 
 ## Current Cannon, Wind, and Shot-Observation Direction (2026-08-07)
 
-The current implementation is functionally connected, but the user rejected the
-large-stage cannon/mountain relationship, debris-based wind presentation, and
-the absence of an automatic post-Fire observation flow. Continue from the active
-[execution contract](execplans/2026-08-07-cannon-shot-observation.md). The prior
+The active [execution contract](execplans/2026-08-07-cannon-shot-observation.md)
+implements the requested lower-cannon/upper-mountain Aim View, a cannon-side
+wind flag, and automatic exact-root Shot Follow. The prior
 [handoff](../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md)
-is consumed history, and this task explicitly does not include a timing or
-performance-profiling pass.
+is consumed history. This task includes structural efficiency corrections but
+no timing, FPS, or performance-profiling pass.
 
-- The current Aim Lock interaction remains implemented: left drag changes
-  yaw/elevation, the wheel changes power, and Map Inspection owns orbit/zoom.
-  Player-facing work will rename these to `조준`/`Aim View` and `지도 보기`/`Map
-  View`; it will not add the previously proposed extra Aim Lock camera gesture.
-- The current safe framer contains the complete mountain by backing away. On
-  later stages this makes the cannon and route detail too small. The stored
-  cannon transform also leaves only about 17 m to Stage 30's nearest terrain
-  front versus about 57 m on Stage 01. Neither state meets the new foreground-
-  cannon/distant-whole-mountain composition.
-- The current `WindDebrisField` remains implemented but is now superseded. The
-  next slice removes it and adds a non-colliding cannon-side flag/streamer driven
-  by the same `WindController`; the HUD remains the exact secondary cue.
-- The existing `CameraDirector` contains legacy Follow math, but normal gameplay
-  does not enter it and it averages active projectiles. The new Shot Follow must
-  track only the newly launched root paintball, show first terrain contact, and
-  offer one visible return-to-cannon action while physics continues.
+- Aim View keeps the established input meaning: left drag changes yaw/elevation,
+  the wheel changes power, and Map View owns orbit/zoom. It adds no extra camera
+  gesture. The shared Aim composition keeps the cannon readable below a useful
+  lower/wider mountain mass. The user's approximate `3:4` reference is a visual
+  guide, not a numeric projected-ratio or complete-silhouette gate.
+- Every baked stage keeps one fixed cannon transform at least 70 m from the
+  nearest playable front. Stage 01 and Stage 30 use the same qualitative camera
+  rule; modest peripheral terrain crop is acceptable when the cannon, muzzle,
+  trajectory, and useful mountain mass remain readable.
+- `CannonWindFlag` replaces generic wind debris. It is non-colliding and consumes
+  the same `WindController` snapshot as physics, prediction, and the exact HUD
+  cue.
+- Accepted Fire enters Shot Follow for only the newly launched generation-0 root,
+  holds first terrain contact for 0.8 seconds, then returns to Aim View. The
+  visible return action and Tab return early without changing projectile physics
+  or stored aim.
 - The target-only coverage meaning, shared HUD Theme/components, persistent
   paint authority, bounded default/summit first-hit witnesses, and open thirty-
   stage production catalog remain valid unless new direct evidence contradicts
   them.
 - Obsolete authored-solution and exhaustive-certificate runner scripts, the
   historical solution test, and inactive generated catalog copies were removed.
-  The schema-compatible certificate classes and bounded default/summit witness
-  path remain because the active v8 layout contract still references them.
+  Optional schema-compatible certificate classes remain for diagnostics; the
+  active v9 admission boundary uses bounded default/summit witnesses and never
+  runs a target-wide solver during play.
+- The bounded final gate passed: 21 focused scripts, one exact-seed dry build,
+  `scripts/verify.ps1`, Windows release export, and seven exported-executable
+  background captures. The reviewed evidence is
+  [`evidence/2026-08-07-cannon-shot-observation.md`](evidence/2026-08-07-cannon-shot-observation.md).
+  No timing/FPS measurement, exhaustive solver, or full-suite run was used.
 
 ## Current Target Coverage and Safe Aim Framing (2026-08-07)
 
@@ -192,9 +196,10 @@ not the user's gameplay, balance, feel, or aesthetic approval.
   `0.25 m` radial samples plus bounded `0.30 m` range and `0.50 m` height
   discretization tolerance.
 - The active catalog pointer is `resources/stages/catalog.tres`. It selects the
-  format-4 persisted bundle
-  `resources/generated_stage_catalogs/v8-ac0a370baddb6355fe3a7a6715de563273817f727c124106d4580d2192cc3994`.
-  The bundle contains all 30 accepted stages and their default/summit witnesses.
+  format-5 persisted bundle
+  `resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
+  The bundle contains all 30 stages built from canonical terrain seed
+  `1347223552`, plus their default/summit witnesses.
 - `StageLayoutRepository` replaces the deleted `StageLayoutPreparer`. It loads
   persisted layouts asynchronously, gives the selected stage urgent priority,
   prefetches without blocking, keeps a three-entry LRU, and never falls back to
@@ -268,12 +273,12 @@ camera-preset behavior is historical only.
   the sole authoritative `PaintSystem` mask.
 - Wind: one stage-seeded fixed-tick schedule changes every 30 seconds with a
   three-second transition. Prediction, live physics, replay/agent snapshots, the
-  compact direction/strength/countdown UI, and restrained debris consume the
-  same wind truth. Strong episodes can wake eligible resting balls.
+  compact direction/strength/countdown UI, and cannon-side flag consume the same
+  wind truth. Strong episodes can wake eligible resting balls.
 - Results and persistence: the first root launch starts a 90/120/180-second
   stage clock. Only Finish or timeout produces a result, and final unique target
   coverage is the sole score. Save format 4 preserves previous best results;
-  replay format 8 and attempt observations record wind and ordered Finish truth.
+  replay format 9 and attempt observations record wind and ordered Finish truth.
 - Mechanisms: Burst, Splitter, and Uphill Rebound are flat terrain glyphs with
   no projectile collision body. Burst paints then consumes, Splitter launches
   three route-readable children, and Uphill Rebound uses stored local ascent.

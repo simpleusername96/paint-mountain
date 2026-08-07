@@ -267,10 +267,7 @@ func _connect_systems() -> void:
 	_stage_controller.stage_clock_changed.connect(_on_stage_clock_changed)
 	_stage_controller.stage_finished.connect(_on_stage_finished)
 	_wind_controller.snapshot_changed.connect(_on_wind_snapshot_changed)
-	_camera_director.mode_changed.connect(func(mode: int) -> void:
-		_hud.set_camera_mode(mode as CameraDirector.Mode)
-		_update_prediction_consumers()
-	)
+	_camera_director.mode_changed.connect(_on_camera_mode_changed)
 	_camera_director.interaction_mode_changed.connect(_on_interaction_mode_changed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
@@ -432,6 +429,18 @@ func _on_interaction_mode_requested(mode: int) -> void:
 	if _stage_controller.current_state != StageController.State.AIMING:
 		return
 	_camera_director.set_interaction_mode(mode as CameraDirector.InteractionMode)
+
+
+func _on_camera_mode_changed(mode: int) -> void:
+	var camera_mode := mode as CameraDirector.Mode
+	_hud.set_camera_mode(camera_mode)
+	var show_preview := _stage_controller.current_state == StageController.State.AIMING \
+			and camera_mode == CameraDirector.Mode.AIMING \
+			and _setting_bool("trajectory_preview", true)
+	_trajectory_preview.visible = show_preview
+	if show_preview:
+		_trajectory_preview.refresh()
+	_update_prediction_consumers()
 
 
 func _on_interaction_mode_changed(mode: int) -> void:

@@ -490,9 +490,8 @@ Rerun policy:
 
 ## Next Steps
 
-All six remediation phases completed on 2026-08-03. Their claims are historical.
-Further gameplay recovery follows the sole active
-[`execplans/2026-08-05-gameplay-contract-recovery.md`](execplans/2026-08-05-gameplay-contract-recovery.md).
+All six remediation phases completed on 2026-08-03. Their claims are historical;
+later dated ExecPlans supersede this document for current work.
 
 ## Completion Criteria
 

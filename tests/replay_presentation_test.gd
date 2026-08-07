@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
+const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 
 var _failed := false
 
@@ -13,7 +13,7 @@ func _run() -> void:
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	game_state.selected_stage_id = &"first_descent"
-	var gameplay := GAMEPLAY_SCENE.instantiate()
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
 	root.add_child(gameplay)
 	await _wait_for_gameplay(gameplay)
 
@@ -29,11 +29,11 @@ func _run() -> void:
 	_assert_true(
 		recorder.start_attempt(
 			gameplay.stage_data,
-			layout.accepted_seed,
+			layout.terrain_seed,
 			layout,
 			wind.schedule_identity()
 		),
-		"format-8 recording must bind to the runtime wind schedule"
+		"format-9 recording must bind to the fixed terrain seed and runtime wind schedule"
 	)
 	_assert_true(
 		controller.begin_aiming(StageController.ActionOrigin.HUMAN),
@@ -83,12 +83,12 @@ func _run() -> void:
 	_assert_true(
 		int(attempt.format_version) == ReplayRecorder.FORMAT_VERSION \
 				and int(attempt.physics_fps) == 60,
-		"replay must use format 8 at the fixed physics rate"
+		"replay must use format 9 at the fixed physics rate"
 	)
 	_assert_true(
 		String(attempt.wind_schedule_identity) == String(wind.schedule_identity()) \
 				and not recorded_result.is_empty(),
-		"format 8 must retain wind identity and final result truth"
+		"format 9 must retain wind identity and final result truth"
 	)
 	var completed_observation := agent.get_observation()
 	_assert_true(
@@ -110,7 +110,7 @@ func _run() -> void:
 				== String(attempt.wind_schedule_identity),
 		"a rejected replay must not replace the current recording"
 	)
-	_assert_true(presentation.start(attempt), "a matching format-8 replay must start")
+	_assert_true(presentation.start(attempt), "a matching format-9 replay must start")
 	var locked_aim := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	_assert_true(
 		not controller.set_aim(-20.0, 18.0, 0.0, StageController.ActionOrigin.HUMAN),
@@ -173,7 +173,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Replay presentation checks passed: format-8 Finish, wind identity, result truth, and agent snapshot contracts.")
+		print("Replay presentation checks passed: format-9 Finish, wind identity, result truth, and agent snapshot contracts.")
 	quit(1 if _failed else 0)
 
 
