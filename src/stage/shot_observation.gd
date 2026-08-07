@@ -1,7 +1,7 @@
 class_name ShotObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 5
+const SCHEMA_VERSION := 6
 
 var schema_version: int = SCHEMA_VERSION
 var shot_number: int = 0
@@ -23,6 +23,7 @@ var settlement_reason_counts: Dictionary = {}
 var coverage_before: float = 0.0
 var coverage_after: float = 0.0
 var coverage_gain: float = 0.0
+var coverage_metric_version: int = TargetSurfaceCoverage.METRIC_VERSION
 var paint_command_count: int = 0
 var paint_command_rejections: Array[Dictionary] = []
 var paint_command_rejection_count: int = 0
@@ -205,6 +206,7 @@ func to_dictionary() -> Dictionary:
 		"coverage_before": coverage_before,
 		"coverage_after": coverage_after,
 		"coverage_gain": coverage_gain,
+		"coverage_metric_version": coverage_metric_version,
 		"paint_command_count": paint_command_count,
 		"paint_command_rejections": paint_command_rejections.duplicate(true),
 		"paint_command_rejection_count": paint_command_rejection_count,

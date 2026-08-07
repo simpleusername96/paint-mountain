@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/top_status_bar.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings.png" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="3_hint"]
 
 [node name="TopStatusBar" type="Control"]
 layout_mode = 3
@@ -61,3 +62,15 @@ icon = ExtResource("2")
 expand_icon = true
 icon_max_width = 24
 theme_type_variation = &"HudIconButton"
+
+[node name="SettingsShortcut" parent="SettingsButton" instance=ExtResource("3_hint")]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -48.0
+offset_top = -11.0
+offset_right = -4.0
+offset_bottom = 11.0
+grow_vertical = 2
+key_text = "Esc"

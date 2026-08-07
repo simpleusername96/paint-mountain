@@ -23,14 +23,14 @@ static func generate(
 			else StageGenerationProfile.stage_id_from_profile_id(profile.profile_id)
 	var exact_seed := terrain_seed if terrain_seed != 0 else profile.base_seed
 	if stage_data == null or exact_seed != StageProgressionData.CANONICAL_TERRAIN_SEED:
-		push_error("Exact v9 generation requires StageData and the canonical terrain seed.")
+		push_error("Exact %s generation requires StageData and the canonical terrain seed." % StageGenerationContract.version_tag())
 		return null
 	var layout := _build_exact(stage_id, profile, exact_seed)
 	if _validate(profile, layout) and _finalize_layout(profile, stage_data, layout):
 		layout.reachability_certificate = stage_data.reachability_certificate
 		return layout
 	var failure_metrics := layout.metrics if layout != null else {"rejection": "route_graph"}
-	push_error("Exact v9 generation failed for %s: %s" % [stage_id, str(failure_metrics)])
+	push_error("Exact %s generation failed for %s: %s" % [StageGenerationContract.version_tag(), stage_id, str(failure_metrics)])
 	return null
 
 
@@ -51,14 +51,14 @@ static func generate_exact(
 		return null
 	var layout := _build_exact(stage_id, profile, exact_seed)
 	if not _validate(profile, layout):
-		push_error("Exact v9 structural generation failed for %s: %s" % [
-			stage_id,
+		push_error("Exact %s structural generation failed for %s: %s" % [
+			StageGenerationContract.version_tag(), stage_id,
 			str(layout.metrics) if layout != null else "missing_layout",
 		])
 		return null
 	if not _finalize_layout(profile, stage_data, layout):
-		push_error("Exact v9 layout finalization failed for %s: %s" % [
-			stage_id,
+		push_error("Exact %s layout finalization failed for %s: %s" % [
+			StageGenerationContract.version_tag(), stage_id,
 			str(layout.metrics),
 		])
 		return null
@@ -268,6 +268,23 @@ static func _finalize_layout(
 		int(target_result.get("checksum", 0))
 	):
 		layout.metrics["rejection"] = "target_mask_install"
+		return false
+	var total_target_surface_area := TargetSurfaceCoverage.total_target_surface_area(
+		layout.target_mask,
+		layout.top_topology,
+		layout.local_bounds,
+		StageGenerationContract.REQUIRED_MASK_SIZE
+	)
+	var target_surface_area_checksum := TargetSurfaceCoverage.metadata_checksum(
+		TargetSurfaceCoverage.METRIC_VERSION,
+		total_target_surface_area
+	)
+	if not layout.install_target_surface_coverage(
+		TargetSurfaceCoverage.METRIC_VERSION,
+		total_target_surface_area,
+		target_surface_area_checksum
+	):
+		layout.metrics["rejection"] = "target_surface_coverage"
 		return false
 	if stage_data != null:
 		layout.decoration_placements = _generate_decorations(stage_data, layout)

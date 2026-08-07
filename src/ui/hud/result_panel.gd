@@ -9,6 +9,7 @@ signal replay_requested
 @onready var title: Label = %Title
 @onready var stars: Label = %Stars
 @onready var coverage: Label = %Coverage
+@onready var coverage_explanation: Label = %CoverageExplanation
 @onready var previous_best: Label = %PreviousBest
 @onready var metadata: Label = %Metadata
 
@@ -59,6 +60,7 @@ func focus_retry() -> void:
 func _refresh_copy() -> void:
 	title.text = tr("result.time_expired") if _finish_reason == &"timeout" else tr("result.completed")
 	coverage.text = "%.1f%%" % _final_coverage
+	coverage_explanation.text = tr("result.coverage_explanation")
 	stars.text = "%s  %s" % [
 		tr("result.grade"),
 		"★".repeat(_star_count) + "☆".repeat(maxi(0, 3 - _star_count)),

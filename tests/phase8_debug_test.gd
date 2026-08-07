@@ -60,7 +60,7 @@ func _run_checks() -> void:
 		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
 		if parsed.expected_observations.size() == 1:
 			var sealed: Dictionary = parsed.expected_observations[0]
-			_assert_true(int(sealed.schema_version) == 5, "debug export must contain schema-5 observations")
+			_assert_true(int(sealed.schema_version) == 6, "debug export must contain schema-6 observations")
 			_assert_true(int(sealed.final_paint_mask_checksum) == paint.paint_mask_checksum(), "debug export checksum must match PaintSystem")
 		_assert_true(parsed.has("mechanisms") and parsed.has("exported_state"), "shot log must contain activations snapshot and outcome state")
 	await process_frame

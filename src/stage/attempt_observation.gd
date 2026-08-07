@@ -1,7 +1,7 @@
 class_name AttemptObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2
 
 const EVENT_AIM := "aim"
 const EVENT_FIRE := "fire"
@@ -16,6 +16,7 @@ const EVENT_RESULT := "result"
 
 var schema_version: int = SCHEMA_VERSION
 var stage_id: StringName = &""
+var coverage_metric_version: int = TargetSurfaceCoverage.METRIC_VERSION
 var wind_schedule_identity: StringName = &""
 var wind_schedule_seed: int = 0
 var events: Array[Dictionary] = []
@@ -209,6 +210,7 @@ func seal(
 		"reason": String(result_reason),
 		"paint_mask_checksum": paint_mask_checksum,
 		"coverage": coverage,
+		"coverage_metric_version": coverage_metric_version,
 		"elapsed_ticks": elapsed_ticks,
 	}
 	if not _append_event(
@@ -217,6 +219,7 @@ func seal(
 			"reason": result.reason,
 			"paint_mask_checksum": paint_mask_checksum,
 			"coverage": coverage,
+			"coverage_metric_version": coverage_metric_version,
 			"elapsed_ticks": elapsed_ticks,
 		},
 		physics_tick
@@ -234,6 +237,7 @@ func to_dictionary() -> Dictionary:
 	return {
 		"schema_version": schema_version,
 		"stage_id": String(stage_id),
+		"coverage_metric_version": coverage_metric_version,
 		"wind_schedule": {
 			"identity": String(wind_schedule_identity),
 			"seed": wind_schedule_seed,
@@ -251,6 +255,7 @@ func load_dictionary(data: Dictionary) -> bool:
 	var wind: Dictionary = data.wind_schedule
 	schema_version = int(data.schema_version)
 	stage_id = StringName(String(data.stage_id))
+	coverage_metric_version = int(data.coverage_metric_version)
 	wind_schedule_identity = StringName(String(wind.identity))
 	wind_schedule_seed = int(wind.seed)
 	events.clear()
@@ -269,6 +274,8 @@ func load_dictionary(data: Dictionary) -> bool:
 static func dictionary_is_valid(data: Dictionary) -> bool:
 	if not _is_json_safe(data) or int(data.get("schema_version", -1)) != SCHEMA_VERSION \
 			or String(data.get("stage_id", "")).is_empty() \
+			or int(data.get("coverage_metric_version", -1)) \
+					!= TargetSurfaceCoverage.METRIC_VERSION \
 			or not data.get("wind_schedule", {}) is Dictionary \
 			or not data.get("events", []) is Array \
 			or not data.get("shot_observations", []) is Array \
@@ -293,6 +300,8 @@ static func dictionary_is_valid(data: Dictionary) -> bool:
 	for observation in data.shot_observations:
 		if not observation is Dictionary \
 				or int(observation.get("schema_version", -1)) != ShotObservation.SCHEMA_VERSION \
+				or int(observation.get("coverage_metric_version", -1)) \
+						!= TargetSurfaceCoverage.METRIC_VERSION \
 				or not bool(observation.get("is_sealed", false)):
 			return false
 	var sealed := bool(data.is_sealed)
@@ -306,6 +315,8 @@ static func dictionary_is_valid(data: Dictionary) -> bool:
 		if String(final.reason) != String(result_event.get("reason", "")) \
 				or int(final.paint_mask_checksum) \
 						!= int(result_event.get("paint_mask_checksum", 0)) \
+				or int(final.coverage_metric_version) \
+						!= int(result_event.get("coverage_metric_version", -1)) \
 				or not is_equal_approx(
 					float(final.coverage), float(result_event.get("coverage", -1.0))
 				) \
@@ -391,6 +402,8 @@ static func _event_is_valid(event: Dictionary) -> bool:
 		EVENT_RESULT:
 			return not String(event.get("reason", "")).is_empty() \
 					and int(event.get("paint_mask_checksum", 0)) != 0 \
+					and int(event.get("coverage_metric_version", -1)) \
+							== TargetSurfaceCoverage.METRIC_VERSION \
 					and _coverage_is_valid(event.get("coverage", -1.0)) \
 					and int(event.get("elapsed_ticks", -1)) >= 0
 		_:
@@ -400,6 +413,8 @@ static func _event_is_valid(event: Dictionary) -> bool:
 static func _final_result_is_valid(result: Dictionary) -> bool:
 	return not String(result.get("reason", "")).is_empty() \
 			and int(result.get("paint_mask_checksum", 0)) != 0 \
+			and int(result.get("coverage_metric_version", -1)) \
+					== TargetSurfaceCoverage.METRIC_VERSION \
 			and _coverage_is_valid(result.get("coverage", -1.0)) \
 			and int(result.get("elapsed_ticks", -1)) >= 0 \
 			and int(result.get("physics_tick", -1)) >= 0 \

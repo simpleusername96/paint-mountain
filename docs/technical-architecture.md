@@ -37,7 +37,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | Owner | Responsibility | Must not own |
 | --- | --- | --- |
 | `GameState` | Global progression, selected stage, settings, best results | Per-shot rules or scene node paths |
-| `SaveSystem` | Versioned serialization, load/default/migration, atomic local writes | UI or stage decisions |
+| `SaveSystem` | Versioned serialization, load/default/migration, metric-version separation, mouse-sensitivity persistence, and atomic local writes | UI or stage decisions |
 | `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, wind generation, camera transforms, or HUD layout |
 | `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, wind profile, and content references | Mutable runtime or accepted baked layout state |
 | `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
@@ -51,14 +51,16 @@ This architecture covers the single-process desktop game. It does not define a b
 | `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/Playable Terrain Surface point queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
 | `OpenPlayEnvironment` | Collider-matched restrained apron/ground, open-world presentation, and stable non-target contact identity | Rear/side containment walls, scoring, hidden blocking planes, bank-shot behavior, or stage outcomes |
 | `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, replay, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
-| `AimInputController` | Presentation-mode-aware mouse/keyboard mapping to yaw/elevation/power, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
-| `TrajectoryPredictor` | Read-only complete pre-impact sphere prediction using the authoritative wind schedule through first collision/bounds exit | Device input, post-impact behavior, mechanisms, or coverage prediction |
-| `CannonController` | Yaw/elevation/power commands, clamping, shared launch calculation, and stable-aim-keyed prediction status | Device polling, Fire admission, target solving, post-fire steering, or stage outcome |
+| `AimInputController` | Presentation-mode-aware mouse/keyboard mapping, unsnapped pointer-angle remainder, sensitivity, interaction intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
+| `TrajectoryPredictionJob` / `TrajectoryPredictor` | Sole resumable fixed-step sphere/collision implementation and its synchronous offline wrapper | Device input, Fire rules, threads, post-impact behavior, mechanisms, or coverage prediction |
+| `TrajectoryPredictionScheduler` | Latest prediction key, one active job, one newest pending key, fixed-tick budget, bounded aim/wind nominations, and atomic publication | Wind generation, Fire admission, or prediction history |
+| `CannonController` | Yaw/elevation/power commands, clamping, shared launch calculation, and last-complete prediction presentation state | Device polling, Fire admission, target solving, post-fire steering, or stage outcome |
 | `ProjectileContact` | Immutable measured contact point/normal/collider/shape/impulse/velocity/tick facts | Mutation, gameplay decisions, or presentation |
 | `PaintProjectile` | Rigid-body behavior, every begun measured contact, persistent terrain-rest lifecycle, surface recovery, and Playable Terrain Surface sweep/radial-mark intent | Persistent mask mutation, coverage totals, wind schedule, or stage transitions |
 | `ProjectileManager` | Parent/child registry, two initial-flight root slots, 21-resident-body cap, family IDs, root-projectile identity publication, per-shot spawn ordinals, paint-command canonicalization, activity facts, and cleanup | Fire admission, projectile tuning, wind generation, camera transforms, or mask writes |
 | `SurfacePaintSweep`, `RadialPaintMark` | Immutable physically justified paint commands with stable source identity and deterministic order | Mask writes, coverage, payload, or flow |
-| `PaintSystem` | Ordered command drain, Playable Terrain Surface paint rasterization, immutable Target Area scoring, one authoritative paint mask/coverage, texture publication, clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
+| `PaintSystem` | Ordered command drain, Playable Terrain Surface paint rasterization, first-threshold weighted Target Area accumulation, one authoritative paint mask/coverage, co-published texture/coverage, and clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
+| `TargetSurfaceCoverage` | Metric version and pure canonical-normal physical-area weighting/checksum rules | Mutable paint, texture publication, stage goals, or HUD text |
 | `TerrainGlyphMechanism` | Terrain-conforming flat-glyph presentation, selection, state, charges/cooldown, and reset | Projectile collision bodies, contact classification, or subclass-specific effects |
 | `TerrainMechanismResolver` | Resolve authoritative Playable Terrain Surface contact against visible glyph footprints and invoke one ordered effect | Fabricated contact, paint-mask mutation, or stage outcomes |
 | `BurstNode` | Request one authoritative radial mark, spend its charge, then consume the incoming ball | Projectile spawning |
@@ -72,7 +74,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, fail-closed repository scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
-| `ReplayRecorder` | Format-9 terrain/open-bound and wind identities, fixed-tick aim/Fire/Finish action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
+| `ReplayRecorder` | Format-10 terrain/open-bound, coverage-metric, and wind identities, fixed-tick aim/Fire/Finish action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
 | `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
 | `GameplayAgentApi` | UI-independent observations, actions, and event stream | Duplicate simulation rules |
 | `AppRoot` | Main-menu, stage-select, settings, and gameplay navigation/lifetime | Stage outcomes or paint state |
@@ -148,8 +150,9 @@ This architecture covers the single-process desktop game. It does not define a b
   Generated default and summit aims remain the bounded runtime-entry witnesses
   and are never exposed as player or agent aim assistance.
 - `StageMvpPermit` is legacy development evidence only and is absent from the
-  active version-9 runtime admission path.
-- Replay format 9 carries canonical stage/profile/layout/certificate versions,
+  active version-10 runtime admission path.
+- Replay format 10 carries canonical stage/profile/layout/certificate and
+  coverage-metric versions,
   the canonical terrain seed, height/target/summit/reachability/open-play-bound
   checksums,
   generated default aim, physics FPS, wind schedule identity, ordered aim/Fire/
@@ -223,13 +226,16 @@ Human / Replay / GameplayAgentApi actions
 ### Paint implementation
 
 - The 512×512 CPU-authoritative byte mask batches texture uploads and increments
-  coverage only when a target byte first crosses threshold; no full-mask
-  readback or second coverage representation is used during play.
+  weighted coverage only when a target byte first crosses threshold; no
+  full-mask readback or second mutable coverage representation is used during
+  play.
 - Maintain a read-only `target_mask` in the same UV/world XZ mapping. Coverage is
-  painted target texels divided by all target texels and therefore counts overlap
-  once without recurring scans. The terrain shader may use that same immutable
-  classification to neutrally distinguish dry Target Area terrain, but it does
-  not create another paint or coverage representation.
+  unique painted physical Target Area surface divided by total Target Area
+  surface. Immutable per-sample weights come from projected texel area multiplied
+  by `1 / abs(canonical_triangle_normal.y)` and count overlap once without
+  recurring scans. The terrain shader may use the same immutable classification
+  to distinguish dry Target Area and lighter painted non-target terrain, but it
+  does not create another paint or coverage representation.
 - Queue surface sweeps and radial marks during physics, canonicalize them through
   stable tick/spawn/source/sequence order, drain at one late fixed-physics
   boundary, reconstruct candidates on the exact shared triangle, and upload at
@@ -280,7 +286,7 @@ Human / Replay / GameplayAgentApi actions
 - The canonical power curve is linear `32..160 m/s` over integer power `0..100`.
   Direct/summit certification and the open play bounds consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
-  reject or admit the promoted version-9 board.
+  reject or admit the promoted version-10 board.
 - Record stage/wind seeds and player actions. Retry and replay consume the same
   fixed-tick schedule and must reproduce the same gameplay outcome.
 - Normal gameplay has no simulation-speed controls. Replay presentation may own
@@ -340,7 +346,9 @@ Human / Replay / GameplayAgentApi actions
 
 - No two owners can authoritatively decide stage state, paint coverage, or projectile settlement.
 - Human UI, replay, debug actions, and AI actions cannot bypass the same command validation.
-- No device input or target solver remains in `CannonController`, and only `StageController` accepts Fire and consumes a shot after state/origin/prediction guards pass.
+- No device input or target solver remains in `CannonController`, and only
+  `StageController` accepts Fire and consumes a shot after canonical-aim,
+  state, capacity, and origin guards pass. Prediction is never a Fire guard.
 - No lobe-first or fixed stage height function, unseeded production RNG,
   authored production mechanism X/Z coordinate, alternate collider/query
   surface, or second target/paint/coverage representation remains after
@@ -358,9 +366,10 @@ Human / Replay / GameplayAgentApi actions
   the same explicit open exit bounds.
 - Active Shot Families and camera presentation modes do not replace `AIMING` as
   Board Phase. Aim remains stored at capacity; one authoritative readiness
-  snapshot disables only Fire and states the prediction/capacity/shot/result
-  reason. Map View and Shot Follow also block aim/Fire at the input boundary;
-  returning to Aim View restores the stored tuple without changing simulation.
+  snapshot disables only Fire for canonical-aim/capacity/shot/result reasons,
+  while prediction status is a separate advisory presentation. Map View and Shot
+  Follow also block aim/Fire at the input boundary; returning to Aim View
+  restores the stored tuple without changing simulation.
 - The edge HUD, bottom-center sole Fire action, interaction-mode toggle, compact
   time/shots/resident/wind/Finish status, gear, and input-capturing paused game
   menu have one typed state/action path. Shot Follow adds only one contextual

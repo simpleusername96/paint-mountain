@@ -22,6 +22,7 @@ related:
   - ../.agents/execplans/2026-08-06-command-columns-hud.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
+  - ../.agents/execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -32,13 +33,50 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The active cannon/wind/Shot Follow gate records the current unimplemented
-direction; its unchecked rows require implementation, rendered review, and final
-user gameplay/feel review.
+builds. The active truthful-coverage/responsive-aiming gate below owns current
+implementation acceptance; unchecked historical rows do not override it.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
+
+## Completed truthful coverage and responsive aiming gate (2026-08-07)
+
+- [x] Equal projected target patches at 0 and 60 degrees receive physical-area
+  weights in a 1:2 ratio; first paint-threshold crossing adds each weight once,
+  repaint adds zero, and painted non-target surface adds zero.
+- [x] The v10 baked layout persists coverage metric 2, total target surface area,
+  and a verified checksum while retaining every v9 physical terrain, target,
+  placement, cannon, and bounded-witness identity.
+- [x] One dirty paint presentation batch publishes both the visible mask and its
+  weighted percentage; result sealing forces that final batch first.
+- [x] Painted target and painted non-target terrain are distinguishable together
+  in running Aim View without hiding valid non-target paint.
+- [x] Fire admission depends only on legal canonical aim and stage rules. Pending
+  or miss prediction never toggles Fire, and Fire performs no physics query.
+- [x] Runtime prediction owns at most one active job and one newest pending key,
+  advances no more than 24 simulation steps per physics callback, never publishes
+  stale work, and keeps the last complete arc visible but subdued while pending.
+- [x] Equivalent `screen_relative` mouse motion produces the same canonical aim
+  at 1280x720 and 1920x1080; fractional sub-0.1-degree movement accumulates, and
+  the persisted 50-150% sensitivity setting affects pointer aim only.
+- [x] Aim View, Map View, Shot Follow, Gear, Finish, Fire, and Pause expose the
+  locked contextual keycaps and gesture line. Escape resumes Pause, no direct R
+  restart remains, and no transient first-session hint remains.
+- [x] Focused structural tests, `scripts/verify.ps1`, Windows release export, and
+  exported-build start pass without timing/FPS/profiler assertions.
+- [x] The implementing agent directly inspects Stage 01 target/non-target paint,
+  Stage 10 shortcuts and pending preview, Shot Follow Tab return, Korean 1280x720,
+  and English 1920x1080 task-owned background captures.
+
+Final Godot 4.7.1 Windows-release captures, inspected individually at native
+size:
+
+- `.agents/evidence/truthful-coverage-and-responsive-aiming-2026-08-07/01-stage01-target-nontarget-ko-1280.png`
+- `.agents/evidence/truthful-coverage-and-responsive-aiming-2026-08-07/02-stage10-aim-shortcuts-ko-1280.png`
+- `.agents/evidence/truthful-coverage-and-responsive-aiming-2026-08-07/03-stage10-preview-pending-ko-1280.png`
+- `.agents/evidence/truthful-coverage-and-responsive-aiming-2026-08-07/04-shot-follow-tab-ko-1280.png`
+- `.agents/evidence/truthful-coverage-and-responsive-aiming-2026-08-07/05-stage10-aim-shortcuts-en-1920.png`
 
 ## Completed target-coverage and safe Aim Lock validation gate (2026-08-07)
 
@@ -401,7 +439,7 @@ Authority and deterministic target terrain:
 - [ ] The effective `source-brief.md`, active design/architecture/checklist,
   project prompt, and implementation record agree on continuous contact paint,
   `target_mask`, targets `4/27/70%`, shots `4/5/6`, and the current HUD/menu.
-- [ ] Every version-9 stage uses canonical terrain seed `1347223552` plus its
+- [ ] Every version-10 stage uses canonical terrain seed `1347223552` plus its
   immutable stage/profile identity and one persisted baked layout. No candidate,
   attempt, or fallback seed remains; graph/layout data and all checksums repeat
   across fresh processes or generation fails closed.
@@ -429,7 +467,7 @@ Aim and open play bounds:
   witness reaches the global highest Playable Terrain Surface region. Neither becomes player
   aim assistance.
 - [ ] Manual play retains independent yaw/elevation/power, empty-playfield drag,
-  A/D/W/S, wheel and power buttons, Space/Fire parity, `R` restart, Tab inspect,
+  A/D/W/S, wheel and power buttons, Space/Fire parity, Tab inspect,
   and a depth-tested arc ending at the real first collision. Bounds exit/timeout
   is non-fireable and no post-impact path or coverage is previewed.
 - [ ] Each stage uses one baked fixed cannon transform at least 70 m from the
@@ -476,7 +514,7 @@ Korean HUD, game menu, visual direction, and approved assets:
   Decorative gauge children do not intercept playfield pointer/wheel input.
 - [ ] Fire is visible/focusable only in `AIMING`, emits exactly one guarded request
   per click or Space press, and is the only bottom-edge aiming action. No aiming
-  Restart or second Fire exists; the `R` shortcut uses the same restart action.
+  Restart, second Fire, or direct `R` restart shortcut exists.
 - [ ] The labeled top-right gear and Escape open one paused full-viewport input
   barrier from every allowed gameplay state. Continue, Restart, Settings, Stage
   Select, and Main Menu appear in order; focus is trapped/restored, simulation
@@ -498,7 +536,7 @@ Korean HUD, game menu, visual direction, and approved assets:
 
 Replay, regression, structural performance, and delivery:
 
-- [ ] Observation schema 4 and replay format 9 contain no payload/flow or
+- [ ] Observation schema 6 and replay format 10 contain no payload/flow or
   `BACKSTOP` fields, store stable contact/mechanism/child ordering plus canonical
   terrain/open-bound/paint-drain/checksum facts, and fresh-process replay
   reproduces identities, final state, target checksum, and paint checksum

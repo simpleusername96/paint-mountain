@@ -2,6 +2,7 @@ extends SceneTree
 
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
+const AIM_CONTROLS_SCENE := preload("res://scenes/ui/hud/aim_controls.tscn")
 const MIGRATION_PATH := "user://paint_mountain_localization_v1.json"
 
 var _failed := false
@@ -14,16 +15,30 @@ func _initialize() -> void:
 func _run() -> void:
 	var save_system := root.get_node("/root/SaveSystem")
 	var defaults: Dictionary = save_system.default_data()
-	_assert_true(defaults.version == 4, "current saves must use format 4")
+	_assert_true(defaults.version == 5, "current saves must use format 5")
+	_assert_true(
+		int(defaults.coverage_metric_version) == TargetSurfaceCoverage.METRIC_VERSION,
+		"current saves must identify the physical-area coverage metric"
+	)
 	_assert_true(defaults.settings.language == "ko", "new installs must default to Korean")
 	_assert_true(not defaults.settings.language_user_selected, "new installs must not claim an explicit language choice")
 	_assert_true(not defaults.settings.reduced_motion, "decorative motion must remain enabled by default")
+	_assert_true(
+		int(defaults.settings.aim_sensitivity_percent) == 100,
+		"new installs must use 100% mouse aim sensitivity"
+	)
 
 	_write_v1_fixture()
 	var migrated: Dictionary = save_system.load_data(MIGRATION_PATH)
-	_assert_true(migrated.version == 4, "format 1 saves must migrate to format 4")
+	_assert_true(migrated.version == 5, "format 1 saves must migrate to format 5")
 	_assert_true(not migrated.has("unlocked_stages"), "all-open migration must discard the obsolete lock list")
-	_assert_true(is_equal_approx(float(migrated.best_results.first_descent.coverage), 14.25), "migration must preserve best results")
+	_assert_true(
+		migrated.best_results.is_empty() \
+				and is_equal_approx(
+					float(migrated.legacy_best_results.first_descent.coverage), 14.25
+				),
+		"metric-1 best results must be preserved only in the legacy envelope"
+	)
 	_assert_true(is_equal_approx(float(migrated.settings.master_volume), 0.37), "migration must preserve settings")
 	_assert_true(migrated.settings.language == "ko" and not migrated.settings.language_user_selected, "migration must add the Korean default without fabricating a choice")
 
@@ -36,8 +51,10 @@ func _run() -> void:
 
 	var stage_select := STAGE_SELECT_SCENE.instantiate() as StageSelectScreen
 	var settings := SETTINGS_SCENE.instantiate() as SettingsScreen
+	var aim_controls := AIM_CONTROLS_SCENE.instantiate() as AimControls
 	root.add_child(stage_select)
 	root.add_child(settings)
+	root.add_child(aim_controls)
 	await process_frame
 	await process_frame
 	stage_select.visible = true
@@ -49,6 +66,7 @@ func _run() -> void:
 
 	game_state.update_setting(&"language", "en", false)
 	await process_frame
+	aim_controls.refresh_locale()
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
 	_assert_translation_contract("en")
 	if not stage_select._cards.is_empty():
@@ -60,9 +78,15 @@ func _run() -> void:
 	_assert_true(quality_option.get_item_text(1) == "MEDIUM", "quality display text must localize without changing metadata")
 	_assert_true(quality_option.get_item_metadata(1) == "medium", "quality metadata must remain stable")
 	_assert_true(resolution_option.get_item_text(0) == "1280 × 720" and resolution_option.get_item_metadata(0) == "1280x720", "resolution display formatting must preserve stored metadata")
+	_assert_true(
+		aim_controls.get_node("Content/ElevationCaption").text == "ANGLE" \
+				and aim_controls.get_node("Content/PowerCaption").text == "POWER",
+		"English Aim controls must not retain Korean captions"
+	)
 
 	game_state.update_setting(&"language", "ko", false)
 	await process_frame
+	aim_controls.refresh_locale()
 	if not stage_select._cards.is_empty():
 		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "switching back to Korean must refresh dynamic UI")
 	_assert_true(quality_option.get_item_text(1) == "보통", "Korean quality display must refresh immediately")
@@ -85,6 +109,7 @@ func _run() -> void:
 	_cleanup_fixture()
 	stage_select.queue_free()
 	settings.queue_free()
+	aim_controls.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
@@ -124,7 +149,7 @@ func _assert_translation_contract(locale: String) -> void:
 	var required := [
 		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
 		"hud.coverage", "hud.coverage_format", "hud.summary_split", "hud.summary_balls",
-		"hud.summary_direct", "hud.first_hint", "hud.aim_lock", "hud.map_inspection",
+		"hud.summary_direct", "hud.aim_context", "hud.map_context", "hud.aim_lock", "hud.map_inspection",
 		"hud.switch_to_map_inspection", "hud.switch_to_aim_lock", "mechanism.burst.description",
 		"hud.time", "hud.resident_balls", "hud.resident_activity_format", "hud.resident_total_format", "hud.wind",
 		"hud.wind_right", "hud.wind_into_screen", "hud.wind_out_of_screen",
@@ -132,7 +157,7 @@ func _assert_translation_contract(locale: String) -> void:
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
 		"result.completed", "result.time_expired", "result.final", "result.grade", "result.elapsed",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
-		"settings.reduced_motion",
+		"settings.reduced_motion", "settings.aim_sensitivity",
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
 		"hud.power_decrease", "hud.power_increase", "ui.previous", "ui.loading_stage", "ui.stage_load_failed", "ui.retry_stage_load",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",

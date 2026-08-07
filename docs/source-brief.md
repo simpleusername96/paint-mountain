@@ -1876,6 +1876,55 @@ exact foreground-percentage, and complete-silhouette interpretations:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-07): Truthful Surface Coverage and Responsive Aiming
+
+After direct Stage 10 play, the user revised how coverage, Fire readiness,
+manual aim, trajectory updates, and shortcut discovery must work. These clauses
+override conflicting raw-target-texel scoring, prediction-gated Fire, hidden
+shortcut, transient control-hint, and resolution-scaled mouse interpretations
+only:
+
+- **Target surface coverage:** the score is the unique painted physical area of
+  the immutable Target Area divided by its total physical area on the Playable
+  Terrain Surface. Each target-mask texel is weighted from its canonical terrain
+  triangle so steep and flat patches contribute by real surface area rather
+  than equal XZ projection area. Camera, FOV, distance, occlusion, and viewport
+  size never affect this score.
+- **One mutable paint truth:** the existing 512-square paint mask remains the
+  sole mutable visual and scoring state. The immutable 512-square target mask
+  identifies eligibility; immutable surface-area metadata supplies weights.
+  Paint outside the Target Area remains visible but contributes zero.
+- **Legible score boundary:** painted Target Area keeps the saturated blue paint
+  treatment. Painted valid non-target terrain uses a lighter, less saturated
+  treatment so the player can tell what contributes. Visible paint and the HUD
+  percentage publish as one presentation batch before result sealing.
+- **Prediction is advisory:** `StageController` admits Fire from the legal
+  canonical aim, editable board state, shots, root-family capacity, terminal
+  state, and action origin only. A pending prediction or a predicted miss never
+  disables Fire. A legal miss uses the existing apron, Support Shell, open-bounds,
+  and never-contacted-timeout rules.
+- **Bounded latest preview:** runtime trajectory prediction keeps at most one
+  active resumable job and one newest pending request, advances only a bounded
+  number of fixed simulation steps per physics tick, and never publishes a
+  stale arc. The last complete arc remains visible but subdued while the newest
+  one is prepared; it is replaced atomically rather than cleared.
+- **Resolution-stable manual aim:** mouse aim uses physical screen-relative
+  motion without manual viewport scaling. Fractional yaw/elevation input is
+  retained until it crosses the canonical 0.1-degree step. A persisted
+  mouse-only sensitivity setting ranges from 50% to 150% with 100% as default;
+  keyboard aim remains unchanged.
+- **Persistent contextual shortcuts:** Aim View exposes drag, A/D/W/S, wheel,
+  Space Fire, Tab Map View, F Finish when available, and Escape pause. Map View
+  exposes its drag/wheel controls and Tab return. Shot Follow exposes Tab return.
+  Pause exposes Escape Continue. These are compact control-adjacent keycaps and
+  context text, not a central tutorial panel.
+- **Retired hidden actions:** remove the four-second first-session hint after the
+  persistent prompts exist, and remove the hidden direct `R` restart shortcut.
+  Restart remains a visible pause-menu action. F3 remains debug-only and is not
+  advertised.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

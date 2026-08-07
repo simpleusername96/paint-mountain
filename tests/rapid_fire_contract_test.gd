@@ -30,15 +30,13 @@ func _run_checks() -> void:
 	var agent := gameplay.get_node("GameplayAgentApi") as GameplayAgentApi
 	var actions := gameplay.get_node("HUD/HUDRoot/ActionButtons") as ActionButtons
 	_assert(controller.begin_aiming(), "rapid-fire contract requires an aiming board")
-	var initial_prediction_budget := 120
-	while not bool(controller.fire_readiness_snapshot().get("fireable", false)) \
-			and initial_prediction_budget > 0:
-		await physics_frame
-		initial_prediction_budget -= 1
 	var initial_readiness := controller.fire_readiness_snapshot()
-	_assert(initial_prediction_budget > 0, "Aim View must publish its current prediction before Fire enables")
 	_assert(bool(initial_readiness.get("editable", false)), "beginning aim must refresh editable Fire readiness")
-	_assert(String(initial_readiness.get("prediction_status", "")) == "fireable", "initial readiness must use a matching prediction key")
+	_assert(
+		bool(initial_readiness.get("fireable", false)) \
+				and not initial_readiness.has("prediction_status"),
+		"legal aim must enable Fire independently of advisory prediction"
+	)
 	_assert(not actions.get_node("FireButton").disabled, "HUD Fire must follow the authoritative ready snapshot")
 	var agent_readiness: Dictionary = agent.get_observation().get("fire_readiness", {})
 	_assert(bool(agent_readiness.get("fireable", false)), "agent observation must expose the same ready Fire contract")
@@ -58,18 +56,14 @@ func _run_checks() -> void:
 		StageController.ActionOrigin.HUMAN
 	)
 	_assert(changed, "the next aim must remain editable while family one moves")
-	_assert(actions.get_node("FireButton").disabled, "pending prediction must disable only Fire")
-	_assert(actions.get_node("ReadinessLabel").text == "궤적 계산 중", "pending Fire must expose the canonical Korean reason")
-	var readiness_budget := 120
-	while not bool(controller.fire_readiness_snapshot().get("fireable", false)) \
-			and readiness_budget > 0:
-		await physics_frame
-		readiness_budget -= 1
-	_assert(not actions.get_node("FireButton").disabled, "matching prediction must re-enable HUD Fire")
+	_assert(
+		bool(controller.fire_readiness_snapshot().get("fireable", false)) \
+				and not actions.get_node("FireButton").disabled,
+		"changed legal aim must stay fireable while its preview is pending"
+	)
 	var second := agent.fire()
 	var third := controller.request_fire()
 	_assert(first and second, "two fire commands must be accepted without waiting for settlement")
-	_assert(readiness_budget > 0, "changed next aim must receive a matching prediction before Fire")
 	_assert(controller.current_state == StageController.State.AIMING, "accepted Fire must keep the board in AIMING while families move")
 	_assert(not third, "third fire must be rejected only at the two-family capacity")
 	var capacity_snapshot := controller.fire_readiness_snapshot()

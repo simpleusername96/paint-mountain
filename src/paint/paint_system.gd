@@ -17,7 +17,6 @@ const PAINT_DRAIN_PRIORITY := 1000
 # visibly continuous while avoiding a texture update on every sixth rendered
 # frame during a long rolling contact.
 const PAINT_TEXTURE_PUBLISH_INTERVAL := 1.0 / 10.0
-const COVERAGE_PUBLISH_INTERVAL := 0.20
 const NORMAL_FACING_THRESHOLD := 0.2588190451 # cos(75 degrees)
 const WRITE_RESULT_NONE := 0
 const WRITE_RESULT_WRITTEN := 1
@@ -93,13 +92,15 @@ var _paint_checksum_xor_component: int = CHECKSUM_XOR_SEED
 var _paint_checksum_sum_component: int = CHECKSUM_SUM_SEED
 var _painted_target_pixels: int = 0
 var _total_target_pixels: int = 0
+var _painted_target_surface_area: float = 0.0
+var _total_target_surface_area: float = 0.0
+var _projected_texel_area: float = 0.0
 var _paint_dirty_rect := Rect2i()
 var _recent_dirty_rect := Rect2i()
 var _recent_live_rect := Rect2i()
 var _texture_upload_pending: bool = false
 var _texture_upload_batch_count: int = 0
 var _paint_texture_publish_elapsed: float = 0.0
-var _coverage_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
 var _recent_diagnostics_enabled: bool = false
 var _surface_sample_cache_miss_count: int = 0
@@ -121,8 +122,9 @@ func configure(
 ) -> void:
 	assert(generated_layout != null and generated_layout.is_valid(), "PaintSystem requires the accepted generated layout.")
 	assert(generated_layout.has_valid_target_mask(), "PaintSystem requires an authoritative target mask.")
+	assert(generated_layout.has_valid_target_surface_coverage(), "PaintSystem requires metric-2 target surface metadata.")
 	assert(paint_surface_tuning != null and paint_surface_tuning.is_valid(), "PaintSystem requires typed surface tuning.")
-	assert(paint_surface_tuning.mask_size == MASK_SIZE, "PaintSystem mask size is fixed at 512 for version 4.")
+	assert(paint_surface_tuning.mask_size == MASK_SIZE, "PaintSystem mask size is fixed at 512 for version 5.")
 	assert(world_bounds.has_area(), "PaintSystem requires non-empty world bounds.")
 	assert(
 		world_bounds.size.is_equal_approx(generated_layout.local_bounds.size),
@@ -177,13 +179,6 @@ func _process(delta: float) -> void:
 	if _paint_texture_publish_elapsed >= PAINT_TEXTURE_PUBLISH_INTERVAL:
 		_paint_texture_publish_elapsed = 0.0
 		_upload_dirty_images()
-	_coverage_publish_elapsed += delta
-	if _coverage_publish_elapsed < COVERAGE_PUBLISH_INTERVAL:
-		return
-	_coverage_publish_elapsed = 0.0
-	if _coverage_changed_since_publish:
-		_coverage_changed_since_publish = false
-		coverage_changed.emit(coverage_percent())
 
 
 func queue_radial_paint_mark(command: RadialPaintMark) -> bool:
@@ -497,6 +492,11 @@ func _write_paint_value(index: int, value: int) -> int:
 		_recent_bytes[index] = 255
 	if newly_painted:
 		_painted_target_pixels += 1
+		var surface_area := TargetSurfaceCoverage.texel_surface_area(
+			_surface_normals[index], _projected_texel_area
+		)
+		assert(surface_area > 0.0, "Target coverage requires a valid upward canonical normal.")
+		_painted_target_surface_area += surface_area
 	_mark_paint_dirty(index)
 	if _recent_diagnostics_enabled:
 		_mark_recent_dirty(index)
@@ -570,11 +570,11 @@ func _next_visited_generation() -> int:
 
 func force_flush_paint_texture() -> void:
 	drain_pending_commands()
-	_upload_dirty_images()
+	var published_batch := _upload_dirty_images()
 	_paint_texture_publish_elapsed = 0.0
-	_coverage_publish_elapsed = 0.0
-	_coverage_changed_since_publish = false
-	coverage_changed.emit(coverage_percent())
+	if not published_batch:
+		_coverage_changed_since_publish = false
+		coverage_changed.emit(coverage_percent())
 
 
 func flush_pending() -> void:
@@ -594,20 +594,23 @@ func clear() -> void:
 		_recent_bytes.fill(0)
 	_reset_paint_mask_checksum()
 	_painted_target_pixels = 0
+	_painted_target_surface_area = 0.0
 	_paint_dirty_rect = Rect2i(Vector2i.ZERO, Vector2i(MASK_SIZE, MASK_SIZE))
 	_recent_dirty_rect = _paint_dirty_rect if _recent_diagnostics_enabled else Rect2i()
 	_recent_live_rect = Rect2i()
 	_texture_upload_pending = true
 	_paint_texture_publish_elapsed = 0.0
-	_coverage_publish_elapsed = 0.0
-	_coverage_changed_since_publish = false
-	coverage_changed.emit(0.0)
+	_coverage_changed_since_publish = true
 
 
 func coverage_percent() -> float:
-	if _total_target_pixels <= 0:
+	if _total_target_surface_area <= 0.0:
 		return 0.0
-	return 100.0 * float(_painted_target_pixels) / float(_total_target_pixels)
+	return clampf(
+		100.0 * _painted_target_surface_area / _total_target_surface_area,
+		0.0,
+		100.0
+	)
 
 
 func paint_mask_checksum() -> int:
@@ -722,6 +725,14 @@ func painted_target_pixels() -> int:
 	return _painted_target_pixels
 
 
+func painted_target_surface_area() -> float:
+	return _painted_target_surface_area
+
+
+func total_target_surface_area() -> float:
+	return _total_target_surface_area
+
+
 func persistent_nontarget_pixel_count() -> int:
 	var count := 0
 	for index in range(_paint_bytes.size()):
@@ -777,6 +788,11 @@ func _create_masks_and_surface_cache() -> void:
 	_visited_generation_id = 0
 	_total_target_pixels = _generated_layout.target_pixel_count()
 	assert(_total_target_pixels > 0, "PaintSystem requires at least one target pixel.")
+	_total_target_surface_area = _generated_layout.total_target_surface_area
+	_projected_texel_area = TargetSurfaceCoverage.projected_texel_area(
+		_generated_layout.local_bounds, MASK_SIZE
+	)
+	assert(_total_target_surface_area > 0.0 and _projected_texel_area > 0.0)
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 	_target_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes)
 	var nontarget_bytes := PackedByteArray()
@@ -793,13 +809,13 @@ func _create_masks_and_surface_cache() -> void:
 	_target_texture = ImageTexture.create_from_image(_target_image)
 	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
 	_painted_target_pixels = 0
+	_painted_target_surface_area = 0.0
 	_paint_dirty_rect = Rect2i()
 	_recent_dirty_rect = Rect2i()
 	_recent_live_rect = Rect2i()
 	_texture_upload_pending = false
 	_texture_upload_batch_count = 0
 	_paint_texture_publish_elapsed = 0.0
-	_coverage_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
 	_surface_sample_cache_miss_count = 0
 	_last_nonempty_drain_duration_usec = 0
@@ -969,9 +985,9 @@ func _include_pixel(rect: Rect2i, pixel: Vector2i) -> Rect2i:
 	return Rect2i(minimum, maximum - minimum + Vector2i.ONE)
 
 
-func _upload_dirty_images() -> void:
+func _upload_dirty_images() -> bool:
 	if not _texture_upload_pending:
-		return
+		return false
 	if _paint_dirty_rect.has_area():
 		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
 		_update_texture_region(_paint_texture, _paint_image, _paint_dirty_rect)
@@ -982,6 +998,10 @@ func _upload_dirty_images() -> void:
 	_paint_dirty_rect = Rect2i()
 	_recent_dirty_rect = Rect2i()
 	_texture_upload_pending = false
+	if _coverage_changed_since_publish:
+		_coverage_changed_since_publish = false
+		coverage_changed.emit(coverage_percent())
+	return true
 
 
 func _update_texture_region(

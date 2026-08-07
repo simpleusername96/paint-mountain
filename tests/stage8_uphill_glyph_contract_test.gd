@@ -16,7 +16,7 @@ func _initialize() -> void:
 	)
 	_assert(
 		layout != null and layout.is_runtime_ready(),
-		"stage 08 persisted v9 layout must retain its runtime terrain contract"
+		"stage 08 persisted v10 layout must retain its runtime terrain contract"
 	)
 	if layout != null:
 		var placements := layout.mechanism_placements

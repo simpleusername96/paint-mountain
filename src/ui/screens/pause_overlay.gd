@@ -22,3 +22,12 @@ func focus_resume() -> void:
 
 func focus_settings() -> void:
 	%Settings.grab_focus()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or not event.is_action_pressed(&"ui_cancel"):
+		return
+	if event is InputEventKey and event.echo:
+		return
+	get_viewport().set_input_as_handled()
+	resume_requested.emit()

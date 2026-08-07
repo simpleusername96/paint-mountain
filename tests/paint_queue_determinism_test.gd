@@ -208,7 +208,7 @@ func _configured_layout(
 	if installed_mask.is_empty():
 		installed_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
 		installed_mask.fill(255)
-	assert(layout.install_target_mask(installed_mask, TargetMaskRasterizer.byte_checksum(installed_mask)))
+	assert(FIXTURE_FACTORY.install_target_mask_with_coverage(layout, installed_mask))
 	var paint := PaintSystem.new()
 	root.add_child(paint)
 	var material := ShaderMaterial.new()

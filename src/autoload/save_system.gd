@@ -1,6 +1,6 @@
 extends Node
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 
 
@@ -8,7 +8,9 @@ func default_data() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
 		"selected_stage_id": "stage_01",
+		"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
 		"best_results": {},
+		"legacy_best_results": {},
 		"settings": {
 			"master_volume": 0.8,
 			"music_volume": 0.7,
@@ -21,6 +23,7 @@ func default_data() -> Dictionary:
 			"quality": "medium",
 			"language": "ko",
 			"language_user_selected": false,
+			"aim_sensitivity_percent": 100,
 		},
 	}
 
@@ -38,10 +41,8 @@ func load_data(path: String = DEFAULT_SAVE_PATH) -> Dictionary:
 	if parse_error != OK or not parsed is Dictionary:
 		_preserve_invalid(path)
 		return default_data()
-	if int(parsed.get("version", -1)) == 1 or int(parsed.get("version", -1)) == 2:
-		parsed = _migrate_v1(parsed)
-	elif int(parsed.get("version", -1)) == 3:
-		parsed = _migrate_v3(parsed)
+	if int(parsed.get("version", -1)) in [1, 2, 3, 4]:
+		parsed = _migrate_to_v5(parsed)
 	elif int(parsed.get("version", -1)) != SAVE_VERSION:
 		_preserve_invalid(path)
 		return default_data()
@@ -79,21 +80,44 @@ func save_data(data: Dictionary, path: String = DEFAULT_SAVE_PATH) -> Error:
 func _merge_with_defaults(data: Dictionary) -> Dictionary:
 	var merged := default_data()
 	merged["selected_stage_id"] = data.get("selected_stage_id", merged.selected_stage_id)
-	merged["best_results"] = data.get("best_results", merged.best_results)
+	var current_best: Dictionary = {}
+	var legacy_best: Dictionary = Dictionary(
+		data.get("legacy_best_results", {})
+	).duplicate(true)
+	var incoming_best: Dictionary = data.get("best_results", {})
+	for stage_id in incoming_best:
+		var entry: Variant = incoming_best[stage_id]
+		if entry is Dictionary and int(entry.get("coverage_metric_version", -1)) \
+				== TargetSurfaceCoverage.METRIC_VERSION:
+			current_best[stage_id] = (entry as Dictionary).duplicate(true)
+		elif not legacy_best.has(stage_id):
+			legacy_best[stage_id] = entry
+	merged["best_results"] = current_best
+	merged["legacy_best_results"] = legacy_best
 	var incoming_settings: Dictionary = data.get("settings", {})
 	var settings: Dictionary = merged.settings
 	for key in incoming_settings:
 		if settings.has(key):
 			settings[key] = incoming_settings[key]
+	settings["aim_sensitivity_percent"] = clampi(
+		int(settings.get("aim_sensitivity_percent", 100)), 50, 150
+	)
 	merged["settings"] = settings
 	return merged
 
 
-func _migrate_v1(data: Dictionary) -> Dictionary:
+func _migrate_to_v5(data: Dictionary) -> Dictionary:
 	var migrated := data.duplicate(true)
-	var migrated_settings: Dictionary = Dictionary(migrated.get("settings", {})).duplicate(true)
-	migrated_settings["language"] = "ko"
-	migrated_settings["language_user_selected"] = false
+	var source_version := int(migrated.get("version", -1))
+	var migrated_settings: Dictionary = Dictionary(
+		migrated.get("settings", {})
+	).duplicate(true)
+	if source_version in [1, 2]:
+		migrated_settings["language"] = "ko"
+		migrated_settings["language_user_selected"] = false
+	migrated_settings["aim_sensitivity_percent"] = clampi(
+		int(migrated_settings.get("aim_sensitivity_percent", 100)), 50, 150
+	)
 	migrated["settings"] = migrated_settings
 	var selected := String(migrated.get("selected_stage_id", "stage_01"))
 	match selected:
@@ -101,14 +125,11 @@ func _migrate_v1(data: Dictionary) -> Dictionary:
 		"burst_basin": selected = "stage_02"
 		"split_ridge": selected = "stage_03"
 	migrated["selected_stage_id"] = selected
-	migrated["version"] = SAVE_VERSION
-	return migrated
-
-
-func _migrate_v3(data: Dictionary) -> Dictionary:
-	# Version 4 adds optional best-run metadata. Existing coverage and stars are
-	# already authoritative, so migration only advances the envelope version.
-	var migrated := data.duplicate(true)
+	migrated["coverage_metric_version"] = TargetSurfaceCoverage.METRIC_VERSION
+	migrated["legacy_best_results"] = Dictionary(
+		migrated.get("legacy_best_results", migrated.get("best_results", {}))
+	).duplicate(true)
+	migrated["best_results"] = {}
 	migrated["version"] = SAVE_VERSION
 	return migrated
 

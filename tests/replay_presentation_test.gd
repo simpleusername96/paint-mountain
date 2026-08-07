@@ -33,7 +33,7 @@ func _run() -> void:
 			layout,
 			wind.schedule_identity()
 		),
-		"format-9 recording must bind to the fixed terrain seed and runtime wind schedule"
+		"format-10 recording must bind to the fixed terrain seed and runtime wind schedule"
 	)
 	_assert_true(
 		controller.begin_aiming(StageController.ActionOrigin.HUMAN),
@@ -83,12 +83,12 @@ func _run() -> void:
 	_assert_true(
 		int(attempt.format_version) == ReplayRecorder.FORMAT_VERSION \
 				and int(attempt.physics_fps) == 60,
-		"replay must use format 9 at the fixed physics rate"
+		"replay must use format 10 at the fixed physics rate"
 	)
 	_assert_true(
 		String(attempt.wind_schedule_identity) == String(wind.schedule_identity()) \
 				and not recorded_result.is_empty(),
-		"format 9 must retain wind identity and final result truth"
+		"format 10 must retain wind identity and final result truth"
 	)
 	var completed_observation := agent.get_observation()
 	_assert_true(
@@ -110,7 +110,7 @@ func _run() -> void:
 				== String(attempt.wind_schedule_identity),
 		"a rejected replay must not replace the current recording"
 	)
-	_assert_true(presentation.start(attempt), "a matching format-9 replay must start")
+	_assert_true(presentation.start(attempt), "a matching format-10 replay must start")
 	var locked_aim := Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent)
 	_assert_true(
 		not controller.set_aim(-20.0, 18.0, 0.0, StageController.ActionOrigin.HUMAN),
@@ -173,7 +173,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Replay presentation checks passed: format-9 Finish, wind identity, result truth, and agent snapshot contracts.")
+		print("Replay presentation checks passed: format-10 Finish, wind identity, result truth, and agent snapshot contracts.")
 	quit(1 if _failed else 0)
 
 

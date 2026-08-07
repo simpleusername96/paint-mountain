@@ -185,6 +185,11 @@ func _build_catalog() -> Dictionary:
 			"layouts/%s_layout.res" % stage.stage_id, baked.payload_sha256
 		])
 		manifest_parts.append("play_bounds_checksum=%d" % baked.play_bounds_checksum)
+		manifest_parts.append("coverage=%d|%.6f|%d" % [
+			baked.coverage_metric_version,
+			baked.total_target_surface_area,
+			baked.target_surface_area_checksum,
+		])
 		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
 			hydrated.generated_default_witness
 		))
@@ -781,6 +786,9 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 	var certificate_paths: Array[String] = []
 	var preview_paths: Array[String] = []
 	var play_bounds_checksums: Array[int] = []
+	var coverage_metric_versions: Array[int] = []
+	var total_target_surface_areas: Array[float] = []
+	var target_surface_area_checksums: Array[int] = []
 	var default_witnesses: Array[Dictionary] = []
 	var summit_witnesses: Array[Dictionary] = []
 	for index in range(catalog.stages.size()):
@@ -798,6 +806,9 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 		if hydrated == null:
 			return false
 		play_bounds_checksums.append(reloaded.play_bounds_checksum)
+		coverage_metric_versions.append(reloaded.coverage_metric_version)
+		total_target_surface_areas.append(reloaded.total_target_surface_area)
+		target_surface_area_checksums.append(reloaded.target_surface_area_checksum)
 		default_witnesses.append(_witness_manifest_summary(hydrated.generated_default_witness))
 		summit_witnesses.append(_witness_manifest_summary(hydrated.generated_summit_witness))
 		if stage.reachability_certificate != null:
@@ -817,6 +828,9 @@ func _write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStage
 		"layout_paths": catalog.layout_paths,
 		"layout_payload_sha256": layouts.map(func(layout: BakedStageLayoutData) -> String: return layout.payload_sha256),
 		"play_bounds_checksums": play_bounds_checksums,
+		"coverage_metric_versions": coverage_metric_versions,
+		"total_target_surface_areas": total_target_surface_areas,
+		"target_surface_area_checksums": target_surface_area_checksums,
 		"default_witnesses": default_witnesses,
 		"summit_witnesses": summit_witnesses,
 		"certificate_paths": certificate_paths,
@@ -921,12 +935,19 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 		return _bundle_validation_failure("manifest layout paths differ from catalog")
 	var payload_hashes: Array = manifest.get("layout_payload_sha256", [])
 	var play_bounds_checksums: Array = manifest.get("play_bounds_checksums", [])
+	var coverage_metric_versions: Array = manifest.get("coverage_metric_versions", [])
+	var total_target_surface_areas: Array = manifest.get("total_target_surface_areas", [])
+	var target_surface_area_checksums: Array = manifest.get("target_surface_area_checksums", [])
 	var default_witnesses: Array = manifest.get("default_witnesses", [])
 	var summit_witnesses: Array = manifest.get("summit_witnesses", [])
 	if payload_hashes.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest payload-hash count differs from stage count")
 	if play_bounds_checksums.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest play-bounds count differs from stage count")
+	if coverage_metric_versions.size() != catalog.stages.size() \
+			or total_target_surface_areas.size() != catalog.stages.size() \
+			or target_surface_area_checksums.size() != catalog.stages.size():
+		return _bundle_validation_failure("manifest coverage metadata count differs from stage count")
 	if default_witnesses.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest default-witness count differs from stage count")
 	if summit_witnesses.size() != catalog.stages.size():
@@ -959,6 +980,19 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 		if baked.play_bounds_checksum != int(play_bounds_checksums[index]) \
 				or baked.play_bounds_checksum != PlayBoundsSpec.new().checksum():
 			return _bundle_validation_failure("%s play bounds differ from manifest" % stage_id)
+		if baked.coverage_metric_version != int(coverage_metric_versions[index]) \
+				or not is_equal_approx(
+					baked.total_target_surface_area,
+					float(total_target_surface_areas[index])
+				) \
+				or baked.target_surface_area_checksum \
+						!= int(target_surface_area_checksums[index]) \
+				or not TargetSurfaceCoverage.metadata_is_valid(
+					baked.coverage_metric_version,
+					baked.total_target_surface_area,
+					baked.target_surface_area_checksum
+				):
+			return _bundle_validation_failure("%s coverage metadata differs from manifest" % stage_id)
 		if not _witness_manifest_matches(
 			default_witnesses[index], hydrated.generated_default_witness
 		):
@@ -985,6 +1019,11 @@ func _verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String = "")
 			baked.payload_sha256,
 		])
 		manifest_parts.append("play_bounds_checksum=%d" % baked.play_bounds_checksum)
+		manifest_parts.append("coverage=%d|%.6f|%d" % [
+			baked.coverage_metric_version,
+			baked.total_target_surface_area,
+			baked.target_surface_area_checksum,
+		])
 		manifest_parts.append("default_witness=%s" % _witness_manifest_descriptor(
 			hydrated.generated_default_witness
 		))

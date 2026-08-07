@@ -3,7 +3,7 @@ extends Node
 
 signal replay_action_ready(action: Dictionary)
 
-const FORMAT_VERSION := 9
+const FORMAT_VERSION := 10
 const DEFAULT_WIND_SCHEDULE_VERSION := 1
 
 var attempt: Dictionary = {}
@@ -63,6 +63,9 @@ func start_attempt(
 		"terrain_seed": generated_layout.terrain_seed,
 		"height_grid_checksum": generated_layout.checksum,
 		"target_mask_checksum": generated_layout.target_mask_checksum,
+		"coverage_metric_version": generated_layout.coverage_metric_version,
+		"total_target_surface_area": generated_layout.total_target_surface_area,
+		"target_surface_area_checksum": generated_layout.target_surface_area_checksum,
 		"reachability_checksum": (
 			certificate.reachable_target_checksum if has_full_certificate else 0
 		),
@@ -213,6 +216,9 @@ func load_attempt(data: Dictionary) -> bool:
 			or not data.has("terrain_seed") \
 			or not data.has("height_grid_checksum") \
 			or not data.has("target_mask_checksum") \
+			or not data.has("coverage_metric_version") \
+			or not data.has("total_target_surface_area") \
+			or not data.has("target_surface_area_checksum") \
 			or not data.has("reachability_checksum") \
 			or not data.has("play_bounds_checksum") \
 			or not data.has("placement_checksum") \
@@ -349,6 +355,11 @@ func _layout_metadata_is_valid(data: Dictionary) -> bool:
 					!= StageProgressionData.CANONICAL_TERRAIN_SEED \
 			or int(data.get("height_grid_checksum", 0)) == 0 \
 			or int(data.get("target_mask_checksum", 0)) == 0 \
+			or not TargetSurfaceCoverage.metadata_is_valid(
+				int(data.get("coverage_metric_version", -1)),
+				float(data.get("total_target_surface_area", -1.0)),
+				int(data.get("target_surface_area_checksum", 0))
+			) \
 			or int(data.get("play_bounds_checksum", 0)) == 0 \
 			or int(data.get("placement_checksum", 0)) == 0:
 		return false
@@ -382,6 +393,8 @@ func _sealed_observation_is_valid(observation: Dictionary) -> bool:
 		or not observation.has("coverage_before") \
 		or not observation.has("coverage_after") \
 		or not observation.has("coverage_gain") \
+		or int(observation.get("coverage_metric_version", -1)) \
+				!= TargetSurfaceCoverage.METRIC_VERSION \
 		or not observation.get("contacts", []) is Array \
 		or not observation.get("mechanism_activations", []) is Array \
 		or not observation.get("child_spawns", []) is Array \
@@ -449,6 +462,8 @@ func _result_dictionary_is_valid(result: Dictionary) -> bool:
 	return _is_json_safe(_json_safe_dictionary(result)) \
 			and not reason.is_empty() \
 			and int(result.get("paint_mask_checksum", 0)) != 0 \
+			and int(result.get("coverage_metric_version", -1)) \
+					== TargetSurfaceCoverage.METRIC_VERSION \
 			and is_finite(coverage) and coverage >= 0.0 and coverage <= 100.0 \
 			and int(result.get("elapsed_ticks", -1)) >= 0
 
@@ -463,6 +478,8 @@ func _result_matches_observation(
 	var reason := String(result.get("finish_reason", result.get("result_reason", "")))
 	return (not result.has("stage_id") or String(result.stage_id) == String(observation.stage_id)) \
 			and String(final.get("reason", "")) == reason \
+			and int(final.get("coverage_metric_version", -1)) \
+					== int(result.get("coverage_metric_version", -2)) \
 			and int(final.get("paint_mask_checksum", 0)) \
 					== int(result.get("paint_mask_checksum", 0)) \
 			and is_equal_approx(

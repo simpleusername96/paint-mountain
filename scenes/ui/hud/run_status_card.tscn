@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/run_status_card.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/hud_metric.tscn" id="2_metric"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="3_hint"]
 
 [node name="RunStatusCard" type="PanelContainer"]
 visible = false
@@ -122,3 +123,18 @@ layout_mode = 2
 theme_type_variation = &"HudFinishButton"
 disabled = true
 text = "ui.finish"
+
+[node name="FinishShortcut" parent="Margin/Content/Finish" instance=ExtResource("3_hint")]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -38.0
+offset_top = -11.0
+offset_right = -8.0
+offset_bottom = 11.0
+grow_horizontal = 0
+grow_vertical = 2
+key_text = "F"

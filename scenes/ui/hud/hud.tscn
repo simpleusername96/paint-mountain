@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/top_status_bar.tscn" id="2"]
@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/mechanism_info_card.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/pause_overlay.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/run_status_card.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="13_hint"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
@@ -60,7 +61,7 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
 offset_top = 72.0
-offset_right = 144.0
+offset_right = 188.0
 offset_bottom = 124.0
 
 [node name="RunStatusCard" parent="HUDRoot" instance=ExtResource("12")]
@@ -84,6 +85,21 @@ offset_bottom = 600.0
 theme_type_variation = &"HudModeButton"
 tooltip_text = "hud.return_to_cannon_hint"
 text = "hud.return_to_cannon"
+
+[node name="ReturnShortcut" parent="HUDRoot/ReturnToCannon" instance=ExtResource("13_hint")]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -54.0
+offset_top = -11.0
+offset_right = -10.0
+offset_bottom = 11.0
+grow_horizontal = 0
+grow_vertical = 2
+key_text = "Tab"
 
 [node name="ShotSummary" parent="HUDRoot" instance=ExtResource("7")]
 unique_name_in_owner = true
@@ -157,25 +173,16 @@ layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "ui.start_aiming"
 
-[node name="FirstSessionHint" type="PanelContainer" parent="HUDRoot"]
+[node name="ContextLine" type="Label" parent="HUDRoot"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
-offset_top = 536.0
-offset_right = 304.0
-offset_bottom = 584.0
-
-[node name="Label" type="Label" parent="HUDRoot/FirstSessionHint"]
-layout_mode = 2
-theme_type_variation = &"HudBody"
-text = "hud.first_hint"
-autowrap_mode = 2
+offset_top = 566.0
+offset_right = 330.0
+offset_bottom = 590.0
+theme_type_variation = &"HudCaption"
+text = "hud.aim_context"
 vertical_alignment = 1
-
-[node name="HintTimer" type="Timer" parent="HUDRoot/FirstSessionHint"]
-unique_name_in_owner = true
-wait_time = 4.0
-one_shot = true
 
 [node name="ResultPanel" parent="HUDRoot" instance=ExtResource("8")]
 unique_name_in_owner = true

@@ -60,7 +60,9 @@ void fragment() {
 		* mix(0.90, 1.04, upwardness)
 		* mix(0.965, 1.035, facet_tone);
 	vec3 dry_rock = mix(support_rock, top_rock, paintable_surface);
-	vec3 painted_color = mix(paint_color.rgb * 0.58, paint_color.rgb, painted);
+	float paint_luma = dot(paint_color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	vec3 nontarget_paint = mix(paint_color.rgb, vec3(paint_luma), 0.58) * 1.28;
+	vec3 painted_color = mix(nontarget_paint, paint_color.rgb, target);
 	ALBEDO = mix(dry_rock, painted_color, painted);
 	ROUGHNESS = mix(0.88, 0.24, painted);
 	SPECULAR = mix(0.32, 0.72, wet_core);

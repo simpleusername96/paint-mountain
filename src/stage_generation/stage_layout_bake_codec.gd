@@ -1,7 +1,7 @@
 class_name StageLayoutBakeCodec
 extends RefCounted
 
-## Schema-2 primitive transport. The SHA-256 feed has one explicit field order;
+## Schema-3 primitive transport. The SHA-256 feed has one explicit field order;
 ## it never delegates semantic bytes to Variant or Resource serialization.
 static func bake(layout: GeneratedStageLayout, stage: StageData) -> BakedStageLayoutData:
 	if layout == null or stage == null or not layout.is_runtime_ready():
@@ -18,6 +18,9 @@ static func bake(layout: GeneratedStageLayout, stage: StageData) -> BakedStageLa
 	data.height_checksum = layout.checksum
 	data.target_mask = layout.target_mask
 	data.target_checksum = layout.target_mask_checksum
+	data.coverage_metric_version = layout.coverage_metric_version
+	data.total_target_surface_area = layout.total_target_surface_area
+	data.target_surface_area_checksum = layout.target_surface_area_checksum
 	data.play_bounds_checksum = layout.play_bounds.checksum()
 	for node in layout.route_graph.nodes:
 		data.route_node_ids.append(node.id)
@@ -95,6 +98,11 @@ static func hydrate(data: BakedStageLayoutData, stage: StageData) -> GeneratedSt
 	if result.top_topology == null or _height_checksum(result.heights) != data.height_checksum \
 			or not result.install_footprint(data.footprint) \
 			or not result.install_target_mask(data.target_mask, data.target_checksum) \
+			or not result.install_target_surface_coverage(
+				data.coverage_metric_version,
+				data.total_target_surface_area,
+				data.target_surface_area_checksum
+			) \
 			or result.play_bounds.checksum() != data.play_bounds_checksum:
 		return null
 	if not _hydrate_placements(result, data, stage):
@@ -124,6 +132,9 @@ static func payload_sha256(data: BakedStageLayoutData) -> String:
 	_append_i64(feed, data.height_checksum)
 	_append_bytes(feed, data.target_mask)
 	_append_i64(feed, data.target_checksum)
+	_append_i64(feed, data.coverage_metric_version)
+	_append_f64(feed, data.total_target_surface_area)
+	_append_i64(feed, data.target_surface_area_checksum)
 	_append_string_array(feed, data.route_node_ids)
 	_append_v3_array(feed, data.route_node_positions)
 	_append_i32_array(feed, data.route_node_route_indices)
@@ -271,6 +282,11 @@ static func _valid_payload(data: BakedStageLayoutData) -> bool:
 			or data.footprint.size() != data.cell_count.x * data.cell_count.y \
 			or data.target_mask.size() != StageGenerationContract.REQUIRED_MASK_SIZE * StageGenerationContract.REQUIRED_MASK_SIZE \
 			or data.height_checksum == 0 or data.target_checksum == 0 \
+			or not TargetSurfaceCoverage.metadata_is_valid(
+				data.coverage_metric_version,
+				data.total_target_surface_area,
+				data.target_surface_area_checksum
+			) \
 			or data.terrain_seed != StageProgressionData.CANONICAL_TERRAIN_SEED \
 			or data.play_bounds_checksum != PlayBoundsSpec.new().checksum() \
 			or (not data.mechanism_loadout_indices.is_empty() and data.placement_checksum == 0) \
@@ -299,6 +315,8 @@ static func _valid_payload(data: BakedStageLayoutData) -> bool:
 
 static func _semantic_fields_are_finite(data: BakedStageLayoutData) -> bool:
 	if not data.local_bounds.position.is_finite() or not data.local_bounds.size.is_finite():
+		return false
+	if not is_finite(data.total_target_surface_area):
 		return false
 	for value in data.heights:
 		if not is_finite(value): return false

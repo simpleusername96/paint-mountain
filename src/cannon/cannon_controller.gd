@@ -2,8 +2,8 @@ class_name CannonController
 extends Node3D
 
 signal aim_changed(yaw_degrees: float, elevation_degrees: float, power_percent: float)
-signal aim_validity_changed(is_valid: bool)
 signal prediction_changed(prediction: TrajectoryPrediction)
+signal prediction_status_changed(status: StringName)
 
 @export var projectile_data: ProjectileData
 @export_range(0.0, 100.0, 1.0) var default_power: float = 68.0
@@ -56,16 +56,9 @@ func set_aim(
 	yaw_degrees = canonical.yaw_degrees
 	elevation_degrees = canonical.elevation_degrees
 	power_percent = float(canonical.power_percent)
-	var was_valid := is_aim_valid()
-	_prediction = null
-	_prediction_aim_key = &""
-	_prediction_wind_identity = &""
-	_prediction_launch_wind_tick = -1
-	_prediction_context_key = &""
-	if was_valid:
-		aim_validity_changed.emit(false)
 	_apply_visuals()
 	publish_current_aim()
+	prediction_status_changed.emit(prediction_status())
 
 
 func publish_current_aim() -> void:
@@ -79,20 +72,17 @@ func set_prediction(
 		launch_wind_tick: int = -1,
 		prediction_context_key: StringName = &""
 ) -> void:
-	var was_valid := is_aim_valid()
 	_prediction = value
 	_prediction_aim_key = prediction_aim_key if not prediction_aim_key.is_empty() else aim_key()
 	_prediction_wind_identity = wind_schedule_identity
 	_prediction_launch_wind_tick = launch_wind_tick
 	_prediction_context_key = prediction_context_key
 	prediction_changed.emit(_prediction)
-	var is_valid := is_aim_valid()
-	if was_valid != is_valid:
-		aim_validity_changed.emit(is_valid)
+	prediction_status_changed.emit(prediction_status())
 
 
 func current_prediction() -> TrajectoryPrediction:
-	return _prediction if prediction_matches_expected_context() else null
+	return _prediction
 
 
 func aim_key() -> StringName:
@@ -114,12 +104,8 @@ func expected_prediction_context_key() -> StringName:
 func expect_prediction_context(context_key: StringName) -> void:
 	if _expected_prediction_context_key == context_key:
 		return
-	var was_valid := is_aim_valid()
 	_expected_prediction_context_key = context_key
-	if not prediction_matches_expected_context():
-		prediction_changed.emit(null)
-	if was_valid:
-		aim_validity_changed.emit(false)
+	prediction_status_changed.emit(prediction_status())
 
 
 func prediction_wind_identity() -> StringName:
@@ -148,13 +134,22 @@ func prediction_status() -> StringName:
 
 
 func is_aim_valid() -> bool:
+	return canonical_aim_is_valid()
+
+
+func canonical_aim_is_valid() -> bool:
+	var aim := AimTuple.new(yaw_degrees, elevation_degrees, int(power_percent))
+	return aim.is_valid()
+
+
+func has_fireable_prediction() -> bool:
 	return prediction_status() == &"fireable"
 
 
 ## Compatibility preflight for low-level fixtures. Production Fire admission is
 ## owned by StageController; this method intentionally has no firing side effect.
 func request_fire() -> bool:
-	return input_enabled and projectile_data != null and is_aim_valid()
+	return input_enabled and projectile_data != null and canonical_aim_is_valid()
 
 
 func get_launch_origin() -> Vector3:

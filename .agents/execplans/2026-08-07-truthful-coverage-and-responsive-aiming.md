@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-07
 last_reviewed: 2026-08-07
 scope: surface-area coverage, target-paint legibility, contextual shortcut prompts, resolution-stable manual aim, advisory trajectory prediction, and stable Fire admission
@@ -331,7 +331,7 @@ solution work.
 
 ## Ordered Implementation Tasks
 
-### Task 1 - Record the superseding product contract
+### [x] Task 1 - Record the superseding product contract
 
 - Add the approved metric, advisory-prediction, open-miss Fire, contextual
   shortcut, and resolution-stable aim clauses to `docs/source-brief.md`.
@@ -342,7 +342,7 @@ solution work.
   present-tense claims that prediction readiness gates Fire or raw texels are
   the final coverage meaning.
 
-### Task 2 - Implement and persist surface-area coverage
+### [x] Task 2 - Implement and persist surface-area coverage
 
 - Add `src/paint/target_surface_coverage.gd` as the pure metric owner.
 - Extend the fixed-layout builder/data/codec/manifest and
@@ -357,7 +357,7 @@ solution work.
   as specified above. Preserve the v9 physical terrain identities while
   atomically promoting v10.
 
-### Task 3 - Make scoring legible in the world and HUD
+### [x] Task 3 - Make scoring legible in the world and HUD
 
 - Adjust the existing terrain shader so dry target, painted target, and painted
   non-target are distinguishable at gameplay distance while support surfaces
@@ -367,7 +367,7 @@ solution work.
 - Capture target and non-target paint together in Aim View before accepting
   contrast. Review Korean and English at 1280x720 and 1920x1080.
 
-### Task 4 - Decouple Fire and refactor prediction state
+### [x] Task 4 - Decouple Fire and refactor prediction state
 
 - Change `StageController.fire_readiness_snapshot()` to use only stage-rule
   admission. Remove prediction from its fireable boolean and readiness-change
@@ -380,7 +380,7 @@ solution work.
 - Keep the last complete preview while a new key is pending; publish pending
   styling without clearing the trajectory to null.
 
-### Task 5 - Make manual aim resolution-stable
+### [x] Task 5 - Make manual aim resolution-stable
 
 - Replace manual pointer scaling with `screen_relative` and add the unsnapped
   requested-angle accumulator.
@@ -390,7 +390,7 @@ solution work.
 - Preserve keyboard, wheel, Map View, Shot Follow return, focus, and replay
   behavior. Remove no legal yaw/elevation/power range.
 
-### Task 6 - Bound runtime trajectory work
+### [x] Task 6 - Bound runtime trajectory work
 
 - Refactor the current predictor into the single resumable job plus synchronous
   compatibility wrapper. Preserve current collision identity and endpoint-rest
@@ -403,7 +403,7 @@ solution work.
 - Add structural tests that count simulation steps and publications, not wall
   time, FPS, or profiler samples.
 
-### Task 7 - Add contextual shortcuts and remove hidden actions
+### [x] Task 7 - Add contextual shortcuts and remove hidden actions
 
 - Add the Theme keycap style and reusable hint component, then place the locked
   hints on Fire, Aim/Map, Return, Finish, Gear, pause Continue, and the aim/map
@@ -414,7 +414,7 @@ solution work.
 - Validate mouse hit regions, keyboard focus order, tooltip/accessibility text,
   and Korean/English fit without reducing required control heights.
 
-### Task 8 - Integrate, audit, and hand off
+### [x] Task 8 - Integrate, audit, and hand off
 
 - Add focused fixtures for weighted coverage, publication synchronization,
   legal-miss Fire, aim remainder/resolution behavior, prediction job bounds,
@@ -541,23 +541,29 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath $paintMou
 
 ## Progress
 
-- Read-only discovery is complete. Current code, active v9 layouts/specs,
-  implemented-status record, current release captures, prior audit, Godot 4.7
-  input/physics guidance, and Microsoft input-accessibility guidance were
-  reviewed.
-- Root causes are identified without FPS/timing instrumentation: projected-texel
-  weighting, visually identical target/non-target paint, split paint/coverage
-  publication cadence, resolution/remainder-sensitive aim input, null preview
-  invalidation, three-tick dynamic wind epochs, and prediction-owned Fire state.
-- No production code, resource, scene, catalog, save, replay, or test behavior has
-  been changed by this planning pass.
+- Tasks 1-8 are complete. Coverage metric 2, v10 fixed layouts, synchronized
+  publication, target/non-target paint classification, advisory prediction,
+  resolution-stable aim, sensitivity, and contextual keycaps are implemented.
+- The scheduler advances at most 24 prediction steps per fixed callback, owns
+  one active job plus one newest pending request, uses 12-tick aim nominations
+  and 30-tick wind buckets, and deduplicates unchanged 60 Hz wind HUD snapshots.
+- Focused coverage, catalog, paint, prediction, Fire, aim, shortcut, pause,
+  localization, observation, replay, persistence, mechanism, settlement, and
+  Shot Follow contracts passed without FPS/timing/profiler assertions.
+- The codebase quality audit found and corrected two stale paths: prediction
+  context changes no longer emit false mechanical-aim invalidity, and identical
+  wind snapshots no longer re-nominate an already owned prediction context. No
+  unresolved task-scope ownership or competing-authority finding remains.
+- `scripts/verify.ps1`, Windows release export, exported-build start, and five
+  native-size running-release captures passed with Godot 4.7.1. The implementing
+  agent inspected every capture and corrected English Aim-card localization and
+  the world-space pending-label scale before acceptance.
 
 ## Next Steps
 
-Execute Tasks 1-8 in order from this single active ExecPlan. Preserve the
-existing dirty files and unrelated evidence residue. Use focused structural
-checks while implementing; run the bounded final verification/export/rendered
-review only after all four user-facing problem families are integrated.
+No implementation task remains in this ExecPlan. Further balance or feel changes
+should start from user play against the v10 release rather than altering this
+completed metric, Fire, prediction, or input contract implicitly.
 
 ## Stop Conditions
 

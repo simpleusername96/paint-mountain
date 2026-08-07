@@ -19,8 +19,6 @@ signal replay_pause_requested(paused: bool)
 signal replay_restart_requested
 signal replay_exit_requested
 
-static var _first_session_hint_seen := false
-
 @onready var _top: TopStatusBar = %TopStatusBar
 @onready var _aim: AimControls = %AimControls
 @onready var _coverage: CoverageMeter = %CoverageMeter
@@ -34,13 +32,11 @@ static var _first_session_hint_seen := false
 @onready var _mechanism: MechanismInfoCard = %MechanismInfoCard
 @onready var _briefing: PanelContainer = %BriefingPanel
 @onready var _pause: PauseOverlay = %PauseOverlay
-@onready var _first_hint: PanelContainer = %FirstSessionHint
-@onready var _hint_timer: Timer = %HintTimer
+@onready var _context_line: Label = %ContextLine
 var _stage_data: StageData
 var _current_state := StageController.State.LOADING
 var _shots_remaining := 0
 var _replay_active := false
-var _hint_pending := false
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
@@ -102,7 +98,6 @@ func _ready() -> void:
 	_replay.hide()
 	_return_to_cannon.hide()
 	_connect_components()
-	_hint_timer.timeout.connect(func() -> void: _first_hint.visible = false)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
 
 
@@ -121,12 +116,6 @@ func configure(stage_data: StageData) -> void:
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
 	%BriefingObjective.text = tr(String(stage_data.objective_key))
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
-	if stage_data.stage_id == &"stage_01" and not _first_session_hint_seen:
-		_hint_pending = true
-		_first_hint.visible = false
-	else:
-		_hint_pending = false
-		_first_hint.visible = false
 	if stage_data.mechanism_loadout.is_empty():
 		_mechanism.hide_card()
 	else:
@@ -154,11 +143,6 @@ func set_fire_readiness(snapshot: Dictionary) -> void:
 
 func show_state(state: StageController.State) -> void:
 	_current_state = state
-	if state != StageController.State.AIMING:
-		# The first-session input hint belongs only to the aiming surface; leaving
-		# it over the live observation controls hides the ball and Fire affordance.
-		_first_hint.visible = false
-		_hint_timer.stop()
 	_replay.visible = _replay_active
 	_top.update_mode(state)
 	# The interaction toggle is the only mode label during the Board Phase.
@@ -186,11 +170,6 @@ func show_state(state: StageController.State) -> void:
 			_actions.focus_fire()
 		else:
 			_interaction.grab_focus()
-		if _hint_pending:
-			_hint_pending = false
-			_first_session_hint_seen = true
-			_first_hint.visible = true
-			_hint_timer.start()
 	elif state == StageController.State.RESULT and not _replay_active:
 		_result.focus_retry()
 	elif state == StageController.State.PAUSED and not _replay_active:
@@ -210,9 +189,6 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_current_camera_mode = mode
 	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW and not _replay_active
-	if mode == CameraDirector.Mode.FOLLOW:
-		_first_hint.visible = false
-		_hint_timer.stop()
 	var aiming_surface := _current_state == StageController.State.AIMING \
 			and not _replay_active and mode == CameraDirector.Mode.AIMING
 	_interaction.visible = aiming_surface
@@ -342,11 +318,10 @@ func _apply_interaction_presentation(update_focus: bool) -> void:
 			and _current_camera_mode == CameraDirector.Mode.AIMING
 	_aim.visible = aiming_surface and aim_locked
 	_actions.visible = aiming_surface and aim_locked
+	_context_line.visible = aiming_surface
+	_context_line.text = tr("hud.aim_context" if aim_locked else "hud.map_context")
 	if not aiming_surface:
 		return
-	if not aim_locked:
-		_first_hint.visible = false
-		_hint_timer.stop()
 	if not update_focus:
 		return
 	if aim_locked:

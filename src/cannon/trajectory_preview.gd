@@ -13,6 +13,8 @@ var _dot_multimesh: MultiMesh
 var _visible_sample_count := 0
 var _impact_marker: MeshInstance3D
 var _exit_marker: Node3D
+var _status_label: Label3D
+var _pending := false
 
 
 func _ready() -> void:
@@ -37,7 +39,10 @@ func configure(cannon: CannonController) -> void:
 	_cannon = cannon
 	if not _cannon.prediction_changed.is_connected(set_prediction):
 		_cannon.prediction_changed.connect(set_prediction)
+	if not _cannon.prediction_status_changed.is_connected(set_prediction_status):
+		_cannon.prediction_status_changed.connect(set_prediction_status)
 	set_prediction(_cannon.current_prediction())
+	set_prediction_status(_cannon.prediction_status())
 
 
 func set_prediction(prediction: TrajectoryPrediction) -> void:
@@ -47,6 +52,11 @@ func set_prediction(prediction: TrajectoryPrediction) -> void:
 
 func current_prediction() -> TrajectoryPrediction:
 	return _prediction
+
+
+func set_prediction_status(status: StringName) -> void:
+	_pending = status == &"pending"
+	_apply_pending_presentation()
 
 
 func visible_sample_count() -> int:
@@ -71,6 +81,7 @@ func refresh() -> void:
 	first_collision_position = _prediction.endpoint if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
 	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
+	_update_status_label(display_points)
 	_update_process_enabled()
 	if _prediction == null:
 		return
@@ -164,6 +175,47 @@ func _build_visuals() -> void:
 		bar.rotation_degrees.z = rotation_degrees
 		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_exit_marker.add_child(bar)
+	_status_label = Label3D.new()
+	_status_label.name = "PredictionStatus"
+	_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_status_label.pixel_size = 0.12
+	_status_label.font_size = 24
+	_status_label.outline_size = 4
+	_status_label.modulate = Color(0.84, 0.90, 1.0, 0.92)
+	_status_label.no_depth_test = true
+	_status_label.visible = false
+	add_child(_status_label)
+
+
+func _apply_pending_presentation() -> void:
+	if _dot_instances == null:
+		return
+	var fade := 0.48 if _pending else 0.0
+	_dot_instances.transparency = fade
+	_impact_marker.transparency = fade
+	for child in _exit_marker.get_children():
+		if child is GeometryInstance3D:
+			(child as GeometryInstance3D).transparency = fade
+	_update_status_label()
+
+
+func _update_status_label(
+		display_points: PackedVector3Array = PackedVector3Array()
+) -> void:
+	_status_label.visible = _pending and _prediction != null
+	if not _status_label.visible:
+		return
+	_status_label.text = tr("preview.updating")
+	var points := display_points
+	if points.is_empty():
+		points = _display_points(_prediction.sampled_points)
+	var anchor := _prediction.endpoint
+	if not points.is_empty():
+		var anchor_index := clampi(
+			roundi(float(points.size() - 1) * 0.64), 0, points.size() - 1
+		)
+		anchor = points[anchor_index]
+	_status_label.global_position = anchor + Vector3.UP * 1.4
 
 
 func _set_marker_scale(marker: Node3D, endpoint: Vector3) -> void:

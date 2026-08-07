@@ -21,7 +21,7 @@ func _initialize() -> void:
 		load(catalog.get_layout_path(stage.stage_id)) as BakedStageLayoutData,
 		stage
 	)
-	_assert(layout != null and layout.is_runtime_ready(), "Stage 03 must hydrate its fixed v9 layout")
+	_assert(layout != null and layout.is_runtime_ready(), "Stage 03 must hydrate its fixed v10 layout")
 	if layout != null:
 		var graph := layout.route_graph
 		_assert(graph.route_count() == 3, "the fixed Stage 03 graph must retain all three routes")
@@ -58,7 +58,7 @@ func _initialize() -> void:
 					"Stage 03 Splitter must retain three route witnesses"
 				)
 	if not _failed:
-		print("Stage 03 glyph route contract passed: fixed v9 graph and placement identities.")
+		print("Stage 03 glyph route contract passed: fixed v10 graph and placement identities.")
 	quit(1 if _failed else 0)
 
 

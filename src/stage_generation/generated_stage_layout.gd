@@ -32,6 +32,15 @@ var target_mask: PackedByteArray:
 var target_mask_checksum: int:
 	get:
 		return _target_mask_checksum
+var coverage_metric_version: int:
+	get:
+		return _coverage_metric_version
+var total_target_surface_area: float:
+	get:
+		return _total_target_surface_area
+var target_surface_area_checksum: int:
+	get:
+		return _target_surface_area_checksum
 var default_aim: AimTuple:
 	get:
 		if reachability_certificate != null:
@@ -42,6 +51,9 @@ var default_aim: AimTuple:
 
 var _target_mask := PackedByteArray()
 var _target_mask_checksum: int = 0
+var _coverage_metric_version: int = 0
+var _total_target_surface_area: float = 0.0
+var _target_surface_area_checksum: int = 0
 var _target_pixel_indices := PackedInt32Array()
 var _target_centroid_local_xz := Vector2(INF, INF)
 var _target_pixel_nearest_centroid: int = -1
@@ -66,6 +78,31 @@ func is_valid() -> bool:
 			and top_topology.matches_height_grid(cell_count, local_bounds, heights) \
 			and route_graph != null and route_graph.is_valid() \
 			and play_bounds != null and play_bounds.is_valid()
+
+
+func install_target_surface_coverage(
+		metric_version: int,
+		total_surface_area: float,
+		area_checksum: int
+) -> bool:
+	if _coverage_metric_version != 0 \
+			or not TargetSurfaceCoverage.metadata_is_valid(
+				metric_version, total_surface_area, area_checksum
+			):
+		return false
+	_coverage_metric_version = metric_version
+	_total_target_surface_area = total_surface_area
+	_target_surface_area_checksum = area_checksum
+	return true
+
+
+func has_valid_target_surface_coverage() -> bool:
+	return has_valid_target_mask() \
+			and TargetSurfaceCoverage.metadata_is_valid(
+				_coverage_metric_version,
+				_total_target_surface_area,
+				_target_surface_area_checksum
+			)
 
 
 func install_target_mask(bytes: PackedByteArray, mask_checksum: int) -> bool:
@@ -119,6 +156,7 @@ func has_valid_target_mask() -> bool:
 
 func is_certified() -> bool:
 	if not is_valid() or not has_valid_target_mask() \
+			or not has_valid_target_surface_coverage() \
 			or reachability_certificate == null or not reachability_certificate.is_valid():
 		return false
 	# DirectReachabilityCertificate validates primitive witness indices but cannot
@@ -159,6 +197,7 @@ func is_runtime_ready() -> bool:
 	if _runtime_readiness_verified:
 		return true
 	if not is_valid() or not has_valid_target_mask() \
+			or not has_valid_target_surface_coverage() \
 			or not _default_witness_matches_layout() \
 			or not _summit_witness_matches_layout():
 		return false
@@ -172,6 +211,7 @@ func runtime_readiness_diagnostic() -> Dictionary:
 	return {
 		"layout_valid": is_valid(),
 		"target_valid": has_valid_target_mask(),
+		"coverage_metadata_valid": has_valid_target_surface_coverage(),
 		"default_matches": _default_witness_matches_layout(),
 		"summit_matches": _summit_witness_matches_layout(),
 		"certificate_valid": reachability_certificate == null or is_certified(),
@@ -191,6 +231,7 @@ func matches_stage_identity(stage: StageData) -> bool:
 			and terrain_seed == expected_seed \
 			and checksum != 0 \
 			and target_mask_checksum != 0 \
+			and has_valid_target_surface_coverage() \
 			and route_graph != null \
 			and route_graph.node_by_id(GeneratedRouteNode.summit_id(stage.stage_id)) != null
 
@@ -225,7 +266,12 @@ func copy_for_runtime() -> GeneratedStageLayout:
 	for placement in decoration_placements:
 		result.decoration_placements.append(placement)
 	if not result.install_footprint(_footprint_cells) \
-			or not result.install_target_mask(_target_mask, _target_mask_checksum):
+			or not result.install_target_mask(_target_mask, _target_mask_checksum) \
+			or not result.install_target_surface_coverage(
+				_coverage_metric_version,
+				_total_target_surface_area,
+				_target_surface_area_checksum
+			):
 		return null
 	return result
 

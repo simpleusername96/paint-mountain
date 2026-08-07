@@ -40,6 +40,13 @@ theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
 theme_override_font_sizes/font_size = 46
 text = "75.0%"
 
+[node name="CoverageExplanation" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudCaption"
+text = "result.coverage_explanation"
+autowrap_mode = 2
+
 [node name="Stars" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2

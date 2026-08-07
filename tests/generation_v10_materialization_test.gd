@@ -1,0 +1,111 @@
+extends SceneTree
+
+const V9_ROOT := "res://resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957"
+
+var _failed := false
+
+
+func _initialize() -> void:
+	call_deferred("_run_checks")
+
+
+func _run_checks() -> void:
+	var previous := load("%s/catalog.tres" % V9_ROOT) as StageCatalogData
+	var current := load("res://resources/stages/catalog.tres") as StageCatalogData
+	_assert_true(previous != null and current != null, "both catalog generations must load")
+	if previous == null or current == null:
+		quit(1)
+		return
+	_assert_true(
+		previous.stages.size() == StageProgressionData.STAGE_COUNT \
+				and current.stages.size() == StageProgressionData.STAGE_COUNT,
+		"v9 and v10 must both contain all thirty stages"
+	)
+	for index in range(mini(previous.stages.size(), current.stages.size())):
+		_compare_stage(index, previous, current)
+	_compare_witness_manifests(current)
+	if not _failed:
+		print("Generation v10 materialization passed: all v9 physical, target, cannon, and witness identities are preserved.")
+	quit(1 if _failed else 0)
+
+
+func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalogData) -> void:
+	var stage_id := "stage_%02d" % (index + 1)
+	var old_stage := previous.stages[index] as StageData
+	var new_stage := current.stages[index] as StageData
+	var old_layout := load("%s/layouts/%s_layout.res" % [V9_ROOT, stage_id]) \
+			as BakedStageLayoutData
+	var new_layout := load(current.layout_paths[index]) as BakedStageLayoutData
+	_assert_true(
+		old_stage != null and new_stage != null \
+				and old_layout != null and new_layout != null,
+		"%s resources must load" % stage_id
+	)
+	if old_stage == null or new_stage == null or old_layout == null or new_layout == null:
+		return
+	var physical_layout_equal := old_layout.terrain_seed == new_layout.terrain_seed \
+			and old_layout.cell_count == new_layout.cell_count \
+			and old_layout.local_bounds == new_layout.local_bounds \
+			and old_layout.heights == new_layout.heights \
+			and old_layout.footprint == new_layout.footprint \
+			and old_layout.height_checksum == new_layout.height_checksum \
+			and old_layout.target_mask == new_layout.target_mask \
+			and old_layout.target_checksum == new_layout.target_checksum \
+			and old_layout.route_node_ids == new_layout.route_node_ids \
+			and old_layout.route_node_positions == new_layout.route_node_positions \
+			and old_layout.route_edge_ids == new_layout.route_edge_ids \
+			and old_layout.play_bounds_checksum == new_layout.play_bounds_checksum \
+			and old_layout.placement_checksum == new_layout.placement_checksum \
+			and old_layout.mechanism_anchor_ids == new_layout.mechanism_anchor_ids \
+			and old_layout.mechanism_transforms == new_layout.mechanism_transforms \
+			and old_layout.decoration_model_ids == new_layout.decoration_model_ids \
+			and old_layout.decoration_local_xz == new_layout.decoration_local_xz
+	_assert_true(physical_layout_equal, "%s v10 physical layout must match v9" % stage_id)
+	_assert_true(
+		old_stage.terrain_center.is_equal_approx(new_stage.terrain_center) \
+				and old_stage.terrain_size.is_equal_approx(new_stage.terrain_size) \
+				and old_stage.cannon_transform.is_equal_approx(new_stage.cannon_transform),
+		"%s terrain and cannon transforms must match v9" % stage_id
+	)
+	_assert_true(
+		new_layout.schema_version == BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION \
+				and TargetSurfaceCoverage.metadata_is_valid(
+					new_layout.coverage_metric_version,
+					new_layout.total_target_surface_area,
+					new_layout.target_surface_area_checksum
+				),
+		"%s must add valid metric-2 metadata" % stage_id
+	)
+	var corrupt := new_layout.duplicate(true) as BakedStageLayoutData
+	corrupt.total_target_surface_area += 1.0
+	_assert_true(
+		StageLayoutBakeCodec.hydrate(corrupt, new_stage) == null,
+		"%s corrupt surface total must fail closed" % stage_id
+	)
+
+
+func _compare_witness_manifests(current: StageCatalogData) -> void:
+	var old_manifest := _read_json("%s/manifest.json" % V9_ROOT)
+	var new_manifest := _read_json(current.bundle_manifest_path)
+	_assert_true(
+		old_manifest.get("default_witnesses", []) \
+				== new_manifest.get("default_witnesses", []),
+		"default bounded witness identities must match v9"
+	)
+	_assert_true(
+		old_manifest.get("summit_witnesses", []) \
+				== new_manifest.get("summit_witnesses", []),
+		"summit bounded witness identities must match v9"
+	)
+
+
+func _read_json(path: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed as Dictionary if parsed is Dictionary else {}
+
+
+func _assert_true(condition: bool, message: String) -> void:
+	if condition:
+		return
+	_failed = true
+	push_error("Generation v10 materialization failed: %s" % message)

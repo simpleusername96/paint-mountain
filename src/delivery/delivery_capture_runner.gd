@@ -11,6 +11,7 @@ var _capture_stage: StringName = &"stage_01"
 var _output_path: String = ""
 var _background_capture := false
 var _capture_size := BACKGROUND_CAPTURE_SIZE
+var _capture_language: StringName = &"ko"
 var _failed: bool = false
 
 
@@ -24,6 +25,10 @@ func _ready() -> void:
 			_output_path = argument.trim_prefix("--capture-output=")
 		elif argument.begins_with("--capture-size="):
 			_capture_size = _parse_capture_size(argument.trim_prefix("--capture-size="))
+		elif argument.begins_with("--capture-language="):
+			_capture_language = StringName(
+				argument.trim_prefix("--capture-language=")
+			)
 		elif argument == "--capture-background":
 			_background_capture = true
 	if _screen.is_empty() or _output_path.is_empty():
@@ -83,6 +88,8 @@ func _run_capture() -> void:
 			await _capture_next_aim(false)
 		"next_aim_ready":
 			await _capture_next_aim(true)
+		"target_nontarget_paint":
+			await _capture_target_and_nontarget_paint(_capture_stage)
 		"two_family":
 			await _capture_two_family()
 		"scale_contact":
@@ -191,13 +198,15 @@ func _start_stage(stage_id: StringName, begin_aiming: bool) -> Node3D:
 
 
 func _initialize_capture_game_state(game_state: GameState, data: Dictionary) -> void:
+	var settings := Dictionary(data.get("settings", {})).duplicate(true)
+	settings["language"] = String(_capture_language)
+	settings["language_user_selected"] = true
 	if _background_capture:
 		# SettingsScreen reapplies the initialized display preference when it opens.
 		# Keep that preference aligned with the requested off-screen capture size.
-		var settings := Dictionary(data.get("settings", {})).duplicate(true)
 		settings["fullscreen"] = false
 		settings["resolution"] = "%dx%d" % [_capture_size.x, _capture_size.y]
-		data["settings"] = settings
+	data["settings"] = settings
 	game_state.initialize_from_data(data)
 
 
@@ -228,8 +237,7 @@ func _capture_wind_aiming(stage_id: StringName) -> void:
 	if wind.current_snapshot() == null:
 		_fail_capture("wind aiming capture did not expose a current wind snapshot")
 		return
-	# Keep the first-session hint honest, then capture the stable current HUD.
-	await get_tree().create_timer(4.2).timeout
+	await get_tree().process_frame
 
 
 func _capture_wind_flag(stage_id: StringName, strong: bool) -> void:
@@ -240,9 +248,7 @@ func _capture_wind_flag(stage_id: StringName, strong: bool) -> void:
 	if snapshot == null:
 		_fail_capture("could not find the requested deterministic crosswind snapshot")
 		return
-	# Match normal Aim captures: the one-time input hint must leave before the
-	# flag and fixed HUD are judged together.
-	await get_tree().create_timer(4.2).timeout
+	await get_tree().process_frame
 	var flag := gameplay.get_node("CannonWindFlag") as CannonWindFlag
 	if not flag.displayed_direction().is_equal_approx(snapshot.push_direction()) \
 			or not is_equal_approx(flag.displayed_strength(), snapshot.normalized_strength):
@@ -497,15 +503,110 @@ func _capture_next_aim(wait_until_ready: bool) -> void:
 	var changed_yaw := cannon.yaw_degrees + 7.0
 	controller.set_aim(changed_yaw, cannon.elevation_degrees, cannon.power_percent)
 	if not wait_until_ready:
-		# Capture immediately after the input invalidates the old prediction. The
-		# short delivery hold lets the real HUD render the PENDING readiness
-		# surface before the coalesced predictor publishes the new key.
+		# Keep the last complete arc visible while the world preview truthfully
+		# shows its updating state. Fire admission must remain unchanged.
 		gameplay.hold_prediction_refresh_for_delivery()
 		await get_tree().process_frame
+		if cannon.prediction_status() != &"pending" \
+				or not controller.fire_readiness_snapshot().fireable:
+			_fail_capture("pending preview capture changed legal Fire readiness")
 		return
 	await _wait_for_cannon_prediction(cannon)
-	if not cannon.is_aim_valid() or not controller.fire_readiness_snapshot().fireable:
-		_fail_capture("changed aim did not become fire-ready")
+	if not cannon.prediction_matches_expected_context() \
+			or not controller.fire_readiness_snapshot().fireable:
+		_fail_capture("changed aim did not publish its newest advisory preview")
+
+
+func _capture_target_and_nontarget_paint(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var layout := gameplay.generated_layout() as GeneratedStageLayout
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var paint := gameplay.get_node("PaintSystem") as PaintSystem
+	var target_bytes := paint.target_bytes_read_only()
+	var target_local := _nearest_mask_surface_local(
+		layout,
+		target_bytes,
+		true,
+		layout.target_centroid_local_xz(),
+		0.0
+	)
+	var nontarget_local := _nearest_mask_surface_local(
+		layout, target_bytes, false, target_local, 9.0
+	)
+	if not target_local.is_finite() or not nontarget_local.is_finite():
+		_fail_capture("target/non-target capture could not find two playable patches")
+		return
+	var identity := paint.authoritative_top_surface_identity()
+	for index in range(2):
+		var local_xz := target_local if index == 0 else nontarget_local
+		var sample := layout.surface_sample_at_local(local_xz.x, local_xz.y, false)
+		var world_point := terrain.to_global(sample.point as Vector3)
+		var world_normal := (
+			terrain.global_transform.basis.inverse().transposed()
+			* (sample.normal as Vector3)
+		).normalized()
+		var command := RadialPaintMark.new(
+			Engine.get_physics_frames(),
+			index,
+			index,
+			index,
+			world_point,
+			world_normal,
+			4.0,
+			identity.collider_rid as RID,
+			StringName(identity.contact_owner_id),
+			StringName(identity.contact_shape_id),
+			int(identity.collider_shape_index),
+			RadialPaintMark.Kind.IMPACT,
+			index + 1
+		)
+		if not paint.queue_radial_paint_mark(command):
+			_fail_capture("target/non-target capture rejected a canonical paint mark")
+			return
+	paint.drain_pending_commands()
+	paint.force_flush_paint_texture()
+	var painted_bytes := paint.paint_bytes_read_only()
+	var painted_nontarget_pixels := 0
+	for pixel_index in range(painted_bytes.size()):
+		if painted_bytes[pixel_index] >= 128 and target_bytes[pixel_index] < 128:
+			painted_nontarget_pixels += 1
+	if paint.painted_target_pixels() <= 0 or painted_nontarget_pixels <= 0:
+		_fail_capture("target/non-target capture did not publish both paint classes")
+		return
+	await get_tree().process_frame
+
+
+func _nearest_mask_surface_local(
+		layout: GeneratedStageLayout,
+		target_bytes: PackedByteArray,
+		desired_target: bool,
+		reference: Vector2,
+		minimum_distance: float
+) -> Vector2:
+	var best := Vector2(INF, INF)
+	var best_distance := INF
+	for pixel_y in range(2, PaintSystem.MASK_SIZE - 2, 2):
+		for pixel_x in range(2, PaintSystem.MASK_SIZE - 2, 2):
+			var pixel_index := pixel_y * PaintSystem.MASK_SIZE + pixel_x
+			if (target_bytes[pixel_index] >= 128) != desired_target:
+				continue
+			var normalized := Vector2(
+				(float(pixel_x) + 0.5) / float(PaintSystem.MASK_SIZE),
+				(float(pixel_y) + 0.5) / float(PaintSystem.MASK_SIZE)
+			)
+			var local_xz := layout.local_bounds.position \
+					+ normalized * layout.local_bounds.size
+			var distance := local_xz.distance_to(reference)
+			if distance < minimum_distance or distance >= best_distance \
+					or layout.surface_sample_at_local(
+						local_xz.x, local_xz.y, false
+					).is_empty():
+				continue
+			best = local_xz
+			best_distance = distance
+	return best
 
 
 func _capture_two_family() -> void:
@@ -562,9 +663,11 @@ func _capture_scale_contact() -> void:
 
 func _wait_for_cannon_prediction(cannon: CannonController) -> void:
 	var budget := 90
-	while not cannon.is_aim_valid() and budget > 0:
-		await get_tree().process_frame
+	while not cannon.prediction_matches_expected_context() and budget > 0:
+		await get_tree().physics_frame
 		budget -= 1
+	if budget <= 0:
+		_fail_capture("advisory prediction did not settle inside the capture budget")
 
 
 func _capture_continuous_paint() -> void:

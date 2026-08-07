@@ -252,7 +252,7 @@ func _install_target_mask(layout: GeneratedStageLayout) -> void:
 	target_mask.resize(PaintSystem.MASK_SIZE * PaintSystem.MASK_SIZE)
 	target_mask.fill(255)
 	_assert_true(
-		layout.install_target_mask(target_mask, TargetMaskRasterizer.byte_checksum(target_mask)),
+		TerrainTestFixtureFactory.install_target_mask_with_coverage(layout, target_mask),
 		"mechanism fixture target mask must install"
 	)
 	layout.checksum = 0x12345678

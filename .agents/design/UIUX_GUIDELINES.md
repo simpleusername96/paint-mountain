@@ -94,8 +94,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
   aim or preview. Mode changes and terrain refocus must acknowledge without a
-  visible stall. The first-session hint and toggle tooltip state the shortcut
-  and the active mouse behavior.
+  visible stall. Persistent compact keycaps and the context line expose the
+  shortcut and active mouse behavior; no timed first-session hint is used.
 - Accepted Fire enters Shot Follow for the newly launched root paintball. Hide
   controls that imply in-flight steering and show one compact focusable
   `대포로 돌아가기` / `RETURN TO CANNON` action at a screen edge. Tab performs
@@ -128,10 +128,11 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Time, resident-ball activity, wind, camera presentation mode, and Finish availability
   are displayed from their authoritative owners. The HUD does not run a second
   timer, wind schedule, or camera/input state machine.
-- Target Coverage means unique painted Target Area texels divided by all Target
-  Area texels. Valid non-target top paint remains visible but is not scored; the
-  dry Target Area cue and HUD copy `목표 영역`/`TARGET AREA` make that boundary
-  clear. Its percentage, rail, and target marker must agree.
+- Target Coverage means unique painted physical Target Area surface divided by
+  its total physical surface. Valid non-target top paint remains visible but is
+  lighter and less saturated and is not scored; the dry Target Area cue and HUD
+  copy `목표 영역`/`TARGET AREA` make that boundary clear. Its percentage, rail,
+  target marker, and visible paint publication must agree.
 - Shots, target, angle, power, and Fire validity update from their authoritative
   owners without duplicated formulas.
 - Icons supplement meaning. Rare, destructive, or menu actions retain visible
@@ -169,6 +170,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
+- `HudKeycap` is the Theme-owned compact keyboard-legend role. Reusable
+  `ShortcutHint` instances show Space on Fire, Tab on Aim/Map and Shot Follow
+  return, F on Finish, and Esc on Gear and Pause Continue without owning input.
 - Keyboard focus uses the shared visible 2 px accent treatment.
 - Align rows by a deliberate center, baseline, or edge. Keep label-to-value gaps
   tighter than gaps between component groups.

@@ -23,6 +23,8 @@ func _ready() -> void:
 
 
 func refresh_locale() -> void:
+	$Content/ElevationCaption.text = tr("hud.angle")
+	$Content/PowerCaption.text = tr("hud.power")
 	%PowerDecrease.tooltip_text = tr("hud.power_decrease")
 	%PowerIncrease.tooltip_text = tr("hud.power_increase")
 

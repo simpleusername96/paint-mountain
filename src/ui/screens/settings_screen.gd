@@ -15,6 +15,7 @@ func _ready() -> void:
 		&"camera_shake": %CameraShake,
 		&"reduced_motion": %ReducedMotion,
 		&"trajectory_preview": %Trajectory,
+		&"aim_sensitivity_percent": %AimSensitivity,
 		&"fullscreen": %Fullscreen,
 		&"resolution": %Resolution,
 		&"quality": %Quality,
@@ -51,6 +52,9 @@ func _add_options(option: OptionButton, values: Array[String]) -> void:
 func _connect_controls() -> void:
 	for key in [&"master_volume", &"music_volume", &"sfx_volume"]:
 		(_controls[key] as HSlider).value_changed.connect(func(value: float) -> void: _store(key, value / 100.0))
+	(%AimSensitivity as HSlider).value_changed.connect(
+		func(value: float) -> void: _store(&"aim_sensitivity_percent", roundi(value))
+	)
 	for key in [&"camera_shake", &"reduced_motion", &"trajectory_preview", &"fullscreen"]:
 		(_controls[key] as CheckButton).toggled.connect(func(value: bool) -> void: _store(key, value))
 	for key in [&"resolution", &"quality", &"language"]:
@@ -65,7 +69,8 @@ func _sync_from_state() -> void:
 		var control: Control = _controls[key]
 		var value = settings.get(String(key))
 		if control is HSlider:
-			control.value = float(value) * 100.0
+			control.value = float(value) if key == &"aim_sensitivity_percent" \
+					else float(value) * 100.0
 		elif control is CheckButton:
 			control.button_pressed = bool(value)
 		elif control is OptionButton:
@@ -128,6 +133,9 @@ func _refresh_language_option_labels() -> void:
 
 func _sync_display_state_from_settings() -> void:
 	var settings: Dictionary = get_node("/root/GameState").settings
+	%AimSensitivityValue.text = "%d%%" % clampi(
+		int(settings.get("aim_sensitivity_percent", 100)), 50, 150
+	)
 	_refresh_language_option_labels()
 	for index in range(%Quality.item_count):
 		%Quality.set_item_text(index, tr("settings.quality_%s" % %Quality.get_item_metadata(index)))

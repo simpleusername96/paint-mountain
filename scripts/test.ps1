@@ -14,11 +14,13 @@ if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) {
 $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path
 
 $ordinaryTests = @(
-    'prediction_scheduler_test.gd',
-    'fixed_mountain_catalog_test.gd',
+	'prediction_scheduler_test.gd',
+	'target_surface_coverage_test.gd',
+	'coverage_publication_test.gd',
+	'fixed_mountain_catalog_test.gd',
     'stage_generation_test.gd',
     'stage30_progression_test.gd',
-    'generation_v9_materialization_test.gd',
+	'generation_v10_materialization_test.gd',
     'baked_stage_layout_test.gd',
     'stage_layout_repository_test.gd',
     'play_bounds_test.gd',
@@ -38,7 +40,8 @@ $ordinaryTests = @(
     'phase4_state_test.gd',
     'phase5_mechanism_test.gd',
     'phase6_content_test.gd',
-    'aim_interaction_test.gd',
+	'aim_interaction_test.gd',
+	'stage10_prediction_readiness_test.gd',
     'shot_observation_test.gd',
     'camera_safety_test.gd',
     'phase8_aiming_composition_test.gd',
@@ -50,8 +53,9 @@ $ordinaryTests = @(
     'phase7_user_qa_contract_test.gd',
     'phase8_hud_truth_test.gd',
     'localization_ui_test.gd',
-    'shot_feedback_test.gd',
-    'replay_recorder_v9_test.gd',
+	'shot_feedback_test.gd',
+	'shortcut_prompt_test.gd',
+	'replay_recorder_v10_test.gd',
     'replay_presentation_test.gd',
     'phase8_debug_test.gd'
 )
@@ -65,7 +69,9 @@ function Invoke-GodotTest {
     )
 
     Write-Host "Running $ScriptName..."
-    $arguments = @('--headless', '--path', $projectRoot) + $EngineArguments + @('--script', "res://tests/$ScriptName")
+	$arguments = @(
+		'--headless', '--path', $projectRoot, '--quit-after', '7200'
+	) + $EngineArguments + @('--script', "res://tests/$ScriptName")
     if ($UserArguments.Count -gt 0) {
         $arguments += '--'
         $arguments += $UserArguments

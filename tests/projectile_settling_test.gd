@@ -395,7 +395,7 @@ func _install_full_target_mask(layout: GeneratedStageLayout) -> void:
 	target_mask.resize(SURFACE_TUNING.mask_size * SURFACE_TUNING.mask_size)
 	target_mask.fill(255)
 	_assert_true(
-		layout.install_target_mask(target_mask, TargetMaskRasterizer.byte_checksum(target_mask)),
+		TerrainTestFixtureFactory.install_target_mask_with_coverage(layout, target_mask),
 		"fixture target mask must install once"
 	)
 

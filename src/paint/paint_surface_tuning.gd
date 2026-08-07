@@ -1,7 +1,7 @@
 class_name PaintSurfaceTuning
 extends Resource
 
-const CONTRACT_VERSION := 4
+const CONTRACT_VERSION := 5
 
 @export_range(1, 2048, 1) var mask_size: int = 512
 @export_range(1, 255, 1) var painted_threshold_byte: int = 128

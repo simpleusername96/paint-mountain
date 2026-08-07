@@ -17,7 +17,11 @@ func _run() -> void:
 		"write":
 			var data: Dictionary = save_system.default_data()
 			data.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
-			data.best_results = {"split_ridge": {"coverage": 77.921, "stars": 1}}
+			data.best_results = {"split_ridge": {
+				"coverage": 77.921,
+				"stars": 1,
+				"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
+			}}
 			data.settings.master_volume = 0.43
 			data.settings.quality = "high"
 			data.settings.language = "en"
@@ -31,14 +35,16 @@ func _run() -> void:
 			quit(0)
 		_:
 			var loaded: Dictionary = save_system.load_data(TEST_PATH)
-			var passed: bool = loaded.unlocked_stages.size() == 3 \
+			var passed: bool = not loaded.has("unlocked_stages") \
 					and is_equal_approx(float(loaded.best_results.split_ridge.coverage), 77.921) \
+					and int(loaded.best_results.split_ridge.coverage_metric_version) \
+							== TargetSurfaceCoverage.METRIC_VERSION \
 					and is_equal_approx(float(loaded.settings.master_volume), 0.43) \
 					and loaded.settings.quality == "high" \
 					and loaded.settings.language == "en" \
 					and loaded.settings.language_user_selected
 			if not passed:
-				push_error("Cross-process save did not preserve unlocks, best result, and settings.")
+				push_error("Cross-process save did not preserve metric-2 best result and settings.")
 			else:
 				print("Phase 8 persistence read passed across a fresh process.")
 			quit(0 if passed else 1)

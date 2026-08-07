@@ -53,15 +53,68 @@ func _check_aim_and_inspection_input(gameplay: Node) -> void:
 	)
 
 	cannon.set_aim(0.0, 38.0, 50.0)
+	var interaction_states: Array[bool] = []
+	aim_input.aim_interaction_changed.connect(
+		func(active: bool) -> void: interaction_states.append(active)
+	)
 	var before_click := _aim(cannon)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
 	_assert_aim_unchanged(cannon, before_click, "a click without dragging must preserve aim")
+	_assert_true(
+		interaction_states == [true, false],
+		"pointer press/release must expose one interaction interval to prediction scheduling"
+	)
+
+	# Four motions that are each too small for the canonical 0.1-degree step must
+	# retain their shared remainder and equal one combined physical motion.
+	cannon.set_aim(0.0, 38.0, 50.0)
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
+	for _index in range(4):
+		await _push_aim_motion(Vector2(0.1, 0.0))
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
+	var accumulated_yaw := cannon.yaw_degrees
+	cannon.set_aim(0.0, 38.0, 50.0)
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
+	await _push_aim_motion(Vector2(0.4, 0.0))
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
+	_assert_true(
+		is_equal_approx(cannon.yaw_degrees, accumulated_yaw) \
+				and accumulated_yaw > 0.0,
+		"sub-step pointer motion must equal one combined motion instead of being discarded"
+	)
+
+	# screen_relative is already physical motion. Changing the viewport must not
+	# add a second scaling factor.
+	root.size = Vector2i(1280, 720)
+	cannon.set_aim(0.0, 38.0, 50.0)
+	await _perform_aim_drag(Vector2(10.0, 0.0))
+	var yaw_1280 := cannon.yaw_degrees
+	root.size = Vector2i(1920, 1080)
+	cannon.set_aim(0.0, 38.0, 50.0)
+	await _perform_aim_drag(Vector2(10.0, 0.0))
+	var yaw_1920 := cannon.yaw_degrees
+	_assert_true(
+		is_equal_approx(yaw_1280, yaw_1920),
+		"equal physical screen motion must produce equal aim at both resolutions"
+	)
+	root.size = Vector2i(1280, 720)
+	var game_state := root.get_node("/root/GameState") as GameState
+	game_state.update_setting(&"aim_sensitivity_percent", 50, false)
+	cannon.set_aim(0.0, 38.0, 50.0)
+	await _perform_aim_drag(Vector2(10.0, 0.0))
+	_assert_true(
+		is_equal_approx(cannon.yaw_degrees, 0.8) \
+				and aim_input.sensitivity_percent() == 50,
+		"50% sensitivity must scale pointer aim only"
+	)
+	game_state.update_setting(&"aim_sensitivity_percent", 100, false)
 
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
 	var aim_drag := InputEventMouseMotion.new()
 	aim_drag.position = Vector2(680, 300)
 	aim_drag.relative = Vector2(40, -20)
+	aim_drag.screen_relative = Vector2(40, -20)
 	aim_drag.button_mask = MOUSE_BUTTON_MASK_LEFT
 	Input.parse_input_event(aim_drag)
 	await process_frame
@@ -99,6 +152,7 @@ func _check_aim_and_inspection_input(gameplay: Node) -> void:
 	var orbit_drag := InputEventMouseMotion.new()
 	orbit_drag.position = Vector2(700, 330)
 	orbit_drag.relative = Vector2(60, 10)
+	orbit_drag.screen_relative = Vector2(60, 10)
 	orbit_drag.button_mask = MOUSE_BUTTON_MASK_LEFT
 	Input.parse_input_event(orbit_drag)
 	await physics_frame
@@ -152,6 +206,21 @@ func _push_mouse_button(position: Vector2, button_index: MouseButton, pressed: b
 	event.pressed = pressed
 	Input.parse_input_event(event)
 	await process_frame
+
+
+func _push_aim_motion(screen_delta: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.relative = screen_delta
+	motion.screen_relative = screen_delta
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	Input.parse_input_event(motion)
+	await process_frame
+
+
+func _perform_aim_drag(screen_delta: Vector2) -> void:
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
+	await _push_aim_motion(screen_delta)
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
 
 
 func _assert_aim_unchanged(cannon: CannonController, expected: Vector3, message: String) -> void:

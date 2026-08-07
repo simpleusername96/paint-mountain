@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/pause_overlay.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="2_hint"]
 
 [node name="PauseOverlay" type="Control"]
 layout_mode = 3
@@ -55,6 +56,21 @@ custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "ui.resume"
+
+[node name="ResumeShortcut" parent="Center/Panel/Margin/Column/Resume" instance=ExtResource("2_hint")]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -54.0
+offset_top = -11.0
+offset_right = -10.0
+offset_bottom = 11.0
+grow_horizontal = 0
+grow_vertical = 2
+key_text = "Esc"
 
 [node name="Restart" type="Button" parent="Center/Panel/Margin/Column"]
 unique_name_in_owner = true

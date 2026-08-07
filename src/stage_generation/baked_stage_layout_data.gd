@@ -1,7 +1,7 @@
 class_name BakedStageLayoutData
 extends Resource
 
-const BAKED_LAYOUT_SCHEMA_VERSION := 2
+const BAKED_LAYOUT_SCHEMA_VERSION := 3
 
 @export_storage var schema_version := BAKED_LAYOUT_SCHEMA_VERSION
 @export_storage var payload_sha256 := ""
@@ -16,6 +16,9 @@ const BAKED_LAYOUT_SCHEMA_VERSION := 2
 @export_storage var height_checksum := 0
 @export_storage var target_mask := PackedByteArray()
 @export_storage var target_checksum := 0
+@export_storage var coverage_metric_version := 0
+@export_storage var total_target_surface_area := 0.0
+@export_storage var target_surface_area_checksum := 0
 @export_storage var route_node_ids: Array[StringName] = []
 @export_storage var route_node_positions := PackedVector3Array()
 @export_storage var route_node_route_indices := PackedInt32Array()

@@ -26,8 +26,11 @@ func _run() -> void:
 	var hud_root: Control = gameplay.get_node("HUD/HUDRoot")
 	_assert_true(controller.begin_aiming(), "feedback fixture must enter aiming")
 	await process_frame
-	_assert_true(hud_root.get_node("FirstSessionHint").visible and is_equal_approx(hud_root.get_node("FirstSessionHint/HintTimer").wait_time, 4.0), "Stage 1 must show one four-second aiming hint")
-	var hint := hud_root.get_node("FirstSessionHint") as Control
+	_assert_true(
+		hud_root.get_node_or_null("FirstSessionHint") == null,
+		"obsolete four-second help must be removed after persistent prompts exist"
+	)
+	var hint := hud_root.get_node("ContextLine") as Control
 	var fire := hud_root.get_node("ActionButtons/FireButton") as Button
 	var aim_controls := hud_root.get_node("AimControls") as Control
 	var coverage_panel := hud_root.get_node("CoverageMeter") as Control
@@ -35,7 +38,7 @@ func _run() -> void:
 			not hint.get_global_rect().intersects(fire.get_global_rect()) \
 					and not hint.get_global_rect().intersects(aim_controls.get_global_rect()) \
 					and not hint.get_global_rect().intersects(coverage_panel.get_global_rect()),
-			"first-session help must remain in the left rail without covering Fire, aim controls, or coverage"
+			"persistent aim context must remain clear of Fire, aim controls, and coverage"
 	)
 	var power_decrease := hud_root.get_node("AimControls/Content/PowerDecrease") as Button
 	var power_increase := hud_root.get_node("AimControls/Content/PowerIncrease") as Button
@@ -57,16 +60,19 @@ func _run() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
-		interaction_control.visible and "맵 둘러보기" in interaction_control.text \
+		interaction_control.visible and "지도 보기" in interaction_control.text \
 				and not hud_root.get_node("AimControls").visible \
-				and not hud_root.get_node("ActionButtons").visible,
+				and not hud_root.get_node("ActionButtons").visible \
+				and hud_root.get_node("ContextLine").text == "드래그 회전 · 휠 확대",
 		"Map Inspection must identify itself and hide aim-only actions"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true(
-		"조준 고정" in interaction_control.text \
+		"조준" in interaction_control.text \
 				and hud_root.get_node("AimControls").visible \
-				and hud_root.get_node("ActionButtons").visible,
+				and hud_root.get_node("ActionButtons").visible \
+				and hud_root.get_node("ContextLine").text \
+						== "드래그 조준 · A D W S · 휠 파워",
 		"Aim Lock must restore aim and Fire controls"
 	)
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")

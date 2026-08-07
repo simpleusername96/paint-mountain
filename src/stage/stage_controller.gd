@@ -117,8 +117,6 @@ func configure(
 	_paint_system = paint_system
 	_terrain_surface = terrain_surface
 	_mechanisms = mechanisms
-	if not _cannon.prediction_changed.is_connected(_on_prediction_changed):
-		_cannon.prediction_changed.connect(_on_prediction_changed)
 	_projectile_manager.stage_bounds = _generated_layout.play_bounds.bounds
 	if not _projectile_manager.shot_family_finished.is_connected(_on_shot_family_finished):
 		_projectile_manager.shot_family_finished.connect(_on_shot_family_finished)
@@ -151,17 +149,12 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	)
 	var editable := _cannon != null and _cannon.input_enabled \
 			and current_state == State.AIMING and _origin_allowed(origin)
-	var prediction := _cannon.current_prediction() if _cannon != null else null
-	var prediction_status: StringName = _cannon.prediction_status() if _cannon != null else &"pending"
-	var prediction_key: StringName = _cannon.prediction_key() if _cannon != null else &""
-	var prediction_aim_key: StringName = _cannon.prediction_aim_key() if _cannon != null else &""
-	var key: StringName = _cannon.expected_prediction_context_key() if _cannon != null else &""
+	var canonical_aim_valid := _cannon != null and _cannon.canonical_aim_is_valid()
 	var reason := ""
 	var reason_key := "ready"
 	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
 			and active_roots < ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES \
-			and prediction_status == &"fireable" and prediction != null \
-			and _cannon.is_aim_valid() and prediction_key == key
+			and canonical_aim_valid
 	if not editable:
 		reason_key = "not_editable"
 		reason = tr("fire.not_editable")
@@ -171,12 +164,9 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	elif _terminal_pending:
 		reason_key = "terminal"
 		reason = tr("fire.terminal")
-	elif prediction_status == &"pending":
-		reason_key = "pending"
-		reason = tr("fire.pending")
-	elif prediction_status == &"invalid":
-		reason_key = "invalid"
-		reason = tr("fire.invalid")
+	elif not canonical_aim_valid:
+		reason_key = "invalid_aim"
+		reason = tr("fire.invalid_aim")
 	elif active_roots >= ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES:
 		reason_key = "capacity"
 		reason = tr("fire.capacity") % [
@@ -186,11 +176,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	return {
 		"phase": state_name(),
 		"editable": editable,
-		"prediction": prediction,
-		"prediction_status": prediction_status,
-		"prediction_key": key,
-		"prediction_context_key": prediction_key,
-		"prediction_aim_key": prediction_aim_key,
+		"canonical_aim_valid": canonical_aim_valid,
 		"active_root_count": active_roots,
 		"active_body_count": active_bodies,
 		"fire_capacity": remaining_capacity,
@@ -313,8 +299,7 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		return false
 	var readiness := fire_readiness_snapshot(origin)
 	if not bool(readiness.get("fireable", false)):
-		# Fire is admitted only from this snapshot. In particular, a prediction
-		# for an older AimTuple can never be launched while the next key is pending.
+		# Fire is admitted only from this constant-work stage-rule snapshot.
 		_emit_fire_readiness()
 		return false
 	var launch_origin := _cannon.get_launch_origin()
@@ -543,6 +528,7 @@ func _begin_finish(
 		"finish_reason": reason,
 		"action_origin": action_origin,
 		"coverage": final_coverage,
+		"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
 		"shots_used": stage_data.maximum_shots - shots_remaining,
 		"shots_remaining": shots_remaining,
 		"elapsed_ticks": _elapsed_run_ticks,
@@ -754,13 +740,6 @@ func _on_projectile_activity_changed(
 	_emit_fire_readiness()
 
 
-func _on_prediction_changed(_prediction: TrajectoryPrediction) -> void:
-	# Prediction status is part of the StageController-owned Fire contract. The
-	# HUD never listens to Cannon validity directly, so a matching-key result
-	# must be republished through the same snapshot path as aim and activity.
-	_emit_fire_readiness()
-
-
 func _set_terminal_pending(pending: bool) -> void:
 	if _terminal_pending == pending:
 		return
@@ -777,9 +756,8 @@ func _aim_key() -> String:
 
 func _emit_fire_readiness() -> void:
 	var snapshot := fire_readiness_snapshot()
-	var key := "%s|%s|%s|%d|%d|%s" % [
+	var key := "%s|%s|%d|%d|%s" % [
 		String(snapshot.get("phase", "")),
-		String(snapshot.get("prediction_key", "")),
 		String(snapshot.get("reason_key", "")),
 		int(snapshot.get("active_root_count", 0)),
 		int(snapshot.get("shots_remaining", 0)),

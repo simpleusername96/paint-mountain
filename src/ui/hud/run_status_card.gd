@@ -125,7 +125,7 @@ func refresh_locale() -> void:
 	%ShotsMetric.set_caption_key("hud.shots")
 	%ActivityMetric.set_caption_key("hud.resident_balls")
 	%WindLabel.text = tr("hud.wind")
-	%Finish.text = "%s  [F]" % tr("ui.finish")
+	%Finish.text = tr("ui.finish")
 	_refresh_values()
 	set_finish_available(finish_is_available())
 

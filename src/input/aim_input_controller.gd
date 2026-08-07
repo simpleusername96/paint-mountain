@@ -1,6 +1,8 @@
 class_name AimInputController
 extends Node3D
 
+signal aim_interaction_changed(active: bool)
+
 const DRAG_YAW_DEGREES_PER_PIXEL := 0.15
 const DRAG_ELEVATION_DEGREES_PER_PIXEL := -0.12
 const KEYBOARD_ANGLE_STEP := 0.5
@@ -8,13 +10,18 @@ const BUTTON_POWER_STEP := 2.0
 const WHEEL_POWER_STEP := 1.0
 const HOLD_DELAY_SECONDS := 0.30
 const HOLD_REPEAT_SECONDS := 0.08
+const MINIMUM_SENSITIVITY_PERCENT := 50
+const MAXIMUM_SENSITIVITY_PERCENT := 150
 
 var _cannon: CannonController
 var _stage_controller: StageController
 var _camera_director: CameraDirector
 var _drag_active := false
 var _pending_drag_degrees := Vector2.ZERO
+var _requested_angles := Vector2.ZERO
 var _held_keys: Dictionary = {}
+var _sensitivity_percent := 100
+var _publishing_pointer_aim := false
 
 
 func configure(
@@ -25,13 +32,20 @@ func configure(
 	_cannon = cannon
 	_stage_controller = stage_controller
 	_camera_director = camera_director
-	_pending_drag_degrees = Vector2.ZERO
+	_requested_angles = Vector2(cannon.yaw_degrees, cannon.elevation_degrees)
+	if not cannon.aim_changed.is_connected(_on_cannon_aim_changed):
+		cannon.aim_changed.connect(_on_cannon_aim_changed)
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null:
+		if not game_state.settings_changed.is_connected(_on_settings_changed):
+			game_state.settings_changed.connect(_on_settings_changed)
+		_on_settings_changed(game_state.settings)
 
 
 func _process(delta: float) -> void:
 	if not _can_adjust_aim():
 		_held_keys.clear()
-		_drag_active = false
+		_end_drag()
 		_pending_drag_degrees = Vector2.ZERO
 		return
 	_flush_pending_drag()
@@ -80,6 +94,14 @@ func request_fire() -> bool:
 	return _stage_controller.request_fire(StageController.ActionOrigin.HUMAN)
 
 
+func requested_angles() -> Vector2:
+	return _requested_angles
+
+
+func sensitivity_percent() -> int:
+	return _sensitivity_percent
+
+
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey:
 		return
@@ -96,7 +118,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var button := event as InputEventMouseButton
 		if button.button_index == MOUSE_BUTTON_LEFT:
-			_drag_active = button.pressed
+			if button.pressed:
+				_begin_drag()
+			else:
+				_flush_pending_drag()
+				_end_drag()
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP:
 			adjust_power(WHEEL_POWER_STEP)
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -104,13 +130,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		var motion := event as InputEventMouseMotion
 		if _drag_active and motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
-			var pointer_scale := _pointer_scale_to_physical_pixels()
+			var sensitivity := float(_sensitivity_percent) / 100.0
 			_pending_drag_degrees += Vector2(
-				motion.relative.x * pointer_scale.x * DRAG_YAW_DEGREES_PER_PIXEL,
-				motion.relative.y * pointer_scale.y * DRAG_ELEVATION_DEGREES_PER_PIXEL
+				motion.screen_relative.x * DRAG_YAW_DEGREES_PER_PIXEL * sensitivity,
+				motion.screen_relative.y * DRAG_ELEVATION_DEGREES_PER_PIXEL * sensitivity
 			)
 		elif not (motion.button_mask & MOUSE_BUTTON_MASK_LEFT):
-			_drag_active = false
+			_flush_pending_drag()
+			_end_drag()
 
 
 func _handle_key(event: InputEventKey) -> bool:
@@ -162,9 +189,53 @@ func _apply_axis_step(yaw_delta: float, elevation_delta: float) -> void:
 func _flush_pending_drag() -> void:
 	if _pending_drag_degrees.is_zero_approx():
 		return
-	var pending := _pending_drag_degrees
+	_requested_angles += _pending_drag_degrees
 	_pending_drag_degrees = Vector2.ZERO
-	_apply_axis_step(pending.x, pending.y)
+	_requested_angles.x = clampf(
+		_requested_angles.x,
+		AimTuple.MINIMUM_YAW_DEGREES,
+		AimTuple.MAXIMUM_YAW_DEGREES
+	)
+	_requested_angles.y = clampf(
+		_requested_angles.y,
+		AimTuple.MINIMUM_ELEVATION_DEGREES,
+		AimTuple.MAXIMUM_ELEVATION_DEGREES
+	)
+	_publishing_pointer_aim = true
+	_stage_controller.set_aim(
+		_requested_angles.x,
+		_requested_angles.y,
+		_cannon.power_percent,
+		StageController.ActionOrigin.HUMAN
+	)
+	_publishing_pointer_aim = false
+
+
+func _begin_drag() -> void:
+	if _drag_active:
+		return
+	_drag_active = true
+	aim_interaction_changed.emit(true)
+
+
+func _end_drag() -> void:
+	if not _drag_active:
+		return
+	_drag_active = false
+	aim_interaction_changed.emit(false)
+
+
+func _on_cannon_aim_changed(yaw: float, elevation: float, _power: float) -> void:
+	if not _publishing_pointer_aim:
+		_requested_angles = Vector2(yaw, elevation)
+
+
+func _on_settings_changed(settings: Dictionary) -> void:
+	_sensitivity_percent = clampi(
+		int(settings.get("aim_sensitivity_percent", 100)),
+		MINIMUM_SENSITIVITY_PERCENT,
+		MAXIMUM_SENSITIVITY_PERCENT
+	)
 
 
 func _axis_for_key(keycode: Key) -> Vector2:
@@ -189,11 +260,3 @@ func _can_adjust_aim() -> bool:
 			and not _stage_controller.action_origin_is_locked() \
 			and _cannon.input_enabled \
 			and _stage_controller.current_state == StageController.State.AIMING
-
-
-func _pointer_scale_to_physical_pixels() -> Vector2:
-	var logical := Vector2(
-		float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),
-		float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
-	)
-	return Vector2(get_viewport().size) / logical

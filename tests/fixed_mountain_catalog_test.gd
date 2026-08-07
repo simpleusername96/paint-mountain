@@ -5,28 +5,36 @@ var _failed := false
 
 func _initialize() -> void:
 	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(catalog != null and catalog.is_valid(), "v9 catalog must be valid and complete")
+	_assert(catalog != null and catalog.is_valid(), "v10 catalog must be valid and complete")
 	if catalog == null:
 		quit(1)
 		return
-	_assert(catalog.catalog_version == 9 and catalog.stages.size() == 30, "v9 catalog must contain thirty stages")
+	_assert(catalog.catalog_version == 10 and catalog.stages.size() == 30, "v10 catalog must contain thirty stages")
 	var manifest_text := FileAccess.get_file_as_string(catalog.bundle_manifest_path)
 	var manifest = JSON.parse_string(manifest_text)
-	_assert(manifest is Dictionary, "v9 manifest must parse")
+	_assert(manifest is Dictionary, "v10 manifest must parse")
 	_assert(not manifest_text.contains("accepted_seed") and not manifest_text.contains("candidate_index") \
 			and not manifest_text.contains("generation_attempt") and not manifest_text.contains("fallback_seed"),
-		"v9 manifest must not retain candidate or fallback identities")
+		"v10 manifest must not retain candidate or fallback identities")
 	var payload_hashes: Dictionary = {}
 	for index in range(catalog.stages.size()):
 		var stage := catalog.stages[index]
 		var baked := load(catalog.layout_paths[index]) as BakedStageLayoutData
 		_assert(stage.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED, "%s must use the canonical terrain seed" % stage.stage_id)
 		_assert(stage.generation_profile.base_seed == StageProgressionData.CANONICAL_TERRAIN_SEED, "%s profile must use the canonical terrain seed" % stage.stage_id)
-		_assert(baked != null and baked.schema_version == 2, "%s must have a v9 baked payload" % stage.stage_id)
+		_assert(baked != null and baked.schema_version == 3, "%s must have a v10 baked payload" % stage.stage_id)
 		if baked != null:
 			_assert(baked.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED, "%s baked seed must be canonical" % stage.stage_id)
 			_assert(baked.play_bounds_checksum == PlayBoundsSpec.new().checksum(), "%s must persist open play bounds" % stage.stage_id)
 			_assert(not payload_hashes.has(baked.payload_sha256), "%s payload must be distinct" % stage.stage_id)
+			_assert(
+				TargetSurfaceCoverage.metadata_is_valid(
+					baked.coverage_metric_version,
+					baked.total_target_surface_area,
+					baked.target_surface_area_checksum
+				),
+				"%s must persist metric-2 surface metadata" % stage.stage_id
+			)
 			payload_hashes[baked.payload_sha256] = true
 	_assert(payload_hashes.size() == 30, "all thirty persisted mountains must have distinct payloads")
 	for stage_id in [&"stage_01", &"stage_30"]:
@@ -41,7 +49,7 @@ func _initialize() -> void:
 			_assert(layout.has_valid_footprint(), "%s mountain footprint must be one independent connected mass" % stage_id)
 			_assert(float(metrics.get("widest_span", 0)) / float(layout.cell_count.x) >= 0.72, "%s mountain must occupy at least 72%% of its width" % stage_id)
 	if not _failed:
-		print("fixed_mountain_catalog_test passed: one canonical seed, thirty distinct persisted v9 layouts")
+		print("fixed_mountain_catalog_test passed: one canonical seed, thirty distinct persisted v10 layouts")
 	quit(1 if _failed else 0)
 
 

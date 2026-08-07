@@ -68,6 +68,30 @@ static func build_layout(kind: Kind) -> GeneratedStageLayout:
 	return layout
 
 
+static func install_target_mask_with_coverage(
+		layout: GeneratedStageLayout,
+		target_mask: PackedByteArray
+) -> bool:
+	if layout == null or layout.top_topology == null \
+			or not layout.install_target_mask(
+				target_mask, TargetMaskRasterizer.byte_checksum(target_mask)
+			):
+		return false
+	var total_area := TargetSurfaceCoverage.total_target_surface_area(
+		target_mask,
+		layout.top_topology,
+		layout.local_bounds,
+		StageGenerationContract.REQUIRED_MASK_SIZE
+	)
+	return layout.install_target_surface_coverage(
+		TargetSurfaceCoverage.METRIC_VERSION,
+		total_area,
+		TargetSurfaceCoverage.metadata_checksum(
+			TargetSurfaceCoverage.METRIC_VERSION, total_area
+		)
+	)
+
+
 static func ramp_height(x: float) -> float:
 	return tan(deg_to_rad(35.0)) * (x + 15.0)
 

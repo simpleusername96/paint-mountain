@@ -139,8 +139,8 @@ func prediction_compute_count() -> int:
 	return _prediction_scheduler.prediction_compute_count()
 
 
-## Delivery-only frame hold used to capture the real pending-readiness surface
-## before the coalesced predictor publishes the latest aim key.
+## Delivery-only frame hold used to capture the real pending-preview surface
+## before the bounded predictor publishes the latest aim key.
 func hold_prediction_refresh_for_delivery(duration_seconds: float = 0.15) -> void:
 	_prediction_scheduler.hold_refresh_for_seconds(duration_seconds)
 
@@ -149,9 +149,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	match event.physical_keycode:
-		KEY_R:
-			if not _replay_presentation.active:
-				_stage_controller.restart(false, StageController.ActionOrigin.HUMAN)
 		KEY_ESCAPE:
 			if _replay_presentation.active:
 				_replay_presentation.exit()
@@ -288,6 +285,9 @@ func _connect_systems() -> void:
 	_hud.replay_exit_requested.connect(_replay_presentation.exit)
 	_replay_presentation.presentation_exited.connect(_on_replay_exited)
 	_replay_presentation.active_changed.connect(_hud.set_replay_active)
+	_aim_input.aim_interaction_changed.connect(
+		_prediction_scheduler.set_aim_interaction_active
+	)
 
 
 func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
@@ -346,9 +346,11 @@ func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void
 
 
 func _on_wind_snapshot_changed(snapshot: WindSnapshot) -> void:
-	_prediction_scheduler.request_latest()
 	if snapshot == null:
 		return
+	var transition_boundary := snapshot.is_transitioning() \
+			!= _wind_transition_was_active
+	_prediction_scheduler.request_latest(transition_boundary)
 	var current_projection := _wind_hud_projection(snapshot.acceleration)
 	var next_projection := _wind_hud_projection(snapshot.next_acceleration)
 	_hud.update_wind(
@@ -440,6 +442,7 @@ func _on_camera_mode_changed(mode: int) -> void:
 	_trajectory_preview.visible = show_preview
 	if show_preview:
 		_trajectory_preview.refresh()
+		_prediction_scheduler.request_latest(true)
 	_update_prediction_consumers()
 
 

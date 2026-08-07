@@ -6,6 +6,7 @@ signal settings_changed(settings: Dictionary)
 var selected_stage_id: StringName = &"stage_01"
 var unlocked_stages: Array[StringName] = StageCatalog.all_stage_ids()
 var best_results: Dictionary = {}
+var legacy_best_results: Dictionary = {}
 var settings: Dictionary = {}
 var persistence_enabled: bool = true
 
@@ -21,6 +22,7 @@ func initialize_from_data(data: Dictionary) -> void:
 	)
 	selected_stage_id = persisted_selected if StageCatalog.get_stage(persisted_selected) != null else &"stage_01"
 	best_results = Dictionary(data.get("best_results", {})).duplicate(true)
+	legacy_best_results = Dictionary(data.get("legacy_best_results", {})).duplicate(true)
 	settings = Dictionary(data.get("settings", _save_system().default_data().settings)).duplicate(true)
 	TranslationServer.set_locale(String(settings.get("language", "ko")))
 
@@ -48,6 +50,7 @@ func complete_stage(
 		var best_result := {
 			"coverage": coverage,
 			"stars": stars,
+			"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
 		}
 		if not result_metadata.is_empty():
 			best_result["metadata"] = {
@@ -83,9 +86,11 @@ func save_now() -> Error:
 
 func export_data() -> Dictionary:
 	return {
-		"version": 4,
+		"version": SaveSystem.SAVE_VERSION,
 		"selected_stage_id": String(selected_stage_id),
+		"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
 		"best_results": best_results.duplicate(true),
+		"legacy_best_results": legacy_best_results.duplicate(true),
 		"settings": settings.duplicate(true),
 	}
 

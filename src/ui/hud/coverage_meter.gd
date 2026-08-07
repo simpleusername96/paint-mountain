@@ -10,6 +10,7 @@ var _target := 0.0
 
 func configure(target: float) -> void:
 	_target = clampf(target, 0.0, 100.0)
+	tooltip_text = tr("hud.coverage_tooltip")
 	target_label.text = "%s %.0f%%" % [tr("hud.target"), _target]
 	var target_y := progress.position.y + progress.size.y * (1.0 - _target / 100.0)
 	target_line.position.y = target_y - target_line.size.y * 0.5
@@ -20,3 +21,7 @@ func update_coverage(coverage: float) -> void:
 	var absolute_coverage := clampf(coverage, 0.0, 100.0)
 	progress.value = absolute_coverage
 	value_label.text = "%.1f%%" % absolute_coverage
+
+
+func refresh_locale() -> void:
+	configure(_target)

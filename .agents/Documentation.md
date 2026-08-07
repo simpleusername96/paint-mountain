@@ -30,30 +30,36 @@ related:
 
 # Project Record
 
-## Current Active QA Execution Contract (2026-08-07)
+## Current Truthful Coverage and Responsive Aiming Implementation (2026-08-07)
 
-The active
+The completed
 [`truthful-coverage-and-responsive-aiming` ExecPlan](execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md)
-records the next cross-system work after direct user play on Stage 10. This is a
-confirmed gap and an implementation plan, not a claim that the correction
-already exists.
+implements the corrections identified during direct Stage 10 play.
 
-- Current coverage counts equally sized XZ target texels rather than weighted
-  physical terrain surface. Target and non-target paint also render with the
-  same final blue, and their independent presentation cadences can let visible
-  paint lead the HUD percentage.
-- Current mouse aim discards sub-step remainders after 0.1-degree
-  canonicalization and couples every accepted change to preview invalidation.
-- When the 12-second prediction horizon reaches a future wind transition, the
-  current scheduler advances its context every three physics ticks. That clears
-  the preview and toggles StageController-owned Fire readiness while running a
-  complete synchronous prediction on each accepted epoch.
-- Space, Tab, and Escape behavior is not persistently visible in the relevant
-  gameplay controls; the Stage 01 hint is transient, while direct R restart is
-  hidden and conflicts with the pause-menu Restart rule.
-- The plan changes no production behavior yet. Existing v9 terrain, paint,
-  camera, wind flag, Shot Follow, saves, replay, and release captures remain the
-  implemented truth until the plan's schema migration and validation finish.
+- `TargetSurfaceCoverage` metric 2 weights each first-painted target texel by
+  its canonical physical triangle area. `PaintSystem` remains the only mutable
+  paint/coverage owner and publishes the visible mask and percentage together.
+- The active fixed catalog is v10 at
+  `resources/generated_stage_catalogs/v10-4d9db2c7e4b50b02ccaa33cabc3e8f21f92f1ef21adc76848c86f02d79cb63f0`.
+  Its thirty stages retain all v9 physical, target, cannon, placement, and
+  bounded-witness identities while adding validated metric-2 metadata.
+- Target paint is saturated blue; valid non-target paint stays visible in a
+  lighter, desaturated blue. Save format 5 preserves old scores only in the
+  legacy envelope. Replay format 10 and the current observation schemas identify
+  metric 2 explicitly.
+- Mouse aim uses resolution-stable `screen_relative` motion, retains fractional
+  input below the 0.1-degree canonical step, and exposes a persisted 50-150%
+  pointer-only sensitivity setting.
+- Fire admission uses only canonical aim and `StageController` rules. Advisory
+  prediction owns one bounded job plus one newest pending request, retains its
+  previous arc while updating, and cannot toggle or block Fire.
+- Aim, Map, Shot Follow, Fire, Finish, Gear, and Pause now expose contextual
+  Space/Tab/F/Escape keycaps. The transient first-session hint and hidden direct
+  R restart are removed.
+- Focused contracts, Godot 4.7.1 import/start verification, Windows release
+  export/start, and five individually reviewed running-release captures passed.
+  The evidence is under
+  [`evidence/truthful-coverage-and-responsive-aiming-2026-08-07/`](evidence/truthful-coverage-and-responsive-aiming-2026-08-07/).
 
 ## Current Open-Mountain Surface Direction (2026-08-07)
 

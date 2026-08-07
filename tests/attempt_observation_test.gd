@@ -63,7 +63,7 @@ func _run_checks() -> void:
 	_assert_true(parsed is Dictionary, "attempt observation must be JSON-safe")
 	_assert_true(
 		AttemptObservation.dictionary_is_valid(parsed),
-		"serialized schema 1 must validate"
+		"serialized schema 2 must validate"
 	)
 	var kinds: Array[String] = []
 	for index in range(serialized.events.size()):
@@ -83,11 +83,13 @@ func _run_checks() -> void:
 			"finish",
 			"result",
 		],
-		"schema 1 must retain the representative event order"
+		"schema 2 must retain the representative event order"
 	)
 	_assert_true(
 		int(serialized.final_result.paint_mask_checksum) == 912345 \
 				and is_equal_approx(float(serialized.final_result.coverage), 18.25) \
+				and int(serialized.final_result.coverage_metric_version) \
+						== TargetSurfaceCoverage.METRIC_VERSION \
 				and String(serialized.final_result.reason) == "manual",
 		"the sealed result must retain authoritative paint identity and coverage"
 	)

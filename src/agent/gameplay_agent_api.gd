@@ -84,6 +84,7 @@ func get_observation() -> Dictionary:
 		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else 0,
 		"height_grid_checksum": _generated_layout.checksum if _generated_layout != null else 0,
 		"layout": _layout_metadata(),
+		"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
 		"target_coverage": _stage_data.target_coverage,
 		"current_coverage": _paint_system.coverage_percent(),
 		"paint": {
@@ -123,8 +124,9 @@ func get_observation() -> Dictionary:
 		"fire_readiness": {
 			"phase": fire_readiness.get("phase", ""),
 			"editable": bool(fire_readiness.get("editable", false)),
-			"prediction_status": String(fire_readiness.get("prediction_status", "pending")),
-			"prediction_key": String(fire_readiness.get("prediction_key", "")),
+			"canonical_aim_valid": bool(
+				fire_readiness.get("canonical_aim_valid", false)
+			),
 			"active_root_count": int(fire_readiness.get("active_root_count", 0)),
 			"fire_capacity": int(fire_readiness.get("fire_capacity", 0)),
 			"shots_remaining": int(fire_readiness.get("shots_remaining", 0)),
@@ -132,6 +134,11 @@ func get_observation() -> Dictionary:
 			"fireable": bool(fire_readiness.get("fireable", false)),
 			"reason_key": String(fire_readiness.get("reason_key", "ready")),
 			"reason": fire_readiness.get("reason", ""),
+		},
+		"trajectory_preview": {
+			"status": String(_cannon.prediction_status()),
+			"aim_key": String(_cannon.prediction_aim_key()),
+			"context_key": String(_cannon.prediction_key()),
 		},
 		"fire_capacity": int(activity.get("fire_capacity", 2)),
 		"terminal_pending": terminal_pending,
@@ -298,6 +305,9 @@ func _layout_metadata() -> Dictionary:
 		"profile_id": String(_generated_layout.profile_id),
 		"profile_version": _generated_layout.profile_version,
 		"target_mask_checksum": _generated_layout.target_mask_checksum,
+		"coverage_metric_version": _generated_layout.coverage_metric_version,
+		"total_target_surface_area": _generated_layout.total_target_surface_area,
+		"target_surface_area_checksum": _generated_layout.target_surface_area_checksum,
 		"reachability_checksum": (
 			certificate.reachable_target_checksum
 			if certificate != null and certificate.is_valid()

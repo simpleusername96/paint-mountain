@@ -102,8 +102,9 @@ exactly three mechanism types.
 - Terrain clicks never solve or alter aim. The complete pre-impact preview uses
   the same radius, fixed-tick gravity, damping, launch origin, speed, shared
   collision geometry, and collision layers as the real ball. It ends at the
-  first physical collision. Bounds exits and timeouts are non-fireable errors;
-  no post-impact route is shown.
+  first physical collision or open-bounds exit. It is advisory: a legal
+  canonical aim may Fire while the newest preview is pending or when that
+  preview predicts a miss. No post-impact route is shown.
 - Firing enters Shot Follow for the new root ball. A visible `대포로 돌아가기`
   / `RETURN TO CANNON` control and context-sensitive Tab return immediately to
   Aim View; the ball continues physically and no post-fire steering is added.
@@ -123,8 +124,9 @@ exactly three mechanism types.
   drain, and camera presentation mode are orthogonal typed activity, not
   competing stage phases.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
-  invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
-  controls remain editable while prior families move.
+  an illegal canonical aim, no shots, terminal pending, or modal lock. Prediction
+  readiness never changes Fire admission. Aim controls remain editable while
+  prior families move.
 - An initial Fire slot releases when its generation-0 root first authoritatively
   traverses valid Playable Terrain Surface or terminates. Family observation
   waits until every current body has reached that surface or terminated;
@@ -187,11 +189,14 @@ exactly three mechanism types.
   defined impact and Burst radial marks reconstructed on the exact
   rendered/collidable triangle. Visual paint and scored paint cannot diverge;
   paint outside the target mask remains visible but does not increase coverage.
-- Coverage is target-mask texels at or above the paint threshold divided by all
-  target-mask texels. Overlap counts once. Dry Target Area terrain is
+- Target surface coverage is the unique painted physical Target Area area divided
+  by its total physical area. Each target texel uses the canonical terrain
+  triangle's projected area multiplied by `1 / abs(normal.y)`; overlap counts
+  once. Camera and viewport state never affect score. Dry Target Area terrain is
   perceptibly but neutrally distinguished before firing, while `목표 영역`/`TARGET
-  AREA` names the authoritative HUD/result percentage without a second coverage
-  representation.
+  AREA` names the authoritative HUD/result percentage without a second mutable
+  coverage representation. Painted non-target terrain remains visible in a
+  lighter, less saturated blue and contributes zero.
 
 ### Mechanisms
 
@@ -275,10 +280,11 @@ exactly three mechanism types.
   previous best, new best, rank/stars, final mountain, retry, next/select, and
   replay. They do not present target coverage or spent shots as an automatic
   clear/failure result.
-- Save version, unlocks, best coverage/stars, and settings locally.
-- Replay format 9 stores stage/profile/layout/certificate versions, the
-  canonical terrain seed, terrain and open-play-bound identities, generated
-  default aim, wind schedule identity,
+- Save version, coverage-metric-separated best coverage/stars, unlocks, and
+  settings including mouse sensitivity locally.
+- Replay format 10 stores stage/profile/layout/certificate and coverage-metric
+  versions, the canonical terrain seed, terrain and open-play-bound identities,
+  generated default aim, wind schedule identity,
   fixed-tick aim/Fire/Finish actions, attempt outcome, and final paint-mask
   checksum. Replay presentation locks normal input and accepts only replay-origin
   actions; older incompatible formats are rejected deterministically.
@@ -294,8 +300,9 @@ exactly three mechanism types.
   and Fire alone at bottom-center. The wind cue shows the direction projectiles
   are pushed, strength, time to change, and approaching direction during the
   transition. Keep the top-center clear for the mountain and high trajectory
-  arcs. No aiming-state Restart or second Fire control exists; `R` remains the
-  quick-restart shortcut.
+  arcs. Compact persistent keycaps expose Space, Tab, F, and Escape where each
+  action is available, with a restrained aim/map gesture line. No aiming-state
+  Restart, second Fire control, or direct `R` restart shortcut exists.
 - During Shot Follow, show one compact focusable return-to-cannon action at the
   edge of the screen and hide controls that imply in-flight steering. Do not
   restore the old multi-preset observation strip.
@@ -304,6 +311,9 @@ exactly three mechanism types.
   restores the exact pre-pause state without advancing simulation. Settings is a
   separate child form above the still-paused menu; closing it returns focus to
   Settings in the menu, and the Settings form never contains Restart.
+- Mouse aiming uses unscaled `screen_relative` motion, retains fractional
+  yaw/elevation remainder across canonical 0.1-degree updates, and applies a
+  persisted mouse-only 50-150% sensitivity setting. Keyboard steps remain fixed.
 - Use off-white panels, navy text, one saturated blue accent, rounded restrained
   controls, real icons, visible keyboard focus, and no aiming-state center modal
   other than the intentionally opened paused game menu.
@@ -329,11 +339,12 @@ exactly three mechanism types.
   selected/current/next use, and materializes scene/render/physics state only on
   the main thread. Heavy preview artifacts retain at most one stage.
 - Aim, map, and ordinary button input acknowledge without a main-thread stall.
-  Fire admission reads a ready canonical prediction and never calculates a
-  trajectory in the action callback. Wind presentation may update every fixed
-  tick, but it does not automatically trigger a full collision prediction every
-  tick. A stale preview becomes a truthful pending state while bounded scheduled
-  work catches up.
+  Fire admission reads only canonical aim and stage-rule state and never
+  calculates or waits for prediction. One latest-only resumable prediction job
+  advances by at most 24 fixed simulation steps per physics tick. Wind
+  presentation may update every fixed tick, but aim and changing-wind prediction
+  nominations are bounded. A stale preview remains visible but subdued while
+  bounded scheduled work catches up, and stale jobs never publish.
 - The cannon-standoff, flight-feel, and camera-flow change uses deterministic
   gameplay contracts and rendered review. It does not require a performance
   timing or profiling pass.

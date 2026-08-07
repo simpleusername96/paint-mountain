@@ -188,7 +188,11 @@ func _build_layout(kind: StringName) -> GeneratedStageLayout:
 	var target_mask := PackedByteArray()
 	target_mask.resize(512 * 512)
 	target_mask.fill(255)
-	assert(layout.install_target_mask(target_mask, TargetMaskRasterizer.byte_checksum(target_mask)))
+	assert(
+		TerrainTestFixtureFactory.install_target_mask_with_coverage(
+			layout, target_mask
+		)
+	)
 	return layout
 
 
