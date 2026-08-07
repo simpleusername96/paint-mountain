@@ -58,18 +58,27 @@ exactly three mechanism types.
 - Cannon length is roughly 2–3 m; target distance 70–150 m; mountain width 120–250 m and height 60–140 m.
 - In the perspective aiming view, the cannon stays in the lower foreground at no more than about 15–20% of the frame; the mountain dominates the middle and upper frame.
 - Briefing begins in map inspection with a limited three-quarter orbit/zoom. Aim
-  Lock uses its authored pose when the exact playable-top points, summit
-  headroom, cannon, and muzzle fit its safe frame; otherwise it retains the
-  authored focus and applies one deterministic same-direction, same-FOV
-  distance correction. It never frames the support shell, follows prediction
-  changes, widens FOV, or relies on manual per-stage repairs. Result uses a
-  restrained three-quarter reveal.
+  Lock uses the authored pose and deterministic safe frame as a recoverable
+  reset composition, but the player can navigate the camera independently to
+  inspect high or distant predicted impacts without changing the stored aim.
+  Fitting all playable-top points, summit headroom, cannon, and muzzle is not
+  sufficient when it makes route, trajectory, or impact detail too small to use.
+  Do not follow prediction automatically, widen FOV to hide the problem, or add
+  per-stage camera repairs. Result uses a restrained three-quarter reveal.
 - Map inspection must keep the whole mountain explorable without terrain clipping or rapid cuts. It does not follow projectiles or switch to preset camera views.
 
 ### Controls and information
 
 - Briefing starts in Map Inspection: terrain click changes inspection focus, left-drag orbits, wheel zooms, Enter/Start enters Aim Lock, and Escape pauses.
-- Gameplay has two interaction modes while Board Phase remains `AIMING`. In Aim Lock, left-drag changes yaw/elevation, wheel or explicit `−/+` controls adjust power, A/D/W/S use the same aim path, and Space/Fire launch. In Map Inspection, terrain click changes inspection focus, left-drag orbits, wheel zooms, and aim/Fire input is blocked. Tab and one visible focusable toggle switch modes without changing the stored aim or preview.
+- Gameplay has two interaction modes while Board Phase remains `AIMING`. In Aim
+  Lock, left-drag changes yaw/elevation, wheel or explicit `−/+` controls adjust
+  power, A/D/W/S use the same aim path, and Space/Fire launch. Aim Lock also
+  exposes a separate discoverable camera-navigation gesture and a one-action
+  return to its authored composition; camera motion never changes the tuple. In
+  Map Inspection, terrain click changes inspection focus, left-drag orbits,
+  wheel zooms, and aim/Fire input is blocked. Tab and one visible focusable
+  toggle switch modes without changing the stored aim or preview, and the switch
+  never performs terrain-scale work in the input callback.
 - Show target, current coverage, shots, angle, power, a dotted initial ballistic arc, and an approximate first impact. Never preview post-impact solution paths or exact coverage.
 - Terrain clicks never solve or alter aim. The complete pre-impact preview uses
   the same radius, fixed-tick gravity, damping, launch origin, speed, shared
@@ -271,6 +280,12 @@ exactly three mechanism types.
   with a truthful preparing state, retains at most three accepted layouts for
   selected/current/next use, and materializes scene/render/physics state only on
   the main thread. Heavy preview artifacts retain at most one stage.
+- Aim, map, and ordinary button input acknowledge without a main-thread stall.
+  Fire admission reads a ready canonical prediction and never calculates a
+  trajectory in the action callback. Wind presentation may update every fixed
+  tick, but it does not automatically trigger a full collision prediction every
+  tick. A stale preview becomes a truthful pending state while bounded scheduled
+  work catches up.
 - Use one low-poly principal terrain mesh (preferably under ~50k triangles),
   batched mask updates, effect pooling, lightweight shadows, a 21-resident-ball
   hard cap, and one split generation.

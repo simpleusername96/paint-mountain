@@ -84,16 +84,21 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Gameplay remains in the aiming Board Phase while the player switches between
   `Aim Lock` and `Map Inspection`; this is a presentation/input state, not a
   separate stage flow.
-- In Aim Lock, the authored aiming view is restored when its safe frame already
-  contains the exact playable-top points, summit headroom, cannon, and muzzle.
-  Otherwise the camera receives one deterministic same-direction, same-FOV
-  distance correction while retaining the authored focus; prediction changes
-  never move it. Left drag adjusts yaw/elevation, the wheel adjusts power,
-  keyboard aiming and Fire are enabled.
+- In Aim Lock, the authored aiming view is the reset pose, not a camera prison.
+  Left drag adjusts yaw/elevation, the wheel adjusts power, and keyboard aiming
+  and Fire remain available. The player must also have a distinct, discoverable
+  way to inspect high and distant impact regions without changing the stored aim
+  or losing the trajectory. The exact additional pointer gesture is not locked
+  by this spec; do not add click-to-target solving by implication.
+- A safe camera must keep the exact playable top, summit headroom, cannon, and
+  muzzle recoverable, but a fit-all-points calculation is not accepted when it
+  shrinks the mountain, route detail, trajectory, or impact marker below useful
+  aiming scale. Preserve a one-action return to the authored aim composition.
 - In Map Inspection, terrain click changes the inspection focus, left drag
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
-  aim or preview. The first-session hint and toggle tooltip state the shortcut
+  aim or preview. Mode changes and terrain refocus must acknowledge without a
+  visible stall. The first-session hint and toggle tooltip state the shortcut
   and the active mouse behavior.
 - Wind is a concise status cue, not a decorative mystery: show the direction
   projectiles are pushed, strength, time until change, and the approaching
@@ -183,8 +188,9 @@ A UI change conforms when:
 
 - the mountain remains the dominant visual and Fire is the unmistakable next
   action during Aim Lock;
-- Aim Lock and Map Inspection make their active input behavior clear, and Tab
-  or the visible toggle returns between them without losing the current aim;
+- Aim Lock keeps high and distant impact regions inspectable at useful scale,
+  and Map Inspection, Tab, or the visible toggle returns without losing the
+  current aim or blocking the interface;
 - the left vertical coverage gauge, lower-left controls, edge status, top-right
   gear, and bottom-center Fire preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;

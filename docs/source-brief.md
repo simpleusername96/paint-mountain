@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -1701,6 +1701,36 @@ target-wide reachability and authored-solution language only:
   metadata; they are not prescribed player solutions. Validate representative
   gameplay behavior and investigate concrete play defects without maintaining
   a per-stage success-path checklist.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Clarification (2026-08-07): Aiming Freedom and Interaction Responsiveness
+
+The user rejected the current running build's aiming freedom and interaction
+responsiveness after the safe-framing and HUD work. These clauses supersede only
+interpretations that treat full-point camera containment, mutually exclusive
+inspection controls, or passing headless checks as sufficient gameplay
+acceptance:
+
+- **Aiming freedom and visibility:** the current fixed Aim Lock experience is
+  too restrictive. While choosing manual yaw, elevation, and power, the player
+  must be able to retain useful context for the whole mountain and for high or
+  distant predicted impact points. Fitting every terrain point somewhere inside
+  the viewport is necessary but is not sufficient when the mountain, routes,
+  trajectory, or impact marker become too small to use. Camera inspection must
+  not overwrite the stored aim.
+- **Responsive interaction:** aim input, ordinary button activation, terrain
+  refocus and other top/map interactions, and Aim Lock/Map Inspection changes
+  must acknowledge immediately and must not produce the observed one-to-two-
+  second stalls. Expensive trajectory, camera-framing, layout-hydration, or
+  certification work must not run synchronously in an input callback or be
+  needlessly restarted at a cadence that blocks the rendered interface. A
+  truthful short prediction-pending state is preferable to blocking the click.
+- **Preserved puzzle contract:** the cannon remains stationary, the player still
+  chooses yaw/elevation/power, and projectiles remain unsteerable after launch.
+  This clarification does not restore exhaustive target-wide first-hit
+  certification, authored success routes, or all-stage manual playthroughs, and
+  it does not by itself approve an inverse click-to-target solver.
 
 All earlier requirements not contradicted here remain in force.
 

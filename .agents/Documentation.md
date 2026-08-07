@@ -17,7 +17,9 @@ related:
   - execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
   - execplans/2026-08-06-command-columns-hud.md
   - execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
+  - ../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md
   - evidence/2026-08-05-gameplay-contract-gap-audit.md
   - ../design-qa.md
   - ../docs/design-spec.md
@@ -26,13 +28,55 @@ related:
 
 # Project Record
 
+## Current User-Rejected Aim and Responsiveness State (2026-08-07)
+
+The current implementation is functionally connected, but the user rejected its
+aiming freedom and responsiveness in the running game. Continue from the
+[next-session handoff](../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md)
+and the supporting
+[audit](evidence/2026-08-07-aim-performance-product-audit.md); do not interpret
+the completed HUD or safe-framing plans as gameplay-feel approval.
+
+- The legal tuple is already broad (`-80..80` yaw, `10..68` elevation, and
+  `0..100` power). The restrictive feel comes primarily from the interaction
+  model: Aim Lock owns all aim/Fire input, Map Inspection blocks it, terrain
+  click only refocuses the inspection camera, and Aim Lock offers no independent
+  camera navigation.
+- The strongest code-level stutter cause is continuous synchronous prediction.
+  Running wind emits a snapshot every physics tick; every snapshot dirties the
+  preview; the scene can therefore execute a full predictor at 20 Hz. One
+  prediction permits 720 physics casts, and the preserved uncommitted recovery
+  diff adds endpoint rest probes to the same loop.
+- Fire has regressed from the earlier constant-work contract. Every Fire request
+  now refreshes prediction synchronously before checking readiness, putting the
+  same expensive work directly in the button/Space call stack.
+- Returning from Map Inspection to Aim Lock recomputes exact top interest points
+  and the Summit Region instead of consuming one stage-owned cached framing
+  result. Stage 30 can scan up to 12,288 top triangles on a toggle.
+- A fresh exported Stage 30 Aim Lock and Map Inspection pair was captured and
+  inspected on 2026-08-07. Aim Lock technically contains the whole mountain but
+  makes route and impact detail very small; the inspected Map pose shows a tiny,
+  near-edge-on mountain with large dead space and weak orientation. Screenshots
+  do not measure latency, so the user's one-to-two-second report remains the
+  runtime observation and the code paths above remain high-confidence causal
+  hypotheses until a focused timing pass records them.
+- The target-only coverage meaning, shared HUD Theme/components, persistent
+  paint authority, bounded default/summit first-hit witnesses, and open thirty-
+  stage catalog remain valid unless new direct evidence contradicts them.
+- `scripts/test.ps1` still runs the historical `phase6_solution_test.gd` even
+  though prescribed success routes are retired. Do not treat that script as a
+  current release requirement; remove or explicitly isolate the solution test
+  during the next test-contract cleanup.
+
 ## Current Target Coverage and Safe Aim Framing (2026-08-07)
 
 The completed execution record is
 [`execplans/2026-08-07-target-coverage-and-safe-aim-framing.md`](execplans/2026-08-07-target-coverage-and-safe-aim-framing.md).
-This work fixes coverage meaning and cannon-view visibility without changing
+This work implemented coverage meaning and a deterministic cannon-view framing
+rule without changing
 paint, scoring, stage balance, saves, replay, trajectories, generation, or the
-catalog.
+catalog. The subsequent user review above rejected the resulting aiming scale
+and interaction freedom; implementation completion is not product acceptance.
 
 - Root-cause inspection found no dropped-paint counting defect. `PaintSystem`
   visibly preserves all valid top-surface paint but scores only unique painted
@@ -119,7 +163,8 @@ not the user's gameplay, balance, feel, or aesthetic approval.
   horizontal horizon,
   lower-height, or upper-height failure. It also requires one Summit Region
   sample. This is analytic range admission, not terrain-occlusion or first-hit
-  certification; the latter remains a separate unfinished release guarantee.
+  certification. Exhaustive target-wide certification is optional offline
+  diagnostic work, not an unfinished product or release guarantee.
 - Repeated final non-rendered runs rebuilt persisted Stage 01 in about
   `3.7..4.6 s` and Stage 30 in about `11.1..13.3 s`, verified legal and synthetic
   rejection cases, and
