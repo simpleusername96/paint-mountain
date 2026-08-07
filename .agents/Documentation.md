@@ -18,6 +18,7 @@ related:
   - execplans/2026-08-06-command-columns-hud.md
   - execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - execplans/2026-08-07-cannon-shot-observation.md
+  - execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md
@@ -28,6 +29,31 @@ related:
 ---
 
 # Project Record
+
+## Current Active QA Execution Contract (2026-08-07)
+
+The active
+[`truthful-coverage-and-responsive-aiming` ExecPlan](execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md)
+records the next cross-system work after direct user play on Stage 10. This is a
+confirmed gap and an implementation plan, not a claim that the correction
+already exists.
+
+- Current coverage counts equally sized XZ target texels rather than weighted
+  physical terrain surface. Target and non-target paint also render with the
+  same final blue, and their independent presentation cadences can let visible
+  paint lead the HUD percentage.
+- Current mouse aim discards sub-step remainders after 0.1-degree
+  canonicalization and couples every accepted change to preview invalidation.
+- When the 12-second prediction horizon reaches a future wind transition, the
+  current scheduler advances its context every three physics ticks. That clears
+  the preview and toggles StageController-owned Fire readiness while running a
+  complete synchronous prediction on each accepted epoch.
+- Space, Tab, and Escape behavior is not persistently visible in the relevant
+  gameplay controls; the Stage 01 hint is transient, while direct R restart is
+  hidden and conflicts with the pause-menu Restart rule.
+- The plan changes no production behavior yet. Existing v9 terrain, paint,
+  camera, wind flag, Shot Follow, saves, replay, and release captures remain the
+  implemented truth until the plan's schema migration and validation finish.
 
 ## Current Open-Mountain Surface Direction (2026-08-07)
 
