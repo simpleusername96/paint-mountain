@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-07
 last_reviewed: 2026-08-07
-scope: cannon-side wind flag, physical cannon standoff, Aim View composition, automatic Shot Follow, and obsolete recovery cleanup
+scope: cannon-side wind flag, physical cannon standoff, Aim View composition, automatic Shot Follow, bounded structural performance work, and obsolete recovery cleanup
 source: user feedback on 2026-08-07 and docs/source-brief.md
 related:
   - ../PLANS.md
@@ -26,8 +26,10 @@ Paint Mountain will frame a large, readable cannon in the foreground against a
 complete distant mountain, replace unclear wind debris with a cannon-side flag,
 and automatically follow each newly fired root paintball until its first terrain
 impact. The player can return to the cannon view at any time without changing
-the projectile. This plan includes no performance timing or profiling pass and
-does not restore exhaustive reachability or authored solution work.
+the projectile. The same implementation restores constant-work Fire admission
+and removes verified redundant prediction, UI, camera, and trajectory-preview
+work without a timing or profiling pass. It does not restore exhaustive
+reachability or authored solution work.
 
 ## Purpose
 
@@ -35,14 +37,17 @@ does not restore exhaustive reachability or authored solution work.
   coherent physical sequence.
 - Deliverable: a versioned stage placement update, shared Aim View composition,
   cannon-side wind flag, specific-projectile Shot Follow state, contextual return
-  control, bounded miss cleanup, focused contracts, production-build captures,
-  and current documentation.
+  control, bounded miss cleanup, a main-thread demand-driven prediction owner,
+  batched trajectory dots, focused contracts, production-build captures, and
+  current documentation.
 - Completion state: Stages 01 and 30 both show a substantial cannon and complete
   distant mountain; the cannon is at least 70 m from the nearest playable front;
   the flag agrees with the authoritative wind; Fire follows the new root ball;
   first terrain impact remains readable; button or Tab returns early while
-  physics continues; no obsolete debris, solution-route runner, inactive catalog,
-  or competing active task document remains.
+  physics continues; Fire performs no trajectory query; inactive presentation
+  performs no repeated prediction or marker work; no obsolete debris,
+  solution-route runner, inactive catalog, or competing active task document
+  remains.
 
 ## Scope and Boundaries
 
@@ -67,6 +72,19 @@ In scope:
 - Set the never-contacted miss timeout to 6.0 seconds. Treat a representative
   default flight near three seconds as visual pacing guidance only, not a
   legal-shot gate, solver objective, or exact duration assertion.
+- Restore constant-work Fire admission: Fire reads one immutable ready prediction
+  context and never invokes `TrajectoryPredictor` from the input/action call
+  stack. Coalesce aim and wind invalidation in one main-thread scheduler.
+- Separate the 60 Hz authoritative wind snapshot from the lower-frequency
+  trajectory-prediction epoch and from HUD text refreshes. Suspend trajectory
+  prediction when the preview and Fire are unavailable, then publish one current
+  prediction before Fire becomes available again.
+- Cache Aim View interest data and the composed pose by immutable stage/layout,
+  cannon transform, FOV, and viewport aspect inputs. A mode toggle must not scan
+  terrain topology.
+- Replace 96 individual trajectory-dot `MeshInstance3D` nodes with one
+  `MultiMeshInstance3D`, while retaining the separate impact/exit markers and
+  existing sample-count contract.
 - Remove the unused `StageData.reliable_solution` field and its serialized values
   as part of the version-9 catalog migration.
 - Update focused tests, delivery capture states, implemented-truth records, and
@@ -75,7 +93,11 @@ In scope:
 Out of scope:
 
 - Performance instrumentation, input-latency measurement, FPS profiling, timing
-  probes, or optimization work inferred from the consumed handoff.
+  probes, or a numerical performance claim. Only the named structural reductions
+  above are authorized.
+- Worker-thread access to `PhysicsDirectSpaceState3D`, a RenderingServer/PhysicsServer
+  rewrite, projectile pooling, broad node-process cleanup, new terrain LOD or
+  occlusion systems, and baked stage-select preview schema work.
 - A new Aim View orbit/pan gesture, Fire from Map View, click-to-target aim,
   inverse aiming, post-fire steering, cinematic replay editing, camera speed
   controls, or multiple observation presets.
@@ -107,6 +129,10 @@ Constraints and invariants:
 - The pre-existing local edits in `src/cannon/trajectory_predictor.gd` and
   `tests/target_mask_test.gd` are not task-owned and must not be staged, reverted,
   or reformatted by this plan.
+- Prediction scheduling may reduce calls into `TrajectoryPredictor`, but it must
+  not edit or bypass the preserved endpoint-rest collision-parity logic. Direct
+  physics-space queries remain on the main thread under the current project
+  settings.
 
 Destructive or irreversible actions:
 
@@ -128,6 +154,9 @@ Destructive or irreversible actions:
 | Return to Cannon (`대포로 돌아가기`) | Camera-only intent that exits Shot Follow and restores Aim View; simulation and aim persist | HUD/input intent consumed by `CameraDirector` |
 | Cannon Standoff | World-space distance from cannon origin to the nearest playable terrain front; minimum 70 m | stage progression/catalog materialization |
 | Wind Flag | Non-colliding physical-looking presentation beside the cannon; free end points in projectile push direction | `CannonWindFlag` consuming `WindController` |
+| Prediction Context Key | Canonical aim key + wind schedule identity + bounded launch epoch used to decide whether one immutable prediction is ready | `TrajectoryPredictionScheduler` |
+| Constant-work Fire | Fire checks the current prediction context and capacity, then accepts or reports pending; it never computes a trajectory | `StageController` admission using scheduler-published cannon state |
+| Wind Display Key | The exact rounded direction/strength/countdown/forecast values visible in the HUD; unchanged keys do not rewrite Control text | `RunStatusCard` presentation |
 | Bounded Entry Witness | Existing offline default or summit first-hit proof used to keep a generated stage playable | catalog builder; not player auto-aim and not exhaustive certification |
 | Reachability/Solver Work | Retired exhaustive target enumeration or authored success-route search | no current owner; obsolete runners removed |
 
@@ -145,6 +174,12 @@ move a camera with the stationary cannon body.
 | Root identity already exists | manager emits the exact root when a family starts | `src/projectile/projectile_manager.gd:4-20,75-134` | Wire the existing signal to `CameraDirector.follow_root()`; add no duplicate shot registry |
 | Impact facts already exist | manager emits typed projectile/contact and valid-top traversal signals | `src/projectile/projectile_manager.gd:5-10,277-349` | Filter events for the followed root and TerrainSurface; do not infer impact from distance or velocity |
 | Wind debris is unclear | 36–60 procedural boxes move over terrain and are wired directly from GameplayScene | `src/wind/wind_debris_field.gd`; `src/gameplay/gameplay_scene.gd:24,197-204`; `tests/wind_debris_field_test.gd` | Delete this presentation and replace its focused contract with the flag |
+| Prediction is continuously invalidated | `WindController` publishes every 60 Hz physics tick, each snapshot dirties prediction, and GameplayScene can run the 720-step predictor at 20 Hz even without aim input | `src/wind/wind_controller.gd:72-78`; `src/gameplay/gameplay_scene.gd:147-153,381-398`; `src/cannon/trajectory_predictor.gd:4-5,65-123` | Separate authoritative snapshots, HUD display keys, and bounded prediction epochs; suspend the scheduler when prediction is not consumable |
+| Fire performs heavy work | every Fire request calls `refresh_prediction_for_fire()` before reading readiness, which invokes the full predictor in the action call stack and conflicts with the existing constant-work focused test | `src/stage/stage_controller.gd:317-328`; `src/cannon/cannon_controller.gd:73-80`; `tests/phase7_user_qa_contract_test.gd:124-153` | Remove the callback path; stale context is immediately `pending`, and only the scheduler publishes readiness |
+| Wind HUD rewrites at physics cadence | every snapshot projects wind and rewrites direction, percentage, countdown, forecast, and tooltips although the visible rounded values often have not changed | `src/gameplay/gameplay_scene.gd:381-398`; `src/ui/hud/run_status_card.gd:81-94,144-167` | Store the latest snapshot but refresh Controls only when the pure Wind Display Key changes |
+| Aim mode toggles can rescan topology | `_safe_aiming_bookmark()` duplicates playable-top points, rescans maxima/summits, and recomposes the pose whenever the bookmark is requested | `src/camera/camera_director.gd:310-400`; `src/stage_generation/generated_stage_layout.gd:270-313` | Build immutable interest data and one keyed Aim pose per stage/view input set; toggles read the cached pose |
+| Trajectory dots are separate render nodes | `TrajectoryPreview` creates 96 identical `MeshInstance3D` dots with one shared mesh/material | `src/cannon/trajectory_preview.gd:1-13,116-139` | Use one 96-instance MultiMesh and update transforms/visible count only when prediction changes |
+| Direct physics queries cross callback boundaries | trajectory prediction runs from idle `_process`; render-camera correction and map click focus can call direct-space rays outside `_physics_process` | `src/gameplay/gameplay_scene.gd:147-153,310-328`; `src/camera/camera_director.gd:104-108,466-485,541-625` | Queue prediction/map-pick intents and resolve all direct-space queries in `_physics_process`; render processing consumes cached results only |
 | Misses can linger | basic paintball timeout is 30 seconds before first valid-top contact | `resources/projectiles/basic_paintball.tres:15`; `src/projectile/paint_projectile.gd:158-168` | Reduce the typed resource value to 6 seconds; keep terrain-resident persistence unchanged |
 | Old solution metadata remains | `StageData.reliable_solution` has no current code consumer but is serialized in legacy sources and v8 Stage 01 | `src/stage/stage_data.gd:29`; repository `reliable_solution` search | Remove it only with v9 promotion so the active content-addressed v8 bundle is not edited in place |
 
@@ -160,6 +195,24 @@ move a camera with the stationary cannon body.
 
 These references supply interaction patterns, not visual assets, control copies,
 or licensing inputs. No external game content enters the repository.
+
+## External Performance References and Decisions
+
+| Official Godot 4.7 guidance | Local application | Decision |
+| --- | --- | --- |
+| [General optimization tips](https://docs.godotengine.org/en/4.7/tutorials/performance/general_optimization.html) distinguishes recurring per-frame work, intermittent stalls, and loading costs, and warns against broad unverified optimization | current source already identifies repeated 720-step prediction, synchronous Fire prediction, topology rescans, and 96 identical render nodes | Accept only structural reductions that remove a verified repeated call, allocation, query, or draw owner; make no FPS or latency claim without measurement |
+| [Ray-casting](https://docs.godotengine.org/en/4.7/tutorials/physics/ray-casting.html) states that direct physics-space access is safe in `_physics_process`, not arbitrary input or render callbacks | prediction, map focus, and render-camera safety currently reach direct-space queries from `_process` or input | Move those queries to fixed physics callbacks and cache their immutable result for render/input consumers |
+| [Node processing](https://docs.godotengine.org/en/4.7/classes/class_node.html) documents that `_process` runs every drawn frame and can be toggled with `set_process()` | preview marker work and a scheduler callback need not run while hidden or clean | Enable processing only while a named pending/visible responsibility exists; do not perform a repository-wide process-mode sweep |
+| [MultiMesh](https://docs.godotengine.org/en/4.7/classes/class_multimesh.html) draws repeated meshes in one call and exposes `visible_instance_count` and `custom_aabb`, at the cost of all-or-none culling | 96 trajectory dots share one mesh/material, remain spatially coherent, and are shown/hidden as one path | Replace only the trajectory-dot set with one MultiMesh; keep markers and unrelated environment nodes unchanged |
+| [Thread-safe APIs](https://docs.godotengine.org/en/4.7/tutorials/performance/thread_safe_apis.html) says the active scene tree and physics simulation are not thread-safe by default | this project does not enable separate-thread physics and predictor queries inspect the live world | Keep prediction on the main physics callback; reject a worker-thread predictor and a server rewrite |
+| [Visibility ranges](https://docs.godotengine.org/en/4.7/tutorials/3d/visibility_ranges.html) targets large, complex 3D scenes and trades detail/popping against rendering work | current generated dressing is only roughly 10–32 low-poly decorations and the whole mountain must remain readable | Reject new LOD/occlusion scope until counts or later evidence justify it |
+
+Rejected for this contract: predictor query/shape reuse because it overlaps the
+preserved uncommitted `trajectory_predictor.gd` work; projectile pooling because
+the authoritative resident lifecycle is complex and capped at 21; stage-select
+preview baking because it changes the catalog schema without fixing the current
+aim/flight flow; and generalized RenderingServer or PhysicsServer conversion
+because the affected counts do not justify that ownership cost.
 
 ## Locked Decisions
 
@@ -189,8 +242,40 @@ or licensing inputs. No external game content enters the repository.
    camera constants only within the 20–30% cannon-height/full-mountain contract,
    never per stage.
 10. Approximately three seconds is a feel reference observed in Shot Follow.
-    Do not add a timer benchmark, flight-duration admission rule, or optimization
-    task. Only the never-contacted miss timeout is exact at 6.0 seconds.
+    Do not add a timer benchmark or flight-duration admission rule. Only the
+    never-contacted miss timeout is exact at 6.0 seconds.
+11. `StageController.request_fire()` is constant-work. It reads capacity and one
+    scheduler-published immutable prediction context; it never calls a refresh
+    callback, `TrajectoryPredictor`, or direct-space query. A mismatched context
+    returns the existing visible `pending` state immediately for human, replay,
+    and agent origins alike.
+12. Add a main-thread `TrajectoryPredictionScheduler` beside the cannon code.
+    Its latest-only key is canonical aim + wind schedule identity + wind launch
+    epoch. A wind epoch remains stable only while every wind sample across
+    `TrajectoryPredictor.MAXIMUM_STEPS` has exactly the same acceleration;
+    otherwise it is `floor(elapsed_ticks / 3)`, matching the current 20 Hz
+    coalescing cadence at the fixed 60 Hz physics rate. No approximate bucket is
+    accepted without the named transition-boundary parity checks.
+13. The scheduler performs direct-space prediction only from `_physics_process`,
+    at most once for the newest dirty key per epoch. It is disabled while neither
+    trajectory preview nor Fire readiness can consume a result. Return from Shot
+    Follow marks the latest key pending and publishes one prediction before Fire
+    becomes available; Fire itself never forces that work.
+14. The authoritative 60 Hz wind snapshot still drives projectile physics and
+    the flag. HUD Controls refresh only when the pure Wind Display Key changes:
+    direction octant, depth cue, rounded strength percent, integer countdown,
+    transition visibility, and rounded next-wind fields.
+15. Aim composition caches exact interest points and the final pose by layout
+    checksum, cannon transform, FOV, and viewport aspect. Stage/migration,
+    viewport, FOV, or cannon-transform change invalidates it; Aim/Map toggles do
+    not.
+16. All direct-space camera safety and map-pick queries execute in
+    `_physics_process`. Follow may run one exact-root safety query per physics
+    tick while moving; render `_process` only interpolates the cached safe pose.
+17. Trajectory dots use one `MultiMeshInstance3D` with 96 allocated instances,
+    `visible_instance_count` equal to sampled dot count, and a refreshed
+    `custom_aabb`. The preview and flag create no mesh/resource per frame and
+    disable idle processing whenever no visible interpolation/facing work exists.
 
 ## Architecture and Data Ownership
 
@@ -198,9 +283,12 @@ or licensing inputs. No external game content enters the repository.
 | --- | --- | --- | --- |
 | Standoff formula | `StageProgressionData` plus `build_stage_catalog.gd` materialization | pure nearest-front/cannon transform calculation after profile bounds exist | camera pose, solver routes, runtime mutation |
 | Accepted placement/resources | `StageData` and promoted v9 catalog | serialized cannon transform, camera bookmark, bounded witnesses | live camera state or duplicated terrain bounds |
-| Aim composition | new responsibility-shaped `AimCameraComposer` beside `CameraDirector`, or an equivalently narrow existing framer extension | exact top points, cannon landmarks, FOV/aspect -> one pose | StageController state, trajectory solving, per-stage repair table |
-| Wind presentation | `CannonWindFlag` under the cannon scene | `configure(WindController)` and settings signal | wind schedule, forces, HUD copy |
-| Follow target/state | `CameraDirector` | `follow_root(PaintProjectile)`, `return_to_aim()`, impact/terminal signal handlers | shot admission, projectile registry, result decisions |
+| Aim composition | new responsibility-shaped `AimCameraComposer` beside `CameraDirector` | immutable exact top/summit points + cannon landmarks + FOV/aspect -> one cached pose | StageController state, trajectory solving, per-stage repair table, mode-toggle topology scans |
+| Prediction scheduling | new `src/cannon/trajectory_prediction_scheduler.gd` | latest canonical aim/wind epoch -> one immutable prediction published to CannonController | Fire admission, worker threads, collision algorithm changes, HUD text |
+| Wind presentation | `CannonWindFlag` under the cannon scene | `configure(WindController)` and settings signal | wind schedule, forces, HUD copy, per-frame mesh creation |
+| Wind display de-duplication | `RunStatusCard` | pure display key derived from the latest snapshot and screen projection | wind schedule or prediction invalidation |
+| Trajectory dot batching | `TrajectoryPreview` | one MultiMesh transform buffer, visible count, custom AABB | predictor ownership, impact/exit marker behavior |
+| Follow target/state | `CameraDirector` | `follow_root(PaintProjectile)`, `return_to_aim()`, impact/terminal signal handlers, physics-cached safe pose | shot admission, projectile registry, result decisions, render-callback physics queries |
 | Root publication | existing `ProjectileManager` | `shot_family_started(shot_id, root_projectile)` | camera transforms |
 | Return UI | `HUDController` plus one reusable compact control | typed `return_to_cannon_requested` intent and visible/focus state | direct Camera3D access or projectile mutation |
 | Flow wiring | `GameplayScene` | connect manager/HUD signals to CameraDirector once | duplicate camera or Board Phase state machine |
@@ -229,6 +317,37 @@ or licensing inputs. No external game content enters the repository.
   - Recorded current owners, exact failure mechanism, comparator lessons, terms,
     exclusions, and this one active execution contract.
 
+- [ ] **1.0 Restore demand-driven prediction and constant-work Fire**
+  - Add `src/cannon/trajectory_prediction_scheduler.gd` as one configured gameplay
+    Node that owns the latest dirty context, the 3-tick/nonchanging-wind epoch,
+    fixed-physics cadence, and publication into `CannonController`. Keep only the
+    newest requested key; do not build a prediction history or worker.
+  - Move live `PhysicsDirectSpaceState3D` prediction out of
+    `GameplayScene._process()` and into the scheduler's `_physics_process()`.
+    GameplayScene forwards aim changes, wind epoch changes, and whether preview
+    or Fire can consume a result; it does not own cadence/key arithmetic.
+  - Remove `CannonController.configure_prediction_refresh()`,
+    `refresh_prediction_for_fire()`, and the call from
+    `StageController.request_fire()`. Extend the published prediction metadata so
+    readiness requires the current canonical context key. A stale key remains
+    visible as `pending` and Fire returns immediately without a query.
+  - Add a pure wind-epoch helper under `WindController`: return one stable
+    keyframe epoch only if every sample through the 720-step prediction horizon
+    has identical acceleration; otherwise return `elapsed_ticks / 3`. Do not
+    allocate 720 WindSnapshots merely to build the key.
+  - Add the pure Wind Display Key to `RunStatusCard`; retain the latest snapshot
+    but skip label/tooltip reassignment when the displayed tuple is unchanged.
+  - Create `tests/prediction_scheduler_test.gd`; extend
+    `phase7_user_qa_contract_test.gd` and `wind_result_hud_test.gd`. Cover latest-
+    key coalescing, stable-wind reuse, three-tick transition epochs, suspend/
+    resume, stale pending, no Fire-side compute, and human/replay/agent parity.
+    At transition start/middle/end, compare a bucketed prediction to an exact-tick
+    prediction and require the same hit identity plus endpoint distance at most
+    0.25 m.
+  - Accept when prediction queries occur only in fixed physics processing, one
+    unchanged stable context is reused, hidden Shot Follow does not recompute,
+    and Fire never changes `prediction_compute_count()`.
+
 - [ ] **1.1 Version the physical standoff contract**
   - Bump `StageGenerationContract.CONTRACT_VERSION` and progression resources to
     version 9. Add one pure progression/materialization helper that places the
@@ -247,13 +366,20 @@ or licensing inputs. No external game content enters the repository.
     that uses exact playable-top points and cannon/muzzle landmarks. Keep 48 FOV
     and one shared set of constants; target a 25% cannon silhouette with an
     accepted 20–30% band and require the complete mountain/summit safe frame.
+  - Build the interest-point set and final pose once per layout checksum, cannon
+    transform, FOV, and viewport aspect. Invalidate only on one of those inputs;
+    Aim/Map toggles consume the cached pose without calling
+    `playable_top_world_points()` or `summit_region()` again.
   - Preserve CameraDirector safety/occlusion correction and Map View behavior.
-    Remove the superseded suggestion for independent Aim View navigation.
+    Remove the superseded suggestion for independent Aim View navigation. Queue
+    Map View click/refocus screen coordinates and resolve their direct-space ray
+    in `_physics_process`, never inside `_unhandled_input`.
   - Extend focused camera tests with Stage 01/30 projection assertions and a
-    rendered-evidence state; numeric projection supports but does not replace
-    runtime image review.
+    cache-invalidation contract plus a rendered-evidence state; numeric projection
+    supports but does not replace runtime image review.
   - Accept when both endpoint stages meet the foreground/distance contract
-    without FOV widening or per-stage data.
+    without FOV widening or per-stage data, a mode toggle performs no topology
+    scan, and input/render callbacks perform no direct-space query.
 
 - [ ] **1.3 Promote the version-9 catalog atomically**
   - Rebuild all 30 persisted stages using only the existing bounded default and
@@ -269,13 +395,30 @@ or licensing inputs. No external game content enters the repository.
     solution-route field remains, and exactly one active generated bundle is
     referenced.
 
+- [ ] **1.4 Batch and suspend trajectory-preview presentation**
+  - Replace `_dots: Array[MeshInstance3D]` with one `MultiMeshInstance3D` backed
+    by the existing shared dot mesh/material. Allocate 96 transforms once; on a
+    new prediction update only the used transforms, set
+    `visible_instance_count`, and refresh one conservative `custom_aabb`.
+  - Keep impact/exit marker behavior and `visible_sample_count()` compatible.
+    Disable `TrajectoryPreview._process()` while the preview is hidden, has no
+    prediction, or has no camera-relative visible marker; enable it only for the
+    marker scale/facing work that genuinely follows a moving camera.
+  - Create `tests/trajectory_preview_efficiency_test.gd` covering one MultiMesh,
+    maximum/partial/zero visible counts, endpoints, custom bounds, marker state,
+    hidden processing, and absence of `TrajectoryDot*` child nodes.
+  - Accept when the visible path is unchanged in the Stage 01/30 Aim captures,
+    all dots use one draw owner, and hidden preview processing is disabled.
+
 - [ ] **2.1 Replace wind debris with the cannon-side flag**
   - Add `CannonWindFlag` as a cannon-owned presentation component using a simple
     pole and triangular streamer/flag with shared project materials. Configure it
     from GameplayScene with the existing WindController.
   - Smoothly orient toward `push_direction`; map normalized strength to restrained
     bend/flutter. Reduced motion preserves static direction and disables repeated
-    flutter.
+    flutter. Build pole/cloth primitives and shared materials once; snapshot or
+    interpolation updates change only transforms/material parameters. Disable
+    idle processing while hidden, settled, or in reduced-motion static state.
   - Delete `WindDebrisField`, its gameplay scene node/wiring, and
     `wind_debris_field_test.gd`; add a focused flag contract for direction,
     strength ordering, transition, reduced motion, non-collision, and cleanup.
@@ -293,8 +436,13 @@ or licensing inputs. No external game content enters the repository.
   - Preserve camera collision/occlusion safety and transition smoothing. A
     Splitter child never steals focus; a later accepted root replaces the prior
     follow target only after the player has returned and fired again.
+  - Remove Follow reads of `ProjectileManager.active_projectiles()` and its copied
+    array. Physics processing computes/caches exact-root focus and one safe pose;
+    render processing interpolates that cache and performs no `intersect_ray`,
+    `cast_motion`, or other direct-space query.
   - Accept when focused tests prove exact-root selection, impact hold,
-    auto-return, terminal return, restart/result cleanup, and two-family behavior.
+    auto-return, terminal return, restart/result cleanup, two-family behavior,
+    O(1) target access, and physics-only safety queries.
 
 - [ ] **3.2 Add the contextual return path and copy**
   - Add one focusable edge control to the existing HUD component system with
@@ -327,20 +475,23 @@ or licensing inputs. No external game content enters the repository.
 - [ ] **5.1 Integrated quality pass**
   - Run `$codebase-quality-auditor` over the final task diff. Check StageController
     ownership, exact-root identity, CameraDirector size, stage-generation
-    responsibility, no second wind truth, HUD intent boundaries, schema removal,
+    responsibility, PredictionScheduler ownership, physics-query callback safety,
+    no second wind truth, HUD intent boundaries, MultiMesh bounds, schema removal,
     resource lifecycle, and reachable failure paths.
   - Make only safe task-scoped corrections. Accept when no competing state owner,
-    catch-all gameplay file, dead debris/solution path, silent null-root follow,
-    or v8/v9 pointer ambiguity remains.
+    catch-all gameplay file, Fire-side prediction, render/input direct-space query,
+    dead debris/solution path, silent null-root follow, or v8/v9 pointer ambiguity
+    remains.
 
 - [ ] **5.2 One focused and production-style validation gate**
   - Before starting, tell the user this gate runs targeted functional scripts,
     one repository smoke check, one Windows release export, and seven background
-    capture states; it does not run the full suite, a performance test, an
+    capture states; it does not run the full suite, a timing/FPS benchmark, an
     exhaustive solver, or a foreground window. Stop after the named artifacts are
     produced and reviewed unless a relevant failure requires one corrected rerun.
-  - Run focused stage placement/camera, wind flag, Shot Follow/HUD, timeout, and
-    replay-presentation scripts directly with headless Godot. Run
+  - Run focused prediction scheduling, camera/query safety, trajectory batching,
+    stage placement, wind flag/HUD, Shot Follow, timeout, and replay-presentation
+    scripts directly with headless Godot. Run
     `scripts/verify.ps1` once and one release export.
   - Capture and inspect at native size: Stage 01 Aim View, Stage 30 Aim View,
     weak/crosswind flag, strong/crosswind flag, mid-flight root follow, terrain
@@ -360,6 +511,16 @@ or licensing inputs. No external game content enters the repository.
 
 - Stage 01 and Stage 30 report at least 70 m from cannon origin to the nearest
   playable front in accepted data.
+- `StageController.request_fire()` never invokes prediction; a stale current key
+  reports pending, while a ready matching key launches with no additional
+  prediction compute. The three-tick transition epoch preserves hit identity and
+  stays within the existing 0.25 m endpoint parity tolerance.
+- An unchanged stable aim/wind context is reused; Shot Follow, pause, result, and
+  hidden preview states do not run trajectory prediction. Wind physics/flag still
+  receive 60 Hz snapshots while unchanged rounded HUD values are not rewritten.
+- Direct physics-space prediction, map-pick, and camera-safety queries occur only
+  in fixed physics callbacks. Render processing consumes cached prediction and
+  safe-pose data.
 - Their 1280x720 Aim View renders show the whole playable silhouette and summit,
   a roughly 20–30% foreground cannon, visible muzzle/trajectory/impact marker,
   and no HUD obstruction.
@@ -373,16 +534,24 @@ or licensing inputs. No external game content enters the repository.
   away from the newly fired root, and Splitter children do not steal focus.
 - Never-contacted root timeout is 6.0 seconds; valid-top contact still disables
   age-based deletion and preserves later wind wake/paint behavior.
+- Aim/Map toggles reuse cached stage interest data and Aim pose. Trajectory dots
+  have one MultiMesh draw owner with correct visible count/bounds, and the hidden
+  preview/settled flag do not run idle presentation callbacks.
 - `reliable_solution`, solution-search code, exhaustive-certificate runner,
   WindDebrisField, inactive generated catalogs, and stale active handoff claims
   are absent from the current implementation/documentation authority.
-- No performance result, timing metric, exhaustive target certificate, solver
-  clear, or all-stage playthrough is claimed as acceptance evidence.
+- No measured performance result, timing metric, exhaustive target certificate,
+  solver clear, or all-stage playthrough is claimed as acceptance evidence.
+  Acceptance claims only the named structural reductions and preserved behavior.
 
 ## Regression Guards
 
 - Fire capacity remains two generation-0 root families; follow state is not a
   capacity or Board Phase.
+- Prediction context remains one latest immutable value; no cache grows with
+  elapsed wind ticks or aim history, and Fire never gains a second admission path.
+- The 3-tick wind epoch is an explicit fixed-60-Hz contract guarded at transition
+  boundaries; do not silently widen it or key only by broad HUD snapshots.
 - Aim tuple, preview, paint mask, wind schedule, timer, result, replay action, and
   stage outcome authorities do not move into HUD, CameraDirector, or flag code.
 - Map View retains safe orbit/zoom/refocus and blocks aim/Fire. Aim View retains
@@ -403,9 +572,13 @@ includes an unrelated performance test and a much broader suite.
 $paintMountainGodot = (Resolve-Path -LiteralPath $env:GODOT_BIN).Path
 
 foreach ($testScript in @(
+  'prediction_scheduler_test.gd',
+  'phase7_user_qa_contract_test.gd',
   'stage_cannon_standoff_test.gd',
   'phase8_aiming_composition_test.gd',
+  'trajectory_preview_efficiency_test.gd',
   'cannon_wind_flag_test.gd',
+  'wind_result_hud_test.gd',
   'shot_follow_camera_test.gd',
   'phase7_ui_test.gd',
   'projectile_settling_test.gd',
@@ -420,16 +593,21 @@ foreach ($testScript in @(
 if ($LASTEXITCODE -ne 0) { throw 'Windows release export failed.' }
 ```
 
-The implementation may rename a proposed new focused test before it is added,
-but the final plan update must record the actual exact command. The production
-capture command set is added after `DeliveryCaptureRunner` owns the seven named
-states; it must use `builds/windows/PaintMountain.exe -- --capture-background`
-and write only under a task-specific `.agents/evidence/` directory.
+The new focused scripts use the exact names above. If verified repository
+ownership makes a different split necessary, revise this contract before adding
+or invoking another command. The production capture command set is added after
+`DeliveryCaptureRunner` owns the seven named states; it must use
+`builds/windows/PaintMountain.exe -- --capture-background` and write only under
+a task-specific `.agents/evidence/` directory.
 
 ## Predetermined Contingencies
 
 | Trigger | Required response | Stop boundary |
 | --- | --- | --- |
+| The three-tick wind epoch changes hit identity or exceeds 0.25 m endpoint parity at a named transition fixture | Reduce only the changing-wind epoch to two ticks and rerun the same fixtures; if it still fails, use an exact one-tick changing-wind epoch while retaining stable constant-wind reuse and constant-work Fire | Do not restore synchronous Fire prediction, loosen collision parity, or approximate the authoritative live wind |
+| A scheduler receives several aim/wind changes before its next physics callback | Replace its one pending key with the newest key and compute once; leave intermediate keys unpublished | Do not queue a history, start parallel physics queries, or publish a stale key |
+| A new task appears to require editing the preserved dirty `trajectory_predictor.gd` | Stop that subtask and establish provenance of the existing diff before changing it | Do not overwrite, stage, or work around collision-parity code silently |
+| MultiMesh trajectory dots cull incorrectly | Recompute one conservative `custom_aabb` from the displayed path plus dot radius and retain all-or-none path culling | Do not return to 96 independent draw nodes or disable culling globally |
 | Stage 30 mountain does not fit while cannon remains 20–30% at 48 FOV | Increase the shared minimum standoff in 5 m steps, rebuild v9, and stop at the first shared value up to 90 m that passes Stage 01/30; keep one value for all stages | Do not widen FOV, shrink the cannon asset, or add per-stage camera data |
 | A new standoff makes the bounded default or summit witness fail | Let the existing 32-candidate catalog search choose a valid persisted seed and bounded witness | Do not invoke target-wide certificate generation or authored solution search; stop and revise the product contract if no candidate passes |
 | Representative default flight still feels prolonged | First adjust the shared generated default aim preference within the existing legal tuple and target-centroid neighborhood, then the shared launch-speed curve only if all bounded witnesses and preview/physics parity are regenerated | Do not add a flight-duration gate or per-stage speed |
@@ -444,10 +622,11 @@ and write only under a task-specific `.agents/evidence/` directory.
 
 - Completed: cleanup of abandoned text/catalog/runner artifacts; current-state
   trace; domain alignment; comparator research; authority-doc updates; consumed
-  handoff; decision-complete plan.
+  handoff; Godot 4.7 performance-guidance review; decision-complete plan.
 - In progress: none. This turn intentionally stops before player-facing Godot
   implementation.
-- Next executable task: **1.1 Version the physical standoff contract**.
+- Next executable task: **1.0 Restore demand-driven prediction and constant-work
+  Fire**.
 - Preserved unrelated work: `src/cannon/trajectory_predictor.gd` and
   `tests/target_mask_test.gd` local modifications.
 - Known untracked residue: 27 obsolete binary PNGs under the two historical
@@ -455,9 +634,10 @@ and write only under a task-specific `.agents/evidence/` directory.
 
 ## Next Steps
 
-1. Resume at Task 1.1 and inspect the two preserved unrelated diffs before
+1. Resume at Task 1.0 and inspect the two preserved unrelated diffs before
    staging anything.
-2. Complete Tasks 1.1–1.3 as one versioned stage-placement/catalog checkpoint.
+2. Complete Task 1.0 as a prediction/readiness checkpoint, then Tasks 1.1–1.4 as
+   one versioned stage-placement/camera/preview checkpoint.
 3. Complete the flag and Shot Follow branches, then integrate them before the
    quality audit.
 4. Announce and run the single bounded final gate only after the implementation
@@ -469,6 +649,9 @@ and write only under a task-specific `.agents/evidence/` directory.
 
 - Stop before any dependency, asset pack, renderer, save-format, scoring, or
   mechanism expansion; it requires separate explicit user approval.
+- Stop before adding timing probes, FPS thresholds, profiler capture, worker-thread
+  physics access, generalized server APIs, pooling, LOD, or occlusion work; none
+  is needed to prove the named structural contracts.
 - Stop if v9 cannot preserve bounded default/summit witnesses within the existing
   32 candidates and shared standoff contingency. Do not reopen exhaustive solver
   work automatically.
@@ -476,7 +659,8 @@ and write only under a task-specific `.agents/evidence/` directory.
   20–30% cannon by 90 m shared standoff at FOV 48; report the geometric conflict
   with captures before changing FOV or asset scale.
 - Stop final validation after the named focused checks, one verify/export, and
-  seven reviewed captures. Do not broaden it for reassurance.
+  seven reviewed captures. Do not add a performance benchmark or broaden it for
+  reassurance.
 - Mark this plan `done` only after implementation, focused contracts,
   production-style visual evidence, documentation truth, and quality audit all
   pass. User-owned gameplay feel remains a separate final review.
