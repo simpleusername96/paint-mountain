@@ -2,7 +2,7 @@ class_name ProjectileData
 extends Resource
 
 @export_category("Body")
-@export_range(0.1, 2.0, 0.05) var radius: float = 0.52
+@export_range(0.1, 4.0, 0.05) var radius: float = 0.52
 @export_range(0.1, 20.0, 0.1) var mass: float = 2.4
 @export_range(0.0, 1.0, 0.01) var bounce: float = 0.08
 @export_range(0.0, 1.0, 0.01) var friction: float = 0.78

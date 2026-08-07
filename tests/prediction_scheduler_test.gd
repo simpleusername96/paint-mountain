@@ -46,13 +46,13 @@ func _run() -> void:
 	_assert_true(
 		scheduler.last_advance_step_count() \
 				<= TrajectoryPredictionScheduler.MAXIMUM_STEPS_PER_TICK,
-		"one fixed callback must never exceed the 24-step budget"
+		"one fixed callback must never exceed the 12-step budget"
 	)
 	_assert_true(
 		cannon.current_prediction() == null,
 		"an incomplete job must not publish a partial arc"
 	)
-	_drive_until_publication(scheduler, cannon, 40)
+	_drive_until_publication(scheduler, cannon, 80)
 	_assert_true(
 		cannon.current_prediction() != null \
 				and scheduler.prediction_publication_count() == 1,
@@ -70,8 +70,8 @@ func _run() -> void:
 		"stable wind must reuse the completed prediction"
 	)
 
-	# Continuous drag may nominate only one newest context per twelve scheduler
-	# ticks. It never creates a queue longer than one active and one pending.
+	# Continuous drag nominates only one newest context per twelve scheduler
+	# ticks. Each nomination replaces obsolete active work instead of waiting.
 	scheduler.set_aim_interaction_active(true)
 	for tick in range(36):
 		cannon.set_aim(float(tick + 1), 38.0, 68.0)
@@ -83,13 +83,16 @@ func _run() -> void:
 			"interactive refresh must retain the fixed-step budget"
 		)
 		_assert_true(
-			scheduler.active_job_count() <= 1 \
-					and scheduler.pending_request_count() <= 1,
-			"scheduler ownership must remain one active plus one newest pending"
+			scheduler.active_job_count() <= 1,
+			"scheduler ownership must remain one active latest-context job"
 		)
 	_assert_true(
 		_fake_compute_count <= 4,
 		"thirty-six interactive ticks must nominate at most once per twelve ticks"
+	)
+	_assert_true(
+		scheduler.discarded_job_count() > 0,
+		"a newer nominated aim must discard obsolete active work"
 	)
 	scheduler.set_aim_interaction_active(false)
 	scheduler._physics_process(1.0 / 60.0)
@@ -134,7 +137,7 @@ func _run() -> void:
 	scheduler.queue_free()
 	await process_frame
 	if not _failed:
-		print("Prediction scheduler checks passed: 24-step jobs, latest-only coalescing, stable reuse, and 30-tick buckets.")
+		print("Prediction scheduler checks passed: 12-step/1 ms callbacks, obsolete-work replacement, stable reuse, and 30-tick buckets.")
 	quit(1 if _failed else 0)
 
 

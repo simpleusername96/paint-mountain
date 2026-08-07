@@ -290,7 +290,7 @@ func _default_witness_matches_layout() -> bool:
 			and identity.terrain_cell.y >= 0 and identity.terrain_cell.y < cell_count.y \
 			and identity.terrain_triangle in [0, 1] \
 			and generated_default_witness.physical_identity != null \
-			and generated_default_witness.physical_identity.has_same_surface_address(identity)
+			and generated_default_witness.contacts_are_compatible()
 
 
 func _summit_witness_matches_layout() -> bool:
@@ -310,7 +310,7 @@ func _witness_matches_sample(witness: StageEntryAimWitness, sample: Dictionary) 
 	return identity != null and identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
 			and identity.terrain_cell == sample.cell and identity.terrain_triangle == int(sample.triangle) \
 			and witness.physical_identity != null \
-			and witness.physical_identity.has_same_surface_address(identity)
+			and witness.contacts_are_compatible()
 
 
 func target_centroid_local_xz() -> Vector2:

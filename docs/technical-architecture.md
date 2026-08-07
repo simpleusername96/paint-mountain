@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, replay, and verification
 source: source-brief.md
@@ -16,6 +16,7 @@ related:
   - ../.agents/execplans/2026-08-05-gameplay-contract-recovery.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
+  - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
 ---
@@ -53,7 +54,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, replay, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
 | `AimInputController` | Presentation-mode-aware mouse/keyboard mapping, unsnapped pointer-angle remainder, sensitivity, interaction intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
 | `TrajectoryPredictionJob` / `TrajectoryPredictor` | Sole resumable fixed-step sphere/collision implementation and its synchronous offline wrapper | Device input, Fire rules, threads, post-impact behavior, mechanisms, or coverage prediction |
-| `TrajectoryPredictionScheduler` | Latest prediction key, one active job, one newest pending key, fixed-tick budget, bounded aim/wind nominations, and atomic publication | Wind generation, Fire admission, or prediction history |
+| `TrajectoryPredictionScheduler` | Latest prediction key, one replaceable active job, 12-step/approximately-1-ms fixed-tick budget, bounded aim/wind nominations, current-only atomic publication, and runtime diagnostics | Wind generation, Fire admission, prediction math, or prediction history |
 | `CannonController` | Yaw/elevation/power commands, clamping, shared launch calculation, and last-complete prediction presentation state | Device polling, Fire admission, target solving, post-fire steering, or stage outcome |
 | `ProjectileContact` | Immutable measured contact point/normal/collider/shape/impulse/velocity/tick facts | Mutation, gameplay decisions, or presentation |
 | `PaintProjectile` | Rigid-body behavior, every begun measured contact, persistent terrain-rest lifecycle, surface recovery, and Playable Terrain Surface sweep/radial-mark intent | Persistent mask mutation, coverage totals, wind schedule, or stage transitions |
@@ -263,6 +264,11 @@ Human / Replay / GameplayAgentApi actions
   cannon, and launch tuning aim for a representative default contact near three
   seconds, but no elapsed-time solver or legal-shot rejection is added; the
   implementing agent judges pacing in the actual Shot Follow flow.
+- The root ball uses `2.40 m` physical radius, `2.80 m` continuous paint radius,
+  and `3.50 m` impact radius. `CannonBallistics` derives one scale-aware centre
+  origin for offline solving, preview, and live bodies: one radius beyond the
+  muzzle plus only the vertical clearance needed to keep the sphere above the
+  fixed cannon platform.
 - An accepted launch publishes the specific generation-0 root identity to the
   presentation path. `CameraDirector` follows only that root, holds its first
   `TerrainSurface` contact for 0.8 seconds, and returns automatically or on a
@@ -283,6 +289,11 @@ Human / Replay / GameplayAgentApi actions
   wind sample, fixed `1/60 s` recurrence, projectile radius, and terrain masks
   used by the rigid body. Terminate at the first sphere-cast collision or bounds
   exit; never show post-impact behavior.
+- `TrajectoryPredictionScheduler` advances that exact job by at most 12 steps
+  and approximately 1 ms per physics callback. A new nominated context discards
+  obsolete active work; only the current key publishes. `TrajectoryPreview`
+  retains the last complete arc/impact marker at subdued opacity and owns no
+  normal-operation calculation/update label.
 - The canonical power curve is linear `32..160 m/s` over integer power `0..100`.
   Direct/summit certification and the open play bounds consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
@@ -387,7 +398,7 @@ Human / Replay / GameplayAgentApi actions
   launches do nothing with this node, and the debug overlay remains unavailable
   in release builds.
 - `resources/stages/catalog.tres` points at the format-5 persisted bundle
-  `resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
+  `resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
   It contains all 30 layouts and their default/summit witnesses.
 - Generic glyph placement searches visible Playable Terrain Surface with spacing;
   it has no authored per-stage coordinates. `CannonWindFlag` replaces generic

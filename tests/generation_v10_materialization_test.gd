@@ -23,9 +23,9 @@ func _run_checks() -> void:
 	)
 	for index in range(mini(previous.stages.size(), current.stages.size())):
 		_compare_stage(index, previous, current)
-	_compare_witness_manifests(current)
+	_assert_current_witnesses(current)
 	if not _failed:
-		print("Generation v10 materialization passed: all v9 physical, target, cannon, and witness identities are preserved.")
+		print("Generation v10 materialization passed: v9 physical, target, and cannon identities are preserved; current-scale entry witnesses are valid.")
 	quit(1 if _failed else 0)
 
 
@@ -84,24 +84,20 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 	)
 
 
-func _compare_witness_manifests(current: StageCatalogData) -> void:
-	var old_manifest := _read_json("%s/manifest.json" % V9_ROOT)
-	var new_manifest := _read_json(current.bundle_manifest_path)
-	_assert_true(
-		old_manifest.get("default_witnesses", []) \
-				== new_manifest.get("default_witnesses", []),
-		"default bounded witness identities must match v9"
-	)
-	_assert_true(
-		old_manifest.get("summit_witnesses", []) \
-				== new_manifest.get("summit_witnesses", []),
-		"summit bounded witness identities must match v9"
-	)
-
-
-func _read_json(path: String) -> Dictionary:
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return parsed as Dictionary if parsed is Dictionary else {}
+func _assert_current_witnesses(current: StageCatalogData) -> void:
+	for index in range(current.stages.size()):
+		var stage_id := "stage_%02d" % (index + 1)
+		var baked := load(current.layout_paths[index]) as BakedStageLayoutData
+		var layout := StageLayoutBakeCodec.hydrate(baked, current.stages[index]) \
+				if baked != null else null
+		_assert_true(
+			layout != null \
+					and layout.generated_default_witness != null \
+					and layout.generated_default_witness.is_valid() \
+					and layout.generated_summit_witness != null \
+					and layout.generated_summit_witness.is_valid(true),
+			"%s must carry valid bounded entry witnesses for the current projectile scale" % stage_id
+		)
 
 
 func _assert_true(condition: bool, message: String) -> void:

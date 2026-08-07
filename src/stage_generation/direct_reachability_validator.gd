@@ -15,7 +15,9 @@ const TARGET_DISTANCE_TOLERANCE := 2.10
 # body uses a discrete rigid sphere. Keep target assignments conservative here
 # so the real contact remains inside the authoritative 2.10 m paint mark.
 const CERTIFICATION_DISTANCE_TOLERANCE := 1.70
-const RIGIDBODY_IDENTITY_DISTANCE_TOLERANCE := TARGET_DISTANCE_TOLERANCE
+const RIGIDBODY_IDENTITY_DISTANCE_TOLERANCE := \
+		StageEntryAimWitness.TERRAIN_FACET_PARITY_TOLERANCE
+const RIGIDBODY_TARGET_RADIUS_CLEARANCE := 0.10
 const SUMMIT_CONTACT_DISTANCE_TOLERANCE := 0.75
 const MAXIMUM_PERPENDICULAR_MISS := 1.02
 const ELEVATION_SAMPLE_STEP_DEGREES := 1.0
@@ -605,9 +607,16 @@ static func validate_rigidbody_batches(
 	var reconciled_assignments := PackedInt32Array()
 	var reconciled_distance_margins := PackedFloat32Array()
 	reconciled_distance_margins.resize(witnesses.size())
+	var physical_target_tolerance := maxf(
+		TARGET_DISTANCE_TOLERANCE,
+		cannon.projectile_data.radius + RIGIDBODY_TARGET_RADIUS_CLEARANCE
+	)
+	var physical_bucket_radius := ceili(
+		physical_target_tolerance / WITNESS_SPATIAL_BUCKET_METERS
+	)
 	var physical_witness_buckets: Dictionary = {}
 	for witness_index in range(witnesses.size()):
-		reconciled_distance_margins[witness_index] = TARGET_DISTANCE_TOLERANCE
+		reconciled_distance_margins[witness_index] = physical_target_tolerance
 		if physical_witness_valid[witness_index] == 1:
 			var physical_bucket := _spatial_bucket_for(physical_points[witness_index])
 			var physical_indices: PackedInt32Array = physical_witness_buckets.get(
@@ -620,34 +629,54 @@ static func validate_rigidbody_batches(
 		var best_witness_index := -1
 		var best_distance := INF
 		var target_bucket := _spatial_bucket_for(target_points[target_index])
-		# Buckets are exactly the certification radius wide, so a 3x3 neighborhood
-		# contains every physical witness that can cover this target point.
-		for bucket_x in range(target_bucket.x - 1, target_bucket.x + 2):
-			for bucket_z in range(target_bucket.y - 1, target_bucket.y + 2):
+		# Expand the bucket neighborhood from the current physical tolerance so a
+		# larger projectile cannot hide a valid nearby witness across a bucket edge.
+		for bucket_x in range(
+			target_bucket.x - physical_bucket_radius,
+			target_bucket.x + physical_bucket_radius + 1
+		):
+			for bucket_z in range(
+				target_bucket.y - physical_bucket_radius,
+				target_bucket.y + physical_bucket_radius + 1
+			):
 				var nearby_indices: PackedInt32Array = physical_witness_buckets.get(
 					Vector2i(bucket_x, bucket_z),
 					PackedInt32Array()
 				)
 				for witness_index in nearby_indices:
 					var distance := physical_points[witness_index].distance_to(target_points[target_index])
-					if distance <= TARGET_DISTANCE_TOLERANCE \
+					if distance <= physical_target_tolerance \
 							and (distance < best_distance \
 							or (is_equal_approx(distance, best_distance) \
 							and (best_witness_index < 0 or witness_index < best_witness_index))):
 						best_witness_index = witness_index
 						best_distance = distance
 		if best_witness_index < 0:
+			var nearest_physical_distance := INF
+			var nearest_physical_point := Vector3.INF
+			for witness_index in range(witnesses.size()):
+				if physical_witness_valid[witness_index] != 1:
+					continue
+				var physical_distance := physical_points[witness_index].distance_to(
+					target_points[target_index]
+				)
+				if physical_distance < nearest_physical_distance:
+					nearest_physical_distance = physical_distance
+					nearest_physical_point = physical_points[witness_index]
 			failure_diagnostics.append({
 				"target_index": target_index,
 				"reason": &"physical_target_uncovered",
-				"distance": best_distance,
+				"distance": nearest_physical_distance,
+				"tolerance": physical_target_tolerance,
+				"physical_point": nearest_physical_point,
+				"target_point": target_points[target_index],
 			})
 			reconciled_assignments.append(0)
 			continue
 		reconciled_assignments.append(best_witness_index)
 		reconciled_distance_margins[best_witness_index] = minf(
 			reconciled_distance_margins[best_witness_index],
-			TARGET_DISTANCE_TOLERANCE - best_distance
+			physical_target_tolerance - best_distance
 		)
 
 	var valid := failure_diagnostics.is_empty()

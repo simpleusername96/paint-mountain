@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -11,6 +11,7 @@ related:
   - technical-architecture.md
   - test-checklist.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
+  - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/Plan.md
 ---
 
@@ -1922,6 +1923,43 @@ only:
   persistent prompts exist, and remove the hidden direct `R` restart shortcut.
   Restart remains a visible pause-menu action. F3 remains debug-only and is not
   advertised.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-08): Larger Paintball, Attainable Goals, and Hitch-Free Aim Feedback
+
+After reviewing the current aiming hitch and the difficulty of filling the
+Target Area, the user authorized implementation without further product choices.
+These clauses override only the prior projectile scale, Stage 11-30 target
+curve, pending-preview ownership, per-tick preview budget, and normal aiming
+calculation-message interpretations:
+
+- **Two-times projectile scale:** use a `2.40 m` root physical/visible radius,
+  a `2.80 m` continuous paint radius, and a `3.50 m` impact paint radius. Keep
+  mass, launch speed, damping, bounce, friction, wind, and split-child `0.78`
+  scale behavior unchanged. The shared launch origin must keep the complete
+  sphere outside the barrel and cannon apron at every legal elevation.
+- **Attainable clear curve:** preserve Stage 01-10 clear targets (`4.0..8.5%`).
+  Set Stages 11-15 to `8.5%`, 16-20 to `9.0%`, 21-25 to `9.5%`, and 26-30 to
+  `10.0%`. Preserve existing shot tiers and set star thresholds to clear,
+  clear plus `2.5`, and clear plus `5.0` percentage points.
+- **Preserve first impact:** keep the approximate first-impact trajectory and
+  marker. Do not extend it into a post-contact solution path; rolling, bouncing,
+  wind, and mechanisms remain the main outcome after contact.
+- **Latest-only preview work:** runtime owns one active prediction job. A newly
+  nominated live aim/wind context replaces obsolete active work rather than
+  waiting for it. Each physics callback advances at most 12 exact fixed steps
+  and stops near a 1 ms main-thread budget, while guaranteeing forward progress.
+  Only a still-current context may publish.
+- **No aiming wait copy:** normal Aim View shows no trajectory-calculation or
+  update text, spinner, or other instruction to wait. The last complete arc and
+  marker remain at subdued opacity while the current exact result is pending.
+  Fire remains independent of preview readiness.
+- **Validation boundary:** automated runtime checks establish scale-dependent
+  contact, paint, bounded entry, and performance behavior. They do not create a
+  shipping solver, authored successful route, exhaustive target certificate, or
+  all-stage manual-clear obligation. Human play remains the owner of feel and
+  readability judgments.
 
 All earlier requirements not contradicted here remain in force.
 

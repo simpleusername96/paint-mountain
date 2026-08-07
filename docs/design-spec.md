@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -16,6 +16,7 @@ related:
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../.agents/execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
+  - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
 ---
@@ -156,9 +157,10 @@ exactly three mechanism types.
   pre-result termination families.
 - Projectile data owns physical and paint tuning plus activation capacity. It
   owns no paint amount, payload, depletion rate, lifetime, slow-stop threshold,
-  or flow budget. The ball must read materially larger than the old version,
-  while its continuous paint mark remains a natural, visibly narrower midpoint
-  than the old oversized mark.
+  or flow budget. The root physical/visible radius is `2.40 m`; continuous and
+  impact paint radii are `2.80 m` and `3.50 m`. Split children retain the `0.78`
+  scale multiplier. The ball centre starts one radius beyond the visible muzzle
+  with only the additional vertical lift needed to clear the cannon apron.
 - A representative default shot should feel close to three seconds before first
   terrain contact, but elapsed flight time is not a legal-shot gate or an exact
   per-stage contract. Physical standoff and launch tuning prevent both an
@@ -269,6 +271,9 @@ exactly three mechanism types.
   data shapes terrain and supports readability without defining a player
   solution. Open-bound admission, analytic range admission, bounded witnesses, and
   representative gameplay regressions remain required.
+- Clear targets are `4.0..8.5%` through Stages 01-10, then use shot-tier
+  plateaus: `8.5%` for 11-15, `9.0%` for 16-20, `9.5%` for 21-25, and `10.0%`
+  for 26-30. Two- and three-star grades remain `+2.5/+5.0` points above clear.
 
 ### Results, persistence, and replay
 
@@ -341,10 +346,12 @@ exactly three mechanism types.
 - Aim, map, and ordinary button input acknowledge without a main-thread stall.
   Fire admission reads only canonical aim and stage-rule state and never
   calculates or waits for prediction. One latest-only resumable prediction job
-  advances by at most 24 fixed simulation steps per physics tick. Wind
+  advances by at most 12 fixed simulation steps and approximately 1 ms per
+  physics tick; a newer nominated context replaces obsolete active work. Wind
   presentation may update every fixed tick, but aim and changing-wind prediction
   nominations are bounded. A stale preview remains visible but subdued while
-  bounded scheduled work catches up, and stale jobs never publish.
+  bounded scheduled work catches up, stale jobs never publish, and normal Aim
+  View shows no calculation/update wait text.
 - The cannon-standoff, flight-feel, and camera-flow change uses deterministic
   gameplay contracts and rendered review. It does not require a performance
   timing or profiling pass.
@@ -388,7 +395,7 @@ remains the implemented-truth boundary.
 
 The active catalog pointer is `resources/stages/catalog.tres`. It selects the
 format-5 persisted thirty-stage bundle at
-`resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
+`resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
 Each accepted layout carries default and summit witnesses. Runtime loads this
 bundle through `StageLayoutRepository`; it asynchronously serves the selected
 layout, may prefetch nearby work, retains three entries, and never substitutes

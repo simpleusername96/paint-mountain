@@ -7,6 +7,8 @@ extends RefCounted
 const YAW_PIVOT_OFFSET := Vector3(0.0, 0.75, -0.1)
 const ELEVATION_PIVOT_OFFSET := Vector3.ZERO
 const MUZZLE_OFFSET := Vector3(0.0, 0.0, -3.45)
+const PLATFORM_Y_BELOW_CANNON_ROOT := -0.125
+const PROJECTILE_PLATFORM_CLEARANCE := 0.01
 
 
 static func launch_direction(yaw_degrees: float, elevation_degrees: float) -> Vector3:
@@ -47,6 +49,38 @@ static func launch_origin_for_transform(
 		elevation_degrees: float
 ) -> Vector3:
 	return cannon_transform * launch_origin_local(yaw_degrees, elevation_degrees)
+
+
+## Places the projectile centre one physical radius beyond the visible muzzle,
+## then applies only the vertical lift needed to clear the cannon platform. This
+## preserves one shared origin for solver, preview, and rigid body.
+static func projectile_launch_origin_local(
+		yaw_degrees: float,
+		elevation_degrees: float,
+		projectile_radius: float
+) -> Vector3:
+	var origin := launch_origin_local(yaw_degrees, elevation_degrees) \
+			+ launch_direction(yaw_degrees, elevation_degrees) \
+			* maxf(projectile_radius, 0.0)
+	origin.y = maxf(
+		origin.y,
+		PLATFORM_Y_BELOW_CANNON_ROOT + maxf(projectile_radius, 0.0) \
+				+ PROJECTILE_PLATFORM_CLEARANCE
+	)
+	return origin
+
+
+static func projectile_launch_origin_for_transform(
+		cannon_transform: Transform3D,
+		yaw_degrees: float,
+		elevation_degrees: float,
+		projectile_radius: float
+) -> Vector3:
+	return cannon_transform * projectile_launch_origin_local(
+		yaw_degrees,
+		elevation_degrees,
+		projectile_radius
+	)
 
 
 ## Builds the exact discrete recurrence used by TrajectoryPredictor without

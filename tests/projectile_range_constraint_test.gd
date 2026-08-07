@@ -39,10 +39,11 @@ func _run_checks() -> void:
 		bool(legal.get("valid", false)),
 		"a surface centered on a legal unobstructed trajectory must be in range: %s" % legal
 	)
-	var reference := CannonBallistics.launch_origin_for_transform(
+	var reference := CannonBallistics.projectile_launch_origin_for_transform(
 		stage.cannon_transform,
 		0.0,
-		90.0
+		90.0,
+		PROJECTILE_DATA.radius
 	)
 	var outside_yaw_direction := CannonBallistics.launch_direction(100.0, 10.0)
 	var outside_yaw_surface := reference + Vector3(
@@ -129,18 +130,22 @@ func _run_checks() -> void:
 			float(layout.metrics.get("ballistic_minimum_height_margin", -INF)) >= 0.0,
 			"%s must retain a non-negative reachable-height margin" % stage_id
 		)
-		var runtime_copy := layout.copy_for_runtime()
+		var baked := load(StageCatalog.get_layout_path(stage_id)) as BakedStageLayoutData
+		var accepted_layout := StageLayoutBakeCodec.hydrate(baked, generated_stage) \
+				if baked != null else null
+		var runtime_copy := accepted_layout.copy_for_runtime() \
+				if accepted_layout != null else null
 		_assert_true(
 			runtime_copy != null and runtime_copy.matches_stage_identity(generated_stage),
 			"%s runtime copy must preserve accepted layout identity" % stage_id
 		)
 		if runtime_copy != null:
-			var cached_default_aim := layout.generated_default_aim
+			var cached_default_aim := accepted_layout.generated_default_aim
 			runtime_copy.metrics["runtime_copy_probe"] = true
 			runtime_copy.generated_default_aim = AimTuple.new(0.0, 38.0, 68)
 			_assert_true(
-				not layout.metrics.has("runtime_copy_probe") \
-						and layout.generated_default_aim == cached_default_aim,
+				not accepted_layout.metrics.has("runtime_copy_probe") \
+						and accepted_layout.generated_default_aim == cached_default_aim,
 				"%s runtime annotations must not mutate the prepared cache source" % stage_id
 			)
 	_assert_raster_rejects_out_of_range_stage(stage, stage_one_layout)
@@ -220,10 +225,11 @@ func _assert_shared_recurrence(
 		elevation_degrees: float,
 		power_percent: float
 ) -> void:
-	var origin := CannonBallistics.launch_origin_for_transform(
+	var origin := CannonBallistics.projectile_launch_origin_for_transform(
 		stage.cannon_transform,
 		yaw_degrees,
-		elevation_degrees
+		elevation_degrees,
+		PROJECTILE_DATA.radius
 	)
 	var endpoint_center := flight_surface + Vector3.UP * PROJECTILE_DATA.radius
 	var horizontal_direction_3d := CannonBallistics.launch_direction(
@@ -269,10 +275,11 @@ func _surface_from_legal_flight(
 		power_percent: float,
 		step_count: int
 ) -> Vector3:
-	var position := CannonBallistics.launch_origin_for_transform(
+	var position := CannonBallistics.projectile_launch_origin_for_transform(
 		stage.cannon_transform,
 		yaw_degrees,
-		elevation_degrees
+		elevation_degrees,
+		PROJECTILE_DATA.radius
 	)
 	var velocity := CannonBallistics.launch_velocity(
 		PROJECTILE_DATA,

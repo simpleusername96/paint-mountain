@@ -51,6 +51,20 @@ func _run() -> void:
 	)
 	_assert(dots.custom_aabb.has_volume(), "visible trajectory points must refresh one culling bound")
 	_assert(preview.is_processing(), "a visible impact marker may keep presentation processing enabled")
+	preview.set_prediction_status(&"pending")
+	_assert(
+		is_equal_approx(dots.transparency, 0.48),
+		"pending prediction must retain the last complete arc at subdued opacity"
+	)
+	_assert(
+		preview.get_node_or_null("PredictionStatus") == null,
+		"normal pending prediction must not create calculation or updating text"
+	)
+	preview.set_prediction_status(&"fireable")
+	_assert(
+		is_zero_approx(dots.transparency),
+		"current prediction must restore the complete arc opacity"
+	)
 
 	var dot_mesh_id: int = dots.multimesh.mesh.get_instance_id()
 	var dot_material_id: int = dots.multimesh.mesh.material.get_instance_id()

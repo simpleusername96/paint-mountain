@@ -17,9 +17,13 @@ static func target_for(stage_number: int) -> float:
 	var n := clampi(stage_number, 1, STAGE_COUNT)
 	if n <= 10:
 		return 4.0 + 0.5 * float(n - 1)
+	if n <= 15:
+		return 8.5
 	if n <= 20:
-		return snappedf(9.0 + 0.35 * float(n - 11), 0.5)
-	return snappedf(12.5 + 0.30 * float(n - 21), 0.5)
+		return 9.0
+	if n <= 25:
+		return 9.5
+	return 10.0
 
 
 static func shots_for(stage_number: int) -> int:

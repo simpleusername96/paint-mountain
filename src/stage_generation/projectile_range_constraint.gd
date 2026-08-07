@@ -231,7 +231,9 @@ func _configure() -> void:
 	_inverse_cannon_transform = _stage_data.cannon_transform.affine_inverse()
 	_terrain_center_in_cannon_space = _inverse_cannon_transform \
 			* _stage_data.terrain_center
-	_reference_origin = CannonBallistics.launch_origin_local(0.0, 90.0)
+	_reference_origin = CannonBallistics.projectile_launch_origin_local(
+		0.0, 90.0, _projectile_data.radius
+	)
 	var yaw_count := roundi(
 		(AimTuple.MAXIMUM_YAW_DEGREES - AimTuple.MINIMUM_YAW_DEGREES) \
 				/ YAW_SAMPLE_DEGREES
@@ -275,7 +277,7 @@ func _configure() -> void:
 
 
 func _cached_or_build_envelope(gravity_magnitude: float) -> Dictionary:
-	var cache_key := "%.6f|%.6f|%.6f|%.6f|%.6f|%d|%.6f|%.6f|%s|%s|%s" % [
+	var cache_key := "%.6f|%.6f|%.6f|%.6f|%.6f|%d|%.6f|%.6f|%s|%s|%s|%s" % [
 		_projectile_data.minimum_launch_speed,
 		_projectile_data.maximum_launch_speed,
 		_projectile_data.linear_damp,
@@ -287,6 +289,7 @@ func _cached_or_build_envelope(gravity_magnitude: float) -> Dictionary:
 		str(CannonBallistics.YAW_PIVOT_OFFSET),
 		str(CannonBallistics.ELEVATION_PIVOT_OFFSET),
 		str(CannonBallistics.MUZZLE_OFFSET),
+		str(_projectile_data.radius),
 	]
 	_envelope_cache_mutex.lock()
 	var envelope: Dictionary = _envelope_cache.get(cache_key, {})
@@ -298,7 +301,9 @@ func _cached_or_build_envelope(gravity_magnitude: float) -> Dictionary:
 
 
 func _build_envelope() -> Dictionary:
-	var reference_origin := CannonBallistics.launch_origin_local(0.0, 90.0)
+	var reference_origin := CannonBallistics.projectile_launch_origin_local(
+		0.0, 90.0, _projectile_data.radius
+	)
 	var horizontal_factors: PackedFloat64Array = _motion_cache.horizontal_factors
 	var final_horizontal_factor := horizontal_factors[TrajectoryPredictor.MAXIMUM_STEPS]
 	var minimum_speed := _projectile_data.minimum_launch_speed
@@ -324,7 +329,9 @@ func _build_envelope() -> Dictionary:
 	for index in range(elevation_count):
 		var elevation := AimTuple.MINIMUM_ELEVATION_DEGREES \
 				+ float(index) * ELEVATION_SAMPLE_DEGREES
-		var origin := CannonBallistics.launch_origin_local(0.0, elevation)
+		var origin := CannonBallistics.projectile_launch_origin_local(
+			0.0, elevation, _projectile_data.radius
+		)
 		var radians := deg_to_rad(elevation)
 		var cosine := cos(radians)
 		var sine := sin(radians)

@@ -302,7 +302,7 @@ func _on_transient_splash_requested(_projectile: PaintProjectile, contact: Proje
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
-	_presentation_effects.muzzle_flash(_cannon.get_launch_origin())
+	_presentation_effects.muzzle_flash(_cannon.get_muzzle_position())
 	_audio_cue(&"fire")
 
 

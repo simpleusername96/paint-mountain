@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -19,6 +19,8 @@ related:
   - execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - execplans/2026-08-07-cannon-shot-observation.md
   - execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
+  - execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
+  - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md
@@ -29,6 +31,33 @@ related:
 ---
 
 # Project Record
+
+## Current Projectile Scale, Coverage Balance, and Aim Performance (2026-08-08)
+
+The active implementation contract is
+[`2026-08-08-projectile-scale-balance-and-aim-performance.md`](execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md).
+
+- The root ball radius is `2.40 m`; continuous and impact paint radii are
+  `2.80 m` and `3.50 m`. Mass and other dynamics are unchanged. A shared
+  scale-aware launch origin places the centre beyond the muzzle and above the
+  apron for every legal elevation.
+- Stage 01-10 clear targets remain `4.0..8.5%`. Stage 11-15 use `8.5%`, 16-20
+  use `9.0%`, 21-25 use `9.5%`, and 26-30 use `10.0%`; stars remain clear plus
+  `2.5/5.0` points. Shots, terrain, target masks, and mechanisms are unchanged.
+- The active fixed catalog is v10 at
+  `resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
+  It preserves v9 physical terrain, target, cannon, and placement identities
+  and rematerializes bounded entry witnesses for the larger body.
+- Advisory prediction owns one replaceable active job. It advances at most 12
+  exact steps and approximately 1 ms per physics callback, discards obsolete
+  work at the next nomination, and publishes only a current context. The prior
+  arc/first-impact marker stays subdued while pending; calculation/update text
+  is removed and Fire remains independent.
+- Stage 01/10/30 measured settled-marker latency was 6/6/9 physics ticks, with
+  an observed slowest callback of `1.089 ms`. Godot verification and Windows
+  release export/start passed. Three 1280x720 running-release renders were
+  inspected directly: early Aim View, pending Stage 10 aim change, and late
+  live scale/contact. The completed plan and evidence record retain details.
 
 ## Current Truthful Coverage and Responsive Aiming Implementation (2026-08-07)
 

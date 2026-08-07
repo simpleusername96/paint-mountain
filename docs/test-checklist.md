@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -23,6 +23,7 @@ related:
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
+  - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -35,6 +36,34 @@ Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
 builds. The active truthful-coverage/responsive-aiming gate below owns current
 implementation acceptance; unchecked historical rows do not override it.
+
+## Active two-times projectile, balance, and aim-performance gate (2026-08-08)
+
+- [x] The root physical/visible radius is `2.40 m`; continuous and impact paint
+  radii are `2.80 m` and `3.50 m`, with unchanged split-child scaling.
+- [x] Every legal launch origin keeps the full sphere above the cannon apron;
+  100 exact contact cases and persistent contact/recovery/paint tests pass.
+- [x] Active clear targets are `4.0..8.5%` for Stages 01-10 and
+  `8.5/9.0/9.5/10.0%` for the four later five-stage tiers. Stars remain
+  clear/`+2.5`/`+5.0`.
+- [x] The promoted v10 bundle has 30 valid layouts and preserves v9 physical
+  terrain, Target Area masks, cannon transforms, and placement identity while
+  carrying scale-valid default/summit witnesses.
+- [x] Prediction owns one replaceable active job, advances at most 12 steps near
+  1 ms per callback, never publishes stale work, and leaves Fire independent.
+  Stage 01/10/30 default settled markers completed in 6/6/9 physics ticks; the
+  observed slowest callback was `1.089 ms`.
+- [x] Pending presentation keeps the last complete arc/first-impact marker
+  subdued and contains no normal calculation/update text or spinner.
+- [x] `scripts/verify.ps1`, Windows release export/start, and direct inspection
+  of task-owned Stage 01/30 Aim/contact captures pass.
+
+Final Godot 4.7.1 Windows-release captures, inspected individually at native
+1280x720 size:
+
+- `.agents/evidence/coverage-balance-and-aim-feedback-2026-08-08/stage-01-aiming-ko-1280x720.png`
+- `.agents/evidence/coverage-balance-and-aim-feedback-2026-08-08/stage-10-aim-change-ko-1280x720.png`
+- `.agents/evidence/coverage-balance-and-aim-feedback-2026-08-08/stage-30-scale-contact-ko-1280x720.png`
 
 ## Scope
 

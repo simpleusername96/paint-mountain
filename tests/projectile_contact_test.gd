@@ -48,17 +48,17 @@ func _run_checks() -> void:
 
 
 func _assert_scale_contract() -> void:
-	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 1.20), "physical projectile radius must be 1.20 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.radius, 2.40), "physical projectile radius must be 2.40 m")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.minimum_launch_speed, 32.0), "minimum launch speed must be 32 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.maximum_launch_speed, 160.0), "maximum launch speed must be 160 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(0.0), 32.0), "zero power must map to 32 m/s")
 	_assert_true(is_equal_approx(PROJECTILE_DATA.launch_speed(100.0), 160.0), "full power must map to 160 m/s")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 1.40), "sweep paint radius must be 1.40 m")
-	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 1.75), "impact paint radius must be 1.75 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.paint_footprint_radius, 2.80), "sweep paint radius must be 2.80 m")
+	_assert_true(is_equal_approx(PROJECTILE_DATA.impact_paint_radius, 3.50), "impact paint radius must be 3.50 m")
 	_assert_true(
 		PROJECTILE_DATA.impact_paint_radius > PROJECTILE_DATA.paint_footprint_radius \
 				and PROJECTILE_DATA.paint_footprint_radius > PROJECTILE_DATA.radius,
-		"impact, sweep, and physical radii must keep the revised middle proportion"
+		"impact, sweep, and physical radii must keep the doubled middle proportion"
 	)
 
 
@@ -72,11 +72,31 @@ func _assert_cannon_ballistic_yaw_contract() -> void:
 			var elevation_pivot := cannon.get_node("YawPivot/ElevationPivot") as Node3D
 			var visual_direction: Vector3 = -elevation_pivot.global_transform.basis.z.normalized()
 			var ballistic_direction: Vector3 = CannonBallistics.launch_direction(yaw, elevation)
+			var tangent_origin := cannon.get_muzzle_position() \
+					+ ballistic_direction * PROJECTILE_DATA.radius
 			_assert_true(
 				visual_direction.dot(ballistic_direction) >= 0.999,
 				"visual muzzle and ballistic launch direction must share yaw/elevation; yaw=%.1f elevation=%.1f visual=%s ballistic=%s" % [
 					yaw, elevation, visual_direction, ballistic_direction
 				]
+			)
+			_assert_true(
+				Vector2(
+					cannon.get_launch_origin().x,
+					cannon.get_launch_origin().z
+				).distance_to(Vector2(
+					tangent_origin.x,
+					tangent_origin.z
+				)) <= 0.0001,
+				"the projectile centre must spawn one radius beyond the muzzle in XZ"
+			)
+			_assert_true(
+				cannon.get_launch_origin().y - PROJECTILE_DATA.radius \
+						>= cannon.global_position.y \
+								+ CannonBallistics.PLATFORM_Y_BELOW_CANNON_ROOT \
+								+ CannonBallistics.PROJECTILE_PLATFORM_CLEARANCE \
+								- 0.0001,
+				"the projectile centre must keep the full sphere above the cannon platform"
 			)
 	cannon.queue_free()
 	await physics_frame

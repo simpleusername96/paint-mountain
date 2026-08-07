@@ -1,10 +1,11 @@
 class_name TrajectoryPredictionScheduler
 extends Node
 
-## Owns one bounded runtime prediction job and one newest pending request.
-## Prediction is presentation-only; StageController never waits on this node.
+## Owns one bounded runtime prediction job. The newest nominated context replaces
+## obsolete work; prediction is presentation-only and never gates StageController.
 
-const MAXIMUM_STEPS_PER_TICK := 24
+const MAXIMUM_STEPS_PER_TICK := 12
+const MAXIMUM_WORK_USEC_PER_TICK := 1000
 const AIM_NOMINATION_INTERVAL_TICKS := 12
 const DYNAMIC_WIND_BUCKET_TICKS := 30
 
@@ -24,10 +25,11 @@ var _hold_physics_ticks := 0
 var _current_context_key: StringName = &""
 var _active_request: Dictionary = {}
 var _active_job: TrajectoryPredictionJob
-var _pending_request: Dictionary = {}
 var _prediction_compute_count := 0
 var _prediction_publication_count := 0
 var _last_advance_step_count := 0
+var _last_advance_elapsed_usec := 0
+var _discarded_job_count := 0
 
 
 func configure(
@@ -83,7 +85,6 @@ func set_consumers_enabled(enabled: bool) -> void:
 	else:
 		_active_job = null
 		_active_request.clear()
-		_pending_request.clear()
 
 
 func consumers_enabled() -> bool:
@@ -115,12 +116,16 @@ func active_job_count() -> int:
 	return 1 if _active_job != null else 0
 
 
-func pending_request_count() -> int:
-	return 0 if _pending_request.is_empty() else 1
-
-
 func last_advance_step_count() -> int:
 	return _last_advance_step_count
+
+
+func last_advance_elapsed_usec() -> int:
+	return _last_advance_elapsed_usec
+
+
+func discarded_job_count() -> int:
+	return _discarded_job_count
 
 
 func _physics_process(_delta: float) -> void:
@@ -128,6 +133,7 @@ func _physics_process(_delta: float) -> void:
 		return
 	_scheduler_tick += 1
 	_last_advance_step_count = 0
+	_last_advance_elapsed_usec = 0
 	if _hold_physics_ticks > 0:
 		_hold_physics_ticks -= 1
 		return
@@ -135,7 +141,13 @@ func _physics_process(_delta: float) -> void:
 		_nominate_live_context()
 	if _active_job == null:
 		return
-	_last_advance_step_count = _active_job.advance(MAXIMUM_STEPS_PER_TICK)
+	var started_at := Time.get_ticks_usec()
+	while _last_advance_step_count < MAXIMUM_STEPS_PER_TICK \
+			and not _active_job.is_complete():
+		_last_advance_step_count += _active_job.advance(1)
+		if Time.get_ticks_usec() - started_at >= MAXIMUM_WORK_USEC_PER_TICK:
+			break
+	_last_advance_elapsed_usec = Time.get_ticks_usec() - started_at
 	if not _active_job.is_complete():
 		return
 	_complete_active_job()
@@ -157,13 +169,13 @@ func _nominate_live_context() -> void:
 	_cannon.expect_prediction_context(context_key)
 	if _active_job != null:
 		if StringName(_active_request.get("context_key", &"")) != context_key:
-			_pending_request = request
-		else:
-			_pending_request.clear()
+			_discarded_job_count += 1
+			_active_job = null
+			_active_request.clear()
+			_start_job(request)
 		return
 	if _cannon.prediction_key() == context_key \
 			and _cannon.prediction_matches_expected_context():
-		_pending_request.clear()
 		return
 	_start_job(request)
 
@@ -190,7 +202,6 @@ func _capture_live_request() -> Dictionary:
 
 func _start_job(request: Dictionary) -> void:
 	_active_request = request
-	_pending_request.clear()
 	_prediction_compute_count += 1
 	if _prediction_callback.is_valid():
 		var result: Variant = _prediction_callback.call(
@@ -233,7 +244,7 @@ func _complete_active_job() -> void:
 	_active_job = null
 	var finished_key := StringName(finished_request.get("context_key", &""))
 	var live_key := _live_context_key()
-	if finished_key == live_key and _pending_request.is_empty():
+	if finished_key == live_key:
 		var prediction := finished_job.completed_prediction()
 		if prediction != null:
 			_cannon.set_prediction(
@@ -244,11 +255,7 @@ func _complete_active_job() -> void:
 				finished_key
 			)
 			_prediction_publication_count += 1
-	if not _pending_request.is_empty():
-		var next_request := _pending_request
-		_pending_request = {}
-		_start_job(next_request)
-	elif finished_key != live_key:
+	if finished_key != live_key:
 		_request_dirty = true
 
 
@@ -271,9 +278,6 @@ func _live_context_is_already_owned() -> bool:
 		return false
 	if _active_job != null \
 			and StringName(_active_request.get("context_key", &"")) == live_key:
-		return true
-	if not _pending_request.is_empty() \
-			and StringName(_pending_request.get("context_key", &"")) == live_key:
 		return true
 	return _cannon.prediction_key() == live_key \
 			and _cannon.prediction_matches_expected_context()

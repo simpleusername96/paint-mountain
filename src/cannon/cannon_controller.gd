@@ -153,14 +153,24 @@ func request_fire() -> bool:
 
 
 func get_launch_origin() -> Vector3:
+	return CannonBallistics.projectile_launch_origin_for_transform(
+		global_transform,
+		yaw_degrees,
+		elevation_degrees,
+		projectile_data.radius
+	)
+
+
+func get_muzzle_position() -> Vector3:
 	return _muzzle.global_position
 
 
 func get_launch_origin_for(requested_yaw: float, requested_elevation: float) -> Vector3:
-	return CannonBallistics.launch_origin_for_transform(
+	return CannonBallistics.projectile_launch_origin_for_transform(
 		global_transform,
 		requested_yaw,
-		requested_elevation
+		requested_elevation,
+		projectile_data.radius
 	)
 
 

@@ -15,7 +15,18 @@ func _initialize() -> void:
 	_assert(StageProgressionData.cell_count_for(30) == Vector2i(96, 64), "Stage 30 cell grid endpoint must match")
 	_assert(StageProgressionData.nominal_peak_for(1) == 64.0, "Stage 01 peak must be 64 m")
 	_assert(StageProgressionData.nominal_peak_for(30) == 92.0, "Stage 30 peak must be 92 m")
-	_assert(StageProgressionData.target_for(1) == 4.0 and StageProgressionData.target_for(30) == 15.0, "coverage endpoints must remain locked")
+	_assert(StageProgressionData.target_for(1) == 4.0 and StageProgressionData.target_for(30) == 10.0, "coverage endpoints must match the attainable scale baseline")
+	_assert(
+		StageProgressionData.target_for(10) == 8.5 \
+				and StageProgressionData.target_for(11) == 8.5 \
+				and StageProgressionData.target_for(15) == 8.5 \
+				and StageProgressionData.target_for(16) == 9.0 \
+				and StageProgressionData.target_for(20) == 9.0 \
+				and StageProgressionData.target_for(21) == 9.5 \
+				and StageProgressionData.target_for(25) == 9.5 \
+				and StageProgressionData.target_for(26) == 10.0,
+		"late clear targets must follow the shot-tier plateaus"
+	)
 	_assert(StageProgressionData.shots_for(1) == 4 and StageProgressionData.shots_for(30) == 7, "shot endpoints must remain locked")
 	var previous_difficulty := -INF
 	var profile_ids: Dictionary = {}
@@ -29,6 +40,15 @@ func _initialize() -> void:
 		_assert(stage.generation_profile.nominal_peak == StageProgressionData.nominal_peak_for(number), "%s peak must consume progression" % stage.stage_id)
 		_assert(stage.generation_profile.routes.size() == StageProgressionData.route_count_for(number), "%s route count must consume progression" % stage.stage_id)
 		_assert(stage.mechanism_loadout.size() == StageProgressionData.mechanism_count_for(number), "%s mechanism count must consume progression" % stage.stage_id)
+		_assert(stage.target_coverage == StageProgressionData.target_for(number), "%s clear target must consume progression" % stage.stage_id)
+		_assert(
+			stage.star_thresholds == Vector3(
+				stage.target_coverage,
+				stage.target_coverage + 2.5,
+				stage.target_coverage + 5.0
+			),
+			"%s star thresholds must retain the clear/+2.5/+5.0 policy" % stage.stage_id
+		)
 		_assert(not profile_ids.has(stage.generation_profile.profile_id), "%s profile ID must be unique" % stage.stage_id)
 		profile_ids[stage.generation_profile.profile_id] = true
 		var difficulty := StageProgressionData.difficulty_score_for(number)

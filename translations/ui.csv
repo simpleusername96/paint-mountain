@@ -15,13 +15,11 @@ ui.restart,RESTART,다시 시작
 ui.fire,FIRE,발사
 ui.finish,FINISH,완료
 fire.not_editable,AIMING SCREEN ONLY,조준 화면에서만 발사할 수 있습니다
-fire.pending,CALCULATING TRAJECTORY,궤적 계산 중
 fire.invalid,AIM AT THE TERRAIN,지형을 조준하세요
 fire.invalid_aim,AIM VALUES ARE INVALID,조준 값이 올바르지 않습니다
 fire.capacity,INITIAL LAUNCH LIMIT %d/%d,초기 발사 동시 한도 %d/%d
 fire.empty,NO SHOTS LEFT,남은 탄 없음
 fire.terminal,RESOLVING RESULT,결과 계산 중
-preview.updating,UPDATING,갱신 중
 ui.pause,PAUSE,일시정지
 ui.resume,RESUME,계속
 ui.next,NEXT,다음
