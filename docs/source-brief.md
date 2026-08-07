@@ -1815,6 +1815,46 @@ height-led progression interpretations only:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-07): Open Mountain Surface and Fixed Cannon
+
+After clarifying what counts as a terrain surface and whether a deep mountain
+requires a movable cannon, the user approved the following direction. These
+clauses override conflicting rear-wall, side-containment-wall, wall-join,
+all-face-paint, and cannon-position-orbit interpretations only:
+
+- **Open mountain environment:** remove the visible and collidable rear
+  backstop and the artificial side containment walls. Do not replace them with
+  hidden blocking planes. A restrained non-target ground/apron may remain, but
+  the world must read as open rather than as a closed box.
+- **Independent closed mountain:** retain meaningful front-to-back depth and a
+  substantial 3D mass. The mountain no longer protrudes from or joins a rear
+  wall; its generated perimeter support shell and bottom close the physical
+  body on every side.
+- **Playable Terrain Surface:** this is the continuous one-height-per-XZ
+  mountain skin, including cannon-facing slopes, terraces, valleys, ridges,
+  summits, and far-side slopes. It does not mean only horizontal or highest
+  areas. Contact traversal on this surface may write persistent paint.
+- **Support Shell:** the vertical perimeter faces and bottom that close the
+  mountain mass are collidable structural faces, not playable terrain. They,
+  the apron, decorations, and mechanisms write no persistent paint and never
+  contribute coverage.
+- **Target Area:** the immutable Target Area is a subset of the Playable Terrain
+  Surface. Paint remains visible across valid non-target surface traversal, but
+  only painted Target Area overlap contributes coverage.
+- **Fixed launch position:** each stage has one baked cannon transform derived
+  from the terrain and minimum standoff. The player cannot move the cannon
+  around the mountain or select side/rear launch stations. Map View camera orbit
+  remains inspection only and never changes the launch position.
+- **Open miss handling:** a shot that misses playable terrain may hit the
+  non-target apron or Support Shell, cross the explicit open play bounds, or
+  reach the never-contacted timeout. Rear/side wall collision and `BACKSTOP`
+  settlement are retired; misses never bank from an enclosing wall.
+- **Deferred full-surface mode:** painting or scoring the Support Shell,
+  triangle-atlas coverage across every exterior face, continuous cannon orbit,
+  and discrete launch stations require a later explicit product revision.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

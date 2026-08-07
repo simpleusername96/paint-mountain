@@ -4,7 +4,7 @@ status: active
 created: 2026-08-04
 last_reviewed: 2026-08-07
 canonical_for: Paint Mountain world art style, visual composition, and gameplay-object legibility
-scope: procedural mountain, wall, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
+scope: procedural mountain, open environment, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
 source: ../../docs/source-brief.md
 related:
   - DESIGN.md
@@ -27,7 +27,7 @@ contacts, paint, and mechanisms are readable before decorative realism.
 
 ## Scope
 
-This spec governs the mountain and wall, visible support geometry, camera
+This spec governs the mountain and open environment, visible support geometry, camera
 composition, lighting, materials, paint appearance, cannon, mechanisms,
 dressing, and gameplay effects. UI composition and interaction presentation are
 owned by `UIUX_GUIDELINES.md`.
@@ -45,10 +45,10 @@ owned by `UIUX_GUIDELINES.md`.
 
 ### Mountain form and route language
 
-- The target is one connected, visibly thick 3D mountain mass protruding from
-  and joining the rear wall.
-- Its visible boundary and silhouette are irregular and expose playable upper
-  faces plus real front and lateral support faces. The mesh and matching
+- The target is one connected, visibly thick, independently closed 3D mountain
+  mass in an open environment. It does not protrude from or join a rear wall.
+- Its visible boundary and silhouette are irregular and expose the Playable
+  Terrain Surface plus real front, rear, and lateral Support Shell faces. The mesh and matching
   collision must not rely on a billboard, visual-only duplicate, hidden plane,
   or full rectangular slab. The effective source brief and technical
   architecture decide the underlying surface representation.
@@ -83,6 +83,9 @@ owned by `UIUX_GUIDELINES.md`.
 - Perspective, occlusion, face-value changes, cast shadows, and camera parallax
   must reinforce real depth. Camera framing may reveal geometry but never fake
   geometry that is absent.
+- Keep the background open. No visible, collidable, or hidden rear/side
+  containment wall may frame the mountain as a boxed board. Misses leave the
+  composition rather than banking from an enclosure.
 - Keep the cannon silhouette and barrel at roughly 20–30% of viewport height in
   Aim View while preserving a clear relationship between muzzle, trajectory,
   impact point, and the full distant target.
@@ -93,12 +96,13 @@ owned by `UIUX_GUIDELINES.md`.
 
 ### Material and color hierarchy
 
-- Rear wall: warm bright off-white.
+- Open background and ground: warm, bright, low-contrast values that separate
+  the mountain silhouette without reading as a wall or horizon-sized panel.
 - Dry mountain: slightly darker warm off-white with flat-shaded facets.
 - Dry Target Area: a perceptible but neutral surface distinction on playable
   top, subordinate to blue paint, the trajectory, and mechanisms; it explains
   score eligibility without reading as a second paint state or an outline.
-- Support faces: visibly separated in value from playable upper faces so the
+- Support Shell faces: visibly separated in value from the Playable Terrain Surface so the
   mass reads as thick.
 - Paint: saturated glossy blue, surface-bound, readable at distance, and not
   dependent on emission.
@@ -129,7 +133,7 @@ owned by `UIUX_GUIDELINES.md`.
 - Burst uses a radial explosion icon, Splitter three readable arrow spokes, and
   Uphill Rebound one explicit uphill arrow. Color is supplementary.
 - Glyphs must be large enough to identify from the aiming and inspection cameras.
-  The shared generator searches actual visible playable top surface, keeps each
+  The shared generator searches the actual Playable Terrain Surface, keeps each
   full circle inside the terrain with boundary and inter-glyph spacing, and may
   retain nearby route identity only for mechanism behavior. It does not use a
   stage-specific world coordinate or require the visible center to be a
@@ -137,9 +141,10 @@ owned by `UIUX_GUIDELINES.md`.
   have few or none.
 - The predicted trajectory uses blue depth-tested marks and ends at the first
   real collision with a readable impact ring.
-- A ball's valid playable-top contact produces a continuous blue route over its
-  real traversal, including outside the scoreable mask. Only target-mask overlap
-  affects coverage. Airborne travel remains unpainted.
+- A ball's valid Playable Terrain Surface contact produces a continuous blue
+  route over its real traversal, including outside the Target Area. Only Target
+  Area overlap affects coverage. The Support Shell, bottom, apron, decorations,
+  mechanisms, and airborne travel remain unpainted.
 - A tall cannon-side pole carries a simple flag, streamer, or windsock. Its free
   end points in the direction projectiles are pushed, and its bend/flap amplitude
   gives a restrained strength cue. It is readable from Aim View, has no gameplay
@@ -167,15 +172,17 @@ A future visual review can call the world conformant only when:
 - the aiming view reads immediately as a thick, stepped 3D puzzle mountain;
 - the complete playable silhouette reads as a lower, wider mountain range with
   several lateral rises rather than one dominant vertical spike;
+- the independently closed mountain reads clearly against an open background
+  with no rear/side enclosure or wall-bank implication;
 - camera movement changes overlap, side exposure, highlights, and shadows;
 - routes and stage difficulty are legible before firing;
 - cannon, trajectory, impact, ball contact, continuous paint, and mechanisms
   form a clear cause-and-effect chain;
 - the cannon-side flag communicates wind direction without competing with the
   mountain, and the Aim View retains the full mountain at distant scale;
-- no full-width slab, card-like target, dominant flat apron, gray test-scene
-  wash, black cannon blob, hidden gameplay mass, or decorative obstruction is
-  visible; and
+- no full-width slab, card-like target, dominant flat apron, enclosing wall,
+  gray test-scene wash, black cannon blob, hidden gameplay mass, or decorative
+  obstruction is visible; and
 - the primary target image and concept board are recognizable in direction,
   while no image has been copied literally.
 
@@ -191,6 +198,8 @@ stage.
 - Decorative complexity that competes with route planning or physics feedback.
 - A visual-only mountain that does not share gameplay collision and paint
   topology.
+- Paint or score on the Support Shell, bottom, apron, decorations, mechanisms,
+  or other non-playable faces.
 
 ## Related
 

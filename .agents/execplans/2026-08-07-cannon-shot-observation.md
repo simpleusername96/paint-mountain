@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-07
 last_reviewed: 2026-08-07
-scope: fixed baked mountain-range terrain, cannon-side wind flag, physical cannon standoff, Aim View composition, automatic Shot Follow, bounded structural performance work, and obsolete recovery cleanup
+scope: fixed baked open mountain-range terrain, playable-surface paint scope, fixed cannon standoff, cannon-side wind flag, Aim View composition, automatic Shot Follow, bounded structural performance work, and obsolete recovery cleanup
 source: user feedback on 2026-08-07 and docs/source-brief.md
 related:
   - ../PLANS.md
@@ -20,11 +20,13 @@ related:
   - 2026-08-07-target-coverage-and-safe-aim-framing.md
 ---
 
-# Fixed Mountain Range, Cannon Standoff, and Shot Observation - Execution Contract
+# Fixed Open Mountain Range, Cannon Standoff, and Shot Observation - Execution Contract
 
-Paint Mountain will load one persisted canonical terrain layout per stage, lower
-and widen the generated mass into a readable mountain-range silhouette, and
-frame a large cannon in the foreground against that complete distant target. It
+Paint Mountain will load one persisted canonical terrain layout per stage,
+lower and widen the generated mass into an independently closed mountain-range
+silhouette, remove the enclosing rear/side walls, and frame a large fixed cannon
+in the foreground against that complete distant target. Valid contact paints the
+Playable Terrain Surface while only Target Area overlap scores. It
 will also replace unclear wind debris with a cannon-side flag and automatically
 follow each newly fired root paintball until its first terrain impact. The same
 implementation restores constant-work Fire admission and removes verified
@@ -43,14 +45,15 @@ reachability, or authored solution work.
   trajectory dots, focused contracts, production-build captures, and current
   documentation.
 - Completion state: Stages 01 and 30 both show a substantial cannon and complete
-  distant lower/wider mountain range from the same persisted data on every
-  load; the cannon is at least 70 m from the nearest playable front; the flag
+  distant lower/wider independent mountain range from the same persisted data
+  on every load; no rear/side containment wall or hidden replacement exists;
+  the fixed cannon is at least 70 m from the nearest playable front; the flag
   agrees with the authoritative wind; Fire follows the new root ball; first
   terrain impact remains readable; button or Tab returns early while physics
   continues; Fire performs no trajectory query; inactive presentation performs
   no repeated prediction or marker work; no runtime terrain generation,
-  obsolete debris, candidate search, solution-route runner, inactive catalog,
-  or competing active task document remains.
+  obsolete debris, backstop path, candidate search, solution-route runner,
+  inactive catalog, or competing active task document remains.
 
 ## Scope and Boundaries
 
@@ -71,6 +74,17 @@ In scope:
   widen lateral terrain bounds from `180..240 m` to `210..280 m`, and require
   the connected footprint to occupy at least 72% of its X bounds at its widest
   row while retaining taper, valleys, terraces, and real support faces.
+- Remove the visible/collidable rear backstop and artificial side containment
+  walls without hidden replacement planes. Generate one independent closed
+  mountain whose perimeter Support Shell and bottom close the mass; retain only
+  a restrained collider-matched non-target apron in an open environment.
+- Replace wall-based containment identity with versioned open play bounds shared
+  by generation, prediction, live projectile escape, replay, and validation.
+  Crossing those bounds seals with `ESCAPED`; apron- or Support Shell-only roots
+  remain never-contacted and use the 6.0-second timeout if they do not exit.
+- Preserve the current XZ paint representation: all valid Playable Terrain
+  Surface traversal paints, only immutable Target Area overlap scores, and the
+  Support Shell, bottom, apron, decorations, and mechanisms never paint.
 - Treat projected playable-silhouette height:width `3:4` as the target center
   with an accepted `0.65..0.85` band in the shared 1280x720 Aim View. This is a
   visual composition contract, not an X:Z grid ratio or a reason to flatten the
@@ -78,6 +92,8 @@ In scope:
 - Derive each stage's cannon placement so the cannon origin is at least 70 m in
   front of the nearest playable terrain edge, then promote one coherent version-9
   catalog with new bounded default/summit witnesses.
+- Keep that one baked cannon transform stationary for the stage. Map View may
+  orbit the inspection camera, but no player action changes the launch position.
 - Use one shared Aim View composition with the cannon at roughly 20–30% of
   viewport height and the complete mountain at distant scale. Preserve the
   48-degree gameplay FOV and reject manual per-stage camera repairs.
@@ -116,6 +132,9 @@ Out of scope:
 - A new Aim View orbit/pan gesture, Fire from Map View, click-to-target aim,
   inverse aiming, post-fire steering, cinematic replay editing, camera speed
   controls, or multiple observation presets.
+- Cannon-position orbit, continuous movement around the mountain, discrete
+  launch stations, Support Shell paint/score, and a triangle-atlas or other
+  all-exterior-face coverage representation.
 - Exhaustive target-texel first-hit certificates, authored success routes,
   solver clears, all-stage playthroughs, or a new solution database.
 - Changes to PaintSystem authority, score meaning, target masks, mechanism rules,
@@ -143,6 +162,11 @@ Constraints and invariants:
   wind or applies force.
 - `PaintSystem` remains the sole paint/coverage authority, and returning the
   camera never terminates or mutates a projectile.
+- `PaintSystem` keeps one authoritative XZ mask over the Playable Terrain
+  Surface. This plan does not introduce a second mask or extend addressing onto
+  the Support Shell, bottom, apron, decorations, or mechanisms.
+- No visible/collidable/hidden rear or side containment wall remains in v9.
+  `PlayBoundsSpec` is data used for exit decisions, not collision geometry.
 - The active v8 catalog remains loadable until the complete v9 bundle passes its
   atomic promotion checks. Only then may v8 be removed as recoverable Git history.
 - `StageLayoutRepository` remains a persisted-layout loader and fails closed on
@@ -160,6 +184,10 @@ Destructive or irreversible actions:
 
 - Removing inactive generated bundles and obsolete tests/scripts is authorized
   by the user's cleanup request and recoverable from Git history.
+- Removing `BackstopEnvironment`, wall/side-wall scene nodes, `ContainmentSpec`,
+  `BACKSTOP` settlement identity, and their superseded tests is authorized after
+  their open-environment replacements pass the named v9 checks; Git is the
+  recovery path.
 - Do not delete the active v8 bundle until `resources/stages/catalog.tres` points
   to a fully validated v9 bundle and the production-style start passes.
 - Do not delete optional certificate compatibility classes during this plan.
@@ -175,9 +203,14 @@ Destructive or irreversible actions:
 | Shot Follow (`탄환 추적`) | Temporary presentation that tracks the one newly accepted generation-0 root through first terrain contact | `CameraDirector` |
 | Return to Cannon (`대포로 돌아가기`) | Camera-only intent that exits Shot Follow and restores Aim View; simulation and aim persist | HUD/input intent consumed by `CameraDirector` |
 | Cannon Standoff | World-space distance from cannon origin to the nearest playable terrain front; minimum 70 m | stage progression/catalog materialization |
+| Fixed Cannon Position | One baked transform per stage; yaw/elevation/power change, but player input never translates/orbits the launch position | `StageData` plus `CannonController` |
 | Canonical Terrain Seed | The one current terrain-family seed supplied to every stage profile; stage ID and immutable profile still make stage layouts distinct | `StageProgressionData` and the v9 catalog builder |
 | Baked Layout | The persisted height grid, connected footprint, topology, target, mechanisms, decorations, witnesses, and checksums loaded as runtime terrain truth | `BakedStageLayoutData` through `StageLayoutRepository` |
 | Mountain-Range Silhouette | The projected playable mass in Aim View; lower and wider with several lateral rises, targeting height:width 0.75 inside a 0.65–0.85 band | generation contract plus `AimCameraComposer` validation |
+| Playable Terrain Surface | The continuous one-height-per-XZ skin, including cannon-facing slopes, terraces, valleys, ridges, summits, and far-side slopes; valid traversal can paint | `TerrainTopTopology`, `TerrainSurface`, and `PaintSystem` |
+| Support Shell | The collidable perimeter walls and bottom that close the independent mountain; never paintable or scoreable | `TerrainGeometryFactory` and `TerrainSurface` shell identity |
+| Target Area | Immutable score-eligible subset of the Playable Terrain Surface; non-target surface paint remains visible but unscored | baked `target_mask` consumed by `PaintSystem` |
+| Open Play Bounds | Versioned non-colliding exit limits shared by prediction, live projectiles, replay, and validation | `PlayBoundsSpec` carried by the baked layout |
 | Wind Flag | Non-colliding physical-looking presentation beside the cannon; free end points in projectile push direction | `CannonWindFlag` consuming `WindController` |
 | Prediction Context Key | Canonical aim key + wind schedule identity + bounded launch epoch used to decide whether one immutable prediction is ready | `TrajectoryPredictionScheduler` |
 | Constant-work Fire | Fire checks the current prediction context and capacity, then accepts or reports pending; it never computes a trajectory | `StageController` admission using scheduler-published cannon state |
@@ -192,7 +225,9 @@ move a camera with the stationary cannon body.
 
 | Concern | Current behavior | Evidence | Consequence |
 | --- | --- | --- | --- |
-| Later terrain approaches the cannon | Stage 01 terrain front is about 57 m from the fixed cannon; Stage 30 is about 17 m because the builder fixes the rear wall and grows terrain forward | `scripts/build_stage_catalog.gd:440-449`; `resources/stages/catalog.tres:3181-3200` | Derive cannon Z after profile bounds are known; do not use one transform for all stages |
+| Later terrain approaches the cannon | Stage 01 terrain front is about 57 m from the fixed cannon; Stage 30 is about 17 m because the builder fixes the rear wall and grows terrain forward | `scripts/build_stage_catalog.gd:440-449`; `resources/stages/catalog.tres:3181-3200` | Remove the wall anchor, use one shared terrain-center rule, and derive one fixed per-stage cannon Z after the accepted footprint exists |
+| Backstop owns unrelated responsibilities | `BackstopEnvironment` creates visible/collidable rear and side walls plus the apron; `ContainmentSpec` mixes wall geometry, apron limits, and exit bounds; projectile settlement has a `BACKSTOP` terminal path | `scenes/gameplay/backstop_environment.tscn`; `src/terrain/backstop_environment.gd`; `src/terrain/containment_spec.gd`; `src/projectile/projectile_settlement_reason.gd` | Split the retained open apron and exit-bound responsibilities, then remove every wall/contact/terminal branch rather than hiding the wall mesh |
+| Paint vocabulary hides the real rule | the authoritative 512-square XZ mask addresses the one-height terrain skin; current prose calls this `playable top`, while shell/apron/wall contacts never write paint | `src/paint/paint_system.gd`; `src/terrain/terrain_surface.gd`; `.agents/Documentation.md:303-313` | Preserve the data representation and rename the product meaning to Playable Terrain Surface; Support Shell remains collision-only |
 | Runtime terrain is already persisted | the active v8 pointer loads thirty compressed layout Resources; `StageLayoutRepository` hydrates them and never generates or solves | `resources/stages/catalog.tres`; active v8 `manifest.json`; `src/app/stage_layout_repository.gd:1-120`; `src/stage_generation/baked_stage_layout_data.gd:1-51` | Preserve the baked Resource boundary; migrate its identity rather than add a second terrain format |
 | Randomness remains in offline admission | the builder searches candidate indices `0..31`; current v8 accepted indices vary and eleven stages do not use candidate zero | `scripts/build_stage_catalog.gd:251-275`; active v8 `manifest.json`; `src/stage_generation/stage_progression_data.gd:7-69` | Version 9 removes the candidate range and fallback seed; one exact terrain-family seed either builds a valid stage or the shared generator/profile contract must be corrected |
 | Height progression dominates late shape | nominal peak grows from 72 m to 126 m while lateral bounds grow only from 180 m to 240 m | `src/stage_generation/stage_progression_data.gd:51-69`; `scripts/build_stage_catalog.gd:468-520` | Lower peak growth, widen X bounds, and shift difficulty toward routes, passes, basins, reversals, width, and mechanisms |
@@ -221,6 +256,8 @@ move a camera with the stationary cannon body.
 | [Angry Birds design interview](https://www.theguardian.com/artanddesign/2016/feb/23/how-we-made-angry-birds) | Predictable aiming helps players understand failure; target distance creates anticipation through flight time | Keep the real first-impact preview and use physical standoff for anticipation; do not add in-flight control or an exact timer gate |
 | [Mario Golf manual](https://www.nintendo.com/eu/media/downloads/games_8/emanuals/nintendo_8/Manual_Nintendo64_MarioGolf_EN.pdf) | Players inspect terrain/landing context and read wind before committing to a shot | Keep Map View separate and make the cannon-side wind flag readable before Fire |
 | [Two Worlds II manual](https://steamcdn-a.akamaihd.net/steam/apps/7520/manuals/TWII_Manual_PC_English_V2c.pdf?t=1576500172) | A red streamer on the mast gives a physical wind-direction cue | Use one nearby streamer/flag whose free end shows projectile push direction; HUD numbers remain secondary |
+| [Angry Birds AR: Isle of Pigs](https://www.rovio.com/articles/rovio-and-resolution-games-give-the-green-light-to-angry-birds-ar-isle-of-pigs-released-today-in-the-app-store/) | Walking around a 3D structure makes viewpoint selection part of the puzzle | Keep Map View inspection orbit, but defer movable launch positions because current Paint Mountain keeps launch planning to yaw/elevation/power |
+| [Team17's Worms 3D retrospective](https://www.team17.com/news/team17s-100-games-part-eight-2002-2004-worms-3d-worms-blast-more) | Fully 3D artillery increased level-authoring burden enough that levels became hand-designed | Preserve the deep mountain but avoid an all-face coverage and 360-degree launch-position expansion in this slice |
 
 These references supply interaction patterns, not visual assets, control copies,
 or licensing inputs. No external game content enters the repository.
@@ -269,9 +306,10 @@ because the affected counts do not justify that ownership cost.
    changes camera state.
 4. Track the exact root from `shot_family_started`; never average resident balls
    and never switch automatically to Splitter children.
-5. First TerrainSurface top or skirt contact starts a 0.8-second impact hold.
-   Backstop, escape, timeout, stage result, restart, invalid target deletion, or
-   early return exits follow safely without changing gameplay outcomes.
+5. First contact with either the Playable Terrain Surface or the Support Shell
+   starts a 0.8-second impact hold. Only Playable Terrain Surface traversal may
+   write paint. Escape, timeout, stage result, restart, invalid target deletion,
+   or early return exits follow safely without changing gameplay outcomes.
 6. During Shot Follow, hide aim controls and show one compact secondary
    return-to-cannon action. After return, the stored tuple and normal two-root
    capacity are immediately available.
@@ -335,13 +373,30 @@ because the affected counts do not justify that ownership cost.
 21. Version 9 uses `terrain_size.x = 210..280 m`, keeps depth progression at
     `120..160 m`, and uses nominal peak `64..92 m`. Footprint synthesis must
     reach at least 72% of X bounds in its widest active row, remain row-solid,
-    join the rear wall, taper by at least four cells, and preserve one physical
-    top/shell source.
+    form one independently closed mass, taper by at least four cells, and
+    preserve one physical Playable Terrain Surface/Support Shell source.
 22. The 1280x720 Aim View projects the playable mountain at height:width
     `0.65..0.85`, targeting `0.75`, while retaining the 20–30% cannon, complete
     silhouette, summit headroom, route layers, trajectory, and impact marker.
     Difficulty growth uses route and mechanism structure rather than a taller
     summit outside the locked peak range.
+23. Remove `BackstopEnvironment`, rear/side wall geometry and contact identity,
+    `ContainmentSpec`, and `BACKSTOP` settlement. `OpenPlayEnvironment` owns only
+    the restrained non-target apron/ground, while `PlayBoundsSpec` owns
+    non-colliding exit bounds shared by prediction, live physics, replay, and
+    the v9 payload checksum. Do not add hidden collision walls.
+24. All valid Playable Terrain Surface traversal writes the one authoritative XZ
+    paint mask. Only immutable Target Area overlap scores. Support Shell,
+    bottom, apron, decorations, and mechanisms remain unpainted and unscored;
+    this plan adds no second texture, face atlas, or coverage representation.
+25. Each stage owns one baked fixed cannon transform derived after its footprint
+    exists. The player edits yaw/elevation/power only. Map View camera orbit is
+    inspection and never translates or rotates the launch transform around the
+    mountain.
+26. A root that crosses `PlayBoundsSpec` terminates as `ESCAPED`. A root that
+    contacts only the apron or Support Shell remains never-contacted and reaches
+    the 6.0-second timeout if it does not exit first. Neither contact creates
+    paint, coverage, a bank shot, or a resident terrain-ball lifetime.
 
 ## Architecture and Data Ownership
 
@@ -349,9 +404,12 @@ because the affected counts do not justify that ownership cost.
 | --- | --- | --- | --- |
 | Fixed terrain identity | `StageProgressionData`, `StageData`, and `build_stage_catalog.gd` | one canonical family seed + stage/profile identity -> one content-addressed baked layout | runtime seed rolls, candidate history, fallback selection, identical thirty-stage topology |
 | Lower/wider range synthesis | `StageProgressionData`, `StageGenerationContract`, `RouteGraphMountainSynthesizer`, and `RouteGraphHeightSynthesizer` | stage number/profile -> bounded X/depth/relief and connected footprint | camera-only scaling, visual duplicate, per-stage coordinate repair |
+| Independent mountain closure | `RouteGraphMountainSynthesizer`, `TerrainGeometryFactory`, and `TerrainSurface` | footprint perimeter -> one Playable Terrain Surface plus collidable Support Shell/bottom | rear-wall join, all-face paint addressing, duplicate visual shell |
+| Open environment | new `OpenPlayEnvironment` plus `PlayBoundsSpec` | restrained apron contact + shared non-colliding exit AABB | rear/side wall geometry, hidden blockers, scoring, bank shots |
 | Persisted terrain payload | `BakedStageLayoutData`, `StageLayoutBakeCodec`, and `StageLayoutRepository` | exact versioned payload/hash -> immutable runtime layout copy | generation, solver, scene/physics creation, silent repair |
 | Standoff formula | `StageProgressionData` plus `build_stage_catalog.gd` materialization | pure nearest-front/cannon transform calculation after profile bounds exist | camera pose, solver routes, runtime mutation |
-| Accepted placement/resources | `StageData` and promoted v9 catalog | serialized cannon transform, camera bookmark, bounded witnesses | live camera state or duplicated terrain bounds |
+| Accepted placement/resources | `StageData` and promoted v9 catalog | serialized fixed cannon transform, camera bookmark, bounded witnesses | live camera state, player launch-position movement, or duplicated terrain bounds |
+| Paintable/scored surface scope | `TerrainTopTopology`, `TerrainSurface`, baked `target_mask`, and `PaintSystem` | Playable Terrain Surface contact -> visible paint; Target Area overlap -> coverage | Support Shell/apron paint, face atlas, second mask |
 | Aim composition | new responsibility-shaped `AimCameraComposer` beside `CameraDirector` | immutable exact top/summit points + cannon landmarks + FOV/aspect -> one cached pose | StageController state, trajectory solving, per-stage repair table, mode-toggle topology scans |
 | Prediction scheduling | new `src/cannon/trajectory_prediction_scheduler.gd` | latest canonical aim/wind epoch -> one immutable prediction published to CannonController | Fire admission, worker threads, collision algorithm changes, HUD text |
 | Wind presentation | `CannonWindFlag` under the cannon scene | `configure(WindController)` and settings signal | wind schedule, forces, HUD copy, per-frame mesh creation |
@@ -440,9 +498,11 @@ because the affected counts do not justify that ownership cost.
     basins, passes, width, undulation, and mechanisms rather than removed height.
   - Update `StageGenerationContract` bounds and
     `RouteGraphMountainSynthesizer` shared contour rules so every row-solid
-    footprint joins the rear wall, its widest active row covers at least 72% of
-    X cells, its row spans still vary by at least four cells, and its occupied
-    ratio stays below 0.85 to prevent a rectangular slab. Lower relief only in
+    footprint forms one independent mass, its widest active row covers at least
+    72% of X cells, its front and rear contours both close through the generated
+    Support Shell, its row spans still vary by at least four cells, and its
+    occupied ratio stays below 0.85 to prevent a rectangular slab. Remove the
+    rear-wall join assertion and height blend. Lower relief only in
     `RouteGraphHeightSynthesizer`/profile inputs; never scale the rendered mesh
     after baking.
   - Replace stale `tests/stage_progression_candidate_test.gd` and
@@ -460,14 +520,41 @@ because the affected counts do not justify that ownership cost.
     current source/test/resource expects a candidate/fallback seed, and the
     active v8 pointer is still unchanged.
 
-- [ ] **1.2 Place the cannon and compose the lower/wider Aim View**
+- [ ] **1.2 Remove the enclosure and establish open play bounds**
+  - Replace `ContainmentSpec` with `PlayBoundsSpec`. Preserve one versioned
+    explicit AABB and bounded apron XZ limits for deterministic generation,
+    prediction, live escape, replay, and checksums; remove backstop center/size,
+    side-wall geometry, join gap, and wall-contact fields.
+  - Replace `BackstopEnvironment` with `OpenPlayEnvironment`, retaining only the
+    restrained collider-matched non-target apron/ground. Delete rear and side
+    mesh/body/shape nodes and do not add invisible blockers. Keep the existing
+    terrain Support Shell and bottom as the mountain's only physical closure.
+  - Remove backstop/side-wall owner and shape IDs, `BACKSTOP` settlement,
+    wall-specific projectile branches, wall material/copy, and builder fixtures.
+    Prediction and live projectiles use the same `PlayBoundsSpec`: leaving it is
+    `ESCAPED`; apron- or Support Shell-only roots remain never-contacted and use
+    the 6.0-second timeout if they do not exit.
+  - Replace `containment_domain_test.gd`, `containment_geometry_test.gd`, and
+    `containment_wall_test.gd` with `play_bounds_test.gd` and
+    `open_play_environment_test.gd`. Add
+    `terrain_surface_paint_scope_test.gd` to prove Playable Terrain Surface
+    traversal paints, only Target Area overlap scores, and Support Shell,
+    bottom, apron, decoration, and mechanism contacts never write paint.
+  - Accept when scene inspection and focused physics checks find no rear/side
+    wall or hidden blocker, the independent mountain remains watertight and
+    collidable, predicted/live exit reasons match, no `BACKSTOP` symbol remains,
+    and the active v8 catalog pointer is still unchanged.
+
+- [ ] **1.3 Place the fixed cannon and compose the lower/wider Aim View**
   - After each exact layout exists, derive one cannon transform with the origin
     at least 70 m in front of the nearest active footprint edge, preserving
-    identity basis and cannon Y. Update shared bookmark derivation relative to
-    that accepted cannon and terrain; do not add 30 authored values.
+    identity basis and cannon Y. Persist that transform as the sole launch
+    position for the stage. Update shared bookmark derivation relative to that
+    accepted cannon and terrain; do not add 30 authored values, cannon orbit, or
+    launch-station input.
   - Replace the current fit-only fallback with a responsibility-shaped composer
-    that uses exact playable-top points and cannon/muzzle landmarks. Keep 48 FOV
-    and one shared set of constants; target a 25% cannon silhouette with an
+    that uses exact Playable Terrain Surface points and cannon/muzzle landmarks.
+    Keep 48 FOV and one shared set of constants; target a 25% cannon silhouette with an
     accepted 20–30% band, projected mountain height:width `0.65..0.85` centered
     on `0.75`, and the complete mountain/summit safe frame.
   - Build the interest-point set and final pose once per layout checksum, cannon
@@ -487,7 +574,7 @@ because the affected counts do not justify that ownership cost.
     data, a mode toggle performs no topology scan, and input/render callbacks
     perform no direct-space query.
 
-- [ ] **1.3 Promote the version-9 catalog atomically**
+- [ ] **1.4 Promote the version-9 catalog atomically**
   - Advance `BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION` to 2 and
     `build_stage_catalog.gd` bundle format to 5 because candidate/attempt fields
     leave the payload and manifest. Rebuild all 30 persisted stages from the
@@ -495,13 +582,17 @@ because the affected counts do not justify that ownership cost.
     do not invoke exhaustive certificate or success-route workers.
   - Verify manifest and payload hashes, exact-seed identity, baked hydration,
     target/range admission, bounded witnesses, distinct stage profiles/layout
-    checksums, footprint span/taper, containment, standoff, and repeat-build
+    checksums, footprint span/taper, independent shell closure, open play bounds,
+    fixed-cannon standoff, and repeat-build
     equality. Point `resources/stages/catalog.tres` to the complete
     content-addressed v9 bundle only after these checks pass.
   - Extend `tests/baked_stage_layout_test.gd` and
     `tests/stage_layout_repository_test.gd` to prove process reload/retry returns
     the same immutable heights, footprint, placement, and checksums; corrupt or
     missing payloads fail and never call `SeededStageGenerator`.
+  - Replace serialized `containment_checksum` with `play_bounds_checksum` in the
+    v9 baked payload, replay, agent/debug observations, and catalog manifest.
+    Persist no wall geometry or backstop identity.
   - Advance `ReplayRecorder.FORMAT_VERSION` from 8 to 9, replace its redundant
     `accepted_seed` field with the one canonical `terrain_seed`, and rename
     `tests/replay_recorder_v8_test.gd` to `tests/replay_recorder_v9_test.gd`.
@@ -510,15 +601,15 @@ because the affected counts do not justify that ownership cost.
     `terrain_seed`.
   - Remove `StageData.reliable_solution` and its legacy serialized values. After
     the v9 pointer passes import/start and exported-PCK loading, remove the
-    replaced active v8 bundle, version-8-only generation resources, stale
-    candidate tests, and any now-empty obsolete catalog directories; Git remains
-    the recovery path.
+    replaced active v8 bundle, `backstop_environment.tscn`, version-8-only
+    generation resources, stale candidate/containment tests, and any now-empty
+    obsolete catalog directories; Git remains the recovery path.
   - Accept when runtime loads every v9 ID through `StageLayoutRepository`, no
-    solution-route/candidate/fallback field remains, clean process load and
-    retry resolve identical hashes, the export contains every layout path, and
+    solution-route/candidate/fallback/backstop/containment field remains, clean
+    process load and retry resolve identical hashes, the export contains every layout path, and
     exactly one active generated bundle is referenced.
 
-- [ ] **1.4 Batch and suspend trajectory-preview presentation**
+- [ ] **1.5 Batch and suspend trajectory-preview presentation**
   - Replace `_dots: Array[MeshInstance3D]` with one `MultiMeshInstance3D` backed
     by the existing shared dot mesh/material. Allocate 96 transforms once; on a
     new prediction update only the used transforms, set
@@ -554,8 +645,9 @@ because the affected counts do not justify that ownership cost.
     substate for airborne follow, impact hold, and returning.
   - GameplayScene forwards `shot_family_started` to `follow_root`. CameraDirector
     filters manager contact/terminal signals for that root and TerrainSurface.
-    It holds first top/skirt contact for 0.8 seconds and otherwise exits safely on
-    early return, terminal event, restart, result, or target invalidation.
+    It holds first Playable Terrain Surface or Support Shell contact for 0.8
+    seconds and otherwise exits safely on early return, terminal event, restart,
+    result, or target invalidation. Support Shell contact never writes paint.
   - Preserve camera collision/occlusion safety and transition smoothing. A
     Splitter child never steals focus; a later accepted root replaces the prior
     follow target only after the player has returned and fired again.
@@ -583,28 +675,30 @@ because the affected counts do not justify that ownership cost.
 
 - [ ] **4.1 Bound dead airtime without making flight a stopwatch puzzle**
   - Change `basic_paintball.tres` and the `ProjectileData` default to a 6.0-second
-    never-contacted timeout. Do not change persistence after valid playable-top
-    contact.
+    never-contacted timeout. Do not change persistence after Playable Terrain
+    Surface contact. Apron or Support Shell contact does not disable the
+    never-contacted timeout.
   - Review the generated default shot in the real Shot Follow flow for Stage 01
     and Stage 30. Tune only shared standoff/camera/launch presentation inputs if
     the flight reads as immediately adjacent or needlessly prolonged; do not add
     an exact flight-time assertion or target solver.
   - Add focused timeout regression for never-contacted versus terrain-resident
     balls and preserve replay/settlement reason contracts.
-  - Accept when misses end promptly, valid-top balls persist, and the two reviewed
-    default flights have a readable anticipation/impact beat near the user's
-    approximate three-second reference.
+  - Accept when misses end promptly, balls that reach the Playable Terrain
+    Surface persist, and the two reviewed default flights have a readable
+    anticipation/impact beat near the user's approximate three-second reference.
 
 - [ ] **5.1 Integrated quality pass**
   - Run `$codebase-quality-auditor` over the final task diff. Check StageController
     ownership, exact-root identity, CameraDirector size, stage-generation
     responsibility, PredictionScheduler ownership, physics-query callback safety,
     no second wind truth, HUD intent boundaries, MultiMesh bounds, schema removal,
-    resource lifecycle, and reachable failure paths.
+    resource lifecycle, PlayBounds/open-environment ownership, exact paint-scope
+    enforcement, and reachable failure paths.
   - Make only safe task-scoped corrections. Accept when no competing state owner,
     catch-all gameplay file, Fire-side prediction, render/input direct-space query,
-    dead debris/solution path, silent null-root follow, or v8/v9 pointer ambiguity
-    remains.
+    dead debris/solution/backstop path, silent null-root follow, competing paint
+    representation, hidden blocker, or v8/v9 pointer ambiguity remains.
 
 - [ ] **5.2 One focused and production-style validation gate**
   - Before starting, tell the user this gate runs targeted functional scripts,
@@ -613,16 +707,17 @@ because the affected counts do not justify that ownership cost.
     exhaustive solver, or a foreground window. Stop after the named artifacts are
     produced and reviewed unless a relevant failure requires one corrected rerun.
   - Run focused prediction scheduling, camera/query safety, trajectory batching,
-    stage placement, wind flag/HUD, Shot Follow, timeout, and replay-presentation
-    scripts directly with headless Godot. Run
-    `scripts/verify.ps1` once and one release export.
+    stage placement, open play bounds, paint-surface scope, wind flag/HUD, Shot
+    Follow, timeout, and replay-presentation scripts directly with headless
+    Godot. Run `scripts/verify.ps1` once and one release export.
   - Capture and inspect at native size: Stage 01 Aim View, Stage 30 Aim View,
     weak/crosswind flag, strong/crosswind flag, mid-flight root follow, terrain
     impact hold, and returned Aim View. Use the built executable and the existing
     background capture path.
   - Accept when commands exit zero with no script/runtime errors and the agent's
     visual review finds no clipping, hidden mountain, tiny cannon, ambiguous wind,
-    lost projectile, obstructive return control, or steering implication.
+    boxed-in backdrop, visible or hidden enclosure, lost projectile, obstructive
+    return control, or steering implication.
 
 - [ ] **5.3 Truthful closeout**
   - Record exact commands, v9 bundle identity, changed/removed files, capture
@@ -647,6 +742,17 @@ because the affected counts do not justify that ownership cost.
   `0.65..0.85`, targeting `0.75`, without render-only geometry scaling.
 - Stage 01 and Stage 30 report at least 70 m from cannon origin to the nearest
   playable front in accepted data.
+- The cannon transform is fixed for the whole stage. Map View orbit, zoom, and
+  refocus do not move the cannon or create another launch position.
+- Scene and focused physics checks find no visible, collidable, or hidden rear or
+  side wall. The mountain remains an independent closed mass, the retained apron
+  is non-target ground, and no `BACKSTOP` settlement symbol remains.
+- The one authoritative paint mask writes only from Playable Terrain Surface
+  traversal. Paint is visible outside the Target Area but scores only inside it;
+  Support Shell, bottom, apron, decoration, and mechanism contact never writes
+  paint.
+- Prediction and live flight use the same `PlayBoundsSpec`; crossing it produces
+  the same `ESCAPED` result in both paths without collision geometry.
 - `StageController.request_fire()` never invokes prediction; a stale current key
   reports pending, while a ready matching key launches with no additional
   prediction compute. The three-tick transition epoch preserves hit identity and
@@ -668,8 +774,8 @@ because the affected counts do not justify that ownership cost.
   and Tab return do not change projectile transform, velocity, lifetime, or aim.
 - Two root families can coexist. A resident/older ball never pulls the camera
   away from the newly fired root, and Splitter children do not steal focus.
-- Never-contacted root timeout is 6.0 seconds; valid-top contact still disables
-  age-based deletion and preserves later wind wake/paint behavior.
+- Never-contacted root timeout is 6.0 seconds; Playable Terrain Surface contact
+  disables age-based deletion and preserves later wind wake/paint behavior.
 - Aim/Map toggles reuse cached stage interest data and Aim pose. Trajectory dots
   have one MultiMesh draw owner with correct visible count/bounds, and the hidden
   preview/settled flag do not run idle presentation callbacks.
@@ -691,7 +797,8 @@ because the affected counts do not justify that ownership cost.
 - Aim tuple, preview, paint mask, wind schedule, timer, result, replay action, and
   stage outcome authorities do not move into HUD, CameraDirector, or flag code.
 - Map View retains safe orbit/zoom/refocus and blocks aim/Fire. Aim View retains
-  existing drag/wheel/keyboard meanings.
+  existing drag/wheel/keyboard meanings. Camera movement never changes the fixed
+  cannon transform.
 - The 48-degree FOV, Compatibility renderer, typed GDScript, fixed 60 Hz physics,
   Korean-first copy, Theme ownership, and common desktop layout support remain.
 - Catalog promotion is atomic; no partial v9 or runtime generation fallback is
@@ -699,6 +806,9 @@ because the affected counts do not justify that ownership cost.
 - The canonical terrain seed is one catalog-family constant, not a per-stage
   tuning control. Stage variety comes from stage/profile identity, and all
   runtime visual/collision/paint consumers use the same baked topology.
+- `PlayBoundsSpec` is exit-decision data only; it must not create a visible,
+  collidable, or hidden containment wall. The one XZ paint mask represents only
+  the Playable Terrain Surface, not the Support Shell or arbitrary exterior faces.
 - No production dependency, external asset, network service, plugin, Docker
   path, or hand-authored stage repair is added.
 
@@ -718,6 +828,9 @@ foreach ($testScript in @(
   'generation_v9_materialization_test.gd',
   'baked_stage_layout_test.gd',
   'stage_layout_repository_test.gd',
+  'play_bounds_test.gd',
+  'open_play_environment_test.gd',
+  'terrain_surface_paint_scope_test.gd',
   'phase7_user_qa_contract_test.gd',
   'stage_cannon_standoff_test.gd',
   'phase8_aiming_composition_test.gd',
@@ -764,7 +877,10 @@ a task-specific `.agents/evidence/` directory.
 | Aim View projected mountain ratio falls below 0.65 | Restore relief within the locked `64..92 m` range and verify the shared camera composer before changing contour width | Do not narrow the widest footprint below 72% or add per-stage camera tuning |
 | Representative default flight still feels prolonged | First adjust the shared generated default aim preference within the existing legal tuple and target-centroid neighborhood, then the shared launch-speed curve only if all bounded witnesses and preview/physics parity are regenerated | Do not add a flight-duration gate or per-stage speed |
 | Follow root is freed before a contact event | Treat invalidation as a terminal presentation event and return safely to Aim View | Do not keep a dangling node reference or infer a fake impact |
-| First contact is backstop rather than TerrainSurface | Return after the existing terminal feedback; do not apply the terrain-impact hold | Do not reclassify backstop as terrain or paint it |
+| First contact is the Support Shell rather than the Playable Terrain Surface | Show the same 0.8-second impact hold, write no paint, then continue the normal escape or never-contacted timeout rules | Do not reclassify the Support Shell as paintable terrain or add another paint representation |
+| A missed root remains inside PlayBounds without reaching the Playable Terrain Surface | Keep the 6.0-second never-contacted timeout and the shared prediction/live exit check | Do not add a hidden wall, enlarge bounds merely to retain the root, or invent a new settlement identity |
+| The open background weakens the mountain silhouette | Adjust shared background, ground, lighting, and material contrast, then review both endpoint captures | Do not restore a rear wall or dark enclosure |
+| The retained apron dominates the open composition | Reduce its visible extent or contrast within the locked bounded-ground responsibility while preserving collision and bounds parity | Do not make the apron paintable or scoreable |
 | Flag cannot remain readable without crossing the muzzle path | Move the single shared pole anchor to the opposite cannon side and re-run both Aim View captures | Do not add a HUD-only replacement or per-stage anchor |
 | Reduced motion makes direction unclear | Keep the streamer statically aligned and reduce only periodic flutter amplitude to zero | Do not hide the flag or wind rule |
 | v9 promotion fails import/start | Keep v8 as the active pointer, retain the staged v9 bundle for diagnosis, and fix only the failing contract | Do not delete v8 or activate a partial bundle |
@@ -789,8 +905,9 @@ a task-specific `.agents/evidence/` directory.
 
 1. Resume at Task 1.0 and inspect the two preserved unrelated diffs before
    staging anything.
-2. Complete Task 1.0 as a prediction/readiness checkpoint, then Tasks 1.1–1.4 as
-   one fixed-terrain, standoff, camera-composition, and preview checkpoint.
+2. Complete Task 1.0 as a prediction/readiness checkpoint, then Tasks 1.1–1.5 as
+   one fixed-terrain, open-environment, standoff, camera-composition, and preview
+   checkpoint.
 3. Complete the flag and Shot Follow branches, then integrate them before the
    quality audit.
 4. Announce and run the single bounded final gate only after the implementation
@@ -802,6 +919,9 @@ a task-specific `.agents/evidence/` directory.
 
 - Stop before any dependency, asset pack, renderer, save-format, scoring, or
   mechanism expansion; it requires separate explicit user approval.
+- Stop before adding cannon orbit, multiple launch stations, moving the fixed
+  cannon, painting the Support Shell, or replacing the one-height XZ paint mask
+  with an all-face atlas; each changes the approved game contract.
 - Stop before adding timing probes, FPS thresholds, profiler capture, worker-thread
   physics access, generalized server APIs, pooling, LOD, or occlusion work; none
   is needed to prove the named structural contracts.

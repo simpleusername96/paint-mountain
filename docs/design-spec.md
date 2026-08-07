@@ -36,8 +36,9 @@ presentation, and the rest of the baseline directive.
 The player inspects a distant mountain, sets a stationary cannon's
 yaw/elevation/power, fires a rigid-body paintball, and watches gravity, wind,
 real surface contact, rolling, and mechanisms produce coverage. Every valid
-playable-top area physically traversed while in contact is painted; only its
-overlap with the immutable target mask counts toward coverage. There is no paint
+Playable Terrain Surface area physically traversed while in contact is painted;
+only its overlap with the immutable Target Area mask counts toward coverage. The
+Support Shell, bottom, apron, decorations, and mechanisms remain unpainted. There is no paint
 reservoir, depletion, or autonomous flow. The first actual launch starts the
 stage timer; the player finishes the run or the timer ends it.
 
@@ -77,6 +78,10 @@ exactly three mechanism types.
   controls; it does not add a second pointer gesture for independent camera
   navigation. Map View remains the deliberate whole-board inspection mode and
   never changes the stored aim.
+- Each stage has one baked cannon transform at least 70 m in front of its
+  nearest playable terrain edge. The player changes yaw, elevation, and power,
+  but cannot orbit or move the launch position around the mountain. Map View
+  orbit changes only the inspection camera.
 - An accepted Fire action enters `Shot Follow`, which follows that newly launched
   root paintball rather than averaging every resident ball. It shows first
   terrain contact, holds the impact for 0.8 seconds, then returns to Aim View.
@@ -122,8 +127,9 @@ exactly three mechanism types.
   invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
   controls remain editable while prior families move.
 - An initial Fire slot releases when its generation-0 root first authoritatively
-  traverses valid playable top or terminates. Family observation waits until every current
-  body has reached valid top or terminated; resident terrain balls may therefore
+  traverses valid Playable Terrain Surface or terminates. Family observation
+  waits until every current body has reached that surface or terminated;
+  resident terrain balls may therefore
   remain physically active without permanently exhausting Fire capacity.
 - Family coverage feedback is nonmodal. Reaching target coverage or spending all
   shots neither clears nor fails the run. After the first shot, Finish may end
@@ -142,7 +148,7 @@ exactly three mechanism types.
 
 - Rigid bodies use gravity, CCD, low ordinary-terrain rebound, rolling/sliding
   friction, angular motion, damping, bounds, and fixed-timestep behavior. Once
-  a ball has reached valid playable top, age, low speed, and engine sleeping do
+  a ball has reached valid Playable Terrain Surface, age, low speed, and engine sleeping do
   not delete it; it may sleep naturally and collision or strong wind may move it
   again. Explicit mechanism consumption, real escape, a never-contacted miss
   timeout, unrecoverable invalid geometry, and stage cleanup are the only
@@ -156,19 +162,19 @@ exactly three mechanism types.
   terrain contact, but elapsed flight time is not a legal-shot gate or an exact
   per-stage contract. Physical standoff and launch tuning prevent both an
   immediate adjacent hit and a needlessly prolonged arc. A root that has never
-  contacted playable top terminates at 6.0 seconds.
+  contacted Playable Terrain Surface terminates at 6.0 seconds.
 - Power `0..100` maps linearly to `32..160 m/s`. Generated summit height/range,
-  predictor, rigid body, and containment use that same curve; maximum-power
+  predictor, rigid body, and open play bounds use that same curve; maximum-power
   rescue through a second velocity constant is forbidden.
-- Airborne travel uses no paint. A verified valid-top first contact may create a
-  radial impact mark and consecutive real valid-top contact samples create a
-  continuous 3D surface sweep. A stationary ball does not repeatedly paint one
+- Airborne travel uses no paint. A verified Playable Terrain Surface first
+  contact may create a radial impact mark, and consecutive real contacts on
+  that surface create a continuous 3D surface sweep. A stationary ball does not repeatedly paint one
   point; resumed motion paints only its new physical path. Terrain embedding is
   recovered against the authoritative surface and physical radius, not treated
   as an ordinary deletion outcome.
 - One 512×512 paint mask is the mutable visual and scoring source. One immutable
   512×512 `target_mask`, rasterized from the accepted shared terrain triangles,
-  defines every configured scoreable top texel through the target-shoulder
+  defines every configured scoreable Target Area texel through the target-shoulder
   boundary. After generation, slope, decorations, camera visibility, expected
   difficulty, and ballistic failure never cut holes in that footprint.
 - During that target raster pass, every included sample must also remain inside
@@ -178,7 +184,7 @@ exactly three mechanism types.
   must pass the same pure analytic gate. Bounded generated default and summit
   aims receive real first-hit checks; exhaustive per-target-texel certification
   is not a product or release requirement.
-- Persistent paint is written only by verified playable-top surface sweeps and
+- Persistent paint is written only by verified Playable Terrain Surface sweeps and
   defined impact and Burst radial marks reconstructed on the exact
   rendered/collidable triangle. Visual paint and scored paint cannot diverge;
   paint outside the target mask remains visible but does not increase coverage.
@@ -190,8 +196,8 @@ exactly three mechanism types.
 
 ### Mechanisms
 
-- All mechanisms are terrain-conforming flat circular glyphs. A real valid-top
-  contact inside the visible glyph footprint activates their data-driven effect;
+- All mechanisms are terrain-conforming flat circular glyphs. A real Playable
+  Terrain Surface contact inside the visible glyph footprint activates their data-driven effect;
   raised 3D obstacle bodies and hidden trigger volumes are not used.
 - Burst applies one large authoritative paint effect, consumes the ball, and
   visibly enters a spent state.
@@ -205,12 +211,13 @@ exactly three mechanism types.
 
 ### Stages
 
-- Generate one accepted immutable variable-size height grid per stage from a
-  deterministic route graph, canonical stage ID/version, fixed accepted seed,
-  and complete typed progression profile. Stage 01 begins at `180 × 120 m` and
-  `72 × 48` cells; Stage 30 ends at `240 × 160 m` and `96 × 64` cells, with
-  bounded adjacent steps and the exact typed progression formulas. The
-  resulting surface has exactly one playable top height per XZ and
+- Generate one immutable variable-size height grid per stage from a
+  deterministic route graph, canonical stage ID/version, the shared canonical
+  terrain-family seed, and a complete typed progression profile. Stage 01 begins
+  at `210 × 120 m` and `84 × 48` cells; Stage 30 ends at `280 × 160 m` and
+  `96 × 64` cells, while nominal peak progression stays within `64..92 m`.
+  Adjacent steps remain bounded by the typed progression formulas. The
+  resulting Playable Terrain Surface has exactly one height per XZ and
   may form broad rollable slopes, terraces, ridges, valleys, and pads, never
   caves, overhangs, tunnels, stacked tops, detached pieces, or literal stairs.
 - Emit the indexed top-triangle list once with one fixed diagonal. The render
@@ -219,10 +226,12 @@ exactly three mechanism types.
   vertices, triangles, and IDs. A `HeightMapShape3D`, bilinear query, independent
   triangulation, visual displacement, or query-only playable surface is not an
   acceptable substitute.
-- The mountain is a closed, lit, physically collidable 3D mass with perimeter
-  skirts and bottom cap. A visible bright off-white rear wall and a faceted,
-  collider-matched non-target apron close the board so legal shots cannot pass
-  through or over the playable scene.
+- The mountain is an independently closed, lit, physically collidable 3D mass
+  with a perimeter Support Shell and bottom cap. The visible/collidable rear
+  backstop and artificial side containment walls are absent and have no hidden
+  replacements. A restrained collider-matched non-target apron may remain as
+  open ground; explicit open play bounds and the never-contacted timeout end
+  misses without wall banks.
 - All thirty stages are selectable from first launch. Per-stage bounds, cells,
   nominal peak, macro undulation, decorations, targets, and seeds change
   gradually; routes, reversals, ridges, passes, basins, station counts, and
@@ -232,29 +241,29 @@ exactly three mechanism types.
   05 are explicit distinctness canaries.
 - Small stages may have no glyph or one or two glyphs. Larger stages contain
   more glyph opportunities, using only Burst, Splitter, and Uphill Rebound.
-- Glyphs use a deterministic generic search of visible playable-top surface and
+- Glyphs use a deterministic generic search of visible Playable Terrain Surface and
   must pass footprint, spacing, slope presentation, visibility, and
   effect-usefulness checks. A failed placement rejects or changes the candidate
   through the generation contract; production resources contain no hand-authored
   X/Z repair fallback.
 - Stage start and restart use one generated legal default aim whose real first
-  hit reaches playable target top near the target-mask centroid. Every accepted
+  hit reaches the Target Area near the target-mask centroid. Every accepted
   stage also carries a separate generated legal first hit on its global highest
-  playable top region. Neither witness is exposed as auto-aim.
+  region of the Playable Terrain Surface. Neither witness is exposed as auto-aim.
 - Each StageData includes identity and translation keys, generation profile/seed,
   cannon transform, camera bookmarks, target/shots/color, mechanism loadout,
-  containment, star thresholds, best data, and tutorial keys. The generated
+  open play bounds, star thresholds, best data, and tutorial keys. The generated
   layout owns the route graph, height samples, fixed triangle identities,
   target mask, bounded default/summit witnesses, optional diagnostic certificate
   metadata, decorations, and resolved placements.
-- Stage generation derives the cannon transform and containment relationship so
+- Stage generation derives the fixed cannon transform and open play bounds so
   the nearest playable front stays at least 70 m away at every supported board
   size. The next promoted catalog records that placement contract; a camera-only
   scale adjustment is not an acceptable substitute.
 - Stages do not require a prescribed successful route, solver clear, exhaustive
   target-wide first-hit proof, or all-stage manual playthrough. Generated route
   data shapes terrain and supports readability without defining a player
-  solution. Containment, analytic range admission, bounded witnesses, and
+  solution. Open-bound admission, analytic range admission, bounded witnesses, and
   representative gameplay regressions remain required.
 
 ### Results, persistence, and replay
@@ -268,8 +277,9 @@ exactly three mechanism types.
   replay. They do not present target coverage or spent shots as an automatic
   clear/failure result.
 - Save version, unlocks, best coverage/stars, and settings locally.
-- Replay format 8 stores stage/profile/layout/certificate versions, accepted
-  seed, terrain identities, generated default aim, wind schedule identity,
+- Replay format 9 stores stage/profile/layout/certificate versions, the
+  canonical terrain seed, terrain and open-play-bound identities, generated
+  default aim, wind schedule identity,
   fixed-tick aim/Fire/Finish actions, attempt outcome, and final paint-mask
   checksum. Replay presentation locks normal input and accepts only replay-origin
   actions; older incompatible formats are rejected deterministically.
@@ -308,7 +318,7 @@ exactly three mechanism types.
   particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/velocity,
   coverage gains and masks, paint-command ordering, preview/collision,
-  mechanisms, seed, reachability/containment identities, bounds, camera, and
+  mechanisms, seed, reachability/open-bound identities, bounds, camera, and
   restart timing plus the specified debug actions. No payload metric remains.
 
 ### Performance and automation
@@ -338,7 +348,10 @@ exactly three mechanism types.
 ## Non-Goals
 
 - Shops, currencies, monetization, customization, upgrades, gacha, dailies, ads, story/dialogue, inventory, multiple cannon/projectile collections, leaderboards, multiplayer, UGC, backend, online service, Docker, and live-service systems.
-- Orthographic tabletop primary gameplay, fixed side-view gameplay, direct projectile steering, full fluid simulation, photorealism, caves, overhangs, or high-end rendering requirements.
+- Orthographic tabletop primary gameplay, fixed side-view gameplay, cannon
+  position orbit or launch-station selection, direct projectile steering, paint
+  or score on the Support Shell, full exterior-face coverage atlases, full fluid
+  simulation, photorealism, caves, overhangs, or high-end rendering requirements.
 
 ## Acceptance Criteria
 
@@ -354,7 +367,7 @@ exactly three mechanism types.
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the current
-contact, persistent-ball, wind, timed-result, surface-glyph, replay-format-8, or
+contact, persistent-ball, wind, timed-result, surface-glyph, replay-format-9, or
 interaction-mode contracts above.
 
 The 2026-08-05 gameplay-recovery plan is superseded history. The completed
@@ -371,7 +384,7 @@ bundle through `StageLayoutRepository`; it asynchronously serves the selected
 layout, may prefetch nearby work, retains three entries, and never substitutes
 runtime generation or aim solving.
 
-Glyph placement uses a generic deterministic search of visible playable-top
+Glyph placement uses a generic deterministic search of visible Playable Terrain Surface
 surface and spacing, not authored stage coordinates. The fast-entry,
 Fire-capacity, and localized loading/retry implementations passed their prior
 production checks. The Fire owner itself enforces the two-root cap; resident

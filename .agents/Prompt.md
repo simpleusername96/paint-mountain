@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 source: ../docs/source-brief.md
 scope: repository purpose and non-negotiable product constraints
 related:
@@ -37,9 +37,15 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
 - Use Godot 4.x and GDScript with no backend, Docker, or unnecessary external dependencies.
 - Make visual paint and calculated coverage share one authoritative mask.
 - Generate a thick, collidable, one-height-per-XZ route-graph mountain whose
-  render, top collision, queries, target rasterization, and paint reconstruction
-  consume one exact triangle list. A visible collidable rear wall and faceted
-  apron contain the current board.
+  render, Playable Terrain Surface collision, queries, target rasterization,
+  and paint reconstruction consume one exact triangle list. Close its perimeter
+  with a non-paintable Support Shell and bottom; keep the environment open with
+  no visible, collidable, or hidden rear/side containment walls. A restrained
+  non-target apron may remain below the play space.
+- Keep one stationary baked cannon transform per stage. Map View may orbit for
+  inspection, but the player cannot move the launch position around the
+  mountain. Persistent paint is limited to the Playable Terrain Surface, and
+  only Target Area overlap contributes coverage.
 - Generate and verify one legal stage-start/restart aim near the target centroid
   and one separate legal first hit for the global highest playable region. Do
   not expose either witness as auto-aim. Exhaustive first-hit certification for
@@ -70,7 +76,8 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
 
 ## Hard Constraints
 
-- The perspective aiming camera keeps the cannon within roughly 15–20% of the frame while the mountain fills most of the middle and upper view.
+- The perspective aiming camera keeps the cannon within roughly 20–30% of the
+  frame while the complete mountain remains visible as a smaller distant mass.
 - Stage progression is controlled by one explicit state machine; restart removes all temporary gameplay state in under one second after confirmation.
 - A fixed timestep, continuous collision detection, low ordinary-terrain rebound,
   bounded child counts and paint-command work, and seeded behavior protect

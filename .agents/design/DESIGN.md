@@ -105,7 +105,7 @@ remains non-canonical and must not silently alter this context.
 | Copy and locale | `translations/ui.csv`, `src/autoload/game_state.gd`, `src/autoload/save_system.gd`, `project.godot` | The CSV owns localized keys and copy; `GameState` owns the current setting and application; `SaveSystem` owns defaults, migration, and persistence. Component-scene defaults are placeholders, not a second authority. |
 | Gameplay composition | `scenes/gameplay/gameplay.tscn`, `src/gameplay/gameplay_scene.gd` | Integrate existing owners only; delegate stage state, paint, camera, mechanisms, and HUD behavior. |
 | Stage shape and data | `src/stage_generation/`, `resources/stage_generation/*.tres`, `resources/stages/*.tres` | Generators own construction policy; typed Resources own route/profile constraints plus per-stage paint, camera, and loadout data. |
-| Terrain and world | `src/terrain/`, `scenes/gameplay/gameplay.tscn`, `src/gameplay/gameplay_scene.gd`, `scenes/gameplay/backstop_environment.tscn` | Terrain owners change playable mass; the gameplay scene owns environment, light, lens, and composition nodes; keep visible geometry, collision, queries, and paint identity aligned. |
+| Terrain and world | `src/terrain/`, `scenes/gameplay/gameplay.tscn`, `src/gameplay/gameplay_scene.gd`, current `scenes/gameplay/backstop_environment.tscn` retirement source | Terrain owners change playable mass; the gameplay scene owns the open environment, light, lens, and composition nodes. The active plan removes rear/side containment walls while keeping visible geometry, collision, queries, paint identity, and open escape rules aligned. |
 | Camera | `src/camera/camera_director.gd`, `resources/stages/*.tres`, `scenes/gameplay/gameplay.tscn` | Stage Resources own bookmarks; `CameraDirector` owns mode, safety, occlusion, orbit, and follow policy; the scene owns active lens settings. |
 | Paint presentation | `src/paint/paint_system.gd`, `src/paint/terrain_paint.gdshader`, `resources/paint/default_paint_surface_tuning.tres`, `resources/stages/*.tres` | `PaintSystem` remains the only mutable mask and coverage owner; shader, tuning Resource, and stage color are its configured visual view. |
 | Cannon and trajectory | `scenes/gameplay/cannon.tscn`, `src/cannon/`, `resources/projectiles/` | Scene owns cannon form, Resources own tuning, and cannon/trajectory owners calculate aim and first impact; HUD only displays and requests. |
@@ -113,7 +113,7 @@ remains non-canonical and must not silently alter this context.
 | Mechanisms and effects | `scenes/mechanisms/`, `src/mechanisms/`, `resources/mechanisms/*.tres`, `src/effects/presentation_effects.gd` | Prefabs own collider-matched form, typed Resources own kind/copy/tuning, and effects explain events without deciding game state. |
 
 World palette and material values are currently distributed across gameplay,
-backstop, cannon, mechanism, dressing, trajectory, and effect owners. No shared
+the retiring backstop environment, cannon, mechanism, dressing, trajectory, and effect owners. No shared
 world-material Resource is canonical yet. Use `ART_DIRECTION.md` for intended
 roles and change only the responsible production owner; do not create a second
 palette registry in this folder.

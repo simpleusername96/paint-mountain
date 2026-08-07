@@ -29,6 +29,30 @@ related:
 
 # Project Record
 
+## Current Open-Mountain Surface Direction (2026-08-07)
+
+The current implementation still constructs `BackstopEnvironment` with visible
+and collidable rear/side walls, joins the generated footprint to the rear wall,
+and records `BACKSTOP` settlement. The user has now superseded that behavior;
+the active execution contract owns its removal. Until that task passes, the
+running build is not evidence of the approved open-mountain direction.
+
+- The intended mountain retains real front-to-back depth as one independently
+  closed 3D mass. Its perimeter Support Shell and bottom close the body without
+  a rear-wall join.
+- Playable Terrain Surface means the continuous one-height-per-XZ skin:
+  cannon-facing slopes, terraces, valleys, ridges, summits, and far-side slopes.
+  Valid traversal paints this surface; only Target Area overlap changes coverage.
+- Support Shell, bottom, apron, decorations, and mechanisms remain collidable or
+  presentational as appropriate but never write persistent paint or coverage.
+- Each stage retains one baked fixed cannon transform with at least 70 m
+  standoff. Map View camera orbit is inspection only; cannon orbit and launch
+  stations are not part of the current game.
+- The rear backstop and artificial side containment walls are removed without
+  hidden replacement planes. A restrained non-target apron may remain. Live and
+  predicted misses use the same explicit open exit bounds, and `BACKSTOP`
+  settlement is retired in favor of real escape or the never-contacted timeout.
+
 ## Current Cannon, Wind, and Shot-Observation Direction (2026-08-07)
 
 The current implementation is functionally connected, but the user rejected the
