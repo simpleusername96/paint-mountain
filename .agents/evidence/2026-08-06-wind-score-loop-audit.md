@@ -2,7 +2,7 @@
 type: evidence
 status: superseded
 created: 2026-08-06
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-07
 topic: current gameplay audit and revised wind-driven coverage loop
 scope: aiming, projectile paint, wind, stage scoring, terrain mechanisms, HUD, and missing UX
 source: the user's 2026-08-06 direction, current repository state, tests, and recent running-game captures
@@ -127,7 +127,8 @@ related:
 
 더 큰 문제는 이름이 `scale_contact`인 최근 캡처가 실제 접촉 중 공과 자국을 함께 보여 주지 않는다는 점이다.
 
-![현재 scale_contact 캡처. 접촉 중 공과 자국의 동시 비교가 되지 않는다.](gameplay-contract-recovery/stage_04_scale_contact_new.png)
+이 세션의 임시 `scale_contact` PNG는 정리 대상이므로 근거로 유지하지 않는다.
+위 판정은 당시 직접 검토 기록이며, 새 구현은 별도 런타임 캡처로 다시 확인해야 한다.
 
 따라서 “구현됨”으로 기록할 수는 있어도 “자연스럽게 보임”은 통과하지 못했다. 첫 조정값은 공 `1.20m`, 연속 자국 `1.40m`, 충격 자국 `1.75m`로 고정하고 별도 정착 자국은 없앤다. 이는 현재보다 공을 33% 키우고, 연속 자국을 줄이며, 연속 띠를 공의 약 1.17배로 만든다. 최종 수용은 수치가 아니라 실제 접촉 장면의 공 실루엣과 페인트 폭을 같은 프레임에서 확인해야 한다.
 
@@ -195,7 +196,8 @@ related:
 
 Burst, Splitter, Bumper는 모두 큰 메시와 실제 물리 콜라이더를 가진 3D 물체다. 보이는 지름은 대략 8~10m다. 최근 화면에서도 산의 흐름보다 장치가 먼저 보이며, 선반과 실루엣이 서로 경쟁한다.
 
-![현재 조준 화면. 정상부와 중간 선반의 3D 장치가 지형 위에 돌출된다.](gameplay-contract-recovery/stage_04_aiming_after_material2.png)
+당시 임시 조준 PNG는 정리 대상이므로 현재 증거로 유지하지 않는다. 이 문단은
+평면 문양으로 교체하기 전 상태에 대한 역사적 판정만 기록한다.
 
 평면 원형 문양으로 바꾸는 방향은 합리적이다. 다만 얇아 보이는 3D 콜라이더를 남기는 방식은 피해야 한다. 포탄이 공중에서 문양의 숨은 부피에 먼저 맞을 수 있기 때문이다.
 
@@ -231,7 +233,8 @@ Stage 1은 0개, Stage 2는 1개, Stage 3~6은 2개, 이후 3·4·5·6개로 늘
 
 포탄이 움직일 때 나타나는 관찰 컨트롤은 화면 우상단에서 중앙 쪽까지 긴 가로 막대를 만든다. 1280×720 캡처에서는 산 정상과 예상 경로가 있는 영역을 직접 덮는다. 현재 `Follow/Wide/Cannon`은 각각 탄을 따라가는 카메라, 넓은 고정 시야, 대포 쪽 고정 시야를 고르는 기술적 카메라 북마크다. 플레이어가 왜 골라야 하는지 직관적이지 않으며, 최신 방향에는 맞지 않는다.
 
-![두 포탄 진행 중 화면. 가로 관찰 바가 산의 우상단을 가린다.](gameplay-contract-recovery/stage_04_two_family_ui2.png)
+당시 임시 두-발 화면 PNG는 정리 대상이므로 현재 증거로 유지하지 않는다. 이전
+관찰 바가 폐기되었다는 설계 판단만 역사 기록으로 남긴다.
 
 권장 배치는 다음과 같다.
 

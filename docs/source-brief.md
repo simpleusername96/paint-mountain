@@ -1734,6 +1734,51 @@ acceptance:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-07): Cannon Standoff, Wind Flag, and Shot Observation
+
+After reviewing the large-stage aiming composition and wind presentation, the
+user revised the visible world and post-Fire camera requirements. These clauses
+override conflicting debris, the earlier 15–20% cannon frame cap, fixed Aim
+Lock, and immediate cannon-return interpretations only:
+
+- **Wind as a cannon-side world cue:** the primary in-world wind cue is a flag,
+  streamer, or windsock mounted beside the stationary cannon. Its orientation
+  shows the direction projectiles are pushed and its motion communicates
+  strength. The existing HUD remains a concise secondary rule and accessibility
+  cue. Generic airborne leaves or debris are not retained as the main wind cue.
+- **Physical cannon-to-mountain separation:** stage growth must not move the
+  playable mountain progressively closer to the cannon. Every stage preserves a
+  deliberate foreground-to-target standoff in world space, with at least 70 m
+  from the cannon origin to the nearest playable front; camera scaling alone
+  cannot conceal a short physical gap.
+- **Aiming composition:** the aiming view presents the cannon as a substantial,
+  readable foreground anchor at roughly 20–30% of viewport height while the
+  complete playable mountain remains a smaller distant subject inside the view.
+  The player still uses the established yaw, elevation, and power controls. This
+  revision does not require another pointer gesture or a separate freely
+  navigated camera inside the aiming mode; deliberate orbit/zoom inspection
+  remains the map-inspection mode.
+- **Automatic shot observation:** after an accepted Fire action, the presentation
+  camera follows the newly launched root paintball through flight and shows its
+  first terrain contact. A visible one-action control returns to the cannon view
+  early. Returning changes only the camera: the projectile continues under the
+  same physics and cannot be steered. Shot Follow temporarily replaces the aim
+  controls on screen; returning immediately restores the stored aim and existing
+  repeat-Fire capacity. The impact is held briefly before the normal automatic
+  return so contact remains readable.
+- **Flight pacing:** approximately three seconds to a representative useful
+  first terrain contact is a tuning target, not an exact per-shot time rule.
+  Useful shots must not feel immediately adjacent to the cannon or remain in the
+  air for an excessive period, and a never-contacted miss must terminate
+  promptly. Distance, launch tuning, and camera staging must be considered
+  together.
+- **Current work boundary:** no performance timing or profiling pass is required
+  by this revision. Exhaustive target-wide reachability, solver clears, authored
+  success routes, and their obsolete recovery artifacts remain outside the
+  current gameplay direction.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

@@ -16,6 +16,7 @@ related:
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-06-command-columns-hud.md
   - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../execplans/2026-08-07-cannon-shot-observation.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -52,14 +53,14 @@ direction. Use its narrow left command column, narrow right status column,
 restrained warm surfaces, centered Fire action, and compact typography rhythm.
 The generated still does not remove real controls or state: Gear remains beside
 the right rail, and direction, power steps, dynamic wind detail, focus, disabled
-states, and Map Inspection remain supported.
+states, Map View, and the contextual Shot Follow return remain supported.
 
 At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 | Element | Placement | Contract |
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
-| Interaction-mode chip and toggle | Below Stage | Shows `Aim Lock` or `Map Inspection`; the focusable toggle and Tab switch modes |
+| Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Readable run state without covering the mountain; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
 | Aim and power | Lower-left | One coherent control group |
@@ -72,38 +73,39 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   survives supported desktop aspect and resolution changes. Do not freeze every
   child to viewport offsets.
 - Keep one Fire control. Do not place Restart in the aiming HUD.
-- Do not expose Follow, Wide, Cannon, gameplay speed, or gameplay Pause strips.
+- Do not expose the old Follow/Wide/Cannon preset rail, gameplay speed, or
+  gameplay Pause strips. Shot Follow uses one contextual return action only.
 - Keep the top-center and center of the world view free of duplicate status
   cards, and keep visible mountain routes free of
   persistent panels, explanatory text, or modal overlays.
 - Trajectory and impact feedback belong in world space; the HUD must not pretend
   to predict post-impact paint.
 
-### Aim Lock and map inspection
+### Aim View, Map View, and Shot Follow
 
 - Gameplay remains in the aiming Board Phase while the player switches between
-  `Aim Lock` and `Map Inspection`; this is a presentation/input state, not a
+  `Aim View`, `Map View`, and `Shot Follow`; this is a presentation/input state, not a
   separate stage flow.
-- In Aim Lock, the authored aiming view is the reset pose, not a camera prison.
-  Left drag adjusts yaw/elevation, the wheel adjusts power, and keyboard aiming
-  and Fire remain available. The player must also have a distinct, discoverable
-  way to inspect high and distant impact regions without changing the stored aim
-  or losing the trajectory. The exact additional pointer gesture is not locked
-  by this spec; do not add click-to-target solving by implication.
-- A safe camera must keep the exact playable top, summit headroom, cannon, and
-  muzzle recoverable, but a fit-all-points calculation is not accepted when it
-  shrinks the mountain, route detail, trajectory, or impact marker below useful
-  aiming scale. Preserve a one-action return to the authored aim composition.
-- In Map Inspection, terrain click changes the inspection focus, left drag
+- In Aim View, left drag adjusts yaw/elevation, the wheel adjusts power, and
+  keyboard aiming and Fire remain available. The authored view keeps the cannon
+  large in the foreground and the complete mountain distant and visible. Do not
+  add another aim-mode pointer gesture or click-to-target solving.
+- In Map View, terrain click changes the inspection focus, left drag
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
   aim or preview. Mode changes and terrain refocus must acknowledge without a
   visible stall. The first-session hint and toggle tooltip state the shortcut
   and the active mouse behavior.
+- Accepted Fire enters Shot Follow for the newly launched root paintball. Hide
+  controls that imply in-flight steering and show one compact focusable
+  `대포로 돌아가기` / `RETURN TO CANNON` action at a screen edge. Tab performs
+  the same contextual return. Returning changes only presentation; simulation,
+  stored aim, and prior balls continue. First terrain contact remains framed for
+  0.8 seconds before automatic return to Aim View.
 - Wind is a concise status cue, not a decorative mystery: show the direction
   projectiles are pushed, strength, time until change, and the approaching
-  direction during the transition. Leaves or debris are supporting world
-  feedback only.
+  direction during the transition. A cannon-side flag or streamer is the primary
+  world cue; the HUD is its exact secondary rule reference.
 - Finish is unavailable until the first actual launch. Target coverage and spent
   shots do not force an outcome; time expiry or Finish ends the run.
 
@@ -123,7 +125,7 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 - HUD components display authoritative state and emit typed intent. They do not
   calculate coverage, mutate paint, advance stage state, or own launch physics.
-- Time, resident-ball activity, wind, interaction mode, and Finish availability
+- Time, resident-ball activity, wind, camera presentation mode, and Finish availability
   are displayed from their authoritative owners. The HUD does not run a second
   timer, wind schedule, or camera/input state machine.
 - Target Coverage means unique painted Target Area texels divided by all Target
@@ -186,11 +188,14 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 A UI change conforms when:
 
-- the mountain remains the dominant visual and Fire is the unmistakable next
-  action during Aim Lock;
-- Aim Lock keeps high and distant impact regions inspectable at useful scale,
-  and Map Inspection, Tab, or the visible toggle returns without losing the
+- the foreground cannon and complete distant mountain remain the dominant world
+  composition and Fire is the unmistakable next action during Aim View;
+- Aim View keeps the whole mountain and predicted impact readable, and Map View,
+  Tab, or the visible toggle returns without losing the
   current aim or blocking the interface;
+- Shot Follow keeps the new root paintball and first terrain impact readable,
+  while the visible return action and Tab restore Aim View without implying
+  in-flight steering;
 - the left vertical coverage gauge, lower-left controls, edge status, top-right
   gear, and bottom-center Fire preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;

@@ -1,9 +1,9 @@
 ---
 type: handoff
-status: active
+status: done
 created: 2026-08-07
 last_reviewed: 2026-08-07
-scope: next-session continuation for aim freedom, interaction latency, plan cleanup, and bounded product expansion
+scope: consumed next-session handoff for aim freedom, interaction latency, and plan cleanup
 source: user feedback on 2026-08-07 and .agents/evidence/2026-08-07-aim-performance-product-audit.md
 related:
   - ../../../.agents/evidence/2026-08-07-aim-performance-product-audit.md
@@ -12,9 +12,17 @@ related:
   - ../../../.agents/design/UIUX_GUIDELINES.md
   - ../../../.agents/execplans/2026-08-03-gameplay-visual-reset.md
   - ../../../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../../../.agents/execplans/2026-08-07-cannon-shot-observation.md
 ---
 
 # Aim and Responsiveness Next-Session Handoff
+
+This handoff was consumed on 2026-08-07. The later user direction rejects the
+suggested extra Aim Lock gesture and timing pass, and adds a cannon-side wind
+flag, physical cannon standoff, a foreground-cannon/distant-mountain Aim View,
+and automatic Shot Follow with early return. The active authority is
+`.agents/execplans/2026-08-07-cannon-shot-observation.md`; the notes below are
+historical context only.
 
 ## Current State
 
@@ -58,83 +66,28 @@ That phrase means **pre-existing uncommitted recovery experiments**, not an
 unfinished game feature. Do not tell the user that exhaustive target-wide
 certification or successful solution routes are still required.
 
-The following six files were already modified before the latest aim/UI work and
-must not be staged, reverted, or bundled without a separate provenance decision:
+The abandoned recovery edits to the gap audit, recovery ExecPlan, and direct
+certificate classes were restored to the committed baseline. Obsolete v7
+catalog copies, the authored-solution test/runner, the exhaustive-certificate
+runner, and orphan UID files were removed. The pre-existing
+`src/cannon/trajectory_predictor.gd` and `tests/target_mask_test.gd` edits remain
+outside this cleanup and must not be staged or reverted without a separate
+provenance decision. The committed production pointer remains v8.
 
-- `.agents/evidence/2026-08-05-gameplay-contract-gap-audit.md`
-- `.agents/execplans/2026-08-05-gameplay-contract-recovery.md`
-- `src/cannon/trajectory_predictor.gd`
-- `src/stage_generation/direct_reachability_certificate.gd`
-- `src/stage_generation/direct_reachability_validator.gd`
-- `tests/target_mask_test.gd`
+## Disposition
 
-There are also untracked v7 catalog directories, recovery screenshots, and
-Stage 30 probe UID files. The committed production pointer is v8. Prior session
-logs prove that the v7 recovery run remained partial and dirty; no clean session
-committed these six files as one ready change.
-
-## Recommended Direction
-
-Use this as the default proposal when the user asks the next session to proceed:
-
-1. Preserve the stationary cannon, manual yaw/elevation/power, no post-fire
-   steering, shared paint authority, and real first-impact preview.
-2. Do not add click-to-target inverse solving. It reintroduces the expensive and
-   ambiguous solver direction the user has already rejected.
-3. Keep left-drag aim and wheel power. Add a separate, discoverable Aim Lock
-   camera-navigation gesture, such as right- or middle-drag orbit with a zoom
-   modifier, plus one-action recenter. Preserve the aim tuple while navigating.
-4. Map Inspection can remain the whole-board overview, but mode switches must use
-   cached framing data and acknowledge immediately.
-5. Restore constant-work Fire: it reads a ready canonical prediction only. If
-   stale, the control responds immediately as prediction-pending; it never
-   computes prediction inside the click callback.
-6. Split 60 Hz wind presentation from launch-relevant prediction invalidation.
-   Schedule/cache prediction by canonical aim plus a bounded wind epoch or time
-   bucket instead of dirtying it for every HUD snapshot.
-
-The extra Aim Lock gesture is recommended, not yet user-approved. If the user
-instead requests Fire in Map Inspection or click-to-target placement, update the
-source brief and create a different interaction contract before coding.
-
-## Next Steps
-
-1. Read root `AGENTS.md`, `.agents/design/DESIGN.md`, this handoff, the linked
-   audit, `docs/source-brief.md`, `.agents/Documentation.md`, and the current
-   worktree status. Do not read superseded plans as active instructions.
-2. Run one bounded diagnostic pass only. Measure these five paths separately:
-   wind-running idle, one-second `+/-` hold, Fire, map refocus/orbit, and
-   Map-to-Aim. Add stage selection only if the user's "placement" refers to that
-   screen. Record prediction count/duration, input-to-visible-response time, and
-   camera solve count. Stop once the causal paths are confirmed.
-3. Create a new decision-complete ExecPlan under `.agents/execplans/` after the
-   measurement and camera gesture decision close discovery. Do not merge into a
-   `done`, `archived`, or `superseded` plan.
-4. Implement in this order:
-   - remove Fire-time synchronous prediction;
-   - separate wind display snapshots from prediction invalidation;
-   - reduce or gate the dirty endpoint-rest probe on the gameplay path;
-   - cache top/summit Aim framing per layout;
-   - reduce safety rays to dirty camera poses;
-   - then add independent Aim Lock camera navigation;
-   - profile stage-preview construction only if a separate selection hitch
-     remains.
-5. Keep validation proportional. While coding, use the single timing probe and
-   focused prediction/camera checks. After the code surface is stable, run one
-   `scripts/verify.ps1`, one release export, and fresh Aim Lock/Map Interaction
-   captures. Do not run exhaustive target-texel workers, solver clears, all-stage
-   playthroughs, or the broad suite merely for reassurance.
-6. Ask for foreground user play after the final capture. Passing headless checks
-   or fitting all terrain points is not gameplay-feel acceptance.
-7. After P0 responsiveness and aiming freedom are accepted, expand in this order:
-   - target-area map/heat view and clearer prediction-pending feedback;
-   - short practice/tutorial stages and last-shot comparison;
-   - aim sensitivity, key remapping, and explicit controller support;
-   - optional stage challenges and seeded local challenge presets;
-   - only after an explicit scope revision, a local editor; new mechanism
-     families remain a separate later product decision.
-8. Mark this handoff `done` after the new ExecPlan owns current progress; do not
-   keep both documents as competing active task authorities.
+- Preserve stationary manual yaw/elevation/power and no post-fire steering.
+- Keep Map View for deliberate orbit/zoom; do not add the proposed independent
+  Aim Lock camera gesture.
+- Replace debris with a cannon-side flag, restore at least 70 m of physical
+  standoff, and compose a large foreground cannon against the complete distant
+  mountain.
+- Follow the newly launched root paintball automatically and provide one visible
+  return-to-cannon action. Do not average all resident balls.
+- Treat roughly three seconds as flight-feel guidance, not an exact rule. Do not
+  run the previously proposed timing/profiling pass.
+- Do not restore click-to-target solving, exhaustive target-wide certificates,
+  authored success routes, or all-stage solution playthroughs.
 
 ## Risks
 
@@ -149,9 +102,8 @@ source brief and create a different interaction contract before coding.
 - Do not make prediction visually stale without a truthful pending state and a
   canonical aim/wind key. Replay, human, agent, and debug Fire share one
   admission contract.
-- Do not revive `phase6_solution_test.gd` as a required success-route gate. The
-  normal `scripts/test.ps1` still includes it and needs later cleanup or explicit
-  optional classification.
+- Do not revive `phase6_solution_test.gd` as a required success-route gate. It
+  and its `scripts/test.ps1` entry were removed during handoff cleanup.
 - Do not clean the existing dirty worktree by reset, checkout, or broad commit.
   Its recovery files and v7 artifacts require a separate owner decision.
 

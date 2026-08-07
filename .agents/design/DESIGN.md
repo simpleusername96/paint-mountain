@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-04
+last_reviewed: 2026-08-07
 canonical_for: Agent-facing entry and map for approved Paint Mountain design direction, preserved experience contracts, and production design owners
 scope: visual world and player-facing surfaces in this repository
 source: ../../docs/source-brief.md
@@ -14,6 +14,7 @@ related:
   - ../../docs/technical-architecture.md
   - ../Documentation.md
   - ../execplans/2026-08-03-gameplay-visual-reset.md
+  - ../execplans/2026-08-07-cannon-shot-observation.md
 ---
 
 # Paint Mountain Design Context
@@ -80,8 +81,9 @@ remains non-canonical and must not silently alter this context.
 ## Product and Surface Intent
 
 - Primary task: inspect a distant target, choose yaw, elevation, and power,
-  predict the first impact, fire once, and understand the physical and painted
-  result before the next shot.
+  predict the first impact, fire, follow the launched paintball through contact,
+  and understand the physical and painted result before the next shot. A
+  one-action return restores the cannon view without changing the projectile.
 - Surface character: a bright, faceted, tactile 3D puzzle mountain with a
   visually secondary Korean-first interface.
 - Preserve: no post-fire steering; one authoritative paint/coverage state;
@@ -107,6 +109,7 @@ remains non-canonical and must not silently alter this context.
 | Camera | `src/camera/camera_director.gd`, `resources/stages/*.tres`, `scenes/gameplay/gameplay.tscn` | Stage Resources own bookmarks; `CameraDirector` owns mode, safety, occlusion, orbit, and follow policy; the scene owns active lens settings. |
 | Paint presentation | `src/paint/paint_system.gd`, `src/paint/terrain_paint.gdshader`, `resources/paint/default_paint_surface_tuning.tres`, `resources/stages/*.tres` | `PaintSystem` remains the only mutable mask and coverage owner; shader, tuning Resource, and stage color are its configured visual view. |
 | Cannon and trajectory | `scenes/gameplay/cannon.tscn`, `src/cannon/`, `resources/projectiles/` | Scene owns cannon form, Resources own tuning, and cannon/trajectory owners calculate aim and first impact; HUD only displays and requests. |
+| Wind presentation | `scenes/gameplay/cannon.tscn`, `src/wind/`, `resources/wind/` | `WindController` owns the schedule; the cannon-side flag presents push direction/strength and owns no force or rule. |
 | Mechanisms and effects | `scenes/mechanisms/`, `src/mechanisms/`, `resources/mechanisms/*.tres`, `src/effects/presentation_effects.gd` | Prefabs own collider-matched form, typed Resources own kind/copy/tuning, and effects explain events without deciding game state. |
 
 World palette and material values are currently distributed across gameplay,
@@ -198,4 +201,5 @@ This context is healthy when a new agent can identify, without session history:
 - `UIUX_GUIDELINES.md`: interface contract.
 - `VISUAL_REFERENCES.md`: evidence classification.
 - `../Documentation.md`: implemented-truth record.
-- `../execplans/2026-08-03-gameplay-visual-reset.md`: current execution sequence.
+- `../execplans/2026-08-03-gameplay-visual-reset.md`: historical visual-reset sequence.
+- `../execplans/2026-08-07-cannon-shot-observation.md`: current execution sequence.

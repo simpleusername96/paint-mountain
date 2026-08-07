@@ -17,6 +17,7 @@ related:
   - execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
   - execplans/2026-08-06-command-columns-hud.md
   - execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - execplans/2026-08-07-cannon-shot-observation.md
   - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md
@@ -28,45 +29,40 @@ related:
 
 # Project Record
 
-## Current User-Rejected Aim and Responsiveness State (2026-08-07)
+## Current Cannon, Wind, and Shot-Observation Direction (2026-08-07)
 
-The current implementation is functionally connected, but the user rejected its
-aiming freedom and responsiveness in the running game. Continue from the
-[next-session handoff](../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md)
-and the supporting
-[audit](evidence/2026-08-07-aim-performance-product-audit.md); do not interpret
-the completed HUD or safe-framing plans as gameplay-feel approval.
+The current implementation is functionally connected, but the user rejected the
+large-stage cannon/mountain relationship, debris-based wind presentation, and
+the absence of an automatic post-Fire observation flow. Continue from the active
+[execution contract](execplans/2026-08-07-cannon-shot-observation.md). The prior
+[handoff](../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md)
+is consumed history, and this task explicitly does not include a timing or
+performance-profiling pass.
 
-- The legal tuple is already broad (`-80..80` yaw, `10..68` elevation, and
-  `0..100` power). The restrictive feel comes primarily from the interaction
-  model: Aim Lock owns all aim/Fire input, Map Inspection blocks it, terrain
-  click only refocuses the inspection camera, and Aim Lock offers no independent
-  camera navigation.
-- The strongest code-level stutter cause is continuous synchronous prediction.
-  Running wind emits a snapshot every physics tick; every snapshot dirties the
-  preview; the scene can therefore execute a full predictor at 20 Hz. One
-  prediction permits 720 physics casts, and the preserved uncommitted recovery
-  diff adds endpoint rest probes to the same loop.
-- Fire has regressed from the earlier constant-work contract. Every Fire request
-  now refreshes prediction synchronously before checking readiness, putting the
-  same expensive work directly in the button/Space call stack.
-- Returning from Map Inspection to Aim Lock recomputes exact top interest points
-  and the Summit Region instead of consuming one stage-owned cached framing
-  result. Stage 30 can scan up to 12,288 top triangles on a toggle.
-- A fresh exported Stage 30 Aim Lock and Map Inspection pair was captured and
-  inspected on 2026-08-07. Aim Lock technically contains the whole mountain but
-  makes route and impact detail very small; the inspected Map pose shows a tiny,
-  near-edge-on mountain with large dead space and weak orientation. Screenshots
-  do not measure latency, so the user's one-to-two-second report remains the
-  runtime observation and the code paths above remain high-confidence causal
-  hypotheses until a focused timing pass records them.
+- The current Aim Lock interaction remains implemented: left drag changes
+  yaw/elevation, the wheel changes power, and Map Inspection owns orbit/zoom.
+  Player-facing work will rename these to `조준`/`Aim View` and `지도 보기`/`Map
+  View`; it will not add the previously proposed extra Aim Lock camera gesture.
+- The current safe framer contains the complete mountain by backing away. On
+  later stages this makes the cannon and route detail too small. The stored
+  cannon transform also leaves only about 17 m to Stage 30's nearest terrain
+  front versus about 57 m on Stage 01. Neither state meets the new foreground-
+  cannon/distant-whole-mountain composition.
+- The current `WindDebrisField` remains implemented but is now superseded. The
+  next slice removes it and adds a non-colliding cannon-side flag/streamer driven
+  by the same `WindController`; the HUD remains the exact secondary cue.
+- The existing `CameraDirector` contains legacy Follow math, but normal gameplay
+  does not enter it and it averages active projectiles. The new Shot Follow must
+  track only the newly launched root paintball, show first terrain contact, and
+  offer one visible return-to-cannon action while physics continues.
 - The target-only coverage meaning, shared HUD Theme/components, persistent
   paint authority, bounded default/summit first-hit witnesses, and open thirty-
-  stage catalog remain valid unless new direct evidence contradicts them.
-- `scripts/test.ps1` still runs the historical `phase6_solution_test.gd` even
-  though prescribed success routes are retired. Do not treat that script as a
-  current release requirement; remove or explicitly isolate the solution test
-  during the next test-contract cleanup.
+  stage production catalog remain valid unless new direct evidence contradicts
+  them.
+- Obsolete authored-solution and exhaustive-certificate runner scripts, the
+  historical solution test, and inactive generated catalog copies were removed.
+  The schema-compatible certificate classes and bounded default/summit witness
+  path remain because the active v8 layout contract still references them.
 
 ## Current Target Coverage and Safe Aim Framing (2026-08-07)
 

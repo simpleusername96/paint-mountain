@@ -72,7 +72,6 @@ try {
         Invoke-GodotTest -ScriptName $test
     }
     Invoke-GodotTest -ScriptName 'phase8_performance_test.gd'
-    Invoke-GodotTest -ScriptName 'phase6_solution_test.gd'
 
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=cleanup')
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=write')

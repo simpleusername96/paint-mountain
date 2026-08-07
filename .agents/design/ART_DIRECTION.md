@@ -14,6 +14,7 @@ related:
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../execplans/2026-08-07-cannon-shot-observation.md
 ---
 
 # Paint Mountain Art Direction
@@ -61,19 +62,22 @@ owned by `UIUX_GUIDELINES.md`.
 
 ### Composition and depth
 
-- The mountain dominates the middle and upper frame from the aiming view.
-- Aim Lock starts from its authored pose. When the playable top, summit
-  headroom, cannon, and muzzle do not fit its safe frame, project the exact
-  playable-top points and move only farther along that authored view direction
-  at the same FOV; never frame the support shell, follow the prediction, widen
-  FOV, or add per-stage camera repairs.
+- The Aim View reads as a deliberate foreground-to-distance composition: the
+  cannon is a large readable anchor in the lower frame and the complete mountain
+  is a smaller distant subject in the middle and upper frame.
+- Preserve at least 70 m of physical standoff from cannon to the nearest playable
+  mountain front. Aim View starts from one authored 48-degree pose that contains
+  the full playable silhouette, summit headroom, cannon, muzzle, trajectory, and
+  first-impact marker. Never frame the support shell, widen FOV to hide scale,
+  or add per-stage camera repairs.
 - Show several front-to-back route layers and enough top, front, and side area
   to communicate volume.
 - Perspective, occlusion, face-value changes, cast shadows, and camera parallax
   must reinforce real depth. Camera framing may reveal geometry but never fake
   geometry that is absent.
-- Keep the cannon small in the lower foreground while preserving a clear visual
-  relationship between muzzle, trajectory, impact point, and target.
+- Keep the cannon silhouette and barrel at roughly 20–30% of viewport height in
+  Aim View while preserving a clear relationship between muzzle, trajectory,
+  impact point, and the full distant target.
 - The apron is subordinate. It must not become a flat band occupying the lower
   half or visually disconnect the cannon from the mountain.
 - Dressing establishes scale and depth but never hides a route, target face,
@@ -128,11 +132,15 @@ owned by `UIUX_GUIDELINES.md`.
 - A ball's valid playable-top contact produces a continuous blue route over its
   real traversal, including outside the scoreable mask. Only target-mask overlap
   affects coverage. Airborne travel remains unpainted.
-- Small pooled leaves or debris move with the current wind as a restrained but
-  readable depth cue at the authored distant view. They never hide the
-  trajectory, paint, or glyphs, and reduced decorative motion can suppress them
-  without hiding the HUD wind rule. Merely spawning close-up-scale particles
-  that disappear at gameplay distance does not satisfy this cue.
+- A tall cannon-side pole carries a simple flag, streamer, or windsock. Its free
+  end points in the direction projectiles are pushed, and its bend/flap amplitude
+  gives a restrained strength cue. It is readable from Aim View, has no gameplay
+  collision or paint authority, never crosses the muzzle/trajectory silhouette,
+  and yields to reduced-motion settings without hiding its static direction.
+  Generic airborne leaves or debris are not the primary wind cue.
+- Shot Follow keeps the newly launched root paintball readable through flight,
+  then holds its first terrain contact briefly so impact, paint, and terrain
+  response form one legible cause-and-effect beat.
 - Muzzle, contact, mechanism, Finish, and timeout effects are brief and bounded.
   They explain cause and effect rather than covering it.
 
@@ -153,6 +161,8 @@ A future visual review can call the world conformant only when:
 - routes and stage difficulty are legible before firing;
 - cannon, trajectory, impact, ball contact, continuous paint, and mechanisms
   form a clear cause-and-effect chain;
+- the cannon-side flag communicates wind direction without competing with the
+  mountain, and the Aim View retains the full mountain at distant scale;
 - no full-width slab, card-like target, dominant flat apron, gray test-scene
   wash, black cannon blob, hidden gameplay mass, or decorative obstruction is
   visible; and

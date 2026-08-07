@@ -17,6 +17,7 @@ related:
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../.agents/execplans/2026-08-06-fast-stage-entry-and-fire-capacity.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
 ---
 
 # Paint Mountain Design Specification
@@ -32,7 +33,7 @@ presentation, and the rest of the baseline directive.
 
 ## Scope
 
-The player inspects a distant mountain, locks a stationary cannon's
+The player inspects a distant mountain, sets a stationary cannon's
 yaw/elevation/power, fires a rigid-body paintball, and watches gravity, wind,
 real surface contact, rolling, and mechanisms produce coverage. Every valid
 playable-top area physically traversed while in contact is painted; only its
@@ -55,27 +56,35 @@ exactly three mechanism types.
 
 ### Spatial and camera composition
 
-- Cannon length is roughly 2–3 m; target distance 70–150 m; mountain width 120–250 m and height 60–140 m.
-- In the perspective aiming view, the cannon stays in the lower foreground at no more than about 15–20% of the frame; the mountain dominates the middle and upper frame.
-- Briefing begins in map inspection with a limited three-quarter orbit/zoom. Aim
-  Lock uses the authored pose and deterministic safe frame as a recoverable
-  reset composition, but the player can navigate the camera independently to
-  inspect high or distant predicted impacts without changing the stored aim.
-  Fitting all playable-top points, summit headroom, cannon, and muzzle is not
-  sufficient when it makes route, trajectory, or impact detail too small to use.
-  Do not follow prediction automatically, widen FOV to hide the problem, or add
-  per-stage camera repairs. Result uses a restrained three-quarter reveal.
-- Map inspection must keep the whole mountain explorable without terrain clipping or rapid cuts. It does not follow projectiles or switch to preset camera views.
+- Cannon length is roughly 2–3 m; mountain width is 120–250 m and height is
+  60–140 m. The nearest playable mountain front remains at least 70 m from the
+  cannon across stage sizes instead of advancing toward it as the board grows.
+- In the perspective `Aim View`, the cannon is a substantial lower-foreground
+  anchor at roughly 20–30% of viewport height. The complete playable mountain is
+  a smaller distant subject in the middle and upper frame, with its silhouette,
+  summit headroom, muzzle, trajectory, and first-impact marker inside the safe
+  view. Keep the authored 48-degree FOV unless runtime visual review proves the
+  shared bookmark itself must change; do not solve the composition with
+  per-stage camera repairs.
+- Briefing begins in `Map View` with limited three-quarter orbit/zoom. `Aim View`
+  uses one authored, recoverable cannon composition and the established aim
+  controls; it does not add a second pointer gesture for independent camera
+  navigation. Map View remains the deliberate whole-board inspection mode and
+  never changes the stored aim.
+- An accepted Fire action enters `Shot Follow`, which follows that newly launched
+  root paintball rather than averaging every resident ball. It shows first
+  terrain contact, holds the impact for 0.8 seconds, then returns to Aim View.
+  The player may return early without changing the projectile or stored aim.
+  Result uses a restrained three-quarter reveal.
 
 ### Controls and information
 
-- Briefing starts in Map Inspection: terrain click changes inspection focus, left-drag orbits, wheel zooms, Enter/Start enters Aim Lock, and Escape pauses.
-- Gameplay has two interaction modes while Board Phase remains `AIMING`. In Aim
-  Lock, left-drag changes yaw/elevation, wheel or explicit `−/+` controls adjust
-  power, A/D/W/S use the same aim path, and Space/Fire launch. Aim Lock also
-  exposes a separate discoverable camera-navigation gesture and a one-action
-  return to its authored composition; camera motion never changes the tuple. In
-  Map Inspection, terrain click changes inspection focus, left-drag orbits,
+- Briefing starts in Map View: terrain click changes inspection focus, left-drag
+  orbits, wheel zooms, Enter/Start enters Aim View, and Escape pauses.
+- Gameplay has Aim View and Map View interaction modes while Board Phase remains
+  `AIMING`. In Aim View, left-drag changes yaw/elevation, wheel or explicit `−/+`
+  controls adjust power, A/D/W/S use the same aim path, and Space/Fire launch. In
+  Map View, terrain click changes inspection focus, left-drag orbits,
   wheel zooms, and aim/Fire input is blocked. Tab and one visible focusable
   toggle switch modes without changing the stored aim or preview, and the switch
   never performs terrain-scale work in the input callback.
@@ -85,18 +94,23 @@ exactly three mechanism types.
   collision geometry, and collision layers as the real ball. It ends at the
   first physical collision. Bounds exits and timeouts are non-fireable errors;
   no post-impact route is shown.
-- Firing never hides or disables the next aim. Aim Lock restores the authored
-  cannon view with a visible next-shot trajectory while prior balls move. There
-  are no Follow, Wide, Cannon, gameplay speed, or gameplay Pause strips.
+- Firing enters Shot Follow for the new root ball. A visible `대포로 돌아가기`
+  / `RETURN TO CANNON` control and context-sensitive Tab return immediately to
+  Aim View; the ball continues physically and no post-fire steering is added.
+  Aim remains editable after the return while earlier balls move. There is no
+  persistent Follow/Wide/Cannon preset rail, gameplay speed, or gameplay Pause
+  strip.
 - One deterministic stage-seeded wind changes on a readable 30-second rhythm
   with a natural three-second transition. The preview and physics use the same
-  wind; restrained leaves or debris supplement, but do not replace, the HUD cue.
+  wind. A cannon-side flag or streamer is the primary world cue and points in
+  the direction projectiles are pushed; motion amplitude communicates strength.
+  The concise HUD cue remains a secondary numeric and transition reference.
 
 ### Stage state
 
 - Authoritative Board Phases are `LOADING`, `BRIEFING`, `AIMING`, `PAUSED`,
   `FINISHING`, and `RESULT`. Active projectile families, resident balls, paint
-  drain, and camera interaction mode are orthogonal typed activity, not
+  drain, and camera presentation mode are orthogonal typed activity, not
   competing stage phases.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
   invalid/pending prediction, no shots, terminal pending, or modal lock. Aim
@@ -125,6 +139,11 @@ exactly three mechanism types.
   or flow budget. The ball must read materially larger than the old version,
   while its continuous paint mark remains a natural, visibly narrower midpoint
   than the old oversized mark.
+- A representative default shot should feel close to three seconds before first
+  terrain contact, but elapsed flight time is not a legal-shot gate or an exact
+  per-stage contract. Physical standoff and launch tuning prevent both an
+  immediate adjacent hit and a needlessly prolonged arc. A root that has never
+  contacted playable top terminates at 6.0 seconds.
 - Power `0..100` maps linearly to `32..160 m/s`. Generated summit height/range,
   predictor, rigid body, and containment use that same curve; maximum-power
   rescue through a second velocity constant is forbidden.
@@ -215,6 +234,10 @@ exactly three mechanism types.
   layout owns the route graph, height samples, fixed triangle identities,
   target mask, bounded default/summit witnesses, optional diagnostic certificate
   metadata, decorations, and resolved placements.
+- Stage generation derives the cannon transform and containment relationship so
+  the nearest playable front stays at least 70 m away at every supported board
+  size. The next promoted catalog records that placement contract; a camera-only
+  scale adjustment is not an acceptable substitute.
 - Stages do not require a prescribed successful route, solver clear, exhaustive
   target-wide first-hit proof, or all-stage manual playthrough. Generated route
   data shapes terrain and supports readability without defining a player
@@ -251,6 +274,9 @@ exactly three mechanism types.
   transition. Keep the top-center clear for the mountain and high trajectory
   arcs. No aiming-state Restart or second Fire control exists; `R` remains the
   quick-restart shortcut.
+- During Shot Follow, show one compact focusable return-to-cannon action at the
+  edge of the screen and hide controls that imply in-flight steering. Do not
+  restore the old multi-preset observation strip.
 - Gear and Escape open the same fully input-capturing paused game menu with
   Continue, Restart, Settings, Stage Select, and Main Menu. Continue/Escape
   restores the exact pre-pause state without advancing simulation. Settings is a
@@ -261,10 +287,10 @@ exactly three mechanism types.
   other than the intentionally opened paused game menu.
 - Bundle Pretendard, default fresh and migrated V1 saves to Korean, support immediate persistent Korean/English switching, and store translation keys rather than visible text in gameplay resources. Interactive controls remain at least 40 px high with visible keyboard focus and no clipped Korean at the three supported resolutions.
 - Use low-poly faceted neutral terrain, sparse scale cues, bright glossy
-  non-emissive blue paint, a dark stylized small cannon, and readable flat
+  non-emissive blue paint, a dark stylized readable foreground cannon, and readable flat
   terrain glyphs with distinct icons and directional cues. Use soft daylight,
-  one main directional light, lightweight effects, and small moving leaves or
-  debris to support visible wind.
+  one main directional light, lightweight effects, and a restrained cannon-side
+  flag or streamer to support visible wind.
 - Provide the specified compact sound set, impact/muzzle/mechanism/result
   particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/velocity,
@@ -286,6 +312,9 @@ exactly three mechanism types.
   tick, but it does not automatically trigger a full collision prediction every
   tick. A stale preview becomes a truthful pending state while bounded scheduled
   work catches up.
+- The cannon-standoff, flight-feel, and camera-flow change uses deterministic
+  gameplay contracts and rendered review. It does not require a performance
+  timing or profiling pass.
 - Use one low-poly principal terrain mesh (preferably under ~50k triangles),
   batched mask updates, effect pooling, lightweight shadows, a 21-resident-ball
   hard cap, and one split generation.
@@ -303,7 +332,7 @@ exactly three mechanism types.
 - The complete observable checklist is `test-checklist.md`.
 - No feature is accepted from documentation, mockups, or scene structure alone; it must run in the project.
 - The active implementation has passed its production-style verification,
-  Windows release export, entry-time measurements, and running-game captures as
+  Windows release export, and running-game captures as
   listed in `test-checklist.md`; older screenshot sets remain historical
   evidence. This does not replace user-owned gameplay, balance, feel, or
   aesthetic QA.
@@ -330,12 +359,12 @@ layout, may prefetch nearby work, retains three entries, and never substitutes
 runtime generation or aim solving.
 
 Glyph placement uses a generic deterministic search of visible playable-top
-surface and spacing, not authored stage coordinates. The fast-entry, Fire-capacity,
-localized loading/retry, and wind-debris implementations passed final production
-verification and rendered evidence. The Fire owner itself enforces the two-root
-cap; resident terrain bodies do not hold that capacity. Wind debris uses the
-shared wind truth, and focused validation proves direction, movement, and
-reduced-motion behavior.
+surface and spacing, not authored stage coordinates. The fast-entry,
+Fire-capacity, and localized loading/retry implementations passed their prior
+production checks. The Fire owner itself enforces the two-root cap; resident
+terrain bodies do not hold that capacity. The currently implemented wind debris
+is superseded presentation and remains only until the cannon-side flag work in
+the active ExecPlan replaces it.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.

@@ -21,6 +21,7 @@ related:
   - ../.agents/execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../.agents/execplans/2026-08-06-command-columns-hud.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
+  - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -30,16 +31,16 @@ related:
 ## Purpose
 
 Define the observable checks required before the game may be reported complete.
-The completed preparation gate and older checked sections are historical evidence
-for earlier builds. The first gate below records completed production validation
-of the implemented fast-entry and wind/UI work; the remaining unchecked rows
-are user-directed gameplay/feel review.
+Completed gates and older checked sections are historical evidence for earlier
+builds. The active cannon/wind/Shot Follow gate records the current unimplemented
+direction; its unchecked rows require implementation, rendered review, and final
+user gameplay/feel review.
 
 ## Scope
 
 Run narrow checks throughout development, then complete this full checklist against a production-style Windows build or the strongest explicitly documented substitute.
 
-## Active target-coverage and safe Aim Lock validation gate (2026-08-07)
+## Completed target-coverage and safe Aim Lock validation gate (2026-08-07)
 
 This gate validates the current target-only score presentation and cannon-view
 framing. It does not change coverage balance, require whole-terrain scoring,
@@ -110,9 +111,43 @@ certification, camera redesign, or inferred gameplay/feel approval.
   30 background capture passed. Final running-release evidence is
   `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png`.
 
-## Active fast-stage-entry and wind/UI validation gate (2026-08-06)
+## Active cannon, wind, and shot-observation gate (2026-08-07)
 
-These are behavior-level acceptance checks for the completed successor plan. They
+These rows describe the user-requested direction and remain unchecked until the
+active ExecPlan is implemented. Flight pacing is a visual gameplay judgment,
+not wall-clock performance measurement; this gate includes no timing or profiling
+pass.
+
+- [ ] Stage 01 and Stage 30 Aim View captures show the cannon as a readable
+  20–30% lower-foreground anchor and the complete playable mountain as a smaller
+  distant subject, with summit headroom, muzzle, trajectory, and first-impact
+  marker visible. The nearest playable front is at least 70 m from the cannon in
+  the promoted layout data.
+- [ ] A non-colliding cannon-side flag or streamer shows the direction
+  projectiles are pushed and visibly distinguishes weak from strong wind. It and
+  the HUD agree through a transition; generic wind debris is absent.
+- [ ] Accepted Fire follows the newly launched root paintball through first
+  terrain contact, holds impact for 0.8 seconds, and returns to Aim View. The
+  visible `대포로 돌아가기` action and Tab return early without steering,
+  terminating, or otherwise changing the projectile.
+- [ ] With two root families allowed, Shot Follow selects the newest accepted
+  root rather than averaging resident balls. Returning preserves the stored aim
+  and leaves the next shot editable while prior physics continues.
+- [ ] A representative default shot has a readable arc that feels close to three
+  seconds without an immediate adjacent hit or prolonged dead airtime. No exact
+  flight-duration test rejects legal shots; a root that never contacts playable
+  top still terminates at the configured 6.0-second miss timeout.
+- [ ] Focused contracts, `scripts/verify.ps1`, a Windows production-style start,
+  and separate running-game captures cover Stage 01/30 Aim View, flag direction,
+  mid-flight follow, impact hold, early return, and automatic return. The
+  implementing agent visually reviews every capture before handoff.
+- [ ] No click-to-target solver, prescribed success route, exhaustive target-wide
+  certificate run, timing probe, or all-stage manual playthrough is used as an
+  acceptance substitute.
+
+## Historical fast-stage-entry and wind/UI validation gate (2026-08-06)
+
+These are historical behavior-level acceptance checks for the completed successor plan. They
 intentionally avoid treating small numerical tolerances, individual physics
 ticks, exhaustive target-texel first-hit enumeration, or prescribed solution
 routes as product requirements. The retained unchecked rows require user
@@ -236,11 +271,9 @@ evidence and does not satisfy this gate.
   rapid-fire/readiness, phase-7, phase-8, replay, and default-aim handoff checks.
 - `scripts/verify.ps1`, the deterministic catalog `--check`, and the Windows
   release export passed through the approved hidden/headless Godot path.
-- The seven fresh `1920×1080` baseline captures and the named `1280×720`
-  recovery captures now exist under `.agents/evidence/gameplay-contract-recovery/`;
-  the continuous-paint runner records a real sweep intent before the settled
-  body is removed, so the ball/mark frame is reproducible without a foreground
-  Godot window.
+- The session-local recovery PNGs were not retained as current evidence. The
+  tracked metadata and textual record remain historical; a future visual claim
+  must use new running-game captures from the active implementation.
 - These observations did not check the then-planned exhaustive certificate or
   controlled rendered-width measurement. The certificate item is now retired;
   this historical recovery gate is not active work.
