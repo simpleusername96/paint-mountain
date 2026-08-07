@@ -17,24 +17,30 @@ claims and screenshots do not establish completion of that redesign.
 
 ## Launch
 
-Open `project.godot` in Godot 4.x and run the project, or use the console executable:
+Godot 4.7.1 is shared with Cardborne from
+`D:\tools\Godot\4.7.1-stable`. The user-level `GODOT_BIN` points to the
+console executable there; do not create another project-local Godot copy.
+
+Open `project.godot` in Godot 4.x and run the project, or use the shared console executable:
 
 ```powershell
-& 'C:\path\to\Godot_v4.x-stable_win64_console.exe' --path 'D:\npjt\paint-mountain' --editor
+& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --path 'D:\npjt\paint-mountain' --editor
 ```
 
 Run the repeatable headless smoke check with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -GodotPath 'C:\path\to\Godot_v4.x-stable_win64_console.exe'
+powershell -ExecutionPolicy Bypass -File scripts/verify.ps1
 ```
 
-`scripts/verify.ps1` also accepts the `GODOT_BIN` environment variable or a `godot4`/`godot` command on PATH.
+`scripts/verify.ps1` resolves the shared path by default and also accepts an
+explicit `-GodotPath`, the `GODOT_BIN` environment variable, or a
+`godot4`/`godot` command on PATH.
 
 Create the production-style Windows build with:
 
 ```powershell
-& 'C:\path\to\Godot_v4.7.1-stable_win64_console.exe' --headless --path 'D:\npjt\paint-mountain' --export-release 'Windows Desktop' 'builds\windows\PaintMountain.exe'
+& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path 'D:\npjt\paint-mountain' --export-release 'Windows Desktop' 'builds\windows\PaintMountain.exe'
 & 'D:\npjt\paint-mountain\builds\windows\PaintMountain.exe'
 ```
 

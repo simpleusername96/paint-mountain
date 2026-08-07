@@ -9,6 +9,7 @@
 
 ## Operating Model
 - Use Godot 4.x, typed GDScript where practical, the Compatibility renderer, a fixed 60 Hz physics tick, and Windows desktop as the first delivery target.
+- Use the shared Godot 4.7.1 runtime at `D:\tools\Godot\4.7.1-stable`; `GODOT_BIN` points to its console executable. Do not create a project-local Godot copy. `scripts/verify.ps1` resolves the shared runtime by default.
 - Keep the project launchable after each milestone. Run `scripts/verify.ps1` after script, scene, resource, or project-setting changes.
 - Do not add production dependencies, plugins, network services, Docker, or asset packs without the user's explicit approval.
 - Before broad or cross-module implementation, use the relevant active ExecPlan under `.agents/execplans/` and finish with `$codebase-quality-auditor`.

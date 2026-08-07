@@ -7,6 +7,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$sharedGodot = 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe'
+
+$requestedGodotExists = -not [string]::IsNullOrWhiteSpace($GodotPath) `
+    -and (Test-Path -LiteralPath $GodotPath -PathType Leaf)
+if (-not $requestedGodotExists -and (Test-Path -LiteralPath $sharedGodot -PathType Leaf)) {
+    $GodotPath = $sharedGodot
+}
 
 if ([string]::IsNullOrWhiteSpace($GodotPath)) {
     $command = Get-Command godot4, godot -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -16,7 +23,7 @@ if ([string]::IsNullOrWhiteSpace($GodotPath)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($GodotPath) -or -not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) {
-    throw 'Godot was not found. Pass -GodotPath, set GODOT_BIN, or add godot4/godot to PATH.'
+    throw 'Godot was not found at D:\tools\Godot\4.7.1-stable. Pass -GodotPath, set GODOT_BIN, or add godot4/godot to PATH.'
 }
 
 $resolvedGodot = (Resolve-Path -LiteralPath $GodotPath).Path

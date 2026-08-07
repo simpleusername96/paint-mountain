@@ -602,10 +602,11 @@ the static-audit correction above.
 
 ## Historical Redesign Risks (2026-08-03)
 
-- Godot is not currently on PATH. The user approved the discovered Godot 4.7.1
-  console executable for Paint Mountain headless verification/export commands
-  only; no visible editor or game launch is authorized outside the two
-  explicitly coordinated evidence sessions.
+- Godot 4.7.1 is shared with Cardborne from
+  `D:\tools\Godot\4.7.1-stable`; the user-level `GODOT_BIN` points to its
+  console executable. Future work must use this shared runtime and must not
+  recreate a project-local Godot copy. Headless verification remains the
+  default unless a visible editor or game session is required by the task.
 - Stage 1 currently has an MVP permit, not the exhaustive all-target
   `DirectReachabilityCertificate` required for release. Do not label the stage
   fully certified or use the permit to satisfy export/final-delivery gates.
