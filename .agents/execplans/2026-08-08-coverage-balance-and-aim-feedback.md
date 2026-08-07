@@ -2,7 +2,8 @@
 type: plan
 status: active
 created: 2026-08-08
-scope: target-coverage balance and non-blocking aim feedback, excluding trajectory and impact-preview decisions
+last_reviewed: 2026-08-08
+scope: target-coverage balance and non-blocking aim feedback, preserving the approximate first-impact marker and excluding its implementation
 related:
   - ../PLANS.md
   - ../Documentation.md
@@ -50,13 +51,17 @@ related:
 - Treat the complete preview as advisory. Fire remains available whenever the
   canonical game rules allow it, whether preview work is current, stale, or
   pending.
+- Preserve the approximate first-impact marker. The marker remains useful for
+  choosing where the projectile first reaches the terrain even though the
+  post-contact roll, bounce, mechanisms, and paint path determine most of the
+  result. This plan does not remove or replace it.
 - Remove normal-operation `CALCULATING TRAJECTORY` / `UPDATING` messaging and
   their Korean equivalents from the eventual implementation. Do not replace
   them with a spinner or another wait-state cue. A subdued retained preview can
   communicate staleness without telling the player to wait.
-- Do not decide arc length, arc fidelity, impact-marker form, prediction
-  scheduling, collision sampling, or landing-point computation in this plan.
-  Those questions are deliberately deferred to a separate product decision.
+- Do not redesign the preserved marker or decide arc length, arc fidelity,
+  prediction scheduling, collision sampling, or landing-point computation in
+  this plan. Those implementation questions remain separate from balance work.
 - Do not revive the archived exhaustive target-wide certificate, authored
   success-route, or all-stage manual-clear requirement. Balance evidence is a
   bounded representative sample, not a new solver or product route asset.
@@ -99,10 +104,11 @@ Current ownership is also known:
   clear and star target curves; shot-count and paint-footprint alternatives;
   mechanism contribution as observed rather than assumed; misleading pending
   copy; resource, catalog, replay, persistence, localization, and test impacts.
-- Out of scope: trajectory or landing-preview design and implementation;
-  predictor performance work; terrain regeneration; cannon placement; target
-  mask edits; wind-rule changes; mechanism placement or behavior changes; a new
-  solver; full 30-stage manual certification; visual restyling; implementation.
+- Out of scope: removing or redesigning the approximate first-impact marker;
+  trajectory or landing-preview implementation; predictor performance work;
+  terrain regeneration; cannon placement; target mask edits; wind-rule changes;
+  mechanism placement or behavior changes; a new solver; full 30-stage manual
+  certification; visual restyling; implementation.
 - Destructive or irreversible actions: none. Evidence runs use the current
   fixed catalog and task-owned output only.
 - Approval required before: changing gameplay, resource, translation, catalog,
@@ -250,8 +256,8 @@ This section identifies likely owners but does not authorize edits.
   explicitly chooses a physical-scale change.
 - The normal pending text belongs to `TrajectoryPreview` presentation and the
   localization table. Removing it must not alter prediction ownership, preview
-  fidelity, or Fire readiness. Remove dead translation entries only after a
-  repository-wide consumer check.
+  fidelity, the approximate first-impact marker, or Fire readiness. Remove dead
+  translation entries only after a repository-wide consumer check.
 - Focused contracts must cover the chosen progression endpoints and transitions,
   catalog/schema compatibility, clear/star ordering, projectile footprint
   resource values when changed, no calculation/updating text in the running Aim
