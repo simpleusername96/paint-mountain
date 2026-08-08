@@ -45,6 +45,9 @@ var motion_state: MotionState:
 var terminal_reason: StringName:
 	get:
 		return _terminal_reason
+var never_contacted_deadline: float:
+	get:
+		return _never_contacted_deadline
 
 var _terrain_surface: TerrainSurface
 var _paint_surface_tuning: PaintSurfaceTuning
@@ -52,6 +55,7 @@ var _wind_controller: WindController
 var _wind_profile: WindProfile
 var _spawn_ordinal: int = -1
 var _elapsed: float = 0.0
+var _never_contacted_deadline: float = 0.0
 var _deactivated: bool = false
 var _motion_state: MotionState = MotionState.MOVING_AIRBORNE
 var _terminal_reason: StringName = &""
@@ -123,7 +127,8 @@ func configure(
 		generation: int = 0,
 		paint_surface_tuning: PaintSurfaceTuning = null,
 		assigned_spawn_ordinal: int = -1,
-		assigned_shot_id: int = 0
+		assigned_shot_id: int = 0,
+		assigned_never_contacted_deadline: float = -1.0
 ) -> void:
 	projectile_data = data
 	stage_bounds = bounds
@@ -131,6 +136,16 @@ func configure(
 	_paint_surface_tuning = paint_surface_tuning
 	_spawn_ordinal = assigned_spawn_ordinal
 	shot_id = assigned_shot_id
+	_never_contacted_deadline = maxf(
+		projectile_data.never_contacted_timeout,
+		minf(
+			projectile_data.predicted_contact_hard_maximum,
+			maxf(
+				projectile_data.never_contacted_timeout,
+				assigned_never_contacted_deadline
+			)
+		)
+	)
 	_cached_incoming_velocity = launch_velocity
 	_velocity_history.assign([launch_velocity])
 	split_generation = generation
@@ -163,7 +178,7 @@ func _physics_process(delta: float) -> void:
 		deactivate(ProjectileSettlementReason.ESCAPED_BOUNDS)
 		return
 	if not _has_touched_playable_top \
-			and _elapsed >= projectile_data.never_contacted_timeout:
+			and _elapsed >= _never_contacted_deadline:
 		deactivate(ProjectileSettlementReason.MISSED_TERRAIN)
 		return
 	if sleeping and _has_touched_playable_top and _last_valid_top_contact != null:

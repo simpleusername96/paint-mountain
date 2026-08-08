@@ -26,7 +26,7 @@ func _process(_delta: float) -> void:
 	if _prediction == null:
 		return
 	if _impact_marker.visible:
-		_set_marker_scale(_impact_marker, _prediction.endpoint)
+		_set_marker_scale(_impact_marker, _prediction.collision_contact_point())
 	elif _exit_marker.visible:
 		var active_camera := get_viewport().get_camera_3d()
 		if active_camera != null:
@@ -77,16 +77,17 @@ func refresh() -> void:
 		)
 	_update_dot_bounds(display_points)
 	has_first_collision = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.COLLISION
-	first_collision_position = _prediction.endpoint if has_first_collision else Vector3.ZERO
+	first_collision_position = _prediction.collision_contact_point() \
+			if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
 	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
 	_update_process_enabled()
 	if _prediction == null:
 		return
 	if has_first_collision:
-		_impact_marker.global_position = _prediction.endpoint
+		_impact_marker.global_position = _prediction.collision_contact_point()
 		_impact_marker.global_basis = Basis(Quaternion(Vector3.UP, _prediction.normal))
-		_set_marker_scale(_impact_marker, _prediction.endpoint)
+		_set_marker_scale(_impact_marker, _prediction.collision_contact_point())
 	elif _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT:
 		_exit_marker.global_position = _prediction.endpoint
 		var active_camera := get_viewport().get_camera_3d()

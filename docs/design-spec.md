@@ -74,10 +74,9 @@ exactly three mechanism types.
   Keep the authored 48-degree FOV and one shared composition; do not solve the
   view with per-stage camera repairs or geometry changes made only for a ratio.
 - Briefing begins in `Map View` with limited three-quarter orbit/zoom. `Aim View`
-  uses one authored, recoverable cannon composition and the established aim
-  controls; it does not add a second pointer gesture for independent camera
-  navigation. Map View remains the deliberate whole-board inspection mode and
-  never changes the stored aim.
+  uses one authored, recoverable cannon composition and terrain-targeted aiming;
+  it does not add independent camera navigation. Map View remains the deliberate
+  whole-board inspection mode and never changes the stored aim or launch target.
 - Each stage has one baked cannon transform at least 70 m in front of its
   nearest playable terrain edge. The player changes yaw, elevation, and power,
   but cannot orbit or move the launch position around the mountain. Map View
@@ -93,19 +92,29 @@ exactly three mechanism types.
 - Briefing starts in Map View: terrain click changes inspection focus, left-drag
   orbits, wheel zooms, Enter/Start enters Aim View, and Escape pauses.
 - Gameplay has Aim View and Map View interaction modes while Board Phase remains
-  `AIMING`. In Aim View, left-drag changes yaw/elevation, wheel or explicit `−/+`
-  controls adjust power, A/D/W/S use the same aim path, and Space/Fire launch. In
-  Map View, terrain click changes inspection focus, left-drag orbits,
-  wheel zooms, and aim/Fire input is blocked. Tab and one visible focusable
-  toggle switch modes without changing the stored aim or preview, and the switch
-  never performs terrain-scale work in the input callback.
-- Show target, current coverage, shots, angle, power, a dotted initial ballistic arc, and an approximate first impact. Never preview post-impact solution paths or exact coverage.
-- Terrain clicks never solve or alter aim. The complete pre-impact preview uses
-  the same radius, fixed-tick gravity, damping, launch origin, speed, shared
-  collision geometry, and collision layers as the real ball. It ends at the
-  first physical collision or open-bounds exit. It is advisory: a legal
-  canonical aim may Fire while the newest preview is pending or when that
-  preview predicts a miss. No post-impact route is shown.
+  `AIMING`. In Aim View, click selects a valid Playable Terrain Surface top point
+  and drag retargets to the latest valid top point; invalid drag gaps retain the
+  last valid target. Elevation controls and W/S pin elevation while solving yaw/
+  power for that target; existing power controls and wheel pin power while
+  solving yaw/elevation. A/D is not a human target-mode control. Map View terrain
+  click changes inspection focus, left-drag orbits, wheel zooms, and aim/Fire
+  input is blocked. Tab and one visible focusable toggle switch modes without
+  changing the stored aim or preview, and the switch never performs terrain-scale
+  work in the input callback.
+- Show the selected target, current coverage, shots, elevation, power, a dotted
+  initial ballistic arc, and a first-impact marker. The selected target is
+  independent of an exact prediction: show a confirmed impact only for matching
+  target, aim, and wind revisions; keep only permitted stale arc dots subdued and
+  hide stale impact or exit markers. Use shape with the existing blue role.
+  Never preview post-impact solution paths or exact coverage.
+- The complete pre-impact preview uses the same radius, fixed-tick gravity,
+  damping, launch origin, speed, shared collision geometry, and collision layers
+  as the real ball. It ends at the first physical collision or open-bounds exit.
+  It is advisory: generic preview pending or a predicted miss never blocks Fire.
+  Only an explicit human target selection or target-preserving elevation/power
+  edit makes Fire pending until its same-revision solution commits or restores
+  the prior committed aim after rejection. Direct replay, agent, and debug tuple
+  actions remain atomic. No post-impact route is shown.
 - Firing enters Shot Follow for the new root ball. A visible `대포로 돌아가기`
   / `RETURN TO CANNON` control and context-sensitive Tab return immediately to
   Aim View; the ball continues physically and no post-fire steering is added.
@@ -125,9 +134,9 @@ exactly three mechanism types.
   drain, and camera presentation mode are orthogonal typed activity, not
   competing stage phases.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
-  an illegal canonical aim, no shots, terminal pending, or modal lock. Prediction
-  readiness never changes Fire admission. Aim controls remain editable while
-  prior families move.
+  an illegal canonical aim, no shots, terminal pending, modal lock, or one
+  unresolved explicit human aim revision. Generic prediction readiness never
+  changes Fire admission. Aim controls remain editable while prior families move.
 - An initial Fire slot releases when its generation-0 root first authoritatively
   traverses valid Playable Terrain Surface or terminates. Family observation
   waits until every current body has reached that surface or terminated;
@@ -165,8 +174,14 @@ exactly three mechanism types.
   terrain contact, but elapsed flight time is not a legal-shot gate or an exact
   per-stage contract. Physical standoff and launch tuning prevent both an
   immediate adjacent hit and a needlessly prolonged arc. A root that has never
-  contacted Playable Terrain Surface terminates at 6.0 seconds.
-- Power `0..100` maps linearly to `32..160 m/s`. Generated summit height/range,
+  contacted Playable Terrain Surface terminates at 6.0 seconds, except that a
+  complete current matching prediction of a first Playable Terrain Surface
+  contact may grant bounded lifetime through that promised contact. A normal
+  unmatched miss retains the 6.0-second timeout and an open-bounds exit remains
+  immediate.
+- Runtime power uses `0.1%` increments over `0..100` and maps linearly to
+  `32..160 m/s`. Whole-power keys and offline generated identities remain
+  unchanged. Generated summit height/range,
   predictor, rigid body, and open play bounds use that same curve; maximum-power
   rescue through a second velocity constant is forbidden.
 - Airborne travel uses no paint. A verified Playable Terrain Surface first

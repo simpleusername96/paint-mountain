@@ -52,10 +52,12 @@ This architecture covers the single-process desktop game. It does not define a b
 | `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/Playable Terrain Surface point queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
 | `OpenPlayEnvironment` | Collider-matched restrained apron/ground, open-world presentation, and stable non-target contact identity | Rear/side containment walls, scoring, hidden blocking planes, bank-shot behavior, or stage outcomes |
 | `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, replay, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
-| `AimInputController` | Presentation-mode-aware mouse/keyboard mapping, unsnapped pointer-angle remainder, sensitivity, interaction intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
+| `AimInputController` | Presentation-mode-aware target-selection and pinned-control intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
+| `TerrainAimController` | Latest valid top-target selection from Aim View click/drag and human target-preserving elevation/power intents | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
+| `TerrainAimSolver` | Bounded current-target inverse solve that keeps the explicitly edited elevation or power pinned and publishes a same-target canonical aim | Device input, Fire admission, target ownership, runtime terrain mutation, or post-impact prediction |
 | `TrajectoryPredictionJob` / `TrajectoryPredictor` | Sole resumable fixed-step sphere/collision implementation and its synchronous offline wrapper | Device input, Fire rules, threads, post-impact behavior, mechanisms, or coverage prediction |
 | `TrajectoryPredictionScheduler` | Latest prediction key, one replaceable active job, 12-step/approximately-1-ms fixed-tick budget, bounded aim/wind nominations, current-only atomic publication, and runtime diagnostics | Wind generation, Fire admission, prediction math, or prediction history |
-| `CannonController` | Yaw/elevation/power commands, clamping, shared launch calculation, and last-complete prediction presentation state | Device polling, Fire admission, target solving, post-fire steering, or stage outcome |
+| `CannonController` | Committed yaw/elevation/power, same-revision aim commit/restore, shared launch calculation, and last-complete prediction presentation state | Device polling, Fire admission, target ownership/solving, post-fire steering, or stage outcome |
 | `ProjectileContact` | Immutable measured contact point/normal/collider/shape/impulse/velocity/tick facts | Mutation, gameplay decisions, or presentation |
 | `PaintProjectile` | Rigid-body behavior, every begun measured contact, persistent terrain-rest lifecycle, surface recovery, and Playable Terrain Surface sweep/radial-mark intent | Persistent mask mutation, coverage totals, wind schedule, or stage transitions |
 | `ProjectileManager` | Parent/child registry, two initial-flight root slots, 21-resident-body cap, family IDs, root-projectile identity publication, per-shot spawn ordinals, paint-command canonicalization, activity facts, and cleanup | Fire admission, projectile tuning, wind generation, camera transforms, or mask writes |
@@ -161,6 +163,8 @@ This architecture covers the single-process desktop game. It does not define a b
   paint-mask checksum. It contains no transform samples and rejects incompatible
   older formats deterministically.
 - Agent observations are immutable snapshots; actions enter through the same validated cannon/stage command layer used by human UI.
+- Runtime power canonicalization supports `0.1%` increments. Existing whole-power
+  keys and integer offline generation retain their stable identities.
 
 ### State and event flow
 
@@ -193,10 +197,18 @@ Human / Replay / GameplayAgentApi actions
   once, records the terminal reason, and cleans resident bodies only after the
   result snapshot.
 - `StageController` remains in gameplay `AIMING` while `CameraDirector` presents
-  Aim View, Map View, or Shot Follow. Aim View forwards aim/Fire input; Map View
-  forwards click-refocus, orbit, and zoom; Shot Follow hides steering controls
-  and accepts only pause or return-to-cannon presentation intent. Switching or
-  returning preserves the current aim and prediction.
+  Aim View, Map View, or Shot Follow. Aim View forwards click/drag top-target
+  selection and target-preserving elevation/power intents; Map View forwards
+  click-refocus, orbit, and zoom only; Shot Follow hides steering controls and
+  accepts only pause or return-to-cannon presentation intent. Switching or
+  returning preserves the committed aim and prediction.
+- `TerrainAimController` queues latest-only top-target picks and sends each
+  accepted human target/pinned-control revision to `TerrainAimSolver`. The
+  solver publishes only a current same-target solution. `StageController` marks
+  Fire pending only for that explicit human revision, then accepts its atomic
+  commit or restore; generic prediction pending or miss remains advisory and
+  never changes Fire admission. Replay, agent, and debug direct tuple commands
+  bypass this human revision transaction.
 - The Aim View composer uses canonical Playable Terrain Surface points, summit
   headroom,
   cannon, and muzzle to keep the cannon identifiable in the lower foreground
@@ -260,10 +272,13 @@ Human / Replay / GameplayAgentApi actions
   materials/damping, and a bounded miss lifetime only before first Playable
   Terrain Surface contact. A terrain-resident ball may sleep naturally but remains present until
   result/restart or an explicit terminal reason.
-- `ProjectileData` owns a 6.0-second never-contacted root timeout. Stage,
-  cannon, and launch tuning aim for a representative default contact near three
-  seconds, but no elapsed-time solver or legal-shot rejection is added; the
-  implementing agent judges pacing in the actual Shot Follow flow.
+- `ProjectileData` owns a 6.0-second never-contacted root timeout. A complete
+  current prediction that promises a first Playable Terrain Surface contact may
+  supply bounded matching-root lifetime through that contact; ordinary unmatched
+  misses retain the timeout and real predicted or live bounds exits remain
+  immediate. Stage, cannon, and launch tuning aim for a representative default
+  contact near three seconds, but no elapsed-time solver or legal-shot rejection
+  is added; the implementing agent judges pacing in the actual Shot Follow flow.
 - The root ball uses `2.40 m` physical radius, `2.80 m` continuous paint radius,
   and `3.50 m` impact radius. `CannonBallistics` derives one scale-aware centre
   origin for offline solving, preview, and live bodies: one radius beyond the
@@ -292,10 +307,13 @@ Human / Replay / GameplayAgentApi actions
 - `TrajectoryPredictionScheduler` advances that exact job by at most 12 steps
   and approximately 1 ms per physics callback. A new nominated context discards
   obsolete active work; only the current key publishes. `TrajectoryPreview`
-  retains the last complete arc/impact marker at subdued opacity and owns no
-  normal-operation calculation/update label.
-- The canonical power curve is linear `32..160 m/s` over integer power `0..100`.
-  Direct/summit certification and the open play bounds consume
+  presents the selected target independently from exact prediction state: only a
+  matching target/aim/wind result receives an impact marker, while stale arc dots
+  may remain subdued and stale impact/exit markers are hidden. It owns no normal-
+  operation calculation/update label and never shows a post-impact route.
+- The canonical runtime power curve is linear `32..160 m/s` over `0.1%` power
+  increments from `0..100`; whole-power stable keys and integer offline
+  generation behavior are preserved. Direct/summit certification and the open play bounds consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
   reject or admit the promoted version-10 board.
 - Record stage/wind seeds and player actions. Retry and replay consume the same

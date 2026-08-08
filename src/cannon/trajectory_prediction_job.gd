@@ -180,13 +180,25 @@ func _advance_one_step() -> void:
 				&"empty_rest_info_after_cast"
 			)
 			return
-		var endpoint: Vector3 = rest_info.get(
+		var contact_point: Vector3 = rest_info.get(
 			"point", _position + motion * collision_fraction
 		)
 		var normal: Vector3 = rest_info.get("normal", Vector3.ZERO)
+		if not contact_point.is_finite() or normal.is_zero_approx():
+			_prediction = TrajectoryPrediction.new(
+				TrajectoryPrediction.Kind.TIMEOUT,
+				_position + motion * collision_fraction,
+				_points,
+				(float(step_index) + collision_fraction) * PHYSICS_STEP,
+				null,
+				Vector3.ZERO,
+				&"invalid_rest_contact"
+			)
+			return
+		var endpoint := contact_point + normal.normalized() * _projectile_radius
 		var collider_id := int(rest_info.get("collider_id", 0))
 		var collider := instance_from_id(collider_id) if collider_id != 0 else null
-		var hit_identity := _resolve_hit_identity(rest_info, collider, endpoint, normal)
+		var hit_identity := _resolve_hit_identity(rest_info, collider, contact_point, normal)
 		if _capture_sampled_points:
 			_points.append(endpoint)
 		_prediction = TrajectoryPrediction.new(
@@ -197,7 +209,8 @@ func _advance_one_step() -> void:
 			collider,
 			normal,
 			&"" if hit_identity != null else &"missing_or_invalid_hit_identity",
-			hit_identity
+			hit_identity,
+			contact_point
 		)
 		return
 	if bounds_fraction < 1.0:

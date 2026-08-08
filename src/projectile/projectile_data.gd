@@ -15,6 +15,8 @@ extends Resource
 
 @export_category("Miss Cleanup")
 @export_range(1.0, 120.0, 0.25) var never_contacted_timeout: float = 6.0
+@export_range(0.0, 5.0, 0.05) var predicted_contact_grace: float = 0.5
+@export_range(1.0, 120.0, 0.25) var predicted_contact_hard_maximum: float = 13.0
 
 @export_category("Paint Surface")
 @export_range(0.05, 8.0, 0.05) var paint_footprint_radius: float = 4.0

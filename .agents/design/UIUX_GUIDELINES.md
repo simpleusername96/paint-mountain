@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-08
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -86,16 +86,19 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Gameplay remains in the aiming Board Phase while the player switches between
   `Aim View`, `Map View`, and `Shot Follow`; this is a presentation/input state, not a
   separate stage flow.
-- In Aim View, left drag adjusts yaw/elevation, the wheel adjusts power, and
-  keyboard aiming and Fire remain available. The authored view keeps the cannon
-  large in the foreground and the complete mountain distant and visible. Do not
-  add another aim-mode pointer gesture or click-to-target solving.
+- In Aim View, click selects a valid terrain top point and drag retargets to the
+  latest valid point, retaining the last valid target across invalid gaps. Angle
+  controls and W/S request a target-preserving elevation edit; power controls and
+  wheel request a target-preserving power edit. A/D is not a human target-mode
+  control. The authored view keeps the cannon large in the foreground and the
+  complete mountain distant and visible.
 - In Map View, terrain click changes the inspection focus, left drag
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
-  aim or preview. Mode changes and terrain refocus must acknowledge without a
-  visible stall. Persistent compact keycaps and the context line expose the
-  shortcut and active mouse behavior; no timed first-session hint is used.
+  committed aim or preview. Mode changes, target selection, and terrain refocus
+  must acknowledge without a visible stall. Persistent compact keycaps and the
+  context line expose the shortcut and active mouse behavior; no timed first-
+  session hint is used.
 - Accepted Fire enters Shot Follow for the newly launched root paintball. Hide
   controls that imply in-flight steering and show one compact focusable
   `대포로 돌아가기` / `RETURN TO CANNON` action at a screen edge. Tab performs
@@ -133,8 +136,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   lighter and less saturated and is not scored; the dry Target Area cue and HUD
   copy `목표 영역`/`TARGET AREA` make that boundary clear. Its percentage, rail,
   target marker, and visible paint publication must agree.
-- Shots, target, angle, power, and Fire validity update from their authoritative
-  owners without duplicated formulas.
+- Shots, selected target, angle, power, prediction state, and Fire validity
+  update from their authoritative owners without duplicated formulas. The
+  selected target is visible immediately. An exact impact marker appears only
+  for a matching target/aim/wind revision; stale arc dots may remain subdued,
+  but stale impact/exit markers are hidden. Pending, confirmed, and rejected
+  target states use shape as well as color.
 - Icons supplement meaning. Rare, destructive, or menu actions retain visible
   Korean labels; icon-only controls require an accessible name and clear focus
   treatment.

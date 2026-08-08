@@ -191,10 +191,12 @@ static func validate_predictor(
 			var prediction: TrajectoryPrediction = solved.prediction
 			var witness_index := witnesses.size()
 			witnesses.append(witness)
-			witness_impacts.append(prediction.endpoint)
+			witness_impacts.append(prediction.collision_contact_point())
 			witness_identities.append(prediction.hit_identity)
 			witness_range_margins.append(float(solved.range_margin))
-			witness_maximum_distances.append(prediction.endpoint.distance_to(target_world_point))
+			witness_maximum_distances.append(
+				prediction.collision_contact_point().distance_to(target_world_point)
+			)
 			target_witness_indices.append(witness_index)
 			var triangle_witnesses: PackedInt32Array = witnesses_by_triangle.get(
 				triangle_key,
@@ -204,7 +206,7 @@ static func validate_predictor(
 			witnesses_by_triangle[triangle_key] = triangle_witnesses
 			_register_spatial_witness(
 				witnesses_by_spatial_bucket,
-				prediction.endpoint,
+				prediction.collision_contact_point(),
 				witness_index
 			)
 
@@ -353,7 +355,7 @@ static func validate_summit(
 			continue
 		var world_offset_y := world_point.y - float(summit.point.y)
 		var height_margin := maxf(
-			(world_offset_y + maximum_height) - prediction.endpoint.y,
+			(world_offset_y + maximum_height) - prediction.collision_contact_point().y,
 			0.0
 		)
 		nearest_height_margin = minf(nearest_height_margin, height_margin)
@@ -386,12 +388,13 @@ static func validate_summit(
 	var minimum_height_margin := float(best.height_margin)
 	witnesses.append(best.aim as AimTuple)
 	var best_prediction: TrajectoryPrediction = best.prediction
-	witness_impacts.append(best_prediction.endpoint)
+	witness_impacts.append(best_prediction.collision_contact_point())
 	witness_identities.append(best_prediction.hit_identity)
 	target_points.append(best.world_point)
 	target_witness_indices.append(0)
 	distance_margins.append(maxf(
-		TARGET_DISTANCE_TOLERANCE - best_prediction.endpoint.distance_to(best.world_point),
+		TARGET_DISTANCE_TOLERANCE \
+				- best_prediction.collision_contact_point().distance_to(best.world_point),
 		0.0
 	))
 	range_margins.append(float(best.range_margin))
@@ -1439,7 +1442,8 @@ static func _prediction_witnesses_target(
 	var identity := prediction.hit_identity
 	return identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
 			and not target_sample.is_empty() \
-			and prediction.endpoint.distance_to(target_world_point) <= maximum_distance
+			and prediction.collision_contact_point().distance_to(target_world_point) \
+					<= maximum_distance
 
 
 static func _new_prediction_diagnostics() -> Dictionary:
@@ -1493,7 +1497,7 @@ static func _record_prediction_diagnostic(
 	owner_shape_counts[owner_shape_key] = int(owner_shape_counts.get(owner_shape_key, 0)) + 1
 	if identity.contact_owner_id != TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
 		return
-	var distance := prediction.endpoint.distance_to(target_world_point)
+	var distance := prediction.collision_contact_point().distance_to(target_world_point)
 	if distance < float(diagnostics.minimum_terrain_top_distance):
 		diagnostics.minimum_terrain_top_distance = distance
 		diagnostics.nearest_terrain_top_aim = aim.stable_key()

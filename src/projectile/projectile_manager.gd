@@ -77,7 +77,8 @@ func spawn_projectile(
 		origin: Vector3,
 		velocity: Vector3,
 		split_generation: int = 0,
-		requested_shot_id: int = 0
+		requested_shot_id: int = 0,
+		never_contacted_deadline: float = -1.0
 ) -> PaintProjectile:
 	_prune_invalid()
 	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
@@ -110,7 +111,8 @@ func spawn_projectile(
 		split_generation,
 		_paint_surface_tuning,
 		assigned_ordinal,
-		assigned_shot_id
+		assigned_shot_id,
+		never_contacted_deadline if split_generation == 0 else -1.0
 	)
 	projectile.configure_wind(_wind_controller, _wind_profile)
 	projectile.contact_reported.connect(_on_contact_reported)

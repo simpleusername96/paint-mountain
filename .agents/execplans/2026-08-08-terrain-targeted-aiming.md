@@ -248,7 +248,7 @@ Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
 `src/projectile/paint_projectile.gd`, `src/projectile/projectile_manager.gd`,
 `src/stage/stage_controller.gd`, `resources/projectiles/basic_paintball.tres`
 
-- [ ] **1.1 Record the approved terrain-targeted aiming supersession.**
+- [x] **1.1 Record the approved terrain-targeted aiming supersession.**
   - Change: append the 2026-08-08 user revision to `docs/source-brief.md` and
     update the conflicting interaction, Fire-readiness, marker, lifetime, and
     ownership clauses in the working design/UI/technical specs. State that only
@@ -260,7 +260,7 @@ Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
     a current predicted terrain contact may be killed at six seconds.
   - Guard: source-brief clauses for stationary cannon, no in-flight steering,
     advisory generic preview, Map Inspection, and no post-impact preview remain.
-- [ ] **1.2 Publish exact prediction surface contact.**
+- [x] **1.2 Publish exact prediction surface contact.**
   - Change: add immutable `contact_point` to `TrajectoryPrediction`; populate it
     from the collision rest result in `TrajectoryPredictionJob`; retain
     `endpoint` as the projectile-center position. Update predictors, test
@@ -269,7 +269,10 @@ Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
     radius/normal and both values are deterministic at 60 Hz.
   - Guard: bounds-exit and timeout predictions have no fabricated contact point,
     and first collision identity/order does not change.
-- [ ] **1.3 Protect a current promised terrain contact through impact.**
+  - Evidence (2026-08-08): `prediction_projectile_parity_test.gd` passed with
+    deterministic sphere-center/contact separation; generation witnesses and
+    the world impact marker now consume the surface contact explicitly.
+- [x] **1.3 Protect a current promised terrain contact through impact.**
   - Change: add the locked grace/hard-maximum tuning to `ProjectileData`; have
     `StageController.request_fire()` read only an already complete matching
     current prediction, derive a constant-work root deadline, and pass it
@@ -280,6 +283,9 @@ Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
     `MISSED_TERRAIN`; the same unmatched in-bounds miss still times out at 6.0 s.
   - Guard: a predicted or live bounds exit still terminates immediately, and
     Fire performs no trajectory calculation or physics query.
+  - Evidence (2026-08-08): `projectile_lifetime_test.gd` proved matching
+    duration-plus-grace, the 13-second cap, unmatched timeout, and immediate
+    bounds exit. The Phase 1 batch passed all five named scripts.
 
 Batch gate:
 
@@ -587,9 +593,11 @@ safety, tolerance, compatibility, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 1.
-- Next task: 1.1, record the limited user supersession in the owning specs.
-- Last completed gate: Discovery Closure Gate.
+- Current phase: Phase 2.
+- Next task: 2.1, establish canonical selected-target state and top-only picking.
+- Last checkpoint evidence: Tasks 1.1-1.3 passed their focused checks; the Phase
+  1 batch passed all five named scripts on 2026-08-08.
+- Last completed gate: Phase 1 batch gate.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit. Do not mirror implementation
   progress in another plan.

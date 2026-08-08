@@ -13,6 +13,9 @@ var kind: Kind:
 var endpoint: Vector3:
 	get:
 		return _endpoint
+var contact_point: Variant:
+	get:
+		return _contact_point
 var sampled_points: PackedVector3Array:
 	get:
 		return _sampled_points.duplicate()
@@ -34,6 +37,7 @@ var hit_identity: TrajectoryHitIdentity:
 
 var _kind: Kind
 var _endpoint: Vector3
+var _contact_point: Variant = null
 var _sampled_points: PackedVector3Array
 var _duration: float
 var _collider: Object
@@ -50,7 +54,8 @@ func _init(
 		prediction_collider: Object = null,
 		prediction_normal: Vector3 = Vector3.ZERO,
 		prediction_diagnostic: StringName = &"",
-		prediction_hit_identity: TrajectoryHitIdentity = null
+		prediction_hit_identity: TrajectoryHitIdentity = null,
+		prediction_contact_point: Variant = null
 ) -> void:
 	_kind = prediction_kind
 	_endpoint = prediction_endpoint
@@ -60,7 +65,17 @@ func _init(
 	_normal = prediction_normal.normalized() if not prediction_normal.is_zero_approx() else Vector3.ZERO
 	_diagnostic = prediction_diagnostic
 	_hit_identity = prediction_hit_identity
+	_contact_point = prediction_contact_point if prediction_contact_point is Vector3 \
+			and (prediction_contact_point as Vector3).is_finite() else null
 
 
 func is_fireable() -> bool:
 	return kind == Kind.COLLISION
+
+
+func collision_contact_point() -> Vector3:
+	assert(
+		_kind == Kind.COLLISION and _contact_point is Vector3,
+		"Only collision predictions expose a surface contact point."
+	)
+	return _contact_point as Vector3

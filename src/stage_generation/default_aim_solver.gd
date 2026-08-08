@@ -116,7 +116,9 @@ static func _bounded_center_fallback(
 				)
 				if prediction.kind != TrajectoryPrediction.Kind.COLLISION:
 					continue
-				var distance := prediction.endpoint.distance_to(target_world_point)
+				var distance := prediction.collision_contact_point().distance_to(
+					target_world_point
+				)
 				if distance < best_any_distance:
 					best_any_distance = distance
 					best_any_aim = AimTuple.new(yaw, elevation, power)
@@ -145,7 +147,7 @@ static func _prediction_matches_target(
 		return false
 	var identity := prediction.hit_identity
 	return identity.contact_owner_id == TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
-			and prediction.endpoint.distance_to(target_world_point) \
+			and prediction.collision_contact_point().distance_to(target_world_point) \
 					<= DirectReachabilityValidator.TARGET_DISTANCE_TOLERANCE
 
 

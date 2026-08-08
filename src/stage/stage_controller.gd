@@ -304,6 +304,7 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		return false
 	var launch_origin := _cannon.get_launch_origin()
 	var velocity := _cannon.get_launch_velocity()
+	var never_contacted_deadline := _root_never_contacted_deadline()
 	coverage_before_shot = _paint_system.coverage_percent()
 	var shot_observation := ShotObservation.new()
 	shot_observation.configure(
@@ -321,7 +322,14 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		_last_drained_paint_command_tick,
 		_last_paint_mask_checksum
 	)
-	var projectile := _projectile_manager.spawn_projectile(_cannon.projectile_data, launch_origin, velocity)
+	var projectile := _projectile_manager.spawn_projectile(
+		_cannon.projectile_data,
+		launch_origin,
+		velocity,
+		0,
+		0,
+		never_contacted_deadline
+	)
 	if projectile == null:
 		return false
 	shot_observation.shot_id = projectile.shot_id
@@ -343,6 +351,27 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	fire_action_accepted.emit(origin)
 	_emit_fire_readiness()
 	return true
+
+
+## Fire only consumes an already-published prediction. It never runs collision
+## work, so a pending or stale preview retains the ordinary miss deadline.
+func _root_never_contacted_deadline() -> float:
+	var data := _cannon.projectile_data
+	var ordinary_deadline := data.never_contacted_timeout
+	var prediction := _cannon.current_prediction()
+	if prediction == null or not _cannon.prediction_matches_expected_context() \
+			or prediction.kind != TrajectoryPrediction.Kind.COLLISION \
+			or prediction.hit_identity == null \
+			or prediction.hit_identity.contact_owner_id \
+					!= TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID:
+		return ordinary_deadline
+	return maxf(
+		ordinary_deadline,
+		minf(
+			data.predicted_contact_hard_maximum,
+			prediction.duration + data.predicted_contact_grace
+		)
+	)
 
 
 func restart(

@@ -1642,10 +1642,11 @@ game. These clauses override only the conflicting earlier clauses:
   ideas remain future candidates, not part of this implementation slice.
 - **Aim lock and map inspection:** the Follow/Wide/Cannon camera preset strip
   and its gameplay 1x/2x/Pause actions are removed. Gameplay has two clear
-  interaction modes while stage rules remain in the aiming phase. In Aim Lock,
-  left drag adjusts yaw/elevation, the wheel adjusts power, keyboard aiming and
-  Fire are available, and the authored aiming camera is restored. In Map
-  Inspection, a terrain click changes inspection focus, left drag orbits the
+  interaction modes while stage rules remain in the aiming phase. The then-current
+  Aim Lock gesture used pointer-angle drag and wheel control (superseded by the
+  2026-08-08 terrain-targeted Aim View revision); keyboard aiming and Fire were
+  available, and the authored aiming camera was restored. In Map Inspection, a
+  terrain click changes inspection focus, left drag orbits the
   safe camera, the wheel zooms, and aim/Fire inputs are blocked. Tab and one
   visible focusable toggle switch modes without changing the stored aim or
   preview. Briefing starts in inspection; Start enters Aim Lock. Gear and Escape
@@ -1961,6 +1962,48 @@ calculation-message interpretations:
   all-stage manual-clear obligation. Human play remains the owner of feel and
   readability judgments.
 
+All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-08): Terrain-Targeted Aiming and Promised Contact
+
+The user approved a limited revision to the Aim View interaction after reviewing
+the current aiming flow. These clauses supersede only the named Aim View gesture,
+target solve, explicit human aim-revision readiness, stale impact-marker,
+runtime-power precision, and promised terrain-contact lifetime interpretations:
+
+- **Aim View terrain targeting:** in Aim View, a click selects a valid Playable
+  Terrain Surface top point and a drag continuously retargets to the latest valid
+  top point. The cannon remains stationary. The selected point, not a pointer
+  angle, is the human aiming intent; invalid gaps retain the last valid selection
+  until release. Map Inspection remains inspection only: its terrain click,
+  orbit, and zoom do not select a launch target or change the stored aim.
+- **Target-preserving aim edits:** after a selected target, the game solves a
+  legal yaw/elevation/power tuple for that point. An explicit elevation edit
+  keeps elevation pinned and solves yaw/power; an explicit power edit keeps power
+  pinned and solves yaw/elevation. This does not add in-flight steering, an
+  authored route, or target-wide reachability certification.
+- **Explicit human aim-revision readiness:** only a human target selection or
+  target-preserving elevation/power edit creates a pending aim revision. Fire
+  waits only until that revision commits a same-revision solution or restores the
+  prior committed aim after rejection. Generic advisory-preview pending or miss
+  states do not disable Fire, and direct replay, agent, and debug tuple actions
+  remain atomic.
+- **Truthful target and prediction markers:** the selected target is shown
+  independently from an exact current prediction. A confirmed impact marker is
+  shown only when its target, aim, and wind revisions match; stale arcs may stay
+  subdued, but stale impact or exit markers are hidden. Marker states use shape
+  as well as the existing blue role. Preview remains pre-impact only.
+- **Runtime power precision and compatibility:** runtime power supports `0.1%`
+  precision. Existing whole-power keys and offline generated identities remain
+  stable and compatible.
+- **Promised terrain-contact lifetime:** when a complete current prediction
+  promises a first Playable Terrain Surface contact after the ordinary
+  never-contacted timeout, the matching launched root remains alive through that
+  promised contact under bounded lifetime tuning. A normal unmatched miss still
+  times out, and a real predicted or live open-bounds exit remains immediate.
+
+Stationary-cannon launch planning, no in-flight steering, advisory generic
+prediction, Map Inspection, and the ban on post-impact preview remain in force.
 All earlier requirements not contradicted here remain in force.
 
 ## Acceptance Criteria
