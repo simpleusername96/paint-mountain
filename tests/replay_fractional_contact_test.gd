@@ -23,11 +23,13 @@ func _run() -> void:
 	var recorder := gameplay.get_node("ReplayRecorder") as ReplayRecorder
 	var presentation := gameplay.get_node("ReplayPresentationController") as ReplayPresentationController
 	var agent := gameplay.get_node("GameplayAgentApi") as GameplayAgentApi
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
 	var wind := gameplay.get_node("WindController") as WindController
 	var projectiles := gameplay.get_node("ProjectileManager") as ProjectileManager
 	var layout := gameplay.generated_layout() as GeneratedStageLayout
 	_assert(controller != null and cannon != null and recorder != null and presentation != null \
-			and agent != null and wind != null and projectiles != null and layout != null,
+			and agent != null and terrain_aim != null and wind != null \
+			and projectiles != null and layout != null,
 		"fixture owners must exist")
 	if _failed:
 		await _finish(gameplay, game_state)
@@ -63,6 +65,7 @@ func _run() -> void:
 	var attempt := recorder.export_attempt()
 	_assert(_has_fractional_aim_without_target_payload(attempt),
 		"fractional committed aim must record only its canonical tuple")
+	var solves_before_replay := terrain_aim.solve_request_count()
 	presentation.playback_error.connect(func(message: String) -> void: _playback_errors.append(message))
 	presentation.playback_finished.connect(func() -> void: _playback_finished = true)
 	_assert(presentation.start(attempt), "fractional attempt must start replay")
@@ -79,6 +82,8 @@ func _run() -> void:
 	_assert(_playback_errors.is_empty(),
 		"fractional first-contact replay must not report a parity error: %s" % str(_playback_errors))
 	_assert(_playback_finished, "fractional first-contact replay must finish result verification")
+	_assert(terrain_aim.solve_request_count() == solves_before_replay,
+		"replay action lock must keep the Human terrain solver out of playback")
 	_assert(_contacts_match(source_contact, replay_contact),
 		"fractional replay must preserve first-contact identity, event, and point: %s / %s" % [
 			JSON.stringify(source_contact), JSON.stringify(replay_contact),

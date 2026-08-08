@@ -128,7 +128,8 @@ func request_wind_refresh() -> void:
 	if epoch == _last_wind_epoch:
 		return
 	_last_wind_epoch = epoch
-	if _selected_target == null or _cannon.human_aim_revision_pending():
+	if _selected_target == null or _cannon.human_aim_revision_pending() \
+			or _stage_controller.action_origin_is_locked():
 		return
 	_begin_solve(_selected_target, &"target", 0.0, false)
 
