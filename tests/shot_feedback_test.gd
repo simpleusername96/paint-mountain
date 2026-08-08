@@ -42,7 +42,7 @@ func _run() -> void:
 	)
 	var power_decrease := hud_root.get_node("AimControls/Content/PowerDecrease") as Button
 	var power_increase := hud_root.get_node("AimControls/Content/PowerIncrease") as Button
-	_assert_true(power_decrease.tooltip_text == "파워 낮추기" and power_increase.tooltip_text == "파워 높이기", "power controls must expose localized tooltips")
+	_assert_true(power_decrease.tooltip_text == "파워 2% 낮추기" and power_increase.tooltip_text == "파워 2% 높이기", "power controls must expose localized tooltips")
 	_assert_true(power_decrease.get_theme_color("icon_normal_color").is_equal_approx(Color("172538")), "power glyphs must use the navy icon tint")
 	hud.update_aim(-7.5, 41.0, 72.0)
 	_assert_true("왼쪽" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim panel must expose direction and elevation independently")
@@ -72,7 +72,7 @@ func _run() -> void:
 				and hud_root.get_node("AimControls").visible \
 				and hud_root.get_node("ActionButtons").visible \
 				and hud_root.get_node("ContextLine").text \
-						== "드래그 조준 · A D W S · 휠 파워",
+						== "지형 클릭·드래그 · W S 각도 · 휠 파워",
 		"Aim Lock must restore aim and Fire controls"
 	)
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")

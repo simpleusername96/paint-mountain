@@ -24,8 +24,8 @@ func _run() -> void:
 	_assert_true(not defaults.settings.language_user_selected, "new installs must not claim an explicit language choice")
 	_assert_true(not defaults.settings.reduced_motion, "decorative motion must remain enabled by default")
 	_assert_true(
-		int(defaults.settings.aim_sensitivity_percent) == 100,
-		"new installs must use 100% mouse aim sensitivity"
+		not defaults.settings.has("aim_sensitivity_percent"),
+		"new saves must omit the retired mouse aim sensitivity setting"
 	)
 
 	_write_v1_fixture()
@@ -41,6 +41,7 @@ func _run() -> void:
 	)
 	_assert_true(is_equal_approx(float(migrated.settings.master_volume), 0.37), "migration must preserve settings")
 	_assert_true(migrated.settings.language == "ko" and not migrated.settings.language_user_selected, "migration must add the Korean default without fabricating a choice")
+	_assert_true(not migrated.settings.has("aim_sensitivity_percent"), "format-5 migration must ignore the retired sensitivity key")
 
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
@@ -83,6 +84,29 @@ func _run() -> void:
 				and aim_controls.get_node("Content/PowerCaption").text == "POWER",
 		"English Aim controls must not retain Korean captions"
 	)
+	_assert_true(
+		(aim_controls.get_node("Content/AngleDecrease") as Button).size.y >= 40.0,
+		"angle controls must retain a 40px focusable target"
+	)
+	_assert_true(
+		(aim_controls.get_node("Content/AngleDecrease") as Button).tooltip_text == "DECREASE ANGLE",
+		"angle controls must refresh English tooltips"
+	)
+	var angle_steps: Array[float] = []
+	var power_steps: Array[float] = []
+	aim_controls.angle_step_requested.connect(func(step: float) -> void: angle_steps.append(step))
+	aim_controls.power_step_requested.connect(func(step: float) -> void: power_steps.append(step))
+	(aim_controls.get_node("Content/AngleIncrease") as Button).button_down.emit()
+	(aim_controls.get_node("Content/AngleIncrease") as Button).button_up.emit()
+	(aim_controls.get_node("Content/PowerDecrease") as Button).button_down.emit()
+	(aim_controls.get_node("Content/PowerDecrease") as Button).button_up.emit()
+	aim_controls.update_aim(0.0, 38.0, 68.1)
+	_assert_true(angle_steps == [1.0] and power_steps == [-2.0], "Aim controls must emit target-preserving angle direction and 2-percent step intents")
+	_assert_true(
+		aim_controls.get_node("Content/ElevationValue").text == "38.0°" \
+				and aim_controls.get_node("Content/PowerValue").text == "68.1%",
+		"Aim controls must display elevation and solved power to one decimal"
+	)
 
 	game_state.update_setting(&"language", "ko", false)
 	await process_frame
@@ -124,7 +148,11 @@ func _write_v1_fixture() -> void:
 		"version": 1,
 		"unlocked_stages": ["first_descent", "burst_basin"],
 		"best_results": {"first_descent": {"coverage": 14.25, "stars": 2}},
-		"settings": {"master_volume": 0.37, "quality": "high"},
+		"settings": {
+			"master_volume": 0.37,
+			"quality": "high",
+			"aim_sensitivity_percent": 50,
+		},
 	}
 	var file := FileAccess.open(absolute_path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture))
@@ -155,11 +183,13 @@ func _assert_translation_contract(locale: String) -> void:
 		"hud.wind_right", "hud.wind_into_screen", "hud.wind_out_of_screen",
 		"hud.wind_strength_format", "hud.wind_change_format", "hud.wind_next_format",
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
+		"fire.aim_revision_pending",
 		"result.completed", "result.time_expired", "result.final", "result.grade", "result.elapsed",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
-		"settings.reduced_motion", "settings.aim_sensitivity",
+		"settings.reduced_motion",
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
-		"hud.power_decrease", "hud.power_increase", "ui.previous", "ui.loading_stage", "ui.stage_load_failed", "ui.retry_stage_load",
+		"hud.angle_decrease", "hud.angle_increase", "hud.power_decrease", "hud.power_increase",
+		"ui.previous", "ui.loading_stage", "ui.stage_load_failed", "ui.retry_stage_load",
 		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
 		"replay.incompatible_format",
 	]

@@ -37,7 +37,10 @@ func _run() -> void:
 		points,
 		3.0,
 		null,
-		Vector3.UP
+		Vector3.UP,
+		&"",
+		null,
+		points[points.size() - 1] - Vector3.UP * 0.18
 	)
 	preview.set_prediction(collision)
 	_assert(
@@ -57,6 +60,10 @@ func _run() -> void:
 		"pending prediction must retain the last complete arc at subdued opacity"
 	)
 	_assert(
+		not (preview.get_node("ImpactMarker") as MeshInstance3D).visible,
+		"pending prediction must hide the stale impact marker"
+	)
+	_assert(
 		preview.get_node_or_null("PredictionStatus") == null,
 		"normal pending prediction must not create calculation or updating text"
 	)
@@ -64,6 +71,23 @@ func _run() -> void:
 	_assert(
 		is_zero_approx(dots.transparency),
 		"current prediction must restore the complete arc opacity"
+	)
+	_assert(
+		(preview.get_node("ImpactMarker") as MeshInstance3D).visible,
+		"current collision prediction must restore its exact impact marker"
+	)
+
+	var bounds_exit := TrajectoryPrediction.new(
+		TrajectoryPrediction.Kind.BOUNDS_EXIT,
+		points[points.size() - 1],
+		points,
+		3.0
+	)
+	preview.set_prediction(bounds_exit)
+	preview.set_prediction_status(&"pending")
+	_assert(
+		not (preview.get_node("BoundsExitMarker") as Node3D).visible,
+		"pending prediction must hide the stale bounds-exit marker"
 	)
 
 	var dot_mesh_id: int = dots.multimesh.mesh.get_instance_id()

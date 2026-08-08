@@ -168,7 +168,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		reason = tr("fire.terminal")
 	elif human_aim_revision_pending:
 		reason_key = "aim_revision_pending"
-		reason = "aim_revision_pending"
+		reason = tr("fire.aim_revision_pending")
 	elif not canonical_aim_valid:
 		reason_key = "invalid_aim"
 		reason = tr("fire.invalid_aim")

@@ -15,6 +15,7 @@ signal interaction_mode_requested(mode: int)
 signal return_to_cannon_requested
 signal replay_speed_requested(speed: float)
 signal power_step_requested(direction: float)
+signal angle_step_requested(direction: float)
 signal replay_pause_requested(paused: bool)
 signal replay_restart_requested
 signal replay_exit_requested
@@ -264,6 +265,7 @@ func _connect_components() -> void:
 	%Start.pressed.connect(func() -> void: begin_aiming_requested.emit())
 	%Back.pressed.connect(func() -> void: stage_select_requested.emit())
 	_aim.power_step_requested.connect(func(direction: float) -> void: power_step_requested.emit(direction))
+	_aim.angle_step_requested.connect(func(direction: float) -> void: angle_step_requested.emit(direction))
 	_top.settings_requested.connect(func() -> void: pause_requested.emit())
 	_actions.fire_requested.connect(func() -> void: fire_requested.emit())
 	_run_status.finish_requested.connect(func() -> void: finish_requested.emit())

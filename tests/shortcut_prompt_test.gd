@@ -34,8 +34,8 @@ func _run_checks() -> void:
 	_assert_true(
 		root_control.get_node("ContextLine").visible \
 				and root_control.get_node("ContextLine").text \
-						== "드래그 조준 · A D W S · 휠 파워",
-		"Aim View must persistently explain drag, keyboard, and wheel input"
+					== "지형 클릭·드래그 · W S 각도 · 휠 파워",
+		"Aim View must persistently explain terrain targeting, angle, and power input"
 	)
 	_assert_true(
 		root_control.get_node_or_null("FirstSessionHint") == null,

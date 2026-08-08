@@ -60,7 +60,7 @@ func _run() -> void:
 		"Shot Follow must show only the contextual return action, not aiming affordances"
 	)
 	_assert(
-		not aim_input.adjust_yaw(5.0) \
+		not aim_input.adjust_elevation_button(1.0) \
 				and Vector3(cannon.yaw_degrees, cannon.elevation_degrees, cannon.power_percent) \
 						.is_equal_approx(retained_aim),
 		"hidden Follow input must not alter the stored aim tuple"

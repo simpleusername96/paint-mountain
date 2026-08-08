@@ -128,30 +128,6 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "settings.trajectory"
 
-[node name="AimSensitivityRow" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
-layout_mode = 2
-
-[node name="AimSensitivityLabel" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio/AimSensitivityRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "settings.aim_sensitivity"
-
-[node name="AimSensitivityValue" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio/AimSensitivityRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(56, 0)
-layout_mode = 2
-horizontal_alignment = 2
-text = "100%"
-
-[node name="AimSensitivity" type="HSlider" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-min_value = 50.0
-max_value = 150.0
-step = 1.0
-value = 100.0
-
 [node name="Display" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
 custom_minimum_size = Vector2(508, 0)
 layout_mode = 2

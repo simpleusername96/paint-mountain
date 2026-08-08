@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -21,6 +21,8 @@
 [ext_resource type="Script" path="res://src/wind/wind_controller.gd" id="19_wind"]
 [ext_resource type="Script" path="res://src/wind/cannon_wind_flag.gd" id="20_wind_flag"]
 [ext_resource type="Script" path="res://src/cannon/trajectory_prediction_scheduler.gd" id="21_prediction_scheduler"]
+[ext_resource type="Script" path="res://src/cannon/terrain_target_preview.gd" id="22_target_preview"]
+[ext_resource type="Script" path="res://src/cannon/terrain_aim_controller.gd" id="23_target_controller"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.78, 0.84, 0.91, 1)
@@ -107,9 +109,17 @@ unique_name_in_owner = true
 visible = false
 script = ExtResource("4_preview")
 
+[node name="TerrainTargetPreview" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("22_target_preview")
+
 [node name="TrajectoryPredictionScheduler" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("21_prediction_scheduler")
+
+[node name="TerrainAimController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("23_target_controller")
 
 [node name="AimInputController" type="Node3D" parent="."]
 unique_name_in_owner = true

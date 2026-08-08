@@ -15,6 +15,8 @@ const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surfa
 @onready var _open_play_environment: OpenPlayEnvironment = %OpenPlayEnvironment
 @onready var _cannon: CannonController = %Cannon
 @onready var _trajectory_preview: TrajectoryPreview = %TrajectoryPreview
+@onready var _target_preview: TerrainTargetPreview = %TerrainTargetPreview
+@onready var _terrain_aim: TerrainAimController = %TerrainAimController
 @onready var _prediction_scheduler: TrajectoryPredictionScheduler = %TrajectoryPredictionScheduler
 @onready var _aim_input: AimInputController = %AimInputController
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
@@ -82,6 +84,17 @@ func _ready() -> void:
 		_generated_layout.terrain_seed
 	):
 		push_error("GameplayScene could not configure trajectory prediction scheduling.")
+		return
+	if not _terrain_aim.configure(
+		_camera,
+		_terrain_surface,
+		_cannon,
+		_stage_controller,
+		_prediction_scheduler,
+		_wind_controller,
+		_target_preview
+	):
+		push_error("GameplayScene could not configure terrain-targeted aiming.")
 		return
 	_update_prediction_consumers()
 	_replay_recorder.start_attempt(
@@ -270,6 +283,7 @@ func _connect_systems() -> void:
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
 	_hud.finish_requested.connect(func() -> void: _stage_controller.finish_stage(StageController.ActionOrigin.HUMAN))
 	_hud.power_step_requested.connect(_aim_input.adjust_power_button)
+	_hud.angle_step_requested.connect(_aim_input.adjust_elevation_button)
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false, StageController.ActionOrigin.HUMAN))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN))
 	_hud.settings_requested.connect(func() -> void: _request_navigation(&"settings"))
@@ -288,6 +302,9 @@ func _connect_systems() -> void:
 	_aim_input.aim_interaction_changed.connect(
 		_prediction_scheduler.set_aim_interaction_active
 	)
+	_aim_input.target_pointer_requested.connect(_terrain_aim.queue_pointer_target)
+	_aim_input.elevation_step_requested.connect(_terrain_aim.request_elevation_delta)
+	_aim_input.power_step_requested.connect(_terrain_aim.request_power_delta)
 
 
 func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
@@ -332,6 +349,7 @@ func _on_restart_action_accepted(origin: int) -> void:
 	_wind_controller.reset()
 	_wind_transition_was_active = false
 	_mechanism_resolver.clear_all()
+	_terrain_aim.reset_for_restart()
 	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
 		_replay_recorder.record_restart()
 
@@ -351,6 +369,7 @@ func _on_wind_snapshot_changed(snapshot: WindSnapshot) -> void:
 	var transition_boundary := snapshot.is_transitioning() \
 			!= _wind_transition_was_active
 	_prediction_scheduler.request_latest(transition_boundary)
+	_terrain_aim.request_wind_refresh()
 	var current_projection := _wind_hud_projection(snapshot.acceleration)
 	var next_projection := _wind_hud_projection(snapshot.next_acceleration)
 	_hud.update_wind(

@@ -23,7 +23,6 @@ func default_data() -> Dictionary:
 			"quality": "medium",
 			"language": "ko",
 			"language_user_selected": false,
-			"aim_sensitivity_percent": 100,
 		},
 	}
 
@@ -99,9 +98,6 @@ func _merge_with_defaults(data: Dictionary) -> Dictionary:
 	for key in incoming_settings:
 		if settings.has(key):
 			settings[key] = incoming_settings[key]
-	settings["aim_sensitivity_percent"] = clampi(
-		int(settings.get("aim_sensitivity_percent", 100)), 50, 150
-	)
 	merged["settings"] = settings
 	return merged
 
@@ -115,9 +111,6 @@ func _migrate_to_v5(data: Dictionary) -> Dictionary:
 	if source_version in [1, 2]:
 		migrated_settings["language"] = "ko"
 		migrated_settings["language_user_selected"] = false
-	migrated_settings["aim_sensitivity_percent"] = clampi(
-		int(migrated_settings.get("aim_sensitivity_percent", 100)), 50, 150
-	)
 	migrated["settings"] = migrated_settings
 	var selected := String(migrated.get("selected_stage_id", "stage_01"))
 	match selected:

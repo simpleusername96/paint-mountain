@@ -383,7 +383,7 @@ Source owners: new `src/cannon/terrain_aim_controller.gd`, new
 `scenes/ui/hud/aim_controls.tscn`, `src/ui/hud_controller.gd`,
 `resources/ui/paint_mountain_theme.tres`, `translations/ui.csv`
 
-- [ ] **3.1 Make Aim View click and drag own terrain retargeting.**
+- [x] **3.1 Make Aim View click and drag own terrain retargeting.**
   - Change: wire `TerrainAimController`; replace pointer-angle drag with the
     queued latest top pick; preserve click-on-press, drag retention over invalid
     gaps, release settlement, mode/Shot Follow persistence, and default-impact
@@ -394,7 +394,10 @@ Source owners: new `src/cannon/terrain_aim_controller.gd`, new
     inspection state.
   - Guard: Fire, pause, HUD buttons, and mode-toggle clicks never leak through to
     terrain selection.
-- [ ] **3.2 Add target-preserving angle and power controls.**
+  - Evidence (2026-08-08): `aim_interaction_test.gd` passed default-target
+    initialization, three terrain clicks, newest-only 40-sample drag collapse,
+    invalid-mode isolation, A/D removal, and unchanged Map orbit/zoom routing.
+- [x] **3.2 Add target-preserving angle and power controls.**
   - Change: add focusable 40 px minimum angle minus/plus controls to the existing
     lower-left group; route them and W/S to pinned-elevation requests; route
     existing power controls/wheel to pinned-power requests. Show elevation and
@@ -408,7 +411,12 @@ Source owners: new `src/cannon/terrain_aim_controller.gd`, new
     Settings layout pass at 1280x720 and 1920x1080.
   - Guard: Fire remains the sole primary action; no duplicate target, branch,
     auto-aim, or explanatory panel is added.
-- [ ] **3.3 Separate selected target from exact and stale prediction.**
+  - Evidence (2026-08-08): the interaction fixture proved 0.5-degree W/S and
+    1-percent wheel requests retained the target through exact prediction;
+    `phase7_ui_test.gd`, `shortcut_prompt_test.gd`, and
+    `localization_ui_test.gd` passed the 720p layout, focus, copy, legacy-save,
+    and Korean/English contracts with Aim Sensitivity removed.
+- [x] **3.3 Separate selected target from exact and stale prediction.**
   - Change: render selected/pending/confirmed/rejected target states with the
     existing blue semantic role plus shape; put impact presentation on
     `contact_point`; hide stale impact/exit markers while keeping permitted
@@ -420,6 +428,12 @@ Source owners: new `src/cannon/terrain_aim_controller.gd`, new
     legible without color.
   - Guard: markers do not cover HUD controls, disable terrain depth, or create
     a second aim/target authority.
+  - Evidence (2026-08-08): `terrain_target_preview_test.gd` passed the ring,
+    pending ticks, confirmed center, rejected X, surface pose, depth, scale, and
+    interpolation contract. `trajectory_preview_efficiency_test.gd` proved
+    pending work keeps only subdued dots and hides stale impact/exit markers.
+    The Phase 3 batch passed all six named scripts after its one stale-copy
+    expectation was updated to the approved interaction wording.
 
 Batch gate:
 
@@ -605,11 +619,11 @@ safety, tolerance, compatibility, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 3.
-- Next task: 3.1, wire Aim View click/drag terrain retargeting.
-- Last checkpoint evidence: Tasks 2.1-2.3 passed their focused checks; the Phase
-  2 batch passed all six named scripts on 2026-08-08.
-- Last completed gate: Phase 2 batch gate.
+- Current phase: Phase 4.
+- Next task: 4.1, prove replay, agent, debug, save, and catalog compatibility.
+- Last checkpoint evidence: Tasks 3.1-3.3 passed their focused checks; the Phase
+  3 batch passed all six named scripts on 2026-08-08.
+- Last completed gate: Phase 3 batch gate.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit. Do not mirror implementation
   progress in another plan.

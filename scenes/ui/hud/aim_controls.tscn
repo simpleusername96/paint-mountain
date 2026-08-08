@@ -5,8 +5,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/plus.png" id="3"]
 
 [node name="AimControls" type="PanelContainer"]
-custom_minimum_size = Vector2(280, 100)
-offset_right = 280.0
+custom_minimum_size = Vector2(336, 100)
+offset_right = 336.0
 offset_bottom = 100.0
 theme_type_variation = &"HudRailPanel"
 script = ExtResource("1")
@@ -19,7 +19,7 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 16.0
 offset_top = 8.0
-offset_right = 264.0
+offset_right = 320.0
 offset_bottom = 28.0
 theme_type_variation = &"HudCaption"
 text = "방향  중앙 +0.0°"
@@ -28,33 +28,61 @@ text = "방향  중앙 +0.0°"
 layout_mode = 0
 offset_left = 16.0
 offset_top = 34.0
-offset_right = 92.0
+offset_right = 128.0
 offset_bottom = 54.0
 theme_type_variation = &"HudCaption"
 text = "각도"
 
-[node name="ElevationValue" type="Label" parent="Content"]
+[node name="AngleDecrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 16.0
 offset_top = 54.0
-offset_right = 118.0
+offset_right = 56.0
+offset_bottom = 94.0
+icon = ExtResource("2")
+expand_icon = true
+focus_mode = 2
+tooltip_text = "hud.angle_decrease"
+theme_type_variation = &"HudIconButton"
+
+[node name="ElevationValue" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 58.0
+offset_top = 54.0
+offset_right = 112.0
 offset_bottom = 92.0
 theme_type_variation = &"HudMetric"
 text = "38.0°"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AngleIncrease" type="Button" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 114.0
+offset_top = 54.0
+offset_right = 154.0
+offset_bottom = 94.0
+icon = ExtResource("3")
+expand_icon = true
+focus_mode = 2
+tooltip_text = "hud.angle_increase"
+theme_type_variation = &"HudIconButton"
 
 [node name="Divider" type="VSeparator" parent="Content"]
 layout_mode = 0
-offset_left = 126.0
+offset_left = 160.0
 offset_top = 36.0
-offset_right = 128.0
+offset_right = 162.0
 offset_bottom = 92.0
 
 [node name="PowerCaption" type="Label" parent="Content"]
 layout_mode = 0
-offset_left = 132.0
+offset_left = 166.0
 offset_top = 34.0
-offset_right = 184.0
+offset_right = 218.0
 offset_bottom = 54.0
 theme_type_variation = &"HudCaption"
 text = "파워"
@@ -62,9 +90,9 @@ text = "파워"
 [node name="PowerDecrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 132.0
+offset_left = 166.0
 offset_top = 54.0
-offset_right = 172.0
+offset_right = 206.0
 offset_bottom = 94.0
 icon = ExtResource("2")
 expand_icon = true
@@ -75,21 +103,21 @@ theme_type_variation = &"HudIconButton"
 [node name="PowerValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 174.0
+offset_left = 208.0
 offset_top = 52.0
-offset_right = 230.0
+offset_right = 288.0
 offset_bottom = 94.0
 theme_type_variation = &"HudMetric"
-text = "68%"
+text = "68.0%"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PowerIncrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 232.0
+offset_left = 290.0
 offset_top = 54.0
-offset_right = 272.0
+offset_right = 330.0
 offset_bottom = 94.0
 icon = ExtResource("3")
 expand_icon = true

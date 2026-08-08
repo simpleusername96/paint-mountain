@@ -1,6 +1,7 @@
 extends SceneTree
 
 const BAKED_GAMEPLAY_FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
+const TARGET_TOLERANCE := 1.2
 
 var _failed := false
 
@@ -23,116 +24,97 @@ func _run_checks() -> void:
 	root.add_child(gameplay)
 	await physics_frame
 	await process_frame
-	await _check_aim_and_inspection_input(gameplay)
+	await _check_targeted_aim_and_inspection_input(gameplay)
 	gameplay.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true
 
 	if not _failed:
-		print("Aim interaction passed: representative Aim Lock and Map Inspection input routing.")
+		print("Aim interaction passed: terrain click/drag, target-preserving controls, and unchanged Map Inspection routing.")
 	quit(1 if _failed else 0)
 
 
-func _check_aim_and_inspection_input(gameplay: Node) -> void:
+func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	var cannon: CannonController = gameplay.get_node("Cannon")
 	var camera: Camera3D = gameplay.get_node("Camera")
+	var terrain: TerrainSurface = gameplay.get_node("TerrainSurface")
 	var stage_controller: StageController = gameplay.get_node("StageController")
 	var camera_director: CameraDirector = gameplay.get_node("CameraDirector")
 	var aim_input: AimInputController = gameplay.get_node("AimInputController")
+	var terrain_aim: TerrainAimController = gameplay.get_node("TerrainAimController")
 	_assert_true(stage_controller.begin_aiming(), "input fixture must enter the aiming phase")
 	camera_director.set_mode(CameraDirector.Mode.AIMING, true)
-	_assert_true(camera_director.aim_is_locked(), "aiming must begin in Aim Lock")
+	_assert_true(camera_director.aim_is_locked(), "aiming must begin in Aim View")
+	await _wait_for_settled_target(terrain_aim)
+	_assert_true(terrain_aim.selected_target() != null, "default exact terrain prediction must initialize a target")
+	if terrain_aim.selected_target() == null:
+		return
 
-	# The shared ballistic convention must agree with what the authored aiming
-	# camera presents: increasing yaw moves the shot toward screen right.
-	var center_screen := _screen_position_for_yaw(camera, cannon, 0.0)
-	var right_screen := _screen_position_for_yaw(camera, cannon, 16.0)
-	_assert_true(
-		right_screen.x > center_screen.x,
-		"positive yaw must move the trajectory toward screen right"
-	)
+	# W/S edits elevation only as an intent; the solver changes the other values
+	# and exact validation retains the selected surface point.
+	var target_before_controls := terrain_aim.selected_target()
+	var elevation_before := cannon.elevation_degrees
+	await _push_key(KEY_W, true)
+	await _push_key(KEY_W, false)
+	await _wait_for_settled_target(terrain_aim)
+	_assert_true(is_equal_approx(cannon.elevation_degrees, elevation_before + 0.5),
+		"W must request one 0.5-degree target-preserving elevation step")
+	_assert_target_prediction(cannon, target_before_controls,
+		"elevation adjustment must retain the selected terrain target")
 
-	cannon.set_aim(0.0, 38.0, 50.0)
-	var interaction_states: Array[bool] = []
-	aim_input.aim_interaction_changed.connect(
-		func(active: bool) -> void: interaction_states.append(active)
-	)
-	var before_click := _aim(cannon)
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
-	_assert_aim_unchanged(cannon, before_click, "a click without dragging must preserve aim")
-	_assert_true(
-		interaction_states == [true, false],
-		"pointer press/release must expose one interaction interval to prediction scheduling"
-	)
+	var power_before := cannon.power_percent
+	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
+	await _wait_for_settled_target(terrain_aim)
+	_assert_true(is_equal_approx(cannon.power_percent, power_before + 1.0),
+		"wheel up must request one target-preserving power step")
+	_assert_target_prediction(cannon, target_before_controls,
+		"power adjustment must retain the selected terrain target")
 
-	# Four motions that are each too small for the canonical 0.1-degree step must
-	# retain their shared remainder and equal one combined physical motion.
-	cannon.set_aim(0.0, 38.0, 50.0)
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	for _index in range(4):
-		await _push_aim_motion(Vector2(0.1, 0.0))
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
-	var accumulated_yaw := cannon.yaw_degrees
-	cannon.set_aim(0.0, 38.0, 50.0)
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	await _push_aim_motion(Vector2(0.4, 0.0))
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
-	_assert_true(
-		is_equal_approx(cannon.yaw_degrees, accumulated_yaw) \
-				and accumulated_yaw > 0.0,
-		"sub-step pointer motion must equal one combined motion instead of being discarded"
-	)
-
-	# screen_relative is already physical motion. Changing the viewport must not
-	# add a second scaling factor.
-	root.size = Vector2i(1280, 720)
-	cannon.set_aim(0.0, 38.0, 50.0)
-	await _perform_aim_drag(Vector2(10.0, 0.0))
-	var yaw_1280 := cannon.yaw_degrees
-	root.size = Vector2i(1920, 1080)
-	cannon.set_aim(0.0, 38.0, 50.0)
-	await _perform_aim_drag(Vector2(10.0, 0.0))
-	var yaw_1920 := cannon.yaw_degrees
-	_assert_true(
-		is_equal_approx(yaw_1280, yaw_1920),
-		"equal physical screen motion must produce equal aim at both resolutions"
-	)
-	root.size = Vector2i(1280, 720)
-	var game_state := root.get_node("/root/GameState") as GameState
-	game_state.update_setting(&"aim_sensitivity_percent", 50, false)
-	cannon.set_aim(0.0, 38.0, 50.0)
-	await _perform_aim_drag(Vector2(10.0, 0.0))
-	_assert_true(
-		is_equal_approx(cannon.yaw_degrees, 0.8) \
-				and aim_input.sensitivity_percent() == 50,
-		"50% sensitivity must scale pointer aim only"
-	)
-	game_state.update_setting(&"aim_sensitivity_percent", 100, false)
-
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	var aim_drag := InputEventMouseMotion.new()
-	aim_drag.position = Vector2(680, 300)
-	aim_drag.relative = Vector2(40, -20)
-	aim_drag.screen_relative = Vector2(40, -20)
-	aim_drag.button_mask = MOUSE_BUTTON_MASK_LEFT
-	Input.parse_input_event(aim_drag)
-	await process_frame
-	await _push_mouse_button(Vector2(680, 300), MOUSE_BUTTON_LEFT, false)
-	_assert_true(
-		cannon.yaw_degrees > before_click.x and cannon.elevation_degrees > before_click.y,
-		"right/up drag in Aim Lock must increase yaw/elevation"
-	)
-
-	var yaw_before_key := cannon.yaw_degrees
+	var aim_before_d := _aim(cannon)
 	await _push_key(KEY_D, true)
 	await _push_key(KEY_D, false)
-	_assert_true(cannon.yaw_degrees > yaw_before_key, "D must move aim toward screen right")
-	var power_before_wheel := cannon.power_percent
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
-	_assert_true(cannon.power_percent > power_before_wheel, "wheel up in Aim Lock must increase power")
+	_assert_aim_unchanged(cannon, aim_before_d, "A/D must no longer alter human target-locked aim")
 
+	# Representative nearby top points are reachable on the same branch. A click
+	# selects each exact ray-hit point and publishes one matching current contact.
+	var anchor := terrain_aim.selected_target().world_point
+	for offset in [Vector2(-2.0, -1.0), Vector2(0.0, -2.0), Vector2(2.0, -1.0)]:
+		var desired := terrain.world_surface_point(Vector2(anchor.x, anchor.z) + offset)
+		_assert_true(not camera.is_position_behind(desired), "representative target must remain visible")
+		await _click_world_point(camera, desired)
+		await _wait_for_settled_target(terrain_aim)
+		var selected := terrain_aim.selected_target()
+		_assert_true(selected != null and selected.world_point.distance_to(desired) <= 0.2,
+			"clicking playable terrain must move the selected target to the ray hit")
+		if selected != null:
+			_assert_target_prediction(cannon, selected,
+				"clicked terrain target must publish a matching exact contact")
+
+	# Many pointer samples before one physics callback collapse into one pick and
+	# one solve request; the last sample wins without a drag backlog.
+	var solve_count_before := terrain_aim.solve_request_count()
+	var drag_start := terrain_aim.selected_target().world_point
+	var drag_end := terrain.world_surface_point(Vector2(anchor.x, anchor.z - 2.0))
+	var drag_start_screen := camera.unproject_position(drag_start)
+	var drag_end_screen := camera.unproject_position(drag_end)
+	for sample_index in range(40):
+		var progress := float(sample_index + 1) / 40.0
+		terrain_aim.queue_pointer_target(drag_start_screen.lerp(drag_end_screen, progress), false)
+	await physics_frame
+	await process_frame
+	_assert_true(terrain_aim.solve_request_count() == solve_count_before + 1,
+		"long drag input must consume only the newest pointer sample per physics tick (%d -> %d)" % [
+			solve_count_before, terrain_aim.solve_request_count()
+		])
+	await _wait_for_settled_target(terrain_aim)
+	var dragged := terrain_aim.selected_target()
+	_assert_true(dragged != null and dragged.world_point.distance_to(drag_end) <= 0.2,
+		"the newest drag point must become the selected surface target")
+
+	# Map Inspection retains its camera-only meanings and never mutates aim or
+	# selected-target state.
 	var aim_before_inspection := _aim(cannon)
+	var target_before_inspection := terrain_aim.selected_target()
 	await _push_key(KEY_TAB, true)
 	await _push_key(KEY_TAB, false)
 	_assert_true(
@@ -140,49 +122,54 @@ func _check_aim_and_inspection_input(gameplay: Node) -> void:
 				and camera_director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
 		"Tab must enter Map Inspection without leaving the aiming phase"
 	)
-
 	var distance_before_zoom := camera_director.inspection_distance()
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_WHEEL_UP, true)
-	_assert_true(
-		camera_director.inspection_distance() < distance_before_zoom,
-		"wheel up in Map Inspection must zoom toward the map"
-	)
+	_assert_true(camera_director.inspection_distance() < distance_before_zoom,
+		"wheel up in Map Inspection must zoom toward the map")
 	var camera_before_orbit := camera.global_position
 	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	var orbit_drag := InputEventMouseMotion.new()
-	orbit_drag.position = Vector2(700, 330)
-	orbit_drag.relative = Vector2(60, 10)
-	orbit_drag.screen_relative = Vector2(60, 10)
-	orbit_drag.button_mask = MOUSE_BUTTON_MASK_LEFT
-	Input.parse_input_event(orbit_drag)
+	await _push_mouse_motion(Vector2(700, 330), Vector2(60, 10), true)
 	await physics_frame
 	await process_frame
 	await _push_mouse_button(Vector2(700, 330), MOUSE_BUTTON_LEFT, false)
-	_assert_true(
-		camera.global_position.distance_to(camera_before_orbit) > 0.01,
-		"left drag in Map Inspection must orbit the camera"
-	)
-	await _push_key(KEY_D, true)
-	await _push_key(KEY_D, false)
+	_assert_true(camera.global_position.distance_to(camera_before_orbit) > 0.01,
+		"left drag in Map Inspection must orbit the camera")
 	_assert_true(not aim_input.request_fire(), "Map Inspection must block Fire")
 	_assert_aim_unchanged(cannon, aim_before_inspection, "Map Inspection must not change stored aim")
+	_assert_true(terrain_aim.selected_target() == target_before_inspection,
+		"Map Inspection must not change the selected terrain target")
 
 	await _push_key(KEY_TAB, true)
 	await _push_key(KEY_TAB, false)
-	_assert_true(camera_director.aim_is_locked(), "Tab must return to Aim Lock")
-	_assert_aim_unchanged(cannon, aim_before_inspection, "returning to Aim Lock must preserve aim")
+	_assert_true(camera_director.aim_is_locked(), "Tab must return to Aim View")
+	_assert_aim_unchanged(cannon, aim_before_inspection, "returning to Aim View must preserve aim")
 
 
-func _screen_position_for_yaw(
-		camera: Camera3D,
+func _wait_for_settled_target(controller: TerrainAimController, maximum_ticks: int = 240) -> void:
+	for _tick in range(maximum_ticks):
+		await physics_frame
+		await process_frame
+		if controller.active_request_revision() < 0 \
+				and controller.selected_target_state() == TerrainTargetPreview.STATE_CONFIRMED:
+			return
+	_assert_true(false, "terrain target solve must settle as confirmed within the bounded fixture window")
+
+
+func _assert_target_prediction(
 		cannon: CannonController,
-		yaw_degrees: float
-) -> Vector2:
-	var elevation := 38.0
-	var direction := CannonBallistics.launch_direction(yaw_degrees, elevation)
-	var endpoint := cannon.get_launch_origin_for(yaw_degrees, elevation) + direction * 80.0
-	_assert_true(not camera.is_position_behind(endpoint), "screen-direction sample must stay in front of camera")
-	return camera.unproject_position(endpoint)
+		target: TerrainAimTarget,
+		message: String
+) -> void:
+	_assert_true(cannon.prediction_matches_expected_context() \
+			and TerrainAimSolver.validates_target(
+				cannon.current_prediction(), target, cannon.projectile_data.radius
+			), message)
+
+
+func _click_world_point(camera: Camera3D, world_point: Vector3) -> void:
+	var screen := camera.unproject_position(world_point)
+	await _push_mouse_button(screen, MOUSE_BUTTON_LEFT, true)
+	await _push_mouse_button(screen, MOUSE_BUTTON_LEFT, false)
 
 
 func _aim(cannon: CannonController) -> Vector3:
@@ -208,19 +195,14 @@ func _push_mouse_button(position: Vector2, button_index: MouseButton, pressed: b
 	await process_frame
 
 
-func _push_aim_motion(screen_delta: Vector2) -> void:
+func _push_mouse_motion(position: Vector2, screen_delta: Vector2, dragging: bool) -> void:
 	var motion := InputEventMouseMotion.new()
+	motion.position = position
 	motion.relative = screen_delta
 	motion.screen_relative = screen_delta
-	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT if dragging else 0
 	Input.parse_input_event(motion)
 	await process_frame
-
-
-func _perform_aim_drag(screen_delta: Vector2) -> void:
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, true)
-	await _push_aim_motion(screen_delta)
-	await _push_mouse_button(Vector2(640, 320), MOUSE_BUTTON_LEFT, false)
 
 
 func _assert_aim_unchanged(cannon: CannonController, expected: Vector3, message: String) -> void:

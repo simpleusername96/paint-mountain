@@ -56,6 +56,7 @@ func current_prediction() -> TrajectoryPrediction:
 func set_prediction_status(status: StringName) -> void:
 	_pending = status == &"pending"
 	_apply_pending_presentation()
+	_update_process_enabled()
 
 
 func visible_sample_count() -> int:
@@ -81,8 +82,9 @@ func refresh() -> void:
 			if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
 	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
-	_update_process_enabled()
 	if _prediction == null:
+		_apply_pending_presentation()
+		_update_process_enabled()
 		return
 	if has_first_collision:
 		_impact_marker.global_position = _prediction.collision_contact_point()
@@ -94,6 +96,8 @@ func refresh() -> void:
 		if active_camera != null:
 			_exit_marker.look_at(active_camera.global_position, Vector3.UP, true)
 		_set_marker_scale(_exit_marker, _prediction.endpoint)
+	_apply_pending_presentation()
+	_update_process_enabled()
 
 
 func _display_points(source: PackedVector3Array) -> PackedVector3Array:
@@ -179,10 +183,11 @@ func _apply_pending_presentation() -> void:
 		return
 	var fade := 0.48 if _pending else 0.0
 	_dot_instances.transparency = fade
-	_impact_marker.transparency = fade
-	for child in _exit_marker.get_children():
-		if child is GeometryInstance3D:
-			(child as GeometryInstance3D).transparency = fade
+	# A prior arc can remain as subdued context, but an endpoint is a promise.
+	# Hide stale collision and bounds markers until the current context publishes.
+	_impact_marker.visible = not _pending and has_first_collision
+	_exit_marker.visible = not _pending and _prediction != null \
+			and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
 
 
 func _set_marker_scale(marker: Node3D, endpoint: Vector3) -> void:
