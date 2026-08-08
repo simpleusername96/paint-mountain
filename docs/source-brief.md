@@ -2038,6 +2038,30 @@ Gameplay logic and aiming-algorithm changes remain outside this UI revision and
 must be documented in a separate execution contract before implementation.
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-08): Remove Player Replay
+
+After reviewing the implemented result-screen replay, the user decided that the
+feature is not needed. These clauses override only the earlier replay support,
+result action, replay/determinism, debug replay, replay-analysis, and replay-test
+requirements:
+
+- **No player replay:** remove replay from the result flow. Clear and failure
+  results retain Retry, Next Stage when available, and Stage Select.
+- **Remove the playback stack:** delete replay recording/serialization,
+  deterministic resimulation, playback scheduling, playback input locking,
+  replay speed/pause/restart/exit controls, replay localization, replay capture
+  cases, and replay-specific tests.
+- **Retain independent diagnostics:** shot and attempt observations, the
+  UI-independent agent API, deterministic physics behavior, fixed baked-layout
+  identity, debug metrics, and debug JSON shot-log export remain supported.
+  They must not retain a hidden player-playback path or a replay format.
+- **Historical text remains historical:** older plans, evidence, and checked
+  results may describe the removed feature, but current specs, implementation
+  records, test runners, and release evidence must not claim that it remains
+  available.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

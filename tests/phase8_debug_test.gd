@@ -98,10 +98,10 @@ func _run_checks() -> void:
 					and int(parsed.terrain_seed) == StageProgressionData.CANONICAL_TERRAIN_SEED,
 			"shot log must contain the canonical stage and fixed terrain seed"
 		)
-		_assert_true(_has_aim_and_fire(parsed.actions), "shot log must contain ordered aim/fire actions")
-		_assert_true(parsed.expected_observations.size() == 1, "shot log must contain the sealed shot outcome")
-		if parsed.expected_observations.size() == 1:
-			var sealed: Dictionary = parsed.expected_observations[0]
+		_assert_true(_has_aim_and_fire(parsed.events), "shot log must contain ordered aim/fire events")
+		_assert_true(parsed.shot_observations.size() == 1, "shot log must contain the sealed shot outcome")
+		if parsed.shot_observations.size() == 1:
+			var sealed: Dictionary = parsed.shot_observations[0]
 			var source_observation := controller.last_sealed_shot_observation()
 			_assert_true(int(sealed.schema_version) == 6, "debug export must contain schema-6 observations")
 			_assert_true(
@@ -139,12 +139,12 @@ func _count_texture_rects(node: Node) -> int:
 	return result
 
 
-func _has_aim_and_fire(actions: Array) -> bool:
+func _has_aim_and_fire(events: Array) -> bool:
 	var has_aim := false
 	var has_fire := false
-	for action in actions:
-		has_aim = has_aim or String(action.get("kind", "")) == "aim"
-		has_fire = has_fire or String(action.get("kind", "")) == "fire"
+	for event in events:
+		has_aim = has_aim or String(event.get("kind", "")) == "aim"
+		has_fire = has_fire or String(event.get("kind", "")) == "fire"
 	return has_aim and has_fire
 
 

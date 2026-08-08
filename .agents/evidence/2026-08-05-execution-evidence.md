@@ -33,7 +33,6 @@ All paths are relative to `.agents/evidence/current/`.
 | `pause_execution_final.png` | In-game pause overlay with the active world behind it |
 | `stage_clear_execution_final.png` | Natural Stage 01 clear after the committed four-shot solution drains |
 | `stage_failed_execution_final.png` | Natural failure after four legal contained non-target shots |
-| `ancillary_replay_execution_final.png` | Replay controls rendered from the replay owner |
 | `aiming_exported_final.png` | Same aiming contract from the exported Windows build |
 | `responsiveness_final.json` | Passing rendered/off-screen responsiveness telemetry |
 
@@ -54,7 +53,7 @@ Godot 4.7.1 executable):
   `projectile_contact_test`, `containment_wall_test`, `mountain_range_mvp_test`,
   `aim_interaction_test`, `shot_observation_test`;
 - family/progression: `rapid_fire_contract_test`, `stage30_progression_test`,
-  `phase6_content_test`, `replay_presentation_test`;
+  `phase6_content_test`;
 - interface/camera/localization: `phase7_ui_test`, `phase8_hud_truth_test`,
   `phase8_aiming_composition_test`, `camera_safety_test`,
   `localization_ui_test`, `shot_feedback_test`;

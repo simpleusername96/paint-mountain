@@ -174,8 +174,6 @@ func restart() -> void:
 
 
 func change_interaction_mode(mode: CameraDirector.InteractionMode) -> bool:
-	if _stage_controller.action_origin_is_locked():
-		return false
 	if mode not in [
 		CameraDirector.InteractionMode.AIM_LOCKED,
 		CameraDirector.InteractionMode.MAP_INSPECTION,
@@ -190,8 +188,6 @@ func change_interaction_mode(mode: CameraDirector.InteractionMode) -> bool:
 
 
 func start_next_stage() -> bool:
-	if _stage_controller.action_origin_is_locked():
-		return false
 	var next_id := StageCatalog.next_stage_id(_stage_data.stage_id)
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state == null or next_id.is_empty() or not game_state.select_stage(next_id):

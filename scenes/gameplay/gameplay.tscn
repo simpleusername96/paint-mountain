@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -9,14 +9,13 @@
 [ext_resource type="Script" path="res://src/stage/stage_controller.gd" id="7_stage_controller"]
 [ext_resource type="Script" path="res://src/camera/camera_director.gd" id="8_camera"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/hud.tscn" id="9_hud"]
-[ext_resource type="Script" path="res://src/replay/replay_recorder.gd" id="10_replay"]
+[ext_resource type="Script" path="res://src/stage/attempt_recorder.gd" id="10_attempt"]
 [ext_resource type="Script" path="res://src/agent/gameplay_agent_api.gd" id="11_agent"]
 [ext_resource type="Script" path="res://src/effects/presentation_effects.gd" id="12_effects"]
 [ext_resource type="Script" path="res://src/terrain/environment_dressing.gd" id="13_dressing"]
 [ext_resource type="Script" path="res://src/debug/debug_overlay.gd" id="14_debug"]
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
-[ext_resource type="Script" path="res://src/replay/replay_presentation_controller.gd" id="17_replay_presentation"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/open_play_environment.tscn" id="18_open_environment"]
 [ext_resource type="Script" path="res://src/wind/wind_controller.gd" id="19_wind"]
 [ext_resource type="Script" path="res://src/wind/cannon_wind_flag.gd" id="20_wind_flag"]
@@ -156,13 +155,9 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 script = ExtResource("13_dressing")
 
-[node name="ReplayRecorder" type="Node" parent="."]
+[node name="AttemptRecorder" type="Node" parent="."]
 unique_name_in_owner = true
-script = ExtResource("10_replay")
-
-[node name="ReplayPresentationController" type="Node" parent="."]
-unique_name_in_owner = true
-script = ExtResource("17_replay_presentation")
+script = ExtResource("10_attempt")
 
 [node name="GameplayAgentApi" type="Node" parent="."]
 unique_name_in_owner = true

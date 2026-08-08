@@ -9,16 +9,11 @@ signal settings_requested
 signal stage_select_requested
 signal main_menu_requested
 signal next_stage_requested
-signal replay_requested
 signal finish_requested
 signal interaction_mode_requested(mode: int)
 signal return_to_cannon_requested
-signal replay_speed_requested(speed: float)
 signal power_step_requested(direction: float)
 signal angle_step_requested(direction: float)
-signal replay_pause_requested(paused: bool)
-signal replay_restart_requested
-signal replay_exit_requested
 
 @onready var _top: TopStatusBar = %TopStatusBar
 @onready var _aim: AimControls = %AimControls
@@ -29,7 +24,6 @@ signal replay_exit_requested
 @onready var _return_to_cannon: Button = %ReturnToCannon
 @onready var _shot_summary: ShotSummary = %ShotSummary
 @onready var _result: ResultPanel = %ResultPanel
-@onready var _replay: ReplayBar = %ReplayBar
 @onready var _mechanism: MechanismInfoCard = %MechanismInfoCard
 @onready var _briefing: PanelContainer = %BriefingPanel
 @onready var _pause: PauseOverlay = %PauseOverlay
@@ -37,7 +31,6 @@ signal replay_exit_requested
 var _stage_data: StageData
 var _current_state := StageController.State.LOADING
 var _shots_remaining := 0
-var _replay_active := false
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
@@ -95,8 +88,6 @@ func update_wind(
 
 
 func _ready() -> void:
-	_replay_active = false
-	_replay.hide()
 	_return_to_cannon.hide()
 	_connect_components()
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
@@ -144,36 +135,35 @@ func set_fire_readiness(snapshot: Dictionary) -> void:
 
 func show_state(state: StageController.State) -> void:
 	_current_state = state
-	_replay.visible = _replay_active
 	_top.update_mode(state)
 	# The interaction toggle is the only mode label during the Board Phase.
 	# Keeping the serial-state "Aiming" chip beside "Map Inspection" is
 	# truthful internally but contradictory to players.
 	_top.mode_value.get_parent().visible = state != StageController.State.AIMING
-	_briefing.visible = state == StageController.State.BRIEFING and not _replay_active
+	_briefing.visible = state == StageController.State.BRIEFING
 	var aiming_surface := state in [
 		StageController.State.AIMING,
 	]
 	if aiming_surface:
 		_mechanism.hide_card()
-	_interaction.visible = aiming_surface and not _replay_active
-	_interaction.set_mode_switch_available(aiming_surface and not _replay_active)
+	_interaction.visible = aiming_surface
+	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
-	_run_status.visible = aiming_surface and not _replay_active
+	_run_status.visible = aiming_surface
 	_apply_finish_availability()
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
-	_result.visible = state == StageController.State.RESULT and not _replay_active
-	_pause.visible = state == StageController.State.PAUSED and not _replay_active and not _pause_overlay_suspended
+	_result.visible = state == StageController.State.RESULT
+	_pause.visible = state == StageController.State.PAUSED and not _pause_overlay_suspended
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
-	elif state == StageController.State.AIMING and not _replay_active:
+	elif state == StageController.State.AIMING:
 		if _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
 			_actions.focus_fire()
 		else:
 			_interaction.grab_focus()
-	elif state == StageController.State.RESULT and not _replay_active:
+	elif state == StageController.State.RESULT:
 		_result.focus_retry()
-	elif state == StageController.State.PAUSED and not _replay_active:
+	elif state == StageController.State.PAUSED:
 		_pause.focus_resume.call_deferred()
 
 
@@ -189,9 +179,9 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 
 func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_current_camera_mode = mode
-	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW and not _replay_active
+	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW
 	var aiming_surface := _current_state == StageController.State.AIMING \
-			and not _replay_active and mode == CameraDirector.Mode.AIMING
+			and mode == CameraDirector.Mode.AIMING
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
@@ -242,16 +232,6 @@ func show_coverage_result_snapshot(result: Dictionary, star_count: int, previous
 	)
 
 
-func set_replay_active(active: bool) -> void:
-	_replay_active = active
-	_replay.visible = active
-	_return_to_cannon.visible = _current_camera_mode == CameraDirector.Mode.FOLLOW \
-			and not _replay_active
-	if active:
-		_replay.reset_controls()
-	show_state(_current_state)
-
-
 func set_pause_overlay_suspended(suspended: bool) -> void:
 	_pause_overlay_suspended = suspended
 	show_state(_current_state)
@@ -276,16 +256,11 @@ func _connect_components() -> void:
 	_result.retry_requested.connect(func() -> void: restart_requested.emit())
 	_result.next_requested.connect(func() -> void: next_stage_requested.emit())
 	_result.stages_requested.connect(func() -> void: stage_select_requested.emit())
-	_result.replay_requested.connect(func() -> void: replay_requested.emit())
 	_pause.resume_requested.connect(func() -> void: pause_requested.emit())
 	_pause.restart_requested.connect(func() -> void: restart_requested.emit())
 	_pause.settings_requested.connect(func() -> void: settings_requested.emit())
 	_pause.stages_requested.connect(func() -> void: stage_select_requested.emit())
 	_pause.main_menu_requested.connect(func() -> void: main_menu_requested.emit())
-	_replay.pause_toggled.connect(func(paused: bool) -> void: replay_pause_requested.emit(paused))
-	_replay.restart_requested.connect(func() -> void: replay_restart_requested.emit())
-	_replay.speed_requested.connect(func(speed: float) -> void: replay_speed_requested.emit(speed))
-	_replay.exit_requested.connect(func() -> void: replay_exit_requested.emit())
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:
@@ -316,7 +291,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 func _apply_interaction_presentation(update_focus: bool) -> void:
 	var aim_locked := _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED
 	var aiming_surface := _current_state == StageController.State.AIMING \
-			and not _replay_active \
 			and _current_camera_mode == CameraDirector.Mode.AIMING
 	_aim.visible = aiming_surface and aim_locked
 	_actions.visible = aiming_surface and aim_locked
@@ -337,5 +311,4 @@ func _apply_finish_availability() -> void:
 		_run_started
 		and not _clock_finished
 		and _current_state == StageController.State.AIMING
-		and not _replay_active
 	)

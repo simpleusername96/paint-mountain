@@ -4,7 +4,6 @@ extends PanelContainer
 signal retry_requested
 signal next_requested
 signal stages_requested
-signal replay_requested
 
 @onready var title: Label = %Title
 @onready var stars: Label = %Stars
@@ -25,7 +24,6 @@ func _ready() -> void:
 	%Retry.pressed.connect(func() -> void: retry_requested.emit())
 	%Next.pressed.connect(func() -> void: next_requested.emit())
 	%Stages.pressed.connect(func() -> void: stages_requested.emit())
-	%Replay.pressed.connect(func() -> void: replay_requested.emit())
 
 
 func configure_has_next(has_next: bool) -> void:

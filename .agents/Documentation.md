@@ -36,6 +36,23 @@ related:
 
 # Project Record
 
+## Current Player-Replay Retirement (2026-08-08)
+
+The user removed player replay after deciding that it did not add enough value
+to the planning loop.
+
+- Result panels now expose Retry, Next Stage when available, and Stage Select;
+  the Replay button and playback bar are absent.
+- `ReplayRecorder`, `ReplayPresentationController`, replay UI scenes/scripts,
+  translations, capture routing, replay formats, replay-specific tests, and the
+  `REPLAY` action origin/exclusive lock are deleted.
+- `AttemptRecorder` preserves only the independent current-run
+  `AttemptObservation` and debug JSON shot-log contract. It has no playback or
+  persistence API.
+- Current verification covers result/HUD state, localization, shot feedback,
+  debug export, stage state, project import/startup, and a production result
+  capture. Older replay plans and evidence remain historical only.
+
 ## Current Casual Shared UI Refresh (2026-08-08)
 
 The implementation and its release evidence are recorded in
@@ -85,7 +102,7 @@ six-second miss-lifetime clauses retained in historical sections below.
   immediate. The deterministic long-flight fixture predicted 8.384 seconds and
   reached live terrain/top contact at 8.417 seconds.
 - Runtime power supports 0.1% precision while existing whole-power catalog keys,
-  replay format 10, attempt schema 2, save format 5, and direct agent/debug tuple
+  attempt schema 2, save format 5, and direct agent/debug tuple
   APIs remain compatible. Selected-target coordinates and solver revisions are
   not serialized.
 - Focused phase gates, `scripts/verify.ps1`, the Windows release export, and

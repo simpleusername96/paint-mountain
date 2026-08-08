@@ -128,8 +128,7 @@ func request_wind_refresh() -> void:
 	if epoch == _last_wind_epoch:
 		return
 	_last_wind_epoch = epoch
-	if _selected_target == null or _cannon.human_aim_revision_pending() \
-			or _stage_controller.action_origin_is_locked():
+	if _selected_target == null or _cannon.human_aim_revision_pending():
 		return
 	_begin_solve(_selected_target, &"target", 0.0, false)
 
@@ -328,8 +327,7 @@ func _prediction_is_current_top(prediction: TrajectoryPrediction) -> bool:
 func _can_request_explicit_adjustment() -> bool:
 	return _configured and _selected_target != null \
 			and _stage_controller.current_state == StageController.State.AIMING \
-			and _cannon.input_enabled \
-			and not _stage_controller.action_origin_is_locked()
+			and _cannon.input_enabled
 
 
 func _current_aim() -> AimTuple:

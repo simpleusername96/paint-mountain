@@ -7,8 +7,8 @@ signal interaction_mode_changed(mode: int)
 enum Mode {
 	BRIEFING,
 	AIMING,
-	# Legacy presentation modes remain loadable for existing replay and delivery
-	# fixtures, but normal gameplay no longer exposes them.
+	# Legacy presentation modes remain loadable for delivery fixtures, but normal
+	# gameplay no longer exposes them.
 	FOLLOW,
 	WIDE,
 	CANNON,

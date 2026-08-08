@@ -4,7 +4,7 @@ status: active
 created: 2026-08-02
 last_reviewed: 2026-08-08
 canonical_for: Paint Mountain runtime system ownership and interfaces
-scope: Godot runtime architecture, data ownership, signals, persistence, replay, and verification
+scope: Godot runtime architecture, data ownership, signals, persistence, diagnostics, and verification
 source: source-brief.md
 related:
   - source-brief.md
@@ -25,7 +25,8 @@ related:
 
 ## Purpose
 
-Define stable responsibility boundaries for the Godot vertical slice so data, presentation, game rules, replay, and future AI control remain separable.
+Define stable responsibility boundaries for the Godot vertical slice so data,
+presentation, game rules, diagnostics, and future AI control remain separable.
 
 ## Scope
 
@@ -51,7 +52,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `TerrainGeometryFactory` | One exact indexed top-triangle list plus closed shell render/collision resources from the accepted layout | Independent triangulation, height interpolation, stage generation, orchestration, or paint state |
 | `TerrainSurface` | Generated terrain node ownership, stable collider/triangle identity, and read-only exact-triangle height/normal/Playable Terrain Surface point queries | Bilinear queries, generation policy, paint pixels, or stage decisions |
 | `OpenPlayEnvironment` | Collider-matched restrained apron/ground, open-world presentation, and stable non-target contact identity | Rear/side containment walls, scoring, hidden blocking planes, bank-shot behavior, or stage outcomes |
-| `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, replay, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
+| `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
 | `AimInputController` | Presentation-mode-aware target-selection and pinned-control intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
 | `TerrainAimController` | Latest valid top-target selection from Aim View click/drag and human target-preserving elevation/power intents | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
 | `TerrainAimSolver` | Bounded current-target inverse solve that keeps the explicitly edited elevation or power pinned and publishes a same-target canonical aim | Device input, Fire admission, target ownership, runtime terrain mutation, or post-impact prediction |
@@ -77,8 +78,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, fail-closed repository scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
-| `ReplayRecorder` | Format-10 terrain/open-bound, coverage-metric, and wind identities, fixed-tick aim/Fire/Finish action stream, expected observations/checksums, and scheduling | Input lock, save progression, or transform-sample playback |
-| `ReplayPresentationController` | Orthogonal replay input/UI lock, replay controls, and exit | Stage-state ownership or gameplay effects |
+| `AttemptRecorder` | Current-run action/shot observations and final outcome for agent/debug diagnostics | Playback, input locking, save progression, or a replay format |
 | `GameplayAgentApi` | UI-independent observations, actions, and event stream | Duplicate simulation rules |
 | `AppRoot` | Main-menu, stage-select, settings, and gameplay navigation/lifetime | Stage outcomes or paint state |
 | `DebugOverlay` | Debug-build-only metrics, derived mask previews, actions, and JSON log export | Alternate gameplay authority |
@@ -115,13 +115,13 @@ This architecture covers the single-process desktop game. It does not define a b
 - The current catalog uses one canonical terrain-family seed path and exactly
   one baked layout identity per stage. Offline building does not search a
   candidate range or silently substitute a fallback seed. A missing, corrupt,
-  or identity-mismatched resource fails closed; retry and replay never regenerate
+  or identity-mismatched resource fails closed; retry never regenerates
   terrain. A future randomized mode must select only among separately versioned,
   validated, persisted catalog variants and requires a new product contract.
 - `GeneratedStageLayout` carries one sampled height per in-bounds XZ plus the one
   fixed cell diagonal. `TerrainGeometryFactory` emits the indexed top triangles
   once. Render mesh, top `ConcavePolygonShape3D`, hit identity, height/normal
-  queries, target rasterization, paint reconstruction, replay checksums, and
+  queries, target rasterization, paint reconstruction, diagnostic checksums, and
   agent terrain observations consume that exact list. `HeightMapShape3D`,
   bilinear interpolation, independently triangulated collision, visual
   displacement, and query-only playable geometry are prohibited.
@@ -154,14 +154,10 @@ This architecture covers the single-process desktop game. It does not define a b
   and are never exposed as player or agent aim assistance.
 - `StageMvpPermit` is legacy development evidence only and is absent from the
   active version-10 runtime admission path.
-- Replay format 10 carries canonical stage/profile/layout/certificate and
-  coverage-metric versions,
-  the canonical terrain seed, height/target/summit/reachability/open-play-bound
-  checksums,
-  generated default aim, physics FPS, wind schedule identity, ordered aim/Fire/
-  Finish actions, expected attempt observations, terminal reason, and final
-  paint-mask checksum. It contains no transform samples and rejects incompatible
-  older formats deterministically.
+- `AttemptObservation` carries current-run aim/Fire/Finish and physical lifecycle
+  events, sealed shot observations, terminal reason, and final paint facts for
+  agent/debug diagnostics. It has no playback scheduler, input lock, transform
+  samples, or player-facing replay format.
 - Agent observations are immutable snapshots; actions enter through the same validated cannon/stage command layer used by human UI.
 - Runtime power canonicalization supports `0.1%` increments. Existing whole-power
   keys and integer offline generation retain their stable identities.
@@ -169,7 +165,7 @@ This architecture covers the single-process desktop game. It does not define a b
 ### State and event flow
 
 ```text
-Human / Replay / GameplayAgentApi actions
+Human / GameplayAgentApi actions
           │ origin-tagged aim/fire/finish/interaction commands
           ▼
    StageController ──────► CannonController ──────► ProjectileManager
@@ -207,7 +203,7 @@ Human / Replay / GameplayAgentApi actions
   solver publishes only a current same-target solution. `StageController` marks
   Fire pending only for that explicit human revision, then accepts its atomic
   commit or restore; generic prediction pending or miss remains advisory and
-  never changes Fire admission. Replay, agent, and debug direct tuple commands
+  never changes Fire admission. Agent and debug direct tuple commands
   bypass this human revision transaction.
 - The Aim View composer uses canonical Playable Terrain Surface points, summit
   headroom,
@@ -316,10 +312,10 @@ Human / Replay / GameplayAgentApi actions
   generation behavior are preserved. Direct/summit certification and the open play bounds consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
   reject or admit the promoted version-10 board.
-- Record stage/wind seeds and player actions. Retry and replay consume the same
-  fixed-tick schedule and must reproduce the same gameplay outcome.
-- Normal gameplay has no simulation-speed controls. Replay presentation may own
-  playback speed without changing the recorded gameplay rules.
+- Record stage/wind seeds and player actions only in the current-run diagnostic
+  observation. This log cannot drive gameplay playback. Retry resets the same
+  fixed-tick wind schedule.
+- Normal gameplay has no simulation-speed controls.
 - Ordinary terrain Support Shell/apron contacts use the locked low-rebound
   material. Playable Terrain Surface penetration is recovered from the
   authoritative surface point, normal, and
@@ -374,7 +370,7 @@ Human / Replay / GameplayAgentApi actions
 ## Acceptance Criteria
 
 - No two owners can authoritatively decide stage state, paint coverage, or projectile settlement.
-- Human UI, replay, debug actions, and AI actions cannot bypass the same command validation.
+- Human UI, debug actions, and AI actions cannot bypass the same command validation.
 - No device input or target solver remains in `CannonController`, and only
   `StageController` accepts Fire and consumes a shot after canonical-aim,
   state, capacity, and origin guards pass. Prediction is never a Fire guard.
@@ -404,13 +400,13 @@ Human / Replay / GameplayAgentApi actions
   menu have one typed state/action path. Shot Follow adds only one contextual
   return-to-cannon action; the old Follow/Wide/Cannon preset rail, normal-play
   1x/2x, duplicate Pause, aiming Restart, and Settings Restart are absent.
-- All save/replay formats include explicit versions and deterministic failure behavior.
+- Save and observation formats include explicit versions and deterministic failure behavior.
 - The project passes `scripts/verify.ps1` after architectural changes.
 
 ## Implemented Delivery Boundary
 
 - `export_presets.cfg` defines the Windows Desktop release path with an embedded PCK and excludes tests, screenshots, reports, builds, and editor state.
-- Cross-process probes validate persistence and deterministic replay without relying on the HUD or a shared process.
+- Cross-process probes validate persistence without relying on the HUD or a shared process.
 - The production executable accepts delivery-only capture arguments through
   `DeliveryCaptureRunner`, including a real paused-game-menu state; normal
   launches do nothing with this node, and the debug overlay remains unavailable

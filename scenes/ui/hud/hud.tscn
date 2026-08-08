@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/top_status_bar.tscn" id="2"]
@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/camera_interaction_control.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/shot_summary.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/result_panel.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud/replay_bar.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/mechanism_info_card.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/pause_overlay.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/run_status_card.tscn" id="12"]
@@ -194,14 +193,6 @@ offset_top = 110.0
 offset_right = -24.0
 offset_bottom = 610.0
 grow_horizontal = 0
-
-[node name="ReplayBar" parent="HUDRoot" instance=ExtResource("9")]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 385.0
-offset_top = 16.0
-offset_right = 895.0
-offset_bottom = 68.0
 
 [node name="PauseOverlay" parent="HUDRoot" instance=ExtResource("11")]
 unique_name_in_owner = true

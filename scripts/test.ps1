@@ -55,9 +55,7 @@ $ordinaryTests = @(
     'localization_ui_test.gd',
 	'shot_feedback_test.gd',
 	'shortcut_prompt_test.gd',
-	'replay_recorder_v10_test.gd',
-    'replay_presentation_test.gd',
-    'phase8_debug_test.gd'
+	'phase8_debug_test.gd'
 )
 
 function Invoke-GodotTest {
@@ -91,20 +89,15 @@ try {
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=cleanup')
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=write')
     Invoke-GodotTest -ScriptName 'phase8_persistence_test.gd' -UserArguments @('--mode=read')
-
-    Invoke-GodotTest -ScriptName 'phase8_replay_process_test.gd' -UserArguments @('--mode=cleanup')
-    Invoke-GodotTest -ScriptName 'phase8_replay_process_test.gd' -UserArguments @('--mode=record')
-    Invoke-GodotTest -ScriptName 'phase8_replay_process_test.gd' -UserArguments @('--mode=replay')
 }
 catch {
     $primaryFailure = $_
 }
 finally {
     $cleanupFailures = [System.Collections.Generic.List[string]]::new()
-    foreach ($cleanup in @(
-        @{ Script = 'phase8_persistence_test.gd'; Mode = '--mode=cleanup' },
-        @{ Script = 'phase8_replay_process_test.gd'; Mode = '--mode=cleanup' }
-    )) {
+	foreach ($cleanup in @(
+		@{ Script = 'phase8_persistence_test.gd'; Mode = '--mode=cleanup' }
+	)) {
         try {
             Invoke-GodotTest -ScriptName $cleanup.Script -UserArguments @($cleanup.Mode)
         }

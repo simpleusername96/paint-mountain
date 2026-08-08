@@ -190,8 +190,6 @@ func _assert_translation_contract(locale: String) -> void:
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
 		"hud.angle_decrease", "hud.angle_increase", "hud.power_decrease", "hud.power_increase",
 		"ui.previous", "ui.loading_stage", "ui.stage_load_failed", "ui.retry_stage_load",
-		"replay.label", "replay.pause", "replay.play", "replay.restart", "replay.exit",
-		"replay.incompatible_format",
 	]
 	for key in required:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])

@@ -40,6 +40,17 @@ builds. The completed terrain-targeted aiming gate below owns the current
 interaction and predicted-contact-lifetime acceptance; unchecked historical
 rows do not override it.
 
+## Completed player-replay retirement gate (2026-08-08)
+
+- [x] Result UI contains Retry, Next Stage when available, and Stage Select,
+  with no Replay action or hidden playback controls.
+- [x] Production code, scenes, translations, delivery captures, active test
+  runners, and release evidence contain no replay owner or playback path.
+- [x] `StageController` has no replay action origin or replay-only exclusive
+  input lock. Human, agent, and debug commands retain their normal validation.
+- [x] `AttemptRecorder` retains only current-run agent/debug observations and
+  JSON shot-log export; it cannot serialize or resimulate a player attempt.
+
 ## Completed terrain-targeted aiming and truthful-flight gate (2026-08-08)
 
 - [x] In Aim View, terrain-top click creates a persistent target at the picked
@@ -61,12 +72,11 @@ rows do not override it.
   predicted duration plus 0.5 seconds, capped at 13 seconds. The long-flight
   fixture predicted `8.384 s`, reached live terrain/top contact at `8.417 s`,
   kept unmatched miss termination at 6 seconds, and kept bounds exit immediate.
-- [x] Runtime 0.1% power, Human-only aim revisions, replay/agent/debug bypass,
-  replay format 10, attempt schema 2, save format 5, and existing whole-power
-  catalog identities pass compatibility checks. No target/solver payload enters
-  replay, score, paint, layout, or agent terrain truth.
-- [x] The diff-scoped quality audit found one replay action-lock leak in Human
-  wind refresh; the corrected path and its focused replay check pass. No
+- [x] Runtime 0.1% power, Human-only aim revisions, agent/debug bypass, attempt
+  schema 2, save format 5, and existing whole-power catalog identities pass
+  compatibility checks. No target/solver payload enters score, paint, layout,
+  or agent terrain truth.
+- [x] The retired replay action lock no longer exists. No
   competing target, aim, prediction, lifetime, paint, or stage-state owner
   remains in the task-owned surface.
 - [x] All named phase gates and `scripts/verify.ps1` pass with Godot 4.7.1. The
@@ -280,7 +290,7 @@ gameplay review; prior exports and captures remain historical unless named below
   one-mark-then-disappear failure. A genuine invalid geometry condition is
   diagnosable without being confused with ordinary play.
 - [ ] Wind changes on a seeded, readable 30-second rhythm. Prediction, live
-  projectile motion, HUD direction/strength/countdown, replay, and decorative
+  projectile motion, HUD direction/strength/countdown, and decorative
   debris agree; pausing does not advance the run.
 - [ ] Strong wind can restart an eligible resting ball. The player can see why
   it moves, and resting balls do not produce repeated stationary paint.
@@ -420,7 +430,7 @@ and legacy screenshot statements.
 - [x] Firing remains disabled until all parent/child projectiles and paint flow settle.
 - [x] Shot coverage gain appears before returning to aim, clear, or failure.
 - [x] Coverage at/above target clears; exhausted shots below target fail.
-- [x] Retry, next stage, stage select, and replay execute from the correct result states.
+- [x] Retry, next stage, and stage select execute from the correct result states; no replay action exists.
 - [x] Confirmed restart reaches a clean playable state in under one second.
 
 ### Paint and coverage
@@ -460,12 +470,11 @@ and legacy screenshot statements.
 - [x] Required sound cues, restrained shake, and pooled particles trigger without recurring console errors.
 - [x] No shop, currency, monetization, story, inventory, multiplayer, or live-service UI exists.
 
-### Save, replay, agent API, and debug
+### Save, agent API, and debug
 
 - [x] Unlocks, best coverage, best stars, and settings survive a normal process restart.
 - [x] Invalid save data falls back safely without blocking play.
-- [x] Replay stores stage/version/seed and ordered aim inputs and reproduces the attempt within defined tolerance.
-- [x] Replay supports play, pause, restart, 1×, and 2×.
+- [x] Result flow and runtime contain no replay recording, playback, input lock, or speed controls.
 - [x] In-process observation/action/event API operates without mouse input or screen reading.
 - [x] Debug overlay contains every specified metric and action and is disabled by default in release.
 - [x] Shot-result log export contains stage, seed, aim, gains, activations, and settlement outcome.
@@ -611,17 +620,15 @@ Korean HUD, game menu, visual direction, and approved assets:
 - [ ] Only already approved committed Kenney/Pretendard assets are used; no new
   dependency, asset pack, or runtime network access exists.
 
-Replay, regression, structural performance, and delivery:
+Observation, regression, structural performance, and delivery:
 
-- [ ] Observation schema 6 and replay format 10 contain no payload/flow or
-  `BACKSTOP` fields, store stable contact/mechanism/child ordering plus canonical
-  terrain/open-bound/paint-drain/checksum facts, and fresh-process replay
-  reproduces identities, final state, target checksum, and paint checksum
-  exactly while rejecting replay format 8.
-- [ ] `scripts/test.ps1`, every active focused test, persistence/replay matrices,
+- [ ] Shot-observation schema 6 and attempt-observation schema 2 contain no
+  payload/flow or `BACKSTOP` fields and store stable contact/mechanism/child
+  ordering plus canonical paint-drain/checksum facts for agent/debug consumers.
+- [ ] `scripts/test.ps1`, every active focused test, the persistence matrix,
   `scripts/verify.ps1`, import/parse/main-scene smoke, and Windows release export
   pass through the approved explicit headless Godot path without parser errors,
-  invalid calls, orphan nodes, penetration guards, or replay divergence.
+  invalid calls, orphan nodes, or penetration-guard failures.
 - [ ] Structural performance checks prove Fire performs no prediction query,
   unchanged prediction/Aim View inputs reuse cached work, trajectory dots use
   one `MultiMeshInstance3D`, hidden preview and settled flag processing suspend,
@@ -645,14 +652,18 @@ active redesign item above.
 - Physical solutions reached 5.791%, 33.470%, and 74.359% for the `4/27/70%` targets. Burst activated in Stage 2; both Splitter and Bumper activated in Stage 3. The six-shot Stage 3 left-route-only guard reached 4.353% and failed below target.
 - The final 1920×1080 rendered Burst workload loaded in 459.79 ms, averaged 60.00 FPS over 360 frames, recorded a 20.18 ms worst frame, used 50.70 MiB static memory, and kept the measured active-ball count at one; separate mechanism checks retain the eight-ball hard cap. A second verbose run completed without the transient two-instance exit warning seen in the first process.
 - The state test measured a 1.073 ms restart. Thirty reliability cycles left no projectiles and measured a 2.056 ms slowest restart.
-- Fresh-process persistence preserved the explicit English locale and selection flag along with progression/results/settings. Fresh-process replay reproduced first impact and coverage with deltas of 0.00000 m and 0.00000 percentage points.
+- Before the 2026-08-08 replay retirement, fresh-process persistence preserved
+  the explicit English locale and selection flag along with progression/results/settings,
+  and the then-current replay probe reproduced first impact and coverage.
 - Korean and English captures were inspected at 1280×720 and 1600×900; settings, pause, menu, stage selection, and aiming controls stayed inside the viewport. Seven final Korean-default release-build images were inspected individually at exactly 1920×1080 with no debug overlay.
 - The Windows executable is unsigned and `builds/` remains intentionally ignored. Godot is not assumed to be on `PATH`; verification accepts an explicit `-GodotPath`.
 
 ## Observed Legacy Baseline Evidence (2026-08-02)
 
 - Godot 4.7.1 import and main-scene smoke passed through `scripts/verify.ps1`.
-- Identical rigid-body shots stayed within 0.25 m at first impact; the shape-cast preview stayed within 1.622 m. Fresh-process replay reproduced first impact and coverage with measured deltas of 0.00000 m and 0.00000 percentage points.
+- Identical rigid-body shots stayed within 0.25 m at first impact; the shape-cast
+  preview stayed within 1.622 m. The fresh-process replay result recorded here
+  predates the 2026-08-08 feature retirement.
 - Fresh-process persistence preserved three unlocks, Split Ridge best coverage/stars, master volume, and quality.
 - Thirty repeated fire/restart/out-of-bounds cycles left zero projectile nodes; the slowest final-batch restart was 1.589 ms. Split recursion and the eight-ball limit passed separately.
 - At fullscreen 1920×1080 on Intel Iris Xe Compatibility rendering, Burst Basin loaded in 355.46 ms and a 360-frame Burst workload averaged 59.84 FPS, with a 50.83 ms worst frame, 62.80 MiB static memory, and no allocation growth beyond the eight-ball cap.

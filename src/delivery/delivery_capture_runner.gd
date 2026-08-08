@@ -135,8 +135,6 @@ func _run_capture() -> void:
 			(settings_gameplay.get_node("StageController") as StageController).toggle_pause()
 			_app._show_settings(&"gameplay")
 			await get_tree().process_frame
-		"ancillary_replay":
-			await _capture_continuous_paint()
 		"manual_result":
 			await _capture_manual_result(_capture_stage)
 		"timeout_result":

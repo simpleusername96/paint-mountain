@@ -103,9 +103,6 @@ func _run() -> void:
 	var mechanism_card: MechanismInfoCard = hud_root.get_node("MechanismInfoCard")
 	_assert_true(mechanism_card.visible and mechanism_card.title.text == "분열", "mechanism callout must show the localized mechanism name")
 	_assert_true(absf(mechanism_card.timer.wait_time - 1.2) <= 0.1, "mechanism callout lifetime must be 1.2 ± 0.1 seconds")
-	hud.set_replay_active(true)
-	_assert_true(hud_root.get_node("ReplayBar").visible and not hud_root.get_node("ActionButtons").visible, "replay state must expose only replay controls")
-	hud.set_replay_active(false)
 	var shader_source := FileAccess.get_file_as_string("res://src/paint/terrain_paint.gdshader")
 	_assert_true(not shader_source.contains("EMISSION"), "terrain shader must not write emission")
 	_assert_true(shader_source.contains("mix(0.88, 0.24, painted)"), "terrain shader must bind 0.88 dry and 0.24 painted roughness")
@@ -113,7 +110,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shot feedback passed: direction, camera interaction state, target, causal summary, callout timing, and replay controls.")
+		print("Shot feedback passed: direction, camera interaction state, target, causal summary, and callout timing.")
 	quit(1 if _failed else 0)
 
 

@@ -20,7 +20,6 @@ signal stage_finished(result: Dictionary)
 
 enum ActionOrigin {
 	HUMAN,
-	REPLAY,
 	AGENT,
 	DEBUG,
 }
@@ -70,7 +69,6 @@ var _last_finished_family_physics_tick: int = -1
 var _last_applied_paint_command_tick: int = -1
 var _last_drained_paint_command_tick: int = -1
 var _last_paint_mask_checksum: int = 0
-var _locked_action_origin: int = -1
 var _terminal_pending := false
 var _last_fire_readiness_key := ""
 var _run_started := false
@@ -148,7 +146,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		0
 	)
 	var editable := _cannon != null and _cannon.input_enabled \
-			and current_state == State.AIMING and _origin_allowed(origin)
+			and current_state == State.AIMING
 	var canonical_aim_valid := _cannon != null and _cannon.canonical_aim_is_valid()
 	var human_aim_revision_pending := origin == ActionOrigin.HUMAN and _cannon != null \
 			and _cannon.human_aim_revision_pending()
@@ -189,7 +187,6 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		"max_fire_capacity": ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES,
 		"shots_remaining": shots_remaining,
 		"terminal_pending": _terminal_pending,
-		"action_lock": _locked_action_origin,
 		"fireable": fireable,
 		"reason_key": reason_key,
 		"reason": reason,
@@ -243,29 +240,7 @@ func remaining_run_ticks() -> int:
 	return maxi(_duration_run_ticks - _elapsed_run_ticks, 0)
 
 
-func lock_action_origin(origin: ActionOrigin) -> bool:
-	if _locked_action_origin >= 0 and _locked_action_origin != origin:
-		return false
-	_locked_action_origin = origin
-	_emit_fire_readiness()
-	return true
-
-
-func release_action_origin(origin: ActionOrigin) -> bool:
-	if _locked_action_origin != origin:
-		return false
-	_locked_action_origin = -1
-	_emit_fire_readiness()
-	return true
-
-
-func action_origin_is_locked() -> bool:
-	return _locked_action_origin >= 0
-
-
-func begin_aiming(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if not _origin_allowed(origin):
-		return false
+func begin_aiming(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state != State.BRIEFING:
 		return false
 	_cannon.input_enabled = true
@@ -277,9 +252,7 @@ func begin_aiming(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	return transitioned
 
 
-func enter_briefing(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if not _origin_allowed(origin):
-		return false
+func enter_briefing(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state != State.AIMING or _run_started:
 		return false
 	_cannon.input_enabled = false
@@ -290,8 +263,7 @@ func enter_briefing(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if not _origin_allowed(origin) \
-			or current_state != State.AIMING \
+	if current_state != State.AIMING \
 			or not _cannon.input_enabled:
 		return false
 	_cannon.set_aim(yaw, elevation, power)
@@ -301,8 +273,7 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 
 
 func begin_human_aim_revision(revision: int) -> bool:
-	if not _origin_allowed(ActionOrigin.HUMAN) \
-			or current_state != State.AIMING or not _cannon.input_enabled:
+	if current_state != State.AIMING or not _cannon.input_enabled:
 		return false
 	var accepted := _cannon.begin_human_aim_revision(revision)
 	if accepted:
@@ -316,8 +287,7 @@ func commit_human_aim_revision(
 		elevation: float,
 		power: float
 ) -> bool:
-	if not _origin_allowed(ActionOrigin.HUMAN) \
-			or current_state != State.AIMING or not _cannon.input_enabled:
+	if current_state != State.AIMING or not _cannon.input_enabled:
 		return false
 	var accepted := _cannon.commit_human_aim_revision(revision, yaw, elevation, power)
 	if accepted:
@@ -332,8 +302,7 @@ func commit_human_aim_revision(
 
 
 func restore_human_aim_revision(revision: int) -> bool:
-	if not _origin_allowed(ActionOrigin.HUMAN) \
-			or current_state != State.AIMING or not _cannon.input_enabled:
+	if current_state != State.AIMING or not _cannon.input_enabled:
 		return false
 	var restored := _cannon.restore_human_aim_revision(revision)
 	if restored:
@@ -342,8 +311,6 @@ func restore_human_aim_revision(revision: int) -> bool:
 
 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if not _origin_allowed(origin):
-		return false
 	var readiness := fire_readiness_snapshot(origin)
 	if not bool(readiness.get("fireable", false)):
 		# Fire is admitted only from this constant-work stage-rule snapshot.
@@ -425,7 +392,7 @@ func restart(
 		return_to_briefing: bool = true,
 		origin: ActionOrigin = ActionOrigin.HUMAN
 ) -> bool:
-	if not _origin_allowed(origin) or current_state == State.FINISHING:
+	if current_state == State.FINISHING:
 		return false
 	if stage_data == null or _generated_layout == null or _cannon == null \
 			or _projectile_manager == null or _paint_system == null:
@@ -477,9 +444,7 @@ func restart(
 	return true
 
 
-func toggle_pause(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if not _origin_allowed(origin):
-		return false
+func toggle_pause(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	if current_state == State.PAUSED:
 		get_tree().paused = false
 		return _transition_to(_state_before_pause, true)
@@ -495,8 +460,8 @@ func toggle_pause(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if origin not in [ActionOrigin.HUMAN, ActionOrigin.REPLAY, ActionOrigin.AGENT] \
-			or not _origin_allowed(origin) or current_state != State.AIMING \
+	if origin not in [ActionOrigin.HUMAN, ActionOrigin.AGENT] \
+			or current_state != State.AIMING \
 			or not _run_started or _terminal_pending:
 		return false
 	return _begin_finish(FINISH_REASON_MANUAL, origin, false, true)
@@ -504,8 +469,6 @@ func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
 	# Debug and capture tooling still pass through the authoritative result barrier.
-	if not _origin_allowed(origin):
-		return
 	if current_state == State.PAUSED:
 		get_tree().paused = false
 		_transition_to(_state_before_pause, true)
@@ -514,8 +477,8 @@ func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
 	_begin_finish(FINISH_REASON_DEBUG, origin, true)
 
 
-func debug_refill_shots(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
-	if not _origin_allowed(origin) or not OS.is_debug_build() or stage_data == null:
+func debug_refill_shots(_origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
+	if not OS.is_debug_build() or stage_data == null:
 		return
 	shots_remaining = stage_data.maximum_shots
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -886,10 +849,6 @@ func _is_allowed_transition(from_state: State, to_state: State) -> bool:
 			return true
 		_:
 			return false
-
-
-func _origin_allowed(origin: ActionOrigin) -> bool:
-	return _locked_action_origin < 0 or _locked_action_origin == origin
 
 
 func _observation_for_shot(shot_id: int) -> ShotObservation:

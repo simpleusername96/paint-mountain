@@ -28,8 +28,7 @@ const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surfa
 @onready var _hud: HUDController = %HUD
 @onready var _mechanism_root: Node3D = %Mechanisms
 @onready var _environment_dressing: Node3D = %EnvironmentDressing
-@onready var _replay_recorder: ReplayRecorder = %ReplayRecorder
-@onready var _replay_presentation: ReplayPresentationController = %ReplayPresentationController
+@onready var _attempt_recorder: AttemptRecorder = %AttemptRecorder
 @onready var _agent_api: GameplayAgentApi = %GameplayAgentApi
 @onready var _presentation_effects: PresentationEffects = %PresentationEffects
 @onready var _debug_overlay: DebugOverlay = %DebugOverlay
@@ -69,12 +68,6 @@ func _ready() -> void:
 	):
 		push_error("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
 		return
-	_replay_presentation.configure(
-		_replay_recorder,
-		_stage_controller,
-		_camera_director,
-		_wind_controller
-	)
 	_aim_input.configure(_cannon, _stage_controller, _camera_director)
 	if not _prediction_scheduler.configure(
 		_cannon,
@@ -97,12 +90,6 @@ func _ready() -> void:
 		push_error("GameplayScene could not configure terrain-targeted aiming.")
 		return
 	_update_prediction_consumers()
-	_replay_recorder.start_attempt(
-		stage_data,
-		_generated_layout.terrain_seed,
-		_generated_layout,
-		_wind_controller.schedule_identity()
-	)
 	_agent_api.configure(
 		stage_data,
 		_stage_controller,
@@ -123,7 +110,7 @@ func _ready() -> void:
 		_trajectory_preview,
 		_camera_director,
 		_mechanisms,
-		_replay_recorder,
+		_attempt_recorder,
 		_generated_layout
 	)
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
@@ -163,10 +150,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match event.physical_keycode:
 		KEY_ESCAPE:
-			if _replay_presentation.active:
-				_replay_presentation.exit()
-			else:
-				_stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN)
+			_stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN)
 
 
 func set_pause_overlay_suspended(suspended: bool) -> void:
@@ -249,7 +233,7 @@ func _layout_matches_stage(layout: GeneratedStageLayout, selected_stage: StageDa
 func _connect_systems() -> void:
 	_cannon.aim_changed.connect(_on_aim_changed)
 	# StageController owns the complete Fire contract (prediction key, capacity,
-	# shots, terminal state, and action lock). Do not let the cannon's partial
+	# shots, and terminal state). Do not let the cannon's partial
 	# aim-validity signal overwrite that authoritative HUD decision.
 	_stage_controller.fire_readiness_changed.connect(_hud.set_fire_readiness)
 	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
@@ -290,15 +274,8 @@ func _connect_systems() -> void:
 	_hud.stage_select_requested.connect(func() -> void: _request_navigation(&"stage_select"))
 	_hud.main_menu_requested.connect(func() -> void: _request_navigation(&"main_menu"))
 	_hud.next_stage_requested.connect(func() -> void: _request_navigation(&"next_stage"))
-	_hud.replay_requested.connect(_start_replay)
 	_hud.interaction_mode_requested.connect(_on_interaction_mode_requested)
 	_hud.return_to_cannon_requested.connect(func() -> void: _camera_director.return_to_aim_view())
-	_hud.replay_speed_requested.connect(_replay_presentation.set_speed)
-	_hud.replay_pause_requested.connect(_replay_presentation.set_paused)
-	_hud.replay_restart_requested.connect(_replay_presentation.restart_playback)
-	_hud.replay_exit_requested.connect(_replay_presentation.exit)
-	_replay_presentation.presentation_exited.connect(_on_replay_exited)
-	_replay_presentation.active_changed.connect(_hud.set_replay_active)
 	_aim_input.aim_interaction_changed.connect(
 		_prediction_scheduler.set_aim_interaction_active
 	)
@@ -329,34 +306,38 @@ func _on_shot_result(gain: float, total: float) -> void:
 
 func _on_shot_observation_sealed(observation: ShotObservation) -> void:
 	_hud.show_shot_observation(observation)
-	if not _replay_presentation.active:
-		_replay_recorder.record_observation(observation)
+	_attempt_recorder.record_shot_observation(observation)
 
 
-func _on_aim_action_accepted(yaw: float, elevation: float, power: float, origin: int) -> void:
-	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
-		_replay_recorder.record_aim(yaw, elevation, power)
+func _on_aim_action_accepted(yaw: float, elevation: float, power: float, _origin: int) -> void:
+	_attempt_recorder.record_aim(yaw, elevation, power)
 
 
-func _on_fire_action_accepted(origin: int) -> void:
-	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
-		_replay_recorder.record_aim(_cannon.yaw_degrees, _cannon.elevation_degrees, _cannon.power_percent)
-		var observation := _stage_controller.current_shot_observation()
-		_replay_recorder.record_fire(observation.shot_id if observation != null else 0)
+func _on_fire_action_accepted(_origin: int) -> void:
+	_attempt_recorder.record_aim(
+		_cannon.yaw_degrees,
+		_cannon.elevation_degrees,
+		_cannon.power_percent
+	)
+	var observation := _stage_controller.current_shot_observation()
+	if observation != null:
+		_attempt_recorder.record_fire(observation.shot_id)
 
 
-func _on_restart_action_accepted(origin: int) -> void:
+func _on_restart_action_accepted(_origin: int) -> void:
 	_wind_controller.reset()
 	_wind_transition_was_active = false
 	_mechanism_resolver.clear_all()
 	_terrain_aim.reset_for_restart()
-	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
-		_replay_recorder.record_restart()
+	_attempt_recorder.start_attempt(
+		stage_data,
+		_wind_controller.schedule_identity(),
+		_generated_layout.terrain_seed
+	)
 
 
-func _on_finish_action_accepted(origin: int) -> void:
-	if origin != StageController.ActionOrigin.REPLAY and not _replay_presentation.active:
-		_replay_recorder.record_finish(StageController.FINISH_REASON_MANUAL)
+func _on_finish_action_accepted(_origin: int) -> void:
+	_attempt_recorder.record_finish(StageController.FINISH_REASON_MANUAL)
 
 
 func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void:
@@ -395,9 +376,7 @@ func _on_stage_finished(result: Dictionary) -> void:
 	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) \
 			if game_state != null else 0.0
 	_hud.show_coverage_result_snapshot(result, stars, previous_best)
-	if _replay_presentation.active:
-		return
-	_replay_recorder.store_final_result(result)
+	_attempt_recorder.store_final_result(result)
 	_presentation_effects.clear_glint(
 		stage_data.terrain_center
 				+ Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0)
@@ -420,8 +399,6 @@ func _on_stage_finished(result: Dictionary) -> void:
 
 func _on_state_changed(current_state: int, previous_state: int) -> void:
 	var state := current_state as StageController.State
-	if previous_state == StageController.State.SHOT_RESULT and not _replay_presentation.active:
-		_replay_recorder.update_latest_result_state(current_state)
 	_hud.show_state(state)
 	match state:
 		StageController.State.BRIEFING:
@@ -445,8 +422,6 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 
 
 func _on_interaction_mode_requested(mode: int) -> void:
-	if _replay_presentation.active:
-		return
 	if _stage_controller.current_state != StageController.State.AIMING:
 		return
 	_camera_director.set_interaction_mode(mode as CameraDirector.InteractionMode)
@@ -468,8 +443,6 @@ func _on_camera_mode_changed(mode: int) -> void:
 func _on_interaction_mode_changed(mode: int) -> void:
 	_hud.set_interaction_mode(mode as CameraDirector.InteractionMode)
 	_update_prediction_consumers()
-	if not _replay_presentation.active and not _stage_controller.action_origin_is_locked():
-		_replay_recorder.record_camera(mode)
 
 
 func _update_prediction_consumers() -> void:
@@ -479,8 +452,7 @@ func _update_prediction_consumers() -> void:
 			and _stage_controller.current_state == StageController.State.AIMING \
 			and _camera_director.current_mode == CameraDirector.Mode.AIMING \
 			and _camera_director.aim_is_locked() \
-			and _cannon.input_enabled \
-			and not _stage_controller.action_origin_is_locked()
+			and _cannon.input_enabled
 	_prediction_scheduler.set_consumers_enabled(
 		(_trajectory_preview != null and _trajectory_preview.visible) or fire_can_consume
 	)
@@ -567,22 +539,6 @@ func _stars_for_coverage(coverage: float) -> int:
 	return stars
 
 
-func _start_replay() -> void:
-	var saved_attempt := _replay_recorder.export_attempt()
-	if saved_attempt.get("actions", []).is_empty():
-		return
-	_replay_presentation.start(saved_attempt)
-
-
-func _on_replay_exited() -> void:
-	_replay_recorder.start_attempt(
-		stage_data,
-		_generated_layout.terrain_seed,
-		_generated_layout,
-		_wind_controller.schedule_identity()
-	)
-
-
 func _on_valid_top_traversed(
 		projectile: PaintProjectile,
 		contact: ProjectileContact,
@@ -644,9 +600,7 @@ func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> 
 
 
 func _live_attempt_observation() -> AttemptObservation:
-	if _replay_presentation.active or _stage_controller.action_origin_is_locked():
-		return null
-	return _replay_recorder.current_attempt_observation()
+	return _attempt_recorder.current_observation()
 
 
 func _wind_hud_projection(world_direction: Vector3) -> Dictionary:
@@ -671,8 +625,7 @@ func _wind_hud_projection(world_direction: Vector3) -> Dictionary:
 
 
 func _request_navigation(destination: StringName) -> void:
-	if not _replay_presentation.active:
-		navigation_requested.emit(destination)
+	navigation_requested.emit(destination)
 
 
 func _audio_cue(cue: StringName) -> void:

@@ -24,7 +24,7 @@ const WRITE_RESULT_NEW_TARGET := 2
 const SURFACE_SAMPLE_UNKNOWN := 0
 const SURFACE_SAMPLE_INACTIVE := 1
 const SURFACE_SAMPLE_ACTIVE := 2
-# Two 26-bit components keep replay JSON round-trips exact while avoiding scans.
+# Two 26-bit components keep JSON diagnostic round-trips exact while avoiding scans.
 const CHECKSUM_COMPONENT_MASK := 0x03ffffff
 const CHECKSUM_XOR_SEED := 0x02d95df4
 const CHECKSUM_SUM_SEED := 0x01873593

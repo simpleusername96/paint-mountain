@@ -15,7 +15,7 @@ related:
 
 Replace the slow Human-only exact terrain-target inversion with immediate direct
 yaw, elevation, and power control plus a cheap top-view landing envelope. Keep
-the real projectile, collision, paint, replay, and advisory exact trajectory as
+the real projectile, collision, paint, and advisory exact trajectory as
 the authorities for what actually happens after Fire.
 
 ## Purpose
@@ -51,6 +51,8 @@ introduced.
 
 In scope:
 
+- The user's prerequisite retirement of the complete player-replay stack before
+  the direct-aim phases continue.
 - `AimInputController` direct drag and keyboard intent.
 - `CannonController` canonical aim mutation and removal of pending Human revisions.
 - A pure `ApproximateLandingEstimator`, immutable height-band input, and immutable
@@ -61,12 +63,13 @@ In scope:
   target state preview, and target-solution branch in the scheduler.
 - Migration of tests, delivery captures, specs, and current implementation record.
 
-Out of scope:
+Out of scope after the replay-retirement prerequisite:
 
 - Rendering a top-view grid, minimap, landing ellipse, or new HUD component.
 - Changing projectile rigid-body physics, collision, paint, target coverage,
   stage generation, mechanisms, progression, catalog identity, or stage values.
-- Changing replay/save/attempt formats or the direct agent/debug `AimTuple` API.
+- Changing save/attempt-observation formats or the direct agent/debug `AimTuple`
+  API.
 - Replacing the existing exact world trajectory and first-impact preview. It stays
   advisory and computes only after the latest input settles.
 
@@ -81,9 +84,15 @@ Architecture invariants:
   a second grid, heightmap, collision mesh, target mask, or coverage representation.
 - The estimate never calls `PhysicsDirectSpaceState3D`, never changes Fire
   readiness, and never replaces a live collision result.
+- Player replay, replay serialization, replay-origin action locks, and replay UI
+  have no remaining runtime owner. `AttemptObservation` remains only for the
+  agent/debug observation and JSON-log contracts.
 
 Destructive or irreversible actions:
 
+- Replay-only scripts, scenes, tests, translations, capture artifacts, and
+  runner entries may be deleted after reference tracing. Git retains recovery
+  history.
 - Obsolete exact-target scripts and their focused tests may be deleted only
   after their replacements pass and `rg` proves no production or delivery
   references remain. Git retains recovery history.
@@ -98,12 +107,13 @@ Exact actions requiring owner or user approval:
 | Concern | Current evidence | Decision |
 | --- | --- | --- |
 | Human aim path | `AimInputController` emits screen positions; `TerrainAimController` holds a committed target and Human revision; `TerrainAimSolver` nominates candidates; `TrajectoryPredictionScheduler` validates each candidate through exact physics | Remove this entire inverse-target chain from the Human runtime |
-| Fire readiness | `StageController` rejects Human Fire while `CannonController.human_aim_revision_pending()` is true | Delete this pending gate; keep legal canonical aim, capacity, origin lock, and stage state checks |
+| Fire readiness | `StageController` rejects Human Fire while `CannonController.human_aim_revision_pending()` is true | Delete this pending gate; keep legal canonical aim, capacity, and stage state checks |
 | Exact preview | `TrajectoryPredictionScheduler` already owns one bounded advisory `TrajectoryPredictionJob` and publishes a context-matched trajectory | Keep only this preview branch, with latest-only coalescing and no target work |
 | Canonical terrain | `TerrainSurface.layout_read_only()` exposes the accepted `GeneratedStageLayout`; its top topology exposes canonical vertices; `StageData.paint_world_bounds()` exposes XZ bounds | Derive three scalar heights once at stage configuration; never sample terrain during an aim edit |
 | Wind | `WindController.sample_at_offset()` deterministically exposes the same schedule used by prediction | Sample the schedule in the pure recurrence; do not query live physics |
 | Input coverage | Current W/S and wheel/button controls exist; A/D and drag do not directly change the tuple | Restore resolution-stable direct yaw/elevation drag and A/D yaw while preserving current keyboard repeat timing |
-| Compatibility | Replay and agent/debug flows call canonical tuple APIs, while delivery and several tests directly reference terrain-target types | Preserve tuple APIs; migrate delivery helpers before deleting exact-target types |
+| Compatibility | Agent/debug flows call canonical tuple APIs, while delivery and several tests directly reference terrain-target types | Preserve tuple APIs; migrate delivery helpers before deleting exact-target types |
+| Player replay | The result flow previously exposed replay and runtime owners serialized and resimulated fixed-tick action streams | Removed; only independently named attempt diagnostics remain for agent/debug use |
 
 Discovery closure:
 
@@ -167,6 +177,33 @@ owner.
 
 ## Tasks
 
+### Prerequisite: retire player replay
+
+Goal: apply the user's latest product decision before later work relies on a
+removed compatibility path.
+
+Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
+`docs/technical-architecture.md`, `src/gameplay/`, `src/stage/`, `src/ui/`,
+`scenes/gameplay/`, `scenes/ui/`, `tests/`, `scripts/test.ps1`
+
+- [x] **P.1** Remove replay behavior and visible controls.
+  - Change: delete replay recorder/presentation/UI owners, replay-origin action
+    locking, result replay intent, replay translations, and capture routing.
+  - Accept: `rg` finds no replay reference in production code, scenes,
+    translations, or active test runners; Retry, Next Stage, and Stage Select
+    remain wired from the result state.
+- [x] **P.2** Preserve independent observation and diagnostics.
+  - Change: move current attempt-observation recording and debug JSON export to
+    an explicitly non-playback owner.
+  - Accept: agent observation, shot observation, and debug-export checks pass
+    without a replay format, playback scheduler, or action-origin lock.
+- [x] **P.3** Update current contracts and evidence.
+  - Change: update current specs, implementation record, checklist, and rendered
+    result evidence; delete replay-only tests and the obsolete current replay
+    screenshot.
+  - Accept: project verification, release export, result-screen rendered QA,
+    and the diff-scoped quality audit pass.
+
 ### Phase 1: Authority and pure contracts
 
 Goal: record the supersession and land deterministic data boundaries before
@@ -224,7 +261,7 @@ Source owners: `src/input/aim_input_controller.gd`,
     exact-target-only tests.
   - Accept: `rg -n "TerrainAim|TerrainScreenRayPicker|TerrainTargetPreview|human_aim_revision_pending" src scenes tests`
     returns no active reference; delivery capture and project import still pass.
-  - Guard: do not remove shared trajectory, ballistic, replay, terrain-topology,
+  - Guard: do not remove shared trajectory, ballistic, terrain-topology,
     or direct reachability generation code merely because an exact-target test
     used it.
 
@@ -238,10 +275,9 @@ Source owners: `tests/`, `.agents/evidence/instant-approximate-landing-feedback-
 - [ ] **3.1** Replace and migrate focused contracts.
   - Change: add `tests/approximate_landing_estimator_test.gd`; rewrite the Human
     sections of `aim_interaction_test.gd`; simplify `prediction_scheduler_test.gd`
-    and `stage10_prediction_readiness_test.gd`; migrate
-    `phase8_debug_test.gd`, `replay_fractional_contact_test.gd`, delivery capture
-    helpers, and any remaining exact-target fixtures.
-  - Accept: direct input, estimator, scheduler, Fire, replay, and capture tests
+    and `stage10_prediction_readiness_test.gd`; migrate `phase8_debug_test.gd`,
+    delivery capture helpers, and any remaining exact-target fixtures.
+  - Accept: direct input, estimator, scheduler, Fire, diagnostics, and capture tests
     pass under Godot 4.7.1 with no compatibility shim that preserves the old
     target solver.
 - [ ] **3.2** Measure the fixed-cost path and inspect the real game.
@@ -268,7 +304,7 @@ Source owners: `tests/`, `.agents/evidence/instant-approximate-landing-feedback-
 | Pure estimator | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/approximate_landing_estimator_test.gd` | Phase 1.2 changes | Estimator contract or test changes |
 | Human flow | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/aim_interaction_test.gd` | Phase 2.1 changes | Input/controller changes |
 | Scheduler | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/prediction_scheduler_test.gd` | Phase 2.2 changes | Scheduler changes |
-| Replay contact | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/replay_fractional_contact_test.gd` | Compatibility owners change | Replay/cannon/projectile changes |
+| Attempt diagnostics | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/phase8_debug_test.gd` | Observation/debug owners change | Observation or debug-export changes |
 | Project gate | `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1` | All focused checks pass | Script, scene, resource, or project-setting changes |
 | Release export | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --export-release 'Windows Desktop' 'builds/windows/PaintMountain.exe'` | Project gate passes | Export-owned input changes |
 | Document gate | `git diff --check` | Evidence and records are complete | Touched text changes |
@@ -301,6 +337,7 @@ the full project suite or export while the ownership graph is still changing.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
+- Replay prerequisite: complete on 2026-08-08.
 - Current phase: Phase 1.
 - Next task: 1.1.
 - Last completed gate: Discovery Closure.

@@ -1,8 +1,8 @@
 class_name PlayBoundsSpec
 extends RefCounted
 
-## Versioned non-colliding limits shared by prediction, live projectiles,
-## replay, and baked-layout identity. This class never creates wall geometry.
+## Versioned non-colliding limits shared by prediction, live projectiles, and
+## baked-layout identity. This class never creates wall geometry.
 const CONTRACT_VERSION := 1
 const FIXED_BOUNDS := AABB(Vector3(-190.0, -32.0, -230.0), Vector3(380.0, 222.0, 330.0))
 const FIXED_APRON_XZ_BOUNDS := Rect2(Vector2(-170.0, -225.0), Vector2(340.0, 320.0))

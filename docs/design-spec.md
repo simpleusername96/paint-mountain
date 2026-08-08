@@ -44,7 +44,7 @@ reservoir, depletion, or autonomous flow. The first actual launch starts the
 stage timer; the player finishes the run or the timer ends it.
 
 The vertical slice includes a main menu, stage select, briefing/inspection,
-aiming, projectile observation, coverage result, pause, settings, saving, replay,
+aiming, projectile observation, coverage result, pause, settings, saving,
 debug tooling, audio/visual feedback, thirty all-open stages, one ball type, and
 exactly three mechanism types.
 
@@ -113,7 +113,7 @@ exactly three mechanism types.
   It is advisory: generic preview pending or a predicted miss never blocks Fire.
   Only an explicit human target selection or target-preserving elevation/power
   edit makes Fire pending until its same-revision solution commits or restores
-  the prior committed aim after rejection. Direct replay, agent, and debug tuple
+  the prior committed aim after rejection. Direct agent and debug tuple
   actions remain atomic. No post-impact route is shown.
 - Firing enters Shot Follow for the new root ball. A visible `대포로 돌아가기`
   / `RETURN TO CANNON` control and context-sensitive Tab return immediately to
@@ -149,7 +149,7 @@ exactly three mechanism types.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
 - The current catalog shares one canonical terrain-family seed. Stage and
   profile identity still make the thirty stages distinct, and each stage has
-  one versioned persisted baked layout. Stage entry, retry, replay, and process
+  one versioned persisted baked layout. Stage entry, retry, and process
   restart reuse that exact layout; gameplay performs no terrain seed roll,
   candidate search, or reconstruction.
   The offline generator is authoring infrastructure only. Future randomness may
@@ -290,24 +290,21 @@ exactly three mechanism types.
   plateaus: `8.5%` for 11-15, `9.0%` for 16-20, `9.5%` for 21-25, and `10.0%`
   for 26-30. Two- and three-star grades remain `+2.5/+5.0` points above clear.
 
-### Results, persistence, and replay
+### Results and persistence
 
 - The first actual launch starts the stage duration, which is 90, 120, or 180
   seconds according to progression. Finish ends an active run after that first
   shot; timer expiry also ends it. Results use final unique target coverage as
   the sole score, with existing star thresholds as grades.
 - Results show stage, final coverage, time outcome, shots used/remaining,
-  previous best, new best, rank/stars, final mountain, retry, next/select, and
-  replay. They do not present target coverage or spent shots as an automatic
+  previous best, new best, rank/stars, final mountain, retry, next, and stage
+  select. They do not present target coverage or spent shots as an automatic
   clear/failure result.
 - Save version, coverage-metric-separated best coverage/stars, unlocks, and
   settings including mouse sensitivity locally.
-- Replay format 10 stores stage/profile/layout/certificate and coverage-metric
-  versions, the canonical terrain seed, terrain and open-play-bound identities,
-  generated default aim, wind schedule identity,
-  fixed-tick aim/Fire/Finish actions, attempt outcome, and final paint-mask
-  checksum. Replay presentation locks normal input and accepts only replay-origin
-  actions; older incompatible formats are rejected deterministically.
+- The player-facing replay and its recording, playback, input-lock, speed, UI,
+  localization, capture, and compatibility formats are absent. Independent shot
+  and attempt observations remain available only to the agent/debug contracts.
 
 ### UI, art, audio, and debug
 
@@ -399,7 +396,7 @@ exactly three mechanism types.
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the current
-contact, persistent-ball, wind, timed-result, surface-glyph, replay-format-9, or
+contact, persistent-ball, wind, timed-result, surface-glyph, retired replay, or
 interaction-mode contracts above.
 
 The 2026-08-05 gameplay-recovery plan is superseded history. The completed

@@ -32,7 +32,6 @@ ui.retry_stage_load,RETRY LOAD,다시 불러오기
 ui.close,CLOSE,닫기
 ui.restore_defaults,RESTORE DEFAULTS,기본값 복원
 ui.main_menu,QUIT TO MAIN MENU,메인 메뉴로
-ui.replay,REPLAY ATTEMPT,플레이 다시 보기
 ui.stages,STAGES,스테이지
 ui.choose_mountain,CHOOSE A MOUNTAIN,산을 선택하세요
 hud.stage,STAGE,스테이지
@@ -208,9 +207,3 @@ stage.generated_29.name,TWENTY-NINTH RANGE,스물아홉 번째 산맥
 stage.generated_29.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
 stage.generated_30.name,THIRTIETH RANGE,서른 번째 산맥
 stage.generated_30.objective,Use Splitter and Uphill Rebound to cover the branching range.,분열과 오르막 반동 문양으로 갈라지는 산맥을 칠하세요.
-replay.label,REPLAY,리플레이
-replay.pause,PAUSE,일시정지
-replay.play,PLAY,재생
-replay.restart,RESTART,처음부터
-replay.exit,EXIT,나가기
-replay.incompatible_format,This replay was made for an older terrain and aiming format.,이 리플레이는 이전 지형·조준 형식으로 만들어져 재생할 수 없습니다.

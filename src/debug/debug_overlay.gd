@@ -12,7 +12,7 @@ var _paint: PaintSystem
 var _trajectory: TrajectoryPreview
 var _camera: CameraDirector
 var _mechanisms: Array[TerrainGlyphMechanism] = []
-var _replay: ReplayRecorder
+var _attempt_recorder: AttemptRecorder
 var _root: Control
 var _metrics: Label
 var _paint_preview: TextureRect
@@ -43,7 +43,7 @@ func configure(
 		trajectory: TrajectoryPreview,
 		camera: CameraDirector,
 		mechanisms: Array[TerrainGlyphMechanism],
-		replay: ReplayRecorder,
+		attempt_recorder: AttemptRecorder,
 		generated_layout: GeneratedStageLayout
 ) -> void:
 	_stage_data = stage_data
@@ -55,7 +55,7 @@ func configure(
 	_trajectory = trajectory
 	_camera = camera
 	_mechanisms = mechanisms
-	_replay = replay
+	_attempt_recorder = attempt_recorder
 	_paint_preview.texture = _paint.paint_texture()
 	_target_preview.texture = _paint.target_texture()
 	_nontarget_preview.texture = _paint.nontarget_texture()
@@ -82,7 +82,7 @@ func _process(_delta: float) -> void:
 	for mechanism in _mechanisms:
 		var snapshot := mechanism.state_snapshot()
 		mechanism_lines.append("%s charge=%s cd=%.2f" % [snapshot.kind, snapshot.remaining_charges, snapshot.cooldown])
-	var seed := int(_replay.attempt.get("terrain_seed", 0)) if _replay != null else 0
+	var seed := _generated_layout.terrain_seed if _generated_layout != null else 0
 	_metrics.text = "STATE  %s\nFPS  %d\nPROJECTILES  %d / %d\nVELOCITY  %s\nPAINT COMMANDS  %d (PENDING %d)\nLAST DRAIN TICK  %d\nMASK CHECKSUM  %d\nCOVERAGE  %.3f%%\nSHOT GAIN  %.3f%%\nTRAJECTORY SAMPLES  %d\nFIRST COLLISION  %s\nMECHANISMS\n%s\nSEED  %d\nBOUNDS  %s\nCAMERA  %s\nRESTART  %.3f ms" % [
 		_controller.state_name(),
 		Engine.get_frames_per_second(),
@@ -129,9 +129,9 @@ func _set_overlay_visible(value: bool) -> void:
 
 
 func export_shot_log(path: String = "user://paint_mountain_shot_log.json") -> Error:
-	if _replay == null:
+	if _attempt_recorder == null:
 		return ERR_UNCONFIGURED
-	var payload := _replay.export_attempt()
+	var payload := _attempt_recorder.export_log()
 	payload["exported_state"] = _controller.state_name()
 	payload["coverage"] = _paint.coverage_percent()
 	payload["last_shot_gain"] = _last_gain
@@ -227,7 +227,7 @@ func _add_action(parent: GridContainer, caption: String, action: Callable) -> vo
 
 
 func _run_debug_action(action: Callable) -> void:
-	if _controller == null or _controller.action_origin_is_locked():
+	if _controller == null:
 		return
 	action.call()
 

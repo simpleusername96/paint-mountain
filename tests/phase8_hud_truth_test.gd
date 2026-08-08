@@ -1,7 +1,6 @@
 extends SceneTree
 
 const HUD_SCENE := preload("res://scenes/ui/hud/hud.tscn")
-const REPLAY_BAR_SCENE := preload("res://scenes/ui/hud/replay_bar.tscn")
 const NAVY := Color("172538")
 
 var _failed := false
@@ -12,18 +11,12 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var replay_default := REPLAY_BAR_SCENE.instantiate() as ReplayBar
-	_assert_true(not replay_default.visible, "ReplayBar scene must default hidden")
-	replay_default.free()
-
 	var hud := HUD_SCENE.instantiate() as HUDController
 	root.add_child(hud)
 	await process_frame
 	var hud_root := hud.get_node("HUDRoot") as Control
-	var replay := hud_root.get_node("ReplayBar") as ReplayBar
 	var actions := hud_root.get_node("ActionButtons") as ActionButtons
 	var status := hud_root.get_node("RunStatusCard") as RunStatusCard
-	_assert_true(not replay.visible, "HUD initialization must keep replay controls hidden")
 	_assert_true(
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
 		"Target coverage must have one owner in the left coverage meter"
@@ -32,11 +25,16 @@ func _run() -> void:
 	_assert_true(coverage_caption.text == "hud.coverage", "CoverageMeter must retain the shared target-area caption key")
 
 	hud.show_state(StageController.State.AIMING)
-	_assert_true(not replay.visible and actions.visible and status.visible, "normal Aiming must expose Fire and edge status without replay controls")
-	hud.set_replay_active(true)
-	_assert_true(replay.visible and not actions.visible and not status.visible, "only active replay mode may expose replay controls")
-	hud.set_replay_active(false)
-	_assert_true(not replay.visible and actions.visible, "leaving replay must restore normal Aiming controls")
+	hud.set_camera_mode(CameraDirector.Mode.AIMING)
+	_assert_true(actions.visible and status.visible, "normal Aiming must expose Fire and edge status")
+	hud.show_state(StageController.State.RESULT)
+	var result_panel := hud_root.get_node("ResultPanel") as ResultPanel
+	_assert_true(result_panel.visible, "the completed run must expose the result panel")
+	_assert_true(result_panel.get_node_or_null("Margin/Content/Replay") == null,
+		"the result panel must not retain a replay action")
+	for action_path in ["Margin/Content/Retry", "Margin/Content/Row/Next", "Margin/Content/Row/Stages"]:
+		_assert_true(result_panel.get_node(action_path) is Button,
+			"the result panel must retain %s" % action_path)
 
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	_assert_true(settings.icon != null, "Settings must keep the approved icon asset")
@@ -49,7 +47,7 @@ func _run() -> void:
 	hud.queue_free()
 	await process_frame
 	if not _failed:
-		print("Phase 8 HUD truth passed: coverage and run status have one owner, replay controls stay state-gated, and settings remains legible.")
+		print("Phase 8 HUD truth passed: coverage and run status have one owner, and settings remains legible.")
 	quit(1 if _failed else 0)
 
 
