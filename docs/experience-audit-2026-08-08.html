@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain — 경험·성능 리셋 제안</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172538;
+      --muted: #66758a;
+      --line: #dfe4ea;
+      --paper: #fffdfb;
+      --canvas: #f2f0ec;
+      --blue: #1675f8;
+      --blue-soft: #e9f2ff;
+      --red: #c84242;
+      --red-soft: #fff0ef;
+      --green: #1f7a55;
+      --green-soft: #eaf7f1;
+      --amber: #9a6400;
+      --amber-soft: #fff7dc;
+      --shadow: 0 14px 40px rgba(23, 37, 56, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.58;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    main { width: min(1180px, calc(100% - 40px)); margin: 28px auto 72px; }
+    header, section {
+      background: var(--paper);
+      border: 1px solid rgba(23, 37, 56, .08);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+    header { padding: 42px 46px; }
+    section { margin-top: 20px; padding: 34px 38px; }
+    h1 { margin: 10px 0 14px; font-size: clamp(34px, 5vw, 58px); line-height: 1.12; letter-spacing: -.045em; }
+    h2 { margin: 0 0 18px; font-size: 27px; line-height: 1.25; letter-spacing: -.025em; }
+    h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.35; }
+    p { margin: 0 0 12px; }
+    p:last-child { margin-bottom: 0; }
+    a { color: #0e63d8; }
+    code { font-family: "Cascadia Mono", Consolas, monospace; font-size: .92em; }
+    .eyebrow { color: var(--blue); font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .lead { max-width: 860px; color: #40516a; font-size: 20px; }
+    .verdict {
+      margin-top: 28px;
+      padding: 20px 22px;
+      border-left: 5px solid var(--red);
+      border-radius: 12px;
+      background: var(--red-soft);
+      font-size: 18px;
+      font-weight: 650;
+    }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
+    .stat { padding: 17px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .stat strong { display: block; font-size: 25px; color: var(--blue); }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .summary-grid, .recommend-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .finding { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .finding b { color: var(--red); }
+    .gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    figure { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    figure.wide { grid-column: 1 / -1; }
+    figure img { display: block; width: 100%; height: auto; background: #ddd; }
+    figcaption { padding: 14px 16px 16px; color: #46566d; font-size: 14px; }
+    figcaption strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 16px; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 22px 0;
+      align-items: stretch;
+    }
+    .flow > div { position: relative; padding: 15px 12px; border-radius: 12px; background: var(--red-soft); text-align: center; font-size: 14px; }
+    .flow > div:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; right: -12px; top: 50%; transform: translateY(-50%); color: var(--red); font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f5f7f9; color: #35445a; }
+    tr:last-child td { border-bottom: 0; }
+    .answer {
+      padding: 22px;
+      border: 1px solid #bcd5fb;
+      border-radius: 14px;
+      background: var(--blue-soft);
+      font-size: 18px;
+    }
+    .answer strong { color: #075dc8; }
+    .option { padding: 20px; border: 1px solid var(--line); border-radius: 14px; }
+    .option.recommended { border-color: #9dd3bb; background: var(--green-soft); }
+    .option small { display: block; margin-top: 8px; color: var(--muted); }
+    ol, ul { margin: 10px 0 0; padding-left: 22px; }
+    li { margin: 7px 0; }
+    .priority { display: grid; grid-template-columns: 78px 1fr; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+    .priority:last-child { border-bottom: 0; }
+    .priority > b { color: var(--blue); }
+    .note { margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: var(--amber-soft); color: #6e4b06; }
+    footer { padding: 26px 8px 0; color: var(--muted); font-size: 13px; }
+    .sources { columns: 2; column-gap: 28px; }
+    .sources li { break-inside: avoid; }
+
+    @media (max-width: 850px) {
+      main { width: min(100% - 24px, 1180px); margin-top: 12px; }
+      header, section { padding: 26px 22px; border-radius: 16px; }
+      .stats, .summary-grid, .recommend-grid, .gallery { grid-template-columns: 1fr; }
+      figure.wide { grid-column: auto; }
+      .flow { grid-template-columns: 1fr; }
+      .flow > div:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -17px; transform: translateX(50%); }
+      .sources { columns: 1; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Paint Mountain · UX / Gameplay Audit · 2026-08-08</div>
+    <h1>정확도를 덜어내고<br>판단과 피드백을 빠르게</h1>
+    <p class="lead">현재 문제는 단순한 UI 미감이 아니다. 플레이어에게는 “대충 어디에 떨어질지 보고 쏘는” 게임인데, 구현은 “선택한 3D 지점에 정확히 닿는 해를 먼저 증명하는” 도구처럼 커졌다.</p>
+    <div class="verdict">판정: 기능은 동작하지만 제품 경험은 막혀 있다. 정확성 중심 계약을 유지한 채 표면만 다듬는 것으로는 해결되지 않는다.</div>
+    <div class="stats">
+      <div class="stat"><strong>2,348줄</strong><span>대포·조준 코드 15개 파일</span></div>
+      <div class="stat"><strong>6,258줄</strong><span>스테이지 생성 코드 26개 파일</span></div>
+      <div class="stat"><strong>최대 6개</strong><span>한 목표에 검증할 탄도 후보</span></div>
+      <div class="stat"><strong>최대 4초</strong><span>통합 테스트가 허용하는 목표 확정 창</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>핵심 진단</h2>
+    <div class="summary-grid">
+      <div class="finding"><h3>1. 퍼즐의 질문이 흐려졌다</h3><p><b>어디에 쏠까?</b>보다 “선택한 점의 정확한 역산이 끝났나?”가 앞선다. 실패와 오차를 학습하는 물리 퍼즐이 정확한 좌표 선택기로 바뀌었다.</p></div>
+      <div class="finding"><h3>2. 매 입력이 계산 계약이 됐다</h3><p>지형 클릭, 드래그, 각도·파워 변경이 모두 새 역산 요청을 만든다. 확정 전에는 Fire도 막힌다. 프레임당 일을 줄였어도 사용자는 완료까지 기다린다.</p></div>
+      <div class="finding"><h3>3. 화면은 많지만 정보는 약하다</h3><p>카드·레일·숫자는 많은데 목표 영역, 산의 경로, 마지막 착탄, 남은 도색 기회는 빠르게 읽히지 않는다. HUD가 세계보다 더 설계돼 보인다.</p></div>
+      <div class="finding"><h3>4. 3D 장점도 제대로 쓰지 못한다</h3><p>Aim View는 작은 삼각형이 만든 노이즈가 크고, Map View는 산을 너무 작게 만든다. Shot Follow는 공이 화면을 지배해 접촉·도색의 원인과 결과가 끊긴다.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>현재 흐름 — 새 실행 캡처</h2>
+    <div class="gallery">
+      <figure>
+        <img src="experience-audit-assets/01-main-menu.png" alt="현재 메인 메뉴">
+        <figcaption><strong>1 · 메인 메뉴 — 보통 이하</strong>큰 빈 패널과 저대비 배경이 첫인상을 약하게 만든다. 핵심 물리 퍼즐의 재미가 보이지 않는다.</figcaption>
+      </figure>
+      <figure>
+        <img src="experience-audit-assets/02-stage-select.png" alt="현재 스테이지 선택 화면">
+        <figcaption><strong>2 · 스테이지 선택 — 나쁨</strong>30개 스테이지가 이름·목표 숫자만 반복된다. 지형 실루엣, 기믹, 난이도 차이를 선택 전에 판단할 수 없다.</figcaption>
+      </figure>
+      <figure class="wide">
+        <img src="experience-audit-assets/03-aiming-stage30.png" alt="현재 스테이지 30 조준 화면">
+        <figcaption><strong>3 · 조준 — 막힘</strong>산은 화면을 채우지만 경로가 ‘삼각형 노이즈’에 묻힌다. 목표 영역은 거의 안 보이고, 좌우 카드와 하단 조작 패널이 시야를 잘게 자른다.</figcaption>
+      </figure>
+      <figure>
+        <img src="experience-audit-assets/04-map-stage30.png" alt="현재 스테이지 30 지도 보기">
+        <figcaption><strong>4 · 지도 보기 — 실패</strong>가장 넓은 화면을 쓰면서도 산은 작고 빈 공간은 과도하다. 커버리지·고도·착탄·마지막 샷을 읽는 지도 기능이 없다.</figcaption>
+      </figure>
+      <figure>
+        <img src="experience-audit-assets/05-impact-stage30.png" alt="현재 스테이지 30 착탄 추적 화면">
+        <figcaption><strong>5 · 착탄 — 보통 이하</strong>큰 공과 가까운 카메라가 지형 관계를 숨긴다. “어디서부터 어디까지 칠해졌나”보다 공 자체가 먼저 보인다.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>탄착 계산이 느리게 느껴지는 이유</h2>
+    <p>현재 일반 미리보기는 이미 프레임당 약 1ms로 잘게 나뉘었다. 병목의 핵심은 새 <b>지형 목표 역산</b>이다.</p>
+    <div class="flow" aria-label="현재 지형 목표 계산 흐름">
+      <div>지형 점 클릭</div>
+      <div>720 타임스텝을 훑어 후보 생성</div>
+      <div>최대 6개 후보 정렬</div>
+      <div>후보별 실제 충돌 예측</div>
+      <div>정확히 맞아야 확정·Fire 허용</div>
+    </div>
+    <table>
+      <thead><tr><th>코드 사실</th><th>플레이 경험 영향</th></tr></thead>
+      <tbody>
+        <tr><td><code>TrajectoryPredictionJob.MAXIMUM_STEPS = 720</code></td><td>한 후보가 최대 12초 탄도를 훑는다.</td></tr>
+        <tr><td><code>TerrainAimSolver.MAXIMUM_NOMINATIONS = 6</code></td><td>앞 후보가 실패하면 다음 후보 검증이 이어진다.</td></tr>
+        <tr><td>프레임당 12 step / 약 1ms</td><td>멈춤은 줄지만 전체 확정 지연은 남는다.</td></tr>
+        <tr><td>테스트 확정 한도 240 physics ticks</td><td>60Hz 기준 최대 4초도 테스트상 성공이다. UX 기준이 없다.</td></tr>
+        <tr><td>Human revision pending 동안 Fire 비활성</td><td>계산은 “참고 정보”가 아니라 조작의 잠금장치다.</td></tr>
+      </tbody>
+    </table>
+    <div class="note">즉, “계산을 더 최적화”하는 것만으로는 부족하다. 정확한 결과를 기다려야 하는 계약을 없애야 한다.</div>
+  </section>
+
+  <section>
+    <h2>질문에 대한 답: Top View 그리드가 더 빠른가?</h2>
+    <div class="answer"><strong>그렇다. 단, “정확한 탄착점”이 아니라 “예상 착탄 구역”으로 정의해야 한다.</strong> 현재 지형도 이미 XZ마다 하나의 높이만 있는 2.5D 표면이라, 64×64 정도의 읽기 전용 그리드와 간단한 탄도 샘플로 즉시 근사할 수 있다.</div>
+    <table style="margin-top:18px">
+      <thead><tr><th></th><th>현재 방식</th><th>권장 방식</th></tr></thead>
+      <tbody>
+        <tr><td><b>표시</b></td><td>정확한 3D 접촉점 링</td><td>Top View의 착탄 원/타원 + 오차 범위</td></tr>
+        <tr><td><b>계산</b></td><td>역산 후보 + 후보별 실제 충돌 검사</td><td>20–40개 탄도 샘플 + 기존 표면 높이 조회</td></tr>
+        <tr><td><b>입력 반응</b></td><td>확정까지 pending</td><td>입력 프레임에 즉시 갱신</td></tr>
+        <tr><td><b>Fire</b></td><td>명시적 목표 계산 중 잠김</td><td>항상 유효한 yaw/elevation/power면 발사 가능</td></tr>
+        <tr><td><b>정확성</b></td><td>발사 전 약속</td><td>오차를 게임의 판단 요소로 수용</td></tr>
+      </tbody>
+    </table>
+    <p class="note">그리드는 새 점수 진실이 되면 안 된다. 기존 <code>PaintSystem</code> 마스크와 <code>target_mask</code>를 축소해 보여주는 읽기 전용 지도여야 한다.</p>
+  </section>
+
+  <section>
+    <h2>권장 경험 리셋</h2>
+    <div class="recommend-grid">
+      <div class="option recommended">
+        <h3>A · 계획은 Top View, 결과는 3D <span style="color:var(--green)">— 권장</span></h3>
+        <ol>
+          <li>기본 조준 화면을 정사영 Top View 지도 중심으로 바꾼다.</li>
+          <li>목표 영역, 현재 페인트, 기믹, 마지막 착탄을 한 지도에 겹친다.</li>
+          <li>yaw/elevation/power를 조정하면 예상 착탄 타원이 즉시 움직인다.</li>
+          <li>발사 후에만 3D Shot Follow로 전환하고, 착탄·도색 후 지도에 자동 복귀한다.</li>
+        </ol>
+        <small>퍼즐 판단과 물리 구경의 역할이 선명하게 분리된다.</small>
+      </div>
+      <div class="option">
+        <h3>B · 3D 조준 유지 + 작은 Top Map</h3>
+        <ol>
+          <li>현재 3D Aim View는 유지한다.</li>
+          <li>오른쪽 상태 카드 대신 240–320px 지도 오버레이를 둔다.</li>
+          <li>정확 목표 역산은 제거하고 근사 착탄 타원을 즉시 표시한다.</li>
+          <li>정확 궤적은 입력이 150ms 이상 멈췄을 때만 참고로 갱신한다.</li>
+        </ol>
+        <small>변경량은 적지만 현재 세계·HUD 문제를 일부 끌고 간다.</small>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>우선순위 해결안</h2>
+    <div class="priority"><b>P0</b><div><h3>정확 목표 역산을 정상 플레이에서 제거</h3><p><code>TerrainAimSolver</code> 결과가 Fire를 막지 않게 하고, 입력 즉시 근사 표시를 갱신한다. 실패 가능한 샷을 허용한다.</p></div></div>
+    <div class="priority"><b>P0</b><div><h3>Map View를 실제 계획 도구로 재정의</h3><p>현재의 작은 산+빈 화면을 버리고, 목표/페인트/기믹/착탄 이력을 읽는 2.5D 보드로 만든다.</p></div></div>
+    <div class="priority"><b>P1</b><div><h3>HUD를 한 줄 상태 + 한 줄 조작으로 축소</h3><p>스테이지, 시간, 탄, 바람, 완료를 상단 한 줄로 묶고, 하단에는 각도·파워·Fire만 남긴다. 모드 카드와 중복 패널을 없앤다.</p></div></div>
+    <div class="priority"><b>P1</b><div><h3>산을 ‘작은 삼각형’이 아니라 ‘큰 경로 덩어리’로 디자인</h3><p>삼각형 밀도와 명암 노이즈를 줄이고, 테라스·능선·분기·목표 영역을 큰 형태와 값 차이로 읽게 한다.</p></div></div>
+    <div class="priority"><b>P1</b><div><h3>착탄 피드백을 공보다 페인트 중심으로</h3><p>카메라 거리를 늘리고 접촉점, 진행 방향, 새로 칠한 구간을 0.5–0.8초 강조한다. 마지막 샷의 착탄·도색량을 지도에 남긴다.</p></div></div>
+    <div class="priority"><b>P2</b><div><h3>메뉴와 스테이지 선택 재구성</h3><p>큰 빈 패널을 줄이고 스테이지 카드에 실루엣 썸네일, 기믹 아이콘, 목표, 최고 기록을 보여준다.</p></div></div>
+  </section>
+
+  <section>
+    <h2>외부 패턴에서 가져올 것만</h2>
+    <ul>
+      <li><b>Worms:</b> 조준 중에도 카메라를 직접 움직이고 확대/축소할 수 있다. “조준”과 “관찰”을 서로 배타적인 모드로 만들 필요가 없다.</li>
+      <li><b>Splatoon:</b> 도색 상태는 별도의 지도로 전체 영역을 읽게 한다. Paint Mountain도 커버리지를 숫자보다 공간으로 보여줘야 한다.</li>
+      <li><b>Angry Birds:</b> 궤적선 자체가 핵심 피드백이다. 다만 여기서는 정확한 약속보다 즉시 갱신되는 근사선이 더 적합하다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>감사 범위와 한계</h2>
+    <table>
+      <tbody>
+        <tr><th>Surface</th><td>메인 메뉴 → 스테이지 선택 → 조준 → 지도 → 착탄</td></tr>
+        <tr><th>Invocation depth</th><td>UI/UX Gate Level 4 · Combined UX audit</td></tr>
+        <tr><th>Rendered evidence</th><td>현재 Windows release, Compatibility renderer, Korean 1280×720, 5개 상태</td></tr>
+        <tr><th>Accessibility</th><td>보이는 텍스트 적합성·대비 위험·상태 단서를 점검했다. 키보드 순서, 스크린리더, 200% 확대는 이번 캡처만으로 확인하지 않았다.</td></tr>
+        <tr><th>Result</th><td><b style="color:var(--red)">blocked</b> — 기능 완성도와 별개로 플레이 경험 리셋이 필요하다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p><b>내부 근거</b></p>
+    <ul class="sources">
+      <li><code>src/cannon/terrain_aim_solver.gd</code></li>
+      <li><code>src/cannon/trajectory_prediction_scheduler.gd</code></li>
+      <li><code>src/cannon/trajectory_prediction_job.gd</code></li>
+      <li><code>src/stage/stage_controller.gd</code></li>
+      <li><code>tests/aim_interaction_test.gd</code></li>
+      <li><code>.agents/design/UIUX_GUIDELINES.md</code></li>
+      <li><code>.agents/design/ART_DIRECTION.md</code></li>
+      <li><code>.agents/Documentation.md</code></li>
+    </ul>
+    <p style="margin-top:18px"><b>공식 비교 자료</b> · <a href="https://www.team17.com/news/worms-w-md-mobilize-out-now-on-apple-android">Team17 — Worms W.M.D Mobilize</a> · <a href="https://splatoon.nintendo.com/ca/news/beginner-basics-for-splatoon-3-the-ins-and-outs-of-playing-online/">Nintendo — Splatoon 3 map/ink guide</a> · <a href="https://www.angrybirds.com/stories/angry-birds-2-update-4-0-0/">Rovio — Angry Birds 2 trajectory-line update</a></p>
+    <p style="margin-top:14px">이 문서는 구현 계획이나 승인된 제품 변경이 아니다. 현재 빌드의 문제를 짧게 정리하고 다음 방향을 선택하기 위한 진단 보고서다.</p>
+  </footer>
+</main>
+</body>
+</html>
