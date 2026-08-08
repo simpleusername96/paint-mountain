@@ -309,7 +309,7 @@ Source owners: new `src/cannon/terrain_aim_target.gd`,
 `src/cannon/cannon_controller.gd`, `src/terrain/terrain_surface.gd`,
 `src/stage/stage_controller.gd`
 
-- [ ] **2.1 Establish canonical selected-target state and top-only picking.**
+- [x] **2.1 Establish canonical selected-target state and top-only picking.**
   - Change: create typed immutable target data containing world point, normal,
     top hit address, and stable revision key. Add one reusable queued screen-ray
     picker that accepts only canonical top-body hits and returns no result for
@@ -318,6 +318,9 @@ Source owners: new `src/cannon/terrain_aim_target.gd`,
     fixtures return the locked target or rejection identity exactly.
   - Guard: no target owner stores a height map, collider duplicate, or mutable
     terrain sample.
+  - Evidence (2026-08-08): `terrain_aim_target_test.gd` passed flat, sloped,
+    triangle-edge, shell, obstruction, sky, stale-camera, newest-request, and
+    consume-once cases without duplicating terrain data.
 - [ ] **2.2 Implement latest-only wind-aware inverse solve requests.**
   - Change: implement deterministic candidate nomination for pinned elevation
     and pinned power using the shared launch origin, damp/gravity/wind recurrence,
@@ -594,7 +597,7 @@ safety, tolerance, compatibility, or acceptance.
 
 - Canonical progress: the task checkboxes in this contract.
 - Current phase: Phase 2.
-- Next task: 2.1, establish canonical selected-target state and top-only picking.
+- Next task: 2.2, implement latest-only wind-aware inverse solve requests.
 - Last checkpoint evidence: Tasks 1.1-1.3 passed their focused checks; the Phase
   1 batch passed all five named scripts on 2026-08-08.
 - Last completed gate: Phase 1 batch gate.
