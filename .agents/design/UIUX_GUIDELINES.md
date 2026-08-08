@@ -17,6 +17,7 @@ related:
   - ../execplans/2026-08-06-command-columns-hud.md
   - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../execplans/2026-08-07-cannon-shot-observation.md
+  - ../execplans/2026-08-08-casual-shared-ui-refresh.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -37,10 +38,11 @@ state.
 
 ## Product Feel
 
-- Sparse, edge-aligned, high-contrast, and calm.
+- Casual, simple, tactile, edge-aware, and calm.
 - Functional rather than dashboard-like: no card mosaic, decorative glass,
   filler metrics, or unsupported actions.
-- Tactile primary actions with restrained secondary surfaces.
+- Tactile primary actions with restrained secondary surfaces, generous internal
+  padding, and clear selected, hover, pressed, disabled, and focus states.
 - Korean-native rather than an English layout with translated strings forced
   into it.
 
@@ -48,11 +50,11 @@ state.
 
 ### Aiming HUD hierarchy
 
-The user-selected `command-columns-hud.png` is the current aiming-HUD visual
-direction. Use its narrow left command column, narrow right status column,
-restrained warm surfaces, centered Fire action, and compact typography rhythm.
-The generated still does not remove real controls or state: Gear remains beside
-the right rail, and direction, power steps, dynamic wind detail, focus, disabled
+The 2026-08-08 casual shared UI supersession replaces
+`command-columns-hud.png` as the current visual authority. Retain its useful
+functional hierarchy—edge status, centered Fire, compact typography, and open
+world center—but do not preserve its literal columns, coordinates, or panel
+details. Gear, direction, power steps, dynamic wind detail, focus, disabled
 states, Map View, and the contextual Shot Follow return remain supported.
 
 At the 1280x720 logical baseline, preserve this relative hierarchy:
@@ -63,12 +65,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Readable run state without covering the mountain; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
-| Aim and power | Lower-left | One coherent control group |
+| Aim and power | Lower edge, outside the cannon/flag silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
-- Use the active ExecPlan's current baseline rectangles while implementing the
-  approved layout, but do not promote those task coordinates into permanent
-  design tokens.
+- Use the active ExecPlan's baseline rectangles as implementation evidence, not
+  permanent design tokens. Recompose a component when its minimum size,
+  internal padding, or world obstruction contradicts the hierarchy.
 - Use a 24 px logical safe margin and anchors/containers so this hierarchy
   survives supported desktop aspect and resolution changes. Do not freeze every
   child to viewport offsets.
@@ -154,6 +156,13 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - `HUDController` owns whole-HUD state presentation and signal coordination.
   Child component scripts own only their displayed structure and narrow intent;
   no component reads a gameplay singleton to reconstruct authoritative state.
+- Components must have one internally consistent minimum size. A parent may not
+  assign a smaller rectangle than a child's minimum content geometry. Use at
+  least 12 px internal padding for compact controls, 16 px for cards, and 24 px
+  for primary menu surfaces unless direct rendered evidence requires more.
+- Prefer one visible containment surface per functional group. Avoid nested
+  outlines, card-in-card framing, and labels whose proximity makes ownership
+  ambiguous.
 
 ### Layout and tokens
 
@@ -162,7 +171,11 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   constants in scripts.
 - Current UI roles are warm surface `#FFFDFC`, navy text/dark surface `#172538`,
   primary blue `#2584FF`, muted progress rail `#C9CDD2`, and danger `#D94C4C`.
-- Panels use the established restrained 12 px radius; primary actions use 16 px.
+  The approved Kenney UI Pack 2.0 subset may supply nine-slice edge and depth
+  treatment for shared button and stage-card roles; the Theme remains the owner.
+- Panels use restrained 14-18 px radii according to prominence; primary actions
+  may use the imported tactile depth edge. Do not mix decorative surface styles
+  within one screen.
   Do not add nested bordered/background containers beyond two visible levels
   without a clear containment reason.
 - Pretendard Variable weight and size roles are Theme-owned semantic type
@@ -207,7 +220,7 @@ A UI change conforms when:
 - Shot Follow keeps the new root paintball and first terrain impact readable,
   while the visible return action and Tab restore Aim View without implying
   in-flight steering;
-- the left vertical coverage gauge, lower-left controls, edge status, top-right
+- the left vertical coverage gauge, lower-edge controls, edge status, top-right
   gear, and bottom-center Fire preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate

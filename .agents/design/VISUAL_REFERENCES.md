@@ -49,7 +49,7 @@ concepts, or asset previews from silently becoming product requirements.
 - Do not use as: a runtime screenshot, feasibility proof, literal geometry,
   exact HUD contract, stage seed, mechanism placement, or acceptance evidence.
 
-### Selected aiming-HUD direction
+### Historical aiming-HUD direction
 
 ![Selected Command Columns HUD](../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
 
@@ -58,16 +58,19 @@ concepts, or asset previews from silently becoming product requirements.
   the user on 2026-08-06 for implementation.
 - SHA-256:
   `1B4AF8DDFF91D5A23238296EC3C886F17CA18E2FC00F2FA93811B50EEEEDCA0F`.
-- Use for: the aiming HUD's narrow left command column, narrow right segmented
-  status rail, bottom-left aim group, bottom-center Fire action, warm restrained
-  panel treatment, and compact Korean typography rhythm.
+- Historical use: the aiming HUD's narrow command/status columns,
+  bottom-center Fire action, warm restrained panel treatment, and compact Korean
+  typography rhythm.
 - Preserve from runtime/spec even when omitted or simplified in the image:
   focusable Gear, direction value, power-step controls, Aim Lock/Map Inspection,
   dynamic wind detail, disabled/readiness states, and authoritative live values.
 - Do not use as: world-render authority, literal stage/mechanism placement,
   runtime proof, a reason to fake state, or permission to remove functionality.
-- The sibling `quiet-edge-hud.png` and `instrument-rail-hud.png` remain rejected
-  alternatives for this implementation, not active directions.
+- Status: superseded on 2026-08-08 by the user's casual shared UI direction.
+  Preserve only the still-valid real actions and edge-first hierarchy recorded
+  in `UIUX_GUIDELINES.md`; do not preserve the literal columns or panel details.
+- The sibling `quiet-edge-hud.png` and `instrument-rail-hud.png` remain historical
+  alternatives, not active directions.
 
 ### Historical anti-reference
 
@@ -81,6 +84,22 @@ concepts, or asset previews from silently becoming product requirements.
   dominant flat foreground, oversized black cannon, weak route/mechanism
   visibility, oversized trajectory dots, and legacy HUD hierarchy.
 - Do not use as: proof of the current revision or a layout to preserve.
+
+### Current exploratory casual UI matrix
+
+- Gallery: [Casual UI Directions](../../docs/concepts/casual-ui-directions-2026-08-08/index.html)
+- Images: `../../docs/concepts/casual-ui-directions-2026-08-08/01-paper-toy-main-menu.png`
+  through `09-field-guide-aim-view.png`.
+- Provenance: nine independent ImageGen outputs grounded in the matching
+  running-game capture and the primary target comparator.
+- Use for: comparing three component languages across Main Menu, Stage Select,
+  and Aim View: Paper Toy Adventure, Sticker Arcade, and Quiet Field Guide.
+- Recommendation: borrow Paper Toy's tactile surfaces for menus and Field
+  Guide's restraint for the gameplay HUD. Limit Sticker Arcade's thick outline
+  and saturation to emphasis states.
+- Do not use as: runtime proof, approved implementation authority, a source of
+  gameplay values, or permission to add invented actions. The implemented Theme
+  and `UIUX_GUIDELINES.md` remain authoritative until the user selects a concept.
 
 ### Historical remediation report
 
@@ -108,9 +127,9 @@ concepts, or asset previews from silently becoming product requirements.
   mechanisms, camera, shadows, and paint must form one legible composition.
 - Blue paint and trajectory provide the strongest saturated gameplay contrast;
   environment and UI stay restrained.
-- The HUD is visually secondary and edge-aligned, but its current canonical
-  layout comes from the user-selected Command Columns direction as interpreted
-  by `UIUX_GUIDELINES.md`, not the primary image's literal controls.
+- The HUD is visually secondary and edge-aligned. Its current canonical
+  behavior and component rules come from `UIUX_GUIDELINES.md`; no generated
+  image is current layout authority until the user selects it.
 - Existing screenshots and scenes can be useful implementation evidence while
   still being wrong as design direction.
 

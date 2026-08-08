@@ -21,6 +21,8 @@ related:
   - execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - execplans/2026-08-08-terrain-targeted-aiming.md
+  - execplans/2026-08-08-casual-shared-ui-refresh.md
+  - execplans/2026-08-08-instant-approximate-landing-feedback.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
@@ -33,6 +35,26 @@ related:
 ---
 
 # Project Record
+
+## Current Casual Shared UI Refresh (2026-08-08)
+
+The implementation and its release evidence are recorded in
+[`2026-08-08-casual-shared-ui-refresh.md`](execplans/2026-08-08-casual-shared-ui-refresh.md)
+and [`evidence/casual-shared-ui-refresh-2026-08-08/`](evidence/casual-shared-ui-refresh-2026-08-08/).
+
+- The shared Godot Theme now owns tactile neutral, primary, and danger roles
+  backed by a narrow CC0 Kenney UI Pack subset. No scene-local token registry or
+  executable dependency was added.
+- Main Menu is compact, Stage Select uses balanced full-height selection and
+  detail surfaces with eight cards per page, and Aim View controls fit a
+  lower-right 368x96 component clear of the cannon and centered Fire action.
+- Korean 1280x720 Main Menu, Stage Select, Aim, Pause, and Settings captures plus
+  an English 1920x1080 Aim capture were inspected directly. Godot verification
+  and the Windows Desktop release export passed.
+- The nine-image [Casual UI Directions gallery](../docs/concepts/casual-ui-directions-2026-08-08/index.html)
+  is exploratory only. The recommended next direction combines Paper Toy menu
+  surfaces with Quiet Field Guide HUD restraint; it does not supersede the
+  running Theme until the user selects it.
 
 ## Current Terrain-Targeted Aiming Implementation (2026-08-08)
 

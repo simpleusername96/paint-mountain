@@ -5,7 +5,7 @@ signal back_requested
 signal start_requested(stage_id: StringName)
 signal selection_changed(stage: StageData)
 
-const PAGE_SIZE := 10
+const PAGE_SIZE := 8
 
 var _selected_stage: StageData
 var _cards: Array[Button] = []
@@ -52,10 +52,11 @@ func _build_pager() -> void:
 	_cards_container.columns = 2
 	for index in range(PAGE_SIZE):
 		var card := Button.new()
-		card.custom_minimum_size = Vector2(0.0, 88.0)
+		card.custom_minimum_size = Vector2(0.0, 120.0)
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.toggle_mode = true
 		card.focus_mode = Control.FOCUS_ALL
+		card.theme_type_variation = &"StageCardButton"
 		_cards_container.add_child(card)
 		_cards.append(card)
 		card.pressed.connect(_on_card_pressed.bind(index))

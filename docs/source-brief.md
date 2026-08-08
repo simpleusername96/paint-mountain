@@ -2006,6 +2006,38 @@ Stationary-cannon launch planning, no in-flight steering, advisory generic
 prediction, Map Inspection, and the ban on post-impact preview remain in force.
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-08): Casual Shared UI Refresh
+
+After reviewing the current menus and Aim View, the user rejected the current
+component detailing, spacing, overlap behavior, and prior mockup as sufficient
+visual authority. These clauses supersede only conflicting UI layout-detail,
+component-surface, padding, and selected-mockup interpretations:
+
+- **Casual and unobtrusive:** the interface must feel like a simple casual game.
+  It uses direct hierarchy, tactile but restrained controls, short copy, and
+  enough breathing room to read immediately without covering the mountain,
+  cannon, wind flag, selected target, trajectory, or impact.
+- **Shared component system:** reusable Theme roles and component scenes remain
+  mandatory. Typography, surfaces, radii, borders, focus, selected, hover,
+  pressed, and disabled states are owned by the shared Theme rather than copied
+  into individual screens.
+- **Layout freedom with functional continuity:** Main Menu, Stage Select, and
+  gameplay HUD may be recomposed. Preserve all real actions and authoritative
+  values, keep Fire as the sole Aim View primary action, and prioritize fixing
+  overlap, clipping, insufficient padding, weak grouping, and oversized empty
+  surfaces over preserving historical coordinates.
+- **External UI texture use:** a small, license-recorded subset of easy-to-source
+  game UI panel or button assets may be imported and adapted through shared Theme
+  roles. Imported assets do not replace production ownership, introduce fake
+  controls, or authorize an unreviewed full asset pack.
+- **Concept status:** generated visual alternatives are exploratory until the
+  user selects a direction. They do not prove runtime behavior and do not
+  silently override the implemented shared component baseline.
+
+Gameplay logic and aiming-algorithm changes remain outside this UI revision and
+must be documented in a separate execution contract before implementation.
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
