@@ -30,6 +30,13 @@ var _prediction_publication_count := 0
 var _last_advance_step_count := 0
 var _last_advance_elapsed_usec := 0
 var _discarded_job_count := 0
+var _target_request: Dictionary = {}
+var _target_candidates: Array[Dictionary] = []
+var _target_candidate_index := 0
+var _target_callback: Callable
+var _active_kind: StringName = &""
+var _target_nominated := false
+var _target_solver: TerrainAimSolver
 
 
 func configure(
@@ -116,6 +123,49 @@ func active_job_count() -> int:
 	return 1 if _active_job != null else 0
 
 
+## Replaces all older target work. constraint is &"elevation" or &"power";
+## branch is an opaque low/high continuity token owned by the caller.
+func request_target_solution(
+		target: TerrainAimTarget,
+		constraint: StringName,
+		requested_value: float,
+		branch: StringName,
+		last_aim: AimTuple,
+		revision: int,
+		callback: Callable
+) -> void:
+	if _cannon == null or _wind_controller == null or target == null or not callback.is_valid():
+		return
+	_target_request = _capture_target_request(target, constraint, requested_value, branch,
+		last_aim, revision)
+	_target_callback = callback
+	_target_candidates.clear()
+	_target_candidate_index = 0
+	_target_nominated = false
+	if _active_job != null:
+		_discarded_job_count += 1
+		_active_job = null
+		_active_request.clear()
+		_active_kind = &""
+	_publish_target(TerrainAimSolution.new(TerrainAimSolution.Status.PENDING, null, null,
+		StringName(_target_request.context_key)))
+
+
+func cancel_target_solution() -> void:
+	if _target_request.is_empty():
+		return
+	if _active_kind == &"target" and _active_job != null:
+		_discarded_job_count += 1
+		_active_job = null
+		_active_request.clear()
+		_active_kind = &""
+	_publish_target(TerrainAimSolution.new(
+		TerrainAimSolution.Status.STALE_CONTEXT, null, null,
+		StringName(_target_request.get("context_key", &"")), &"cancelled"
+	))
+	_clear_target_request()
+
+
 func last_advance_step_count() -> int:
 	return _last_advance_step_count
 
@@ -137,8 +187,29 @@ func _physics_process(_delta: float) -> void:
 	if _hold_physics_ticks > 0:
 		_hold_physics_ticks -= 1
 		return
+	if not _target_request.is_empty():
+		if not _target_nominated:
+			_nominate_target_request()
+		if _target_solver != null and not _target_solver.is_complete():
+			var nomination_started := Time.get_ticks_usec()
+			_target_solver.advance_until(nomination_started + MAXIMUM_WORK_USEC_PER_TICK)
+			_last_advance_elapsed_usec = Time.get_ticks_usec() - nomination_started
+			if not _target_solver.is_complete():
+				return
+			_target_candidates = _target_solver.candidates()
+		if _active_job == null:
+			_start_next_target_job()
+		if _active_job != null:
+			_advance_active_job()
+		return
 	if _request_dirty and _nomination_is_due():
 		_nominate_live_context()
+	if _active_job == null:
+		return
+	_advance_active_job()
+
+
+func _advance_active_job() -> void:
 	if _active_job == null:
 		return
 	var started_at := Time.get_ticks_usec()
@@ -150,7 +221,10 @@ func _physics_process(_delta: float) -> void:
 	_last_advance_elapsed_usec = Time.get_ticks_usec() - started_at
 	if not _active_job.is_complete():
 		return
-	_complete_active_job()
+	if _active_kind == &"target":
+		_complete_target_job()
+	else:
+		_complete_active_job()
 
 
 func _nomination_is_due() -> bool:
@@ -201,6 +275,7 @@ func _capture_live_request() -> Dictionary:
 
 
 func _start_job(request: Dictionary) -> void:
+	_active_kind = &"preview"
 	_active_request = request
 	_prediction_compute_count += 1
 	if _prediction_callback.is_valid():
@@ -238,10 +313,11 @@ func _start_job(request: Dictionary) -> void:
 
 
 func _complete_active_job() -> void:
-	var finished_request := _active_request
+	var finished_request := _active_request.duplicate()
 	var finished_job := _active_job
 	_active_request = {}
 	_active_job = null
+	_active_kind = &""
 	var finished_key := StringName(finished_request.get("context_key", &""))
 	var live_key := _live_context_key()
 	if finished_key == live_key:
@@ -257,6 +333,140 @@ func _complete_active_job() -> void:
 			_prediction_publication_count += 1
 	if finished_key != live_key:
 		_request_dirty = true
+
+
+func _capture_target_request(
+		target: TerrainAimTarget, constraint: StringName, requested_value: float,
+		branch: StringName, last_aim: AimTuple, revision: int
+) -> Dictionary:
+	var launch_tick := _prediction_launch_tick()
+	var wind_identity := _wind_controller.schedule_identity()
+	var wind_epoch := _wind_controller.prediction_epoch(
+		TrajectoryPredictionJob.MAXIMUM_STEPS, DYNAMIC_WIND_BUCKET_TICKS
+	)
+	return {
+		"target": target,
+		"constraint": constraint,
+		"requested_value": requested_value,
+		"branch": branch,
+		"last_aim": last_aim,
+		"revision": revision,
+		"launch_tick": launch_tick,
+		"wind_identity": wind_identity,
+		"wind_epoch": wind_epoch,
+		"context_key": StringName("target:%s|%d|%s|%d" % [
+			String(target.revision_key), revision, String(wind_identity), wind_epoch
+		]),
+	}
+
+
+func _start_next_target_job() -> void:
+	if _target_request.is_empty():
+		return
+	if _target_candidate_index >= _target_candidates.size():
+		_publish_target(TerrainAimSolution.new(
+			TerrainAimSolution.Status.NO_SOLUTION, null, null,
+			StringName(_target_request.context_key), &"no_verified_candidate"
+		))
+		_clear_target_request()
+		return
+	var candidate := _target_candidates[_target_candidate_index]
+	_target_candidate_index += 1
+	var aim: AimTuple = candidate.aim
+	_active_kind = &"target"
+	_active_request = {
+		"aim": aim,
+		"context_key": _target_request.context_key,
+		"launch_tick": _target_request.launch_tick,
+	}
+	_prediction_compute_count += 1
+	_active_job = TrajectoryPredictionJob.create(
+		_cannon.get_world_3d().direct_space_state,
+		_cannon.get_launch_origin_for(aim.yaw_degrees, aim.elevation_degrees),
+		CannonBallistics.launch_velocity(_cannon.projectile_data, aim.yaw_degrees,
+			aim.elevation_degrees, float(aim.power_percent)),
+		_cannon.projectile_data.radius, _cannon.projectile_data.linear_damp, _bounds,
+		TrajectoryPredictionJob.COLLISION_MASK, true, _wind_profile, _schedule_seed,
+		int(_target_request.launch_tick)
+	)
+
+
+func _complete_target_job() -> void:
+	var finished_job := _active_job
+	var finished_request := _active_request.duplicate()
+	_active_job = null
+	_active_request.clear()
+	_active_kind = &""
+	if _target_request.is_empty() or StringName(finished_request.context_key) \
+			!= StringName(_target_request.context_key) or not _target_context_is_current():
+		if not _target_request.is_empty():
+			_target_nominated = false
+			_target_candidates.clear()
+			_target_candidate_index = 0
+		return
+	var prediction := finished_job.completed_prediction()
+	var target: TerrainAimTarget = _target_request.target
+	if TerrainAimSolver.validates_target(prediction, target, _cannon.projectile_data.radius):
+		var aim := finished_request.aim as AimTuple
+		var forward_context := build_context_key(
+			aim.stable_key(), _wind_controller.schedule_identity(),
+			_wind_controller.prediction_epoch(TrajectoryPredictionJob.MAXIMUM_STEPS,
+				DYNAMIC_WIND_BUCKET_TICKS)
+		)
+		var accepted := _publish_target(TerrainAimSolution.new(TerrainAimSolution.Status.VALID,
+			finished_request.aim as AimTuple, prediction,
+			forward_context))
+		if accepted and _target_context_is_current() and _cannon.aim_key() == aim.stable_key():
+			_cannon.expect_prediction_context(forward_context)
+			_cannon.set_prediction(prediction, aim.stable_key(), _wind_controller.schedule_identity(),
+				int(finished_request.launch_tick), forward_context)
+			_prediction_publication_count += 1
+		_clear_target_request()
+		return
+	_start_next_target_job()
+
+
+func _target_context_is_current() -> bool:
+	if _target_request.is_empty():
+		return false
+	return StringName(_target_request.wind_identity) == _wind_controller.schedule_identity() \
+		and int(_target_request.wind_epoch) == _wind_controller.prediction_epoch(
+			TrajectoryPredictionJob.MAXIMUM_STEPS, DYNAMIC_WIND_BUCKET_TICKS
+		)
+
+
+func _publish_target(solution: TerrainAimSolution) -> bool:
+	if _target_callback.is_valid():
+		var result: Variant = _target_callback.call(solution)
+		return result is bool and result
+	return false
+
+
+func _clear_target_request() -> void:
+	_target_request.clear()
+	_target_candidates.clear()
+	_target_candidate_index = 0
+	_target_nominated = false
+	_target_solver = null
+	_target_callback = Callable()
+
+
+func _nominate_target_request() -> void:
+	# Capture the newest wind epoch on the bounded scheduler tick, never in input.
+	_target_request = _capture_target_request(
+		_target_request.target as TerrainAimTarget,
+		StringName(_target_request.constraint), float(_target_request.requested_value),
+		StringName(_target_request.branch), _target_request.last_aim as AimTuple,
+		int(_target_request.revision)
+	)
+	_target_solver = TerrainAimSolver.new()
+	_target_solver.begin(_cannon, _target_request.target as TerrainAimTarget,
+		StringName(_target_request.constraint), float(_target_request.requested_value),
+		StringName(_target_request.branch), _target_request.last_aim as AimTuple,
+		_wind_profile, _schedule_seed, int(_target_request.launch_tick))
+	_target_candidates = _target_solver.candidates()
+	_target_candidate_index = 0
+	_target_nominated = true
 
 
 func _live_context_key() -> StringName:

@@ -150,11 +150,13 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	var editable := _cannon != null and _cannon.input_enabled \
 			and current_state == State.AIMING and _origin_allowed(origin)
 	var canonical_aim_valid := _cannon != null and _cannon.canonical_aim_is_valid()
+	var human_aim_revision_pending := origin == ActionOrigin.HUMAN and _cannon != null \
+			and _cannon.human_aim_revision_pending()
 	var reason := ""
 	var reason_key := "ready"
 	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
 			and active_roots < ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES \
-			and canonical_aim_valid
+			and canonical_aim_valid and not human_aim_revision_pending
 	if not editable:
 		reason_key = "not_editable"
 		reason = tr("fire.not_editable")
@@ -164,6 +166,9 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 	elif _terminal_pending:
 		reason_key = "terminal"
 		reason = tr("fire.terminal")
+	elif human_aim_revision_pending:
+		reason_key = "aim_revision_pending"
+		reason = "aim_revision_pending"
 	elif not canonical_aim_valid:
 		reason_key = "invalid_aim"
 		reason = tr("fire.invalid_aim")
@@ -177,6 +182,7 @@ func fire_readiness_snapshot(origin: ActionOrigin = ActionOrigin.HUMAN) -> Dicti
 		"phase": state_name(),
 		"editable": editable,
 		"canonical_aim_valid": canonical_aim_valid,
+		"aim_revision_pending": human_aim_revision_pending,
 		"active_root_count": active_roots,
 		"active_body_count": active_bodies,
 		"fire_capacity": remaining_capacity,
@@ -292,6 +298,47 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 	aim_action_accepted.emit(_cannon.yaw_degrees, _cannon.elevation_degrees, _cannon.power_percent, origin)
 	_emit_fire_readiness()
 	return true
+
+
+func begin_human_aim_revision(revision: int) -> bool:
+	if not _origin_allowed(ActionOrigin.HUMAN) \
+			or current_state != State.AIMING or not _cannon.input_enabled:
+		return false
+	var accepted := _cannon.begin_human_aim_revision(revision)
+	if accepted:
+		_emit_fire_readiness()
+	return accepted
+
+
+func commit_human_aim_revision(
+		revision: int,
+		yaw: float,
+		elevation: float,
+		power: float
+) -> bool:
+	if not _origin_allowed(ActionOrigin.HUMAN) \
+			or current_state != State.AIMING or not _cannon.input_enabled:
+		return false
+	var accepted := _cannon.commit_human_aim_revision(revision, yaw, elevation, power)
+	if accepted:
+		aim_action_accepted.emit(
+			_cannon.yaw_degrees,
+			_cannon.elevation_degrees,
+			_cannon.power_percent,
+			ActionOrigin.HUMAN
+		)
+		_emit_fire_readiness()
+	return accepted
+
+
+func restore_human_aim_revision(revision: int) -> bool:
+	if not _origin_allowed(ActionOrigin.HUMAN) \
+			or current_state != State.AIMING or not _cannon.input_enabled:
+		return false
+	var restored := _cannon.restore_human_aim_revision(revision)
+	if restored:
+		_emit_fire_readiness()
+	return restored
 
 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
@@ -780,7 +827,7 @@ func _set_terminal_pending(pending: bool) -> void:
 func _aim_key() -> String:
 	if _cannon == null:
 		return ""
-	return AimTuple.new(_cannon.yaw_degrees, _cannon.elevation_degrees, int(_cannon.power_percent)).stable_key()
+	return AimTuple.new(_cannon.yaw_degrees, _cannon.elevation_degrees, _cannon.power_percent).stable_key()
 
 
 func _emit_fire_readiness() -> void:

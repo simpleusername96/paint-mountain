@@ -725,7 +725,8 @@ static func build_certificate(
 	for witness in witnesses:
 		angles.append(roundi(witness.yaw_degrees * 10.0))
 		angles.append(roundi(witness.elevation_degrees * 10.0))
-		powers.append(witness.power_percent)
+		# Certificate storage is deliberately integer-only for catalog identity.
+		powers.append(int(witness.power_percent))
 	var certificate_target_indices: PackedInt32Array = rigidbody_result.get(
 		"target_witness_indices",
 		predictor_result.target_witness_indices
@@ -779,7 +780,7 @@ static func build_certificate(
 			return null
 		summit_witness_angle_tenths.append(roundi(summit_aim.yaw_degrees * 10.0))
 		summit_witness_angle_tenths.append(roundi(summit_aim.elevation_degrees * 10.0))
-		summit_witness_power = summit_aim.power_percent
+		summit_witness_power = int(summit_aim.power_percent)
 		var summit_physical_impacts: PackedVector3Array = summit_rigidbody_result.get(
 			"physical_witness_impacts",
 			PackedVector3Array()
@@ -1347,7 +1348,7 @@ static func _append_elevation_neighborhood(
 			cannon,
 			aim.yaw_degrees,
 			aim.elevation_degrees,
-			aim.power_percent,
+			int(aim.power_percent),
 			target_world_point,
 			target_world_normal,
 			solver_cache
@@ -1360,7 +1361,7 @@ static func _append_elevation_neighborhood(
 			"endpoint_error": float(endpoint.endpoint_error),
 			"perpendicular_miss": float(endpoint.perpendicular_miss),
 			"flight_duration": _damped_duration_at_horizontal_range_cached(
-				float(solver_cache.speeds[aim.power_percent]) * cos(deg_to_rad(aim.elevation_degrees)),
+				float(solver_cache.speeds[int(aim.power_percent)]) * cos(deg_to_rad(aim.elevation_degrees)),
 				float(endpoint.projected_range),
 				solver_cache
 			),
@@ -1694,7 +1695,7 @@ static func _rigidbody_checksum(
 static func _hash_aim(hash: int, aim: AimTuple) -> int:
 	hash = _hash_int(hash, roundi(aim.yaw_degrees * 10.0))
 	hash = _hash_int(hash, roundi(aim.elevation_degrees * 10.0))
-	return _hash_int(hash, aim.power_percent)
+	return _hash_int(hash, int(aim.power_percent))
 
 
 static func _hash_identity(hash: int, identity: TrajectoryHitIdentity) -> int:

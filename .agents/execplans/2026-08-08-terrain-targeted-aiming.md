@@ -321,7 +321,7 @@ Source owners: new `src/cannon/terrain_aim_target.gd`,
   - Evidence (2026-08-08): `terrain_aim_target_test.gd` passed flat, sloped,
     triangle-edge, shell, obstruction, sky, stale-camera, newest-request, and
     consume-once cases without duplicating terrain data.
-- [ ] **2.2 Implement latest-only wind-aware inverse solve requests.**
+- [x] **2.2 Implement latest-only wind-aware inverse solve requests.**
   - Change: implement deterministic candidate nomination for pinned elevation
     and pinned power using the shared launch origin, damp/gravity/wind recurrence,
     legal ranges, prior branch, and last committed aim. Extend the existing
@@ -336,7 +336,12 @@ Source owners: new `src/cannon/terrain_aim_target.gd`,
   - Guard: `DirectReachabilityValidator` is never called from runtime, there is
     never more than one exact active job, and no input callback or Fire path
     performs a search or direct-space query.
-- [ ] **2.3 Add committed aim revisions and tenth-percent power.**
+  - Evidence (2026-08-08): `terrain_aim_solver_test.gd` passed deterministic
+    wind nomination, positive yaw, low/high branch isolation, flat and sloped
+    real-terrain scheduler round trips, pinned elevation and power, stale
+    revision replacement, atomic prediction publication, and the one-job/
+    12-step bounded-work diagnostics.
+- [x] **2.3 Add committed aim revisions and tenth-percent power.**
   - Change: add neutral begin/commit/restore aim-revision methods at the
     StageController/CannonController boundary. Human explicit edits mark Fire
     pending until a same-revision solution commits or restores; direct
@@ -349,6 +354,10 @@ Source owners: new `src/cannon/terrain_aim_target.gd`,
     generated witness identities are unchanged.
   - Guard: generic preview pending/miss never changes Fire readiness and no new
     stage state is introduced.
+  - Evidence (2026-08-08): `aim_precision_revision_test.gd` passed fractional
+    canonical aim/key behavior, Human-only revision readiness and restore, and
+    direct action compatibility. The Phase 2 batch passed all six named scripts;
+    generation/catalog identity fixtures remained unchanged.
 
 Batch gate:
 
@@ -596,11 +605,11 @@ safety, tolerance, compatibility, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 2.
-- Next task: 2.2, implement latest-only wind-aware inverse solve requests.
-- Last checkpoint evidence: Tasks 1.1-1.3 passed their focused checks; the Phase
-  1 batch passed all five named scripts on 2026-08-08.
-- Last completed gate: Phase 1 batch gate.
+- Current phase: Phase 3.
+- Next task: 3.1, wire Aim View click/drag terrain retargeting.
+- Last checkpoint evidence: Tasks 2.1-2.3 passed their focused checks; the Phase
+  2 batch passed all six named scripts on 2026-08-08.
+- Last completed gate: Phase 2 batch gate.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit. Do not mirror implementation
   progress in another plan.

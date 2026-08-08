@@ -204,7 +204,8 @@ static func _store_witness(data: BakedStageLayoutData, witness: StageEntryAimWit
 	var prefix := "summit_" if summit else "default_"
 	data.set(prefix + "aim_yaw", witness.aim.yaw_degrees)
 	data.set(prefix + "aim_elevation", witness.aim.elevation_degrees)
-	data.set(prefix + "aim_power", witness.aim.power_percent)
+	# Baked witness power remains an integer-only catalog contract.
+	data.set(prefix + "aim_power", int(witness.aim.power_percent))
 	_store_identity(data, prefix + "predicted_", witness.predicted_identity)
 	_store_identity(data, prefix + "physical_", witness.physical_identity)
 	data.set(prefix + "predicted_local_impact", witness.predicted_local_impact)
