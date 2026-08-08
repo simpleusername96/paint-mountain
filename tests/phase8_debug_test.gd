@@ -43,7 +43,6 @@ func _run_checks() -> void:
 	)
 	_assert_true(original_aim != null and fractional_aim != null,
 		"debug bypass proof requires canonical original and fractional aims")
-	_assert_true(controller.begin_human_aim_revision(91), "debug bypass proof requires a pending human revision")
 	if fractional_aim != null:
 		_assert_true(
 			controller.set_aim(
@@ -52,10 +51,8 @@ func _run_checks() -> void:
 				fractional_aim.power_percent,
 				StageController.ActionOrigin.DEBUG
 			),
-			"debug direct aim must bypass a pending human revision"
+			"debug direct aim must accept the canonical fractional tuple"
 		)
-		_assert_true(not cannon.human_aim_revision_pending(),
-			"debug direct aim must clear the Human-only revision barrier")
 	if original_aim != null:
 		_assert_true(
 			controller.set_aim(
@@ -117,7 +114,7 @@ func _run_checks() -> void:
 	if FileAccess.file_exists(LOG_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(LOG_PATH))
 	if not _failed:
-		print("Phase 8 debug checks passed: hidden default, 8 actions, Human-revision bypass, drain/checksum metrics, and complete JSON shot log.")
+		print("Phase 8 debug checks passed: hidden default, 8 actions, direct debug aim, drain/checksum metrics, and complete JSON shot log.")
 	game_state.persistence_enabled = true
 	gameplay.queue_free()
 	await process_frame

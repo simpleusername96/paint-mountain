@@ -76,13 +76,21 @@ func _run() -> void:
 	_assert_true(language_option.get_item_text(0) == "KOREAN" and language_option.get_item_text(1) == "ENGLISH", "language option labels must update immediately")
 	var quality_option: OptionButton = settings._controls.get(&"quality")
 	var resolution_option: OptionButton = settings._controls.get(&"resolution")
+	var display_mutations_before_passive_sync := settings.display_mutation_count()
+	settings._sync_from_state()
+	settings._apply_setting(&"master_volume", 0.5)
+	settings._apply_setting(&"quality", "medium")
+	_assert_true(
+		settings.display_mutation_count() == display_mutations_before_passive_sync,
+		"passive settings synchronization and non-display changes must not mutate window geometry"
+	)
 	_assert_true(quality_option.get_item_text(1) == "MEDIUM", "quality display text must localize without changing metadata")
 	_assert_true(quality_option.get_item_metadata(1) == "medium", "quality metadata must remain stable")
 	_assert_true(resolution_option.get_item_text(0) == "1280 × 720" and resolution_option.get_item_metadata(0) == "1280x720", "resolution display formatting must preserve stored metadata")
 	_assert_true(
-		aim_controls.get_node("Content/ElevationCaption").text == "ANGLE" \
-				and aim_controls.get_node("Content/PowerCaption").text == "POWER",
-		"English Aim controls must not retain Korean captions"
+		aim_controls.get_node("Content/ElevationCaption").text == "∠" \
+				and aim_controls.get_node("Content/PowerCaption").text == "▰",
+		"Aim controls must use locale-independent instrument symbols"
 	)
 	_assert_true(
 		(aim_controls.get_node("Content/AngleDecrease") as Button).size.y >= 40.0,

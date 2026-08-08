@@ -27,6 +27,7 @@ func _run_checks() -> void:
 		_assert_placement_checksum_contract(first, placements)
 	_assert_surface_candidates_are_not_legacy_pads(first, placements)
 	_assert_gentle_uphill_is_ranked_without_a_minimum_rise_gate()
+	_assert_middle_upper_height_is_preferred()
 	_assert_count_cap()
 	print("Phase 4 generic glyph placement passed")
 	quit(1 if _failed else 0)
@@ -167,6 +168,29 @@ func _assert_count_cap() -> void:
 		BURST_DATA, BURST_DATA, BURST_DATA,
 	]
 	_assert_true(MechanismPlacementGenerator.generate(stage, fixture.layout).is_empty(), "placement must preserve the six-glyph stage cap")
+
+
+func _assert_middle_upper_height_is_preferred() -> void:
+	var fixture := _three_route_fixture(TerrainTestFixtureFactory.Kind.RAMP)
+	var stage := fixture.stage as StageData
+	var layout := fixture.layout as GeneratedStageLayout
+	stage.mechanism_loadout = [BURST_DATA]
+	var placements := MechanismPlacementGenerator.generate(stage, layout)
+	_assert_true(placements.size() == 1, "height preference fixture must place Burst")
+	if placements.is_empty():
+		return
+	var anchors := MechanismLoadoutPlanner._build_generic_anchors(layout)
+	var height_range := MechanismLoadoutPlanner._anchor_height_range(anchors)
+	var normalized := inverse_lerp(
+		height_range.x,
+		height_range.y,
+		placements[0].local_transform.origin.y
+	)
+	_assert_true(
+		normalized >= MechanismLoadoutPlanner.PREFERRED_HEIGHT_MINIMUM \
+				and normalized <= MechanismLoadoutPlanner.PREFERRED_HEIGHT_MAXIMUM,
+		"a suitable Burst glyph must prefer the middle/upper-middle height band"
+	)
 
 
 func _three_route_fixture(kind: TerrainTestFixtureFactory.Kind) -> Dictionary:

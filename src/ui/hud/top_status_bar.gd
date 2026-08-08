@@ -12,7 +12,7 @@ func _ready() -> void:
 
 
 func configure(stage: StageData) -> void:
-	stage_value.text = "%s %02d" % [tr("hud.stage"), stage.stage_number]
+	stage_value.text = "▲ %02d" % stage.stage_number
 
 
 func update_mode(state: StageController.State) -> void:

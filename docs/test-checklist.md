@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -36,9 +36,8 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The completed terrain-targeted aiming gate below owns the current
-interaction and predicted-contact-lifetime acceptance; unchecked historical
-rows do not override it.
+builds. The active immediate-aim and sparse-instrument gate below owns current
+interaction and gameplay-HUD acceptance; historical rows do not override it.
 
 ## Completed player-replay retirement gate (2026-08-08)
 
@@ -51,7 +50,46 @@ rows do not override it.
 - [x] `AttemptRecorder` retains only current-run agent/debug observations and
   JSON shot-log export; it cannot serialize or resimulate a player attempt.
 
-## Completed terrain-targeted aiming and truthful-flight gate (2026-08-08)
+## Active immediate aim and sparse-instrument gate (2026-08-09)
+
+- [x] Passive Settings synchronization plus audio, quality, motion, preview, and
+  locale changes do not mutate window mode or size. Explicit fullscreen and
+  resolution actions retain their focused behavior.
+- [x] Terrain click/drag and target-preserving angle/power input commit an
+  approximate tuple without waiting for an exact collision job. The focused
+  solver fixture completes its bounded cached-wind, stride-eight nomination
+  within one 60 Hz frame; Fire is available from the resulting canonical aim.
+- [x] `TrajectoryPredictionScheduler` owns only one replaceable advisory job;
+  obsolete target callbacks, Human revision state, and the pending Fire gate are
+  absent.
+- [x] Normal Aim View has no persistent prose strip or left/right/bottom status
+  card. It shows compact stage, coverage, time, shots, residents, wind, Finish,
+  yaw, elevation, power, and Fire instruments.
+- [x] A/D, W/S, wheel, Space, Tab, F, and Escape keycaps sit beside the value or
+  action they control. Interactive targets remain at least 40 px and preserve
+  tooltips/focus.
+- [x] Korean 1280x720 and English 1920x1080 running-game captures were inspected
+  for mountain occlusion, overlap, clipping, hierarchy, and shortcut placement.
+- [x] Godot 4.7.1 import/startup verification and the Windows release export
+  pass. The exported executable produced separate Korean 1280x720 and English
+  1920x1080 Aim View captures with exit 0 and empty stderr; both were inspected
+  at native size.
+- [x] Focused placement tests prove eligible Burst anchors prefer normalized
+  terrain height 0.55..0.85.
+- [ ] Rebuild and promote the complete 30-stage baked catalog, inspect
+  representative glyph stages, and run its catalog/certificate checks.
+
+Current evidence:
+
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/imagegen-target-reference.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/agy-review.md`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/runtime-aim-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/runtime-aim-1920x1080-en.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/runtime-settings-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/release-aim-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/release-aim-1920x1080-en.png`
+
+## Historical exact terrain-targeted aiming and truthful-flight gate (2026-08-08)
 
 - [x] In Aim View, terrain-top click creates a persistent target at the picked
   surface point. Continuous drag keeps only the latest pointer sample, moves the

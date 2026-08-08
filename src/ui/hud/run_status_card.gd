@@ -1,5 +1,5 @@
 class_name RunStatusCard
-extends PanelContainer
+extends Control
 
 signal finish_requested
 
@@ -121,11 +121,10 @@ func focus_finish() -> void:
 
 func refresh_locale() -> void:
 	_wind_display_key = &""
-	%TimeMetric.set_caption_key("hud.time")
-	%ShotsMetric.set_caption_key("hud.shots")
-	%ActivityMetric.set_caption_key("hud.resident_balls")
-	%WindLabel.text = tr("hud.wind")
-	%Finish.text = tr("ui.finish")
+	%TimeValue.tooltip_text = tr("hud.time")
+	%ShotsValue.tooltip_text = tr("hud.shots")
+	%ActivityValue.tooltip_text = tr("hud.resident_balls")
+	%Finish.text = "✓"
 	_refresh_values()
 	set_finish_available(finish_is_available())
 
@@ -138,19 +137,21 @@ func _refresh_values() -> void:
 
 func _refresh_clock() -> void:
 	var shown_seconds := _remaining_seconds if _clock_started else _duration_seconds
-	%TimeMetric.set_value(_format_duration(shown_seconds) if shown_seconds > 0.0 else "--:--")
-	%TimeMetric.tooltip_text = tr("hud.timer_starts_on_first_shot") if not _clock_started else ""
+	%TimeValue.text = _format_duration(shown_seconds) if shown_seconds > 0.0 else "--:--"
+	%TimeValue.tooltip_text = tr("hud.timer_starts_on_first_shot") \
+			if not _clock_started else tr("hud.time")
 
 
 func _refresh_activity() -> void:
-	%ShotsMetric.set_value(str(_shots_remaining))
+	%ShotsValue.text = str(_shots_remaining)
 	if _has_resident_breakdown:
-		%ActivityMetric.set_value(tr("hud.resident_activity_format") % [
-			_moving_residents,
-			_resting_residents,
-		])
+		%ActivityValue.text = (
+			"0"
+			if _moving_residents == 0 and _resting_residents == 0
+			else "%d↗ %d•" % [_moving_residents, _resting_residents]
+		)
 	else:
-		%ActivityMetric.set_value(tr("hud.resident_total_format") % _resident_total)
+		%ActivityValue.text = str(_resident_total)
 
 
 func _refresh_wind() -> void:
@@ -163,30 +164,24 @@ func _refresh_wind() -> void:
 	)
 	if _wind_snapshot == null:
 		%WindArrow.text = "—"
-		%WindDirection.text = tr("hud.wind_waiting")
-		%WindStrength.text = tr("hud.wind_strength_format") % [tr("hud.wind_calm"), 0]
-		%WindCountdown.text = tr("hud.wind_change_waiting")
+		%WindValue.text = "0%"
+		%WindCountdown.text = "--s"
 		%WindForecast.visible = false
-		%WindBox.tooltip_text = tr("hud.wind_waiting")
+		%WindGroup.tooltip_text = tr("hud.wind_waiting")
 		return
 	var direction_label := _direction_label(_wind_screen_direction, _wind_depth_cue)
 	var percent := clampi(roundi(_wind_snapshot.normalized_strength * 100.0), 0, 100)
 	var strength_label := tr(_strength_key(_wind_snapshot.normalized_strength))
 	var countdown := maxi(ceili(_wind_snapshot.seconds_until_change), 0)
 	%WindArrow.text = _direction_arrow(_wind_screen_direction, _wind_depth_cue)
-	%WindDirection.text = direction_label
-	%WindStrength.text = tr("hud.wind_strength_format") % [strength_label, percent]
-	%WindCountdown.text = tr("hud.wind_change_format") % countdown
+	%WindValue.text = "%d%%" % percent
+	%WindCountdown.text = "%ds" % countdown
 	var description := tr("hud.wind_accessible_format") % [direction_label, strength_label, percent, countdown]
-	%WindBox.tooltip_text = description
+	%WindGroup.tooltip_text = description
 	%WindArrow.tooltip_text = description
 	%WindForecast.visible = _wind_snapshot.is_transitioning()
 	if _wind_snapshot.is_transitioning():
-		var next_direction := _direction_label(_next_wind_screen_direction, _next_wind_depth_cue)
-		var next_percent := clampi(roundi(_wind_snapshot.next_normalized_strength * 100.0), 0, 100)
-		var next_strength := tr(_strength_key(_wind_snapshot.next_normalized_strength))
 		%NextWindArrow.text = _direction_arrow(_next_wind_screen_direction, _next_wind_depth_cue)
-		%NextWindText.text = tr("hud.wind_next_format") % [next_direction, next_strength, next_percent]
 
 
 static func wind_display_key(

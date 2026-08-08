@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -110,11 +110,11 @@ exactly three mechanism types.
 - The complete pre-impact preview uses the same radius, fixed-tick gravity,
   damping, launch origin, speed, shared collision geometry, and collision layers
   as the real ball. It ends at the first physical collision or open-bounds exit.
-  It is advisory: generic preview pending or a predicted miss never blocks Fire.
-  Only an explicit human target selection or target-preserving elevation/power
-  edit makes Fire pending until its same-revision solution commits or restores
-  the prior committed aim after rejection. Direct agent and debug tuple
-  actions remain atomic. No post-impact route is shown.
+  It is advisory: preview pending or a predicted miss never blocks Fire. A Human
+  target selection or target-preserving elevation/power edit commits the best
+  bounded approximate inverse candidate immediately, without an exact collision
+  query. Rejected approximate requests preserve the prior canonical aim. Direct
+  agent and debug tuple actions remain atomic. No post-impact route is shown.
 - Firing enters Shot Follow for the new root ball. A visible `대포로 돌아가기`
   / `RETURN TO CANNON` control and context-sensitive Tab return immediately to
   Aim View; the ball continues physically and no post-fire steering is added.
@@ -134,8 +134,7 @@ exactly three mechanism types.
   drain, and camera presentation mode are orthogonal typed activity, not
   competing stage phases.
 - Two root-shot families may coexist. Fire alone disables at two-family capacity,
-  an illegal canonical aim, no shots, terminal pending, modal lock, or one
-  unresolved explicit human aim revision. Generic prediction readiness never
+  an illegal canonical aim, no shots, terminal pending, or modal lock. Prediction readiness never
   changes Fire admission. Aim controls remain editable while prior families move.
 - An initial Fire slot releases when its generation-0 root first authoritatively
   traverses valid Playable Terrain Surface or terminates. Family observation
@@ -311,15 +310,13 @@ exactly three mechanism types.
 - Separate full-screen menu, stage-select, briefing, gameplay, coverage-result,
   pause, and settings interfaces; anchors/containers support common 16:9 desktop
   resolutions.
-- Use the sparse edge-aligned HUD with stage and current interaction mode at
-  upper-left, time, shots, resident-ball activity, wind, Finish, and a labeled
-  gear at the edge, a vertical coverage gauge at left, angle/power at lower-left,
-  and Fire alone at bottom-center. The wind cue shows the direction projectiles
-  are pushed, strength, time to change, and approaching direction during the
-  transition. Keep the top-center clear for the mountain and high trajectory
-  arcs. Compact persistent keycaps expose Space, Tab, F, and Escape where each
-  action is available, with a restrained aim/map gesture line. No aiming-state
-  Restart, second Fire control, or direct `R` restart shortcut exists.
+- Use a panel-free sparse gameplay instrument layout: stage and interaction at
+  upper-left, a shallow icon/number status row at upper-right, a thin coverage
+  gauge at left, yaw/elevation/power instruments at the lower edge, and Fire
+  alone at bottom-center. Keep the mountain and high trajectory arcs clear.
+  Attach A/D, W/S, wheel, Space, Tab, F, and Escape keycaps directly to the value
+  or action they control. Normal play has no persistent prose instruction strip,
+  aiming-state Restart, second Fire control, or direct R restart shortcut.
 - During Shot Follow, show one compact focusable return-to-cannon action at the
   edge of the screen and hide controls that imply in-flight steering. Do not
   restore the old multi-preset observation strip.
@@ -327,7 +324,10 @@ exactly three mechanism types.
   Continue, Restart, Settings, Stage Select, and Main Menu. Continue/Escape
   restores the exact pre-pause state without advancing simulation. Settings is a
   separate child form above the still-paused menu; closing it returns focus to
-  Settings in the menu, and the Settings form never contains Restart.
+  Settings in the menu, and the Settings form never contains Restart. Passive
+  Settings synchronization and non-display changes never set window mode or
+  size; fullscreen and resolution apply only from their explicit actions or a
+  defaults restore.
 - Mouse aiming uses unscaled `screen_relative` motion, retains fractional
   yaw/elevation remainder across canonical 0.1-degree updates, and applies a
   persisted mouse-only 50-150% sensitivity setting. Keyboard steps remain fixed.
@@ -340,6 +340,8 @@ exactly three mechanism types.
   terrain glyphs with distinct icons and directional cues. Use soft daylight,
   one main directional light, lightweight effects, and a restrained cannon-side
   flag or streamer to support visible wind.
+- Prefer eligible surface-glyph anchors at normalized terrain height 0.55..0.85,
+  then at 0.40 or above, before using lower deterministic fallback candidates.
 - Provide the specified compact sound set, impact/muzzle/mechanism/result
   particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/velocity,

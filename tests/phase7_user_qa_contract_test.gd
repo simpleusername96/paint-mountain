@@ -55,7 +55,6 @@ func _run() -> void:
 				and not hud_root.get_node("AimControls").visible \
 				and not hud_root.get_node("ActionButtons").visible \
 				and not hud_root.get_node("CameraInteractionControl").visible \
-				and not hud_root.get_node("ContextLine").visible \
 				and not preview.visible,
 		"Shot Follow must show only the contextual return action, not aiming affordances"
 	)

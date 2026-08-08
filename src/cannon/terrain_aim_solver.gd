@@ -1,20 +1,20 @@
 class_name TerrainAimSolver
 extends RefCounted
 
-## Inverts the exact fixed-step recurrence without collision queries. It builds
-## one wind/gravity baseline, then nominates a small set for physics validation.
+## Inverts the fixed-step recurrence without collision queries. It builds one
+## wind/gravity baseline and nominates legal approximate aims immediately;
+## exact physics prediction may later refine only the target presentation.
 const TARGET_CONTACT_FACTOR := 0.5
 const MAXIMUM_NOMINATIONS := 6
 const BRANCH_SPLIT_ELEVATION_DEGREES := 45.0
+const NOMINATION_STEP_STRIDE := 8
 var _cannon: CannonController
 var _target: TerrainAimTarget
 var _constraint: StringName
 var _requested_value := 0.0
 var _branch: StringName
 var _last_aim: AimTuple
-var _wind_profile: WindProfile
-var _wind_seed := 0
-var _launch_tick := 0
+var _wind_accelerations := PackedVector3Array()
 var _step_index := 0
 var _damping := 1.0
 var _baseline_position := Vector3.ZERO
@@ -25,7 +25,7 @@ var _seen: Dictionary = {}
 var _complete := false
 
 
-func begin(cannon: CannonController, target: TerrainAimTarget, constraint: StringName,
+func _begin(cannon: CannonController, target: TerrainAimTarget, constraint: StringName,
 		requested_value: float, branch: StringName, last_aim: AimTuple, wind_profile: WindProfile,
 		wind_seed: int, launch_tick: int) -> void:
 	_cannon = cannon
@@ -34,36 +34,40 @@ func begin(cannon: CannonController, target: TerrainAimTarget, constraint: Strin
 	_requested_value = requested_value
 	_branch = branch
 	_last_aim = last_aim
-	_wind_profile = wind_profile
-	_wind_seed = wind_seed
-	_launch_tick = launch_tick
+	_wind_accelerations = WindController.acceleration_range(
+		wind_profile,
+		wind_seed,
+		launch_tick,
+		TrajectoryPredictionJob.MAXIMUM_STEPS
+	)
 	_damping = maxf(1.0 - cannon.projectile_data.linear_damp * TrajectoryPredictionJob.PHYSICS_STEP, 0.0)
 	_complete = _damping <= 0.0 or (constraint == &"elevation" and (requested_value < AimTuple.MINIMUM_ELEVATION_DEGREES or requested_value > AimTuple.MAXIMUM_ELEVATION_DEGREES)) or (constraint == &"power" and (requested_value < 0.0 or requested_value > 100.0))
-
-
-func advance_until(deadline_usec: int) -> void:
-	while not _complete and Time.get_ticks_usec() < deadline_usec:
-		_advance_one()
-
-
-func is_complete() -> bool:
-	return _complete
-
-
-func candidates() -> Array[Dictionary]:
-	return _candidates
 
 
 func _advance_one() -> void:
 	_response = _damping * (_response + TrajectoryPredictionJob.PHYSICS_STEP)
 	_baseline_velocity *= _damping
 	_baseline_velocity += _gravity_vector() * TrajectoryPredictionJob.PHYSICS_STEP
-	if _wind_profile != null:
-		var wind := WindController.sample_for_tick(_wind_profile, _wind_seed, _launch_tick + _step_index)
-		if wind != null:
-			_baseline_velocity += wind.acceleration * TrajectoryPredictionJob.PHYSICS_STEP
+	if _step_index < _wind_accelerations.size():
+		_baseline_velocity += (
+			_wind_accelerations[_step_index]
+			* TrajectoryPredictionJob.PHYSICS_STEP
+		)
 	_baseline_position += _baseline_velocity * TrajectoryPredictionJob.PHYSICS_STEP
-	_append_inverted_candidate(_candidates, _seen, _cannon, _target.world_point + _target.world_normal * _cannon.projectile_data.radius, _baseline_position, _response, _constraint, _requested_value, _branch, _last_aim)
+	if _step_index % NOMINATION_STEP_STRIDE == NOMINATION_STEP_STRIDE - 1:
+		_append_inverted_candidate(
+			_candidates,
+			_seen,
+			_cannon,
+			_target.world_point
+					+ _target.world_normal * _cannon.projectile_data.radius,
+			_baseline_position,
+			_response,
+			_constraint,
+			_requested_value,
+			_branch,
+			_last_aim
+		)
 	_step_index += 1
 	if _step_index >= TrajectoryPredictionJob.MAXIMUM_STEPS:
 		_candidates.sort_custom(func(first: Dictionary, second: Dictionary) -> bool: return _candidate_precedes(first, second, _branch, _last_aim))
@@ -85,10 +89,10 @@ static func nominate(cannon: CannonController, target: TerrainAimTarget,
 			or requested_value > AimTuple.MAXIMUM_POWER_PERCENT):
 		return []
 	var request := TerrainAimSolver.new()
-	request.begin(cannon, target, constraint, requested_value, branch, last_aim, wind_profile, wind_seed, launch_tick)
-	while not request.is_complete():
-		request.advance_until(Time.get_ticks_usec() + 1000000)
-	return request.candidates()
+	request._begin(cannon, target, constraint, requested_value, branch, last_aim, wind_profile, wind_seed, launch_tick)
+	while not request._complete:
+		request._advance_one()
+	return request._candidates
 
 
 static func validates_target(prediction: TrajectoryPrediction, target: TerrainAimTarget,

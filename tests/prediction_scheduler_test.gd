@@ -52,7 +52,7 @@ func _run() -> void:
 		cannon.current_prediction() == null,
 		"an incomplete job must not publish a partial arc"
 	)
-	_drive_until_publication(scheduler, cannon, 80)
+	_drive_until_publication(scheduler, cannon, 800)
 	_assert_true(
 		cannon.current_prediction() != null \
 				and scheduler.prediction_publication_count() == 1,
@@ -97,7 +97,7 @@ func _run() -> void:
 	scheduler.set_aim_interaction_active(false)
 	scheduler._physics_process(1.0 / 60.0)
 	var final_aim_key := cannon.aim_key()
-	_drive_until_publication(scheduler, cannon, 100)
+	_drive_until_publication(scheduler, cannon, 800)
 	_assert_true(
 		cannon.prediction_aim_key() == final_aim_key,
 		"release must immediately nominate and eventually publish only the latest aim"

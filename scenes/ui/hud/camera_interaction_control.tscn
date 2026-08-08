@@ -5,15 +5,15 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="3_hint"]
 
 [node name="CameraInteractionControl" type="Button"]
-custom_minimum_size = Vector2(164, 52)
-offset_right = 164.0
-offset_bottom = 52.0
+custom_minimum_size = Vector2(112, 44)
+offset_right = 112.0
+offset_bottom = 44.0
 tooltip_text = "hud.switch_to_map_inspection"
 text = "hud.aim_lock"
 icon = ExtResource("2")
 expand_icon = true
-icon_max_width = 24
-theme_type_variation = &"HudModeButton"
+icon_max_width = 20
+theme_type_variation = &"HudModeButtonCompact"
 script = ExtResource("1")
 
 [node name="ModeShortcut" parent="." instance=ExtResource("3_hint")]

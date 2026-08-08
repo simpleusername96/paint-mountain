@@ -88,8 +88,6 @@ func _run_capture() -> void:
 			await _capture_terrain_target_arc(_capture_stage, &"low")
 		"terrain_target_high_arc":
 			await _capture_terrain_target_arc(_capture_stage, &"high")
-		"terrain_target_pending":
-			await _capture_terrain_target_pending(_capture_stage)
 		"terrain_target_rejected":
 			await _capture_terrain_target_rejected(_capture_stage)
 		"protected_long_flight_impact":
@@ -157,9 +155,7 @@ func _run_capture() -> void:
 		get_tree().quit(1)
 		return
 	var settle_frames := 42
-	if _screen == "terrain_target_pending":
-		settle_frames = 6
-	elif _screen == "terrain_target_rejected":
+	if _screen == "terrain_target_rejected":
 		settle_frames = 2
 	elif _screen in [
 		"next_aim_pending",
@@ -405,8 +401,11 @@ func _capture_terrain_target_selected(stage_id: StringName) -> void:
 		return
 	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
 	if terrain_aim.selected_target() == null \
-			or terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_CONFIRMED:
-		_fail_capture("selected-target capture did not expose a confirmed terrain target")
+			or terrain_aim.selected_target_state() not in [
+				TerrainTargetPreview.STATE_SELECTED,
+				TerrainTargetPreview.STATE_CONFIRMED,
+			]:
+		_fail_capture("selected-target capture did not expose a terrain target")
 
 
 func _capture_terrain_target_dragged(stage_id: StringName) -> void:
@@ -440,7 +439,7 @@ func _capture_terrain_target_dragged(stage_id: StringName) -> void:
 			_fail_capture("dragged-target capture could not queue the latest pointer sample")
 			return
 	await get_tree().physics_frame
-	if not await _wait_for_confirmed_terrain_target(terrain_aim):
+	if not await _wait_for_selected_terrain_target(terrain_aim):
 		return
 	var dragged := terrain_aim.selected_target()
 	if dragged == null or dragged.world_point.distance_to(original.world_point) \
@@ -464,7 +463,7 @@ func _capture_terrain_target_arc(stage_id: StringName, branch: StringName) -> vo
 		if not terrain_aim.request_elevation_delta(0.5):
 			_fail_capture("low-arc capture could not request a target-preserving angle step")
 			return
-		if not await _wait_for_confirmed_terrain_target(terrain_aim):
+		if not await _wait_for_selected_terrain_target(terrain_aim):
 			return
 	elif branch == &"high":
 		if not await _request_delivery_arc_solution(
@@ -482,27 +481,8 @@ func _capture_terrain_target_arc(stage_id: StringName, branch: StringName) -> vo
 	if branch == &"low" and is_equal_approx(cannon.elevation_degrees, initial_elevation):
 		_fail_capture("low-arc capture did not publish a distinct same-target angle")
 		return
-	if not TerrainAimSolver.validates_target(
-		cannon.current_prediction(), target, cannon.projectile_data.radius
-	):
+	if terrain_aim.selected_target() != target:
 		_fail_capture("%s-arc capture did not retain the selected target" % branch)
-
-
-func _capture_terrain_target_pending(stage_id: StringName) -> void:
-	var gameplay := await _start_terrain_target_capture(stage_id)
-	if gameplay == null:
-		return
-	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
-	var stage_controller := gameplay.get_node("StageController") as StageController
-	gameplay.hold_prediction_refresh_for_delivery(2.0)
-	if not terrain_aim.request_elevation_delta(0.5):
-		_fail_capture("pending-target capture could not begin an explicit angle revision")
-		return
-	await get_tree().process_frame
-	if terrain_aim.active_request_revision() < 0 \
-			or terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_PENDING \
-			or bool(stage_controller.fire_readiness_snapshot().fireable):
-		_fail_capture("pending-target capture did not retain the real pending/Fire state")
 
 
 func _capture_terrain_target_rejected(stage_id: StringName) -> void:
@@ -514,17 +494,9 @@ func _capture_terrain_target_rejected(stage_id: StringName) -> void:
 	# A low-branch target cannot silently flip to this high-branch elevation.
 	# The normal controller path must restore the committed aim and show its X.
 	var delta := AimTuple.MAXIMUM_ELEVATION_DEGREES - cannon.elevation_degrees
-	if not terrain_aim.request_elevation_delta(delta):
-		_fail_capture("rejected-target capture could not begin the incompatible branch request")
-		return
-	var budget := 900
-	while terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_REJECTED \
-			and budget > 0:
-		await get_tree().physics_frame
-		await get_tree().process_frame
-		budget -= 1
-	if budget <= 0:
-		_fail_capture("rejected-target capture did not reach the shape-based rejection state")
+	if terrain_aim.request_elevation_delta(delta) \
+			or terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_REJECTED:
+		_fail_capture("rejected-target capture did not reject the incompatible branch immediately")
 
 
 func _capture_protected_long_flight_impact(stage_id: StringName) -> void:
@@ -629,26 +601,27 @@ func _start_terrain_target_capture(stage_id: StringName) -> Node3D:
 	var cannon := gameplay.get_node("Cannon") as CannonController
 	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
 	await _wait_for_cannon_prediction(cannon)
-	if _failed or not await _wait_for_confirmed_terrain_target(terrain_aim):
+	if _failed or not await _wait_for_selected_terrain_target(terrain_aim):
 		return null
 	return gameplay
 
 
-func _wait_for_confirmed_terrain_target(
+func _wait_for_selected_terrain_target(
 		terrain_aim: TerrainAimController,
 		maximum_ticks: int = 900
 ) -> bool:
 	var budget := maximum_ticks
 	while budget > 0:
-		if terrain_aim.active_request_revision() < 0 \
-				and terrain_aim.selected_target() != null \
-				and terrain_aim.selected_target_state() \
-						== TerrainTargetPreview.STATE_CONFIRMED:
+		if terrain_aim.selected_target() != null \
+				and terrain_aim.selected_target_state() in [
+					TerrainTargetPreview.STATE_SELECTED,
+					TerrainTargetPreview.STATE_CONFIRMED,
+				]:
 			return true
 		await get_tree().physics_frame
 		await get_tree().process_frame
 		budget -= 1
-	_fail_capture("terrain target did not settle as confirmed inside the capture budget")
+	_fail_capture("terrain target did not become selectable inside the capture budget")
 	return false
 
 
@@ -659,47 +632,34 @@ func _request_delivery_arc_solution(
 		stage_controller: StageController,
 		cannon: CannonController
 ) -> bool:
-	var scheduler := gameplay.get_node("TrajectoryPredictionScheduler") \
-			as TrajectoryPredictionScheduler
+	var wind := gameplay.get_node("WindController") as WindController
 	var high_reference := AimTuple.new(
 		cannon.yaw_degrees,
 		maxf(60.0, TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES + 0.5),
 		cannon.power_percent
 	)
-	var outcome := {"complete": false, "accepted": false}
-	var callback := func(solution: TerrainAimSolution) -> bool:
-		if solution == null or solution.status == TerrainAimSolution.Status.PENDING:
-			return false
-		outcome.complete = true
-		if solution.status != TerrainAimSolution.Status.VALID or solution.aim == null:
-			return false
-		outcome.accepted = stage_controller.set_aim(
-			solution.aim.yaw_degrees,
-			solution.aim.elevation_degrees,
-			solution.aim.power_percent,
-			StageController.ActionOrigin.DEBUG
-		)
-		return bool(outcome.accepted)
-	scheduler.request_target_solution(
+	var candidates := TerrainAimSolver.nominate(
+		cannon,
 		target,
 		&"target",
 		0.0,
 		branch,
 		high_reference,
-		int(Engine.get_physics_frames()),
-		callback
+		gameplay.stage_data.wind_profile,
+		gameplay.terrain_layout_read_only().terrain_seed,
+		wind.elapsed_ticks()
 	)
-	var budget := 1200
-	while not bool(outcome.complete) and budget > 0:
-		await get_tree().physics_frame
-		await get_tree().process_frame
-		budget -= 1
-	if budget <= 0 or not bool(outcome.accepted):
-		_fail_capture("%s-arc capture could not validate a same-target exact solution" % branch)
+	if candidates.is_empty():
+		_fail_capture("%s-arc capture could not nominate a same-target solution" % branch)
 		return false
-	if not await _wait_for_confirmed_terrain_target(
-		gameplay.get_node("TerrainAimController") as TerrainAimController
+	var aim := candidates[0].aim as AimTuple
+	if not stage_controller.set_aim(
+		aim.yaw_degrees,
+		aim.elevation_degrees,
+		aim.power_percent,
+		StageController.ActionOrigin.DEBUG
 	):
+		_fail_capture("%s-arc capture could not commit its nominated aim" % branch)
 		return false
 	return true
 

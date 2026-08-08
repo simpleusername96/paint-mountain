@@ -27,7 +27,6 @@ signal angle_step_requested(direction: float)
 @onready var _mechanism: MechanismInfoCard = %MechanismInfoCard
 @onready var _briefing: PanelContainer = %BriefingPanel
 @onready var _pause: PauseOverlay = %PauseOverlay
-@onready var _context_line: Label = %ContextLine
 var _stage_data: StageData
 var _current_state := StageController.State.LOADING
 var _shots_remaining := 0
@@ -294,8 +293,6 @@ func _apply_interaction_presentation(update_focus: bool) -> void:
 			and _current_camera_mode == CameraDirector.Mode.AIMING
 	_aim.visible = aiming_surface and aim_locked
 	_actions.visible = aiming_surface and aim_locked
-	_context_line.visible = aiming_surface
-	_context_line.text = tr("hud.aim_context" if aim_locked else "hud.map_context")
 	if not aiming_surface:
 		return
 	if not update_focus:

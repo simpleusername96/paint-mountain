@@ -11,6 +11,10 @@ const MINIMUM_AIMING_DIAMETER_PIXELS := 12.0
 const MINIMUM_BRIEFING_DIAMETER_PIXELS := 16.0
 const CANNON_VISIBILITY_CLEARANCE := 0.5
 const FOOTPRINT_RING_FRACTIONS := [0.0, 0.5, 1.0]
+const PREFERRED_HEIGHT_MINIMUM := 0.55
+const PREFERRED_HEIGHT_MAXIMUM := 0.85
+const FALLBACK_HEIGHT_MINIMUM := 0.40
+const PREFERRED_HEIGHT_CENTER := 0.68
 
 
 static func plan(
@@ -30,6 +34,7 @@ static func plan(
 		layout.metrics["placement_rejection"] = "generic_anchor_count"
 		return empty
 
+	var height_range := _anchor_height_range(anchors)
 	var candidate_sets: Array = []
 	var request_order: Array[Dictionary] = []
 	for request_index in range(stage_data.mechanism_loadout.size()):
@@ -39,7 +44,13 @@ static func plan(
 			return empty
 		var candidates: Array[Dictionary] = []
 		for anchor in anchors:
-			var candidate := _candidate_for(stage_data, layout, mechanism_data, anchor)
+			var candidate := _candidate_for(
+				stage_data,
+				layout,
+				mechanism_data,
+				anchor,
+				height_range
+			)
 			if not candidate.is_empty():
 				candidates.append(candidate)
 		candidates.sort_custom(_candidate_less)
@@ -125,7 +136,8 @@ static func _candidate_for(
 		stage_data: StageData,
 		layout: GeneratedStageLayout,
 		mechanism_data: MechanismData,
-		anchor: MechanismGlyphAnchor
+		anchor: MechanismGlyphAnchor,
+		height_range: Vector2
 ) -> Dictionary:
 	if not _generic_suitability(stage_data, layout, mechanism_data, anchor):
 		return {}
@@ -166,9 +178,29 @@ static func _candidate_for(
 	placement.downstream_tangent = forward
 	placement.splitter_route_targets = split_targets
 	placement.uphill_tangent = uphill_tangent
+	var normalized_height := 0.5
+	if height_range.y - height_range.x > 0.0001:
+		normalized_height = inverse_lerp(
+			height_range.x,
+			height_range.y,
+			anchor.surface_point.y
+		)
+	var height_rank := 2
+	if (
+		normalized_height >= PREFERRED_HEIGHT_MINIMUM
+		and normalized_height <= PREFERRED_HEIGHT_MAXIMUM
+	):
+		height_rank = 0
+	elif normalized_height >= FALLBACK_HEIGHT_MINIMUM:
+		height_rank = 1
 	return {
 		"anchor_id": anchor.id,
 		"score": kind_score,
+		"height_rank": height_rank,
+		"height_distance": absf(
+			normalized_height - PREFERRED_HEIGHT_CENTER
+		),
+		"normalized_height": normalized_height,
 		"placement": placement,
 	}
 
@@ -342,9 +374,26 @@ static func _separated_from_selected(
 
 
 static func _candidate_less(a: Dictionary, b: Dictionary) -> bool:
+	if int(a.height_rank) != int(b.height_rank):
+		return int(a.height_rank) < int(b.height_rank)
+	if not is_equal_approx(float(a.height_distance), float(b.height_distance)):
+		return float(a.height_distance) < float(b.height_distance)
 	if not is_equal_approx(float(a.score), float(b.score)):
 		return float(a.score) > float(b.score)
 	return String(a.anchor_id) < String(b.anchor_id)
+
+
+static func _anchor_height_range(
+		anchors: Array[MechanismGlyphAnchor]
+) -> Vector2:
+	if anchors.is_empty():
+		return Vector2.ZERO
+	var minimum := INF
+	var maximum := -INF
+	for anchor in anchors:
+		minimum = minf(minimum, anchor.surface_point.y)
+		maximum = maxf(maximum, anchor.surface_point.y)
+	return Vector2(minimum, maximum)
 
 
 static func _projected_horizontal_pixels(

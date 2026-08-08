@@ -1,124 +1,156 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/aim_controls.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/minus.png" id="2"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/plus.png" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="4_hint"]
 
-[node name="AimControls" type="PanelContainer"]
-custom_minimum_size = Vector2(368, 96)
-offset_right = 368.0
-offset_bottom = 96.0
-theme_type_variation = &"HudRailPanel"
+[node name="AimControls" type="Control"]
+custom_minimum_size = Vector2(486, 88)
+offset_right = 486.0
+offset_bottom = 88.0
 script = ExtResource("1")
 
 [node name="Content" type="Control" parent="."]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="YawHint" parent="Content" instance=ExtResource("4_hint")]
+layout_mode = 0
+offset_top = 4.0
+offset_right = 54.0
+offset_bottom = 30.0
+key_text = "A/D"
+
+[node name="DirectionCaption" type="Label" parent="Content"]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 2.0
+offset_right = 84.0
+offset_bottom = 32.0
+theme_type_variation = &"HudAccentValue"
+text = "↔"
+vertical_alignment = 1
 
 [node name="DirectionValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 16.0
-offset_top = 10.0
-offset_right = 352.0
+offset_left = 86.0
+offset_top = 2.0
+offset_right = 146.0
+offset_bottom = 32.0
+theme_type_variation = &"HudControlValue"
+text = "+0.0°"
+vertical_alignment = 1
+
+[node name="AngleHint" parent="Content" instance=ExtResource("4_hint")]
+layout_mode = 0
+offset_left = 156.0
+offset_top = 4.0
+offset_right = 212.0
 offset_bottom = 30.0
-theme_type_variation = &"HudCaption"
-text = "방향  중앙 +0.0°"
+key_text = "W/S"
 
 [node name="ElevationCaption" type="Label" parent="Content"]
 layout_mode = 0
-offset_left = 16.0
-offset_top = 32.0
-offset_right = 128.0
-offset_bottom = 50.0
-theme_type_variation = &"HudCaption"
-text = "각도"
+offset_left = 218.0
+offset_top = 2.0
+offset_right = 242.0
+offset_bottom = 32.0
+theme_type_variation = &"HudAccentValue"
+text = "∠"
+vertical_alignment = 1
+
+[node name="ElevationValue" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 244.0
+offset_top = 2.0
+offset_right = 310.0
+offset_bottom = 32.0
+theme_type_variation = &"HudControlValue"
+text = "38.0°"
+vertical_alignment = 1
 
 [node name="AngleDecrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 16.0
-offset_top = 50.0
-offset_right = 58.0
-offset_bottom = 92.0
+offset_left = 218.0
+offset_top = 40.0
+offset_right = 260.0
+offset_bottom = 82.0
 icon = ExtResource("2")
 expand_icon = true
 focus_mode = 2
 tooltip_text = "hud.angle_decrease"
 theme_type_variation = &"HudIconButton"
 
-[node name="ElevationValue" type="Label" parent="Content"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 60.0
-offset_top = 50.0
-offset_right = 118.0
-offset_bottom = 92.0
-theme_type_variation = &"HudControlValue"
-text = "38.0°"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="AngleIncrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 120.0
-offset_top = 50.0
-offset_right = 162.0
-offset_bottom = 92.0
+offset_left = 264.0
+offset_top = 40.0
+offset_right = 306.0
+offset_bottom = 82.0
 icon = ExtResource("3")
 expand_icon = true
 focus_mode = 2
 tooltip_text = "hud.angle_increase"
 theme_type_variation = &"HudIconButton"
 
-[node name="Divider" type="VSeparator" parent="Content"]
+[node name="PowerHint" parent="Content" instance=ExtResource("4_hint")]
 layout_mode = 0
-offset_left = 180.0
-offset_top = 32.0
-offset_right = 182.0
-offset_bottom = 92.0
+offset_left = 322.0
+offset_top = 4.0
+offset_right = 390.0
+offset_bottom = 30.0
+key_text = "Wheel"
 
 [node name="PowerCaption" type="Label" parent="Content"]
 layout_mode = 0
-offset_left = 194.0
-offset_top = 32.0
-offset_right = 254.0
-offset_bottom = 50.0
-theme_type_variation = &"HudCaption"
-text = "파워"
+offset_left = 394.0
+offset_top = 2.0
+offset_right = 418.0
+offset_bottom = 32.0
+theme_type_variation = &"HudAccentValue"
+text = "▰"
+vertical_alignment = 1
+
+[node name="PowerValue" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 420.0
+offset_top = 2.0
+offset_right = 486.0
+offset_bottom = 32.0
+theme_type_variation = &"HudControlValue"
+text = "68.0%"
+vertical_alignment = 1
 
 [node name="PowerDecrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 194.0
-offset_top = 50.0
-offset_right = 236.0
-offset_bottom = 92.0
+offset_left = 394.0
+offset_top = 40.0
+offset_right = 436.0
+offset_bottom = 82.0
 icon = ExtResource("2")
 expand_icon = true
 focus_mode = 2
 tooltip_text = "hud.power_decrease"
 theme_type_variation = &"HudIconButton"
 
-[node name="PowerValue" type="Label" parent="Content"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 238.0
-offset_top = 50.0
-offset_right = 324.0
-offset_bottom = 92.0
-theme_type_variation = &"HudControlValue"
-text = "68.0%"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="PowerIncrease" type="Button" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 326.0
-offset_top = 50.0
-offset_right = 368.0
-offset_bottom = 92.0
+offset_left = 440.0
+offset_top = 40.0
+offset_right = 482.0
+offset_bottom = 82.0
 icon = ExtResource("3")
 expand_icon = true
 focus_mode = 2

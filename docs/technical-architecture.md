@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, diagnostics, and verification
 source: source-brief.md
@@ -198,13 +198,13 @@ Human / GameplayAgentApi actions
   click-refocus, orbit, and zoom only; Shot Follow hides steering controls and
   accepts only pause or return-to-cannon presentation intent. Switching or
   returning preserves the committed aim and prediction.
-- `TerrainAimController` queues latest-only top-target picks and sends each
-  accepted human target/pinned-control revision to `TerrainAimSolver`. The
-  solver publishes only a current same-target solution. `StageController` marks
-  Fire pending only for that explicit human revision, then accepts its atomic
-  commit or restore; generic prediction pending or miss remains advisory and
-  never changes Fire admission. Agent and debug direct tuple commands
-  bypass this human revision transaction.
+- `TerrainAimController` queues latest-only top-target picks and runs the bounded
+  pure inverse recurrence immediately for each accepted target or pinned-control
+  request. `TerrainAimSolver` samples candidate times at a fixed eight-step
+  stride and consumes one cached wind-acceleration horizon; it performs no
+  collision query. The first legal deterministic nomination is committed through
+  `StageController.set_aim()`. Rejection retains the prior canonical aim.
+  Prediction pending or miss remains advisory and never changes Fire admission.
 - The Aim View composer uses canonical Playable Terrain Surface points, summit
   headroom,
   cannon, and muzzle to keep the cannon identifiable in the lower foreground
@@ -307,6 +307,9 @@ Human / GameplayAgentApi actions
   matching target/aim/wind result receives an impact marker, while stale arc dots
   may remain subdued and stale impact/exit markers are hidden. It owns no normal-
   operation calculation/update label and never shows a post-impact route.
+- The scheduler owns only the replaceable exact advisory preview job. Human
+  terrain targeting has no scheduler branch, target callback, or pending Fire
+  transaction.
 - The canonical runtime power curve is linear `32..160 m/s` over `0.1%` power
   increments from `0..100`; whole-power stable keys and integer offline
   generation behavior are preserved. Direct/summit certification and the open play bounds consume
@@ -414,7 +417,8 @@ Human / GameplayAgentApi actions
 - `resources/stages/catalog.tres` points at the format-5 persisted bundle
   `resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
   It contains all 30 layouts and their default/summit witnesses.
-- Generic glyph placement searches visible Playable Terrain Surface with spacing;
+- Generic glyph placement searches visible Playable Terrain Surface with spacing
+  and ranks normalized height 0.55..0.85 first, then 0.40 or above;
   it has no authored per-stage coordinates. `CannonWindFlag` replaces generic
   debris without changing `WindController` authority.
 - `ProjectileManager` is the capacity authority: it admits no more than two

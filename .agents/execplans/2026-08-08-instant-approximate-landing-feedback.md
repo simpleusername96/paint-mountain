@@ -2,355 +2,174 @@
 type: plan
 status: active
 created: 2026-08-08
-scope: direct aim input, pure approximate landing feedback, and retirement of human exact target solving
+last_reviewed: 2026-08-09
+scope: immediate terrain-target aiming, stable display settings, sparse gameplay HUD, and higher glyph placement
 related:
   - ../../docs/source-brief.md
   - ../../docs/design-spec.md
   - ../../docs/technical-architecture.md
   - ../Documentation.md
+  - ../design/DESIGN.md
   - 2026-08-08-terrain-targeted-aiming.md
+  - 2026-08-08-casual-shared-ui-refresh.md
 ---
 
-# Instant Approximate Landing Feedback - Execution Contract
+# Immediate Terrain Aim and Sparse HUD - Execution Contract
 
-Replace the slow Human-only exact terrain-target inversion with immediate direct
-yaw, elevation, and power control plus a cheap top-view landing envelope. Keep
-the real projectile, collision, paint, and advisory exact trajectory as
-the authorities for what actually happens after Fire.
+Keep the player-approved terrain click/drag target flow, but remove exact
+collision verification from the input transaction. A valid click must commit the
+best deterministic inverse-ballistic candidate immediately. The existing exact
+trajectory job remains advisory, latest-only, and never blocks Fire.
 
-## Purpose
+At the same time, stop settings synchronization from changing window mode or
+size, replace the normal in-game dashboard with a sparse icon-and-number HUD,
+and prefer terrain glyphs around the middle and upper-middle of the mountain.
 
-- Objective: every Human aim edit changes the cannon immediately and publishes
-  a stable coarse answer to “roughly where will this land?” without raycasts,
-  collision queries, candidate searches, or waiting for a physics job.
-- Deliverable: a pure landing estimator and immutable result contract, direct
-  aim input, one simplified advisory prediction scheduler, migrated tests and
-  capture helpers, and measured runtime evidence.
-- Completion state: no Human action depends on exact inverse solving; Fire is
-  admitted from the current legal aim and normal stage rules; the future map or
-  HUD can project normalized landing data onto any top-view grid.
+## Product and Architecture Decisions
 
-## Product Decision
+- Human aim remains terrain-targeted: click or drag chooses a terrain point;
+  elevation and power edits preserve that selected point approximately.
+- The inverse recurrence may scan its bounded 720 fixed steps synchronously. It
+  performs no collision query and returns the best legal candidate immediately.
+- Exact first-contact prediction is presentation-only. It may later confirm the
+  selected marker or show the actual first impact, but it cannot gate aim or Fire.
+- `StageController` remains the only Fire-admission and stage-state owner.
+- `CannonController` remains the canonical aim owner. Pending Human revision
+  state is deleted because no asynchronous Human transaction remains.
+- Settings UI synchronization only copies state into controls and translated
+  labels. Display mode and resolution change only for their own setting action
+  or a deliberate defaults restore.
+- The gameplay mountain is the primary surface. Persistent HUD uses small
+  instruments, icons, numbers, symbols, and controls without enclosing rail or
+  card panels. Briefing, pause, and result overlays may still use panels.
+- Shortcut hints sit next to the value or action they control. They are not a
+  separate instruction sentence or detached annotation.
+- Glyph placement prefers normalized terrain height 0.55..0.85, then 0.40 or
+  above, with deterministic fallback when suitability or separation requires it.
+  Existing footprint, slope, visibility, mechanism semantics, and separation
+  remain authoritative.
 
-The planning puzzle remains “choose yaw, elevation, and power, then fire with no
-in-flight steering.” The change removes false precision and solver waiting. The
-coarse indicator is an estimate, not a target lock and not a promise of contact.
+## Verified Causes and Design Evidence
 
-Human controls after this change:
+| Concern | Current evidence | Locked response |
+| --- | --- | --- |
+| Aim delay | `TerrainAimSolver` nominates up to six candidates, then `TrajectoryPredictionScheduler` advances a full exact collision job for each before `TerrainAimController` commits | Commit the first approximate nomination immediately; scheduler owns only the current advisory preview |
+| Fire delay | `StageController.fire_readiness_snapshot()` rejects Human Fire while `human_aim_revision_pending()` | Remove pending revision state and gate |
+| Display distortion | `SettingsScreen._sync_from_state()` always calls `_sync_display_state_from_settings()`, which calls `window_set_mode()` and `window_set_size()` after every setting change | Split passive control sync from explicit display mutation |
+| HUD obstruction | Runtime captures show a 168x506 right rail plus left and bottom panels covering the mountain; 1920x1080 retains fixed-offset bunching | Use edge anchors and borderless instrument groups; remove normal-play context prose |
+| Shortcut aesthetics | Current keycaps float inside large text controls or below unrelated copy | Attach `A/D`, `W/S`, wheel, Space, Tab, F, and Esc hints directly to the controlled value/action |
+| Glyph height | Burst ties fall back to ascending `surface/z/x` anchor IDs, selecting low/front anchors | Rank candidates by normalized height band before kind score |
 
-- left drag: horizontal motion changes yaw and vertical motion changes elevation;
-- A/D: yaw in 0.5-degree steps, W/S: elevation in 0.5-degree steps;
-- wheel and existing power buttons: power;
-- existing elevation buttons: elevation;
-- Space or Fire: immediately asks `StageController` to fire the current legal tuple.
+Design evidence:
 
-No new gameplay action, steering mode, target selection, or serialized state is
-introduced.
+- Baseline runtime captures:
+  `.agents/evidence/casual-shared-ui-refresh-2026-08-08/03-aim-stage30-1280x720.png`,
+  `05-settings-stage30-1280x720.png`, and
+  `06-aim-stage30-1920x1080-en.png`.
+- ImageGen edit reference:
+  `.agents/evidence/sparse-instrument-hud-2026-08-09/imagegen-target-reference.png`.
+- External visual review:
+  `.agents/evidence/sparse-instrument-hud-2026-08-09/agy-review.md`.
 
 ## Scope and Boundaries
 
 In scope:
 
-- The user's prerequisite retirement of the complete player-replay stack before
-  the direct-aim phases continue.
-- `AimInputController` direct drag and keyboard intent.
-- `CannonController` canonical aim mutation and removal of pending Human revisions.
-- A pure `ApproximateLandingEstimator`, immutable height-band input, and immutable
-  `ApproximateLandingEnvelope` output.
-- A small runtime coordinator that recomputes the envelope on aim or relevant
-  wind-context changes and emits one narrow signal for future presentation.
-- Removal of the exact Human terrain-target controller, ray picker, solver,
-  target state preview, and target-solution branch in the scheduler.
-- Migration of tests, delivery captures, specs, and current implementation record.
+- settings display-application ownership and focused regression coverage;
+- synchronous approximate terrain target solving and scheduler simplification;
+- removal of obsolete `TerrainAimSolution` and Human revision APIs after zero
+  production/test references;
+- normal gameplay HUD composition, icon assets, responsive anchors, and focused
+  UI contracts;
+- deterministic height-biased glyph planning, focused placement tests, and a
+  promoted baked catalog after explicit alignment for the broad rebuild;
+- current source/spec/architecture/implementation records and rendered evidence.
 
-Out of scope after the replay-retirement prerequisite:
+Out of scope:
 
-- Rendering a top-view grid, minimap, landing ellipse, or new HUD component.
-- Changing projectile rigid-body physics, collision, paint, target coverage,
-  stage generation, mechanisms, progression, catalog identity, or stage values.
-- Changing save/attempt-observation formats or the direct agent/debug `AimTuple`
-  API.
-- Replacing the existing exact world trajectory and first-impact preview. It stays
-  advisory and computes only after the latest input settles.
-
-Architecture invariants:
-
-- `StageController` remains the sole Fire-admission, shot-progression, clear, and
-  failure owner.
-- `CannonController` remains the single canonical current-aim owner.
-- `PaintSystem` remains the single mutable paint and coverage owner.
-- `GeneratedStageLayout` remains the only terrain-shape authority. The landing
-  estimator may receive three immutable scalar height summaries, but cannot own
-  a second grid, heightmap, collision mesh, target mask, or coverage representation.
-- The estimate never calls `PhysicsDirectSpaceState3D`, never changes Fire
-  readiness, and never replaces a live collision result.
-- Player replay, replay serialization, replay-origin action locks, and replay UI
-  have no remaining runtime owner. `AttemptObservation` remains only for the
-  agent/debug observation and JSON-log contracts.
-
-Destructive or irreversible actions:
-
-- Replay-only scripts, scenes, tests, translations, capture artifacts, and
-  runner entries may be deleted after reference tracing. Git retains recovery
-  history.
-- Obsolete exact-target scripts and their focused tests may be deleted only
-  after their replacements pass and `rg` proves no production or delivery
-  references remain. Git retains recovery history.
-
-Exact actions requiring owner or user approval:
-
-- None. This document plans only repository-local code and docs. It adds no
-  dependency, network service, plugin, asset, or schema migration.
-
-## Verified Current State
-
-| Concern | Current evidence | Decision |
-| --- | --- | --- |
-| Human aim path | `AimInputController` emits screen positions; `TerrainAimController` holds a committed target and Human revision; `TerrainAimSolver` nominates candidates; `TrajectoryPredictionScheduler` validates each candidate through exact physics | Remove this entire inverse-target chain from the Human runtime |
-| Fire readiness | `StageController` rejects Human Fire while `CannonController.human_aim_revision_pending()` is true | Delete this pending gate; keep legal canonical aim, capacity, and stage state checks |
-| Exact preview | `TrajectoryPredictionScheduler` already owns one bounded advisory `TrajectoryPredictionJob` and publishes a context-matched trajectory | Keep only this preview branch, with latest-only coalescing and no target work |
-| Canonical terrain | `TerrainSurface.layout_read_only()` exposes the accepted `GeneratedStageLayout`; its top topology exposes canonical vertices; `StageData.paint_world_bounds()` exposes XZ bounds | Derive three scalar heights once at stage configuration; never sample terrain during an aim edit |
-| Wind | `WindController.sample_at_offset()` deterministically exposes the same schedule used by prediction | Sample the schedule in the pure recurrence; do not query live physics |
-| Input coverage | Current W/S and wheel/button controls exist; A/D and drag do not directly change the tuple | Restore resolution-stable direct yaw/elevation drag and A/D yaw while preserving current keyboard repeat timing |
-| Compatibility | Agent/debug flows call canonical tuple APIs, while delivery and several tests directly reference terrain-target types | Preserve tuple APIs; migrate delivery helpers before deleting exact-target types |
-| Player replay | The result flow previously exposed replay and runtime owners serialized and resimulated fixed-tick action streams | Removed; only independently named attempt diagnostics remain for agent/debug use |
-
-Discovery closure:
-
-- Product, architecture, input, data, compatibility, deletion, and validation
-  choices are locked above.
-- The exact solver's measured complexity is no longer relevant to Human input;
-  the replacement has fixed work and no collision queries.
-- Remaining unknowns are implementation-local and cannot change this contract.
-
-## Locked Approximation Algorithm
-
-### Immutable stage summary
-
-At stage configuration, build `LandingHeightBand` from the canonical top
-vertices already owned by `GeneratedStageLayout`:
-
-- `low_y`: 20th percentile top-surface height;
-- `center_y`: 50th percentile top-surface height;
-- `high_y`: 80th percentile top-surface height;
-- `world_xz_bounds`: the existing `StageData.paint_world_bounds()`.
-
-The percentile sort happens once per accepted layout. Only these scalars and the
-existing bounds survive. This is a summary, not a second terrain representation.
-
-### Pure fixed-step estimate
-
-For each current aim tuple:
-
-1. Start from the cannon's shared launch origin and launch velocity.
-2. Advance at the project fixed 60 Hz for at most 13 seconds (780 fixed steps),
-   using the same damp-then-gravity-then-position order as
-   `TrajectoryPredictionJob` and the deterministic wind sample for each tick.
-3. On the descending branch, linearly interpolate the XZ crossings of `high_y`,
-   `center_y`, and `low_y`. These become near, center, and far samples.
-4. Normalize every sample against `world_xz_bounds`. Preserve unclamped values
-   so a consumer can distinguish an off-map shot; provide clamped values only
-   for display projection.
-5. Classify the result as `IN_BOUNDS`, `EDGE_OR_EXIT`, `NO_DESCENDING_CROSSING`,
-   or `INVALID_INPUT`. Report the lateral/longitudinal span between crossings as
-   uncertainty, not confidence theatre.
-
-`ApproximateLandingEnvelope` contains only immutable values: classification,
-three world XZ samples when available, three normalized samples, center sample,
-uncertainty extents, elapsed estimate time, and the aim/wind context key. It
-does not contain a collider, terrain triangle, target identity, or “hit” flag.
-
-The future top-view renderer may quantize normalized samples to a grid (for
-example 12 by 8), but grid size and drawing remain presentation policy. The
-estimator returns continuous normalized coordinates so it does not become a UI
-owner.
-
-### Runtime cadence
-
-- Recompute synchronously on canonical `aim_changed` and when the wind context
-  key changes enough to invalidate the displayed envelope.
-- Publish only when the context key or immutable result changes.
-- Keep exact trajectory prediction coalesced during drag and request its latest
-  job immediately on drag release, stage entry, camera return, and relevant wind
-  boundaries.
-- The estimate is always advisory and cannot be read by `StageController`.
+- direct freeform drag aiming, in-flight steering, new actions, a minimap, or a
+  second terrain/coverage representation;
+- projectile physics, paint authority, target coverage, stage difficulty,
+  mechanism behavior, save format, progression, or production dependencies;
+- redesigning briefing, pause, settings form, or result overlays beyond fixes
+  required for display stability and normal-game visual continuity.
 
 ## Tasks
 
-### Prerequisite: retire player replay
+### 1. Display and Human aim responsiveness
 
-Goal: apply the user's latest product decision before later work relies on a
-removed compatibility path.
+- [x] **1.1 Stable settings synchronization**
+  - Split passive display-control refresh from explicit display application.
+  - Prove audio, motion, preview, quality, and language changes do not call a
+    window mode or size mutation; fullscreen/resolution each apply once.
+- [x] **1.2 Immediate terrain target commit**
+  - Run the bounded pure inverse recurrence synchronously after the physics pick,
+    choose the first legal nomination, and call `StageController.set_aim()` in
+    the same physics tick.
+  - Keep selected/rejected/confirmed marker states truthful. Invalid targets keep
+    the last canonical aim.
+- [x] **1.3 One advisory exact prediction owner**
+  - Delete the scheduler target branch and Human revision state/gate.
+  - Prove rapid latest-only input cannot leave a pending Fire block and that the
+    scheduler owns at most one replaceable preview job.
 
-Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
-`docs/technical-architecture.md`, `src/gameplay/`, `src/stage/`, `src/ui/`,
-`scenes/gameplay/`, `scenes/ui/`, `tests/`, `scripts/test.ps1`
+### 2. Sparse gameplay HUD
 
-- [x] **P.1** Remove replay behavior and visible controls.
-  - Change: delete replay recorder/presentation/UI owners, replay-origin action
-    locking, result replay intent, replay translations, and capture routing.
-  - Accept: `rg` finds no replay reference in production code, scenes,
-    translations, or active test runners; Retry, Next Stage, and Stage Select
-    remain wired from the result state.
-- [x] **P.2** Preserve independent observation and diagnostics.
-  - Change: move current attempt-observation recording and debug JSON export to
-    an explicitly non-playback owner.
-  - Accept: agent observation, shot observation, and debug-export checks pass
-    without a replay format, playback scheduler, or action-origin lock.
-- [x] **P.3** Update current contracts and evidence.
-  - Change: update current specs, implementation record, checklist, and rendered
-    result evidence; delete replay-only tests and the obsolete current replay
-    screenshot.
-  - Accept: project verification, release export, result-screen rendered QA,
-    and the diff-scoped quality audit pass.
+- [x] **2.1 Instrument composition**
+  - Replace stage, coverage, run status, and aim rail panels with borderless,
+    edge-anchored icon/number groups. Retain real clickable controls and tooltips.
+  - Remove the persistent aim/map context sentence from normal play.
+- [x] **2.2 Integrated shortcut hints**
+  - Show `A/D` with yaw, `W/S` with elevation, wheel with power, Space with Fire,
+    Tab with interaction mode, F with Finish, and Esc with settings/pause.
+  - Keep focus targets at least 40px and preserve locale-safe accessible names.
+- [x] **2.3 Responsive rendered QA**
+  - Inspect the running built game at 1280x720 and 1920x1080 in Korean and
+    English. Check mountain occlusion, overlap, clipping, hierarchy, focus, and
+    state changes against the ImageGen reference.
 
-### Phase 1: Authority and pure contracts
+### 3. Higher terrain glyphs
 
-Goal: record the supersession and land deterministic data boundaries before
-changing the Human flow.
+- [x] **3.1 Deterministic height preference**
+  - Add normalized-height metadata to generic candidates and rank the preferred
+    middle/upper-middle band before existing mechanism-specific score.
+  - Prove preferred candidates win when suitable and deterministic fallback
+    still completes constrained assignments.
+- [ ] **3.2 Catalog promotion**
+  - After user alignment for the broad generation cost, rebuild all 30 baked
+    layouts, run catalog/certificate checks, inspect representative runtime
+    stages, and promote exactly one complete content-addressed bundle.
 
-Source owners: `docs/source-brief.md`, `docs/design-spec.md`,
-`docs/technical-architecture.md`, `src/cannon/`, `src/stage_generation/`
+### 4. Contracts and handoff
 
-- [ ] **1.1** Record the later user supersession.
-  - Change: state that Human terrain clicking and exact inverse target retention
-    are replaced by direct tuple control and an approximate top-view-ready
-    envelope. Preserve no-steering and exact live physics clauses.
-  - Accept: the source brief, design spec, and technical architecture name one
-    consistent current Human aim path and label older exact-target docs historical.
-- [ ] **1.2** Add the immutable approximation contracts and pure estimator.
-  - Change: implement `LandingHeightBand`, `ApproximateLandingEnvelope`, and
-    `ApproximateLandingEstimator`; derive the height band once from the accepted
-    layout and reuse shared ballistic/wind constants.
-  - Accept: focused tests prove deterministic output, finite values, monotonic
-    yaw rotation, longer center range for a representative power increase,
-    meaningful low/center/high ordering, all classifications, and zero physics
-    or scene-tree dependency.
-  - Guard: no copied terrain grid, target mask, collider query, node lookup, or
-    mutable array enters the estimator result.
+- [x] **4.1 Current documentation**
+  - Record the later UI, display, aim-latency, and glyph-placement decisions in
+    the effective source brief and current design/architecture/implementation
+    records. Retire stale pending-solver descriptions.
+- [ ] **4.2 Final gates**
+  - Run focused tests while implementing, then `scripts/verify.ps1`, release
+    export, production-style runtime captures, `git diff --check`, and the
+    task-scoped codebase quality audit. Commit only task-owned files.
 
-### Phase 2: Immediate Human flow and scheduler simplification
+## Validation Cadence
 
-Goal: make every Human edit immediate and retire competing exact-target owners.
+Use focused Godot scripts after each owner changes. Run the project verify gate
+once all script/scene/resource edits are coherent. The full 30-stage catalog
+rebuild and ordered broad test suite are expensive gates: state their purpose,
+cost, impact, and stopping condition and obtain alignment before starting them.
 
-Source owners: `src/input/aim_input_controller.gd`,
-`src/cannon/cannon_controller.gd`, `src/cannon/trajectory_prediction_scheduler.gd`,
-`src/gameplay/gameplay_scene.gd`, `src/stage/stage_controller.gd`,
-`scenes/gameplay/gameplay.tscn`, `src/delivery/delivery_capture_runner.gd`
+Stop and revise this contract only if current source authority or runtime evidence
+contradicts one of the locked product or ownership decisions above.
 
-- [ ] **2.1** Replace inverse targeting with direct canonical aim changes.
-  - Change: emit and apply resolution-stable drag deltas, A/D yaw, W/S
-    elevation, and existing power/elevation steps through the canonical tuple
-    path; add the runtime envelope coordinator and narrow change signal.
-  - Accept: the cannon visibly and numerically changes on the same input frame;
-    100 rapid drag samples leave exactly the newest canonical aim and newest
-    envelope with no pending revision state.
-  - Guard: Map Inspection, focus routing, key repeat timing, action-origin locks,
-    direct agent/debug tuple actions, and no in-flight steering remain unchanged.
-- [ ] **2.2** Reduce prediction and Fire admission to one owner each.
-  - Change: remove target requests, candidate nomination, solver callbacks, and
-    target-job state from `TrajectoryPredictionScheduler`; remove pending Human
-    revision methods and Fire gate; migrate delivery captures to direct tuples.
-  - Accept: scheduler owns at most one replaceable preview job, settled input
-    publishes the latest exact advisory preview, and Human Fire succeeds or
-    fails only from `StageController`'s canonical legal-aim and stage rules.
-- [ ] **2.3** Retire obsolete exact-target files safely.
-  - Change: after replacement tests pass, remove `TerrainAimController`,
-    `TerrainAimSolver`, `TerrainAimTarget`, `TerrainAimSolution`,
-    `TerrainScreenRayPicker`, `TerrainTargetPreview`, their scene nodes, and
-    exact-target-only tests.
-  - Accept: `rg -n "TerrainAim|TerrainScreenRayPicker|TerrainTargetPreview|human_aim_revision_pending" src scenes tests`
-    returns no active reference; delivery capture and project import still pass.
-  - Guard: do not remove shared trajectory, ballistic, terrain-topology,
-    or direct reachability generation code merely because an exact-target test
-    used it.
+## Progress
 
-### Phase 3: Regression, timing, and durable evidence
-
-Goal: prove that the simpler path is immediate, compatible, and truthful.
-
-Source owners: `tests/`, `.agents/evidence/instant-approximate-landing-feedback-2026-08-08/`,
-`.agents/Documentation.md`, `docs/test-checklist.md`
-
-- [ ] **3.1** Replace and migrate focused contracts.
-  - Change: add `tests/approximate_landing_estimator_test.gd`; rewrite the Human
-    sections of `aim_interaction_test.gd`; simplify `prediction_scheduler_test.gd`
-    and `stage10_prediction_readiness_test.gd`; migrate `phase8_debug_test.gd`,
-    delivery capture helpers, and any remaining exact-target fixtures.
-  - Accept: direct input, estimator, scheduler, Fire, diagnostics, and capture tests
-    pass under Godot 4.7.1 with no compatibility shim that preserves the old
-    target solver.
-- [ ] **3.2** Measure the fixed-cost path and inspect the real game.
-  - Change: benchmark 1,000 estimator calls for Stage 1, 10, and 30 contexts;
-    record median, p95, maximum, iteration count, and proof of zero space-state
-    queries. Export and capture Aim View before input, during rapid adjustment,
-    after settled exact preview, and immediately after Fire.
-  - Accept: on the delivery machine p95 estimate cost is at most 0.25 ms and
-    maximum at most 0.50 ms; no frame waits for an estimate; runtime captures
-    show current aim values and Fire responsiveness without a target-lock state.
-  - Contingency: if the fixed 780-step loop misses the budget, keep 60 Hz wind
-    samples but evaluate every fourth position sample using the closed discrete
-    recurrence. Do not reintroduce raycasts, candidate search, or background jobs.
-- [ ] **3.3** Finish durable records and gates.
-  - Change: update `.agents/Documentation.md`, `docs/test-checklist.md`, and an
-    evidence README; mark this plan done only after all checks pass.
-  - Accept: current docs describe direct aim plus coarse feedback as implemented,
-    while the old exact-target plan is explicitly historical.
-
-## Validation and Rework Controls
-
-| Cadence | Exact check | Run when | Do not rerun until |
-| --- | --- | --- | --- |
-| Pure estimator | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/approximate_landing_estimator_test.gd` | Phase 1.2 changes | Estimator contract or test changes |
-| Human flow | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/aim_interaction_test.gd` | Phase 2.1 changes | Input/controller changes |
-| Scheduler | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/prediction_scheduler_test.gd` | Phase 2.2 changes | Scheduler changes |
-| Attempt diagnostics | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --script res://tests/phase8_debug_test.gd` | Observation/debug owners change | Observation or debug-export changes |
-| Project gate | `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1` | All focused checks pass | Script, scene, resource, or project-setting changes |
-| Release export | `& 'D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --export-release 'Windows Desktop' 'builds/windows/PaintMountain.exe'` | Project gate passes | Export-owned input changes |
-| Document gate | `git diff --check` | Evidence and records are complete | Touched text changes |
-
-Run the narrowest check that proves the active task. Defer the broad ordered
-`scripts/test.ps1` suite unless a focused failure crosses subsystem boundaries;
-before running it, explain its cost and stopping condition and obtain the user
-alignment required by repository policy.
-
-## Predetermined Contingencies and Change Control
-
-| Trigger | Required response | Boundary |
-| --- | --- | --- |
-| Approximate crossings are absent for a legal upward shot | Publish `NO_DESCENDING_CROSSING` with the last finite normalized sample | Do not fabricate an impact point |
-| The center sample lies outside the map | Publish unclamped and clamped normalized values plus `EDGE_OR_EXIT` | Do not silently snap gameplay physics to the map |
-| Exact advisory preview later disagrees with the envelope | Keep both truthful: the envelope stays coarse and the exact preview replaces only its own world marker | Neither result gates Fire |
-| A deleted target type still has a delivery/test consumer | Migrate that consumer to direct tuple intent, then rerun `rg` | Do not add a deprecated compatibility wrapper |
-| Fixed cost misses the locked budget | Apply the four-step closed-recurrence contingency and remeasure once | No physics query or async solver is permitted |
-| A verified material fact contradicts this contract | Stop the affected branch and revise the plan before implementation continues | Do not choose a new product or architecture contract ad hoc |
-
-## Anti-Rework Sequence
-
-Land and test the pure estimator first because it has no scene dependency. Then
-switch Human input and Fire readiness while old exact-target files still exist
-for comparison. Migrate delivery and regression consumers next. Delete the old
-stack only after zero-reference proof. Run import/verify once after deletions,
-then one release export and one rendered evidence batch. Do not repeatedly run
-the full project suite or export while the ownership graph is still changing.
-
-## Progress and Next Steps
-
-- Canonical progress: the task checkboxes in this contract.
-- Replay prerequisite: complete on 2026-08-08.
-- Current phase: Phase 1.
-- Next task: 1.1.
-- Last completed gate: Discovery Closure.
-- Update rule: check a task and advance this pointer only after its named
-  acceptance evidence exists.
-
-## Completion and Stop Conditions
-
-Complete when every task, guard, focused gate, project gate, release export, and
-rendered evidence check passes; current docs name one Human aim path; obsolete
-target-solver references are absent; and frontmatter status is `done`.
-
-Replan only when verified material evidence invalidates the locked product,
-architecture, dependency, compatibility, safety, or validation contract. Do
-not replan for ordinary implementation details, a passing check whose inputs did
-not change, or a coarse estimate that honestly reports its uncertainty.
+- Current phase: 3.2, awaiting explicit alignment for the broad 30-stage
+  catalog rebuild and promotion.
+- Completed implementation and evidence: stable Settings display ownership,
+  immediate approximate terrain aim, one advisory preview owner, sparse HUD,
+  integrated shortcuts, normalized-height glyph ranking, focused contracts,
+  Godot verification, Windows release export, and inspected release captures.
+- Remaining acceptance work: rebuild and promote one complete catalog bundle,
+  run its catalog/certificate checks, inspect representative glyph stages, then
+  close 3.2 and 4.2.
+- Complete only when every checkbox has named evidence and frontmatter is `done`.

@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -53,7 +53,33 @@ to the planning loop.
   debug export, stage state, project import/startup, and a production result
   capture. Older replay plans and evidence remain historical only.
 
-## Current Casual Shared UI Refresh (2026-08-08)
+## Current Immediate Aim and Sparse Instrument Refresh (2026-08-09)
+
+The active implementation contract is
+[`2026-08-08-instant-approximate-landing-feedback.md`](execplans/2026-08-08-instant-approximate-landing-feedback.md).
+
+- Settings state synchronization is passive. Only explicit fullscreen,
+  resolution, or defaults actions may change window mode or size.
+- Terrain click/drag remains the Human model. `TerrainAimController` now commits
+  the first legal deterministic inverse candidate immediately. Its pure solver
+  uses a cached 720-tick wind horizon and an eight-tick candidate stride; the
+  focused fixture remains below one 60 Hz frame. Exact collision prediction is one
+  later advisory job and no Human pending-revision Fire gate remains.
+- Normal gameplay uses no left/right status cards, bottom aim panel, or
+  persistent prose instruction strip. Stage, coverage, time, shots, resident
+  balls, wind, Finish, aim values, and real actions are edge-aligned symbols and
+  numbers. A/D, W/S, wheel, Space, Tab, F, and Escape hints are attached to their
+  controlled value or action.
+- Source and Windows-release 1280x720 Korean and 1920x1080 English Aim View
+  captures under
+  [`evidence/sparse-instrument-hud-2026-08-09/`](evidence/sparse-instrument-hud-2026-08-09/)
+  were inspected directly. Import/startup verification and release export pass;
+  catalog promotion remains active-plan work.
+- New mechanism placement ranks suitable normalized heights 0.55..0.85 first,
+  then 0.40 or above. The current baked catalog still needs its approved broad
+  rebuild before running stages show the new anchors.
+
+## Historical Casual Shared UI Refresh (2026-08-08)
 
 The implementation and its release evidence are recorded in
 [`2026-08-08-casual-shared-ui-refresh.md`](execplans/2026-08-08-casual-shared-ui-refresh.md)
@@ -73,9 +99,9 @@ and [`evidence/casual-shared-ui-refresh-2026-08-08/`](evidence/casual-shared-ui-
   surfaces with Quiet Field Guide HUD restraint; it does not supersede the
   running Theme until the user selects it.
 
-## Current Terrain-Targeted Aiming Implementation (2026-08-08)
+## Historical Exact Terrain-Targeted Aiming Implementation (2026-08-08)
 
-The completed execution contract is
+The completed historical execution contract is
 [`2026-08-08-terrain-targeted-aiming.md`](execplans/2026-08-08-terrain-targeted-aiming.md).
 It supersedes the older pointer-angle gesture, sensitivity-setting, and fixed
 six-second miss-lifetime clauses retained in historical sections below.
@@ -84,15 +110,10 @@ six-second miss-lifetime clauses retained in historical sections below.
   Terrain Surface top. Pointer input keeps only the latest screen sample; the
   fixed-physics picker rejects shell, apron, mechanism, sky, and invalid gaps
   without moving the last valid target.
-- `TerrainAimController` owns the persistent selected target and Human-only
-  latest revision. W/S and the lower-left buttons request 0.5-degree elevation
-  changes; the wheel and power buttons request power changes. The bounded
-  inverse solver adjusts the remaining tuple values to retain the same exact
-  target and never flips low/high branch silently.
-- The target uses shape-first selected, pending, confirmed, and rejected states.
-  An explicit unsolved revision disables Fire with localized feedback; automatic
-  wind maintenance leaves the last committed aim launchable until an exact
-  replacement publishes. Map Inspection retains drag orbit and wheel zoom.
+- The 2026-08-09 implementation above supersedes this section's asynchronous
+  Human revision, pending marker, exact validation wait, and Fire gate. The
+  top-only picker, selected/rejected/confirmed marker meanings, branch
+  continuity, and Map Inspection input separation remain.
 - Exact prediction now separates projectile-centre endpoint from the surface
   `contact_point`. Markers, target validation, generated witnesses, and live
   contact identity use the surface point consistently.

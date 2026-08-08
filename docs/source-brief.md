@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -2061,6 +2061,40 @@ requirements:
   available.
 
 All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-09): Immediate Aim, Sparse Instruments, and Higher Glyphs
+
+After reviewing the running Settings and Aim View, the user rejected display
+resizing during unrelated settings actions, the remaining aim wait, the
+panel-and-text-heavy gameplay HUD, detached shortcut annotations, and glyphs
+clustered near the mountain base. These clauses supersede only those behaviors:
+
+- **Stable display settings:** opening or synchronizing Settings and changing a
+  non-display setting must not reapply window mode or size. Fullscreen and
+  resolution apply only from their own explicit actions or a deliberate defaults
+  restore.
+- **Immediate terrain targeting:** terrain click and drag remain the Human aim
+  model. A valid top pick commits the best bounded approximate inverse solution
+  immediately without exact collision validation. Exact pre-impact prediction
+  remains latest-only advisory presentation and never blocks aim or Fire.
+- **Sparse gameplay instruments:** normal play must not use large left, right, or
+  bottom panels or a persistent prose instruction strip. Prefer icons, small
+  images, numbers, and symbols; keep the mountain primary. Real interactive
+  controls, accessible tooltips, focus, and localized names remain.
+- **Integrated shortcuts:** place A/D, W/S, wheel, Space, Tab, F, and Escape key
+  hints next to the value or action they control. They must read as part of the
+  instrument rather than as detached documentation.
+- **Higher surface glyphs:** when existing suitability, visibility, effect, and
+  spacing rules admit alternatives, prefer glyph anchors around the middle and
+  upper-middle of the terrain instead of the lower edge. Deterministic fallback
+  remains legal when the preferred band cannot complete the loadout.
+- **Rendered authority:** use the generated sparse-instrument UI reference only
+  as a direction, then inspect the actual running game at supported 16:9 sizes
+  and correct overlap, clipping, and hierarchy from those captures.
+
+No in-flight steering, new action, new mechanism, second paint representation,
+or projectile-physics change is introduced. All earlier requirements not
+contradicted here remain in force.
 
 ## Acceptance Criteria
 

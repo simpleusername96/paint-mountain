@@ -18,8 +18,6 @@ var _prediction_wind_identity: StringName = &""
 var _prediction_launch_wind_tick: int = -1
 var _prediction_context_key: StringName = &""
 var _expected_prediction_context_key: StringName = &""
-var _committed_aim: AimTuple
-var _pending_human_aim_revision: int = -1
 
 @onready var _yaw_pivot: Node3D = %YawPivot
 @onready var _elevation_pivot: Node3D = %ElevationPivot
@@ -36,7 +34,6 @@ func _ready() -> void:
 		"Cannon scene offsets must match the shared ballistic geometry contract."
 	)
 	power_percent = default_power
-	_committed_aim = AimTuple.canonicalize(yaw_degrees, elevation_degrees, power_percent)
 	_apply_visuals()
 	aim_changed.emit(yaw_degrees, elevation_degrees, power_percent)
 
@@ -53,61 +50,10 @@ func set_aim(
 	if is_equal_approx(canonical.yaw_degrees, yaw_degrees) \
 			and is_equal_approx(canonical.elevation_degrees, elevation_degrees) \
 			and is_equal_approx(canonical.power_percent, power_percent):
-		_pending_human_aim_revision = -1
-		_committed_aim = canonical
 		if publish_if_unchanged:
 			publish_current_aim()
 		return
-	_pending_human_aim_revision = -1
-	_committed_aim = canonical
 	_apply_canonical_aim(canonical)
-
-
-## Explicit human revisions retain the last launchable tuple until a matching
-## solver result either atomically replaces it or restores it.
-func begin_human_aim_revision(revision: int) -> bool:
-	if revision < 0:
-		return false
-	if _pending_human_aim_revision > revision:
-		return false
-	if _committed_aim == null:
-		_committed_aim = AimTuple.canonicalize(yaw_degrees, elevation_degrees, power_percent)
-	if _committed_aim == null:
-		return false
-	# Latest-only target solving may supersede an older pending revision. The
-	# committed tuple remains untouched until this exact revision finishes.
-	_pending_human_aim_revision = revision
-	prediction_status_changed.emit(prediction_status())
-	return true
-
-
-func commit_human_aim_revision(
-		revision: int,
-		new_yaw: float,
-		new_elevation: float,
-		new_power: float
-) -> bool:
-	if revision != _pending_human_aim_revision:
-		return false
-	var canonical := AimTuple.canonicalize(new_yaw, new_elevation, new_power)
-	if canonical == null or not canonical.is_valid():
-		return false
-	_committed_aim = canonical
-	_pending_human_aim_revision = -1
-	_apply_canonical_aim(canonical)
-	return true
-
-
-func restore_human_aim_revision(revision: int) -> bool:
-	if revision != _pending_human_aim_revision or _committed_aim == null:
-		return false
-	_pending_human_aim_revision = -1
-	_apply_canonical_aim(_committed_aim)
-	return true
-
-
-func human_aim_revision_pending() -> bool:
-	return _pending_human_aim_revision >= 0
 
 
 func _apply_canonical_aim(canonical: AimTuple) -> void:

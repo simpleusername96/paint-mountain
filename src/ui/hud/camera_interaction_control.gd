@@ -34,12 +34,11 @@ func _request_other_mode() -> void:
 
 
 func _refresh_copy() -> void:
-	var compact_english := TranslationServer.get_locale().to_lower().begins_with("en")
-	theme_type_variation = &"HudModeButtonCompact" if compact_english else &"HudModeButton"
-	icon = null if compact_english else _mode_icon
+	theme_type_variation = &"HudModeButtonCompact"
+	icon = _mode_icon
 	if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
-		text = tr("hud.aim_lock")
+		text = "◎"
 		tooltip_text = tr("hud.switch_to_map_inspection")
 	else:
-		text = tr("hud.map_inspection")
+		text = "◇"
 		tooltip_text = tr("hud.switch_to_aim_lock")

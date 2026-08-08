@@ -29,13 +29,14 @@ func _run_checks() -> void:
 	await process_frame
 	_assert_keycap(root_control, "ActionButtons/FireButton/FireShortcut", "[Space]")
 	_assert_keycap(root_control, "CameraInteractionControl/ModeShortcut", "[Tab]")
-	_assert_keycap(root_control, "RunStatusCard/Margin/Content/Finish/FinishShortcut", "[F]")
+	_assert_keycap(root_control, "RunStatusCard/Finish/FinishShortcut", "[F]")
 	_assert_keycap(root_control, "TopStatusBar/SettingsButton/SettingsShortcut", "[Esc]")
+	_assert_keycap(root_control, "AimControls/Content/YawHint", "[A/D]")
+	_assert_keycap(root_control, "AimControls/Content/AngleHint", "[W/S]")
+	_assert_keycap(root_control, "AimControls/Content/PowerHint", "[Wheel]")
 	_assert_true(
-		root_control.get_node("ContextLine").visible \
-				and root_control.get_node("ContextLine").text \
-					== "지형 클릭·드래그 · W S 각도 · 휠 파워",
-		"Aim View must persistently explain terrain targeting, angle, and power input"
+		root_control.get_node_or_null("ContextLine") == null,
+		"normal play must not retain a prose instruction strip"
 	)
 	_assert_true(
 		root_control.get_node_or_null("FirstSessionHint") == null,
@@ -45,18 +46,15 @@ func _run_checks() -> void:
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
 		root_control.get_node("CameraInteractionControl").visible \
-				and root_control.get_node("ContextLine").visible \
-				and root_control.get_node("ContextLine").text == "드래그 회전 · 휠 확대" \
 				and not root_control.get_node("ActionButtons").visible,
-		"Map View must show only its relevant Tab, drag, and wheel prompts"
+		"Map View must keep its Tab control and hide aim-only actions"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
 	_assert_keycap(root_control, "ReturnToCannon/ReturnShortcut", "[Tab]")
 	_assert_true(
 		root_control.get_node("ReturnToCannon").visible \
-				and not root_control.get_node("ActionButtons").visible \
-				and not root_control.get_node("ContextLine").visible,
+				and not root_control.get_node("ActionButtons").visible,
 		"Shot Follow must show Return with Tab without aim prompts"
 	)
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
@@ -108,7 +106,7 @@ func _run_checks() -> void:
 		"ActionButtons/FireButton",
 		"CameraInteractionControl",
 		"TopStatusBar/SettingsButton",
-		"ContextLine",
+		"AimControls",
 	]:
 		_assert_inside_viewport(root_control.get_node(path) as Control, path)
 	gameplay.queue_free()

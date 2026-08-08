@@ -1,5 +1,5 @@
 class_name CoverageMeter
-extends PanelContainer
+extends Control
 
 @onready var progress: ProgressBar = %Progress
 @onready var value_label: Label = %CoverageValue
@@ -11,7 +11,7 @@ var _target := 0.0
 func configure(target: float) -> void:
 	_target = clampf(target, 0.0, 100.0)
 	tooltip_text = tr("hud.coverage_tooltip")
-	target_label.text = "%s %.0f%%" % [tr("hud.target"), _target]
+	target_label.text = "◆ %.0f" % _target
 	var target_y := progress.position.y + progress.size.y * (1.0 - _target / 100.0)
 	target_line.position.y = target_y - target_line.size.y * 0.5
 	update_coverage(0.0)

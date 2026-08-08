@@ -50,8 +50,7 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	if terrain_aim.selected_target() == null:
 		return
 
-	# W/S edits elevation only as an intent; the solver changes the other values
-	# and exact validation retains the selected surface point.
+	# W/S commits a target-preserving approximate tuple in the same input turn.
 	var target_before_controls := terrain_aim.selected_target()
 	var elevation_before := cannon.elevation_degrees
 	await _push_key(KEY_W, true)
@@ -59,7 +58,7 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	await _wait_for_settled_target(terrain_aim)
 	_assert_true(is_equal_approx(cannon.elevation_degrees, elevation_before + 0.5),
 		"W must request one 0.5-degree target-preserving elevation step")
-	_assert_target_prediction(cannon, target_before_controls,
+	_assert_true(terrain_aim.selected_target() == target_before_controls,
 		"elevation adjustment must retain the selected terrain target")
 
 	var power_before := cannon.power_percent
@@ -67,7 +66,7 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	await _wait_for_settled_target(terrain_aim)
 	_assert_true(is_equal_approx(cannon.power_percent, power_before + 1.0),
 		"wheel up must request one target-preserving power step")
-	_assert_target_prediction(cannon, target_before_controls,
+	_assert_true(terrain_aim.selected_target() == target_before_controls,
 		"power adjustment must retain the selected terrain target")
 
 	var aim_before_d := _aim(cannon)
@@ -75,8 +74,8 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	await _push_key(KEY_D, false)
 	_assert_aim_unchanged(cannon, aim_before_d, "A/D must no longer alter human target-locked aim")
 
-	# Representative nearby top points are reachable on the same branch. A click
-	# selects each exact ray-hit point and publishes one matching current contact.
+	# Representative nearby top points commit immediately; exact prediction may
+	# later confirm the marker but never owns the input transaction.
 	var anchor := terrain_aim.selected_target().world_point
 	for offset in [Vector2(-2.0, -1.0), Vector2(0.0, -2.0), Vector2(2.0, -1.0)]:
 		var desired := terrain.world_surface_point(Vector2(anchor.x, anchor.z) + offset)
@@ -87,8 +86,14 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 		_assert_true(selected != null and selected.world_point.distance_to(desired) <= 0.2,
 			"clicking playable terrain must move the selected target to the ray hit")
 		if selected != null:
-			_assert_target_prediction(cannon, selected,
-				"clicked terrain target must publish a matching exact contact")
+			_assert_true(
+				terrain_aim.last_solve_elapsed_usec() < 16667,
+				"clicked terrain solve must finish within one 60 Hz frame budget"
+			)
+			_assert_true(
+				bool(stage_controller.fire_readiness_snapshot().fireable),
+				"approximate target commit must leave Fire immediately available"
+			)
 
 	# Many pointer samples before one physics callback collapse into one pick and
 	# one solve request; the last sample wins without a drag backlog.
@@ -149,21 +154,13 @@ func _wait_for_settled_target(controller: TerrainAimController, maximum_ticks: i
 	for _tick in range(maximum_ticks):
 		await physics_frame
 		await process_frame
-		if controller.active_request_revision() < 0 \
-				and controller.selected_target_state() == TerrainTargetPreview.STATE_CONFIRMED:
+		if controller.selected_target() != null \
+				and controller.selected_target_state() in [
+					TerrainTargetPreview.STATE_SELECTED,
+					TerrainTargetPreview.STATE_CONFIRMED,
+				]:
 			return
-	_assert_true(false, "terrain target solve must settle as confirmed within the bounded fixture window")
-
-
-func _assert_target_prediction(
-		cannon: CannonController,
-		target: TerrainAimTarget,
-		message: String
-) -> void:
-	_assert_true(cannon.prediction_matches_expected_context() \
-			and TerrainAimSolver.validates_target(
-				cannon.current_prediction(), target, cannon.projectile_data.radius
-			), message)
+	_assert_true(false, "terrain target must commit inside the bounded fixture window")
 
 
 func _click_world_point(camera: Camera3D, world_point: Vector3) -> void:

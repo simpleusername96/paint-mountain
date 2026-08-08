@@ -45,11 +45,11 @@ func _run_checks() -> void:
 	)
 	for card in stage_select._cards:
 		_assert_true(not card.disabled, "unlocked stage cards must be keyboard-selectable")
-	_assert_true(stage_select._page_label.text == "1-10 / 30", "stage select must show the inclusive first-page range")
+	_assert_true(stage_select._page_label.text == "1-8 / 30", "stage select must show the inclusive first-page range")
 	stage_select.set_page_for_capture(1)
-	_assert_true(stage_select._page_label.text == "11-20 / 30", "stage select must show the inclusive second-page range")
-	stage_select.set_page_for_capture(2)
-	_assert_true(stage_select._page_label.text == "21-30 / 30", "stage select must show the inclusive third-page range")
+	_assert_true(stage_select._page_label.text == "9-16 / 30", "stage select must show the inclusive second-page range")
+	stage_select.set_page_for_capture(3)
+	_assert_true(stage_select._page_label.text == "25-30 / 30", "stage select must show the inclusive final-page range")
 	_assert_true(stage_select._next_page.disabled and not stage_select._previous_page.disabled, "page edge controls must disable only the unavailable direction")
 	stage_select.set_page_for_capture(0)
 	stage_select._cards[1].pressed.emit()
@@ -140,11 +140,11 @@ func _assert_theme_contract() -> void:
 	var theme: Theme = load("res://resources/ui/paint_mountain_theme.tres")
 	_assert_true(theme.default_font_size == 16, "theme body type must be at least 16px")
 	var panel := theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat
-	var primary := theme.get_stylebox("normal", "PrimaryButton") as StyleBoxFlat
+	var primary := theme.get_stylebox("normal", "PrimaryButton") as StyleBoxTexture
 	var focus := theme.get_stylebox("focus", "Button") as StyleBoxFlat
 	var debug_panel := theme.get_stylebox("panel", "DebugPanel") as StyleBoxFlat
-	_assert_true(panel.corner_radius_top_left == 12, "panel radius must be 12px")
-	_assert_true(primary.corner_radius_top_left == 16, "primary radius must be 16px")
+	_assert_true(panel != null and panel.corner_radius_top_left == 18, "shared panels must use the current 18px radius token")
+	_assert_true(primary != null and primary.texture != null, "primary actions must use the shared textured button asset")
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
 	for variation in [
@@ -172,9 +172,9 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var hud_rect := Rect2(rendered_hud_rect.position, logical_size)
 	var hud_center := hud_rect.get_center()
 	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
-	var coverage_value := coverage.get_node_or_null("Content/CoverageValue") as Label
-	var target_value := coverage.get_node_or_null("Content/TargetValue") as Label
-	var progress := coverage.get_node_or_null("Content/Progress") as ProgressBar
+	var coverage_value := coverage.get_node_or_null("CoverageValue") as Label
+	var target_value := coverage.get_node_or_null("TargetValue") as Label
+	var progress := coverage.get_node_or_null("Progress") as ProgressBar
 	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left coverage meter must be the sole target owner")
 	_assert_true(coverage_value != null and target_value != null, "the left coverage meter must own both current and target values")
 	_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the coverage rail must fill from bottom to top")
@@ -203,8 +203,11 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	var status_rect := status.get_global_rect()
 	var settings_rect := settings.get_global_rect()
-	_assert_true(status_rect.get_center().x > hud_center.x and status_rect.size.x < hud_rect.size.x * 0.25, "run state must stay in one compact right-edge card")
+	_assert_true(
+		status_rect.get_center().x > hud_center.x and status_rect.size.y <= 64.0,
+		"run state must stay in one shallow borderless instrument row"
+	)
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
-	_assert_true(settings_rect.end.x <= status_rect.position.x, "settings must remain separate and immediately precede the right status rail")
+	_assert_true(not settings_rect.intersects(status_rect), "settings must not overlap the status instruments")
 	for control in [coverage, fire, status, settings]:
 		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

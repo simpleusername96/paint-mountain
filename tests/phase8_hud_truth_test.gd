@@ -21,8 +21,8 @@ func _run() -> void:
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
 		"Target coverage must have one owner in the left coverage meter"
 	)
-	var coverage_caption := hud_root.get_node("CoverageMeter/Content/CoverageCaption") as Label
-	_assert_true(coverage_caption.text == "hud.coverage", "CoverageMeter must retain the shared target-area caption key")
+	var coverage_caption := hud_root.get_node("CoverageMeter/CoverageCaption") as Label
+	_assert_true(coverage_caption.text == "◎", "CoverageMeter must use the approved target-area symbol")
 
 	hud.show_state(StageController.State.AIMING)
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)

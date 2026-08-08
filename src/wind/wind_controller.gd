@@ -138,6 +138,52 @@ static func sample_for_tick(
 	)
 
 
+## Builds a fixed horizon with one profile validation and cached keyframes.
+## Ballistic solvers use this instead of rebuilding a WindSnapshot per step.
+static func acceleration_range(
+		profile: WindProfile,
+		schedule_seed: int,
+		start_tick: int,
+		count: int,
+		physics_ticks_per_second: int = 60
+) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	if profile == null or not profile.is_valid() or count <= 0:
+		return result
+	result.resize(count)
+	var interval_ticks := profile.interval_ticks(physics_ticks_per_second)
+	var transition_ticks := profile.transition_ticks(physics_ticks_per_second)
+	var cached_keyframe_index := -1
+	var current_target := Vector3.ZERO
+	var next_target := Vector3.ZERO
+	for offset in range(count):
+		var safe_tick := maxi(start_tick + offset, 0)
+		var keyframe_index := safe_tick / interval_ticks
+		if keyframe_index != cached_keyframe_index:
+			cached_keyframe_index = keyframe_index
+			current_target = _keyframe_acceleration(
+				profile, schedule_seed, keyframe_index
+			)
+			next_target = _keyframe_acceleration(
+				profile, schedule_seed, keyframe_index + 1
+			)
+		var local_tick := safe_tick % interval_ticks
+		var acceleration := current_target
+		if (
+			transition_ticks > 0
+			and local_tick >= interval_ticks - transition_ticks
+		):
+			var progress := (
+				float(local_tick - (interval_ticks - transition_ticks))
+				/ float(transition_ticks)
+			)
+			acceleration = current_target.lerp(
+				next_target, smoothstep(0.0, 1.0, progress)
+			)
+		result[offset] = acceleration
+	return result
+
+
 static func prediction_epoch_for(
 		profile: WindProfile,
 		schedule_seed: int,

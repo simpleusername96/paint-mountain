@@ -1,5 +1,5 @@
 class_name AimControls
-extends PanelContainer
+extends Control
 
 signal power_step_requested(direction: float)
 signal angle_step_requested(direction: float)
@@ -29,8 +29,6 @@ func _ready() -> void:
 
 
 func refresh_locale() -> void:
-	$Content/ElevationCaption.text = tr("hud.angle")
-	$Content/PowerCaption.text = tr("hud.power")
 	%AngleDecrease.tooltip_text = tr("hud.angle_decrease")
 	%AngleIncrease.tooltip_text = tr("hud.angle_increase")
 	%PowerDecrease.tooltip_text = tr("hud.power_decrease")
@@ -47,12 +45,7 @@ func _process(delta: float) -> void:
 
 
 func update_aim(yaw: float, elevation: float, power: float) -> void:
-	var side := tr("hud.direction_center")
-	if yaw < -0.05:
-		side = tr("hud.direction_left")
-	elif yaw > 0.05:
-		side = tr("hud.direction_right")
-	direction_value.text = "%s  %s %+.1f°" % [tr("hud.direction"), side, yaw]
+	direction_value.text = "%+.1f°" % yaw
 	elevation_value.text = "%.1f°" % elevation
 	power_value.text = "%.1f%%" % power
 

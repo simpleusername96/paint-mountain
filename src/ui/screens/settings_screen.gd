@@ -5,6 +5,7 @@ signal close_requested
 
 var _controls: Dictionary = {}
 var _syncing := false
+var _display_mutation_count := 0
 
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _ready() -> void:
 	%Defaults.pressed.connect(_restore_defaults)
 	%Close.pressed.connect(_close)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
+	_apply_display_settings_from_state()
 	visible = false
 
 
@@ -74,7 +76,7 @@ func _sync_from_state() -> void:
 					control.select(index)
 					break
 	_syncing = false
-	_sync_display_state_from_settings()
+	_sync_display_controls()
 
 
 func _store(key: StringName, value) -> void:
@@ -97,6 +99,10 @@ func _apply_setting(key: StringName, value) -> void:
 		&"music_volume": _set_bus_volume("Music", float(value))
 		&"sfx_volume": _set_bus_volume("SFX", float(value))
 		&"quality": get_viewport().scaling_3d_scale = 0.75 if value == "low" else (1.0 if value == "medium" else 1.15)
+		&"fullscreen": _apply_fullscreen(bool(value))
+		&"resolution":
+			if not bool(get_node("/root/GameState").settings.get("fullscreen", false)):
+				_apply_windowed_resolution(String(value))
 
 
 func _set_bus_volume(bus_name: String, normalized: float) -> void:
@@ -115,6 +121,7 @@ func _restore_defaults() -> void:
 	_syncing = false
 	for key in [&"master_volume", &"music_volume", &"sfx_volume", &"quality"]:
 		_apply_setting(key, game_state.settings[String(key)])
+	_apply_display_settings_from_state()
 	game_state.save_now()
 	_sync_from_state()
 
@@ -126,7 +133,9 @@ func _refresh_language_option_labels() -> void:
 		%Language.set_item_text(index, tr("settings.korean") if %Language.get_item_metadata(index) == "ko" else tr("settings.english"))
 
 
-func _sync_display_state_from_settings() -> void:
+## Passive synchronization must never resize or change the mode of the window.
+## Only explicit display-setting actions call the DisplayServer helpers below.
+func _sync_display_controls() -> void:
 	var settings: Dictionary = get_node("/root/GameState").settings
 	_refresh_language_option_labels()
 	for index in range(%Quality.item_count):
@@ -136,18 +145,36 @@ func _sync_display_state_from_settings() -> void:
 		%Resolution.set_item_text(index, value.replace("x", " × "))
 	var fullscreen := bool(settings.get("fullscreen", false))
 	%Resolution.disabled = fullscreen
+
+
+func _apply_display_settings_from_state() -> void:
+	var settings: Dictionary = get_node("/root/GameState").settings
+	_apply_fullscreen(bool(settings.get("fullscreen", false)))
+
+
+func _apply_fullscreen(fullscreen: bool) -> void:
 	var desired_mode := DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen \
 			else DisplayServer.WINDOW_MODE_WINDOWED
 	if DisplayServer.window_get_mode() != desired_mode:
 		DisplayServer.window_set_mode(desired_mode)
+		_display_mutation_count += 1
 	if not fullscreen:
-		_apply_windowed_resolution(String(settings.get("resolution", "1280x720")))
+		_apply_windowed_resolution(String(
+			get_node("/root/GameState").settings.get("resolution", "1280x720")
+		))
 
 
 func _apply_windowed_resolution(value: String) -> void:
 	var parts := value.split("x")
 	if parts.size() == 2:
-		DisplayServer.window_set_size(Vector2i(int(parts[0]), int(parts[1])))
+		var requested_size := Vector2i(int(parts[0]), int(parts[1]))
+		if DisplayServer.window_get_size() != requested_size:
+			DisplayServer.window_set_size(requested_size)
+			_display_mutation_count += 1
+
+
+func display_mutation_count() -> int:
+	return _display_mutation_count
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:

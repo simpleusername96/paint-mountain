@@ -30,22 +30,21 @@ func _run() -> void:
 		hud_root.get_node_or_null("FirstSessionHint") == null,
 		"obsolete four-second help must be removed after persistent prompts exist"
 	)
-	var hint := hud_root.get_node("ContextLine") as Control
 	var fire := hud_root.get_node("ActionButtons/FireButton") as Button
 	var aim_controls := hud_root.get_node("AimControls") as Control
 	var coverage_panel := hud_root.get_node("CoverageMeter") as Control
 	_assert_true(
-			not hint.get_global_rect().intersects(fire.get_global_rect()) \
-					and not hint.get_global_rect().intersects(aim_controls.get_global_rect()) \
-					and not hint.get_global_rect().intersects(coverage_panel.get_global_rect()),
-			"persistent aim context must remain clear of Fire, aim controls, and coverage"
+		not fire.get_global_rect().intersects(aim_controls.get_global_rect()) \
+				and not fire.get_global_rect().intersects(coverage_panel.get_global_rect()) \
+				and hud_root.get_node_or_null("ContextLine") == null,
+		"sparse aim instruments must not overlap Fire or coverage"
 	)
 	var power_decrease := hud_root.get_node("AimControls/Content/PowerDecrease") as Button
 	var power_increase := hud_root.get_node("AimControls/Content/PowerIncrease") as Button
 	_assert_true(power_decrease.tooltip_text == "파워 2% 낮추기" and power_increase.tooltip_text == "파워 2% 높이기", "power controls must expose localized tooltips")
 	_assert_true(power_decrease.get_theme_color("icon_normal_color").is_equal_approx(Color("172538")), "power glyphs must use the navy icon tint")
 	hud.update_aim(-7.5, 41.0, 72.0)
-	_assert_true("왼쪽" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim panel must expose direction and elevation independently")
+	_assert_true("-7.5°" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim instruments must expose direction and elevation independently")
 	var interaction_control := hud_root.get_node("CameraInteractionControl") as CameraInteractionControl
 	_assert_true(
 		interaction_control != null and interaction_control.visible \
@@ -60,19 +59,16 @@ func _run() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
-		interaction_control.visible and "지도 보기" in interaction_control.text \
+		interaction_control.visible and interaction_control.text == "◇" \
 				and not hud_root.get_node("AimControls").visible \
-				and not hud_root.get_node("ActionButtons").visible \
-				and hud_root.get_node("ContextLine").text == "드래그 회전 · 휠 확대",
-		"Map Inspection must identify itself and hide aim-only actions"
+				and not hud_root.get_node("ActionButtons").visible,
+		"Map Inspection must use its symbol and hide aim-only actions"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true(
-		"조준" in interaction_control.text \
+		interaction_control.text == "◎" \
 				and hud_root.get_node("AimControls").visible \
-				and hud_root.get_node("ActionButtons").visible \
-				and hud_root.get_node("ContextLine").text \
-						== "지형 클릭·드래그 · W S 각도 · 휠 파워",
+				and hud_root.get_node("ActionButtons").visible,
 		"Aim Lock must restore aim and Fire controls"
 	)
 	var coverage: CoverageMeter = hud_root.get_node("CoverageMeter")
@@ -81,8 +77,8 @@ func _run() -> void:
 	_assert_true(
 		is_equal_approx(coverage.progress.max_value, 100.0)
 		and is_equal_approx(coverage.progress.value, 2.0)
-		and "목표" in coverage.target_label.text,
-		"coverage must show the authoritative absolute 0..100 value with a visible target label"
+		and "◆" in coverage.target_label.text,
+		"coverage must show the authoritative absolute value with a symbolic goal marker"
 	)
 	var observation := ShotObservation.new()
 	observation.configure(1, -7.5, 41.0, 72.0, 12.0)

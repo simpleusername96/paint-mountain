@@ -22,9 +22,9 @@ func _run() -> void:
 	var hud_root := hud.get_node("HUDRoot") as Control
 	var status := hud_root.get_node("RunStatusCard") as RunStatusCard
 	_assert_true(status.visible and status.get_global_rect().get_center().x > 640.0, "run status must stay on the right edge during play")
-	_assert_true(status.size.x < 1280.0 * 0.25, "run status must remain compact instead of spanning the mountain")
+	_assert_true(status.size.y <= 64.0, "run status must remain a shallow instrument row")
 	_assert_true(not status.finish_is_available(), "Finish must be disabled before the first shot starts the clock")
-	var finish_button := status.get_node("Margin/Content/Finish") as Button
+	var finish_button := status.get_node("Finish") as Button
 	var finish_key := finish_button.shortcut.events[0] as InputEventKey
 	_assert_true(finish_button.focus_mode != Control.FOCUS_NONE and finish_key.physical_keycode == KEY_F, "Finish must be keyboard-focusable and expose the F shortcut")
 
@@ -37,8 +37,8 @@ func _run() -> void:
 	hud.update_shots(3, 4)
 	hud.update_resident_activity(2, 1)
 	_assert_true(status.finish_is_available(), "Finish must enable once the run clock has started")
-	_assert_true(status.get_node("Margin/Content/TimeMetric/Value").text == "01:00", "clock must display the authoritative remaining time")
-	_assert_true("2" in status.get_node("Margin/Content/ActivityMetric/Value").text and "1" in status.get_node("Margin/Content/ActivityMetric/Value").text, "resident activity must show moving and resting counts")
+	_assert_true(status.get_node("TimeValue").text == "01:00", "clock must display the authoritative remaining time")
+	_assert_true("2" in status.get_node("ActivityValue").text and "1" in status.get_node("ActivityValue").text, "resident activity must show moving and resting counts")
 
 	var wind := WindSnapshot.new(
 		1620,
@@ -51,9 +51,9 @@ func _run() -> void:
 		&"hud-test"
 	)
 	hud.update_wind(wind, Vector2.RIGHT, RunStatusCard.DepthCue.NONE, Vector2.UP)
-	_assert_true(status.get_node("Margin/Content/WindBox/WindArrow").text == "→", "wind arrow must show projectile push direction")
-	_assert_true("오른쪽" in status.get_node("Margin/Content/WindBox/WindText/WindDirection").text, "wind must also state its direction in plain text")
-	_assert_true(status.get_node("Margin/Content/WindForecast").visible, "the final transition window must reveal the next wind")
+	_assert_true(status.get_node("WindGroup/WindArrow").text == "→", "wind arrow must show projectile push direction")
+	_assert_true(status.get_node("WindGroup/WindValue").text == "70%", "wind strength must use a compact numeric value")
+	_assert_true(status.get_node("WindGroup/WindForecast").visible, "the final transition window must reveal the next wind")
 	var same_display_wind := WindSnapshot.new(
 		1621,
 		wind.acceleration,

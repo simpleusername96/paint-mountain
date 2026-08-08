@@ -83,8 +83,9 @@ func _ready() -> void:
 		_terrain_surface,
 		_cannon,
 		_stage_controller,
-		_prediction_scheduler,
 		_wind_controller,
+		stage_data.wind_profile,
+		_generated_layout.terrain_seed,
 		_target_preview
 	):
 		push_error("GameplayScene could not configure terrain-targeted aiming.")
