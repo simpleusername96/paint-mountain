@@ -20,6 +20,7 @@ related:
   - execplans/2026-08-07-cannon-shot-observation.md
   - execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
+  - execplans/2026-08-08-terrain-targeted-aiming.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
@@ -32,9 +33,18 @@ related:
 
 # Project Record
 
+## Active Terrain-Targeted Aiming Plan (2026-08-08)
+
+The active execution contract is
+[`2026-08-08-terrain-targeted-aiming.md`](execplans/2026-08-08-terrain-targeted-aiming.md).
+It records the approved direct terrain click/drag target flow, target-preserving
+angle and power solving, and predicted-contact lifetime parity. This is planned
+work, not implemented truth; the current running implementation remains the
+manual pointer-angle and six-second never-contacted behavior described below.
+
 ## Current Projectile Scale, Coverage Balance, and Aim Performance (2026-08-08)
 
-The active implementation contract is
+The completed implementation contract is
 [`2026-08-08-projectile-scale-balance-and-aim-performance.md`](execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md).
 
 - The root ball radius is `2.40 m`; continuous and impact paint radii are
