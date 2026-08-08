@@ -252,6 +252,12 @@ func _on_solution(
 	]:
 		var rejected_target := _pending_target
 		_pending_target = null
+		if not explicit_human_revision:
+			_selected_target = _committed_target
+			_active_request_revision = -1
+			_pending_kind = &""
+			_present_selected_state()
+			return false
 		if explicit_human_revision:
 			_stage_controller.restore_human_aim_revision(revision)
 		_selected_target = _committed_target

@@ -23,11 +23,21 @@ func _run() -> void:
 		"recording must bind to the fixed terrain seed and active v10 layout"
 	)
 	var default_aim := layout.default_aim
+	_assert(
+		is_equal_approx(default_aim.power_percent, roundf(default_aim.power_percent)) \
+				and default_aim.stable_key() == &"%d:%d:%d" % [
+					roundi(default_aim.yaw_degrees * 10.0),
+					roundi(default_aim.elevation_degrees * 10.0),
+					roundi(default_aim.power_percent),
+				],
+		"active whole-power catalog witnesses must retain their exact historical keys"
+	)
 	recorder.record_aim(
 		default_aim.yaw_degrees,
 		default_aim.elevation_degrees,
 		default_aim.power_percent
 	)
+	recorder.record_aim(12.3, 38.1, 68.1)
 	recorder.record_camera(CameraDirector.InteractionMode.AIM_LOCKED)
 	recorder.record_fire(1)
 	recorder.record_finish()
@@ -50,6 +60,21 @@ func _run() -> void:
 		"accepted_seed", "candidate_index", "generation_attempt", "containment_checksum"
 	]:
 		_assert(not exported.has(obsolete_key), "format 10 must omit obsolete key '%s'" % obsolete_key)
+	var actions: Array = exported.actions
+	_assert(
+		actions.size() >= 2 and is_equal_approx(float(actions[1].power), 68.1) \
+				and actions[1].keys().size() == 5 \
+				and not actions[1].has("selected_target") \
+				and not actions[1].has("target_world_point"),
+		"fractional aim actions must round-trip without selected-target payload state"
+	)
+	var legacy_settings := (root.get_node("/root/SaveSystem") as SaveSystem)._merge_with_defaults({
+		"settings": {"aim_sensitivity_percent": 50},
+	})
+	_assert(
+		not (legacy_settings.settings as Dictionary).has("aim_sensitivity_percent"),
+		"format-5 save merging must ignore the retired sensitivity setting"
+	)
 
 	var json_round_trip := JSON.parse_string(JSON.stringify(exported)) as Dictionary
 	var loaded := ReplayRecorder.new()

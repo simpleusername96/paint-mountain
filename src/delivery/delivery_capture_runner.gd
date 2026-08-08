@@ -80,6 +80,20 @@ func _run_capture() -> void:
 			await get_tree().create_timer(1.0).timeout
 		"map_inspection":
 			await _capture_map_inspection(_capture_stage)
+		"terrain_target_selected":
+			await _capture_terrain_target_selected(_capture_stage)
+		"terrain_target_dragged":
+			await _capture_terrain_target_dragged(_capture_stage)
+		"terrain_target_low_arc":
+			await _capture_terrain_target_arc(_capture_stage, &"low")
+		"terrain_target_high_arc":
+			await _capture_terrain_target_arc(_capture_stage, &"high")
+		"terrain_target_pending":
+			await _capture_terrain_target_pending(_capture_stage)
+		"terrain_target_rejected":
+			await _capture_terrain_target_rejected(_capture_stage)
+		"protected_long_flight_impact":
+			await _capture_protected_long_flight_impact(_capture_stage)
 		"aim_return":
 			await _capture_aim_return(_capture_stage)
 		"summit_hit":
@@ -131,16 +145,29 @@ func _run_capture() -> void:
 			push_error("Unknown delivery capture screen: %s" % _screen)
 			get_tree().quit(1)
 			return
-	if _screen not in ["projectile_and_continuous_paint", "summit_hit", "next_aim_pending", "next_aim_ready", "two_family", "scale_contact"]:
+	if _screen not in [
+		"projectile_and_continuous_paint",
+		"summit_hit",
+		"next_aim_pending",
+		"next_aim_ready",
+		"two_family",
+		"scale_contact",
+		"protected_long_flight_impact",
+	]:
 		Engine.time_scale = 1.0
 	if _failed:
 		get_tree().quit(1)
 		return
 	var settle_frames := 42
-	if _screen in [
+	if _screen == "terrain_target_pending":
+		settle_frames = 6
+	elif _screen == "terrain_target_rejected":
+		settle_frames = 2
+	elif _screen in [
 		"next_aim_pending",
 		"next_aim_ready",
 		"scale_contact",
+		"protected_long_flight_impact",
 		"shot_follow_midflight",
 		"shot_follow_impact_hold",
 		"shot_follow_returned",
@@ -368,6 +395,304 @@ func _capture_map_inspection(stage_id: StringName) -> void:
 	await get_tree().create_timer(4.2).timeout
 	if director.current_interaction_mode != CameraDirector.InteractionMode.MAP_INSPECTION:
 		_fail_capture("map inspection capture did not retain Map Inspection")
+
+
+func _capture_terrain_target_selected(stage_id: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	if terrain_aim.selected_target() == null \
+			or terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_CONFIRMED:
+		_fail_capture("selected-target capture did not expose a confirmed terrain target")
+
+
+func _capture_terrain_target_dragged(stage_id: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var camera := gameplay.get_node("Camera") as Camera3D
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var original := terrain_aim.selected_target()
+	if original == null:
+		_fail_capture("dragged-target capture has no initial target")
+		return
+	var drag_distance := maxf(cannon.projectile_data.radius * 0.75, 1.0)
+	var desired := terrain.world_surface_point(
+		Vector2(original.world_point.x, original.world_point.z)
+				+ Vector2(drag_distance, -drag_distance)
+	)
+	if not desired.is_finite() or camera.is_position_behind(desired):
+		_fail_capture("dragged-target capture could not derive a visible nearby top point")
+		return
+	var start_screen := camera.unproject_position(original.world_point)
+	var end_screen := camera.unproject_position(desired)
+	for sample_index in range(24):
+		var progress := float(sample_index + 1) / 24.0
+		if not terrain_aim.queue_pointer_target(
+			start_screen.lerp(end_screen, progress),
+			sample_index == 23
+		):
+			_fail_capture("dragged-target capture could not queue the latest pointer sample")
+			return
+	await get_tree().physics_frame
+	if not await _wait_for_confirmed_terrain_target(terrain_aim):
+		return
+	var dragged := terrain_aim.selected_target()
+	if dragged == null or dragged.world_point.distance_to(original.world_point) \
+			< drag_distance * 0.45:
+		_fail_capture("dragged-target capture did not move the selected surface point")
+
+
+func _capture_terrain_target_arc(stage_id: StringName, branch: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var stage_controller := gameplay.get_node("StageController") as StageController
+	var target := terrain_aim.selected_target()
+	if target == null:
+		_fail_capture("%s-arc capture has no selected target" % branch)
+		return
+	if branch == &"low":
+		if not terrain_aim.request_elevation_delta(-0.5):
+			_fail_capture("low-arc capture could not request a target-preserving angle step")
+			return
+		if not await _wait_for_confirmed_terrain_target(terrain_aim):
+			return
+	elif branch == &"high":
+		if not await _request_delivery_arc_solution(
+			gameplay, target, &"high", stage_controller, cannon
+		):
+			return
+	else:
+		_fail_capture("unknown terrain-target arc branch: %s" % branch)
+		return
+	var expected_high := branch == &"high"
+	if (cannon.elevation_degrees >= TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES) \
+			!= expected_high:
+		_fail_capture("%s-arc capture published the wrong ballistic branch" % branch)
+		return
+	if not TerrainAimSolver.validates_target(
+		cannon.current_prediction(), target, cannon.projectile_data.radius
+	):
+		_fail_capture("%s-arc capture did not retain the selected target" % branch)
+
+
+func _capture_terrain_target_pending(stage_id: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	var stage_controller := gameplay.get_node("StageController") as StageController
+	gameplay.hold_prediction_refresh_for_delivery(2.0)
+	if not terrain_aim.request_elevation_delta(0.5):
+		_fail_capture("pending-target capture could not begin an explicit angle revision")
+		return
+	await get_tree().process_frame
+	if terrain_aim.active_request_revision() < 0 \
+			or terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_PENDING \
+			or bool(stage_controller.fire_readiness_snapshot().fireable):
+		_fail_capture("pending-target capture did not retain the real pending/Fire state")
+
+
+func _capture_terrain_target_rejected(stage_id: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	# A low-branch target cannot silently flip to this high-branch elevation.
+	# The normal controller path must restore the committed aim and show its X.
+	var delta := AimTuple.MAXIMUM_ELEVATION_DEGREES - cannon.elevation_degrees
+	if not terrain_aim.request_elevation_delta(delta):
+		_fail_capture("rejected-target capture could not begin the incompatible branch request")
+		return
+	var budget := 900
+	while terrain_aim.selected_target_state() != TerrainTargetPreview.STATE_REJECTED \
+			and budget > 0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		budget -= 1
+	if budget <= 0:
+		_fail_capture("rejected-target capture did not reach the shape-based rejection state")
+
+
+func _capture_protected_long_flight_impact(stage_id: StringName) -> void:
+	var gameplay := await _start_terrain_target_capture(stage_id)
+	if gameplay == null:
+		return
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var target := terrain_aim.selected_target()
+	if target == null:
+		_fail_capture("long-flight capture has no selected terrain target")
+		return
+	# This delivery-only drop isolates the lifetime promise from aim solving.
+	# Prediction and the live body share zero wind, the same sphere, and the
+	# authored play bounds, while the selected marker supplies a visible impact.
+	manager.configure_wind(null, null)
+	var maximum_height := manager.stage_bounds.end.y - target.world_point.y \
+			- cannon.projectile_data.radius - 2.0
+	var drop_height := minf(120.0, maximum_height)
+	if drop_height < 90.0:
+		_fail_capture("long-flight capture bounds cannot hold a greater-than-six-second drop")
+		return
+	var origin := target.world_point + Vector3.UP * drop_height
+	var prediction := TrajectoryPredictor.predict_motion(
+		gameplay.get_world_3d().direct_space_state,
+		origin,
+		Vector3.ZERO,
+		cannon.projectile_data.radius,
+		cannon.projectile_data.linear_damp,
+		manager.stage_bounds
+	)
+	if prediction.kind != TrajectoryPrediction.Kind.COLLISION \
+			or prediction.hit_identity == null \
+			or prediction.hit_identity.contact_owner_id \
+					!= TrajectoryHitIdentity.TERRAIN_TOP_OWNER_ID \
+			or prediction.duration <= cannon.projectile_data.never_contacted_timeout:
+		_fail_capture("long-flight capture did not predict a protected terrain-top impact")
+		return
+	var deadline := minf(
+		cannon.projectile_data.predicted_contact_hard_maximum,
+		maxf(
+			cannon.projectile_data.never_contacted_timeout,
+			prediction.duration + cannon.projectile_data.predicted_contact_grace
+		)
+	)
+	var contact_state := {"seen": false, "contact": null}
+	var root_projectile := manager.spawn_projectile(
+		cannon.projectile_data,
+		origin,
+		Vector3.ZERO,
+		0,
+		0,
+		deadline
+	)
+	if root_projectile == null:
+		_fail_capture("long-flight capture could not spawn its protected root")
+		return
+	manager.projectile_contact_reported.connect(
+		func(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+			if projectile == root_projectile and contact != null \
+					and contact.is_first_contact and terrain.is_top_collider(contact.collider):
+				contact_state.seen = true
+				contact_state.contact = contact
+	)
+	var budget := ceili((deadline + 1.0) * float(Engine.physics_ticks_per_second))
+	while not bool(contact_state.seen) and budget > 0 \
+			and root_projectile.terminal_reason != ProjectileSettlementReason.MISSED_TERRAIN:
+		await get_tree().physics_frame
+		budget -= 1
+	if not bool(contact_state.seen):
+		_fail_capture("protected long-flight root disappeared before its predicted top impact")
+		return
+	var contact := contact_state.contact as ProjectileContact
+	if contact == null \
+			or contact.world_position.distance_to(prediction.collision_contact_point()) > 0.25:
+		_fail_capture("protected long-flight live contact diverged from its prediction")
+		return
+	# Hold the just-contacted real body long enough for the off-screen renderer
+	# to capture it without changing gameplay ownership or adding a fake marker.
+	Engine.time_scale = 0.08
+
+
+func _start_terrain_target_capture(stage_id: StringName) -> Node3D:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return null
+	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	if not director.set_interaction_mode(
+		CameraDirector.InteractionMode.AIM_LOCKED, true
+	):
+		_fail_capture("terrain-target capture could not settle the authored Aim View")
+		return null
+	var wind := gameplay.get_node("WindController") as WindController
+	# Freeze only the delivery fixture's current deterministic snapshot so an
+	# epoch boundary cannot replace the requested visual state before capture.
+	wind.stop()
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
+	await _wait_for_cannon_prediction(cannon)
+	if _failed or not await _wait_for_confirmed_terrain_target(terrain_aim):
+		return null
+	return gameplay
+
+
+func _wait_for_confirmed_terrain_target(
+		terrain_aim: TerrainAimController,
+		maximum_ticks: int = 900
+) -> bool:
+	var budget := maximum_ticks
+	while budget > 0:
+		if terrain_aim.active_request_revision() < 0 \
+				and terrain_aim.selected_target() != null \
+				and terrain_aim.selected_target_state() \
+						== TerrainTargetPreview.STATE_CONFIRMED:
+			return true
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		budget -= 1
+	_fail_capture("terrain target did not settle as confirmed inside the capture budget")
+	return false
+
+
+func _request_delivery_arc_solution(
+		gameplay: Node3D,
+		target: TerrainAimTarget,
+		branch: StringName,
+		stage_controller: StageController,
+		cannon: CannonController
+) -> bool:
+	var scheduler := gameplay.get_node("TrajectoryPredictionScheduler") \
+			as TrajectoryPredictionScheduler
+	var high_reference := AimTuple.new(
+		cannon.yaw_degrees,
+		maxf(60.0, TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES + 0.5),
+		cannon.power_percent
+	)
+	var outcome := {"complete": false, "accepted": false}
+	var callback := func(solution: TerrainAimSolution) -> bool:
+		if solution == null or solution.status == TerrainAimSolution.Status.PENDING:
+			return false
+		outcome.complete = true
+		if solution.status != TerrainAimSolution.Status.VALID or solution.aim == null:
+			return false
+		outcome.accepted = stage_controller.set_aim(
+			solution.aim.yaw_degrees,
+			solution.aim.elevation_degrees,
+			solution.aim.power_percent,
+			StageController.ActionOrigin.DEBUG
+		)
+		return bool(outcome.accepted)
+	scheduler.request_target_solution(
+		target,
+		&"target",
+		0.0,
+		branch,
+		high_reference,
+		int(Engine.get_physics_frames()),
+		callback
+	)
+	var budget := 1200
+	while not bool(outcome.complete) and budget > 0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		budget -= 1
+	if budget <= 0 or not bool(outcome.accepted):
+		_fail_capture("%s-arc capture could not validate a same-target exact solution" % branch)
+		return false
+	if not await _wait_for_confirmed_terrain_target(
+		gameplay.get_node("TerrainAimController") as TerrainAimController
+	):
+		return false
+	return true
 
 
 func _capture_aim_return(stage_id: StringName) -> void:
