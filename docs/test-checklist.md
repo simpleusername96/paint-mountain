@@ -24,6 +24,8 @@ related:
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
+  - ../.agents/execplans/2026-08-08-terrain-targeted-aiming.md
+  - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -34,8 +36,54 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The active truthful-coverage/responsive-aiming gate below owns current
-implementation acceptance; unchecked historical rows do not override it.
+builds. The completed terrain-targeted aiming gate below owns the current
+interaction and predicted-contact-lifetime acceptance; unchecked historical
+rows do not override it.
+
+## Completed terrain-targeted aiming and truthful-flight gate (2026-08-08)
+
+- [x] In Aim View, terrain-top click creates a persistent target at the picked
+  surface point. Continuous drag keeps only the latest pointer sample, moves the
+  target smoothly, and never projects invalid shell/apron/mechanism/sky hits to a
+  fake point. Map Inspection still owns drag orbit and wheel zoom.
+- [x] W/S and lower-left angle buttons request 0.5-degree changes; wheel power
+  and power buttons request their documented steps. The exact solver retains
+  the selected surface target while changing the complementary aim values.
+  Release evidence shows the same target at low `20.0° / 91.5%` and high
+  `57.5° / 54.1%` combinations.
+- [x] Pending, confirmed, selected, and rejected target states are shape-first.
+  Explicit pending revisions disable Fire and hide stale impact/exit promises;
+  rejection restores the last committed target and aim without branch flipping.
+- [x] Prediction surface contact, live terrain/top identity, target validation,
+  and impact presentation share the same contact point. Projectile-centre
+  endpoints remain separate and bounds/timeout predictions fabricate no contact.
+- [x] A current matching terrain-top prediction extends only that root through
+  predicted duration plus 0.5 seconds, capped at 13 seconds. The long-flight
+  fixture predicted `8.384 s`, reached live terrain/top contact at `8.417 s`,
+  kept unmatched miss termination at 6 seconds, and kept bounds exit immediate.
+- [x] Runtime 0.1% power, Human-only aim revisions, replay/agent/debug bypass,
+  replay format 10, attempt schema 2, save format 5, and existing whole-power
+  catalog identities pass compatibility checks. No target/solver payload enters
+  replay, score, paint, layout, or agent terrain truth.
+- [x] The diff-scoped quality audit found one replay action-lock leak in Human
+  wind refresh; the corrected path and its focused replay check pass. No
+  competing target, aim, prediction, lifetime, paint, or stage-state owner
+  remains in the task-owned surface.
+- [x] All named phase gates and `scripts/verify.ps1` pass with Godot 4.7.1. The
+  final Windows release produces the eight captures below with exit 0 and empty
+  stderr; each was inspected directly at native size with no clipped controls,
+  false Fire state, stale marker, or premature protected-shot disappearance.
+
+Final running-release evidence:
+
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_selected-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_dragged-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_low_arc-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_high_arc-en-1920x1080.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_pending-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/terrain_target_rejected-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/protected_long_flight_impact-ko-1280x720.png`
+- `.agents/evidence/terrain-targeted-aiming-2026-08-08/map_inspection-en-1920x1080.png`
 
 ## Active two-times projectile, balance, and aim-performance gate (2026-08-08)
 

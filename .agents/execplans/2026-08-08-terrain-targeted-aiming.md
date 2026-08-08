@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-08
 scope: implement direct terrain targeting, target-preserving angle and power adjustment, and truthful predicted-contact projectile lifetime
 related:
@@ -36,8 +36,9 @@ prediction, Map Inspection, Shot Follow, and the current HUD hierarchy.
   target/trajectory presentation, predicted-contact lifetime protection,
   focused contracts, updated product/architecture records, and inspected
   Windows-release evidence.
-- Completion state: a fresh executor can implement the work from this contract;
-  implementation is not complete until all task checks and final gates pass.
+- Completion state: implementation, focused phase gates, quality audit,
+  repository verification, Windows release export, and direct review of eight
+  native-size release captures completed on 2026-08-08.
 
 ## Scope and Boundaries
 
@@ -455,7 +456,7 @@ Source owners: `src/replay/`, `src/agent/gameplay_agent_api.gd`,
 `src/delivery/delivery_capture_runner.gd`, `tests/`, `docs/test-checklist.md`,
 `.agents/Documentation.md`
 
-- [ ] **4.1 Preserve replay, agent, debug, save, and catalog compatibility.**
+- [x] **4.1 Preserve replay, agent, debug, save, and catalog compatibility.**
   - Change: update consumers for fractional power and committed target-solved
     aim events without storing selected-target coordinates. Keep replay format
     10, attempt schema 2, save format 5, and direct tuple action APIs. Prove old
@@ -466,7 +467,7 @@ Source owners: `src/replay/`, `src/agent/gameplay_agent_api.gd`,
     load with the removed sensitivity key ignored.
   - Guard: no target selection or solver state enters score, paint, layout,
     replay identity, or agent terrain truth.
-- [ ] **4.2 Add focused long-flight and visible-flow evidence states.**
+- [x] **4.2 Add focused long-flight and visible-flow evidence states.**
   - Change: add deterministic capture-runner states for selected target,
     dragged target, low/high same-target combinations, target pending, and a
     protected greater-than-six-second terrain impact. Add/update focused tests
@@ -495,14 +496,14 @@ Preconditions:
 Source owners: all task-owned files, `.agents/evidence/terrain-targeted-aiming-2026-08-08/`,
 `.agents/Documentation.md`, `docs/test-checklist.md`, this contract
 
-- [ ] **5.1 Run the final repository and quality gates once.**
+- [x] **5.1 Run the final repository and quality gates once.**
   - Change: run `scripts/verify.ps1`; load `$codebase-quality-auditor` and audit
     the cross-module changes for competing aim/target/prediction owners,
     catch-all growth, API/schema drift, stale gesture/settings code, and
     reachable failure paths. Correct only small task-scoped findings.
   - Accept: verification and the audit pass with no unresolved task-scope
     blocker; unrelated worktree files remain untouched.
-- [ ] **5.2 Export and inspect the running Windows release.**
+- [x] **5.2 Export and inspect the running Windows release.**
   - Change: export once, run the named task-owned background capture states, and
     inspect every image directly at 1280x720 Korean and 1920x1080 English.
     Exercise click, drag, angle, power, pending, confirmation, invalid-target,
@@ -513,7 +514,7 @@ Source owners: all task-owned files, `.agents/evidence/terrain-targeted-aiming-2
     readable at early and late stage scales.
   - Guard: Windows desktop is the product target; mobile layout is not added.
     Use both supported desktop sizes as the Level 3 responsive evidence.
-- [ ] **5.3 Close records and commit only task-owned changes.**
+- [x] **5.3 Close records and commit only task-owned changes.**
   - Change: update implemented truth and test checklist with actual evidence,
     change this plan to `done`, and create coherent scoped commits without
     staging `tests/target_mask_test.gd` or unrelated evidence/catalog staging.
@@ -619,11 +620,14 @@ safety, tolerance, compatibility, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 4.
-- Next task: 4.1, prove replay, agent, debug, save, and catalog compatibility.
-- Last checkpoint evidence: Tasks 3.1-3.3 passed their focused checks; the Phase
-  3 batch passed all six named scripts on 2026-08-08.
-- Last completed gate: Phase 3 batch gate.
+- Current phase: complete.
+- Next task: none within this contract.
+- Last checkpoint evidence: every named phase batch passed. The long-flight
+  fixture predicted `8.384 s` and reached live terrain/top contact at `8.417 s`;
+  the fractional replay reproduced terrain/top contact and paint checksum.
+- Last completed gate: `scripts/verify.ps1`, diff-scoped quality audit, Windows
+  release export, and eight native-size release captures with exit 0 and empty
+  stderr. Every capture was inspected directly on 2026-08-08.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit. Do not mirror implementation
   progress in another plan.

@@ -189,8 +189,12 @@ func _run_capture() -> void:
 	# Paused captures can retain one deferred RefCounted object when the process
 	# quits in the same frame. Tear down gameplay on the normal AppRoot boundary
 	# and allow that queue to drain after the image has been saved.
+	Engine.time_scale = 1.0
 	if _app != null:
 		_app._remove_gameplay()
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	await get_tree().process_frame
 	await get_tree().process_frame
 	get_tree().quit(0 if error == OK else 1)
 
@@ -457,8 +461,9 @@ func _capture_terrain_target_arc(stage_id: StringName, branch: StringName) -> vo
 	if target == null:
 		_fail_capture("%s-arc capture has no selected target" % branch)
 		return
+	var initial_elevation := cannon.elevation_degrees
 	if branch == &"low":
-		if not terrain_aim.request_elevation_delta(-0.5):
+		if not terrain_aim.request_elevation_delta(0.5):
 			_fail_capture("low-arc capture could not request a target-preserving angle step")
 			return
 		if not await _wait_for_confirmed_terrain_target(terrain_aim):
@@ -475,6 +480,9 @@ func _capture_terrain_target_arc(stage_id: StringName, branch: StringName) -> vo
 	if (cannon.elevation_degrees >= TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES) \
 			!= expected_high:
 		_fail_capture("%s-arc capture published the wrong ballistic branch" % branch)
+		return
+	if branch == &"low" and is_equal_approx(cannon.elevation_degrees, initial_elevation):
+		_fail_capture("low-arc capture did not publish a distinct same-target angle")
 		return
 	if not TerrainAimSolver.validates_target(
 		cannon.current_prediction(), target, cannon.projectile_data.radius
@@ -578,18 +586,21 @@ func _capture_protected_long_flight_impact(stage_id: StringName) -> void:
 	if root_projectile == null:
 		_fail_capture("long-flight capture could not spawn its protected root")
 		return
+	var contact_callback := func(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+		if projectile == root_projectile and contact != null \
+				and contact.is_first_contact and terrain.is_top_collider(contact.collider):
+			contact_state.seen = true
+			contact_state.contact = contact
 	manager.projectile_contact_reported.connect(
-		func(projectile: PaintProjectile, contact: ProjectileContact) -> void:
-			if projectile == root_projectile and contact != null \
-					and contact.is_first_contact and terrain.is_top_collider(contact.collider):
-				contact_state.seen = true
-				contact_state.contact = contact
+		contact_callback
 	)
 	var budget := ceili((deadline + 1.0) * float(Engine.physics_ticks_per_second))
 	while not bool(contact_state.seen) and budget > 0 \
 			and root_projectile.terminal_reason != ProjectileSettlementReason.MISSED_TERRAIN:
 		await get_tree().physics_frame
 		budget -= 1
+	if manager.projectile_contact_reported.is_connected(contact_callback):
+		manager.projectile_contact_reported.disconnect(contact_callback)
 	if not bool(contact_state.seen):
 		_fail_capture("protected long-flight root disappeared before its predicted top impact")
 		return

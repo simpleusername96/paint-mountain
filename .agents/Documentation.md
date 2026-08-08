@@ -21,6 +21,7 @@ related:
   - execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - execplans/2026-08-08-terrain-targeted-aiming.md
+  - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
   - evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
@@ -33,14 +34,43 @@ related:
 
 # Project Record
 
-## Active Terrain-Targeted Aiming Plan (2026-08-08)
+## Current Terrain-Targeted Aiming Implementation (2026-08-08)
 
-The active execution contract is
+The completed execution contract is
 [`2026-08-08-terrain-targeted-aiming.md`](execplans/2026-08-08-terrain-targeted-aiming.md).
-It records the approved direct terrain click/drag target flow, target-preserving
-angle and power solving, and predicted-contact lifetime parity. This is planned
-work, not implemented truth; the current running implementation remains the
-manual pointer-angle and six-second never-contacted behavior described below.
+It supersedes the older pointer-angle gesture, sensitivity-setting, and fixed
+six-second miss-lifetime clauses retained in historical sections below.
+
+- Aim View left click and continuous left drag select only canonical Playable
+  Terrain Surface top. Pointer input keeps only the latest screen sample; the
+  fixed-physics picker rejects shell, apron, mechanism, sky, and invalid gaps
+  without moving the last valid target.
+- `TerrainAimController` owns the persistent selected target and Human-only
+  latest revision. W/S and the lower-left buttons request 0.5-degree elevation
+  changes; the wheel and power buttons request power changes. The bounded
+  inverse solver adjusts the remaining tuple values to retain the same exact
+  target and never flips low/high branch silently.
+- The target uses shape-first selected, pending, confirmed, and rejected states.
+  An explicit unsolved revision disables Fire with localized feedback; automatic
+  wind maintenance leaves the last committed aim launchable until an exact
+  replacement publishes. Map Inspection retains drag orbit and wheel zoom.
+- Exact prediction now separates projectile-centre endpoint from the surface
+  `contact_point`. Markers, target validation, generated witnesses, and live
+  contact identity use the surface point consistently.
+- A matching current terrain-top prediction protects only that generation-zero
+  root through `prediction duration + 0.5 s`, capped at 13 seconds. Unmatched
+  roots still use the ordinary 6-second miss timeout and real bounds exits stay
+  immediate. The deterministic long-flight fixture predicted 8.384 seconds and
+  reached live terrain/top contact at 8.417 seconds.
+- Runtime power supports 0.1% precision while existing whole-power catalog keys,
+  replay format 10, attempt schema 2, save format 5, and direct agent/debug tuple
+  APIs remain compatible. Selected-target coordinates and solver revisions are
+  not serialized.
+- Focused phase gates, `scripts/verify.ps1`, the Windows release export, and
+  eight release capture states passed. Korean 1280x720 and English 1920x1080
+  evidence was inspected directly with no clipping, false Fire readiness, stale
+  impact marker, or premature protected-shot disappearance. See
+  [`evidence/terrain-targeted-aiming-2026-08-08/`](evidence/terrain-targeted-aiming-2026-08-08/).
 
 ## Current Projectile Scale, Coverage Balance, and Aim Performance (2026-08-08)
 
@@ -69,7 +99,7 @@ The completed implementation contract is
   inspected directly: early Aim View, pending Stage 10 aim change, and late
   live scale/contact. The completed plan and evidence record retain details.
 
-## Current Truthful Coverage and Responsive Aiming Implementation (2026-08-07)
+## Historical Truthful Coverage and Responsive Aiming Implementation (2026-08-07)
 
 The completed
 [`truthful-coverage-and-responsive-aiming` ExecPlan](execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md)
@@ -86,9 +116,10 @@ implements the corrections identified during direct Stage 10 play.
   lighter, desaturated blue. Save format 5 preserves old scores only in the
   legacy envelope. Replay format 10 and the current observation schemas identify
   metric 2 explicitly.
-- Mouse aim uses resolution-stable `screen_relative` motion, retains fractional
-  input below the 0.1-degree canonical step, and exposes a persisted 50-150%
-  pointer-only sensitivity setting.
+- The 2026-08-07 build used resolution-stable pointer-angle drag and a persisted
+  sensitivity setting. The terrain-targeted implementation above supersedes
+  that interaction and removes the setting while save format 5 ignores its old
+  key.
 - Fire admission uses only canonical aim and `StageController` rules. Advisory
   prediction owns one bounded job plus one newest pending request, retains its
   previous arc while updating, and cannot toggle or block Fire.
@@ -132,9 +163,9 @@ wind flag, and automatic exact-root Shot Follow. The prior
 is consumed history. This task includes structural efficiency corrections but
 no timing, FPS, or performance-profiling pass.
 
-- Aim View keeps the established input meaning: left drag changes yaw/elevation,
-  the wheel changes power, and Map View owns orbit/zoom. It adds no extra camera
-  gesture. The shared Aim composition keeps the cannon readable below a useful
+- This historical build used left drag for yaw/elevation and the wheel for
+  power. The terrain-targeted implementation above replaces only the Aim View
+  meaning; Map View still owns orbit/zoom. The shared Aim composition keeps the cannon readable below a useful
   lower/wider mountain mass. The user's approximate `3:4` reference is a visual
   guide, not a numeric projected-ratio or complete-silhouette gate.
 - Every baked stage keeps one fixed cannon transform at least 70 m from the
