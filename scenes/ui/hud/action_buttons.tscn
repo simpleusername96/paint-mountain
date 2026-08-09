@@ -1,12 +1,11 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/action_buttons.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="2_hint"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/paint_splash.svg" id="3_fire"]
 
 [node name="ActionButtons" type="Control"]
-custom_minimum_size = Vector2(196, 62)
-offset_right = 196.0
+custom_minimum_size = Vector2(202, 62)
+offset_right = 202.0
 offset_bottom = 62.0
 script = ExtResource("1")
 
@@ -15,7 +14,7 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 8.0
 offset_top = -26.0
-offset_right = 196.0
+offset_right = 202.0
 offset_bottom = -2.0
 theme_type_variation = &"HudCaption"
 text = ""
@@ -25,25 +24,10 @@ vertical_alignment = 1
 [node name="FireButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 196.0
+offset_right = 202.0
 offset_bottom = 62.0
 theme_type_variation = &"PrimaryButton"
 text = "ui.fire"
 icon = ExtResource("3_fire")
 expand_icon = true
 icon_max_width = 24
-
-[node name="FireShortcut" parent="FireButton" instance=ExtResource("2_hint")]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = -58.0
-offset_top = -10.0
-offset_right = -10.0
-offset_bottom = 10.0
-grow_horizontal = 0
-grow_vertical = 2
-key_text = "Space"

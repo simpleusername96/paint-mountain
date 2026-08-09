@@ -19,6 +19,8 @@ related:
   - ../execplans/2026-08-07-cannon-shot-observation.md
   - ../execplans/2026-08-08-casual-shared-ui-refresh.md
   - ../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md
+  - ../execplans/2026-08-09-quiet-context-ui-system.md
+  - ../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -49,9 +51,38 @@ state.
 
 ## Requirements
 
+### Approved Quiet Context system
+
+The user-approved 2026-08-09 reference
+`docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`
+(SHA-256
+`715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`)
+is the current interface direction. It supersedes the heavier card and detached
+keycap treatment of the 2026-08-08 casual shared refresh while preserving its
+real navigation, tactile primary actions, and Korean-first interaction
+contracts.
+
+- Put status and labels directly at the screen edges when containment is not
+  required. Use spacing and hairline dividers before panels.
+- Reserve a filled blue surface for the current primary action. Routine and
+  secondary actions use quiet neutral or text-led treatment; disabled state
+  remains explicit.
+- Use one sentence-like context legend along the safe lower edge of interactive
+  gameplay states. Each input cue stays inline with its short action label; do
+  not scatter detached dark keycap tiles around controls.
+- Menus and interrupted states may use one containment surface when it clarifies
+  focus or input blocking. Do not nest bordered cards inside that surface.
+- Aim View exposes angle and power only. The target-derived horizontal yaw is
+  not a player control or useful planning instrument, so `↔`, a yaw degree, A,
+  and D are absent from the visible HUD.
+- Apply the same paper-white, navy, blue-accent, hairline-divider, restrained
+  radius, type, focus, and state rules to Main Menu, Stage Select, Briefing,
+  Map View, Shot Follow, Pause, Settings, and Result. The approved image decides
+  the system, not literal generated terrain pixels or omitted real actions.
+
 ### Aiming HUD hierarchy
 
-The 2026-08-08 casual shared UI supersession replaces
+The approved Quiet Context system replaces
 `command-columns-hud.png` as the current visual authority. Retain its useful
 functional hierarchy—edge status, centered Fire, compact typography, and open
 world center—but do not preserve its literal columns, coordinates, or panel
@@ -101,9 +132,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
 - Tab and one visible focusable toggle switch modes without changing the stored
   committed aim or preview. Mode changes, target selection, and terrain refocus
-  must acknowledge without a visible stall. Persistent compact keycaps and the
-  context line expose the shortcut and active mouse behavior; no timed first-
-  session hint is used.
+  must acknowledge without a visible stall. The shared lower-edge context
+  legend exposes the active inputs and mouse behavior; no detached prompt set or
+  timed first-session hint is used.
 - Accepted Fire enters Shot Follow for the newly launched root paintball. Hide
   controls that imply in-flight steering and show one compact focusable
   `대포로 돌아가기` / `RETURN TO CANNON` action at a screen edge. Tab performs
@@ -193,11 +224,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
-- `HudKeycap` is the Theme-owned compact filled control-token role. It uses no
-  literal square brackets. Reusable `ShortcutHint` instances show S/W beside the
-  matching elevation step buttons, a mouse-wheel glyph beside power, Space on
-  Fire, Tab on Aim/Map and Shot Follow return, F on Finish, and Esc on Gear and
-  Pause Continue without owning input. Terrain-target yaw shows no A/D token.
+- Input-token styling is Theme-owned and quiet: navy text with an optional thin
+  neutral outline only when a key name needs separation from its action label.
+  The shared context legend groups S/W with angle, the mouse-wheel glyph with
+  power, Space with Fire, Tab with Aim/Map or Shot Follow return, and Esc with
+  menu/Continue without owning input. F may remain inside the real Finish
+  action. Terrain-target yaw shows no A/D token.
 - Aim steppers keep decrement, current value, and increment in one row and
   disable the matching direct-control button at its numeric boundary.
 - Keyboard focus uses the shared visible 2 px accent treatment.
@@ -228,7 +260,8 @@ A UI change conforms when:
   while the visible return action and Tab restore Aim View without implying
   in-flight steering;
 - the left vertical coverage gauge, lower-edge controls, edge status, top-right
-  gear, and bottom-center Fire preserve the specified hierarchy;
+  gear, bottom-center Fire, and one quiet bottom context legend preserve the
+  specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
   pause action;
@@ -237,6 +270,8 @@ A UI change conforms when:
   keyboard-focus states;
 - no panel overlaps another, escapes its container, hides fixed content, or
   blocks the world-space impact point; and
+- no reachable screen contains detached dark shortcut tiles, avoidable nested
+  card framing, or a visible yaw readout; and
 - every visible action is connected to real functionality.
 
 Every substantial UI or visual-composition change requires direct inspection of

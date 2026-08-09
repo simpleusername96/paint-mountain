@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/mechanism_info_card.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/pause_overlay.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/run_status_card.tscn" id="12"]
-[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="13_hint"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/context_legend.tscn" id="13_legend"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
@@ -34,43 +34,43 @@ layout_mode = 1
 [node name="AimControls" parent="HUDRoot" instance=ExtResource("3")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 744.0
-offset_top = 628.0
-offset_right = 1230.0
-offset_bottom = 704.0
+offset_left = 770.0
+offset_top = 568.0
+offset_right = 1258.0
+offset_bottom = 644.0
 
 [node name="CoverageMeter" parent="HUDRoot" instance=ExtResource("4")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 16.0
-offset_top = 136.0
-offset_right = 108.0
-offset_bottom = 422.0
+offset_left = 24.0
+offset_top = 152.0
+offset_right = 140.0
+offset_bottom = 438.0
 
 [node name="ActionButtons" parent="HUDRoot" instance=ExtResource("5")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 542.0
-offset_top = 642.0
-offset_right = 738.0
-offset_bottom = 704.0
+offset_left = 566.0
+offset_top = 574.0
+offset_right = 768.0
+offset_bottom = 636.0
 
 [node name="CameraInteractionControl" parent="HUDRoot" instance=ExtResource("6")]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 16.0
-offset_top = 70.0
-offset_right = 128.0
-offset_bottom = 114.0
+offset_left = 24.0
+offset_top = 76.0
+offset_right = 172.0
+offset_bottom = 120.0
 
 [node name="RunStatusCard" parent="HUDRoot" instance=ExtResource("12")]
 unique_name_in_owner = true
 layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -660.0
+offset_left = -630.0
 offset_top = 14.0
-offset_right = -120.0
+offset_right = -90.0
 offset_bottom = 66.0
 grow_horizontal = 0
 
@@ -84,21 +84,6 @@ offset_bottom = 600.0
 theme_type_variation = &"HudModeButton"
 tooltip_text = "hud.return_to_cannon_hint"
 text = "hud.return_to_cannon"
-
-[node name="ReturnShortcut" parent="HUDRoot/ReturnToCannon" instance=ExtResource("13_hint")]
-layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -54.0
-offset_top = -11.0
-offset_right = -10.0
-offset_bottom = 11.0
-grow_horizontal = 0
-grow_vertical = 2
-key_text = "Tab"
 
 [node name="ShotSummary" parent="HUDRoot" instance=ExtResource("7")]
 unique_name_in_owner = true
@@ -120,9 +105,9 @@ offset_bottom = 214.0
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 340.0
-offset_top = 520.0
+offset_top = 492.0
 offset_right = 940.0
-offset_bottom = 696.0
+offset_bottom = 646.0
 
 [node name="Margin" type="MarginContainer" parent="HUDRoot/BriefingPanel"]
 layout_mode = 2
@@ -186,3 +171,16 @@ grow_horizontal = 0
 [node name="PauseOverlay" parent="HUDRoot" instance=ExtResource("11")]
 unique_name_in_owner = true
 layout_mode = 1
+
+[node name="ContextLegend" parent="HUDRoot" instance=ExtResource("13_legend")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -54.0
+offset_right = -24.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0

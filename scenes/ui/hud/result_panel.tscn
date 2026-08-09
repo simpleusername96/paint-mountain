@@ -23,21 +23,19 @@ theme_override_constants/separation = 12
 [node name="Title" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_type_variation = &"HudMetric"
 text = "완료"
 autowrap_mode = 2
 
 [node name="CoverageLabel" type="Label" parent="Margin/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"HudCaption"
 text = "result.final"
 
 [node name="Coverage" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 46
+theme_type_variation = &"ResultCoverage"
 text = "75.0%"
 
 [node name="CoverageExplanation" type="Label" parent="Margin/Content"]
@@ -50,22 +48,20 @@ autowrap_mode = 2
 [node name="Stars" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"HudAccentValue"
 text = "등급  ★★★"
 
 [node name="PreviousBest" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"HudBody"
 text = "이전 최고  62.0%"
 
 [node name="Metadata" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"HudCaption"
 text = "경과 시간  01:24 · 사용한 탄  4"
 autowrap_mode = 2
 

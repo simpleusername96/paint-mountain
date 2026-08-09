@@ -126,7 +126,7 @@ func refresh_locale() -> void:
 	%TimeValue.tooltip_text = tr("hud.time")
 	%ShotsValue.tooltip_text = tr("hud.shots")
 	%ActivityValue.tooltip_text = tr("hud.resident_balls")
-	%Finish.text = "✓"
+	%Finish.text = "%s  F" % tr("ui.finish")
 	_refresh_values()
 	set_finish_available(finish_is_available())
 

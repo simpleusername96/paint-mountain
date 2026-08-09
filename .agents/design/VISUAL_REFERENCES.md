@@ -94,12 +94,38 @@ concepts, or asset previews from silently becoming product requirements.
   running-game capture and the primary target comparator.
 - Use for: comparing three component languages across Main Menu, Stage Select,
   and Aim View: Paper Toy Adventure, Sticker Arcade, and Quiet Field Guide.
-- Recommendation: borrow Paper Toy's tactile surfaces for menus and Field
-  Guide's restraint for the gameplay HUD. Limit Sticker Arcade's thick outline
-  and saturation to emphasis states.
+- Historical recommendation: borrow Paper Toy's tactile surfaces for menus and
+  Field Guide's restraint for the gameplay HUD. The later approved Quiet
+  Context system below supersedes this recommendation.
 - Do not use as: runtime proof, approved implementation authority, a source of
   gameplay values, or permission to add invented actions. The implemented Theme
-  and `UIUX_GUIDELINES.md` remain authoritative until the user selects a concept.
+  and `UIUX_GUIDELINES.md` remained authoritative until the user selected the
+  later concept.
+
+### Approved Quiet Context UI system
+
+![Approved Quiet Context UI](../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
+
+- Image: [approved Quiet Context UI](../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
+- Provenance: ImageGen revision grounded in the current running Stage 30 Aim
+  View, selected explicitly by the user on 2026-08-09.
+- SHA-256:
+  `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`.
+- Current use: direct edge-aligned status, warm paper-white field, navy type,
+  blue primary action, left coverage rail, centered Fire, right-side
+  angle/power instruments, hairline separation, minimal containment, and one
+  quiet lower-edge context legend with inline input/action pairs.
+- Apply across: Main Menu, Stage Select, Briefing, Aim View, Map View, Shot
+  Follow, Pause, Settings, transient feedback, and Result using the same Theme,
+  spacing, divider, action, focus, and disabled-state principles.
+- Preserve beyond the still: real Gear, Finish, loading/failure, Map/Follow,
+  focus, localization, settings, and result behavior even when the generated
+  image omits or simplifies them.
+- Do not copy: generated mountain/glyph placement, fake state, missing actions,
+  text artifacts, or exact pixels that conflict with responsive layout. Do not
+  retain detached dark keycap tiles or visible target-derived yaw.
+- Status: approved visual authority for the UI system. Running-build captures
+  remain required implementation and acceptance evidence.
 
 ### Historical remediation report
 
@@ -128,8 +154,9 @@ concepts, or asset previews from silently becoming product requirements.
 - Blue paint and trajectory provide the strongest saturated gameplay contrast;
   environment and UI stay restrained.
 - The HUD is visually secondary and edge-aligned. Its current canonical
-  behavior and component rules come from `UIUX_GUIDELINES.md`; no generated
-  image is current layout authority until the user selects it.
+  behavior and component rules come from `UIUX_GUIDELINES.md`; the approved
+  Quiet Context image supplies the visual hierarchy while running code and
+  active specs preserve real behavior.
 - Existing screenshots and scenes can be useful implementation evidence while
   still being wrong as design direction.
 

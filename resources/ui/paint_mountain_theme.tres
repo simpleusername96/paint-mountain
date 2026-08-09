@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=35 format=3]
+[gd_resource type="Theme" load_steps=37 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png" id="2_neutral_depth"]
@@ -81,32 +81,26 @@ content_margin_right = 18.0
 content_margin_bottom = 14.0
 
 [sub_resource type="StyleBoxFlat" id="Panel"]
-bg_color = Color(1, 0.992157, 0.988235, 0.97)
+bg_color = Color(1, 0.992157, 0.988235, 0.96)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.88, 0.89, 0.91, 0.92)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0.09, 0.145, 0.22, 0.16)
-shadow_size = 10
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="HudStagePanel"]
-bg_color = Color(1, 0.992157, 0.988235, 0.96)
+border_color = Color(0.85098, 0.866667, 0.890196, 0.78)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.85098, 0.866667, 0.890196, 1)
-shadow_color = Color(0.09, 0.145, 0.22, 0.14)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.09, 0.145, 0.22, 0.1)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="HudStagePanel"]
+bg_color = Color(1, 0.992157, 0.988235, 0.62)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="ModePanel"]
 bg_color = Color(0.090196, 0.145098, 0.219608, 0.97)
@@ -123,23 +117,23 @@ corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-bg_color = Color(1, 0.992157, 0.988235, 0.98)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(1, 0.992157, 0.988235, 0.74)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.85098, 0.866667, 0.890196, 1)
+border_color = Color(0.788235, 0.803922, 0.823529, 0.82)
 
 [sub_resource type="StyleBoxFlat" id="ButtonHover"]
 bg_color = Color(0.921569, 0.952941, 1, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -148,17 +142,22 @@ border_color = Color(0.439216, 0.666667, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="ButtonPressed"]
 bg_color = Color(0.823529, 0.886275, 1, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
-bg_color = Color(0.831373, 0.839216, 0.85098, 0.82)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.831373, 0.839216, 0.85098, 0.46)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.788235, 0.803922, 0.823529, 0.52)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="Focus"]
 bg_color = Color(0, 0, 0, 0)
@@ -177,32 +176,36 @@ expand_margin_right = 2.0
 expand_margin_bottom = 2.0
 
 [sub_resource type="StyleBoxFlat" id="HudModeNormal"]
-bg_color = Color(1, 0.992157, 0.988235, 0.98)
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-border_width_left = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.85098, 0.866667, 0.890196, 1)
+bg_color = Color(1, 0.992157, 0.988235, 0.58)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="HudModeHover"]
 bg_color = Color(0.921569, 0.952941, 1, 1)
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-border_width_left = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.439216, 0.666667, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="HudModePressed"]
 bg_color = Color(0.823529, 0.886275, 1, 1)
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="HudModeDisabled"]
-bg_color = Color(0.831373, 0.839216, 0.85098, 0.82)
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.831373, 0.839216, 0.85098, 0.42)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id="HudModeCompactNormal"]
+
+[sub_resource type="StyleBoxEmpty" id="QuietButtonNormal"]
 
 [sub_resource type="StyleBoxFlat" id="HudModeFocus"]
 bg_color = Color(0, 0, 0, 0)
@@ -249,34 +252,36 @@ color = Color(0.145098, 0.517647, 1, 1)
 thickness = 2
 
 [sub_resource type="StyleBoxFlat" id="HudKeycap"]
-content_margin_left = 5.0
+content_margin_left = 6.0
 content_margin_top = 1.0
-content_margin_right = 5.0
+content_margin_right = 6.0
 content_margin_bottom = 1.0
-bg_color = Color(0.090196, 0.145098, 0.219608, 0.9)
+bg_color = Color(1, 0.992157, 0.988235, 0.72)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.407843, 0.45098, 0.517647, 0.72)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
-shadow_color = Color(1, 1, 1, 0.22)
-shadow_size = 1
-shadow_offset = Vector2(0, 1)
 
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 16
 Label/font_sizes/font_size = 17
 Label/colors/font_outline_color = Color(1, 1, 1, 0.18)
-Label/constants/outline_size = 1
+Label/constants/outline_size = 0
 Button/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 Button/colors/font_disabled_color = Color(0.407843, 0.45098, 0.517647, 0.9)
 Button/font_sizes/font_size = 17
-Button/styles/normal = SubResource("KenneyNeutralDepth")
-Button/styles/hover = SubResource("KenneyNeutralFlat")
-Button/styles/pressed = SubResource("KenneyNeutralFlat")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/pressed = SubResource("ButtonPressed")
 Button/styles/disabled = SubResource("ButtonDisabled")
 Button/styles/focus = SubResource("Focus")
 Label/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
@@ -297,6 +302,12 @@ PrimaryButton/styles/normal = SubResource("KenneyPrimaryDepth")
 PrimaryButton/styles/hover = SubResource("KenneyPrimaryFlat")
 PrimaryButton/styles/pressed = SubResource("KenneyPrimaryFlat")
 PrimaryButton/styles/focus = SubResource("Focus")
+QuietButton/base_type = &"Button"
+QuietButton/styles/normal = SubResource("QuietButtonNormal")
+QuietButton/styles/hover = SubResource("ButtonHover")
+QuietButton/styles/pressed = SubResource("ButtonPressed")
+QuietButton/styles/disabled = SubResource("QuietButtonNormal")
+QuietButton/styles/focus = SubResource("Focus")
 ModePanel/base_type = &"PanelContainer"
 ModePanel/styles/panel = SubResource("ModePanel")
 DebugPanel/base_type = &"PanelContainer"
@@ -314,8 +325,12 @@ HudCaption/base_type = &"Label"
 HudCaption/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
 HudCaption/fonts/font = SubResource("FontWeight500")
 HudCaption/font_sizes/font_size = 14
+HudLegend/base_type = &"Label"
+HudLegend/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudLegend/fonts/font = SubResource("FontWeight500")
+HudLegend/font_sizes/font_size = 14
 HudKeycap/base_type = &"Label"
-HudKeycap/colors/font_color = Color(1, 0.992157, 0.988235, 1)
+HudKeycap/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudKeycap/fonts/font = SubResource("FontWeight600")
 HudKeycap/font_sizes/font_size = 11
 HudKeycapPanel/base_type = &"PanelContainer"
@@ -328,6 +343,10 @@ HudSection/base_type = &"Label"
 HudSection/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudSection/fonts/font = SubResource("FontWeight600")
 HudSection/font_sizes/font_size = 18
+HudStageLabel/base_type = &"Label"
+HudStageLabel/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudStageLabel/fonts/font = SubResource("FontWeight600")
+HudStageLabel/font_sizes/font_size = 20
 HudValue/base_type = &"Label"
 HudValue/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudValue/fonts/font = SubResource("FontWeight600")
@@ -348,6 +367,14 @@ HudAccentValue/base_type = &"Label"
 HudAccentValue/colors/font_color = Color(0.145098, 0.517647, 1, 1)
 HudAccentValue/fonts/font = SubResource("FontWeight600")
 HudAccentValue/font_sizes/font_size = 22
+ResultCoverage/base_type = &"Label"
+ResultCoverage/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+ResultCoverage/fonts/font = SubResource("FontWeight700")
+ResultCoverage/font_sizes/font_size = 46
+HudAccentCaption/base_type = &"Label"
+HudAccentCaption/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+HudAccentCaption/fonts/font = SubResource("FontWeight500")
+HudAccentCaption/font_sizes/font_size = 14
 ScreenTitle/base_type = &"Label"
 ScreenTitle/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 ScreenTitle/fonts/font = SubResource("FontWeight700")
@@ -369,21 +396,23 @@ MenuSubtitle/font_sizes/font_size = 17
 StageCardButton/base_type = &"Button"
 StageCardButton/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 StageCardButton/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
-StageCardButton/colors/font_pressed_color = Color(1, 1, 1, 1)
-StageCardButton/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+StageCardButton/colors/font_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+StageCardButton/colors/font_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 StageCardButton/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 StageCardButton/fonts/font = SubResource("FontWeight600")
 StageCardButton/font_sizes/font_size = 15
-StageCardButton/styles/normal = SubResource("KenneyNeutralDepth")
-StageCardButton/styles/hover = SubResource("KenneyNeutralFlat")
-StageCardButton/styles/pressed = SubResource("KenneyPrimaryFlat")
-StageCardButton/styles/hover_pressed = SubResource("KenneyPrimaryDepth")
+StageCardButton/styles/normal = SubResource("ButtonNormal")
+StageCardButton/styles/hover = SubResource("ButtonHover")
+StageCardButton/styles/pressed = SubResource("ButtonPressed")
+StageCardButton/styles/hover_pressed = SubResource("ButtonPressed")
 StageCardButton/styles/disabled = SubResource("ButtonDisabled")
 StageCardButton/styles/focus = SubResource("Focus")
 HudStagePanel/base_type = &"PanelContainer"
 HudStagePanel/styles/panel = SubResource("HudStagePanel")
 HudRailPanel/base_type = &"PanelContainer"
 HudRailPanel/styles/panel = SubResource("Panel")
+HudCalloutPanel/base_type = &"PanelContainer"
+HudCalloutPanel/styles/panel = SubResource("QuietButtonNormal")
 HudModeButton/base_type = &"Button"
 HudModeButton/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudModeButton/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
@@ -400,6 +429,7 @@ HudModeButton/styles/disabled = SubResource("HudModeDisabled")
 HudModeButton/styles/focus = SubResource("HudModeFocus")
 HudModeButtonCompact/base_type = &"HudModeButton"
 HudModeButtonCompact/font_sizes/font_size = 14
+HudModeButtonCompact/styles/normal = SubResource("HudModeCompactNormal")
 HudIconButton/base_type = &"Button"
 HudIconButton/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudIconButton/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)

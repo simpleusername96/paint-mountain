@@ -32,6 +32,7 @@ ui.retry_stage_load,RETRY LOAD,다시 불러오기
 ui.close,CLOSE,닫기
 ui.restore_defaults,RESTORE DEFAULTS,기본값 복원
 ui.main_menu,QUIT TO MAIN MENU,메인 메뉴로
+ui.menu,MENU,메뉴
 ui.stages,STAGES,스테이지
 ui.choose_mountain,CHOOSE A MOUNTAIN,산을 선택하세요
 hud.stage,STAGE,스테이지
@@ -75,6 +76,8 @@ hud.direction_left,LEFT,왼쪽
 hud.direction_right,RIGHT,오른쪽
 hud.direction_center,CENTER,중앙
 hud.power,POWER,파워
+hud.orbit,ORBIT,회전
+hud.zoom,ZOOM,확대
 hud.angle_decrease,DECREASE ANGLE,각도 낮추기
 hud.angle_increase,INCREASE ANGLE,각도 높이기
 hud.power_decrease,DECREASE POWER BY 2%,파워 2% 낮추기
@@ -86,6 +89,7 @@ hud.summary_balls,%d balls,공 %d개
 hud.summary_direct,Direct route,직접 경로
 hud.aim_context,TERRAIN CLICK/DRAG · W S ANGLE · WHEEL POWER,지형 클릭·드래그 · W S 각도 · 휠 파워
 hud.map_context,DRAG TO ROTATE · WHEEL ZOOM,드래그 회전 · 휠 확대
+hud.map,MAP,지도
 hud.camera_hint,LEFT-DRAG ORBIT · WHEEL ZOOM,왼쪽 드래그 회전 · 휠 확대
 hud.aim_lock,AIM VIEW,조준
 hud.map_inspection,MAP VIEW,지도 보기
@@ -93,6 +97,7 @@ hud.switch_to_map_inspection,Switch to Map View (Tab) · Drag orbit · Wheel zoo
 hud.switch_to_aim_lock,Switch to Aim View (Tab) · Drag aim · Wheel power,조준으로 전환 (Tab) · 드래그 조준 · 휠 파워
 hud.return_to_cannon,RETURN TO CANNON,대포로 돌아가기
 hud.return_to_cannon_hint,Return camera to Aim View (Tab); the paintball keeps moving.,조준 화면으로 돌아갑니다(Tab). 페인트볼은 계속 움직입니다.
+input.drag,DRAG,드래그
 hud.briefing,BRIEFING,지형 확인
 hud.aiming,AIMING,조준
 hud.in_flight,IN FLIGHT,비행 중

@@ -24,19 +24,24 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.035, 0.055, 0.08, 0.1)
 
-[node name="BrandPanel" type="PanelContainer" parent="Root"]
+[node name="BrandPanel" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 48.0
-offset_top = 98.0
-offset_right = 504.0
-offset_bottom = 624.0
+offset_top = 92.0
+offset_right = 472.0
+offset_bottom = 628.0
 
 [node name="Margin" type="MarginContainer" parent="Root/BrandPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 30
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
 [node name="Content" type="VBoxContainer" parent="Root/BrandPanel/Margin"]
 layout_mode = 2
@@ -75,16 +80,19 @@ text = "ui.play"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+theme_type_variation = &"QuietButton"
 text = "ui.stage_select"
 
 [node name="Settings" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+theme_type_variation = &"QuietButton"
 text = "ui.settings"
 
 [node name="Quit" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
+theme_type_variation = &"QuietButton"
 text = "ui.quit"

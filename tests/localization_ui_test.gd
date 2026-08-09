@@ -88,9 +88,9 @@ func _run() -> void:
 	_assert_true(quality_option.get_item_metadata(1) == "medium", "quality metadata must remain stable")
 	_assert_true(resolution_option.get_item_text(0) == "1280 × 720" and resolution_option.get_item_metadata(0) == "1280x720", "resolution display formatting must preserve stored metadata")
 	_assert_true(
-		aim_controls.get_node("Content/ElevationCaption").text == "∠" \
-				and aim_controls.get_node("Content/PowerCaption").text == "▰",
-		"Aim controls must use locale-independent instrument symbols"
+		aim_controls.get_node("Content/AngleLabel").text == "ANGLE" \
+				and aim_controls.get_node("Content/PowerLabel").text == "POWER",
+		"Aim controls must use localized direct labels without a yaw instrument"
 	)
 	_assert_true(
 		(aim_controls.get_node("Content/AngleDecrease") as Button).size.y >= 40.0,

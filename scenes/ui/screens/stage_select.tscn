@@ -21,7 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.035, 0.055, 0.08, 0.2)
+color = Color(0.035, 0.055, 0.08, 0.08)
 
 [node name="Back" type="Button" parent="Root"]
 unique_name_in_owner = true
@@ -31,6 +31,7 @@ offset_top = 24.0
 offset_right = 136.0
 offset_bottom = 68.0
 text = "ui.back"
+theme_type_variation = &"QuietButton"
 
 [node name="Heading" type="Label" parent="Root"]
 layout_mode = 0
@@ -38,10 +39,10 @@ offset_left = 160.0
 offset_top = 24.0
 offset_right = 600.0
 offset_bottom = 68.0
-theme_type_variation = &"ScreenTitleLight"
+theme_type_variation = &"ScreenTitle"
 text = "ui.choose_mountain"
 
-[node name="CardsPanel" type="PanelContainer" parent="Root"]
+[node name="CardsPanel" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 88.0
@@ -49,11 +50,16 @@ offset_right = 656.0
 offset_bottom = 696.0
 
 [node name="Margin" type="MarginContainer" parent="Root/CardsPanel"]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 20
+theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_bottom = 12
 
 [node name="Content" type="VBoxContainer" parent="Root/CardsPanel/Margin"]
 layout_mode = 2
@@ -91,7 +97,14 @@ custom_minimum_size = Vector2(112, 44)
 layout_mode = 2
 text = "ui.next"
 
-[node name="PreviewPanel" type="PanelContainer" parent="Root"]
+[node name="Divider" type="VSeparator" parent="Root"]
+layout_mode = 0
+offset_left = 667.0
+offset_top = 96.0
+offset_right = 669.0
+offset_bottom = 688.0
+
+[node name="PreviewPanel" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 680.0
 offset_top = 88.0
@@ -99,7 +112,12 @@ offset_right = 1256.0
 offset_bottom = 696.0
 
 [node name="Margin" type="MarginContainer" parent="Root/PreviewPanel"]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 26
 theme_override_constants/margin_right = 28

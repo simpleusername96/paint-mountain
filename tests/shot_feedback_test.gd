@@ -44,7 +44,11 @@ func _run() -> void:
 	_assert_true(power_decrease.tooltip_text == "파워 2% 낮추기" and power_increase.tooltip_text == "파워 2% 높이기", "power controls must expose localized tooltips")
 	_assert_true(power_decrease.get_theme_color("icon_normal_color").is_equal_approx(Color("172538")), "power glyphs must use the navy icon tint")
 	hud.update_aim(-7.5, 41.0, 72.0)
-	_assert_true("-7.5°" in hud_root.get_node("AimControls/Content/DirectionValue").text and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text, "aim instruments must expose direction and elevation independently")
+	_assert_true(
+		hud_root.get_node_or_null("AimControls/Content/DirectionValue") == null \
+				and "41.0°" in hud_root.get_node("AimControls/Content/ElevationValue").text,
+		"aim instruments must omit yaw and expose target-preserving elevation"
+	)
 	var interaction_control := hud_root.get_node("CameraInteractionControl") as CameraInteractionControl
 	_assert_true(
 		interaction_control != null and interaction_control.visible \
@@ -59,14 +63,14 @@ func _run() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
-		interaction_control.visible and interaction_control.text == "◇" \
+		interaction_control.visible and interaction_control.text == "지도 보기" \
 				and not hud_root.get_node("AimControls").visible \
 				and not hud_root.get_node("ActionButtons").visible,
-		"Map Inspection must use its symbol and hide aim-only actions"
+		"Map Inspection must use its direct label and hide aim-only actions"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true(
-		interaction_control.text == "◎" \
+		interaction_control.text == "조준" \
 				and hud_root.get_node("AimControls").visible \
 				and hud_root.get_node("ActionButtons").visible,
 		"Aim Lock must restore aim and Fire controls"
@@ -77,7 +81,9 @@ func _run() -> void:
 	_assert_true(
 		is_equal_approx(coverage.progress.max_value, 100.0)
 		and is_equal_approx(coverage.progress.value, 2.0)
-		and coverage.target_label.text == "%.0f%%" % gameplay.stage_data.target_coverage
+		and coverage.target_label.text == "%s %.0f%%" % [
+			tr("hud.target"), gameplay.stage_data.target_coverage,
+		]
 		and absf(
 			coverage.target_label.get_global_rect().get_center().y
 			- coverage.target_line.get_global_rect().get_center().y

@@ -6,6 +6,11 @@ signal fire_requested
 
 func _ready() -> void:
 	%FireButton.pressed.connect(func() -> void: fire_requested.emit())
+	refresh_locale()
+
+
+func refresh_locale() -> void:
+	%FireButton.text = "%s  Space" % tr("ui.fire")
 
 
 func set_fire_readiness(snapshot: Dictionary) -> void:

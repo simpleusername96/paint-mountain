@@ -31,19 +31,19 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -560.0
-offset_top = -320.0
-offset_right = 560.0
-offset_bottom = 320.0
+offset_left = -540.0
+offset_top = -300.0
+offset_right = 540.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Margin" type="MarginContainer" parent="SettingsRoot/Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 22
 
 [node name="Content" type="VBoxContainer" parent="SettingsRoot/Panel/Margin"]
 layout_mode = 2
@@ -55,29 +55,27 @@ layout_mode = 2
 [node name="Title" type="Label" parent="SettingsRoot/Panel/Margin/Content/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"ScreenTitle"
 text = "settings.title"
 
 [node name="Autosave" type="Label" parent="SettingsRoot/Panel/Margin/Content/Header"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"HudCaption"
 text = "settings.autosave"
 
 [node name="Columns" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 40
+theme_override_constants/separation = 24
 
 [node name="Audio" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
-custom_minimum_size = Vector2(508, 0)
+custom_minimum_size = Vector2(484, 0)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Heading" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"HudAccentSection"
 text = "settings.audio"
 
 [node name="MasterLabel" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
@@ -109,8 +107,7 @@ max_value = 100.0
 step = 1.0
 [node name="GameplayHeading" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"HudAccentSection"
 text = "settings.gameplay"
 [node name="CameraShake" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 unique_name_in_owner = true
@@ -128,15 +125,17 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "settings.trajectory"
 
+[node name="ColumnDivider" type="VSeparator" parent="SettingsRoot/Panel/Margin/Content/Columns"]
+layout_mode = 2
+
 [node name="Display" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
-custom_minimum_size = Vector2(508, 0)
+custom_minimum_size = Vector2(484, 0)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Heading" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"HudAccentSection"
 text = "settings.display"
 [node name="Fullscreen" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
 unique_name_in_owner = true
@@ -159,18 +158,16 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 [node name="LanguageHeading" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.145098, 0.517647, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"HudAccentSection"
 text = "settings.language"
 [node name="Language" type="OptionButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 [node name="LanguageNote" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
-custom_minimum_size = Vector2(508, 40)
+custom_minimum_size = Vector2(484, 40)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"HudCaption"
 text = "settings.language_note"
 autowrap_mode = 2
 
@@ -183,6 +180,7 @@ theme_override_constants/separation = 12
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 44)
 layout_mode = 2
+theme_type_variation = &"QuietButton"
 text = "ui.restore_defaults"
 
 [node name="Close" type="Button" parent="SettingsRoot/Panel/Margin/Content/Footer"]

@@ -134,14 +134,14 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
 `.agents/design/VISUAL_REFERENCES.md`, `resources/ui/paint_mountain_theme.tres`,
 `scenes/ui/components/`, `src/ui/components/`
 
-- [ ] **1.1 Register the approved Quiet Context direction**
+- [x] **1.1 Register the approved Quiet Context direction**
   - Change: add the selected image and its approved/forbidden qualities to the
     visual register and update the UI spec so it supersedes the current heavy
     shared-casual surface treatment without changing interaction authority.
   - Accept: both active specs name the exact image, direct edge hierarchy,
     single context legend, minimal containment, primary-action rule, and yaw
     exclusion without turning generated world pixels into requirements.
-- [ ] **1.2 Rebuild shared Theme roles for quiet paper instruments**
+- [x] **1.2 Rebuild shared Theme roles for quiet paper instruments**
   - Change: update the existing Theme's neutral surfaces, buttons, primary,
     disabled, separators, progress, type variations, focus, and stage-selection
     roles. Add only responsibility-shaped variations required by several
@@ -152,7 +152,7 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
     duplicated palette/style overrides.
   - Guard: debug-overlay styling remains unchanged unless a shared parent style
     would otherwise make it unreadable.
-- [ ] **1.3 Replace detached shortcut badges with one context legend primitive**
+- [x] **1.3 Replace detached shortcut badges with one context legend primitive**
   - Change: implement a shared context-legend component with Aim, Map, Follow,
     Briefing, and Pause content modes using existing mouse-wheel imagery and
     localized action labels; remove obsolete detached hint placement from
@@ -181,7 +181,7 @@ Preconditions:
 Source owners: `scenes/ui/hud/hud.tscn`, `scenes/ui/hud/*.tscn`,
 `src/ui/hud_controller.gd`, `src/ui/hud/*.gd`, `translations/ui.csv`
 
-- [ ] **2.1 Recompose the 1280x720 Aim View**
+- [x] **2.1 Recompose the 1280x720 Aim View**
   - Change: place direct stage/mode status at upper left, time/ammunition/
     resident/wind/Finish/Gear along the top edge, coverage at the left edge,
     Fire at bottom center, angle/power at bottom right, and the Aim legend under
@@ -191,7 +191,7 @@ Source owners: `scenes/ui/hud/hud.tscn`, `scenes/ui/hud/*.tscn`,
     mountain, trajectory, target, cannon, and flag readable.
   - Guard: Finish remains disabled before the first launch, Gear and Escape open
     the same Pause flow, and Fire remains the sole aiming primary action.
-- [ ] **2.2 Remove visible yaw and keep target-preserving steppers truthful**
+- [x] **2.2 Remove visible yaw and keep target-preserving steppers truthful**
   - Change: delete the direction caption/value/divider and all display updates
     from `AimControls`; retain elevation/power step signals, hold repeat,
     boundaries, tooltips, and `HUDController.update_aim` compatibility.
@@ -199,7 +199,7 @@ Source owners: `scenes/ui/hud/hud.tscn`, `scenes/ui/hud/*.tscn`,
     buttons still change the selected target's legal angle/power immediately.
   - Guard: `AimInputController`, `TerrainAimController`, and ballistics are not
     changed by this presentational task.
-- [ ] **2.3 Apply the system to Map View, Shot Follow, Briefing, feedback, and Result**
+- [x] **2.3 Apply the system to Map View, Shot Follow, Briefing, feedback, and Result**
   - Change: give each presentation state the same edge instruments and one
     state-specific legend/action lane; simplify Briefing, shot summary,
     mechanism callout, and Result to one containment level with the world still
@@ -228,21 +228,21 @@ Preconditions:
 Source owners: `scenes/ui/screens/*.tscn`, `src/ui/screens/*.gd`,
 `src/app/app_root.gd`, `translations/ui.csv`
 
-- [ ] **3.1 Recompose Main Menu**
+- [x] **3.1 Recompose Main Menu**
   - Change: remove the large brand card, place title/subtitle and actions
     directly over the preview with one restrained readability treatment, keep
     Play as the sole filled primary action, and flatten secondary navigation.
   - Accept: ready, loading, and load-failure states remain readable and
     focusable; the preview world is dominant; Korean and English text does not
     clip.
-- [ ] **3.2 Recompose Stage Select**
+- [x] **3.2 Recompose Stage Select**
   - Change: replace the two giant panels with direct heading, one restrained
     repeated stage-selection region, a divider-led detail region, quiet pager,
     and one primary Start action.
   - Accept: eight stages per page, selected state, target/best/mechanism data,
     page 1/page 2 navigation, loading/retry, keyboard focus, and all-open stage
     behavior remain functional with no nested card wall.
-- [ ] **3.3 Recompose Pause and Settings**
+- [x] **3.3 Recompose Pause and Settings**
   - Change: keep the full-viewport paused barrier but use one compact Pause
     surface and one Settings surface with direct section headings, hairline
     separation, aligned fields, restrained controls, and a single action lane.
@@ -251,7 +251,7 @@ Source owners: `scenes/ui/screens/*.tscn`, `src/ui/screens/*.gd`,
     opening or changing non-display settings does not mutate window geometry.
   - Guard: settings persistence, explicit fullscreen/resolution mutation, focus
     restoration, and paused input blocking remain unchanged.
-- [ ] **3.4 Remove remaining cross-page surface drift**
+- [x] **3.4 Remove remaining cross-page surface drift**
   - Change: eliminate scene-local palette/type duplication made obsolete by the
     new Theme and align result, modal, stage, menu, and HUD action states with
     the same spacing, radius, focus, disabled, and divider rules.
@@ -345,9 +345,14 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 1 - Canonical direction and shared primitives.
-- Next task: 1.1 - Register the approved Quiet Context direction.
-- Last completed gate: Discovery Closure Gate.
+- Current phase: Phase 4 - Responsive production evidence and closeout.
+- Next task: 4.1 - Update focused contracts and pass repository verification.
+- Last completed gate: Phase 3; Korean 1280x720 runtime captures cover Main
+  Menu, Stage Select, Briefing, Aim, Map, Follow, Pause, Settings, and Result.
+  Gameplay HUD, target-preserving aiming, navigation, localization, settings
+  geometry, and the shared context legend pass their focused contracts. The
+  approved Aim reference and runtime were also reviewed in a same-size combined
+  comparison input.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

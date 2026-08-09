@@ -27,21 +27,38 @@ func _run_checks() -> void:
 	var root_control := gameplay.get_node("HUD/HUDRoot") as Control
 	_assert_true(controller.begin_aiming(), "shortcut fixture must enter Aim View")
 	await process_frame
-	_assert_keycap(root_control, "ActionButtons/FireButton/FireShortcut", "Space")
-	_assert_keycap(root_control, "CameraInteractionControl/ModeShortcut", "Tab")
-	_assert_keycap(root_control, "RunStatusCard/Finish/FinishShortcut", "F")
-	_assert_keycap(root_control, "TopStatusBar/SettingsButton/SettingsShortcut", "Esc")
+	var legend := root_control.get_node("ContextLegend") as ContextLegend
+	_assert_true(
+		legend.visible and legend.context_mode == ContextLegend.Mode.AIM,
+		"Aim View must expose one shared Aim context legend"
+	)
+	_assert_legend_contains(legend, ["S/W", "Space", "Tab", "Esc", "각도", "파워", "발사"])
+	_assert_true(
+		(legend.get_node("Center/Items/PowerItem/Input") as TextureRect).texture != null,
+		"Aim context must use the real mouse-wheel glyph"
+	)
 	_assert_true(
 		root_control.get_node_or_null("AimControls/Content/YawHint") == null,
 		"derived target yaw must not advertise unavailable A/D steering"
 	)
-	_assert_keycap(root_control, "AimControls/Content/AngleDecreaseHint", "S")
-	_assert_keycap(root_control, "AimControls/Content/AngleIncreaseHint", "W")
-	_assert_icon_prompt(root_control, "AimControls/Content/PowerHint")
 	_assert_true(
-		root_control.get_node_or_null("ContextLine") == null,
-		"normal play must not retain a prose instruction strip"
+		root_control.get_node_or_null("AimControls/Content/DirectionValue") == null \
+				and root_control.get_node_or_null("AimControls/Content/DirectionCaption") == null,
+		"target-derived yaw must not remain visible"
 	)
+	for detached_path in [
+		"ActionButtons/FireButton/FireShortcut",
+		"CameraInteractionControl/ModeShortcut",
+		"RunStatusCard/Finish/FinishShortcut",
+		"TopStatusBar/SettingsButton/SettingsShortcut",
+		"AimControls/Content/AngleDecreaseHint",
+		"AimControls/Content/AngleIncreaseHint",
+		"AimControls/Content/PowerHint",
+	]:
+		_assert_true(
+			root_control.get_node_or_null(detached_path) == null,
+			"%s must not remain as a detached shortcut badge" % detached_path
+		)
 	_assert_true(
 		root_control.get_node_or_null("FirstSessionHint") == null,
 		"transient first-session prompt must not remain"
@@ -53,24 +70,32 @@ func _run_checks() -> void:
 				and not root_control.get_node("ActionButtons").visible,
 		"Map View must keep its Tab control and hide aim-only actions"
 	)
+	_assert_true(
+		legend.context_mode == ContextLegend.Mode.MAP \
+				and not legend.get_node("Center/Items/AngleItem").visible \
+				and not legend.get_node("Center/Items/FireItem").visible,
+		"Map View must switch the shared legend instead of leaving Aim prompts"
+	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
-	_assert_keycap(root_control, "ReturnToCannon/ReturnShortcut", "Tab")
 	_assert_true(
 		root_control.get_node("ReturnToCannon").visible \
-				and not root_control.get_node("ActionButtons").visible,
+				and not root_control.get_node("ActionButtons").visible \
+				and legend.context_mode == ContextLegend.Mode.FOLLOW,
 		"Shot Follow must show Return with Tab without aim prompts"
 	)
+	_assert_legend_contains(legend, ["Tab", "대포로 돌아가기", "Esc"])
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
 	_assert_true(
 		controller.toggle_pause(), "Escape prompt fixture must enter pause"
 	)
 	await process_frame
-	_assert_keycap(
-		root_control,
-		"PauseOverlay/Center/Panel/Margin/Column/Resume/ResumeShortcut",
-		"Esc"
+	var pause_legend := root_control.get_node("PauseOverlay/ContextLegend") as ContextLegend
+	_assert_true(
+		pause_legend.visible and pause_legend.context_mode == ContextLegend.Mode.PAUSE,
+		"Pause must use the same context legend primitive"
 	)
+	_assert_legend_contains(pause_legend, ["Esc", "계속"])
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.physical_keycode = KEY_ESCAPE
@@ -111,6 +136,7 @@ func _run_checks() -> void:
 		"CameraInteractionControl",
 		"TopStatusBar/SettingsButton",
 		"AimControls",
+		"ContextLegend",
 	]:
 		_assert_inside_viewport(root_control.get_node(path) as Control, path)
 	gameplay.queue_free()
@@ -118,30 +144,18 @@ func _run_checks() -> void:
 	TranslationServer.set_locale("ko")
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shortcut prompts passed: contextual Space, Tab, F, Escape, pause resume, and no R restart.")
+		print("Shortcut prompts passed: one responsive context legend, F shortcut, pause resume, and no R restart.")
 	quit(1 if _failed else 0)
 
 
-func _assert_keycap(root_control: Control, path: String, expected: String) -> void:
-	var hint := root_control.get_node_or_null(path) as ShortcutHint
-	var label: Label
-	if hint != null:
-		label = hint.get_node_or_null("Content/Keycap") as Label
-	_assert_true(
-		hint != null and label != null and label.text == expected and not label.text.contains("["),
-		"%s must expose %s through ShortcutHint" % [path, expected]
-	)
-
-
-func _assert_icon_prompt(root_control: Control, path: String) -> void:
-	var hint := root_control.get_node_or_null(path) as ShortcutHint
-	var icon: TextureRect
-	if hint != null:
-		icon = hint.get_node_or_null("Content/Icon") as TextureRect
-	_assert_true(
-		hint != null and icon != null and icon.visible and icon.texture != null,
-		"%s must expose a compact input glyph" % path
-	)
+func _assert_legend_contains(legend: ContextLegend, expected_values: Array[String]) -> void:
+	var text_values: Array[String] = []
+	for label in legend.find_children("*", "Label", true, false):
+		if (label as Label).is_visible_in_tree():
+			text_values.append((label as Label).text)
+	var joined := " ".join(text_values)
+	for expected in expected_values:
+		_assert_true(expected in joined, "context legend must expose '%s'" % expected)
 
 
 func _assert_inside_viewport(control: Control, label: String) -> void:

@@ -1,14 +1,12 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/aim_controls.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/minus.png" id="2"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/plus.png" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/ui/components/shortcut_hint.tscn" id="4_hint"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/mouse_wheel.svg" id="5_wheel"]
 
 [node name="AimControls" type="Control"]
-custom_minimum_size = Vector2(486, 76)
-offset_right = 486.0
+custom_minimum_size = Vector2(488, 76)
+offset_right = 488.0
 offset_bottom = 76.0
 script = ExtResource("1")
 
@@ -20,58 +18,29 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="DirectionCaption" type="Label" parent="Content"]
+[node name="AngleLabel" type="Label" parent="Content"]
 layout_mode = 0
-offset_top = 30.0
-offset_right = 22.0
-offset_bottom = 72.0
-theme_type_variation = &"HudAccentValue"
-text = "↔"
-vertical_alignment = 1
+offset_left = 90.0
+offset_right = 180.0
+offset_bottom = 24.0
+theme_type_variation = &"HudCaption"
+text = "hud.angle"
 
-[node name="DirectionValue" type="Label" parent="Content"]
-unique_name_in_owner = true
+[node name="PowerLabel" type="Label" parent="Content"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 30.0
-offset_right = 78.0
-offset_bottom = 72.0
-theme_type_variation = &"HudValue"
-text = "+0.0°"
-vertical_alignment = 1
-
-[node name="DirectionDivider" type="VSeparator" parent="Content"]
-layout_mode = 0
-offset_left = 82.0
-offset_top = 20.0
-offset_right = 84.0
-offset_bottom = 74.0
-
-[node name="AngleDecreaseHint" parent="Content" instance=ExtResource("4_hint")]
-layout_mode = 0
-offset_left = 97.0
-offset_top = 8.0
-offset_right = 125.0
-offset_bottom = 28.0
-key_text = "S"
-
-[node name="ElevationCaption" type="Label" parent="Content"]
-layout_mode = 0
-offset_left = 140.0
-offset_top = 30.0
-offset_right = 156.0
-offset_bottom = 72.0
-theme_type_variation = &"HudAccentValue"
-text = "∠"
-vertical_alignment = 1
+offset_left = 288.0
+offset_right = 378.0
+offset_bottom = 24.0
+theme_type_variation = &"HudCaption"
+text = "hud.power"
 
 [node name="ElevationValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 160.0
-offset_top = 30.0
+offset_top = 26.0
 offset_right = 222.0
-offset_bottom = 72.0
+offset_bottom = 74.0
 theme_type_variation = &"HudControlValue"
 text = "38.0°"
 horizontal_alignment = 1
@@ -81,9 +50,9 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 90.0
-offset_top = 30.0
+offset_top = 26.0
 offset_right = 132.0
-offset_bottom = 72.0
+offset_bottom = 74.0
 icon = ExtResource("2")
 expand_icon = true
 focus_mode = 2
@@ -94,56 +63,29 @@ theme_type_variation = &"HudIconButton"
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 230.0
-offset_top = 30.0
+offset_top = 26.0
 offset_right = 272.0
-offset_bottom = 72.0
+offset_bottom = 74.0
 icon = ExtResource("3")
 expand_icon = true
 focus_mode = 2
 tooltip_text = "hud.angle_increase"
 theme_type_variation = &"HudIconButton"
 
-[node name="AngleIncreaseHint" parent="Content" instance=ExtResource("4_hint")]
-layout_mode = 0
-offset_left = 237.0
-offset_top = 8.0
-offset_right = 265.0
-offset_bottom = 28.0
-key_text = "W"
-
 [node name="PowerDivider" type="VSeparator" parent="Content"]
 layout_mode = 0
 offset_left = 280.0
-offset_top = 20.0
+offset_top = 8.0
 offset_right = 282.0
 offset_bottom = 74.0
-
-[node name="PowerHint" parent="Content" instance=ExtResource("4_hint")]
-layout_mode = 0
-offset_left = 380.0
-offset_top = 7.0
-offset_right = 408.0
-offset_bottom = 29.0
-key_text = ""
-icon_texture = ExtResource("5_wheel")
-
-[node name="PowerCaption" type="Label" parent="Content"]
-layout_mode = 0
-offset_left = 338.0
-offset_top = 30.0
-offset_right = 354.0
-offset_bottom = 72.0
-theme_type_variation = &"HudAccentValue"
-text = "▰"
-vertical_alignment = 1
 
 [node name="PowerValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 360.0
-offset_top = 30.0
-offset_right = 428.0
-offset_bottom = 72.0
+offset_left = 358.0
+offset_top = 26.0
+offset_right = 430.0
+offset_bottom = 74.0
 theme_type_variation = &"HudControlValue"
 text = "68.0%"
 horizontal_alignment = 1
@@ -153,9 +95,9 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 288.0
-offset_top = 30.0
+offset_top = 26.0
 offset_right = 330.0
-offset_bottom = 72.0
+offset_bottom = 74.0
 icon = ExtResource("2")
 expand_icon = true
 focus_mode = 2
@@ -166,9 +108,9 @@ theme_type_variation = &"HudIconButton"
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 436.0
-offset_top = 30.0
+offset_top = 26.0
 offset_right = 478.0
-offset_bottom = 72.0
+offset_bottom = 74.0
 icon = ExtResource("3")
 expand_icon = true
 focus_mode = 2

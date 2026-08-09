@@ -7,7 +7,6 @@ signal angle_step_requested(direction: float)
 const HOLD_DELAY := 0.30
 const HOLD_REPEAT := 0.08
 
-@onready var direction_value: Label = %DirectionValue
 @onready var elevation_value: Label = %ElevationValue
 @onready var power_value: Label = %PowerValue
 var _hold_direction := 0.0
@@ -29,6 +28,8 @@ func _ready() -> void:
 
 
 func refresh_locale() -> void:
+	$Content/AngleLabel.text = tr("hud.angle")
+	$Content/PowerLabel.text = tr("hud.power")
 	%AngleDecrease.tooltip_text = tr("hud.angle_decrease")
 	%AngleIncrease.tooltip_text = tr("hud.angle_increase")
 	%PowerDecrease.tooltip_text = tr("hud.power_decrease")
@@ -44,8 +45,7 @@ func _process(delta: float) -> void:
 		_next_repeat += HOLD_REPEAT
 
 
-func update_aim(yaw: float, elevation: float, power: float) -> void:
-	direction_value.text = "%+.1f°" % yaw
+func update_aim(_yaw: float, elevation: float, power: float) -> void:
 	elevation_value.text = "%.1f°" % elevation
 	power_value.text = "%.1f%%" % power
 	%AngleDecrease.disabled = elevation <= AimTuple.MINIMUM_ELEVATION_DEGREES

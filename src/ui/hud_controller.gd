@@ -27,6 +27,7 @@ signal angle_step_requested(direction: float)
 @onready var _mechanism: MechanismInfoCard = %MechanismInfoCard
 @onready var _briefing: PanelContainer = %BriefingPanel
 @onready var _pause: PauseOverlay = %PauseOverlay
+@onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
 var _current_state := StageController.State.LOADING
 var _shots_remaining := 0
@@ -90,6 +91,7 @@ func _ready() -> void:
 	_return_to_cannon.hide()
 	_connect_components()
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
+	_refresh_context_legend()
 
 
 func configure(stage_data: StageData) -> void:
@@ -153,6 +155,7 @@ func show_state(state: StageController.State) -> void:
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state == StageController.State.RESULT
 	_pause.visible = state == StageController.State.PAUSED and not _pause_overlay_suspended
+	_refresh_context_legend()
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
 	elif state == StageController.State.AIMING:
@@ -174,6 +177,7 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 	_current_interaction_mode = mode
 	_interaction.set_interaction_mode(mode)
 	_apply_interaction_presentation(true)
+	_refresh_context_legend()
 
 
 func set_camera_mode(mode: CameraDirector.Mode) -> void:
@@ -184,6 +188,7 @@ func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
+	_refresh_context_legend()
 
 
 func show_shot_result(_gain: float, _total: float) -> void:
@@ -264,6 +269,7 @@ func _connect_components() -> void:
 
 func _on_settings_changed(_settings: Dictionary) -> void:
 	_aim.refresh_locale()
+	_actions.refresh_locale()
 	if _stage_data != null:
 		_top.configure(_stage_data)
 		_top.update_mode(_current_state)
@@ -280,11 +286,31 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_return_to_cannon.text = tr("hud.return_to_cannon")
 		_return_to_cannon.tooltip_text = tr("hud.return_to_cannon_hint")
 		_result.refresh_locale()
+		_context_legend.refresh_locale()
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
 		if _current_state == StageController.State.BRIEFING and not _stage_data.mechanism_loadout.is_empty():
 			_mechanism.show_brief(_stage_data.mechanism_loadout[0].kind)
 	show_state(_current_state)
+
+
+func _refresh_context_legend() -> void:
+	if not is_instance_valid(_context_legend):
+		return
+	if _current_state == StageController.State.BRIEFING:
+		_context_legend.visible = true
+		_context_legend.set_context(ContextLegend.Mode.BRIEFING)
+		return
+	if _current_state != StageController.State.AIMING:
+		_context_legend.visible = false
+		return
+	_context_legend.visible = true
+	if _current_camera_mode == CameraDirector.Mode.FOLLOW:
+		_context_legend.set_context(ContextLegend.Mode.FOLLOW)
+	elif _current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION:
+		_context_legend.set_context(ContextLegend.Mode.MAP)
+	else:
+		_context_legend.set_context(ContextLegend.Mode.AIM)
 
 
 func _apply_interaction_presentation(update_focus: bool) -> void:

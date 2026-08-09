@@ -140,15 +140,19 @@ func _assert_theme_contract() -> void:
 	var theme: Theme = load("res://resources/ui/paint_mountain_theme.tres")
 	_assert_true(theme.default_font_size == 16, "theme body type must be at least 16px")
 	var panel := theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat
+	var routine_button := theme.get_stylebox("normal", "Button") as StyleBoxFlat
 	var primary := theme.get_stylebox("normal", "PrimaryButton") as StyleBoxTexture
 	var focus := theme.get_stylebox("focus", "Button") as StyleBoxFlat
 	var debug_panel := theme.get_stylebox("panel", "DebugPanel") as StyleBoxFlat
-	_assert_true(panel != null and panel.corner_radius_top_left == 18, "shared panels must use the current 18px radius token")
+	var keycap := theme.get_stylebox("panel", "HudKeycapPanel") as StyleBoxFlat
+	_assert_true(panel != null and panel.corner_radius_top_left == 14, "shared panels must use the quiet 14px radius token")
+	_assert_true(routine_button != null and routine_button.corner_radius_top_left == 10, "routine actions must use the flat quiet button token")
 	_assert_true(primary != null and primary.texture != null, "primary actions must use the shared textured button asset")
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
+	_assert_true(keycap != null and keycap.bg_color.get_luminance() > 0.8 and keycap.border_width_left == 1, "shortcut keycaps must be light outlined context tokens")
 	for variation in [
-		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"ScreenTitle",
+		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"HudLegend", &"ScreenTitle",
 	]:
 		_assert_true(theme.is_type_variation(variation, &"Label"), "%s must be a shared Label variation" % variation)
 	for variation in [&"HudModeButton", &"HudIconButton", &"HudFinishButton", &"PrimaryButton"]:
