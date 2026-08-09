@@ -81,12 +81,16 @@ The completed implementation contract is
   and the final legibility comparison under
   [`evidence/hud-legibility-and-wind-stable-aim-2026-08-09/`](evidence/hud-legibility-and-wind-stable-aim-2026-08-09/)
   were inspected directly. Import/startup verification and release export pass.
-- New mechanism placement ranks suitable normalized heights 0.55..0.85 first,
-  then 0.40 or above. The approved all-30 build promoted v10 manifest
-  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`.
-  Final Windows-release Stage 02, 03, 08, and 30 captures show Burst, Splitter,
-  Uphill, and mixed glyphs across the middle/upper terrain. The fast bundle,
-  materialization, bake, and representative glyph contracts pass.
+- Mechanism placement now ranks anchors in the projected default Aim View
+  terrain silhouette: 0.38..0.62 first, then the bounded 0.28..0.74 band.
+  Mechanism score breaks ties inside a band, and a complete camera-facing set
+  with its terrain-draped perimeter inside the view safe frame is preferred.
+  The approved all-30 build promoted v10 manifest
+  `701b3b63feeee0dc1ce064cc91953fbdab91d90db1f004ef247dc4b8b22d1b4e`.
+  Final Windows-release Stage 02, 03, 08, and 30 captures show complete Burst,
+  Splitter, Uphill, and mixed glyphs across the visual middle. Catalog,
+  materialization, bake, representative glyph, and Aim View composition
+  contracts pass.
 
 ## Historical Casual Shared UI Refresh (2026-08-08)
 

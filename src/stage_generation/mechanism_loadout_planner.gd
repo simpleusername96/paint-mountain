@@ -3,18 +3,23 @@ extends RefCounted
 
 const MAXIMUM_GLYPHS := 6
 const FOOTPRINT_SAMPLE_COUNT := 16
-const MAXIMUM_CENTER_SLOPE_DEGREES := 42.0
+const MAXIMUM_CENTER_SLOPE_DEGREES := 60.0
 const MAXIMUM_NORMAL_VARIATION_DEGREES := 32.0
 const GLYPH_EDGE_MARGIN := 0.75
 const GLYPH_SEPARATION_MARGIN := 1.0
 const MINIMUM_AIMING_DIAMETER_PIXELS := 12.0
 const MINIMUM_BRIEFING_DIAMETER_PIXELS := 16.0
-const CANNON_VISIBILITY_CLEARANCE := 0.5
+const MINIMUM_AIM_VIEW_FACING_DOT := 0.50
+const AIM_VIEW_VISIBILITY_CLEARANCE := 0.5
 const FOOTPRINT_RING_FRACTIONS := [0.0, 0.5, 1.0]
-const PREFERRED_HEIGHT_MINIMUM := 0.55
-const PREFERRED_HEIGHT_MAXIMUM := 0.85
-const FALLBACK_HEIGHT_MINIMUM := 0.40
-const PREFERRED_HEIGHT_CENTER := 0.68
+const AIM_VIEW_VERTICAL_FOV_DEGREES := 48.0
+const AIM_VIEW_ASPECT_RATIO := 16.0 / 9.0
+const PREFERRED_VIEW_BAND_MINIMUM := 0.38
+const PREFERRED_VIEW_BAND_MAXIMUM := 0.62
+const FALLBACK_VIEW_BAND_MINIMUM := 0.28
+const FALLBACK_VIEW_BAND_MAXIMUM := 0.74
+const PREFERRED_VIEW_CENTER := 0.50
+const AIM_VIEW_HORIZONTAL_SAFE_NDC := 0.84
 
 
 static func plan(
@@ -33,8 +38,11 @@ static func plan(
 	if anchors.size() < stage_data.mechanism_loadout.size():
 		layout.metrics["placement_rejection"] = "generic_anchor_count"
 		return empty
+	var aim_view := _build_aim_view_context(stage_data, layout)
+	if aim_view.is_empty():
+		layout.metrics["placement_rejection"] = "aim_view_projection"
+		return empty
 
-	var height_range := _anchor_height_range(anchors)
 	var candidate_sets: Array = []
 	var request_order: Array[Dictionary] = []
 	for request_index in range(stage_data.mechanism_loadout.size()):
@@ -49,7 +57,7 @@ static func plan(
 				layout,
 				mechanism_data,
 				anchor,
-				height_range
+				aim_view
 			)
 			if not candidate.is_empty():
 				candidates.append(candidate)
@@ -74,7 +82,17 @@ static func plan(
 
 	var selected: Array = []
 	selected.resize(stage_data.mechanism_loadout.size())
-	if not _assign_candidates(0, request_order, candidate_sets, selected, {}):
+	var assigned := false
+	if _all_requests_have_candidates_within_ranks(candidate_sets, 1, 0):
+		assigned = _assign_candidates(
+			0, request_order, candidate_sets, selected, {}, 1, 0
+		)
+	if not assigned:
+		selected.fill(null)
+		assigned = _assign_candidates(
+			0, request_order, candidate_sets, selected, {}, 2, 1
+		)
+	if not assigned:
 		layout.metrics["placement_rejection"] = "glyph_separation_or_assignment"
 		return empty
 	var placements: Array[MechanismPlacement] = []
@@ -134,12 +152,12 @@ static func _nearest_route_metadata(route_graph: GeneratedRouteGraph, local_xz: 
 
 static func _candidate_for(
 		stage_data: StageData,
-		layout: GeneratedStageLayout,
-		mechanism_data: MechanismData,
-		anchor: MechanismGlyphAnchor,
-		height_range: Vector2
+	layout: GeneratedStageLayout,
+	mechanism_data: MechanismData,
+	anchor: MechanismGlyphAnchor,
+	aim_view: Dictionary
 ) -> Dictionary:
-	if not _generic_suitability(stage_data, layout, mechanism_data, anchor):
+	if not _generic_suitability(stage_data, layout, mechanism_data, anchor, aim_view):
 		return {}
 	var split_targets := PackedVector3Array()
 	var uphill_tangent := Vector3.ZERO
@@ -178,38 +196,51 @@ static func _candidate_for(
 	placement.downstream_tangent = forward
 	placement.splitter_route_targets = split_targets
 	placement.uphill_tangent = uphill_tangent
-	var normalized_height := 0.5
-	if height_range.y - height_range.x > 0.0001:
-		normalized_height = inverse_lerp(
-			height_range.x,
-			height_range.y,
-			anchor.surface_point.y
-		)
-	var height_rank := 2
+	var horizontal_extent := _glyph_horizontal_extent_ndc(
+		stage_data, layout, placement, aim_view
+	)
+	if not is_finite(horizontal_extent) \
+			or horizontal_extent > AIM_VIEW_HORIZONTAL_SAFE_NDC:
+		return {}
+	var world_point := stage_data.terrain_center + anchor.surface_point
+	var view_fraction := _aim_view_vertical_fraction(world_point, aim_view)
+	if not is_finite(view_fraction):
+		return {}
+	view_fraction = clampf(view_fraction, 0.0, 1.0)
+	var view_rank := 2
 	if (
-		normalized_height >= PREFERRED_HEIGHT_MINIMUM
-		and normalized_height <= PREFERRED_HEIGHT_MAXIMUM
+		view_fraction >= PREFERRED_VIEW_BAND_MINIMUM
+		and view_fraction <= PREFERRED_VIEW_BAND_MAXIMUM
 	):
-		height_rank = 0
-	elif normalized_height >= FALLBACK_HEIGHT_MINIMUM:
-		height_rank = 1
+		view_rank = 0
+	elif (
+		view_fraction >= FALLBACK_VIEW_BAND_MINIMUM
+		and view_fraction <= FALLBACK_VIEW_BAND_MAXIMUM
+	):
+		view_rank = 1
+	var facing_dot := anchor.surface_normal.dot(
+		(Vector3(aim_view.camera_position) - world_point).normalized()
+	)
 	return {
 		"anchor_id": anchor.id,
 		"score": kind_score,
-		"height_rank": height_rank,
-		"height_distance": absf(
-			normalized_height - PREFERRED_HEIGHT_CENTER
+		"view_rank": view_rank,
+		"view_distance": absf(
+			view_fraction - PREFERRED_VIEW_CENTER
 		),
-		"normalized_height": normalized_height,
+		"aim_view_vertical_fraction": view_fraction,
+		"readability_rank": 0 if facing_dot >= MINIMUM_AIM_VIEW_FACING_DOT else 1,
+		"aim_view_facing_dot": facing_dot,
 		"placement": placement,
 	}
 
 
 static func _generic_suitability(
 		stage_data: StageData,
-		layout: GeneratedStageLayout,
-		mechanism_data: MechanismData,
-		anchor: MechanismGlyphAnchor
+	layout: GeneratedStageLayout,
+	mechanism_data: MechanismData,
+	anchor: MechanismGlyphAnchor,
+	aim_view: Dictionary
 ) -> bool:
 	var radius := mechanism_data.glyph_radius
 	if not layout.local_bounds.grow(-(radius + GLYPH_EDGE_MARGIN)).has_point(anchor.local_xz):
@@ -226,13 +257,13 @@ static func _generic_suitability(
 			var sample := layout.surface_sample_at_local(point.x, point.y, false)
 			if sample.is_empty() or anchor.surface_normal.dot(Vector3(sample.normal)) < minimum_normal_dot:
 				return false
-	if not _has_cannon_side_visibility(stage_data, layout, anchor):
+	if not _has_aim_view_visibility(stage_data, layout, anchor, aim_view):
 		return false
 	var diameter := radius * 2.0
 	var world_point := stage_data.terrain_center + anchor.surface_point
 	if _projected_horizontal_pixels(
-		stage_data.aiming_camera_position,
-		stage_data.aiming_camera_target,
+		aim_view.camera_position,
+		aim_view.camera_target,
 		world_point,
 		diameter
 	) < MINIMUM_AIMING_DIAMETER_PIXELS:
@@ -245,14 +276,14 @@ static func _generic_suitability(
 	) >= MINIMUM_BRIEFING_DIAMETER_PIXELS
 
 
-static func _has_cannon_side_visibility(
+static func _has_aim_view_visibility(
 		stage_data: StageData,
 		layout: GeneratedStageLayout,
-		anchor: MechanismGlyphAnchor
+		anchor: MechanismGlyphAnchor,
+		aim_view: Dictionary
 ) -> bool:
-	var muzzle_world := stage_data.cannon_transform * Vector3(0.0, 1.5, -1.5)
-	var muzzle_local := muzzle_world - stage_data.terrain_center
-	var start_xz := Vector2(muzzle_local.x, muzzle_local.z)
+	var camera_local := Vector3(aim_view.camera_position) - stage_data.terrain_center
+	var start_xz := Vector2(camera_local.x, camera_local.z)
 	var distance := start_xz.distance_to(anchor.local_xz)
 	var cell_size := layout.local_bounds.size / Vector2(layout.cell_count)
 	var sample_count := maxi(1, ceili(distance / maxf(cell_size.length() * 0.5, 0.001)))
@@ -262,8 +293,8 @@ static func _has_cannon_side_visibility(
 		var sample := layout.surface_sample_at_local(point_xz.x, point_xz.y, false)
 		if sample.is_empty():
 			continue
-		var line_height := lerpf(muzzle_local.y, anchor.surface_point.y, t)
-		if float(sample.point.y) > line_height + CANNON_VISIBILITY_CLEARANCE:
+		var line_height := lerpf(camera_local.y, anchor.surface_point.y, t)
+		if float(sample.point.y) > line_height + AIM_VIEW_VISIBILITY_CLEARANCE:
 			return false
 	return true
 
@@ -338,12 +369,18 @@ static func _assign_candidates(
 		request_order: Array[Dictionary],
 		candidate_sets: Array,
 		selected: Array,
-		used_anchor_ids: Dictionary
+		used_anchor_ids: Dictionary,
+		maximum_view_rank: int,
+		maximum_readability_rank: int
 ) -> bool:
 	if order_index >= request_order.size():
 		return true
 	var request_index := int(request_order[order_index].request_index)
 	for candidate: Dictionary in candidate_sets[request_index]:
+		if int(candidate.view_rank) > maximum_view_rank:
+			continue
+		if int(candidate.readability_rank) > maximum_readability_rank:
+			continue
 		if used_anchor_ids.has(candidate.anchor_id):
 			continue
 		var placement := candidate.placement as MechanismPlacement
@@ -351,11 +388,36 @@ static func _assign_candidates(
 			continue
 		selected[request_index] = candidate
 		used_anchor_ids[candidate.anchor_id] = true
-		if _assign_candidates(order_index + 1, request_order, candidate_sets, selected, used_anchor_ids):
+		if _assign_candidates(
+			order_index + 1,
+			request_order,
+			candidate_sets,
+			selected,
+			used_anchor_ids,
+			maximum_view_rank,
+			maximum_readability_rank
+		):
 			return true
 		used_anchor_ids.erase(candidate.anchor_id)
 		selected[request_index] = null
 	return false
+
+
+static func _all_requests_have_candidates_within_ranks(
+		candidate_sets: Array,
+		maximum_view_rank: int,
+		maximum_readability_rank: int
+) -> bool:
+	for candidates: Array in candidate_sets:
+		var has_candidate := false
+		for candidate: Dictionary in candidates:
+			if int(candidate.view_rank) <= maximum_view_rank \
+					and int(candidate.readability_rank) <= maximum_readability_rank:
+				has_candidate = true
+				break
+		if not has_candidate:
+			return false
+	return true
 
 
 static func _separated_from_selected(
@@ -374,26 +436,170 @@ static func _separated_from_selected(
 
 
 static func _candidate_less(a: Dictionary, b: Dictionary) -> bool:
-	if int(a.height_rank) != int(b.height_rank):
-		return int(a.height_rank) < int(b.height_rank)
-	if not is_equal_approx(float(a.height_distance), float(b.height_distance)):
-		return float(a.height_distance) < float(b.height_distance)
+	if int(a.view_rank) != int(b.view_rank):
+		return int(a.view_rank) < int(b.view_rank)
+	if int(a.readability_rank) != int(b.readability_rank):
+		return int(a.readability_rank) < int(b.readability_rank)
 	if not is_equal_approx(float(a.score), float(b.score)):
 		return float(a.score) > float(b.score)
+	if not is_equal_approx(float(a.view_distance), float(b.view_distance)):
+		return float(a.view_distance) < float(b.view_distance)
 	return String(a.anchor_id) < String(b.anchor_id)
 
 
-static func _anchor_height_range(
-		anchors: Array[MechanismGlyphAnchor]
-) -> Vector2:
-	if anchors.is_empty():
-		return Vector2.ZERO
-	var minimum := INF
-	var maximum := -INF
-	for anchor in anchors:
-		minimum = minf(minimum, anchor.surface_point.y)
-		maximum = maxf(maximum, anchor.surface_point.y)
-	return Vector2(minimum, maximum)
+static func _build_aim_view_context(
+		stage_data: StageData,
+		layout: GeneratedStageLayout
+) -> Dictionary:
+	var world_points := _playable_top_world_points(stage_data, layout)
+	if world_points.is_empty():
+		return {}
+	var minimum := Vector3(INF, INF, INF)
+	var maximum := Vector3(-INF, -INF, -INF)
+	for point in world_points:
+		minimum = minimum.min(point)
+		maximum = maximum.max(point)
+	minimum.y = minf(
+		minimum.y,
+		stage_data.terrain_center.y + TerrainGeometryFactory.DEFAULT_BASE_Y
+	)
+	var terrain_bounds := AABB(minimum, maximum - minimum)
+	if not terrain_bounds.has_volume():
+		return {}
+	var composed := AimCameraComposer.compose(
+		world_points,
+		terrain_bounds,
+		stage_data.cannon_transform,
+		AIM_VIEW_VERTICAL_FOV_DEGREES,
+		AIM_VIEW_ASPECT_RATIO
+	)
+	if composed.is_empty():
+		return {}
+	var camera_position := Vector3(composed.position)
+	var camera_target := Vector3(composed.focus)
+	var forward := (camera_target - camera_position).normalized()
+	var right := forward.cross(Vector3.UP).normalized()
+	var up := right.cross(forward).normalized()
+	if forward.is_zero_approx() or right.is_zero_approx() or up.is_zero_approx():
+		return {}
+	var context := {
+		"camera_position": camera_position,
+		"camera_target": camera_target,
+		"forward": forward,
+		"right": right,
+		"up": up,
+		"vertical_tangent": tan(deg_to_rad(AIM_VIEW_VERTICAL_FOV_DEGREES * 0.5)),
+	}
+	context["horizontal_tangent"] = float(context.vertical_tangent) \
+			* AIM_VIEW_ASPECT_RATIO
+	var top_ndc := -INF
+	var bottom_ndc := INF
+	for point in world_points:
+		var vertical_ndc := _projected_vertical_ndc(point, context)
+		if not is_finite(vertical_ndc):
+			continue
+		top_ndc = maxf(top_ndc, vertical_ndc)
+		bottom_ndc = minf(bottom_ndc, vertical_ndc)
+	if not is_finite(top_ndc) or not is_finite(bottom_ndc) \
+			or top_ndc - bottom_ndc <= 0.0001:
+		return {}
+	context["top_ndc"] = clampf(top_ndc, -1.0, 1.0)
+	context["bottom_ndc"] = clampf(bottom_ndc, -1.0, 1.0)
+	if float(context.top_ndc) - float(context.bottom_ndc) <= 0.0001:
+		return {}
+	return context
+
+
+static func _playable_top_world_points(
+		stage_data: StageData,
+		layout: GeneratedStageLayout
+) -> PackedVector3Array:
+	if stage_data == null or layout == null or layout.top_topology == null:
+		return PackedVector3Array()
+	var topology := layout.top_topology
+	var vertices := topology.canonical_vertices_read_only()
+	var indices := topology.canonical_triangle_indices_read_only()
+	var seen: Dictionary = {}
+	var world_points := PackedVector3Array()
+	for source_index in indices:
+		if seen.has(source_index):
+			continue
+		seen[source_index] = true
+		world_points.append(stage_data.terrain_center + vertices[source_index])
+	return world_points
+
+
+static func _aim_view_vertical_fraction(
+		world_point: Vector3,
+		aim_view: Dictionary
+) -> float:
+	if aim_view.is_empty():
+		return INF
+	var vertical_ndc := _projected_vertical_ndc(world_point, aim_view)
+	if not is_finite(vertical_ndc):
+		return INF
+	return inverse_lerp(
+		float(aim_view.top_ndc),
+		float(aim_view.bottom_ndc),
+		vertical_ndc
+	)
+
+
+static func _projected_vertical_ndc(
+		world_point: Vector3,
+		aim_view: Dictionary
+) -> float:
+	var relative := world_point - Vector3(aim_view.camera_position)
+	var depth := relative.dot(Vector3(aim_view.forward))
+	var vertical_tangent := float(aim_view.vertical_tangent)
+	if depth <= 0.01 or vertical_tangent <= 0.0:
+		return INF
+	return relative.dot(Vector3(aim_view.up)) / (depth * vertical_tangent)
+
+
+static func _projected_horizontal_ndc(
+		world_point: Vector3,
+		aim_view: Dictionary
+) -> float:
+	var relative := world_point - Vector3(aim_view.camera_position)
+	var depth := relative.dot(Vector3(aim_view.forward))
+	var horizontal_tangent := float(aim_view.horizontal_tangent)
+	if depth <= 0.01 or horizontal_tangent <= 0.0:
+		return INF
+	return relative.dot(Vector3(aim_view.right)) / (depth * horizontal_tangent)
+
+
+static func _glyph_horizontal_extent_ndc(
+		stage_data: StageData,
+		layout: GeneratedStageLayout,
+		placement: MechanismPlacement,
+		aim_view: Dictionary
+) -> float:
+	if stage_data == null or layout == null or placement == null \
+			or placement.mechanism_data == null:
+		return INF
+	var maximum_extent := 0.0
+	var radius := placement.mechanism_data.glyph_radius
+	for sample_index in range(FOOTPRINT_SAMPLE_COUNT):
+		var angle := TAU * float(sample_index) / float(FOOTPRINT_SAMPLE_COUNT)
+		var planar := Vector3(
+			cos(angle) * radius,
+			0.0,
+			sin(angle) * radius
+		)
+		var surface_guess := placement.local_transform * planar
+		var sample := layout.surface_sample_at_local(
+			surface_guess.x, surface_guess.z, false
+		)
+		if sample.is_empty():
+			return INF
+		var horizontal_ndc := _projected_horizontal_ndc(
+			stage_data.terrain_center + Vector3(sample.point), aim_view
+		)
+		if not is_finite(horizontal_ndc):
+			return INF
+		maximum_extent = maxf(maximum_extent, absf(horizontal_ndc))
+	return maximum_extent
 
 
 static func _projected_horizontal_pixels(

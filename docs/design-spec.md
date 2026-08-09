@@ -343,8 +343,12 @@ exactly three mechanism types.
   terrain glyphs with distinct icons and directional cues. Use soft daylight,
   one main directional light, lightweight effects, and a restrained cannon-side
   flag or streamer to support visible wind.
-- Prefer eligible surface-glyph anchors at normalized terrain height 0.55..0.85,
-  then at 0.40 or above, before using lower deterministic fallback candidates.
+- Project eligible surface-glyph anchors into the canonical 48-degree, 16:9 Aim
+  View and prefer vertical fraction 0.38..0.62 inside the projected Playable
+  Terrain Surface silhouette; use 0.28..0.74 as the bounded second band before
+  deterministic fallback. Within a band, preserve mechanism suitability and
+  prefer a complete camera-facing assignment whose terrain-draped perimeter
+  stays inside the Aim View safe frame.
 - Provide the specified compact sound set, impact/muzzle/mechanism/result
   particles, and small non-continuous shake.
 - Release-disabled debug overlay exposes state, FPS, projectile/velocity,

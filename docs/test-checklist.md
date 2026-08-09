@@ -78,16 +78,21 @@ interaction and gameplay-HUD acceptance; historical rows do not override it.
   pass. The exported executable produced separate Korean 1280x720 and English
   1920x1080 Aim View captures with exit 0 and empty stderr; both were inspected
   at native size.
-- [x] Focused placement tests prove eligible Burst anchors prefer normalized
-  terrain height 0.55..0.85.
+- [x] Focused placement and representative composition tests prove eligible
+  glyphs prefer the projected Aim View terrain-silhouette band 0.38..0.62,
+  remain inside the bounded 0.28..0.74 fallback band, keep their draped
+  perimeter inside the view safe frame, and use readable camera-facing surfaces.
 - [x] The approved all-30 build promoted v10 manifest
-  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`.
+  `701b3b63feeee0dc1ce064cc91953fbdab91d90db1f004ef247dc4b8b22d1b4e`.
   The generation-free bundle check, v10 materialization/bake checks, and Stage
-  02/03/08 glyph contracts pass. Optional exhaustive certificate and preview
-  arrays remain empty under the bounded-witness contract.
+  02/03/08 glyph contracts plus the Stage 02/03/08/30 Aim View composition
+  contract pass. Optional exhaustive certificate and preview arrays remain
+  empty under the bounded-witness contract.
 - [x] Final Windows-release Stage 02, 03, 08, and 30 Aim View captures were
-  inspected at 1280x720. Burst, Splitter, Uphill, and mixed glyphs occupy
-  middle/upper terrain without HUD, trajectory, overlap, or clipping blockers.
+  inspected individually at 1280x720 under
+  `.agents/evidence/aim-view-centered-glyphs-2026-08-09/`. Burst, Splitter,
+  Uphill, and mixed glyphs occupy the visual middle without skyline/foot drift,
+  grazing crescents, HUD/trajectory overlap, or clipping blockers.
 
 Current evidence:
 

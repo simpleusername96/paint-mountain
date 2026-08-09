@@ -28,6 +28,7 @@ $ordinaryTests = @(
     'terrain_surface_paint_scope_test.gd',
     'stage_cannon_standoff_test.gd',
     'mechanism_placement_test.gd',
+    'glyph_aim_view_composition_test.gd',
     'decoration_placement_test.gd',
     'stage2_burst_glyph_contract_test.gd',
     'stage3_glyph_route_contract_test.gd',

@@ -139,6 +139,11 @@ owned by `UIUX_GUIDELINES.md`.
   stage-specific world coordinate or require the visible center to be a
   pre-authored route pad. Larger stages may carry more glyphs; small stages may
   have few or none.
+- In the default Aim View, place eligible glyphs across the visual middle of the
+  projected mountain silhouette rather than by world height or along the
+  skyline/foot. Preserve small vertical variation inside that middle band, keep
+  the terrain-draped perimeter in the view safe frame, and prefer surfaces that
+  face the camera enough for the complete icon to read.
 - The predicted trajectory uses blue depth-tested marks and ends at the first
   real collision with a readable impact ring.
 - A ball's valid Playable Terrain Surface contact produces a continuous blue

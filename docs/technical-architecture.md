@@ -416,12 +416,16 @@ Human / GameplayAgentApi actions
   launches do nothing with this node, and the debug overlay remains unavailable
   in release builds.
 - `resources/stages/catalog.tres` points at the format-5 persisted bundle
-  `resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
+  `resources/generated_stage_catalogs/v10-701b3b63feeee0dc1ce064cc91953fbdab91d90db1f004ef247dc4b8b22d1b4e`.
   It contains all 30 layouts and their default/summit witnesses.
-- Generic glyph placement searches visible Playable Terrain Surface with spacing
-  and ranks normalized height 0.55..0.85 first, then 0.40 or above;
-  it has no authored per-stage coordinates. `CannonWindFlag` replaces generic
-  debris without changing `WindController` authority.
+- `MechanismLoadoutPlanner` searches visible Playable Terrain Surface with
+  spacing, reuses `AimCameraComposer` without owning camera behavior, and ranks
+  anchors inside the projected terrain silhouette's 0.38..0.62 middle band
+  before the bounded 0.28..0.74 fallback band. Within a band it preserves
+  mechanism score, terrain-draped perimeter safety, and a complete assignment
+  of camera-facing glyphs before deterministic fallback; it has no authored
+  per-stage coordinates. `CannonWindFlag` replaces generic debris without
+  changing `WindController` authority.
 - `ProjectileManager` is the capacity authority: it admits no more than two
   root families and releases a generation-0 slot on the first Playable Terrain Surface
   traversal or terminal event. Resident terrain bodies remain physically alive

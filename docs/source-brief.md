@@ -2124,6 +2124,29 @@ wind-refresh behavior:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-09): Aim-View-Centered Terrain Glyphs
+
+After reviewing the revised glyph placement, the user clarified that “middle”
+means the middle of the mountain as seen while aiming, not a normalized world
+height or the upper ridgeline. These clauses supersede only conflicting glyph
+placement wording:
+
+- **Visual middle:** judge glyph height inside the projected Playable Terrain
+  Surface silhouette under the canonical default Aim View. Do not substitute
+  world elevation, route progress, or the viewport midpoint.
+- **Middle-band preference:** complete the loadout on readable middle faces
+  whenever eligible candidates exist. A bounded deterministic fallback remains
+  legal only when mechanism behavior, spacing, or surface safety cannot complete
+  the preferred assignment.
+- **Complete readable marks:** prefer faces that point toward the Aim View and
+  keep the complete terrain-draped glyph inside the view safe frame. Do not
+  accept a placement that reads only as a clipped or grazing crescent.
+- **Preserved gameplay meaning:** Burst, Splitter, and Uphill Rebound behavior,
+  route witnesses, footprint consistency, separation, terrain, and camera
+  composition remain unchanged.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
