@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-10
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -95,7 +95,7 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
-| Time, shots, activity, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident activity remains separate; Gear remains the menu action |
+| Time, shots, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident-ball activity stays internal; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
@@ -160,8 +160,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 - HUD components display authoritative state and emit typed intent. They do not
   calculate coverage, mutate paint, advance stage state, or own launch physics.
-- Time, resident-ball activity, camera presentation mode, and Finish availability
-  are displayed from their authoritative owners. The HUD does not run a second
+- Time, camera presentation mode, and Finish availability are displayed from
+  their authoritative owners. Resident-ball activity stays internal because it
+  does not support a visible player decision. The HUD does not run a second
   timer or camera/input state machine.
 - Target Coverage means unique painted physical Target Area surface divided by
   its total physical surface. Valid non-target top paint remains visible but is

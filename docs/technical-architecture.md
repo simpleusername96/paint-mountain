@@ -396,7 +396,7 @@ Human / GameplayAgentApi actions
   Follow also block aim/Fire at the input boundary; returning to Aim View
   restores the stored tuple without changing simulation.
 - The edge HUD, bottom-center sole Fire action, interaction-mode toggle, compact
-  time, remaining/maximum shots, separate resident activity, Finish, gear,
+  time, remaining/maximum shots, Finish, gear,
   and input-capturing paused game menu have one typed state/action path. Shot
   Follow adds only one contextual
   return-to-cannon action; the old Follow/Wide/Cannon preset rail, normal-play

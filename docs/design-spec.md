@@ -313,8 +313,8 @@ exactly three mechanism types.
   upper-left, a shallow icon/number status row at upper-right, a thin coverage
   gauge at left, yaw/elevation/power instruments at the lower edge, and Fire
   alone at bottom-center. Keep the mountain and high trajectory arcs clear.
-  Show shots as remaining / maximum and resident activity separately. Attach
-  compact S/W tokens to their actual elevation step buttons, a mouse-wheel glyph
+  Show shots as remaining / maximum. Do not expose resident-ball activity or
+  counts in the HUD. Attach compact S/W tokens to their actual elevation step buttons, a mouse-wheel glyph
   to power, and Space, Tab, F, and Escape tokens directly to their actions. Do
   not advertise A/D in terrain-target mode or draw literal square brackets.
   Normal play has no persistent prose instruction strip, aiming-state Restart,

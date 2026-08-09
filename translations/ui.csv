@@ -41,9 +41,6 @@ hud.coverage,TARGET AREA,목표 영역
 hud.coverage_tooltip,Painted physical surface inside the marked Target Area,표시된 목표 영역 안에서 실제로 칠한 표면
 hud.shots,SHOTS LEFT,남은 탄
 hud.time,TIME,남은 시간
-hud.resident_balls,BALLS,공 움직임
-hud.resident_activity_format,%d · Resting %d,%d · 멈춤 %d
-hud.resident_total_format,Resident %d,지형 위 공 %d
 hud.timer_starts_on_first_shot,Timer starts with the first shot,첫 발사와 함께 시간이 흐릅니다
 hud.finish_tooltip,Finish and score target-area coverage (F),목표 영역 칠함으로 완료 (F)
 hud.finish_disabled_tooltip,Available after the first shot,첫 발사 후 사용할 수 있습니다

@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-10
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -25,6 +25,7 @@ related:
   - execplans/2026-08-08-instant-approximate-landing-feedback.md
   - execplans/2026-08-09-quiet-context-ui-system.md
   - execplans/2026-08-09-remove-wind-system.md
+  - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
@@ -73,8 +74,8 @@ historical cost and is not a reason to retain the feature.
   terrain seed is not removed with the former wind schedule seed.
 - Aim and exact prediction use the same fixed-tick gravity, damping, projectile
   geometry, collision, and open-bounds inputs as the live ball.
-- The right-edge run status contains time, remaining/maximum shots, resident
-  activity, and Finish. Completed wind plans and pre-removal evidence remain
+- The right-edge run status contains time, remaining/maximum shots, and Finish.
+  Completed wind plans and pre-removal evidence remain
   historical context only.
 
 ### Limitations
@@ -83,6 +84,37 @@ No controlled wind-on/wind-off CPU, GPU, memory, FPS, or player A/B study was
 performed. The retirement records a product-value and system-complexity
 judgment; it does not claim that wind had no mechanical effect or that measured
 runtime performance improved.
+
+## Current Resident-Activity HUD Retirement (2026-08-10)
+
+### Context
+
+The compact `moving ↗ / resting •` resident-ball readout exposed internal
+projectile state without explaining a useful player decision. Its unlabeled
+symbol and values were ambiguous in the running Korean HUD.
+
+### Decision
+
+The gameplay HUD no longer displays a resident-ball icon, total, or
+moving/resting breakdown. HUD-specific state, update methods, localization, and
+scene nodes are removed. `ProjectileManager` retains authoritative residency
+and motion-state tracking for gameplay and diagnostics.
+
+### Rationale
+
+The indicator added decoding effort and visual weight but did not help the
+player choose a target, angle, power, Fire, or Finish action.
+
+### Consequences
+
+- The right-edge status row contains time, remaining/maximum shots, and Finish.
+- Projectile persistence, mechanism wake, scoring, and stage completion do not
+  depend on a visible HUD consumer and remain unchanged.
+
+### Limitations
+
+This change removes presentation only. It does not remove resident projectiles,
+their internal activity signal, or diagnostic observations.
 
 ## Current Quiet Context UI System (2026-08-09)
 
@@ -149,7 +181,7 @@ The completed implementation contract is
   illegal aim or blocking Fire on prediction.
 - Normal gameplay uses no left/right status cards, bottom aim panel, or
   persistent prose instruction strip. Stage, coverage, time, remaining/maximum
-  shots, separate resident activity, Finish, elevation, solved power, and
+  shots, Finish, elevation, solved power, and
   real actions are edge-aligned symbols and numbers. The Quiet Context system
   above supersedes this section's former detached shortcut treatment; A/D and
   visible yaw remain absent from terrain-target mode.
@@ -384,13 +416,13 @@ and interaction freedom; implementation completion is not product acceptance.
   The Level 3 report records `Result: passed`. User gameplay feel and aesthetic
   approval remain explicitly separate from implementation completion.
 
-## Current UI Implementation: Shared Command Columns HUD (2026-08-06)
+## Historical UI Implementation: Shared Command Columns HUD (2026-08-06)
 
 The completed execution record is
 [`execplans/2026-08-06-command-columns-hud.md`](execplans/2026-08-06-command-columns-hud.md).
 The user-selected
 [`command-columns-hud.png`](../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
-is the current aiming-HUD visual authority. This UI record does not add or
+was the aiming-HUD visual authority at that revision. This UI record does not add or
 restore target-wide first-hit certification, prescribed stage success routes,
 camera redesign, gameplay approval, or balance approval.
 
@@ -400,9 +432,9 @@ camera redesign, gameplay approval, or balance approval.
   absolute coverage progress, target marker, focus, disabled, and icon states.
   The affected HUD scenes contain no local font, color, icon, or StyleBox
   presentation overrides; their remaining overrides are layout-only.
-- `HudMetric` is a reusable presentational caption/value component. Time, shots,
-  and resident activity instantiate it independently inside `RunStatusCard`;
-  the component does not read gameplay state or own timers.
+- `HudMetric` was introduced as a reusable presentational caption/value
+  component. The current `RunStatusCard` directly formats time and shots and
+  does not display resident activity.
 - The 1280x720 Aim Lock composition now uses the joined Stage/mode command card,
   absolute vertical coverage rail, compact lower-left direction/elevation/power
   group, sole centered Fire action, adjacent Gear action, and segmented right

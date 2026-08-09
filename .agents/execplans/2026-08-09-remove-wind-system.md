@@ -1,6 +1,6 @@
 ---
 type: plan
-status: blocked
+status: active
 created: 2026-08-09
 scope: complete retirement of wind gameplay, presentation, data, diagnostics, tests, and active documentation while preserving the non-wind coverage loop
 related:
@@ -23,7 +23,7 @@ Paint Mountain will no longer contain a wind gameplay or presentation system. Th
 
 - Objective: remove every active wind-owned rule, interface, resource, visible cue, diagnostic field, fixture, and test without weakening the remaining planning and coverage loop.
 - Deliverable: a Godot 4.7.1 project whose runtime, generated resources, UI, agent observation, attempt logs, tests, active specs, and production evidence contain no live wind contract.
-- Completion state: source and exported gameplay run without wind nodes or resources; the aiming HUD has a compact time/shots/residents/Finish layout; focused and repository checks pass; a production capture has been visually inspected; the decision and consequences are recorded; this plan is `done`.
+- Completion state: source and exported gameplay run without wind nodes or resources; the aiming HUD has a compact time/shots/Finish layout; focused and repository checks pass; a production capture has been visually inspected; the decision and consequences are recorded; this plan is `done`.
 
 ## Scope and Boundaries
 
@@ -34,7 +34,7 @@ In scope:
 - Remove unused wind resource references from the active catalog and every tracked generated catalog resource so no retained resource points at a deleted path.
 - Change attempt observation schema 2 to schema 3 by removing the wind schedule and transition event; retain a generic projectile wake event for mechanism impulses without a wind episode field.
 - Keep the attempt terrain seed sourced directly from `GeneratedStageLayout.terrain_seed`.
-- Simplify the aiming status card to time, remaining/maximum shots, resident activity, and Finish.
+- Simplify the aiming status card to time, remaining/maximum shots, and Finish. The 2026-08-10 user revision removes resident activity from the visible HUD while retaining internal projectile state.
 - Update active product, design, architecture, implementation, QA, and acceptance documents while preserving completed wind plans and historical evidence as history.
 
 Out of scope:
@@ -147,8 +147,8 @@ Preconditions:
 Source owners: `scenes/ui/hud/run_status_card.tscn`, `src/ui/hud/run_status_card.gd`, `src/ui/hud_controller.gd`, `scenes/ui/hud/hud.tscn`, `translations/ui.csv`, `src/delivery/delivery_capture_runner.gd`
 
 - [x] **3.1** Remove wind UI and compact the status card.
-  - Change: delete the WindGroup, wind formatter/state, HUD façade method, localization keys, and cannon flag; move Finish next to resident activity and shrink both the component and its right-edge instance from 540 px to 384 px without changing other HUD hierarchy.
-  - Accept: focused UI/localization tests pass; the rendered Korean Aim View shows time, shots, activity, and Finish with no gap, clipping, overlap, or wind cue.
+  - Change: delete the WindGroup, wind formatter/state, HUD façade method, localization keys, and cannon flag; apply the later user revision by removing resident activity and shrinking both the component and its right-edge instance from 540 px to 284 px without changing other HUD hierarchy.
+  - Accept: focused UI/localization tests pass; the rendered Korean Aim View shows time, shots, and Finish with no gap, clipping, overlap, or wind cue.
   - Evidence: focused UI/localization/HUD checks passed; the inspected 1280x720 release capture meets the stated layout criteria.
 - [x] **3.2** Remove wind-only delivery capture behavior.
   - Change: route `aiming`, `aiming_burst`, and `aiming_split` through a generic aiming capture; delete weak/strong wind flag screens, deterministic wind seeking, wind freezing, zero-wind fixture calls, and wind arguments in arc helpers.

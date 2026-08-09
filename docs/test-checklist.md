@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-10
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -27,6 +27,7 @@ related:
   - ../.agents/execplans/2026-08-08-terrain-targeted-aiming.md
   - ../.agents/execplans/2026-08-09-quiet-context-ui-system.md
   - ../.agents/execplans/2026-08-09-remove-wind-system.md
+  - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
@@ -41,10 +42,31 @@ Completed gates and older checked sections are historical evidence for earlier
 builds. The Quiet Context gate below owns current UI presentation. The
 immediate-aim gate retains interaction and calculation acceptance; its older
 shortcut and HUD presentation clauses do not override the Quiet Context gate.
-The wind-retirement gate records the current no-wind runtime, data, and HUD
-contract; earlier wind gates and captures are pre-removal history only.
+The resident-activity HUD gate owns the current top-right status row. The
+wind-retirement gate records the no-wind runtime and data contract, but its HUD
+capture is pre-resident-activity-removal history.
 
-## Completed wind-retirement gate (2026-08-09)
+## Completed resident-activity HUD removal gate (2026-08-10)
+
+- [x] The top-right runtime status row contains time, remaining/maximum shots,
+  and Finish; Settings remains the adjacent separate action.
+- [x] The resident-ball activity icon, values, tooltip, localization, HUD state,
+  and gameplay-to-HUD update wiring are absent without a replacement count.
+- [x] Projectile residency and motion state remain available internally for
+  stage rules, mechanisms, scoring, completion, and diagnostics.
+- [x] The compact status card is `284 x 52` at the 1280x720 baseline and has no
+  empty instrument gap, overlap, clipping, or overflow in the inspected Korean
+  Windows release capture.
+- [x] Focused HUD, localization, truth, and user-QA contracts pass. Project
+  verification and the Windows release export pass, and the exported background
+  capture exits cleanly.
+
+Current evidence:
+
+- `.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md`
+- `.agents/evidence/resident-activity-hud-removal-2026-08-10/release-aim-stage30-1280x720-ko.png`
+
+## Historical completed wind-retirement gate (2026-08-09)
 
 - [x] Runtime source, scenes, stage data, active/generated catalogs, agent
   observations, attempt diagnostics, delivery captures, translations, and test

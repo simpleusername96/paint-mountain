@@ -37,31 +37,7 @@ var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
 var _current_camera_mode := CameraDirector.Mode.BRIEFING
 var _run_started := false
 var _clock_finished := false
-var _resident_total := 0
-var _moving_residents := 0
-var _resting_residents := 0
-var _has_resident_breakdown := false
 var _pause_overlay_suspended := false
-
-
-func update_activity(
-		_active_shot_ids: PackedInt64Array,
-		active_projectiles: int,
-		_fire_capacity: int
-) -> void:
-	# Resident-ball activity no longer changes camera controls. The interaction
-	# toggle belongs to the Board Phase and remains stable while balls move.
-	_resident_total = maxi(active_projectiles, 0)
-	_has_resident_breakdown = false
-	_run_status.update_resident_total(_resident_total)
-
-
-func update_resident_activity(moving: int, resting: int) -> void:
-	_moving_residents = maxi(moving, 0)
-	_resting_residents = maxi(resting, 0)
-	_resident_total = _moving_residents + _resting_residents
-	_has_resident_breakdown = true
-	_run_status.update_resident_activity(_moving_residents, _resting_residents)
 
 
 func update_clock(snapshot: Dictionary) -> void:
@@ -84,10 +60,6 @@ func configure(stage_data: StageData) -> void:
 	_coverage.configure(stage_data.target_coverage)
 	_run_started = false
 	_clock_finished = false
-	_moving_residents = 0
-	_resting_residents = 0
-	_resident_total = 0
-	_has_resident_breakdown = false
 	_run_status.reset_for_stage(stage_data.maximum_shots, stage_data.resolved_duration_seconds())
 	_result.configure_has_next(not StageCatalog.next_stage_id(stage_data.stage_id).is_empty())
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
@@ -259,10 +231,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_top.update_mode(_current_state)
 		_run_status.refresh_locale()
 		_run_status.update_shots(_shots_remaining)
-		if _has_resident_breakdown:
-			_run_status.update_resident_activity(_moving_residents, _resting_residents)
-		else:
-			_run_status.update_resident_total(_resident_total)
 		%BriefingTitle.text = tr(String(_stage_data.display_name_key))
 		%BriefingObjective.text = tr(String(_stage_data.objective_key))
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)

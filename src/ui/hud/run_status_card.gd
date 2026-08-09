@@ -5,10 +5,6 @@ signal finish_requested
 
 var _shots_remaining := 0
 var _maximum_shots := 0
-var _resident_total := 0
-var _moving_residents := 0
-var _resting_residents := 0
-var _has_resident_breakdown := false
 var _remaining_seconds := 0.0
 var _duration_seconds := 0.0
 var _clock_started := false
@@ -27,10 +23,6 @@ func _ready() -> void:
 func reset_for_stage(maximum_shots: int, duration_seconds: float) -> void:
 	_maximum_shots = maxi(maximum_shots, 0)
 	_shots_remaining = _maximum_shots
-	_moving_residents = 0
-	_resting_residents = 0
-	_resident_total = 0
-	_has_resident_breakdown = false
 	_duration_seconds = maxf(duration_seconds, 0.0)
 	_remaining_seconds = _duration_seconds
 	_clock_started = false
@@ -40,21 +32,7 @@ func reset_for_stage(maximum_shots: int, duration_seconds: float) -> void:
 
 func update_shots(remaining: int) -> void:
 	_shots_remaining = maxi(remaining, 0)
-	_refresh_activity()
-
-
-func update_resident_activity(moving: int, resting: int) -> void:
-	_moving_residents = maxi(moving, 0)
-	_resting_residents = maxi(resting, 0)
-	_resident_total = _moving_residents + _resting_residents
-	_has_resident_breakdown = true
-	_refresh_activity()
-
-
-func update_resident_total(total: int) -> void:
-	_resident_total = maxi(total, 0)
-	_has_resident_breakdown = false
-	_refresh_activity()
+	_refresh_shots()
 
 
 func update_clock(snapshot: Dictionary) -> void:
@@ -85,7 +63,6 @@ func focus_finish() -> void:
 func refresh_locale() -> void:
 	%TimeValue.tooltip_text = tr("hud.time")
 	%ShotsValue.tooltip_text = tr("hud.shots")
-	%ActivityValue.tooltip_text = tr("hud.resident_balls")
 	%Finish.text = "%s  F" % tr("ui.finish")
 	_refresh_values()
 	set_finish_available(finish_is_available())
@@ -93,7 +70,7 @@ func refresh_locale() -> void:
 
 func _refresh_values() -> void:
 	_refresh_clock()
-	_refresh_activity()
+	_refresh_shots()
 
 
 func _refresh_clock() -> void:
@@ -103,16 +80,8 @@ func _refresh_clock() -> void:
 			if not _clock_started else tr("hud.time")
 
 
-func _refresh_activity() -> void:
+func _refresh_shots() -> void:
 	%ShotsValue.text = "%d / %d" % [_shots_remaining, _maximum_shots]
-	if _has_resident_breakdown:
-		%ActivityValue.text = (
-			"0"
-			if _moving_residents == 0 and _resting_residents == 0
-			else "%d↗ %d•" % [_moving_residents, _resting_residents]
-		)
-	else:
-		%ActivityValue.text = str(_resident_total)
 
 
 func _format_duration(seconds: float) -> String:

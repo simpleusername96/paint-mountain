@@ -2184,6 +2184,25 @@ only earlier wind requirements and wind-specific interpretations:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-10): Hide Resident-Ball Activity
+
+After seeing the compact resident-ball activity indicator in the running HUD,
+the user decided that this internal simulation state does not need a visible
+gameplay instrument. These clauses supersede only earlier requirements to show
+resident-ball counts or moving/resting activity:
+
+- **Remove the visible activity instrument:** remove its icon, moving/resting
+  values, tooltip, localization, layout space, and HUD-specific update wiring.
+  Do not replace it with another resident count or status label.
+- **Keep internal gameplay truth:** projectile residency, moving/resting state,
+  mechanism wake behavior, stage completion, scoring, and diagnostic contracts
+  remain owned by their existing gameplay systems. Hiding the indicator must
+  not change those rules.
+- **Keep the run status focused:** the top-right gameplay status contains time,
+  remaining/maximum shots, Finish, and Gear only.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
