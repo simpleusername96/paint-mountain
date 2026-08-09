@@ -50,7 +50,7 @@ interaction and gameplay-HUD acceptance; historical rows do not override it.
 - [x] `AttemptRecorder` retains only current-run agent/debug observations and
   JSON shot-log export; it cannot serialize or resimulate a player attempt.
 
-## Active immediate aim and sparse-instrument gate (2026-08-09)
+## Completed immediate aim and sparse-instrument gate (2026-08-09)
 
 - [x] Passive Settings synchronization plus audio, quality, motion, preview, and
   locale changes do not mutate window mode or size. Explicit fullscreen and
@@ -59,14 +59,18 @@ interaction and gameplay-HUD acceptance; historical rows do not override it.
   approximate tuple without waiting for an exact collision job. The focused
   solver fixture completes its bounded cached-wind, stride-eight nomination
   within one 60 Hz frame; Fire is available from the resulting canonical aim.
+- [x] A successful explicit elevation or power edit remains pinned across later
+  wind epochs when legal. A focused Stage 30 regression covers both constraint
+  types and confirms that no later wind-refresh solve silently resets them.
 - [x] `TrajectoryPredictionScheduler` owns only one replaceable advisory job;
   obsolete target callbacks, Human revision state, and the pending Fire gate are
   absent.
 - [x] Normal Aim View has no persistent prose strip or left/right/bottom status
-  card. It shows compact stage, coverage, time, shots, residents, wind, Finish,
-  yaw, elevation, power, and Fire instruments.
-- [x] A/D, W/S, wheel, Space, Tab, F, and Escape keycaps sit beside the value or
-  action they control. Interactive targets remain at least 40 px and preserve
+  card. It shows compact stage, coverage, time, remaining/maximum shots,
+  residents, wind, Finish, yaw, elevation, power, and Fire instruments.
+- [x] Filled S/W, mouse-wheel, Space, Tab, F, and Escape tokens sit beside the
+  value or action they control without literal brackets. A/D is absent from
+  terrain-target mode. Interactive targets remain at least 40 px and preserve
   tooltips/focus.
 - [x] Korean 1280x720 and English 1920x1080 running-game captures were inspected
   for mountain occlusion, overlap, clipping, hierarchy, and shortcut placement.
@@ -98,6 +102,10 @@ Current evidence:
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_03-1280x720-ko.png`
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_08-1280x720-ko.png`
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_30-1280x720-ko.png`
+- `.agents/evidence/hud-legibility-and-wind-stable-aim-2026-08-09/source-aim-stage30-1280x720-ko.png`
+- `.agents/evidence/hud-legibility-and-wind-stable-aim-2026-08-09/source-low-arc-stage30-1280x720-ko.png`
+- `.agents/evidence/hud-legibility-and-wind-stable-aim-2026-08-09/release-low-arc-stage30-1280x720-ko.png`
+- `.agents/evidence/hud-legibility-and-wind-stable-aim-2026-08-09/release-aim-stage30-1920x1080-en.png`
 
 ## Historical exact terrain-targeted aiming and truthful-flight gate (2026-08-08)
 

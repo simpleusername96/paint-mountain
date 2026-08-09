@@ -54,7 +54,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `OpenPlayEnvironment` | Collider-matched restrained apron/ground, open-world presentation, and stable non-target contact identity | Rear/side containment walls, scoring, hidden blocking planes, bank-shot behavior, or stage outcomes |
 | `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
 | `AimInputController` | Presentation-mode-aware target-selection and pinned-control intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
-| `TerrainAimController` | Latest valid top-target selection from Aim View click/drag and human target-preserving elevation/power intents | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
+| `TerrainAimController` | Latest valid top-target selection from Aim View click/drag, human target-preserving elevation/power intents, and preservation of the last successful explicit constraint across wind refreshes | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
 | `TerrainAimSolver` | Bounded current-target inverse solve that keeps the explicitly edited elevation or power pinned and publishes a same-target canonical aim | Device input, Fire admission, target ownership, runtime terrain mutation, or post-impact prediction |
 | `TrajectoryPredictionJob` / `TrajectoryPredictor` | Sole resumable fixed-step sphere/collision implementation and its synchronous offline wrapper | Device input, Fire rules, threads, post-impact behavior, mechanisms, or coverage prediction |
 | `TrajectoryPredictionScheduler` | Latest prediction key, one replaceable active job, 12-step/approximately-1-ms fixed-tick budget, bounded aim/wind nominations, current-only atomic publication, and runtime diagnostics | Wind generation, Fire admission, prediction math, or prediction history |
@@ -399,8 +399,9 @@ Human / GameplayAgentApi actions
   Follow also block aim/Fire at the input boundary; returning to Aim View
   restores the stored tuple without changing simulation.
 - The edge HUD, bottom-center sole Fire action, interaction-mode toggle, compact
-  time/shots/resident/wind/Finish status, gear, and input-capturing paused game
-  menu have one typed state/action path. Shot Follow adds only one contextual
+  time, remaining/maximum shots, separate resident activity, wind, Finish, gear,
+  and input-capturing paused game menu have one typed state/action path. Shot
+  Follow adds only one contextual
   return-to-cannon action; the old Follow/Wide/Cannon preset rail, normal-play
   1x/2x, duplicate Pause, aiming Restart, and Settings Restart are absent.
 - Save and observation formats include explicit versions and deterministic failure behavior.

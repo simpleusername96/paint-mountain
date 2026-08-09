@@ -10,6 +10,7 @@ enum DepthCue {
 }
 
 var _shots_remaining := 0
+var _maximum_shots := 0
 var _resident_total := 0
 var _moving_residents := 0
 var _resting_residents := 0
@@ -36,7 +37,8 @@ func _ready() -> void:
 
 
 func reset_for_stage(maximum_shots: int, duration_seconds: float) -> void:
-	_shots_remaining = maxi(maximum_shots, 0)
+	_maximum_shots = maxi(maximum_shots, 0)
+	_shots_remaining = _maximum_shots
 	_moving_residents = 0
 	_resting_residents = 0
 	_resident_total = 0
@@ -143,7 +145,7 @@ func _refresh_clock() -> void:
 
 
 func _refresh_activity() -> void:
-	%ShotsValue.text = str(_shots_remaining)
+	%ShotsValue.text = "%d / %d" % [_shots_remaining, _maximum_shots]
 	if _has_resident_breakdown:
 		%ActivityValue.text = (
 			"0"

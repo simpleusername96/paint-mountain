@@ -250,19 +250,17 @@ thickness = 2
 
 [sub_resource type="StyleBoxFlat" id="HudKeycap"]
 content_margin_left = 5.0
-content_margin_top = 2.0
+content_margin_top = 1.0
 content_margin_right = 5.0
-content_margin_bottom = 2.0
-bg_color = Color(0.921569, 0.952941, 1, 0.96)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.439216, 0.666667, 1, 0.9)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+content_margin_bottom = 1.0
+bg_color = Color(0.090196, 0.145098, 0.219608, 0.9)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(1, 1, 1, 0.22)
+shadow_size = 1
+shadow_offset = Vector2(0, 1)
 
 [resource]
 default_font = ExtResource("1_font")
@@ -317,10 +315,11 @@ HudCaption/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
 HudCaption/fonts/font = SubResource("FontWeight500")
 HudCaption/font_sizes/font_size = 14
 HudKeycap/base_type = &"Label"
-HudKeycap/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+HudKeycap/colors/font_color = Color(1, 0.992157, 0.988235, 1)
 HudKeycap/fonts/font = SubResource("FontWeight600")
-HudKeycap/font_sizes/font_size = 12
-HudKeycap/styles/normal = SubResource("HudKeycap")
+HudKeycap/font_sizes/font_size = 11
+HudKeycapPanel/base_type = &"PanelContainer"
+HudKeycapPanel/styles/panel = SubResource("HudKeycap")
 HudBody/base_type = &"Label"
 HudBody/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudBody/fonts/font = SubResource("FontWeight500")

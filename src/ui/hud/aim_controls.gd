@@ -48,6 +48,10 @@ func update_aim(yaw: float, elevation: float, power: float) -> void:
 	direction_value.text = "%+.1f°" % yaw
 	elevation_value.text = "%.1f°" % elevation
 	power_value.text = "%.1f%%" % power
+	%AngleDecrease.disabled = elevation <= AimTuple.MINIMUM_ELEVATION_DEGREES
+	%AngleIncrease.disabled = elevation >= AimTuple.MAXIMUM_ELEVATION_DEGREES
+	%PowerDecrease.disabled = power <= AimTuple.MINIMUM_POWER_PERCENT
+	%PowerIncrease.disabled = power >= AimTuple.MAXIMUM_POWER_PERCENT
 
 
 func _begin_hold(direction: float, angle: bool) -> void:

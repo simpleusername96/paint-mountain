@@ -65,14 +65,21 @@ The completed implementation contract is
   uses a cached 720-tick wind horizon and an eight-tick candidate stride; the
   focused fixture remains below one 60 Hz frame. Exact collision prediction is one
   later advisory job and no Human pending-revision Fire gate remains.
+- The last successful explicit elevation or power edit remains the preferred
+  same-target constraint across later wind epochs. If it becomes infeasible, the
+  controller falls back to another legal same-target tuple without publishing an
+  illegal aim or blocking Fire on prediction.
 - Normal gameplay uses no left/right status cards, bottom aim panel, or
-  persistent prose instruction strip. Stage, coverage, time, shots, resident
-  balls, wind, Finish, aim values, and real actions are edge-aligned symbols and
-  numbers. A/D, W/S, wheel, Space, Tab, F, and Escape hints are attached to their
-  controlled value or action.
+  persistent prose instruction strip. Stage, coverage, time, remaining/maximum
+  shots, separate resident activity, wind, Finish, aim values, and real actions
+  are edge-aligned symbols and numbers. Filled S/W, mouse-wheel, Space, Tab, F,
+  and Escape tokens are attached to their actual control; A/D is not advertised
+  in terrain-target mode and literal square brackets are absent.
 - Source and Windows-release 1280x720 Korean and 1920x1080 English Aim View
   captures under
   [`evidence/sparse-instrument-hud-2026-08-09/`](evidence/sparse-instrument-hud-2026-08-09/)
+  and the final legibility comparison under
+  [`evidence/hud-legibility-and-wind-stable-aim-2026-08-09/`](evidence/hud-legibility-and-wind-stable-aim-2026-08-09/)
   were inspected directly. Import/startup verification and release export pass.
 - New mechanism placement ranks suitable normalized heights 0.55..0.85 first,
   then 0.40 or above. The approved all-30 build promoted v10 manifest

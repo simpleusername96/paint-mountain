@@ -77,8 +77,15 @@ func _run() -> void:
 	_assert_true(
 		is_equal_approx(coverage.progress.max_value, 100.0)
 		and is_equal_approx(coverage.progress.value, 2.0)
-		and "◆" in coverage.target_label.text,
-		"coverage must show the authoritative absolute value with a symbolic goal marker"
+		and coverage.target_label.text == "%.0f%%" % gameplay.stage_data.target_coverage
+		and absf(
+			coverage.target_label.get_global_rect().get_center().y
+			- coverage.target_line.get_global_rect().get_center().y
+		) <= 14.0,
+		"coverage must place the numeric goal beside its authoritative rail marker (label=%s line=%s)" % [
+			coverage.target_label.get_global_rect(),
+			coverage.target_line.get_global_rect(),
+		]
 	)
 	var observation := ShotObservation.new()
 	observation.configure(1, -7.5, 41.0, 72.0, 12.0)

@@ -2096,6 +2096,34 @@ No in-flight steering, new action, new mechanism, second paint representation,
 or projectile-physics change is introduced. All earlier requirements not
 contradicted here remain in force.
 
+## Later User Supersession (2026-08-09): Legible Instruments and Wind-Stable Aim Edits
+
+After reviewing the revised Aim View, the user requested a clearer ammunition
+readout, more polished shortcut prompts, and reliable target-preserving edits
+while wind changes. These clauses supersede only conflicting HUD-label and
+wind-refresh behavior:
+
+- **Shot capacity:** show shots as remaining / maximum, such as `7 / 7`.
+  Resident-ball activity remains a separate number and symbol.
+- **Truthful shortcut tokens:** show only controls that act in the current mode.
+  Aim View exposes S/W beside the actual elevation decrease/increase controls,
+  a mouse-wheel glyph beside power, Space on Fire, Tab on the view toggle, F on
+  Finish, and Escape on Gear. A/D is not an Aim View target control and is not
+  advertised there. Key tokens do not use literal square brackets.
+- **Compact aim instruments:** place decrement, current value, and increment in
+  one row. Disable the matching button at the direct numeric boundary. Yaw is a
+  passive directional value while terrain-target mode owns the horizontal aim.
+- **Wind-stable explicit edits:** after a selected terrain target, the last
+  successful explicit elevation or power edit remains pinned across later wind
+  refreshes whenever a legal same-target solution exists. If that pinned value
+  becomes temporarily infeasible, fall back to another legal same-target tuple;
+  never publish an illegal tuple or create a prediction-based Fire gate.
+- **Reference authority:** external HUD examples and model review are advisory
+  evidence for hierarchy and interaction clarity. Do not copy a layout, asset
+  pack, panel, or unsupported action from them.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

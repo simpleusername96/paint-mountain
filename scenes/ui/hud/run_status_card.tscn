@@ -5,8 +5,8 @@
 
 [node name="RunStatusCard" type="Control"]
 visible = false
-custom_minimum_size = Vector2(610, 52)
-offset_right = 610.0
+custom_minimum_size = Vector2(540, 52)
+offset_right = 540.0
 offset_bottom = 52.0
 script = ExtResource("1")
 
@@ -45,17 +45,17 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 132.0
 offset_top = 8.0
-offset_right = 166.0
+offset_right = 204.0
 offset_bottom = 44.0
 theme_type_variation = &"HudValue"
-text = "7"
+text = "7 / 7"
 vertical_alignment = 1
 
 [node name="ActivitySymbol" type="Label" parent="."]
 layout_mode = 0
-offset_left = 180.0
+offset_left = 218.0
 offset_top = 8.0
-offset_right = 206.0
+offset_right = 242.0
 offset_bottom = 44.0
 theme_type_variation = &"HudAccentValue"
 text = "◉"
@@ -64,9 +64,9 @@ vertical_alignment = 1
 [node name="ActivityValue" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 208.0
+offset_left = 244.0
 offset_top = 8.0
-offset_right = 272.0
+offset_right = 304.0
 offset_bottom = 44.0
 theme_type_variation = &"HudValue"
 text = "0"
@@ -75,8 +75,8 @@ vertical_alignment = 1
 [node name="WindGroup" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 286.0
-offset_right = 440.0
+offset_left = 318.0
+offset_right = 472.0
 offset_bottom = 52.0
 
 [node name="WindArrow" type="Label" parent="WindGroup"]
@@ -136,9 +136,9 @@ horizontal_alignment = 1
 [node name="Finish" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 456.0
+offset_left = 478.0
 offset_top = 4.0
-offset_right = 514.0
+offset_right = 526.0
 offset_bottom = 48.0
 theme_type_variation = &"HudIconButton"
 disabled = true

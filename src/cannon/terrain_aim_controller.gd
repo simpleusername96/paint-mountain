@@ -19,6 +19,8 @@ var _picker := TerrainScreenRayPicker.new()
 var _selected_target: TerrainAimTarget
 var _committed_target: TerrainAimTarget
 var _branch: StringName = &""
+var _preferred_constraint: StringName = &"target"
+var _preferred_value := 0.0
 var _next_request_revision := 0
 var _queued_pointer_revision := -1
 var _queued_pointer_settled := false
@@ -103,7 +105,11 @@ func request_elevation_delta(delta_degrees: float) -> bool:
 	))
 	if is_equal_approx(requested, _cannon.elevation_degrees):
 		return false
-	return _solve_and_commit(_selected_target, &"elevation", requested)
+	var committed := _solve_and_commit(_selected_target, &"elevation", requested)
+	if committed:
+		_preferred_constraint = &"elevation"
+		_preferred_value = requested
+	return committed
 
 
 func request_power_delta(delta_percent: float) -> bool:
@@ -116,7 +122,11 @@ func request_power_delta(delta_percent: float) -> bool:
 	))
 	if is_equal_approx(requested, _cannon.power_percent):
 		return false
-	return _solve_and_commit(_selected_target, &"power", requested)
+	var committed := _solve_and_commit(_selected_target, &"power", requested)
+	if committed:
+		_preferred_constraint = &"power"
+		_preferred_value = requested
+	return committed
 
 
 func request_wind_refresh() -> void:
@@ -127,7 +137,21 @@ func request_wind_refresh() -> void:
 		return
 	_last_wind_epoch = epoch
 	if _selected_target != null:
-		_solve_and_commit(_selected_target, &"target", 0.0)
+		# Keep the last dimension the player explicitly edited pinned while the
+		# other two compensate for the new deterministic wind horizon. If that
+		# exact preference becomes temporarily infeasible, retain target ownership
+		# and fall back to any legal same-target tuple without flashing a false
+		# player-input rejection every wind bucket.
+		var committed := _solve_and_commit(
+			_selected_target,
+			_preferred_constraint,
+			_preferred_value,
+			false
+		)
+		if not committed and _preferred_constraint != &"target":
+			committed = _solve_and_commit(_selected_target, &"target", 0.0, false)
+		if not committed:
+			_present_selected_state()
 
 
 func reset_for_restart() -> void:
@@ -137,6 +161,8 @@ func reset_for_restart() -> void:
 	_committed_target = null
 	_user_selected = false
 	_branch = _branch_for_aim(_current_aim())
+	_preferred_constraint = &"target"
+	_preferred_value = 0.0
 	_last_wind_epoch = _current_wind_epoch()
 	if _preview != null:
 		_preview.clear_target()
@@ -162,13 +188,18 @@ func last_solve_elapsed_usec() -> int:
 func _request_explicit_target(target: TerrainAimTarget) -> bool:
 	if _selected_target != null and _selected_target.revision_key == target.revision_key:
 		return true
-	return _solve_and_commit(target, &"target", 0.0)
+	var committed := _solve_and_commit(target, &"target", 0.0)
+	if committed:
+		_preferred_constraint = &"target"
+		_preferred_value = 0.0
+	return committed
 
 
 func _solve_and_commit(
 		target: TerrainAimTarget,
 		constraint: StringName,
-		requested_value: float
+		requested_value: float,
+		present_rejection: bool = true
 ) -> bool:
 	if target == null:
 		return false
@@ -187,7 +218,8 @@ func _solve_and_commit(
 	)
 	_last_solve_elapsed_usec = Time.get_ticks_usec() - started_at
 	if candidates.is_empty():
-		_present_rejected_target(target)
+		if present_rejection:
+			_present_rejected_target(target)
 		return false
 	var aim := candidates[0].aim as AimTuple
 	if aim == null or not _stage_controller.set_aim(
@@ -196,7 +228,8 @@ func _solve_and_commit(
 		aim.power_percent,
 		StageController.ActionOrigin.HUMAN
 	):
-		_present_rejected_target(target)
+		if present_rejection:
+			_present_rejected_target(target)
 		return false
 	_committed_target = target
 	_selected_target = target

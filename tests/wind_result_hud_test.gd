@@ -38,6 +38,10 @@ func _run() -> void:
 	hud.update_resident_activity(2, 1)
 	_assert_true(status.finish_is_available(), "Finish must enable once the run clock has started")
 	_assert_true(status.get_node("TimeValue").text == "01:00", "clock must display the authoritative remaining time")
+	_assert_true(
+		status.get_node("ShotsValue").text == "3 / 4",
+		"shots must distinguish remaining ammunition from stage capacity"
+	)
 	_assert_true("2" in status.get_node("ActivityValue").text and "1" in status.get_node("ActivityValue").text, "resident activity must show moving and resting counts")
 
 	var wind := WindSnapshot.new(

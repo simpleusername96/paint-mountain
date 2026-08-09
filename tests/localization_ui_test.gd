@@ -115,6 +115,12 @@ func _run() -> void:
 				and aim_controls.get_node("Content/PowerValue").text == "68.1%",
 		"Aim controls must display elevation and solved power to one decimal"
 	)
+	aim_controls.update_aim(0.0, AimTuple.MAXIMUM_ELEVATION_DEGREES, AimTuple.MAXIMUM_POWER_PERCENT)
+	_assert_true(
+		(aim_controls.get_node("Content/AngleIncrease") as Button).disabled
+		and (aim_controls.get_node("Content/PowerIncrease") as Button).disabled,
+		"direct numeric aim bounds must disable their matching increment buttons"
+	)
 
 	game_state.update_setting(&"language", "ko", false)
 	await process_frame

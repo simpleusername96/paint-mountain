@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-09
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -18,6 +18,7 @@ related:
   - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../execplans/2026-08-07-cannon-shot-observation.md
   - ../execplans/2026-08-08-casual-shared-ui-refresh.md
+  - ../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -63,7 +64,7 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
-| Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Readable run state without covering the mountain; Gear remains the menu action |
+| Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident activity remains separate; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
 | Aim and power | Lower edge, outside the cannon/flag silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
@@ -92,7 +93,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   latest valid point, retaining the last valid target across invalid gaps. Angle
   controls and W/S request a target-preserving elevation edit; power controls and
   wheel request a target-preserving power edit. A/D is not a human target-mode
-  control. The authored view keeps the cannon large in the foreground and the
+  control and is not advertised there. Wind refresh preserves the last successful
+  explicit elevation or power constraint whenever a legal same-target tuple
+  exists. The authored view keeps the cannon large in the foreground and the
   complete mountain distant and visible.
 - In Map View, terrain click changes the inspection focus, left drag
   orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
@@ -190,9 +193,13 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
-- `HudKeycap` is the Theme-owned compact keyboard-legend role. Reusable
-  `ShortcutHint` instances show Space on Fire, Tab on Aim/Map and Shot Follow
-  return, F on Finish, and Esc on Gear and Pause Continue without owning input.
+- `HudKeycap` is the Theme-owned compact filled control-token role. It uses no
+  literal square brackets. Reusable `ShortcutHint` instances show S/W beside the
+  matching elevation step buttons, a mouse-wheel glyph beside power, Space on
+  Fire, Tab on Aim/Map and Shot Follow return, F on Finish, and Esc on Gear and
+  Pause Continue without owning input. Terrain-target yaw shows no A/D token.
+- Aim steppers keep decrement, current value, and increment in one row and
+  disable the matching direct-control button at its numeric boundary.
 - Keyboard focus uses the shared visible 2 px accent treatment.
 - Align rows by a deliberate center, baseline, or edge. Keep label-to-value gaps
   tighter than gaps between component groups.

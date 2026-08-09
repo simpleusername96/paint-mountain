@@ -27,13 +27,17 @@ func _run_checks() -> void:
 	var root_control := gameplay.get_node("HUD/HUDRoot") as Control
 	_assert_true(controller.begin_aiming(), "shortcut fixture must enter Aim View")
 	await process_frame
-	_assert_keycap(root_control, "ActionButtons/FireButton/FireShortcut", "[Space]")
-	_assert_keycap(root_control, "CameraInteractionControl/ModeShortcut", "[Tab]")
-	_assert_keycap(root_control, "RunStatusCard/Finish/FinishShortcut", "[F]")
-	_assert_keycap(root_control, "TopStatusBar/SettingsButton/SettingsShortcut", "[Esc]")
-	_assert_keycap(root_control, "AimControls/Content/YawHint", "[A/D]")
-	_assert_keycap(root_control, "AimControls/Content/AngleHint", "[W/S]")
-	_assert_keycap(root_control, "AimControls/Content/PowerHint", "[Wheel]")
+	_assert_keycap(root_control, "ActionButtons/FireButton/FireShortcut", "Space")
+	_assert_keycap(root_control, "CameraInteractionControl/ModeShortcut", "Tab")
+	_assert_keycap(root_control, "RunStatusCard/Finish/FinishShortcut", "F")
+	_assert_keycap(root_control, "TopStatusBar/SettingsButton/SettingsShortcut", "Esc")
+	_assert_true(
+		root_control.get_node_or_null("AimControls/Content/YawHint") == null,
+		"derived target yaw must not advertise unavailable A/D steering"
+	)
+	_assert_keycap(root_control, "AimControls/Content/AngleDecreaseHint", "S")
+	_assert_keycap(root_control, "AimControls/Content/AngleIncreaseHint", "W")
+	_assert_icon_prompt(root_control, "AimControls/Content/PowerHint")
 	_assert_true(
 		root_control.get_node_or_null("ContextLine") == null,
 		"normal play must not retain a prose instruction strip"
@@ -51,7 +55,7 @@ func _run_checks() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
-	_assert_keycap(root_control, "ReturnToCannon/ReturnShortcut", "[Tab]")
+	_assert_keycap(root_control, "ReturnToCannon/ReturnShortcut", "Tab")
 	_assert_true(
 		root_control.get_node("ReturnToCannon").visible \
 				and not root_control.get_node("ActionButtons").visible,
@@ -65,7 +69,7 @@ func _run_checks() -> void:
 	_assert_keycap(
 		root_control,
 		"PauseOverlay/Center/Panel/Margin/Column/Resume/ResumeShortcut",
-		"[Esc]"
+		"Esc"
 	)
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
@@ -120,9 +124,23 @@ func _run_checks() -> void:
 
 func _assert_keycap(root_control: Control, path: String, expected: String) -> void:
 	var hint := root_control.get_node_or_null(path) as ShortcutHint
+	var label: Label
+	if hint != null:
+		label = hint.get_node_or_null("Content/Keycap") as Label
 	_assert_true(
-		hint != null and hint.get_node("Keycap").text == expected,
+		hint != null and label != null and label.text == expected and not label.text.contains("["),
 		"%s must expose %s through ShortcutHint" % [path, expected]
+	)
+
+
+func _assert_icon_prompt(root_control: Control, path: String) -> void:
+	var hint := root_control.get_node_or_null(path) as ShortcutHint
+	var icon: TextureRect
+	if hint != null:
+		icon = hint.get_node_or_null("Content/Icon") as TextureRect
+	_assert_true(
+		hint != null and icon != null and icon.visible and icon.texture != null,
+		"%s must expose a compact input glyph" % path
 	)
 
 

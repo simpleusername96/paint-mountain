@@ -11,9 +11,14 @@ var _target := 0.0
 func configure(target: float) -> void:
 	_target = clampf(target, 0.0, 100.0)
 	tooltip_text = tr("hud.coverage_tooltip")
-	target_label.text = "◆ %.0f" % _target
+	target_label.text = "%.0f%%" % _target
 	var target_y := progress.position.y + progress.size.y * (1.0 - _target / 100.0)
 	target_line.position.y = target_y - target_line.size.y * 0.5
+	target_label.position.y = clampf(
+		target_y - target_label.size.y * 0.5,
+		progress.position.y - 2.0,
+		progress.position.y + progress.size.y - target_label.size.y + 2.0
+	)
 	update_coverage(0.0)
 
 
