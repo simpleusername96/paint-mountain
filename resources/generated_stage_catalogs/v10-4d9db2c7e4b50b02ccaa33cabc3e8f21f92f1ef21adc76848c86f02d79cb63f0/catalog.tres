@@ -7,7 +7,6 @@
 [ext_resource type="Script" path="res://src/stage_generation/stage_route_profile.gd" id="5_6l0bt"]
 [ext_resource type="Script" path="res://src/stage_generation/stage_generation_profile.gd" id="6_hp4yy"]
 [ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="7_e5p30"]
-[ext_resource type="Resource" path="res://resources/wind/standard_wind.tres" id="8_pgekt"]
 
 [sub_resource type="Resource" id="Resource_fvlxo"]
 script = ExtResource("4_sk4oa")

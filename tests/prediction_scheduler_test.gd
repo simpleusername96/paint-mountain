@@ -7,7 +7,6 @@ const PREDICTION_SCHEDULER := preload(
 
 var _failed := false
 var _fake_compute_count := 0
-var _last_launch_tick := -1
 
 
 func _initialize() -> void:
@@ -16,25 +15,17 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var cannon := CANNON_SCENE.instantiate() as CannonController
-	var wind := WindController.new()
 	var scheduler := PREDICTION_SCHEDULER.new()
 	root.add_child(cannon)
-	root.add_child(wind)
 	root.add_child(scheduler)
 	await process_frame
 
-	var profile := WindProfile.new()
-	profile.interval_seconds = 30.0
-	profile.transition_seconds = 3.0
-	_assert_true(wind.configure(profile, 9173), "wind fixture must configure")
 	var roomy_bounds := AABB(
 		Vector3(-10000.0, -10000.0, -10000.0),
 		Vector3(20000.0, 20000.0, 20000.0)
 	)
 	_assert_true(
-		scheduler.configure(
-			cannon, wind, roomy_bounds, profile, 9173, _fake_job
-		),
+		scheduler.configure(cannon, roomy_bounds, _fake_job),
 		"scheduler fixture must configure"
 	)
 	scheduler.set_consumers_enabled(true)
@@ -60,14 +51,12 @@ func _run() -> void:
 	)
 
 	var initial_context := scheduler.current_context_key()
-	wind.start()
 	for _tick in range(10):
-		wind._physics_process(1.0 / 60.0)
 		scheduler.request_latest()
 		scheduler._physics_process(1.0 / 60.0)
 	_assert_true(
 		_fake_compute_count == 1 and scheduler.current_context_key() == initial_context,
-		"stable wind must reuse the completed prediction"
+		"an unchanged aim must reuse the completed prediction"
 	)
 
 	# Continuous drag nominates only one newest context per twelve scheduler
@@ -103,41 +92,15 @@ func _run() -> void:
 		"release must immediately nominate and eventually publish only the latest aim"
 	)
 
-	var changing_profile := WindProfile.new()
-	changing_profile.interval_seconds = 13.0
-	changing_profile.transition_seconds = 3.0
-	var epoch0 := WindController.prediction_epoch_for(
-		changing_profile, 271, 0, 720, 30
-	)
-	var epoch29 := WindController.prediction_epoch_for(
-		changing_profile, 271, 29, 720, 30
-	)
-	var epoch30 := WindController.prediction_epoch_for(
-		changing_profile, 271, 30, 720, 30
-	)
 	_assert_true(
-		epoch0 == epoch29 and epoch30 == epoch0 + 1,
-		"forecast-changing preview epochs must advance once per thirty physics ticks"
-	)
-	var stable_epoch0 := WindController.prediction_epoch_for(profile, 9173, 0, 720, 30)
-	var stable_epoch120 := WindController.prediction_epoch_for(
-		profile, 9173, 120, 720, 30
-	)
-	_assert_true(
-		stable_epoch0 < 0 and stable_epoch0 == stable_epoch120,
-		"stable wind must keep one negative keyframe epoch across elapsed ticks"
-	)
-	_assert_true(
-		_last_launch_tick >= 0 \
-				and scheduler.prediction_compute_count() == _fake_compute_count,
+		scheduler.prediction_compute_count() == _fake_compute_count,
 		"structural diagnostics must count only jobs actually started"
 	)
 	cannon.queue_free()
-	wind.queue_free()
 	scheduler.queue_free()
 	await process_frame
 	if not _failed:
-		print("Prediction scheduler checks passed: 12-step/1 ms callbacks, obsolete-work replacement, stable reuse, and 30-tick buckets.")
+		print("Prediction scheduler checks passed: 12-step/1 ms callbacks, obsolete-work replacement, and unchanged-aim reuse.")
 	quit(1 if _failed else 0)
 
 
@@ -162,13 +125,9 @@ func _drive_until_publication(
 
 func _fake_job(
 		cannon: CannonController,
-		bounds: AABB,
-		profile: WindProfile,
-		seed: int,
-		launch_tick: int
+		bounds: AABB
 ) -> TrajectoryPredictionJob:
 	_fake_compute_count += 1
-	_last_launch_tick = launch_tick
 	return TrajectoryPredictionJob.create(
 		cannon.get_world_3d().direct_space_state,
 		cannon.get_launch_origin(),
@@ -177,10 +136,7 @@ func _fake_job(
 		cannon.projectile_data.linear_damp,
 		bounds,
 		TrajectoryPredictionJob.COLLISION_MASK,
-		true,
-		profile,
-		seed,
-		launch_tick
+		true
 	)
 
 

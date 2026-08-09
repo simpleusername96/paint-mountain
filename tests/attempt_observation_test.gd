@@ -10,27 +10,15 @@ func _initialize() -> void:
 func _run_checks() -> void:
 	var observation := AttemptObservation.new()
 	_assert_true(
-		observation.configure(&"stage_04", &"wind-v1-4007", 4007, 0),
-		"an attempt requires stable stage and wind identities"
+		observation.configure(&"stage_04", 0),
+		"an attempt requires a stable stage identity"
 	)
 	_assert_true(observation.record_aim(12.0, 41.0, 73.0, 0), "aim must record")
 	_assert_true(observation.record_fire(1, 0), "Fire must record after aim")
-	var wind := WindSnapshot.new(
-		1800,
-		Vector3(2.0, 0.0, -1.0),
-		Vector3(-3.0, 0.0, 2.0),
-		0.4,
-		0.7,
-		30.0,
-		0.0,
-		&"wind-v1-4007"
-	)
-	wind.strong_episode_id = 2
-	_assert_true(observation.record_wind_transition(wind, 1), "wind transition must record")
 	_assert_true(observation.record_projectile_rest(1, 0, 2), "terrain rest must record")
 	_assert_true(
-		observation.record_projectile_wake(1, 0, &"strong_wind", 2, 3),
-		"strong-wind wake must record"
+		observation.record_projectile_wake(1, 0, &"mechanism_impulse", 3),
+		"mechanism wake must record"
 	)
 	_assert_true(
 		observation.record_terrain_recovery(1, 0, &"surface_clearance", 4),
@@ -63,7 +51,13 @@ func _run_checks() -> void:
 	_assert_true(parsed is Dictionary, "attempt observation must be JSON-safe")
 	_assert_true(
 		AttemptObservation.dictionary_is_valid(parsed),
-		"serialized schema 2 must validate"
+		"serialized schema 3 must validate"
+	)
+	var schema_2 := serialized.duplicate(true)
+	schema_2["schema_version"] = 2
+	_assert_true(
+		not AttemptObservation.dictionary_is_valid(schema_2),
+		"schema 2 input must be rejected rather than interpreted as schema 3"
 	)
 	var kinds: Array[String] = []
 	for index in range(serialized.events.size()):
@@ -74,7 +68,6 @@ func _run_checks() -> void:
 		kinds == [
 			"aim",
 			"fire",
-			"wind_transition",
 			"projectile_rest",
 			"projectile_wake",
 			"terrain_recovery",
@@ -83,7 +76,7 @@ func _run_checks() -> void:
 			"finish",
 			"result",
 		],
-		"schema 2 must retain the representative event order"
+		"schema 3 must retain the representative event order"
 	)
 	_assert_true(
 		int(serialized.final_result.paint_mask_checksum) == 912345 \
@@ -102,15 +95,24 @@ func _run_checks() -> void:
 	)
 
 	var out_of_order := AttemptObservation.new()
-	out_of_order.configure(&"stage_04", &"wind-v1-4007", 4007, 0)
+	out_of_order.configure(&"stage_04", 0)
 	_assert_true(out_of_order.record_aim(0.0, 40.0, 70.0, 5), "first event must record")
 	_assert_true(
 		not out_of_order.record_fire(1, 4),
 		"an event with an earlier tick must not be appended after a later event"
 	)
 
+	var stage_data := StageData.new()
+	stage_data.stage_id = &"stage_04"
+	var recorder := AttemptRecorder.new()
+	_assert_true(recorder.start_attempt(stage_data, 4007), "recorder must start with terrain seed")
+	_assert_true(
+		int(recorder.export_log().terrain_seed) == 4007,
+		"attempt export must preserve the generated terrain seed"
+	)
+
 	if not _failed:
-		print("Attempt observation checks passed: schema, event order, wind/lifecycle facts, and authoritative result.")
+		print("Attempt observation checks passed: schema, event order, mechanism/lifecycle facts, and authoritative result.")
 	quit(1 if _failed else 0)
 
 

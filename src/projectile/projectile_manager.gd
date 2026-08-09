@@ -10,7 +10,7 @@ signal valid_top_traversed(projectile: PaintProjectile, contact: ProjectileConta
 signal valid_top_exited(projectile: PaintProjectile)
 signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal projectile_motion_state_changed(projectile: PaintProjectile, previous_state: int, current_state: int)
-signal projectile_woke(projectile: PaintProjectile, reason: StringName, strong_episode_id: int)
+signal projectile_woke(projectile: PaintProjectile, reason: StringName)
 signal projectile_terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal all_projectiles_settled
 signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
@@ -27,8 +27,6 @@ const DEFAULT_PAINT_SURFACE_TUNING := preload("res://resources/paint/default_pai
 var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
 var _terrain_surface: TerrainSurface
 var _paint_surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING
-var _wind_controller: WindController
-var _wind_profile: WindProfile
 var _active: Array[PaintProjectile] = []
 var _settlement_check_queued := false
 var _pending_intents: Array[Dictionary] = []
@@ -56,20 +54,6 @@ func configure_terrain(
 	assert(paint_surface_tuning != null and paint_surface_tuning.is_valid(), "ProjectileManager requires valid paint-surface tuning.")
 	_terrain_surface = terrain_surface
 	_paint_surface_tuning = paint_surface_tuning
-
-
-func configure_wind(controller: WindController, profile: WindProfile) -> void:
-	if _wind_controller != null \
-			and _wind_controller.strong_episode_started.is_connected(_on_strong_episode_started):
-		_wind_controller.strong_episode_started.disconnect(_on_strong_episode_started)
-	_wind_controller = controller
-	_wind_profile = profile
-	if _wind_controller != null \
-			and not _wind_controller.strong_episode_started.is_connected(_on_strong_episode_started):
-		_wind_controller.strong_episode_started.connect(_on_strong_episode_started)
-	for projectile in _active:
-		if is_instance_valid(projectile):
-			projectile.configure_wind(_wind_controller, _wind_profile)
 
 
 func spawn_projectile(
@@ -114,7 +98,6 @@ func spawn_projectile(
 		assigned_shot_id,
 		never_contacted_deadline if split_generation == 0 else -1.0
 	)
-	projectile.configure_wind(_wind_controller, _wind_profile)
 	projectile.contact_reported.connect(_on_contact_reported)
 	projectile.radial_paint_mark_intent_requested.connect(_on_radial_paint_mark_intent)
 	projectile.surface_paint_sweep_intent_requested.connect(_on_surface_paint_sweep_intent)
@@ -369,17 +352,14 @@ func _on_projectile_motion_state_changed(
 	projectile_motion_state_changed.emit(projectile, _previous_state, current_state)
 	if projectile == null:
 		return
-	if current_state == PaintProjectile.MotionState.RESTING_ON_TERRAIN:
-		_wake_projectile_for_current_strong(projectile)
 	_emit_activity_changed()
 
 
 func _on_projectile_woke(
 		projectile: PaintProjectile,
-		reason: StringName,
-		strong_episode_id: int
+		reason: StringName
 ) -> void:
-	projectile_woke.emit(projectile, reason, strong_episode_id)
+	projectile_woke.emit(projectile, reason)
 
 
 func _on_projectile_terrain_recovered(
@@ -388,19 +368,6 @@ func _on_projectile_terrain_recovered(
 		correction_distance: float
 ) -> void:
 	projectile_terrain_recovered.emit(projectile, physics_tick, correction_distance)
-
-
-func _on_strong_episode_started(_episode_id: int, snapshot: WindSnapshot) -> void:
-	for projectile in _active:
-		if is_instance_valid(projectile):
-			projectile.wake_for_strong_wind(snapshot)
-	_emit_activity_changed()
-
-
-func _wake_projectile_for_current_strong(projectile: PaintProjectile) -> void:
-	if _wind_controller == null or projectile == null:
-		return
-	projectile.wake_for_strong_wind(_wind_controller.current_snapshot())
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:

@@ -9,10 +9,7 @@ const COLLISION_MASK := TrajectoryPredictionJob.COLLISION_MASK
 static func predict(
 		space_state: PhysicsDirectSpaceState3D,
 		cannon: CannonController,
-		stage_bounds: AABB,
-		wind_profile: WindProfile = null,
-		wind_schedule_seed: int = 0,
-		launch_wind_tick: int = 0
+		stage_bounds: AABB
 ) -> TrajectoryPrediction:
 	return predict_motion(
 		space_state,
@@ -22,10 +19,7 @@ static func predict(
 		cannon.projectile_data.linear_damp,
 		stage_bounds,
 		COLLISION_MASK,
-		true,
-		wind_profile,
-		wind_schedule_seed,
-		launch_wind_tick
+		true
 	)
 
 
@@ -37,10 +31,7 @@ static func predict_motion(
 		linear_damp: float,
 		stage_bounds: AABB,
 		collision_mask: int = COLLISION_MASK,
-		capture_sampled_points: bool = true,
-		wind_profile: WindProfile = null,
-		wind_schedule_seed: int = 0,
-		launch_wind_tick: int = 0
+		capture_sampled_points: bool = true
 ) -> TrajectoryPrediction:
 	var job := TrajectoryPredictionJob.create(
 		space_state,
@@ -50,10 +41,7 @@ static func predict_motion(
 		linear_damp,
 		stage_bounds,
 		collision_mask,
-		capture_sampled_points,
-		wind_profile,
-		wind_schedule_seed,
-		launch_wind_tick
+		capture_sampled_points
 	)
 	while not job.is_complete():
 		job.advance(MAXIMUM_STEPS)

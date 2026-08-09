@@ -25,15 +25,14 @@ func _run() -> void:
 		Vector3.UP,
 		identity
 	)
-	var profile := WindProfile.new()
 	var baseline := AimTuple.new(0.0, 38.0, 68.0)
 	var started_at := Time.get_ticks_usec()
 	var free := TerrainAimSolver.nominate(
-		cannon, target, &"target", 0.0, &"low", baseline, profile, 9173, 0
+		cannon, target, &"target", 0.0, &"low", baseline
 	)
 	var elapsed_usec := Time.get_ticks_usec() - started_at
 	var repeated := TerrainAimSolver.nominate(
-		cannon, target, &"target", 0.0, &"low", baseline, profile, 9173, 0
+		cannon, target, &"target", 0.0, &"low", baseline
 	)
 	var high_branch := TerrainAimSolver.nominate(
 		cannon,
@@ -42,15 +41,12 @@ func _run() -> void:
 		0.0,
 		&"high",
 		AimTuple.new(0.0, 58.0, 68.0),
-		profile,
-		9173,
-		0
 	)
 	var pinned_elevation := TerrainAimSolver.nominate(
-		cannon, target, &"elevation", 38.0, &"low", baseline, profile, 9173, 0
+		cannon, target, &"elevation", 38.0, &"low", baseline
 	)
 	var pinned_power := TerrainAimSolver.nominate(
-		cannon, target, &"power", 68.0, &"high", baseline, profile, 9173, 0
+		cannon, target, &"power", 68.0, &"high", baseline
 	)
 	_assert_true(
 		not free.is_empty() and free.size() <= TerrainAimSolver.MAXIMUM_NOMINATIONS,
@@ -58,7 +54,7 @@ func _run() -> void:
 	)
 	_assert_true(
 		_candidate_keys(free) == _candidate_keys(repeated),
-		"the same wind context must nominate deterministically"
+		"the same gravity context must nominate deterministically"
 	)
 	_assert_true(
 		elapsed_usec < 16667,

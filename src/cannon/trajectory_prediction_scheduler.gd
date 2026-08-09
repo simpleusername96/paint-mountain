@@ -1,19 +1,14 @@
 class_name TrajectoryPredictionScheduler
 extends Node
 
-## Owns one bounded advisory prediction job. New aim or wind context replaces
+## Owns one bounded advisory prediction job. New aim replaces
 ## obsolete work; prediction never gates StageController or terrain input.
 
 const MAXIMUM_STEPS_PER_TICK := 12
 const MAXIMUM_WORK_USEC_PER_TICK := 1000
 const AIM_NOMINATION_INTERVAL_TICKS := 12
-const DYNAMIC_WIND_BUCKET_TICKS := 30
-
 var _cannon: CannonController
-var _wind_controller: WindController
 var _bounds := AABB()
-var _wind_profile: WindProfile
-var _schedule_seed := 0
 var _prediction_callback: Callable
 var _consumers_enabled := false
 var _aim_interaction_active := false
@@ -34,24 +29,16 @@ var _discarded_job_count := 0
 
 func configure(
 		cannon: CannonController,
-		wind_controller: WindController,
 		bounds: AABB,
-		wind_profile: WindProfile,
-		schedule_seed: int,
 		prediction_callback: Callable = Callable()
 ) -> bool:
 	if (
 		cannon == null
-		or wind_controller == null
-		or wind_profile == null
 		or not bounds.has_volume()
 	):
 		return false
 	_cannon = cannon
-	_wind_controller = wind_controller
 	_bounds = bounds
-	_wind_profile = wind_profile
-	_schedule_seed = schedule_seed
 	_prediction_callback = prediction_callback
 	_request_dirty = true
 	_nominate_immediately = true
@@ -134,7 +121,7 @@ func discarded_job_count() -> int:
 
 
 func _physics_process(_delta: float) -> void:
-	if _cannon == null or _wind_controller == null or not _consumers_enabled:
+	if _cannon == null or not _consumers_enabled:
 		return
 	_scheduler_tick += 1
 	_last_advance_step_count = 0
@@ -194,18 +181,10 @@ func _nominate_live_context() -> void:
 
 
 func _capture_live_request() -> Dictionary:
-	var launch_tick := _prediction_launch_tick()
 	var aim_key := _cannon.aim_key()
-	var wind_identity := _wind_controller.schedule_identity()
-	var wind_epoch := _wind_controller.prediction_epoch(
-		TrajectoryPredictionJob.MAXIMUM_STEPS,
-		DYNAMIC_WIND_BUCKET_TICKS
-	)
 	return {
-		"context_key": build_context_key(aim_key, wind_identity, wind_epoch),
+		"context_key": build_context_key(aim_key),
 		"aim_key": aim_key,
-		"wind_identity": wind_identity,
-		"launch_tick": launch_tick,
 		"origin": _cannon.get_launch_origin(),
 		"launch_velocity": _cannon.get_launch_velocity(),
 		"projectile_radius": _cannon.projectile_data.radius,
@@ -219,10 +198,7 @@ func _start_job(request: Dictionary) -> void:
 	if _prediction_callback.is_valid():
 		var result: Variant = _prediction_callback.call(
 			_cannon,
-			_bounds,
-			_wind_profile,
-			_schedule_seed,
-			int(request.launch_tick)
+			_bounds
 		)
 		if result is TrajectoryPredictionJob:
 			_active_job = result as TrajectoryPredictionJob
@@ -243,10 +219,7 @@ func _start_job(request: Dictionary) -> void:
 		float(request.linear_damp),
 		_bounds,
 		TrajectoryPredictionJob.COLLISION_MASK,
-		true,
-		_wind_profile,
-		_schedule_seed,
-		int(request.launch_tick)
+		true
 	)
 
 
@@ -263,8 +236,6 @@ func _complete_active_job() -> void:
 			_cannon.set_prediction(
 				prediction,
 				StringName(finished_request.aim_key),
-				StringName(finished_request.wind_identity),
-				int(finished_request.launch_tick),
 				finished_key
 			)
 			_prediction_publication_count += 1
@@ -273,18 +244,11 @@ func _complete_active_job() -> void:
 
 
 func _live_context_key() -> StringName:
-	return build_context_key(
-		_cannon.aim_key(),
-		_wind_controller.schedule_identity(),
-		_wind_controller.prediction_epoch(
-			TrajectoryPredictionJob.MAXIMUM_STEPS,
-			DYNAMIC_WIND_BUCKET_TICKS
-		)
-	)
+	return build_context_key(_cannon.aim_key())
 
 
 func _live_context_is_already_owned() -> bool:
-	if _cannon == null or _wind_controller == null or not _consumers_enabled:
+	if _cannon == null or not _consumers_enabled:
 		return false
 	var live_key := _live_context_key()
 	if live_key != _current_context_key:
@@ -300,25 +264,5 @@ func _live_context_is_already_owned() -> bool:
 	)
 
 
-func _prediction_launch_tick() -> int:
-	var epoch := _wind_controller.prediction_epoch(
-		TrajectoryPredictionJob.MAXIMUM_STEPS,
-		DYNAMIC_WIND_BUCKET_TICKS
-	)
-	return (
-		_wind_controller.elapsed_ticks()
-		if epoch < 0
-		else epoch * DYNAMIC_WIND_BUCKET_TICKS
-	)
-
-
-static func build_context_key(
-		aim_key: StringName,
-		wind_schedule_identity: StringName,
-		wind_epoch: int
-) -> StringName:
-	return StringName("%s|%s|%d" % [
-		String(aim_key),
-		String(wind_schedule_identity),
-		wind_epoch,
-	])
+static func build_context_key(aim_key: StringName) -> StringName:
+	return aim_key

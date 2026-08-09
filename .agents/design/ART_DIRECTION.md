@@ -150,12 +150,6 @@ owned by `UIUX_GUIDELINES.md`.
   route over its real traversal, including outside the Target Area. Only Target
   Area overlap affects coverage. The Support Shell, bottom, apron, decorations,
   mechanisms, and airborne travel remain unpainted.
-- A tall cannon-side pole carries a simple flag, streamer, or windsock. Its free
-  end points in the direction projectiles are pushed, and its bend/flap amplitude
-  gives a restrained strength cue. It is readable from Aim View, has no gameplay
-  collision or paint authority, never crosses the muzzle/trajectory silhouette,
-  and yields to reduced-motion settings without hiding its static direction.
-  Generic airborne leaves or debris are not the primary wind cue.
 - Shot Follow keeps the newly launched root paintball readable through flight,
   then holds its first terrain contact briefly so impact, paint, and terrain
   response form one legible cause-and-effect beat.
@@ -183,7 +177,7 @@ A future visual review can call the world conformant only when:
 - routes and stage difficulty are legible before firing;
 - cannon, trajectory, impact, ball contact, continuous paint, and mechanisms
   form a clear cause-and-effect chain;
-- the cannon-side flag communicates wind direction without competing with the
+- the cannon and trajectory remain readable without competing with the
   mountain, and the Aim View retains the full mountain at distant scale;
 - no full-width slab, card-like target, dominant flat apron, enclosing wall,
   gray test-scene wash, black cannon blob, hidden gameplay mass, or decorative

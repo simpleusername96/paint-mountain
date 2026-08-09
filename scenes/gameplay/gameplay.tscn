@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -17,8 +17,6 @@
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/open_play_environment.tscn" id="18_open_environment"]
-[ext_resource type="Script" path="res://src/wind/wind_controller.gd" id="19_wind"]
-[ext_resource type="Script" path="res://src/wind/cannon_wind_flag.gd" id="20_wind_flag"]
 [ext_resource type="Script" path="res://src/cannon/trajectory_prediction_scheduler.gd" id="21_prediction_scheduler"]
 [ext_resource type="Script" path="res://src/cannon/terrain_target_preview.gd" id="22_target_preview"]
 [ext_resource type="Script" path="res://src/cannon/terrain_aim_controller.gd" id="23_target_controller"]
@@ -135,14 +133,6 @@ script = ExtResource("6_paint")
 [node name="StageController" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("7_stage_controller")
-
-[node name="WindController" type="Node" parent="."]
-unique_name_in_owner = true
-script = ExtResource("19_wind")
-
-[node name="CannonWindFlag" type="Node3D" parent="."]
-unique_name_in_owner = true
-script = ExtResource("20_wind_flag")
 
 [node name="CameraDirector" type="Node" parent="."]
 unique_name_in_owner = true

@@ -26,8 +26,6 @@ func _run() -> void:
 	await process_frame
 	_assert(gameplay.get_node_or_null("OpenPlayEnvironment") is OpenPlayEnvironment, "gameplay must use the open environment")
 	_assert(gameplay.get_node_or_null("BackstopEnvironment") == null, "gameplay must not contain a backstop")
-	_assert(gameplay.get_node_or_null("CannonWindFlag") is CannonWindFlag, "gameplay must show a cannon-side wind flag")
-	_assert(gameplay.get_node_or_null("WindDebrisField") == null, "gameplay must not retain wind debris")
 	var hud := gameplay.get_node_or_null("HUD") as HUDController
 	_assert(hud != null and hud.get_node_or_null("HUDRoot/ReturnToCannon") is Button, "HUD must expose a contextual return-to-cannon action")
 	var translations := FileAccess.get_file_as_string("res://translations/ui.csv")
@@ -107,7 +105,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("phase7_user_qa_contract_test passed: current scene, copy, fixed layouts, flag, and return action")
+		print("phase7_user_qa_contract_test passed: current scene, copy, fixed layouts, and return action")
 	quit(1 if _failed else 0)
 
 

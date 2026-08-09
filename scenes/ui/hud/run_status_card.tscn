@@ -4,8 +4,8 @@
 
 [node name="RunStatusCard" type="Control"]
 visible = false
-custom_minimum_size = Vector2(540, 52)
-offset_right = 540.0
+custom_minimum_size = Vector2(384, 52)
+offset_right = 384.0
 offset_bottom = 52.0
 script = ExtResource("1")
 
@@ -71,83 +71,12 @@ theme_type_variation = &"HudValue"
 text = "0"
 vertical_alignment = 1
 
-[node name="WindGroup" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 318.0
-offset_right = 472.0
-offset_bottom = 52.0
-
-[node name="WindLabel" type="Label" parent="WindGroup"]
-layout_mode = 0
-offset_top = 8.0
-offset_right = 34.0
-offset_bottom = 34.0
-theme_type_variation = &"HudAccentCaption"
-text = "hud.wind"
-vertical_alignment = 1
-
-[node name="WindArrow" type="Label" parent="WindGroup"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 34.0
-offset_top = 4.0
-offset_right = 68.0
-offset_bottom = 46.0
-theme_type_variation = &"HudAccentValue"
-text = "→"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="WindValue" type="Label" parent="WindGroup"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 70.0
-offset_top = 6.0
-offset_right = 124.0
-offset_bottom = 38.0
-theme_type_variation = &"HudValue"
-text = "0%"
-vertical_alignment = 1
-
-[node name="WindCountdown" type="Label" parent="WindGroup"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 66.0
-offset_top = 30.0
-offset_right = 132.0
-offset_bottom = 52.0
-theme_type_variation = &"HudCaption"
-text = "--s"
-vertical_alignment = 1
-
-[node name="WindForecast" type="Control" parent="WindGroup"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 0
-offset_left = 126.0
-offset_top = 3.0
-offset_right = 154.0
-offset_bottom = 25.0
-
-[node name="NextWindArrow" type="Label" parent="WindGroup/WindForecast"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"HudCaption"
-text = "↗"
-horizontal_alignment = 1
-
 [node name="Finish" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 478.0
+offset_left = 318.0
 offset_top = 4.0
-offset_right = 540.0
+offset_right = 384.0
 offset_bottom = 48.0
 theme_type_variation = &"HudFinishButton"
 disabled = true

@@ -71,22 +71,6 @@ func update_clock(snapshot: Dictionary) -> void:
 	_apply_finish_availability()
 
 
-func update_wind(
-		snapshot: WindSnapshot,
-		screen_direction: Vector2,
-		depth_cue: RunStatusCard.DepthCue = RunStatusCard.DepthCue.NONE,
-		next_screen_direction: Vector2 = Vector2.ZERO,
-		next_depth_cue: RunStatusCard.DepthCue = RunStatusCard.DepthCue.NONE
-) -> void:
-	_run_status.update_wind(
-		snapshot,
-		screen_direction,
-		depth_cue,
-		next_screen_direction,
-		next_depth_cue
-	)
-
-
 func _ready() -> void:
 	_return_to_cannon.hide()
 	_connect_components()

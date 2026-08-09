@@ -26,6 +26,7 @@ related:
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-08-terrain-targeted-aiming.md
   - ../.agents/execplans/2026-08-09-quiet-context-ui-system.md
+  - ../.agents/execplans/2026-08-09-remove-wind-system.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
@@ -40,6 +41,37 @@ Completed gates and older checked sections are historical evidence for earlier
 builds. The Quiet Context gate below owns current UI presentation. The
 immediate-aim gate retains interaction and calculation acceptance; its older
 shortcut and HUD presentation clauses do not override the Quiet Context gate.
+The wind-retirement gate records the current no-wind runtime, data, and HUD
+contract; earlier wind gates and captures are pre-removal history only.
+
+## Completed wind-retirement gate (2026-08-09)
+
+- [x] Runtime source, scenes, stage data, active/generated catalogs, agent
+  observations, attempt diagnostics, delivery captures, translations, and test
+  registration contain no live wind type, path, force, schedule, episode, or
+  compatibility owner.
+- [x] Attempt observation schema 3 records the generated terrain seed directly,
+  rejects schema 2, and retains generic mechanism-driven projectile wake facts
+  without a weather episode field.
+- [x] Projectile settling and mechanism impulses remain active. Terrain aiming
+  and trajectory prediction use gravity/collision inputs and retain current-only
+  publication, target-preserving edits, and prediction/live parity.
+- [x] The Korean 1280x720 exported Stage 30 Aim View shows a compact run status
+  with time, remaining/maximum shots, resident activity, Finish, and Settings.
+  It has no empty instrument gap, clipping, overlap, flag, or weather cue.
+- [x] All task-reached focused checks, project import/startup verification, the
+  Windows release export, and the exported background capture pass. Capture
+  stderr is empty after rebuilding the stale Godot export cache.
+- [x] The repository-wide runner's two unchanged baseline defects are recorded
+  as a limitation: `phase6_content_test.gd` expects legacy stage IDs and
+  `camera_safety_test.gd` references an absent camera constant. Direct checks
+  after that barrier cover the changed HUD, observation, debug, and prediction
+  contracts and pass.
+
+Current evidence:
+
+- `.agents/evidence/wind-retirement-2026-08-09/README.md`
+- `.agents/evidence/wind-retirement-2026-08-09/release-aim-stage30-1280x720-ko.png`
 
 ## Completed player-replay retirement gate (2026-08-08)
 
@@ -60,7 +92,7 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 - [x] Ammunition is `remaining / maximum`; visible yaw, A/D, direction arrows,
   standalone dark shortcut tiles, and persistent prose strips are absent.
 - [x] W/S, wheel, direct angle/power buttons, Space, Tab, Escape, and F remain
-  truthful. Wind-stable selected-target angle/power changes and Fire admission
+  truthful. Target-preserving angle/power changes and Fire admission
   pass focused runtime tests.
 - [x] Main Menu and Stage Select have no giant enclosing card. Pause and
   Settings retain one modal surface; Briefing, transient feedback, and Result
@@ -71,7 +103,7 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
   Result. Korean 1600x900 covers Stage Select and Settings.
 - [x] The exact 1280x720 source and production Aim captures were normalized 1:1
   and reviewed together. `design-qa.md` records no remaining P0/P1/P2 issue.
-- [x] Shared Theme, UI flow, localization, shortcut, HUD truth, wind/result,
+- [x] Shared Theme, UI flow, localization, shortcut, HUD truth, result,
   shot feedback, and target-preserving aim contracts pass. Repository
   verification and the Windows Desktop release export pass.
 
@@ -90,17 +122,17 @@ Current evidence:
   resolution actions retain their focused behavior.
 - [x] Terrain click/drag and target-preserving angle/power input commit an
   approximate tuple without waiting for an exact collision job. The focused
-  solver fixture completes its bounded cached-wind, stride-eight nomination
+  solver fixture completes its bounded gravity/damping, stride-eight nomination
   within one 60 Hz frame; Fire is available from the resulting canonical aim.
 - [x] A successful explicit elevation or power edit remains pinned across later
-  wind epochs when legal. A focused Stage 30 regression covers both constraint
-  types and confirms that no later wind-refresh solve silently resets them.
+  same-target solves when legal. A focused Stage 30 regression covers both
+  constraint types and confirms that no later solve silently resets them.
 - [x] `TrajectoryPredictionScheduler` owns only one replaceable advisory job;
   obsolete target callbacks, Human revision state, and the pending Fire gate are
   absent.
 - [x] Normal Aim View has no persistent prose strip or left/right/bottom status
   card. It shows compact stage, coverage, time, remaining/maximum shots,
-  residents, wind, Finish, yaw, elevation, power, and Fire instruments.
+  residents, Finish, yaw, elevation, power, and Fire instruments.
 - [x] Filled S/W, mouse-wheel, Space, Tab, F, and Escape tokens sit beside the
   value or action they control without literal brackets. A/D is absent from
   terrain-target mode. Interactive targets remain at least 40 px and preserve
@@ -293,12 +325,11 @@ claim user gameplay/feel approval.
   passed` report are under
   `.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/`.
 
-## Active shared Command Columns HUD validation gate (2026-08-06)
+## Historical shared Command Columns HUD validation gate (2026-08-06)
 
-This gate supersedes earlier HUD geometry and target-normalized coverage rows.
-It validates the user-selected aiming layout and shared design system only; it
-does not require all-stage solution routes, exhaustive target-wide first-hit
-certification, camera redesign, or inferred gameplay/feel approval.
+This pre-removal gate superseded earlier HUD geometry and target-normalized
+coverage rows at the time. Its layout and weather rows are historical after the
+Quiet Context and wind-retirement gates; they do not define the current HUD.
 
 - [x] The selected 1280x720 reference is registered at
   `docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`; the
@@ -330,7 +361,7 @@ certification, camera redesign, or inferred gameplay/feel approval.
   30 background capture passed. Final running-release evidence is
   `.agents/evidence/command-columns-hud-2026-08-06/exported-aim-lock-stage30-ko-1280x720.png`.
 
-## Completed cannon, wind, and shot-observation gate (2026-08-07)
+## Historical completed cannon, wind, and shot-observation gate (2026-08-07)
 
 These rows describe the implemented user-requested direction. Flight pacing is
 a visual gameplay judgment, not wall-clock performance measurement; this gate

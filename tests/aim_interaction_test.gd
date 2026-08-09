@@ -28,18 +28,10 @@ func _run_checks() -> void:
 	gameplay.queue_free()
 	await process_frame
 
-	_assert_true(game_state.select_stage(&"stage_30"), "Stage 30 must be selectable for the wind fixture")
-	var stage_30 := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_30")
-	root.add_child(stage_30)
-	await physics_frame
-	await process_frame
-	await _check_wind_stable_explicit_aim(stage_30)
-	stage_30.queue_free()
-	await process_frame
 	game_state.persistence_enabled = true
 
 	if not _failed:
-		print("Aim interaction passed: terrain click/drag, wind-stable target-preserving controls, and unchanged Map Inspection routing.")
+		print("Aim interaction passed: terrain click/drag, target-preserving controls, and unchanged Map Inspection routing.")
 	quit(1 if _failed else 0)
 
 
@@ -157,69 +149,6 @@ func _check_targeted_aim_and_inspection_input(gameplay: Node) -> void:
 	await _push_key(KEY_TAB, false)
 	_assert_true(camera_director.aim_is_locked(), "Tab must return to Aim View")
 	_assert_aim_unchanged(cannon, aim_before_inspection, "returning to Aim View must preserve aim")
-
-
-func _check_wind_stable_explicit_aim(gameplay: Node) -> void:
-	var cannon := gameplay.get_node("Cannon") as CannonController
-	var stage_controller := gameplay.get_node("StageController") as StageController
-	var camera_director := gameplay.get_node("CameraDirector") as CameraDirector
-	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
-	var wind := gameplay.get_node("WindController") as WindController
-	_assert_true(stage_controller.begin_aiming(), "Stage 30 fixture must enter Aim View")
-	camera_director.set_mode(CameraDirector.Mode.AIMING, true)
-	await _wait_for_settled_target(terrain_aim)
-	_assert_true(terrain_aim.selected_target() != null, "Stage 30 must expose a selected terrain target")
-	if terrain_aim.selected_target() == null:
-		return
-
-	var elevation_before := cannon.elevation_degrees
-	_assert_true(
-		terrain_aim.request_elevation_delta(0.5),
-		"Stage 30 must accept the reachable positive elevation edit"
-	)
-	var pinned_elevation := cannon.elevation_degrees
-	_assert_true(
-		is_equal_approx(pinned_elevation, elevation_before + 0.5),
-		"the explicit Stage 30 elevation must commit before wind refresh"
-	)
-	_advance_to_next_wind_epoch(wind)
-	terrain_aim.request_wind_refresh()
-	_assert_true(
-		is_equal_approx(cannon.elevation_degrees, pinned_elevation),
-		"wind compensation must keep the player's explicit elevation pinned"
-	)
-
-	var power_before := cannon.power_percent
-	_assert_true(
-		terrain_aim.request_power_delta(-1.0),
-		"Stage 30 must accept a reachable negative power edit"
-	)
-	var pinned_power := cannon.power_percent
-	_assert_true(
-		is_equal_approx(pinned_power, power_before - 1.0),
-		"the explicit Stage 30 power must commit before wind refresh"
-	)
-	_advance_to_next_wind_epoch(wind)
-	terrain_aim.request_wind_refresh()
-	_assert_true(
-		is_equal_approx(cannon.power_percent, pinned_power),
-		"wind compensation must keep the player's explicit power pinned"
-	)
-
-
-func _advance_to_next_wind_epoch(wind: WindController) -> void:
-	var initial := wind.prediction_epoch(
-		TrajectoryPredictionJob.MAXIMUM_STEPS,
-		TrajectoryPredictionScheduler.DYNAMIC_WIND_BUCKET_TICKS
-	)
-	for _tick in range(2400):
-		wind._elapsed_ticks += 1
-		if wind.prediction_epoch(
-			TrajectoryPredictionJob.MAXIMUM_STEPS,
-			TrajectoryPredictionScheduler.DYNAMIC_WIND_BUCKET_TICKS
-		) != initial:
-			return
-	_assert_true(false, "wind fixture must reach a new prediction epoch")
 
 
 func _wait_for_settled_target(controller: TerrainAimController, maximum_ticks: int = 240) -> void:

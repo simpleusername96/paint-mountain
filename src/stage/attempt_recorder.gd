@@ -7,16 +7,13 @@ var _observation := AttemptObservation.new()
 
 func start_attempt(
 		stage_data: StageData,
-		wind_schedule_identity: StringName,
-		wind_schedule_seed: int
+		requested_terrain_seed: int
 ) -> bool:
-	if stage_data == null or String(wind_schedule_identity).is_empty():
+	if stage_data == null:
 		return false
-	terrain_seed = wind_schedule_seed
+	terrain_seed = requested_terrain_seed
 	return _observation.configure(
 		stage_data.stage_id,
-		wind_schedule_identity,
-		wind_schedule_seed,
 		Engine.get_physics_frames()
 	)
 

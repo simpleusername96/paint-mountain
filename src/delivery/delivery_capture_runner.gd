@@ -67,13 +67,7 @@ func _run_capture() -> void:
 		"stage_briefing":
 			await _start_stage(_capture_stage, false)
 		"aiming":
-			await _capture_wind_aiming(_capture_stage)
-		"wind_aiming":
-			await _capture_wind_aiming(_capture_stage)
-		"wind_flag_weak":
-			await _capture_wind_flag(_capture_stage, false)
-		"wind_flag_strong":
-			await _capture_wind_flag(_capture_stage, true)
+			await _capture_aiming(_capture_stage)
 		"shot_follow_midflight":
 			await _capture_shot_follow_midflight(_capture_stage)
 		"shot_follow_impact_hold":
@@ -115,12 +109,12 @@ func _run_capture() -> void:
 			var burst_stage := _capture_stage
 			if StageCatalog.canonical_id(burst_stage) == &"stage_01":
 				burst_stage = &"stage_02"
-			await _capture_wind_aiming(burst_stage)
+			await _capture_aiming(burst_stage)
 		"aiming_split":
 			var split_stage := _capture_stage
 			if StageCatalog.canonical_id(split_stage) == &"stage_01":
 				split_stage = &"stage_03"
-			await _capture_wind_aiming(split_stage)
+			await _capture_aiming(split_stage)
 		"projectile_and_continuous_paint":
 			await _capture_continuous_paint()
 		"observation":
@@ -257,34 +251,15 @@ func _wait_for_active_gameplay(stage_id: StringName) -> Node3D:
 	return null
 
 
-func _capture_wind_aiming(stage_id: StringName) -> void:
+func _capture_aiming(stage_id: StringName) -> void:
 	var gameplay := await _start_stage(stage_id, true)
 	if gameplay == null:
 		return
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
-	var wind := gameplay.get_node("WindController") as WindController
 	if director.current_interaction_mode != CameraDirector.InteractionMode.AIM_LOCKED:
-		_fail_capture("wind aiming capture did not enter Aim Lock")
-		return
-	if wind.current_snapshot() == null:
-		_fail_capture("wind aiming capture did not expose a current wind snapshot")
+		_fail_capture("aiming capture did not enter Aim Lock")
 		return
 	await get_tree().process_frame
-
-
-func _capture_wind_flag(stage_id: StringName, strong: bool) -> void:
-	var gameplay := await _start_stage(stage_id, true)
-	if gameplay == null:
-		return
-	var snapshot := _seek_crosswind_snapshot(gameplay, strong)
-	if snapshot == null:
-		_fail_capture("could not find the requested deterministic crosswind snapshot")
-		return
-	await get_tree().process_frame
-	var flag := gameplay.get_node("CannonWindFlag") as CannonWindFlag
-	if not flag.displayed_direction().is_equal_approx(snapshot.push_direction()) \
-			or not is_equal_approx(flag.displayed_strength(), snapshot.normalized_strength):
-		_fail_capture("wind flag did not retain the selected authoritative snapshot")
 
 
 func _capture_shot_follow_midflight(stage_id: StringName) -> void:
@@ -350,32 +325,6 @@ func _capture_shot_follow_returned(stage_id: StringName) -> void:
 	if director.current_mode != CameraDirector.Mode.AIMING \
 			or residents_before <= 0 or manager.active_count() <= 0:
 		_fail_capture("returning the camera changed projectile residency")
-
-
-func _seek_crosswind_snapshot(gameplay: Node3D, strong: bool) -> WindSnapshot:
-	var wind := gameplay.get_node("WindController") as WindController
-	var profile := gameplay.stage_data.wind_profile as WindProfile
-	var interval_ticks := profile.interval_ticks(Engine.physics_ticks_per_second)
-	var selected: WindSnapshot
-	for keyframe_index in range(64):
-		var tick := keyframe_index * interval_ticks
-		var candidate := wind.sample_at_tick(tick)
-		if candidate == null or absf(candidate.push_direction().x) < 0.72:
-			continue
-		if strong and candidate.normalized_strength < maxf(
-			profile.strong_wind_threshold,
-			0.80
-		):
-			continue
-		if not strong and candidate.normalized_strength > 0.35:
-			continue
-		selected = candidate
-		wind._elapsed_ticks = tick
-		wind._snapshot = candidate
-		wind._update_strong_state()
-		wind.snapshot_changed.emit(candidate)
-		break
-	return selected
 
 
 func _capture_map_inspection(stage_id: StringName) -> void:
@@ -519,9 +468,8 @@ func _capture_protected_long_flight_impact(stage_id: StringName) -> void:
 		_fail_capture("long-flight capture has no selected terrain target")
 		return
 	# This delivery-only drop isolates the lifetime promise from aim solving.
-	# Prediction and the live body share zero wind, the same sphere, and the
-	# authored play bounds, while the selected marker supplies a visible impact.
-	manager.configure_wind(null, null)
+	# Prediction and the live body share the same sphere and authored play
+	# bounds, while the selected marker supplies a visible impact.
 	var maximum_height := manager.stage_bounds.end.y - target.world_point.y \
 			- cannon.projectile_data.radius - 2.0
 	var drop_height := minf(120.0, maximum_height)
@@ -601,10 +549,6 @@ func _start_terrain_target_capture(stage_id: StringName) -> Node3D:
 	):
 		_fail_capture("terrain-target capture could not settle the authored Aim View")
 		return null
-	var wind := gameplay.get_node("WindController") as WindController
-	# Freeze only the delivery fixture's current deterministic snapshot so an
-	# epoch boundary cannot replace the requested visual state before capture.
-	wind.stop()
 	var cannon := gameplay.get_node("Cannon") as CannonController
 	var terrain_aim := gameplay.get_node("TerrainAimController") as TerrainAimController
 	await _wait_for_cannon_prediction(cannon)
@@ -639,7 +583,6 @@ func _request_delivery_arc_solution(
 		stage_controller: StageController,
 		cannon: CannonController
 ) -> bool:
-	var wind := gameplay.get_node("WindController") as WindController
 	var high_reference := AimTuple.new(
 		cannon.yaw_degrees,
 		maxf(60.0, TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES + 0.5),
@@ -651,10 +594,7 @@ func _request_delivery_arc_solution(
 		&"target",
 		0.0,
 		branch,
-		high_reference,
-		gameplay.stage_data.wind_profile,
-		gameplay.terrain_layout_read_only().terrain_seed,
-		wind.elapsed_ticks()
+		high_reference
 	)
 	if candidates.is_empty():
 		_fail_capture("%s-arc capture could not nominate a same-target solution" % branch)

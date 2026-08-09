@@ -208,8 +208,15 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var status_rect := status.get_global_rect()
 	var settings_rect := settings.get_global_rect()
 	_assert_true(
-		status_rect.get_center().x > hud_center.x and status_rect.size.y <= 64.0,
-		"run state must stay in one shallow borderless instrument row"
+		status_rect.get_center().x > hud_center.x and status_rect.size == Vector2(384.0, 52.0),
+		"run state must stay a 384x52 shallow borderless instrument row"
+	)
+	_assert_true(status.get_child_count() == 7, "run status must expose only time, shots, activity, and Finish")
+	var activity := status.get_node("ActivityValue") as Label
+	var finish := status.get_node("Finish") as Button
+	_assert_true(
+		finish.get_global_rect().position.x >= activity.get_global_rect().end.x,
+		"Finish must immediately follow resident activity"
 	)
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
 	_assert_true(not settings_rect.intersects(status_rect), "settings must not overlap the status instruments")

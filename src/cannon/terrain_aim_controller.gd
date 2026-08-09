@@ -11,9 +11,6 @@ var _camera: Camera3D
 var _terrain: TerrainSurface
 var _cannon: CannonController
 var _stage_controller: StageController
-var _wind_controller: WindController
-var _wind_profile: WindProfile
-var _wind_seed := 0
 var _preview: TerrainTargetPreview
 var _picker := TerrainScreenRayPicker.new()
 var _selected_target: TerrainAimTarget
@@ -24,7 +21,6 @@ var _preferred_value := 0.0
 var _next_request_revision := 0
 var _queued_pointer_revision := -1
 var _queued_pointer_settled := false
-var _last_wind_epoch := -2147483648
 var _configured := false
 var _user_selected := false
 var _rejected_revision := -1
@@ -37,9 +33,6 @@ func configure(
 		terrain: TerrainSurface,
 		cannon: CannonController,
 		stage_controller: StageController,
-		wind_controller: WindController,
-		wind_profile: WindProfile,
-		wind_seed: int,
 		preview: TerrainTargetPreview
 ) -> bool:
 	if (
@@ -47,8 +40,6 @@ func configure(
 		or terrain == null
 		or cannon == null
 		or stage_controller == null
-		or wind_controller == null
-		or wind_profile == null
 		or preview == null
 	):
 		return false
@@ -56,12 +47,8 @@ func configure(
 	_terrain = terrain
 	_cannon = cannon
 	_stage_controller = stage_controller
-	_wind_controller = wind_controller
-	_wind_profile = wind_profile
-	_wind_seed = wind_seed
 	_preview = preview
 	_branch = _branch_for_aim(_current_aim())
-	_last_wind_epoch = _current_wind_epoch()
 	if not _cannon.prediction_changed.is_connected(_on_prediction_changed):
 		_cannon.prediction_changed.connect(_on_prediction_changed)
 	_configured = true
@@ -129,31 +116,6 @@ func request_power_delta(delta_percent: float) -> bool:
 	return committed
 
 
-func request_wind_refresh() -> void:
-	if not _configured:
-		return
-	var epoch := _current_wind_epoch()
-	if epoch == _last_wind_epoch:
-		return
-	_last_wind_epoch = epoch
-	if _selected_target != null:
-		# Keep the last dimension the player explicitly edited pinned while the
-		# other two compensate for the new deterministic wind horizon. If that
-		# exact preference becomes temporarily infeasible, retain target ownership
-		# and fall back to any legal same-target tuple without flashing a false
-		# player-input rejection every wind bucket.
-		var committed := _solve_and_commit(
-			_selected_target,
-			_preferred_constraint,
-			_preferred_value,
-			false
-		)
-		if not committed and _preferred_constraint != &"target":
-			committed = _solve_and_commit(_selected_target, &"target", 0.0, false)
-		if not committed:
-			_present_selected_state()
-
-
 func reset_for_restart() -> void:
 	_rejected_revision = -1
 	_picker.clear()
@@ -163,7 +125,6 @@ func reset_for_restart() -> void:
 	_branch = _branch_for_aim(_current_aim())
 	_preferred_constraint = &"target"
 	_preferred_value = 0.0
-	_last_wind_epoch = _current_wind_epoch()
 	if _preview != null:
 		_preview.clear_target()
 	target_state_changed.emit(null, TerrainTargetPreview.STATE_HIDDEN)
@@ -211,10 +172,7 @@ func _solve_and_commit(
 		constraint,
 		requested_value,
 		_branch,
-		_current_aim(),
-		_wind_profile,
-		_wind_seed,
-		_wind_controller.elapsed_ticks()
+		_current_aim()
 	)
 	_last_solve_elapsed_usec = Time.get_ticks_usec() - started_at
 	if candidates.is_empty():
@@ -338,13 +296,4 @@ func _branch_for_aim(aim: AimTuple) -> StringName:
 		if aim.elevation_degrees
 				>= TerrainAimSolver.BRANCH_SPLIT_ELEVATION_DEGREES
 		else &"low"
-	)
-
-
-func _current_wind_epoch() -> int:
-	if _wind_controller == null:
-		return -2147483648
-	return _wind_controller.prediction_epoch(
-		TrajectoryPredictionJob.MAXIMUM_STEPS,
-		TrajectoryPredictionScheduler.DYNAMIC_WIND_BUCKET_TICKS
 	)

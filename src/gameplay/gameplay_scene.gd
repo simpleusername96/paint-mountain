@@ -22,8 +22,6 @@ const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surfa
 @onready var _projectile_manager: ProjectileManager = %ProjectileManager
 @onready var _paint_system: PaintSystem = %PaintSystem
 @onready var _stage_controller: StageController = %StageController
-@onready var _wind_controller: WindController = %WindController
-@onready var _wind_flag: CannonWindFlag = %CannonWindFlag
 @onready var _camera_director: CameraDirector = %CameraDirector
 @onready var _hud: HUDController = %HUD
 @onready var _mechanism_root: Node3D = %Mechanisms
@@ -39,7 +37,6 @@ var _generated_layout: GeneratedStageLayout
 var _prepared_layout: GeneratedStageLayout
 var _prepared_stage_id: StringName = &""
 var _prepared_layout_checksum: int = 0
-var _wind_transition_was_active := false
 
 
 func _ready() -> void:
@@ -71,10 +68,7 @@ func _ready() -> void:
 	_aim_input.configure(_cannon, _stage_controller, _camera_director)
 	if not _prediction_scheduler.configure(
 		_cannon,
-		_wind_controller,
-		_generated_layout.play_bounds.bounds,
-		stage_data.wind_profile,
-		_generated_layout.terrain_seed
+		_generated_layout.play_bounds.bounds
 	):
 		push_error("GameplayScene could not configure trajectory prediction scheduling.")
 		return
@@ -83,9 +77,6 @@ func _ready() -> void:
 		_terrain_surface,
 		_cannon,
 		_stage_controller,
-		_wind_controller,
-		stage_data.wind_profile,
-		_generated_layout.terrain_seed,
 		_target_preview
 	):
 		push_error("GameplayScene could not configure terrain-targeted aiming.")
@@ -99,8 +90,7 @@ func _ready() -> void:
 		_projectile_manager,
 		_camera_director,
 		_mechanisms,
-		_generated_layout,
-		_wind_controller
+		_generated_layout
 	)
 	_debug_overlay.configure(
 		stage_data,
@@ -116,7 +106,6 @@ func _ready() -> void:
 	)
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
-	_on_wind_snapshot_changed(_wind_controller.current_snapshot())
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
 
 
@@ -177,15 +166,7 @@ func _build_stage_world() -> bool:
 		stage_data.terrain_center.y
 	)
 	_projectile_manager.configure_terrain(_terrain_surface)
-	if stage_data.wind_profile == null or not _wind_controller.configure(
-		stage_data.wind_profile,
-		_generated_layout.terrain_seed
-	):
-		push_error("GameplayScene requires a valid stage wind profile.")
-		return false
-	_projectile_manager.configure_wind(_wind_controller, stage_data.wind_profile)
 	_cannon.global_transform = stage_data.cannon_transform
-	_wind_flag.configure(_cannon, _wind_controller)
 	var paint_material := ShaderMaterial.new()
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	# The mountain must read as a faceted 3D mass against the open sky and quiet
@@ -258,10 +239,8 @@ func _connect_systems() -> void:
 	_stage_controller.fire_action_accepted.connect(_on_fire_action_accepted)
 	_stage_controller.restart_action_accepted.connect(_on_restart_action_accepted)
 	_stage_controller.finish_action_accepted.connect(_on_finish_action_accepted)
-	_stage_controller.stage_clock_started.connect(func(_duration_ticks: int) -> void: _wind_controller.start())
 	_stage_controller.stage_clock_changed.connect(_on_stage_clock_changed)
 	_stage_controller.stage_finished.connect(_on_stage_finished)
-	_wind_controller.snapshot_changed.connect(_on_wind_snapshot_changed)
 	_camera_director.mode_changed.connect(_on_camera_mode_changed)
 	_camera_director.interaction_mode_changed.connect(_on_interaction_mode_changed)
 	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
@@ -326,13 +305,10 @@ func _on_fire_action_accepted(_origin: int) -> void:
 
 
 func _on_restart_action_accepted(_origin: int) -> void:
-	_wind_controller.reset()
-	_wind_transition_was_active = false
 	_mechanism_resolver.clear_all()
 	_terrain_aim.reset_for_restart()
 	_attempt_recorder.start_attempt(
 		stage_data,
-		_wind_controller.schedule_identity(),
 		_generated_layout.terrain_seed
 	)
 
@@ -345,31 +321,7 @@ func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void
 	_hud.update_clock(_stage_controller.clock_snapshot())
 
 
-func _on_wind_snapshot_changed(snapshot: WindSnapshot) -> void:
-	if snapshot == null:
-		return
-	var transition_boundary := snapshot.is_transitioning() \
-			!= _wind_transition_was_active
-	_prediction_scheduler.request_latest(transition_boundary)
-	_terrain_aim.request_wind_refresh()
-	var current_projection := _wind_hud_projection(snapshot.acceleration)
-	var next_projection := _wind_hud_projection(snapshot.next_acceleration)
-	_hud.update_wind(
-		snapshot,
-		current_projection.screen_direction,
-		current_projection.depth_cue,
-		next_projection.screen_direction,
-		next_projection.depth_cue
-	)
-	var transition_started := snapshot.is_transitioning() and not _wind_transition_was_active
-	_wind_transition_was_active = snapshot.is_transitioning()
-	var observation := _live_attempt_observation()
-	if transition_started and observation != null:
-		observation.record_wind_transition(snapshot)
-
-
 func _on_stage_finished(result: Dictionary) -> void:
-	_wind_controller.stop()
 	_mechanism_resolver.clear_all()
 	var final_coverage := float(result.get("coverage", 0.0))
 	var stars := _stars_for_coverage(final_coverage)
@@ -562,16 +514,14 @@ func _on_projectile_motion_state_changed(
 
 func _on_projectile_woke(
 		projectile: PaintProjectile,
-		reason: StringName,
-		strong_episode_id: int
+		reason: StringName
 ) -> void:
 	var observation := _live_attempt_observation()
 	if observation != null:
 		observation.record_projectile_wake(
 			projectile.shot_id,
 			projectile.spawn_ordinal,
-			reason,
-			strong_episode_id
+			reason
 		)
 
 
@@ -602,27 +552,6 @@ func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> 
 
 func _live_attempt_observation() -> AttemptObservation:
 	return _attempt_recorder.current_observation()
-
-
-func _wind_hud_projection(world_direction: Vector3) -> Dictionary:
-	if world_direction.is_zero_approx() or _camera == null:
-		return {
-			"screen_direction": Vector2.ZERO,
-			"depth_cue": RunStatusCard.DepthCue.NONE,
-		}
-	var local_direction := _camera.global_basis.inverse() * world_direction.normalized()
-	var screen_direction := Vector2(local_direction.x, -local_direction.y)
-	var depth_cue := RunStatusCard.DepthCue.NONE
-	if screen_direction.length() < 0.35 and absf(local_direction.z) >= 0.35:
-		depth_cue = RunStatusCard.DepthCue.INTO_SCREEN \
-				if local_direction.z < 0.0 else RunStatusCard.DepthCue.OUT_OF_SCREEN
-		screen_direction = Vector2.ZERO
-	elif not screen_direction.is_zero_approx():
-		screen_direction = screen_direction.normalized()
-	return {
-		"screen_direction": screen_direction,
-		"depth_cue": depth_cue,
-	}
 
 
 func _request_navigation(destination: StringName) -> void:

@@ -22,8 +22,6 @@ func _run_checks() -> void:
 	await physics_frame
 	await process_frame
 	var controller := gameplay.get_node("StageController") as StageController
-	var stage_data := gameplay.get("stage_data") as StageData
-	var wind := gameplay.get_node("WindController") as WindController
 	var cannon := gameplay.get_node("Cannon") as CannonController
 	var scheduler := gameplay.get_node(
 		"TrajectoryPredictionScheduler"
@@ -37,20 +35,14 @@ func _run_checks() -> void:
 				and not initial.has("prediction_status"),
 		"legal Stage 10 aim must be fireable without waiting for preview"
 	)
-	var profile := wind.current_snapshot()
-	_assert_true(profile != null, "Stage 10 wind snapshot must exist")
-	var interval_ticks: int = stage_data.wind_profile.interval_ticks(60)
-	var transition_ticks: int = stage_data.wind_profile.transition_ticks(60)
-	wind._elapsed_ticks = interval_ticks - transition_ticks - 2
-	wind.start()
 	var saw_pending := cannon.prediction_status() == &"pending"
-	for _tick in range(transition_ticks + 40):
+	for _tick in range(80):
 		await physics_frame
 		var readiness := controller.fire_readiness_snapshot()
 		_assert_true(
 			bool(readiness.get("fireable", false)) \
 					and String(readiness.get("reason_key", "")) == "ready",
-			"changing-wind preview work must not alter Fire admission"
+			"advisory preview work must not alter Fire admission"
 		)
 		_assert_true(
 			not actions.get_node("FireButton").disabled,
@@ -67,7 +59,7 @@ func _run_checks() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Stage 10 readiness passed: changing-wind prediction never toggles Fire.")
+		print("Stage 10 readiness passed: advisory prediction never toggles Fire.")
 	quit(1 if _failed else 0)
 
 

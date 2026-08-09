@@ -48,8 +48,6 @@ $ordinaryTests = @(
     'camera_safety_test.gd',
     'phase8_aiming_composition_test.gd',
     'trajectory_preview_efficiency_test.gd',
-    'cannon_wind_flag_test.gd',
-    'wind_result_hud_test.gd',
     'shot_follow_camera_test.gd',
     'phase7_ui_test.gd',
     'phase7_user_qa_contract_test.gd',

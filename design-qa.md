@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-09
 topic: quiet-context-ui-system
 scope: all production UI surfaces and selected Stage 30 Aim View fidelity
@@ -10,9 +10,13 @@ related:
   - .agents/design/UIUX_GUIDELINES.md
 ---
 
-# Quiet Context UI Design QA
+# Historical Quiet Context UI Design QA
 
 ## Purpose
+
+This report records the pre-wind-retirement production build. Its wind flag,
+wind HUD, and related verification statements are historical evidence, not the
+current interface contract.
 
 Verify that the production Windows build applies the selected Quiet Context
 direction to every reachable UI surface, and that the Stage 30 Aim View remains

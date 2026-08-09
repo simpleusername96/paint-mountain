@@ -21,7 +21,6 @@ func _run_checks() -> void:
 	await physics_frame
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
-	var manager: ProjectileManager = gameplay.get_node("ProjectileManager")
 	var overlay: DebugOverlay = gameplay.get_node("DebugOverlay")
 	_assert_true(not overlay.visible, "debug overlay must be disabled by default")
 	overlay.set_debug_visible(true)
@@ -77,11 +76,10 @@ func _run_checks() -> void:
 	)
 	Engine.time_scale = 3.0
 	var frame_budget := 60 * 24
-	while (manager.active_count() > 0 or controller.sealed_shot_observations().is_empty()) \
-			and frame_budget > 0:
+	while controller.sealed_shot_observations().is_empty() and frame_budget > 0:
 		await physics_frame
 		frame_budget -= 1
-	_assert_true(frame_budget > 0, "debug log shot must settle within the bounded lifetime")
+	_assert_true(frame_budget > 0, "debug log shot observation must seal within the bounded lifetime")
 	Engine.time_scale = 1.0
 	_assert_true(overlay.export_shot_log(LOG_PATH) == OK, "debug overlay must export a JSON shot log")
 	var file := FileAccess.open(LOG_PATH, FileAccess.READ)

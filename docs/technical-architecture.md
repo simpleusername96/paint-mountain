@@ -40,8 +40,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | --- | --- | --- |
 | `GameState` | Global progression, selected stage, settings, best results | Per-shot rules or scene node paths |
 | `SaveSystem` | Versioned serialization, load/default/migration, metric-version separation, mouse-sensitivity persistence, and atomic local writes | UI or stage decisions |
-| `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, wind generation, camera transforms, or HUD layout |
-| `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, wind profile, and content references | Mutable runtime or accepted baked layout state |
+| `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, projectile forces, camera transforms, or HUD layout |
+| `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, and content references | Mutable runtime or accepted baked layout state |
 | `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
 | `StageCatalogBuilder` | Offline exact-seed generation, complete validation, cannon-standoff derivation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, candidate selection, hand-authored repair, or partial catalog activation |
 | `SeededStageGenerator` | Pure authoring-time one-profile/one-canonical-seed route-graph and layout reconstruction plus identity verification | Candidate search, runtime fallback, physics-world solving, stage transitions, paint state, or hand-authored production repair |
@@ -54,14 +54,14 @@ This architecture covers the single-process desktop game. It does not define a b
 | `OpenPlayEnvironment` | Collider-matched restrained apron/ground, open-world presentation, and stable non-target contact identity | Rear/side containment walls, scoring, hidden blocking planes, bank-shot behavior, or stage outcomes |
 | `PlayBoundsSpec` | Versioned open exit bounds and apron geometry limits used by generation, prediction, projectile escape, and validation | Collision-wall construction, scoring, camera transforms, or terrain formulas |
 | `AimInputController` | Presentation-mode-aware target-selection and pinned-control intent, Fire, inspection orbit/refocus/zoom, and contextual return-to-cannon intents | Camera transforms, target solving, Fire acceptance, shot consumption, or outcomes |
-| `TerrainAimController` | Latest valid top-target selection from Aim View click/drag, human target-preserving elevation/power intents, and preservation of the last successful explicit constraint across wind refreshes | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
+| `TerrainAimController` | Latest valid top-target selection from Aim View click/drag, human target-preserving elevation/power intents, and preservation of the last successful explicit constraint across later solves | Map Inspection behavior, camera transforms, inverse solving, Fire admission, or outcomes |
 | `TerrainAimSolver` | Bounded current-target inverse solve that keeps the explicitly edited elevation or power pinned and publishes a same-target canonical aim | Device input, Fire admission, target ownership, runtime terrain mutation, or post-impact prediction |
 | `TrajectoryPredictionJob` / `TrajectoryPredictor` | Sole resumable fixed-step sphere/collision implementation and its synchronous offline wrapper | Device input, Fire rules, threads, post-impact behavior, mechanisms, or coverage prediction |
-| `TrajectoryPredictionScheduler` | Latest prediction key, one replaceable active job, 12-step/approximately-1-ms fixed-tick budget, bounded aim/wind nominations, current-only atomic publication, and runtime diagnostics | Wind generation, Fire admission, prediction math, or prediction history |
+| `TrajectoryPredictionScheduler` | Latest prediction key, one replaceable active job, 12-step/approximately-1-ms fixed-tick budget, bounded aim nominations, current-only atomic publication, and runtime diagnostics | Fire admission, prediction math, or prediction history |
 | `CannonController` | Committed yaw/elevation/power, same-revision aim commit/restore, shared launch calculation, and last-complete prediction presentation state | Device polling, Fire admission, target ownership/solving, post-fire steering, or stage outcome |
 | `ProjectileContact` | Immutable measured contact point/normal/collider/shape/impulse/velocity/tick facts | Mutation, gameplay decisions, or presentation |
-| `PaintProjectile` | Rigid-body behavior, every begun measured contact, persistent terrain-rest lifecycle, surface recovery, and Playable Terrain Surface sweep/radial-mark intent | Persistent mask mutation, coverage totals, wind schedule, or stage transitions |
-| `ProjectileManager` | Parent/child registry, two initial-flight root slots, 21-resident-body cap, family IDs, root-projectile identity publication, per-shot spawn ordinals, paint-command canonicalization, activity facts, and cleanup | Fire admission, projectile tuning, wind generation, camera transforms, or mask writes |
+| `PaintProjectile` | Rigid-body behavior, every begun measured contact, persistent terrain-rest lifecycle, surface recovery, and Playable Terrain Surface sweep/radial-mark intent | Persistent mask mutation, coverage totals, ambient-force schedules, or stage transitions |
+| `ProjectileManager` | Parent/child registry, two initial-flight root slots, 21-resident-body cap, family IDs, root-projectile identity publication, per-shot spawn ordinals, paint-command canonicalization, activity facts, and cleanup | Fire admission, projectile tuning, ambient-force generation, camera transforms, or mask writes |
 | `SurfacePaintSweep`, `RadialPaintMark` | Immutable physically justified paint commands with stable source identity and deterministic order | Mask writes, coverage, payload, or flow |
 | `PaintSystem` | Ordered command drain, Playable Terrain Surface paint rasterization, first-threshold weighted Target Area accumulation, one authoritative paint mask/coverage, co-published texture/coverage, and clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
 | `TargetSurfaceCoverage` | Metric version and pure canonical-normal physical-area weighting/checksum rules | Mutable paint, texture publication, stage goals, or HUD text |
@@ -70,9 +70,6 @@ This architecture covers the single-process desktop game. It does not define a b
 | `BurstNode` | Request one authoritative radial mark, spend its charge, then consume the incoming ball | Projectile spawning |
 | `SplitterNode` | Consume input and request a bounded, route-readable three-child fan | Stage decisions or recursive splitting |
 | `UphillReboundNode` | Redirect a retained ball toward a stored meaningful local ascent with cooldown | Direct coverage changes |
-| `WindProfile` | Typed wind cadence, transition, strength, and wake tuning | Runtime phase, random state, HUD formatting, or projectile mutation |
-| `WindController` | One stage-seeded fixed-tick current/next wind schedule and strong-episode identity | Camera projection, HUD layout, stage terminal decisions, or duplicated physics rules |
-| `CannonWindFlag` | Non-colliding cannon-side flag/streamer presentation of the current push direction and strength, with reduced-motion behavior | Wind schedule, projectile forces, HUD formatting, paint, or gameplay decisions |
 | `CameraDirector` | Authored `AIM_VIEW`, safe `MAP_VIEW`, specific-root `SHOT_FOLLOW`, impact hold, return-to-cannon, result framing, and transitions; existing internal enum names may migrate independently | Board Phase, aim values, Fire admission, prediction solving, projectile selection policy, or game rules |
 | `HUDController` and screen controllers | Display Board Phase/readiness/activity/presentation mode and emit typed aim, fire, return-to-cannon, and game-menu intents | Reconstruct Fire admission, authoritative state mutation, direct pause/settings mutation, camera transforms, or alternate coverage |
 | `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
@@ -87,10 +84,10 @@ This architecture covers the single-process desktop game. It does not define a b
 ### Data contracts
 
 - Use typed `Resource` classes for StageProgressionData, StageCatalogData,
-  StageData, generation profiles/contracts, ProjectileData, WindProfile,
+  StageData, generation profiles/contracts, ProjectileData,
   certificates, and each mechanism's configuration.
-- StageData owns targets, shots, colors, camera bookmarks, duration, wind
-  profile, generation profile/canonical seed/certificate reference, mechanism loadout,
+- StageData owns targets, shots, colors, camera bookmarks, duration,
+  generation profile/canonical seed/certificate reference, mechanism loadout,
   thresholds, and translation keys. `PlayBoundsSpec` owns versioned open exit
   bounds and apron limits, and `GeneratedStageLayout` carries them to runtime consumers. Runtime
   construction consumes one accepted
@@ -172,16 +169,16 @@ Human / GameplayAgentApi actions
           │                         │                        │
           │ timer/result authority  │ launch/prediction      │ lifecycle
           ▼                         ▼                        ▼
- HUD / CameraDirector ◄──── WindController ───────► PaintProjectile
+ HUD / CameraDirector ◄──── attempt observation/state ──────┐
           ▲                                                  │
           │               playable terrain contact ─────────┤
           │                                                  ▼
-          └──── attempt observation/state ── PaintSystem ◄─ Glyph Resolver
+          └─────────────────────────────── PaintSystem ◄─ Glyph Resolver
 ```
 
 - Required typed events include shot fired, every begun measured contact/bounce,
   projectile rest/wake/recovery/termination, queued and drained paint command,
-  glyph activation/split, wind transition, coverage changed, Finish request,
+  glyph activation/split, coverage changed, Finish request,
   timeout, and attempt result.
 - `StageController` changes Board Phase only through explicit transition methods
   that validate allowed predecessors. Projectile motion and paint drain do not
@@ -201,7 +198,7 @@ Human / GameplayAgentApi actions
 - `TerrainAimController` queues latest-only top-target picks and runs the bounded
   pure inverse recurrence immediately for each accepted target or pinned-control
   request. `TerrainAimSolver` samples candidate times at a fixed eight-step
-  stride and consumes one cached wind-acceleration horizon; it performs no
+  stride over the gravity/damping recurrence; it performs no
   collision query. The first legal deterministic nomination is committed through
   `StageController.set_aim()`. Rejection retains the prior canonical aim.
   Prediction pending or miss remains advisory and never changes Fire admission.
@@ -218,7 +215,7 @@ Human / GameplayAgentApi actions
   CameraDirector follows only that root through first TerrainSurface contact,
   holds it for 0.8 seconds, and returns automatically or on a typed early-return
   intent. Projectile simulation and Board Phase never depend on camera state.
-- Restart first blocks new actions, cancels camera and wind transitions, frees
+- Restart first blocks new actions, cancels camera transitions, frees
   managed temporary objects, resets mechanisms and timers, clears paint/effects,
   reapplies immutable data, then enters `BRIEFING` or the chosen retry state.
 - Gameplay construction loads and verifies the persisted accepted layout before
@@ -296,15 +293,15 @@ Human / GameplayAgentApi actions
   Never discard a simultaneous mechanism/terrain contact by selecting one global
   primary contact or infer contact from projectile center minus world up.
 - Calculate preview positions with the exact launch transform, velocity
-  conversion, gravity, replace-mode linear damping, authoritative time-indexed
-  wind sample, fixed `1/60 s` recurrence, projectile radius, and terrain masks
+  conversion, gravity, replace-mode linear damping, fixed `1/60 s` recurrence,
+  projectile radius, and terrain masks
   used by the rigid body. Terminate at the first sphere-cast collision or bounds
   exit; never show post-impact behavior.
 - `TrajectoryPredictionScheduler` advances that exact job by at most 12 steps
   and approximately 1 ms per physics callback. A new nominated context discards
   obsolete active work; only the current key publishes. `TrajectoryPreview`
   presents the selected target independently from exact prediction state: only a
-  matching target/aim/wind result receives an impact marker, while stale arc dots
+  matching target/aim result receives an impact marker, while stale arc dots
   may remain subdued and stale impact/exit markers are hidden. It owns no normal-
   operation calculation/update label and never shows a post-impact route.
 - The scheduler owns only the replaceable exact advisory preview job. Human
@@ -315,9 +312,9 @@ Human / GameplayAgentApi actions
   generation behavior are preserved. Direct/summit certification and the open play bounds consume
   that same curve and the same damped recurrence; an undamped apex bound cannot
   reject or admit the promoted version-10 board.
-- Record stage/wind seeds and player actions only in the current-run diagnostic
-  observation. This log cannot drive gameplay playback. Retry resets the same
-  fixed-tick wind schedule.
+- Record the generated terrain seed and player actions only in the current-run
+  diagnostic observation. This log cannot drive gameplay playback. Retry reuses
+  the same accepted terrain layout.
 - Normal gameplay has no simulation-speed controls.
 - Ordinary terrain Support Shell/apron contacts use the locked low-rebound
   material. Playable Terrain Surface penetration is recovered from the
@@ -399,7 +396,7 @@ Human / GameplayAgentApi actions
   Follow also block aim/Fire at the input boundary; returning to Aim View
   restores the stored tuple without changing simulation.
 - The edge HUD, bottom-center sole Fire action, interaction-mode toggle, compact
-  time, remaining/maximum shots, separate resident activity, wind, Finish, gear,
+  time, remaining/maximum shots, separate resident activity, Finish, gear,
   and input-capturing paused game menu have one typed state/action path. Shot
   Follow adds only one contextual
   return-to-cannon action; the old Follow/Wide/Cannon preset rail, normal-play
@@ -424,8 +421,8 @@ Human / GameplayAgentApi actions
   before the bounded 0.28..0.74 fallback band. Within a band it preserves
   mechanism score, terrain-draped perimeter safety, and a complete assignment
   of camera-facing glyphs before deterministic fallback; it has no authored
-  per-stage coordinates. `CannonWindFlag` replaces generic debris without
-  changing `WindController` authority.
+  per-stage coordinates. The gameplay scene has no ambient-force controller or
+  wind-presentation node.
 - `ProjectileManager` is the capacity authority: it admits no more than two
   root families and releases a generation-0 slot on the first Playable Terrain Surface
   traversal or terminal event. Resident terrain bodies remain physically alive

@@ -14,8 +14,6 @@ var power_percent: float = 68.0
 var input_enabled: bool = true
 var _prediction: TrajectoryPrediction
 var _prediction_aim_key: StringName = &""
-var _prediction_wind_identity: StringName = &""
-var _prediction_launch_wind_tick: int = -1
 var _prediction_context_key: StringName = &""
 var _expected_prediction_context_key: StringName = &""
 
@@ -72,14 +70,10 @@ func publish_current_aim() -> void:
 func set_prediction(
 		value: TrajectoryPrediction,
 		prediction_aim_key: StringName = &"",
-		wind_schedule_identity: StringName = &"",
-		launch_wind_tick: int = -1,
 		prediction_context_key: StringName = &""
 ) -> void:
 	_prediction = value
 	_prediction_aim_key = prediction_aim_key if not prediction_aim_key.is_empty() else aim_key()
-	_prediction_wind_identity = wind_schedule_identity
-	_prediction_launch_wind_tick = launch_wind_tick
 	_prediction_context_key = prediction_context_key
 	prediction_changed.emit(_prediction)
 	prediction_status_changed.emit(prediction_status())
@@ -110,14 +104,6 @@ func expect_prediction_context(context_key: StringName) -> void:
 		return
 	_expected_prediction_context_key = context_key
 	prediction_status_changed.emit(prediction_status())
-
-
-func prediction_wind_identity() -> StringName:
-	return _prediction_wind_identity
-
-
-func prediction_launch_wind_tick() -> int:
-	return _prediction_launch_wind_tick
 
 
 func prediction_matches_current_aim() -> bool:

@@ -35,7 +35,7 @@ presentation, and the rest of the baseline directive.
 ## Scope
 
 The player inspects a distant mountain, sets a stationary cannon's
-yaw/elevation/power, fires a rigid-body paintball, and watches gravity, wind,
+yaw/elevation/power, fires a rigid-body paintball, and watches gravity,
 real surface contact, rolling, and mechanisms produce coverage. Every valid
 Playable Terrain Surface area physically traversed while in contact is painted;
 only its overlap with the immutable Target Area mask counts toward coverage. The
@@ -104,7 +104,7 @@ exactly three mechanism types.
 - Show the selected target, current coverage, shots, elevation, power, a dotted
   initial ballistic arc, and a first-impact marker. The selected target is
   independent of an exact prediction: show a confirmed impact only for matching
-  target, aim, and wind revisions; keep only permitted stale arc dots subdued and
+  target and aim revisions; keep only permitted stale arc dots subdued and
   hide stale impact or exit markers. Use shape with the existing blue role.
   Never preview post-impact solution paths or exact coverage.
 - The complete pre-impact preview uses the same radius, fixed-tick gravity,
@@ -121,11 +121,10 @@ exactly three mechanism types.
   Aim remains editable after the return while earlier balls move. There is no
   persistent Follow/Wide/Cannon preset rail, gameplay speed, or gameplay Pause
   strip.
-- One deterministic stage-seeded wind changes on a readable 30-second rhythm
-  with a natural three-second transition. The preview and physics use the same
-  wind. A cannon-side flag or streamer is the primary world cue and points in
-  the direction projectiles are pushed; motion amplitude communicates strength.
-  The concise HUD cue remains a secondary numeric and transition reference.
+- There is no ambient wind or equivalent hidden external force. Pre-impact
+  planning and live motion use gravity, damping, collision, and the same
+  projectile geometry; after terrain contact, only collision and explicit
+  mechanism impulses may reactivate a resting ball.
 
 ### Stage state
 
@@ -159,7 +158,7 @@ exactly three mechanism types.
 - Rigid bodies use gravity, CCD, low ordinary-terrain rebound, rolling/sliding
   friction, angular motion, damping, bounds, and fixed-timestep behavior. Once
   a ball has reached valid Playable Terrain Surface, age, low speed, and engine sleeping do
-  not delete it; it may sleep naturally and collision or strong wind may move it
+  not delete it; it may sleep naturally and collision or a mechanism impulse may move it
   again. Explicit mechanism consumption, real escape, a never-contacted miss
   timeout, unrecoverable invalid geometry, and stage cleanup are the only
   pre-result termination families.
@@ -368,8 +367,7 @@ exactly three mechanism types.
   Fire admission reads only canonical aim and stage-rule state and never
   calculates or waits for prediction. One latest-only resumable prediction job
   advances by at most 12 fixed simulation steps and approximately 1 ms per
-  physics tick; a newer nominated context replaces obsolete active work. Wind
-  presentation may update every fixed tick, but aim and changing-wind prediction
+  physics tick; a newer nominated context replaces obsolete active work. Aim
   nominations are bounded. A stale preview remains visible but subdued while
   bounded scheduled work catches up, stale jobs never publish, and normal Aim
   View shows no calculation/update wait text.
@@ -380,7 +378,7 @@ exactly three mechanism types.
   batched mask updates, effect pooling, lightweight shadows, a 21-resident-ball
   hard cap, and one split generation.
 - Provide a UI-independent in-process observation/action/event interface with
-  stage/aim/terrain/wind/mechanism/projectile/attempt data and set aim, Fire,
+  stage/aim/terrain/mechanism/projectile/attempt data and set aim, Fire,
   Finish, restart, interaction-mode, and next-stage actions.
 
 ## Non-Goals
@@ -405,7 +403,7 @@ exactly three mechanism types.
 
 The 2026-08-02 and earlier 2026-08-03 runs remain historical evidence for the
 superseded implementation. They do not establish conformance with the current
-contact, persistent-ball, wind, timed-result, surface-glyph, retired replay, or
+contact, persistent-ball, timed-result, surface-glyph, retired replay, or
 interaction-mode contracts above.
 
 The 2026-08-05 gameplay-recovery plan is superseded history. The completed
@@ -426,9 +424,9 @@ Glyph placement uses a generic deterministic search of visible Playable Terrain 
 surface and spacing, not authored stage coordinates. The fast-entry,
 Fire-capacity, and localized loading/retry implementations passed their prior
 production checks. The Fire owner itself enforces the two-root cap; resident
-terrain bodies do not hold that capacity. A non-colliding cannon-side flag now
-replaces generic wind debris and consumes the same wind snapshot as physics,
-prediction, and the HUD.
+terrain bodies do not hold that capacity. The retired wind implementation and
+its cannon-side flag remain documented only in historical plans and evidence;
+the current build has no ambient-force or wind-presentation contract.
 
 The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.

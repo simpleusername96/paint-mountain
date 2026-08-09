@@ -86,7 +86,7 @@ The approved Quiet Context system replaces
 `command-columns-hud.png` as the current visual authority. Retain its useful
 functional hierarchy—edge status, centered Fire, compact typography, and open
 world center—but do not preserve its literal columns, coordinates, or panel
-details. Gear, direction, power steps, dynamic wind detail, focus, disabled
+details. Gear, direction, power steps, focus, disabled
 states, Map View, and the contextual Shot Follow return remain supported.
 
 At the 1280x720 logical baseline, preserve this relative hierarchy:
@@ -95,9 +95,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | --- | --- | --- |
 | Stage card | Upper-left | Primary stage identity |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
-| Time, shots, activity, wind, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident activity remains separate; Gear remains the menu action |
+| Time, shots, activity, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident activity remains separate; Gear remains the menu action |
 | Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
-| Aim and power | Lower edge, outside the cannon/flag silhouette | One coherent control group |
+| Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
 - Use the active ExecPlan's baseline rectangles as implementation evidence, not
@@ -124,8 +124,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   latest valid point, retaining the last valid target across invalid gaps. Angle
   controls and W/S request a target-preserving elevation edit; power controls and
   wheel request a target-preserving power edit. A/D is not a human target-mode
-  control and is not advertised there. Wind refresh preserves the last successful
-  explicit elevation or power constraint whenever a legal same-target tuple
+  control and is not advertised there. Later same-target solves preserve the
+  last successful explicit elevation or power constraint whenever a legal tuple
   exists. The authored view keeps the cannon large in the foreground and the
   complete mountain distant and visible.
 - In Map View, terrain click changes the inspection focus, left drag
@@ -141,10 +141,6 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   the same contextual return. Returning changes only presentation; simulation,
   stored aim, and prior balls continue. First terrain contact remains framed for
   0.8 seconds before automatic return to Aim View.
-- Wind is a concise status cue, not a decorative mystery: show the direction
-  projectiles are pushed, strength, time until change, and the approaching
-  direction during the transition. A cannon-side flag or streamer is the primary
-  world cue; the HUD is its exact secondary rule reference.
 - Finish is unavailable until the first actual launch. Target coverage and spent
   shots do not force an outcome; time expiry or Finish ends the run.
 
@@ -164,9 +160,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 - HUD components display authoritative state and emit typed intent. They do not
   calculate coverage, mutate paint, advance stage state, or own launch physics.
-- Time, resident-ball activity, wind, camera presentation mode, and Finish availability
+- Time, resident-ball activity, camera presentation mode, and Finish availability
   are displayed from their authoritative owners. The HUD does not run a second
-  timer, wind schedule, or camera/input state machine.
+  timer or camera/input state machine.
 - Target Coverage means unique painted physical Target Area surface divided by
   its total physical surface. Valid non-target top paint remains visible but is
   lighter and less saturated and is not scored; the dry Target Area cue and HUD
@@ -175,7 +171,7 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Shots, selected target, angle, power, prediction state, and Fire validity
   update from their authoritative owners without duplicated formulas. The
   selected target is visible immediately. An exact impact marker appears only
-  for a matching target/aim/wind revision; stale arc dots may remain subdued,
+  for a matching target/aim revision; stale arc dots may remain subdued,
   but stale impact/exit markers are hidden. Pending, confirmed, and rejected
   target states use shape as well as color.
 - Icons supplement meaning. Rare, destructive, or menu actions retain visible

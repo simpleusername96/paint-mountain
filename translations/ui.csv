@@ -44,28 +44,6 @@ hud.time,TIME,남은 시간
 hud.resident_balls,BALLS,공 움직임
 hud.resident_activity_format,%d · Resting %d,%d · 멈춤 %d
 hud.resident_total_format,Resident %d,지형 위 공 %d
-hud.wind,WIND,바람
-hud.wind_waiting,WIND READY,바람 준비
-hud.wind_calm_direction,CALM,고요함
-hud.wind_right,RIGHT,오른쪽
-hud.wind_down_right,DOWN-RIGHT,오른쪽 아래
-hud.wind_down,DOWN,아래쪽
-hud.wind_down_left,DOWN-LEFT,왼쪽 아래
-hud.wind_left,LEFT,왼쪽
-hud.wind_up_left,UP-LEFT,왼쪽 위
-hud.wind_up,UP,위쪽
-hud.wind_up_right,UP-RIGHT,오른쪽 위
-hud.wind_into_screen,INTO SCREEN,화면 안쪽
-hud.wind_out_of_screen,OUT OF SCREEN,화면 바깥쪽
-hud.wind_calm,CALM,고요함
-hud.wind_light,LIGHT,약함
-hud.wind_steady,STEADY,보통
-hud.wind_strong,STRONG,강함
-hud.wind_strength_format,%s %d%%,%s %d%%
-hud.wind_change_waiting,Starts with first shot,첫 발사와 함께 시작
-hud.wind_change_format,Changes in %ds,%d초 뒤 변경
-hud.wind_accessible_format,Push %s · %s %d%% · changes in %ds,공을 %s으로 미는 바람 · %s %d%% · %d초 뒤 변경
-hud.wind_next_format,Next %s · %s %d%%,다음 %s · %s %d%%
 hud.timer_starts_on_first_shot,Timer starts with the first shot,첫 발사와 함께 시간이 흐릅니다
 hud.finish_tooltip,Finish and score target-area coverage (F),목표 영역 칠함으로 완료 (F)
 hud.finish_disabled_tooltip,Available after the first shot,첫 발사 후 사용할 수 있습니다

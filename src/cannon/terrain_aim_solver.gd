@@ -2,7 +2,7 @@ class_name TerrainAimSolver
 extends RefCounted
 
 ## Inverts the fixed-step recurrence without collision queries. It builds one
-## wind/gravity baseline and nominates legal approximate aims immediately;
+## gravity baseline and nominates legal approximate aims immediately;
 ## exact physics prediction may later refine only the target presentation.
 const TARGET_CONTACT_FACTOR := 0.5
 const MAXIMUM_NOMINATIONS := 6
@@ -14,7 +14,6 @@ var _constraint: StringName
 var _requested_value := 0.0
 var _branch: StringName
 var _last_aim: AimTuple
-var _wind_accelerations := PackedVector3Array()
 var _step_index := 0
 var _damping := 1.0
 var _baseline_position := Vector3.ZERO
@@ -26,20 +25,13 @@ var _complete := false
 
 
 func _begin(cannon: CannonController, target: TerrainAimTarget, constraint: StringName,
-		requested_value: float, branch: StringName, last_aim: AimTuple, wind_profile: WindProfile,
-		wind_seed: int, launch_tick: int) -> void:
+		requested_value: float, branch: StringName, last_aim: AimTuple) -> void:
 	_cannon = cannon
 	_target = target
 	_constraint = constraint
 	_requested_value = requested_value
 	_branch = branch
 	_last_aim = last_aim
-	_wind_accelerations = WindController.acceleration_range(
-		wind_profile,
-		wind_seed,
-		launch_tick,
-		TrajectoryPredictionJob.MAXIMUM_STEPS
-	)
 	_damping = maxf(1.0 - cannon.projectile_data.linear_damp * TrajectoryPredictionJob.PHYSICS_STEP, 0.0)
 	_complete = _damping <= 0.0 or (constraint == &"elevation" and (requested_value < AimTuple.MINIMUM_ELEVATION_DEGREES or requested_value > AimTuple.MAXIMUM_ELEVATION_DEGREES)) or (constraint == &"power" and (requested_value < 0.0 or requested_value > 100.0))
 
@@ -48,11 +40,6 @@ func _advance_one() -> void:
 	_response = _damping * (_response + TrajectoryPredictionJob.PHYSICS_STEP)
 	_baseline_velocity *= _damping
 	_baseline_velocity += _gravity_vector() * TrajectoryPredictionJob.PHYSICS_STEP
-	if _step_index < _wind_accelerations.size():
-		_baseline_velocity += (
-			_wind_accelerations[_step_index]
-			* TrajectoryPredictionJob.PHYSICS_STEP
-		)
 	_baseline_position += _baseline_velocity * TrajectoryPredictionJob.PHYSICS_STEP
 	if _step_index % NOMINATION_STEP_STRIDE == NOMINATION_STEP_STRIDE - 1:
 		_append_inverted_candidate(
@@ -78,8 +65,7 @@ func _advance_one() -> void:
 
 static func nominate(cannon: CannonController, target: TerrainAimTarget,
 		constraint: StringName, requested_value: float, branch: StringName,
-		last_aim: AimTuple, wind_profile: WindProfile, wind_seed: int,
-		launch_tick: int) -> Array[Dictionary]:
+		last_aim: AimTuple) -> Array[Dictionary]:
 	if cannon == null or cannon.projectile_data == null or target == null:
 		return []
 	if constraint == &"elevation" and (requested_value < AimTuple.MINIMUM_ELEVATION_DEGREES \
@@ -89,7 +75,7 @@ static func nominate(cannon: CannonController, target: TerrainAimTarget,
 			or requested_value > AimTuple.MAXIMUM_POWER_PERCENT):
 		return []
 	var request := TerrainAimSolver.new()
-	request._begin(cannon, target, constraint, requested_value, branch, last_aim, wind_profile, wind_seed, launch_tick)
+	request._begin(cannon, target, constraint, requested_value, branch, last_aim)
 	while not request._complete:
 		request._advance_one()
 	return request._candidates

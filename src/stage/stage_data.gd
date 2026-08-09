@@ -1,8 +1,6 @@
 class_name StageData
 extends Resource
 
-const DEFAULT_WIND_PROFILE: WindProfile = preload("res://resources/wind/standard_wind.tres")
-
 @export_category("Identity")
 @export var stage_id: StringName = &"stage_01"
 @export var stage_version: int = StageGenerationContract.CONTRACT_VERSION
@@ -13,7 +11,6 @@ const DEFAULT_WIND_PROFILE: WindProfile = preload("res://resources/wind/standard
 @export_range(0.01, 100.0, 0.01) var target_coverage: float = 10.0
 @export_range(1, 12, 1) var maximum_shots: int = 4
 @export_range(0.0, 300.0, 1.0) var duration_seconds: float = 0.0
-@export var wind_profile: WindProfile = DEFAULT_WIND_PROFILE
 @export var paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
 @export var star_thresholds := Vector3(10.0, 18.0, 28.0)
 @export var objective_key: StringName = &"stage.first_descent.objective"

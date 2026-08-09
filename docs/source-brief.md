@@ -2147,6 +2147,43 @@ placement wording:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-09): Remove Wind
+
+After reviewing the implemented wind system and its role in the current
+terrain-targeted aiming loop, the user decided to remove wind completely while
+preserving the rest of the persistent coverage game. These clauses supersede
+only earlier wind requirements and wind-specific interpretations:
+
+- **Remove wind gameplay:** remove the stage-seeded wind schedule, projectile
+  wind acceleration, strong-wind resident-ball wake, and every wind-dependent
+  aiming or trajectory-prediction input. Gravity, collision, terrain contact,
+  and mechanism impulses remain the projectile-motion rules.
+- **Remove wind presentation:** remove the gameplay HUD direction, strength,
+  countdown, and forecast; remove the cannon-side flag or streamer and any
+  other world cue whose purpose is to communicate wind. Do not leave a calm or
+  zero-wind compatibility indicator.
+- **Remove wind contracts:** remove wind profiles, snapshots, controllers,
+  stage fields, agent-observation fields, attempt-log schedule and transition
+  fields, delivery-capture modes, localization, and wind-only tests. Retained
+  generated resources must not point at deleted wind resources.
+- **Preserve the non-wind coverage loop:** persistent paintballs, mechanism
+  impulses and their generic wake observation, stage duration, timeout,
+  Finish, coverage scoring, terrain generation and seed identity, and bounded
+  gravity/collision prediction remain in force.
+- **Record the result truthfully:** wind was implemented as deterministic
+  physics, prediction, HUD, and resident-ball reactivation and did change
+  simulation outcomes. In the target-driven aiming loop, however, its value as
+  a legible player-controlled planning choice was not demonstrated, while its
+  cross-system implementation, verification, and maintenance complexity was
+  substantial. Do not claim measured CPU, GPU, memory, or frame-rate savings
+  without a controlled profile.
+- **Preserve history:** completed wind plans, prior evidence, and earlier
+  supersession text remain historical records. Active specifications,
+  implementation records, test runners, resources, and release evidence must
+  describe and validate the wind-free current build.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

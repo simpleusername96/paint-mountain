@@ -1,12 +1,11 @@
 class_name AttemptObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 
 const EVENT_AIM := "aim"
 const EVENT_FIRE := "fire"
 const EVENT_FINISH := "finish"
-const EVENT_WIND_TRANSITION := "wind_transition"
 const EVENT_PROJECTILE_REST := "projectile_rest"
 const EVENT_PROJECTILE_WAKE := "projectile_wake"
 const EVENT_TERRAIN_RECOVERY := "terrain_recovery"
@@ -17,8 +16,6 @@ const EVENT_RESULT := "result"
 var schema_version: int = SCHEMA_VERSION
 var stage_id: StringName = &""
 var coverage_metric_version: int = TargetSurfaceCoverage.METRIC_VERSION
-var wind_schedule_identity: StringName = &""
-var wind_schedule_seed: int = 0
 var events: Array[Dictionary] = []
 var shot_observations: Array[Dictionary] = []
 var final_result: Dictionary = {}
@@ -30,16 +27,11 @@ var _next_sequence: int = 0
 
 func configure(
 		requested_stage_id: StringName,
-		requested_wind_identity: StringName,
-		requested_wind_seed: int,
 		recording_start_tick: int = -1
 ) -> bool:
-	if String(requested_stage_id).is_empty() \
-			or String(requested_wind_identity).is_empty():
+	if String(requested_stage_id).is_empty():
 		return false
 	stage_id = requested_stage_id
-	wind_schedule_identity = requested_wind_identity
-	wind_schedule_seed = requested_wind_seed
 	events.clear()
 	shot_observations.clear()
 	final_result.clear()
@@ -82,23 +74,6 @@ func record_finish(reason: StringName = &"manual", physics_tick: int = -1) -> bo
 	}, physics_tick)
 
 
-func record_wind_transition(
-		snapshot: WindSnapshot,
-		physics_tick: int = -1
-) -> bool:
-	if snapshot == null or snapshot.schedule_identity != wind_schedule_identity:
-		return false
-	return _append_event({
-		"kind": EVENT_WIND_TRANSITION,
-		"wind_tick": snapshot.physics_tick,
-		"acceleration": _vector3_array(snapshot.acceleration),
-		"next_acceleration": _vector3_array(snapshot.next_acceleration),
-		"normalized_strength": snapshot.normalized_strength,
-		"next_normalized_strength": snapshot.next_normalized_strength,
-		"strong_episode_id": snapshot.strong_episode_id,
-	}, physics_tick)
-
-
 func record_projectile_rest(
 		shot_id: int,
 		spawn_ordinal: int,
@@ -113,10 +88,9 @@ func record_projectile_wake(
 		shot_id: int,
 		spawn_ordinal: int,
 		reason: StringName,
-		strong_episode_id: int = 0,
 		physics_tick: int = -1
 ) -> bool:
-	if String(reason).is_empty() or strong_episode_id < 0:
+	if String(reason).is_empty():
 		return false
 	return _append_projectile_event(
 		EVENT_PROJECTILE_WAKE,
@@ -124,7 +98,6 @@ func record_projectile_wake(
 		spawn_ordinal,
 		{
 			"reason": String(reason),
-			"strong_episode_id": strong_episode_id,
 		},
 		physics_tick
 	)
@@ -238,10 +211,6 @@ func to_dictionary() -> Dictionary:
 		"schema_version": schema_version,
 		"stage_id": String(stage_id),
 		"coverage_metric_version": coverage_metric_version,
-		"wind_schedule": {
-			"identity": String(wind_schedule_identity),
-			"seed": wind_schedule_seed,
-		},
 		"events": events.duplicate(true),
 		"shot_observations": shot_observations.duplicate(true),
 		"final_result": final_result.duplicate(true),
@@ -252,12 +221,9 @@ func to_dictionary() -> Dictionary:
 func load_dictionary(data: Dictionary) -> bool:
 	if not dictionary_is_valid(data):
 		return false
-	var wind: Dictionary = data.wind_schedule
 	schema_version = int(data.schema_version)
 	stage_id = StringName(String(data.stage_id))
 	coverage_metric_version = int(data.coverage_metric_version)
-	wind_schedule_identity = StringName(String(wind.identity))
-	wind_schedule_seed = int(wind.seed)
 	events.clear()
 	for event in data.events:
 		events.append((event as Dictionary).duplicate(true))
@@ -276,14 +242,10 @@ static func dictionary_is_valid(data: Dictionary) -> bool:
 			or String(data.get("stage_id", "")).is_empty() \
 			or int(data.get("coverage_metric_version", -1)) \
 					!= TargetSurfaceCoverage.METRIC_VERSION \
-			or not data.get("wind_schedule", {}) is Dictionary \
 			or not data.get("events", []) is Array \
 			or not data.get("shot_observations", []) is Array \
 			or not data.get("final_result", {}) is Dictionary \
 			or not data.has("is_sealed"):
-		return false
-	var wind: Dictionary = data.wind_schedule
-	if String(wind.get("identity", "")).is_empty() or not wind.has("seed"):
 		return false
 	var previous_tick := -1
 	var events_value: Array = data.events
@@ -379,19 +341,11 @@ static func _event_is_valid(event: Dictionary) -> bool:
 			return int(event.get("shot_id", 0)) > 0
 		EVENT_FINISH:
 			return not String(event.get("reason", "")).is_empty()
-		EVENT_WIND_TRANSITION:
-			return int(event.get("wind_tick", -1)) >= 0 \
-					and _vector_array_is_valid(event.get("acceleration", [])) \
-					and _vector_array_is_valid(event.get("next_acceleration", [])) \
-					and _finite_number(event, "normalized_strength") \
-					and _finite_number(event, "next_normalized_strength") \
-					and int(event.get("strong_episode_id", -1)) >= 0
 		EVENT_PROJECTILE_REST:
 			return _projectile_identity_is_valid(event)
 		EVENT_PROJECTILE_WAKE:
 			return _projectile_identity_is_valid(event) \
-					and not String(event.get("reason", "")).is_empty() \
-					and int(event.get("strong_episode_id", -1)) >= 0
+					and not String(event.get("reason", "")).is_empty()
 		EVENT_TERRAIN_RECOVERY, EVENT_PROJECTILE_TERMINAL:
 			return _projectile_identity_is_valid(event) \
 					and not String(event.get("reason", "")).is_empty()

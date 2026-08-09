@@ -15,9 +15,6 @@ var _projectile_radius := 0.0
 var _linear_damp := 0.0
 var _stage_bounds := AABB()
 var _capture_sampled_points := true
-var _wind_profile: WindProfile
-var _wind_schedule_seed := 0
-var _launch_wind_tick := 0
 var _points := PackedVector3Array()
 var _position := Vector3.ZERO
 var _velocity := Vector3.ZERO
@@ -35,10 +32,7 @@ static func create(
 		linear_damp: float,
 		stage_bounds: AABB,
 		collision_mask: int = COLLISION_MASK,
-		capture_sampled_points: bool = true,
-		wind_profile: WindProfile = null,
-		wind_schedule_seed: int = 0,
-		launch_wind_tick: int = 0
+		capture_sampled_points: bool = true
 ) -> TrajectoryPredictionJob:
 	var job := TrajectoryPredictionJob.new()
 	job._origin = origin
@@ -48,9 +42,6 @@ static func create(
 	job._linear_damp = linear_damp
 	job._stage_bounds = stage_bounds
 	job._capture_sampled_points = capture_sampled_points
-	job._wind_profile = wind_profile
-	job._wind_schedule_seed = wind_schedule_seed
-	job._launch_wind_tick = launch_wind_tick
 	job._points = PackedVector3Array([origin]) if capture_sampled_points \
 			else PackedVector3Array()
 	if space_state == null or projectile_radius <= 0.0:
@@ -107,14 +98,6 @@ func _advance_one_step() -> void:
 	var step_index := _step_index
 	_velocity *= maxf(1.0 - _linear_damp * PHYSICS_STEP, 0.0)
 	_velocity += _gravity * PHYSICS_STEP
-	if _wind_profile != null:
-		var wind := WindController.sample_for_tick(
-			_wind_profile,
-			_wind_schedule_seed,
-			maxi(0, _launch_wind_tick) + step_index
-		)
-		if wind != null:
-			_velocity += wind.acceleration * PHYSICS_STEP
 	var next_position := _position + _velocity * PHYSICS_STEP
 	var motion := next_position - _position
 	var bounds_fraction := _bounds_exit_fraction(

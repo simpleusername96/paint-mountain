@@ -16,7 +16,7 @@ signal motion_state_changed(
 	previous_state: int,
 	current_state: int
 )
-signal woke(projectile: PaintProjectile, reason: StringName, strong_episode_id: int)
+signal woke(projectile: PaintProjectile, reason: StringName)
 signal terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal stopped(projectile: PaintProjectile, reason: StringName)
 
@@ -51,8 +51,6 @@ var never_contacted_deadline: float:
 
 var _terrain_surface: TerrainSurface
 var _paint_surface_tuning: PaintSurfaceTuning
-var _wind_controller: WindController
-var _wind_profile: WindProfile
 var _spawn_ordinal: int = -1
 var _elapsed: float = 0.0
 var _never_contacted_deadline: float = 0.0
@@ -77,7 +75,6 @@ var _invalid_geometry_ticks: int = 0
 var _velocity_history: Array[Vector3] = []
 var _queued_desired_velocity := Vector3.INF
 var _queued_desired_velocity_tick: int = -1
-var _last_wake_strong_episode_id: int = 0
 
 
 func paint_radius_multiplier() -> float:
@@ -94,29 +91,6 @@ func has_reached_playable_top() -> bool:
 
 func is_resting_on_terrain() -> bool:
 	return _motion_state == MotionState.RESTING_ON_TERRAIN
-
-
-func configure_wind(controller: WindController, profile: WindProfile) -> void:
-	_wind_controller = controller
-	_wind_profile = profile
-
-
-func wake_for_strong_wind(snapshot: WindSnapshot) -> bool:
-	if snapshot == null or _wind_profile == null or not snapshot.strong \
-			or snapshot.strong_episode_id <= _last_wake_strong_episode_id \
-			or not is_resting_on_terrain() or _last_valid_top_contact == null:
-		return false
-	var tangent_push := snapshot.acceleration.slide(_last_valid_top_contact.normal)
-	if tangent_push.is_zero_approx():
-		return false
-	_last_wake_strong_episode_id = snapshot.strong_episode_id
-	sleeping = false
-	apply_central_impulse(
-		tangent_push.normalized() * mass * _wind_profile.wake_impulse_speed
-	)
-	_set_motion_state(MotionState.MOVING_ON_TERRAIN)
-	woke.emit(self, &"strong_wind", snapshot.strong_episode_id)
-	return true
 
 
 func configure(
@@ -189,7 +163,7 @@ func _physics_process(delta: float) -> void:
 			if _current_paintable_top_contact != null
 			else MotionState.MOVING_AIRBORNE
 		)
-		woke.emit(self, &"collision_or_force", 0)
+		woke.emit(self, &"collision_or_force")
 
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
@@ -305,7 +279,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		state.apply_central_impulse(mass * (_queued_desired_velocity - state.linear_velocity))
 		_queued_desired_velocity = Vector3.INF
 		_queued_desired_velocity_tick = -1
-	_apply_wind_acceleration(state)
 	_cached_incoming_velocity = state.linear_velocity
 	_velocity_history.append(state.linear_velocity)
 	if _velocity_history.size() > 3:
@@ -321,7 +294,7 @@ func queue_desired_velocity(desired_velocity: Vector3, contact_tick: int) -> voi
 		if _motion_state == MotionState.RESTING_ON_TERRAIN:
 			_set_motion_state(MotionState.MOVING_ON_TERRAIN)
 		if was_resting:
-			woke.emit(self, &"mechanism_impulse", 0)
+			woke.emit(self, &"mechanism_impulse")
 
 
 func deactivate(reason: StringName) -> void:
@@ -442,20 +415,6 @@ func _set_motion_state(next_state: MotionState) -> void:
 	if next_state == MotionState.RESTING_ON_TERRAIN:
 		_close_paint_interval()
 	motion_state_changed.emit(self, previous, next_state)
-
-
-func _apply_wind_acceleration(state: PhysicsDirectBodyState3D) -> void:
-	if _wind_controller == null or _wind_profile == null or sleeping:
-		return
-	var snapshot := _wind_controller.current_snapshot()
-	if snapshot == null:
-		return
-	var acceleration := snapshot.acceleration
-	if _motion_state == MotionState.MOVING_ON_TERRAIN \
-			and _last_valid_top_contact != null:
-		acceleration = acceleration.slide(_last_valid_top_contact.normal) \
-				* _wind_profile.terrain_acceleration_multiplier
-	state.linear_velocity += acceleration * state.step
 
 
 func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) -> bool:

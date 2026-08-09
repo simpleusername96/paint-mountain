@@ -5,7 +5,6 @@
 [ext_resource type="Script" path="res://src/stage_generation/stage_generation_profile.gd" id="3_utub0"]
 [ext_resource type="Script" path="res://src/mechanisms/mechanism_data.gd" id="4_2f8er"]
 [ext_resource type="Script" path="res://src/stage/stage_data.gd" id="5_bt2ie"]
-[ext_resource type="Resource" path="res://resources/wind/standard_wind.tres" id="6_vvrjy"]
 
 [sub_resource type="Resource" id="Resource_g7bo8"]
 script = ExtResource("1_1jmid")

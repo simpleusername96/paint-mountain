@@ -24,6 +24,7 @@ related:
   - execplans/2026-08-08-casual-shared-ui-refresh.md
   - execplans/2026-08-08-instant-approximate-landing-feedback.md
   - execplans/2026-08-09-quiet-context-ui-system.md
+  - execplans/2026-08-09-remove-wind-system.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
@@ -36,6 +37,52 @@ related:
 ---
 
 # Project Record
+
+## Current Wind Retirement (2026-08-09)
+
+### Context
+
+The deterministic wind implementation affected projectile physics, inverse aim
+nomination, exact prediction, persistent-ball reactivation, HUD, the cannon-side
+flag, diagnostics, delivery capture, and tests. Runtime and focused fixtures
+proved that it changed trajectories and could reactivate resting balls, but the
+terrain-targeted aiming model automatically compensated for the force and did
+not demonstrate a sufficiently legible player-controlled planning choice.
+
+### Decision
+
+Wind is removed from the current product and implementation. There is no wind
+schedule, ambient projectile acceleration, strong-wind wake, wind-aware aim or
+prediction input, HUD cue, cannon flag, stage profile, agent observation field,
+attempt transition event, delivery state, localization key, or wind-only test.
+Persistent balls, mechanism impulses, the stage timer, Finish, coverage,
+terrain-seed identity, and gravity/collision prediction remain.
+
+### Rationale
+
+The cross-system implementation, verification, and maintenance surface was
+larger than its demonstrated planning value. Prior implementation effort is
+historical cost and is not a reason to retain the feature.
+
+### Consequences
+
+- `AttemptObservation` schema 3 removes the wind schedule and transition event.
+  Generic `projectile_wake` remains for mechanism impulses and no longer carries
+  a strong-episode identifier.
+- `AttemptRecorder` receives `GeneratedStageLayout.terrain_seed` directly; the
+  terrain seed is not removed with the former wind schedule seed.
+- Aim and exact prediction use the same fixed-tick gravity, damping, projectile
+  geometry, collision, and open-bounds inputs as the live ball.
+- The right-edge run status contains time, remaining/maximum shots, resident
+  activity, and Finish. Completed wind plans and pre-removal evidence remain
+  historical context only.
+
+### Limitations
+
+No controlled wind-on/wind-off CPU, GPU, memory, FPS, or player A/B study was
+performed. The retirement records a product-value and system-complexity
+judgment; it does not claim that wind had no mechanical effect or that measured
+runtime performance improved.
 
 ## Current Quiet Context UI System (2026-08-09)
 
@@ -93,16 +140,16 @@ The completed implementation contract is
   resolution, or defaults actions may change window mode or size.
 - Terrain click/drag remains the Human model. `TerrainAimController` now commits
   the first legal deterministic inverse candidate immediately. Its pure solver
-  uses a cached 720-tick wind horizon and an eight-tick candidate stride; the
+  uses the gravity/damping recurrence and an eight-tick candidate stride; the
   focused fixture remains below one 60 Hz frame. Exact collision prediction is one
   later advisory job and no Human pending-revision Fire gate remains.
 - The last successful explicit elevation or power edit remains the preferred
-  same-target constraint across later wind epochs. If it becomes infeasible, the
+  constraint across later same-target solves. If it becomes infeasible, the
   controller falls back to another legal same-target tuple without publishing an
   illegal aim or blocking Fire on prediction.
 - Normal gameplay uses no left/right status cards, bottom aim panel, or
   persistent prose instruction strip. Stage, coverage, time, remaining/maximum
-  shots, separate resident activity, wind, Finish, elevation, solved power, and
+  shots, separate resident activity, Finish, elevation, solved power, and
   real actions are edge-aligned symbols and numbers. The Quiet Context system
   above supersedes this section's former detached shortcut treatment; A/D and
   visible yaw remain absent from terrain-target mode.
@@ -167,9 +214,9 @@ six-second miss-lifetime clauses retained in historical sections below.
   immediate. The deterministic long-flight fixture predicted 8.384 seconds and
   reached live terrain/top contact at 8.417 seconds.
 - Runtime power supports 0.1% precision while existing whole-power catalog keys,
-  attempt schema 2, save format 5, and direct agent/debug tuple
-  APIs remain compatible. Selected-target coordinates and solver revisions are
-  not serialized.
+  save format 5, and direct agent/debug tuple APIs remain compatible. The current
+  wind retirement supersedes this milestone's attempt-schema-2 compatibility;
+  selected-target coordinates and solver revisions remain unserialized.
 - Focused phase gates, `scripts/verify.ps1`, the Windows release export, and
   eight release capture states passed. Korean 1280x720 and English 1920x1080
   evidence was inspected directly with no clipping, false Fire readiness, stale
@@ -258,11 +305,13 @@ an independently closed 3D mass rather than geometry joined to an enclosure.
   predicted misses use the same explicit open exit bounds, and `BACKSTOP`
   settlement is retired in favor of real escape or the never-contacted timeout.
 
-## Current Cannon, Wind, and Shot-Observation Direction (2026-08-07)
+## Historical Cannon, Wind, and Shot-Observation Direction (2026-08-07)
 
-The active [execution contract](execplans/2026-08-07-cannon-shot-observation.md)
-implements the requested lower-cannon/upper-mountain Aim View, a cannon-side
-wind flag, and automatic exact-root Shot Follow. The prior
+The completed [execution contract](execplans/2026-08-07-cannon-shot-observation.md)
+implemented the requested lower-cannon/upper-mountain Aim View, a cannon-side
+wind flag, and automatic exact-root Shot Follow. The flag and wind portions are
+superseded by the current retirement record above; Shot Follow and the surviving
+composition rules remain current. The prior
 [handoff](../docs/handoffs/aim-performance-and-product-direction-2026-08-07/README.md)
 is consumed history. This task includes structural efficiency corrections but
 no timing, FPS, or performance-profiling pass.
@@ -363,9 +412,9 @@ camera redesign, gameplay approval, or balance approval.
   configured target as a separate marker. It no longer normalizes progress by
   the target threshold.
 - Map Inspection keeps the command/status rails and hides aim-only controls.
-  Korean and English copy, focus, Finish gating, wind text, Settings intent, and
+  Korean and English copy, focus, Finish gating, Settings intent, and
   existing HUD signals remain connected to their prior owners.
-- Focused HUD, localization, wind/result, and shot-feedback checks passed. The
+- Focused HUD, localization, result, and shot-feedback checks passed. The
   final `scripts/verify.ps1`, Windows release export, exported hidden start, and
   exported Stage 30 capture passed with Godot
   `4.7.1.stable.official.a13da4feb`.
@@ -419,11 +468,10 @@ not the user's gameplay, balance, feel, or aesthetic approval.
   current family body reaches valid top or terminates. Terrain residents persist
   for the stage and may move again; they do not consume Fire capacity forever.
   `ProjectileManager`, rather than the HUD, enforces the two-root Fire cap.
-- The UI and wind-debris changes are implemented: selected-stage loading fails
-  closed with a localized retry state, Fire capacity is represented separately
-  from resident bodies, and terrain-contained debris uses the shared wind truth.
-  The focused wind contract proves direction, motion, and reduced-motion
-  behavior; the exported render shows visible debris.
+- Selected-stage loading fails closed with a localized retry state, and Fire
+  capacity is represented separately from resident bodies. This milestone's
+  wind-debris implementation and evidence are historical after the current wind
+  retirement; they no longer describe the running build.
 - Final validation passed: `scripts/verify.ps1`; Windows release export at
   `builds/windows/PaintMountain.exe`; and eight 1280x720 capture runs, each exit
   0 with empty final stderr. Exported entry readiness measured `1035.5 ms` for
@@ -459,12 +507,13 @@ checked tasks while claiming major phases were implemented.
 
 ## Historical wind-driven coverage-loop record (2026-08-06)
 
-### Prior wind-driven coverage-loop record (implementation superseded by current validation state)
+### Pre-removal wind-driven coverage-loop record
 
 The effective `docs/source-brief.md` remains the product requirement authority.
-The current implementation now realizes its 2026-08-06 wind-loop supersession;
-the earlier clear/failure, finite-lifetime projectile, physical-mechanism, and
-camera-preset behavior is historical only.
+The 2026-08-06 implementation realized its wind-loop supersession. The current
+wind retirement above supersedes that feature; this section and the earlier
+clear/failure, finite-lifetime projectile, physical-mechanism, and camera-preset
+behavior are historical only.
 
 - Aim and camera: positive yaw moves the preview and real landing point toward
   screen right. `AIM_LOCKED` owns aim/power/Fire input, while

@@ -3,12 +3,6 @@ extends Control
 
 signal finish_requested
 
-enum DepthCue {
-	NONE,
-	INTO_SCREEN,
-	OUT_OF_SCREEN,
-}
-
 var _shots_remaining := 0
 var _maximum_shots := 0
 var _resident_total := 0
@@ -18,12 +12,6 @@ var _has_resident_breakdown := false
 var _remaining_seconds := 0.0
 var _duration_seconds := 0.0
 var _clock_started := false
-var _wind_snapshot: WindSnapshot
-var _wind_screen_direction := Vector2.RIGHT
-var _wind_depth_cue := DepthCue.NONE
-var _next_wind_screen_direction := Vector2.RIGHT
-var _next_wind_depth_cue := DepthCue.NONE
-var _wind_display_key: StringName = &""
 
 
 func _ready() -> void:
@@ -46,8 +34,6 @@ func reset_for_stage(maximum_shots: int, duration_seconds: float) -> void:
 	_duration_seconds = maxf(duration_seconds, 0.0)
 	_remaining_seconds = _duration_seconds
 	_clock_started = false
-	_wind_snapshot = null
-	_wind_display_key = &""
 	set_finish_available(false)
 	_refresh_values()
 
@@ -82,31 +68,6 @@ func update_clock(snapshot: Dictionary) -> void:
 	_refresh_clock()
 
 
-func update_wind(
-		snapshot: WindSnapshot,
-		screen_direction: Vector2,
-		depth_cue: DepthCue = DepthCue.NONE,
-		next_screen_direction: Vector2 = Vector2.ZERO,
-		next_depth_cue: DepthCue = DepthCue.NONE
-) -> void:
-	_wind_snapshot = snapshot
-	_wind_screen_direction = screen_direction
-	_wind_depth_cue = depth_cue
-	_next_wind_screen_direction = next_screen_direction \
-			if not next_screen_direction.is_zero_approx() else screen_direction
-	_next_wind_depth_cue = next_depth_cue
-	var next_display_key := wind_display_key(
-		snapshot,
-		screen_direction,
-		depth_cue,
-		_next_wind_screen_direction,
-		next_depth_cue
-	)
-	if next_display_key == _wind_display_key:
-		return
-	_refresh_wind()
-
-
 func set_finish_available(available: bool) -> void:
 	%Finish.disabled = not available
 	%Finish.tooltip_text = tr("hud.finish_tooltip") if available else tr("hud.finish_disabled_tooltip")
@@ -122,7 +83,6 @@ func focus_finish() -> void:
 
 
 func refresh_locale() -> void:
-	_wind_display_key = &""
 	%TimeValue.tooltip_text = tr("hud.time")
 	%ShotsValue.tooltip_text = tr("hud.shots")
 	%ActivityValue.tooltip_text = tr("hud.resident_balls")
@@ -134,7 +94,6 @@ func refresh_locale() -> void:
 func _refresh_values() -> void:
 	_refresh_clock()
 	_refresh_activity()
-	_refresh_wind()
 
 
 func _refresh_clock() -> void:
@@ -156,111 +115,6 @@ func _refresh_activity() -> void:
 		%ActivityValue.text = str(_resident_total)
 
 
-func _refresh_wind() -> void:
-	_wind_display_key = wind_display_key(
-		_wind_snapshot,
-		_wind_screen_direction,
-		_wind_depth_cue,
-		_next_wind_screen_direction,
-		_next_wind_depth_cue
-	)
-	if _wind_snapshot == null:
-		%WindArrow.text = "—"
-		%WindValue.text = "0%"
-		%WindCountdown.text = "--s"
-		%WindForecast.visible = false
-		%WindGroup.tooltip_text = tr("hud.wind_waiting")
-		return
-	var direction_label := _direction_label(_wind_screen_direction, _wind_depth_cue)
-	var percent := clampi(roundi(_wind_snapshot.normalized_strength * 100.0), 0, 100)
-	var strength_label := tr(_strength_key(_wind_snapshot.normalized_strength))
-	var countdown := maxi(ceili(_wind_snapshot.seconds_until_change), 0)
-	%WindArrow.text = _direction_arrow(_wind_screen_direction, _wind_depth_cue)
-	%WindValue.text = "%d%%" % percent
-	%WindCountdown.text = "%ds" % countdown
-	var description := tr("hud.wind_accessible_format") % [direction_label, strength_label, percent, countdown]
-	%WindGroup.tooltip_text = description
-	%WindArrow.tooltip_text = description
-	%WindForecast.visible = _wind_snapshot.is_transitioning()
-	if _wind_snapshot.is_transitioning():
-		%NextWindArrow.text = _direction_arrow(_next_wind_screen_direction, _next_wind_depth_cue)
-
-
-static func wind_display_key(
-		snapshot: WindSnapshot,
-		screen_direction: Vector2,
-		depth_cue: DepthCue,
-		next_screen_direction: Vector2,
-		next_depth_cue: DepthCue
-) -> StringName:
-	if snapshot == null:
-		return &"none"
-	var direction_bucket := _direction_bucket(screen_direction, depth_cue)
-	var next_direction_bucket := _direction_bucket(next_screen_direction, next_depth_cue)
-	return StringName("%d|%d|%d|%d|%d|%d" % [
-		direction_bucket,
-		clampi(roundi(snapshot.normalized_strength * 100.0), 0, 100),
-		maxi(ceili(snapshot.seconds_until_change), 0),
-		1 if snapshot.is_transitioning() else 0,
-		next_direction_bucket,
-		clampi(roundi(snapshot.next_normalized_strength * 100.0), 0, 100),
-	])
-
-
-static func _direction_bucket(screen_direction: Vector2, depth_cue: DepthCue) -> int:
-	match depth_cue:
-		DepthCue.INTO_SCREEN:
-			return 8
-		DepthCue.OUT_OF_SCREEN:
-			return 9
-	if screen_direction.is_zero_approx():
-		return 10
-	return posmod(roundi(screen_direction.angle() / (PI / 4.0)), 8)
-
-
 func _format_duration(seconds: float) -> String:
 	var total_seconds := maxi(ceili(seconds), 0)
 	return "%02d:%02d" % [total_seconds / 60, total_seconds % 60]
-
-
-func _strength_key(value: float) -> String:
-	if value < 0.25:
-		return "hud.wind_calm"
-	if value < 0.55:
-		return "hud.wind_light"
-	if value < 0.75:
-		return "hud.wind_steady"
-	return "hud.wind_strong"
-
-
-func _direction_label(screen_direction: Vector2, depth_cue: DepthCue) -> String:
-	match depth_cue:
-		DepthCue.INTO_SCREEN:
-			return tr("hud.wind_into_screen")
-		DepthCue.OUT_OF_SCREEN:
-			return tr("hud.wind_out_of_screen")
-	if screen_direction.is_zero_approx():
-		return tr("hud.wind_calm_direction")
-	var octant := posmod(roundi(screen_direction.angle() / (PI / 4.0)), 8)
-	return tr([
-		"hud.wind_right",
-		"hud.wind_down_right",
-		"hud.wind_down",
-		"hud.wind_down_left",
-		"hud.wind_left",
-		"hud.wind_up_left",
-		"hud.wind_up",
-		"hud.wind_up_right",
-	][octant])
-
-
-func _direction_arrow(screen_direction: Vector2, depth_cue: DepthCue) -> String:
-	match depth_cue:
-		DepthCue.INTO_SCREEN:
-			return "⊗"
-		DepthCue.OUT_OF_SCREEN:
-			return "⊙"
-	if screen_direction.is_zero_approx():
-		return "•"
-	var octant := posmod(roundi(screen_direction.angle() / (PI / 4.0)), 8)
-	return ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"][octant]

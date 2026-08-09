@@ -40,8 +40,6 @@ func _assert_predicted_root_deadline(prediction_duration: float, expected_deadli
 	cannon.set_prediction(
 		_terrain_prediction(prediction_duration),
 		cannon.aim_key(),
-		&"lifetime-wind",
-		0,
 		context_key
 	)
 	_assert(controller.request_fire(), "a matching current terrain prediction must allow Fire")

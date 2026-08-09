@@ -61,14 +61,16 @@ concepts, or asset previews from silently becoming product requirements.
 - Historical use: the aiming HUD's narrow command/status columns,
   bottom-center Fire action, warm restrained panel treatment, and compact Korean
   typography rhythm.
-- Preserve from runtime/spec even when omitted or simplified in the image:
+- Historical runtime/spec details omitted or simplified in the image included
   focusable Gear, direction value, power-step controls, Aim Lock/Map Inspection,
-  dynamic wind detail, disabled/readiness states, and authoritative live values.
+  dynamic weather detail, disabled/readiness states, and authoritative live
+  values. These are not current requirements.
 - Do not use as: world-render authority, literal stage/mechanism placement,
   runtime proof, a reason to fake state, or permission to remove functionality.
 - Status: superseded on 2026-08-08 by the user's casual shared UI direction.
   Preserve only the still-valid real actions and edge-first hierarchy recorded
-  in `UIUX_GUIDELINES.md`; do not preserve the literal columns or panel details.
+  in `UIUX_GUIDELINES.md`; do not preserve the literal columns, panel details,
+  or the weather instrumentation retired on 2026-08-09.
 - The sibling `quiet-edge-hud.png` and `instrument-rail-hud.png` remain historical
   alternatives, not active directions.
 

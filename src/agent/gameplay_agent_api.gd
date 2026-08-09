@@ -10,7 +10,6 @@ var _cannon: CannonController
 var _paint_system: PaintSystem
 var _projectile_manager: ProjectileManager
 var _camera_director: CameraDirector
-var _wind_controller: WindController
 var _mechanisms: Array[TerrainGlyphMechanism] = []
 var _previous_shot: Dictionary = {}
 
@@ -23,8 +22,7 @@ func configure(
 		projectile_manager: ProjectileManager,
 		camera_director: CameraDirector,
 		mechanisms: Array[TerrainGlyphMechanism],
-		generated_layout: GeneratedStageLayout = null,
-		wind_controller: WindController = null
+		generated_layout: GeneratedStageLayout = null
 ) -> void:
 	_stage_data = stage_data
 	_generated_layout = generated_layout
@@ -33,9 +31,6 @@ func configure(
 	_paint_system = paint_system
 	_projectile_manager = projectile_manager
 	_camera_director = camera_director
-	_wind_controller = wind_controller
-	if _wind_controller == null and get_parent() != null:
-		_wind_controller = get_parent().get_node_or_null("WindController") as WindController
 	_mechanisms = mechanisms
 	if not _stage_controller.shot_fired.is_connected(_on_shot_fired):
 		_stage_controller.shot_fired.connect(_on_shot_fired)
@@ -107,7 +102,6 @@ func get_observation() -> Dictionary:
 		"mechanisms": mechanism_states,
 		"clock": _stage_controller.clock_snapshot(),
 		"result": _stage_controller.result_snapshot(),
-		"wind": _wind_snapshot(),
 		"projectiles": projectile_activity,
 		"interaction": {
 			"mode": _camera_director.interaction_mode_name(),
@@ -212,44 +206,6 @@ func _on_shot_observation_sealed(observation: ShotObservation) -> void:
 
 func _on_stage_finished(result: Dictionary) -> void:
 	gameplay_event.emit(&"stage_finished", result.duplicate(true))
-
-
-func _wind_snapshot() -> Dictionary:
-	if _wind_controller == null:
-		return {
-			"schedule_identity": "",
-			"current_direction": Vector3.ZERO,
-			"current_strength": 0.0,
-			"next_direction": Vector3.ZERO,
-			"next_strength": 0.0,
-			"seconds_until_change": 0.0,
-		}
-	var snapshot := _wind_controller.current_snapshot()
-	if snapshot == null:
-		return {
-			"schedule_identity": String(_wind_controller.schedule_identity()),
-			"current_direction": Vector3.ZERO,
-			"current_strength": 0.0,
-			"next_direction": Vector3.ZERO,
-			"next_strength": 0.0,
-			"seconds_until_change": 0.0,
-		}
-	return {
-		"schedule_identity": String(snapshot.schedule_identity),
-		"physics_tick": snapshot.physics_tick,
-		"current_direction": snapshot.push_direction(),
-		"current_strength": snapshot.normalized_strength,
-		"next_direction": (
-			snapshot.next_acceleration.normalized()
-			if not snapshot.next_acceleration.is_zero_approx()
-			else Vector3.ZERO
-		),
-		"next_strength": snapshot.next_normalized_strength,
-		"seconds_until_change": snapshot.seconds_until_change,
-		"transition_progress": snapshot.transition_progress,
-		"strong": snapshot.strong,
-		"strong_episode_id": snapshot.strong_episode_id,
-	}
 
 
 func _projectile_activity_snapshot(activity: Dictionary) -> Dictionary:
