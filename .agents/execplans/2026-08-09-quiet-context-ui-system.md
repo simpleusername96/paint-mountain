@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-09
 scope: Faithfully implement the user-approved Quiet Context UI across every reachable Paint Mountain interface surface
 related:
@@ -277,13 +277,13 @@ Source owners: `tests/`, `src/delivery/delivery_capture_runner.gd`,
 `design-qa.md`, `.agents/evidence/quiet-context-ui-system-2026-08-09/`,
 `.agents/Documentation.md`, this plan
 
-- [ ] **4.1 Update focused contracts and pass repository verification**
+- [x] **4.1 Update focused contracts and pass repository verification**
   - Change: update only tests invalidated by the approved presentation contract,
     preserving behavior assertions; run the named focused batch and
     `scripts/verify.ps1`.
   - Accept: every named test and verification command exits zero without a
     `SCRIPT ERROR` or recurring runtime error.
-- [ ] **4.2 Export, capture, compare, and correct the running build**
+- [x] **4.2 Export, capture, compare, and correct the running build**
   - Change: build `Windows Desktop`, start the built executable through the
     existing background capture path, and save separate captures for Korean
     1280x720 Main Menu, Stage Select, Briefing, Aim, Map, Follow, Pause,
@@ -296,7 +296,7 @@ Source owners: `tests/`, `src/delivery/delivery_capture_runner.gd`,
     are fixed and `design-qa.md` says `final result: passed`.
   - Guard: captures come from the production executable without debug overlay;
     concept images never substitute for runtime evidence.
-- [ ] **4.3 Record current truth and close the contract**
+- [x] **4.3 Record current truth and close the contract**
   - Change: update `.agents/Documentation.md`, record Level 4 UI/UX evidence and
     any non-blocking P3 notes, mark this plan `done`, and commit only task-owned
     files.
@@ -345,14 +345,13 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 4 - Responsive production evidence and closeout.
-- Next task: 4.1 - Update focused contracts and pass repository verification.
-- Last completed gate: Phase 3; Korean 1280x720 runtime captures cover Main
-  Menu, Stage Select, Briefing, Aim, Map, Follow, Pause, Settings, and Result.
-  Gameplay HUD, target-preserving aiming, navigation, localization, settings
-  geometry, and the shared context legend pass their focused contracts. The
-  approved Aim reference and runtime were also reviewed in a same-size combined
-  comparison input.
+- Current phase: Complete.
+- Next task: none.
+- Last completed gate: Phase 4; nine focused UI/gameplay contracts and
+  `scripts/verify.ps1` pass, the Windows release export succeeds, and the full
+  Korean/English production capture matrix is present at the required sizes.
+  `design-qa.md` records the equal-size source/runtime comparison history and
+  `final result: passed` with no remaining P0/P1/P2 issue.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

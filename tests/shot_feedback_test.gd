@@ -63,14 +63,14 @@ func _run() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
-		interaction_control.visible and interaction_control.text == "지도 보기" \
+		interaction_control.visible and interaction_control.text.begins_with("지도 보기") \
 				and not hud_root.get_node("AimControls").visible \
 				and not hud_root.get_node("ActionButtons").visible,
 		"Map Inspection must use its direct label and hide aim-only actions"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true(
-		interaction_control.text == "조준" \
+		interaction_control.text.begins_with("조준") \
 				and hud_root.get_node("AimControls").visible \
 				and hud_root.get_node("ActionButtons").visible,
 		"Aim Lock must restore aim and Fire controls"
@@ -84,11 +84,11 @@ func _run() -> void:
 		and coverage.target_label.text == "%s %.0f%%" % [
 			tr("hud.target"), gameplay.stage_data.target_coverage,
 		]
-		and absf(
-			coverage.target_label.get_global_rect().get_center().y
-			- coverage.target_line.get_global_rect().get_center().y
-		) <= 14.0,
-		"coverage must place the numeric goal beside its authoritative rail marker (label=%s line=%s)" % [
+		and coverage.target_label.get_global_rect().get_center().y \
+				> coverage.target_line.get_global_rect().get_center().y
+		and coverage.target_label.get_global_rect().get_center().y \
+				- coverage.target_line.get_global_rect().get_center().y <= 28.0,
+		"coverage must place the numeric goal just below its authoritative rail marker (label=%s line=%s)" % [
 			coverage.target_label.get_global_rect(),
 			coverage.target_line.get_global_rect(),
 		]

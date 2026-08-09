@@ -14,10 +14,12 @@ func configure(target: float) -> void:
 	target_label.text = "%s %.0f%%" % [tr("hud.target"), _target]
 	var target_y := progress.position.y + progress.size.y * (1.0 - _target / 100.0)
 	target_line.position.y = target_y - target_line.size.y * 0.5
+	# Keep the numeric goal under its rail tick so the hairline never strikes
+	# through localized copy at larger desktop scales.
 	target_label.position.y = clampf(
-		target_y - target_label.size.y * 0.5,
-		progress.position.y - 2.0,
-		progress.position.y + progress.size.y - target_label.size.y + 2.0
+		target_y + 6.0,
+		progress.position.y + 4.0,
+		size.y - target_label.size.y
 	)
 	update_coverage(0.0)
 

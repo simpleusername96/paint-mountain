@@ -25,6 +25,7 @@ related:
   - ../.agents/execplans/2026-08-07-truthful-coverage-and-responsive-aiming.md
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-08-terrain-targeted-aiming.md
+  - ../.agents/execplans/2026-08-09-quiet-context-ui-system.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
@@ -36,8 +37,9 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The active immediate-aim and sparse-instrument gate below owns current
-interaction and gameplay-HUD acceptance; historical rows do not override it.
+builds. The Quiet Context gate below owns current UI presentation. The
+immediate-aim gate retains interaction and calculation acceptance; its older
+shortcut and HUD presentation clauses do not override the Quiet Context gate.
 
 ## Completed player-replay retirement gate (2026-08-08)
 
@@ -49,6 +51,37 @@ interaction and gameplay-HUD acceptance; historical rows do not override it.
   input lock. Human, agent, and debug commands retain their normal validation.
 - [x] `AttemptRecorder` retains only current-run agent/debug observations and
   JSON shot-log export; it cannot serialize or resimulate a player attempt.
+
+## Completed Quiet Context UI gate (2026-08-09)
+
+- [x] The selected `revised-02-context-line.png` hierarchy is applied to the
+  running Aim View: direct edge status, left coverage rail, centered Fire,
+  right angle/power instruments, and one bottom context line.
+- [x] Ammunition is `remaining / maximum`; visible yaw, A/D, direction arrows,
+  standalone dark shortcut tiles, and persistent prose strips are absent.
+- [x] W/S, wheel, direct angle/power buttons, Space, Tab, Escape, and F remain
+  truthful. Wind-stable selected-target angle/power changes and Fire admission
+  pass focused runtime tests.
+- [x] Main Menu and Stage Select have no giant enclosing card. Pause and
+  Settings retain one modal surface; Briefing, transient feedback, and Result
+  contain no third-level border stack.
+- [x] Korean 1280x720 production captures cover Main Menu, Stage Select,
+  Briefing, Aim, Map, Follow, Pause, Settings, manual Result, and timeout
+  Result. English 1920x1080 covers Main Menu, Stage Select, Aim, Settings, and
+  Result. Korean 1600x900 covers Stage Select and Settings.
+- [x] The exact 1280x720 source and production Aim captures were normalized 1:1
+  and reviewed together. `design-qa.md` records no remaining P0/P1/P2 issue.
+- [x] Shared Theme, UI flow, localization, shortcut, HUD truth, wind/result,
+  shot feedback, and target-preserving aim contracts pass. Repository
+  verification and the Windows Desktop release export pass.
+
+Current evidence:
+
+- `.agents/evidence/quiet-context-ui-system-2026-08-09/final-reference-vs-runtime-aim.png`
+- `.agents/evidence/quiet-context-ui-system-2026-08-09/final-ko-1280x720-contact-sheet.png`
+- `.agents/evidence/quiet-context-ui-system-2026-08-09/final-en-1920x1080-contact-sheet.png`
+- `.agents/evidence/quiet-context-ui-system-2026-08-09/final-ko-1600x900-contact-sheet.png`
+- `design-qa.md`
 
 ## Completed immediate aim and sparse-instrument gate (2026-08-09)
 

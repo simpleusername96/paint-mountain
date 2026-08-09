@@ -23,6 +23,7 @@ related:
   - execplans/2026-08-08-terrain-targeted-aiming.md
   - execplans/2026-08-08-casual-shared-ui-refresh.md
   - execplans/2026-08-08-instant-approximate-landing-feedback.md
+  - execplans/2026-08-09-quiet-context-ui-system.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
   - evidence/2026-08-07-aim-performance-product-audit.md
@@ -35,6 +36,36 @@ related:
 ---
 
 # Project Record
+
+## Current Quiet Context UI System (2026-08-09)
+
+The completed implementation contract is
+[`2026-08-09-quiet-context-ui-system.md`](execplans/2026-08-09-quiet-context-ui-system.md),
+and the final comparison report is [`../design-qa.md`](../design-qa.md).
+
+- The exact approved visual target is
+  `docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`,
+  SHA-256
+  `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`.
+- `paint_mountain_theme.tres` remains the only UI token owner. Routine panels
+  and buttons are flat and quiet, primary actions alone use filled blue, focus
+  remains 2 px, and the small shortcut keycap is paper-white with a thin navy
+  outline.
+- `ContextLegend` owns one responsive bottom input/action sentence for Aim,
+  Map, Follow, Briefing, and Pause. Detached dark keycap tiles are removed.
+  Aim View shows remaining/maximum ammunition as `n / n`, contains no yaw or
+  A/D display, and keeps W/S, wheel, direct angle/power steppers, Space, Tab,
+  Escape, and F truthful to existing input owners.
+- Main Menu and Stage Select no longer sit inside giant enclosing cards.
+  Briefing, feedback, and Result use at most one required containment level;
+  Pause and Settings retain one modal surface and no nested card wall.
+- Korean 1280x720 production captures cover Main Menu, Stage Select, Briefing,
+  Aim, Map, Follow, Pause, Settings, manual Result, and timeout Result. English
+  1920x1080 covers Main Menu, Stage Select, Aim, Settings, and Result; Korean
+  1600x900 covers Stage Select and Settings. The selected Aim reference and
+  final runtime were inspected in one equal-size combined image.
+- Focused UI/gameplay contracts, repository verification, and the Windows
+  release export pass. Product Design QA records no remaining P0/P1/P2 issue.
 
 ## Current Player-Replay Retirement (2026-08-08)
 
@@ -71,10 +102,10 @@ The completed implementation contract is
   illegal aim or blocking Fire on prediction.
 - Normal gameplay uses no left/right status cards, bottom aim panel, or
   persistent prose instruction strip. Stage, coverage, time, remaining/maximum
-  shots, separate resident activity, wind, Finish, aim values, and real actions
-  are edge-aligned symbols and numbers. Filled S/W, mouse-wheel, Space, Tab, F,
-  and Escape tokens are attached to their actual control; A/D is not advertised
-  in terrain-target mode and literal square brackets are absent.
+  shots, separate resident activity, wind, Finish, elevation, solved power, and
+  real actions are edge-aligned symbols and numbers. The Quiet Context system
+  above supersedes this section's former detached shortcut treatment; A/D and
+  visible yaw remain absent from terrain-target mode.
 - Source and Windows-release 1280x720 Korean and 1920x1080 English Aim View
   captures under
   [`evidence/sparse-instrument-hud-2026-08-09/`](evidence/sparse-instrument-hud-2026-08-09/)
