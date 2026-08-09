@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-08
 last_reviewed: 2026-08-09
 scope: immediate terrain-target aiming, stable display settings, sparse gameplay HUD, and higher glyph placement
@@ -135,7 +135,7 @@ Out of scope:
     middle/upper-middle band before existing mechanism-specific score.
   - Prove preferred candidates win when suitable and deterministic fallback
     still completes constrained assignments.
-- [ ] **3.2 Catalog promotion**
+- [x] **3.2 Catalog promotion**
   - After user alignment for the broad generation cost, rebuild all 30 baked
     layouts, run catalog/certificate checks, inspect representative runtime
     stages, and promote exactly one complete content-addressed bundle.
@@ -146,7 +146,7 @@ Out of scope:
   - Record the later UI, display, aim-latency, and glyph-placement decisions in
     the effective source brief and current design/architecture/implementation
     records. Retire stale pending-solver descriptions.
-- [ ] **4.2 Final gates**
+- [x] **4.2 Final gates**
   - Run focused tests while implementing, then `scripts/verify.ps1`, release
     export, production-style runtime captures, `git diff --check`, and the
     task-scoped codebase quality audit. Commit only task-owned files.
@@ -163,13 +163,15 @@ contradicts one of the locked product or ownership decisions above.
 
 ## Progress
 
-- Current phase: 3.2, awaiting explicit alignment for the broad 30-stage
-  catalog rebuild and promotion.
-- Completed implementation and evidence: stable Settings display ownership,
-  immediate approximate terrain aim, one advisory preview owner, sparse HUD,
-  integrated shortcuts, normalized-height glyph ranking, focused contracts,
-  Godot verification, Windows release export, and inspected release captures.
-- Remaining acceptance work: rebuild and promote one complete catalog bundle,
-  run its catalog/certificate checks, inspect representative glyph stages, then
-  close 3.2 and 4.2.
-- Complete only when every checkbox has named evidence and frontmatter is `done`.
+- Completed on 2026-08-09.
+- Stable Settings display ownership, immediate approximate terrain aim, one
+  advisory preview owner, sparse HUD, integrated shortcuts, and
+  normalized-height glyph ranking are implemented and covered by focused tests.
+- The approved all-30 build promoted the complete content-addressed v10 bundle
+  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`.
+  Its fast bundle check, materialization/bake checks, and Stage 02/03/08 glyph
+  contracts pass. Optional exhaustive certificates and previews remain absent
+  by the established bounded-witness contract.
+- Godot import/startup verification, Windows release export, and native-size
+  release inspection pass. Stage 02, 03, 08, and 30 captures show glyphs across
+  middle/upper terrain without HUD overlap.

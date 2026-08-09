@@ -31,6 +31,10 @@ related:
 - `runtime-settings-1280x720-ko.png`
 - `release-aim-1280x720-ko.png`
 - `release-aim-1920x1080-en.png`
+- `final-release-aim-stage_02-1280x720-ko.png`
+- `final-release-aim-stage_03-1280x720-ko.png`
+- `final-release-aim-stage_08-1280x720-ko.png`
+- `final-release-aim-stage_30-1280x720-ko.png`
 
 The source captures and the two final Windows release captures use the
 Compatibility renderer and the actual baked Stage 30 gameplay scene. Both
@@ -44,8 +48,12 @@ release processes exited 0 with empty stderr. Direct inspection found:
 - shortcut keycaps are attached to their controlled value/action;
 - the first pass exposed a Fire/Space overlap, which was corrected by moving the
   keycap above the Fire button;
-- glyphs remain low in these images because they use the pre-change baked
-  catalog. The catalog rebuild is a separate active acceptance item.
+- the final Stage 02, 03, 08, and 30 release captures use promoted manifest
+  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`;
+- Burst, Splitter, and Uphill glyphs sit across the middle/upper and upper
+  terrain instead of clustering at the mountain foot;
+- a 24-frame evidence-only settle override lets the Aim camera finish without
+  allowing unrelated live state to replace the inspected frame.
 
 ## Focused runtime facts
 
@@ -60,6 +68,31 @@ release processes exited 0 with empty stderr. Direct inspection found:
 - Preferred middle/upper-middle glyph ranking passes in
   `mechanism_placement_test.gd`.
 
-Godot 4.7.1 import/startup verification and the Windows release export passed.
-This evidence remains active only until the complete baked catalog is rebuilt,
-promoted, validated, and inspected in representative running stages.
+## Catalog and delivery verification
+
+- The approved all-30 build completed in 784.2 seconds with exit 0 and empty
+  stderr. It promoted one v10 bundle with 30 stages, 30 profiles, and 30 layouts.
+- The generation-free catalog check, v10 materialization, baked-layout,
+  mechanism placement, and Stage 02/03/08 glyph contracts pass.
+- Godot 4.7.1 import/startup verification and the final Windows release export
+  pass. All four final glyph captures exited 0 with empty stderr.
+
+UIUX gate evidence:
+
+- Surface: normal-play Aim View and baked terrain glyph composition.
+- Invocation depth: Level 4 continuation and final rendered evidence.
+- Files/screens touched: sparse HUD, Stage 02/03/08/30 Aim View, Settings.
+- Primary task checked: mountain-first hierarchy, integrated controls, and
+  middle/upper glyph placement.
+- Viewports checked: 1280x720 Korean and 1920x1080 English.
+- States checked: Aim View, selected target, Settings, and representative Burst,
+  Splitter, Uphill, and mixed-glyph stages.
+- Accessibility checks: real controls, visible focus styles, tooltips/localized
+  names, and at least 40 px interactive targets remain covered by focused tests.
+- Screenshots: the runtime, release, and final-release PNGs named above.
+- Exceptions accepted: panels remain only for modal briefing/pause/result and
+  the settings form; the normal-play surface stays borderless.
+- Remaining warnings: none in the inspected task surface.
+- Result: passed.
+
+This completed evidence remains active as consult-only implementation evidence.

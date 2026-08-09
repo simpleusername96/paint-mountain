@@ -55,7 +55,7 @@ to the planning loop.
 
 ## Current Immediate Aim and Sparse Instrument Refresh (2026-08-09)
 
-The active implementation contract is
+The completed implementation contract is
 [`2026-08-08-instant-approximate-landing-feedback.md`](execplans/2026-08-08-instant-approximate-landing-feedback.md).
 
 - Settings state synchronization is passive. Only explicit fullscreen,
@@ -73,11 +73,13 @@ The active implementation contract is
 - Source and Windows-release 1280x720 Korean and 1920x1080 English Aim View
   captures under
   [`evidence/sparse-instrument-hud-2026-08-09/`](evidence/sparse-instrument-hud-2026-08-09/)
-  were inspected directly. Import/startup verification and release export pass;
-  catalog promotion remains active-plan work.
+  were inspected directly. Import/startup verification and release export pass.
 - New mechanism placement ranks suitable normalized heights 0.55..0.85 first,
-  then 0.40 or above. The current baked catalog still needs its approved broad
-  rebuild before running stages show the new anchors.
+  then 0.40 or above. The approved all-30 build promoted v10 manifest
+  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`.
+  Final Windows-release Stage 02, 03, 08, and 30 captures show Burst, Splitter,
+  Uphill, and mixed glyphs across the middle/upper terrain. The fast bundle,
+  materialization, bake, and representative glyph contracts pass.
 
 ## Historical Casual Shared UI Refresh (2026-08-08)
 
@@ -144,7 +146,7 @@ The completed implementation contract is
 - Stage 01-10 clear targets remain `4.0..8.5%`. Stage 11-15 use `8.5%`, 16-20
   use `9.0%`, 21-25 use `9.5%`, and 26-30 use `10.0%`; stars remain clear plus
   `2.5/5.0` points. Shots, terrain, target masks, and mechanisms are unchanged.
-- The active fixed catalog is v10 at
+- The then-active fixed catalog was v10 at
   `resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
   It preserves v9 physical terrain, target, cannon, and placement identities
   and rematerializes bounded entry witnesses for the larger body.
@@ -168,7 +170,7 @@ implements the corrections identified during direct Stage 10 play.
 - `TargetSurfaceCoverage` metric 2 weights each first-painted target texel by
   its canonical physical triangle area. `PaintSystem` remains the only mutable
   paint/coverage owner and publishes the visible mask and percentage together.
-- The active fixed catalog is v10 at
+- The then-active fixed catalog was v10 at
   `resources/generated_stage_catalogs/v10-4d9db2c7e4b50b02ccaa33cabc3e8f21f92f1ef21adc76848c86f02d79cb63f0`.
   Its thirty stages retain all v9 physical, target, cannon, placement, and
   bounded-witness identities while adding validated metric-2 metadata.
@@ -357,7 +359,7 @@ not the user's gameplay, balance, feel, or aesthetic approval.
   proved that an out-of-range raster fails as a whole. The envelope uses
   `0.25 m` radial samples plus bounded `0.30 m` range and `0.50 m` height
   discretization tolerance.
-- The active catalog pointer is `resources/stages/catalog.tres`. It selects the
+- At that milestone, `resources/stages/catalog.tres` selected the
   format-5 persisted bundle
   `resources/generated_stage_catalogs/v9-b0eb55b3e366a7a92b1391a6acd0298bbc854d8c831e8ac57f9b5df5ab44c957`.
   The bundle contains all 30 stages built from canonical terrain seed

@@ -25,7 +25,7 @@ func _run_checks() -> void:
 		_compare_stage(index, previous, current)
 	_assert_current_witnesses(current)
 	if not _failed:
-		print("Generation v10 materialization passed: v9 physical, target, and cannon identities are preserved; current-scale entry witnesses are valid.")
+		print("Generation v10 materialization passed: v9 terrain, target, route, and cannon identities are preserved; current glyph/decor placement and entry witnesses are valid.")
 	quit(1 if _failed else 0)
 
 
@@ -43,7 +43,10 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 	)
 	if old_stage == null or new_stage == null or old_layout == null or new_layout == null:
 		return
-	var physical_layout_equal := old_layout.terrain_seed == new_layout.terrain_seed \
+	# Mechanism placement is intentionally version-local, and decoration may move
+	# with it to preserve spacing. Both may change while the mountain, target,
+	# routes, and cannon remain identical.
+	var terrain_layout_equal := old_layout.terrain_seed == new_layout.terrain_seed \
 			and old_layout.cell_count == new_layout.cell_count \
 			and old_layout.local_bounds == new_layout.local_bounds \
 			and old_layout.heights == new_layout.heights \
@@ -54,13 +57,23 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 			and old_layout.route_node_ids == new_layout.route_node_ids \
 			and old_layout.route_node_positions == new_layout.route_node_positions \
 			and old_layout.route_edge_ids == new_layout.route_edge_ids \
-			and old_layout.play_bounds_checksum == new_layout.play_bounds_checksum \
-			and old_layout.placement_checksum == new_layout.placement_checksum \
-			and old_layout.mechanism_anchor_ids == new_layout.mechanism_anchor_ids \
-			and old_layout.mechanism_transforms == new_layout.mechanism_transforms \
-			and old_layout.decoration_model_ids == new_layout.decoration_model_ids \
-			and old_layout.decoration_local_xz == new_layout.decoration_local_xz
-	_assert_true(physical_layout_equal, "%s v10 physical layout must match v9" % stage_id)
+			and old_layout.play_bounds_checksum == new_layout.play_bounds_checksum
+	_assert_true(
+		terrain_layout_equal,
+		"%s v10 terrain, target, and route layout must match v9" % stage_id
+	)
+	_assert_true(
+		new_layout.placement_checksum != 0 \
+				and new_layout.mechanism_anchor_ids.size() == new_stage.mechanism_loadout.size() \
+				and new_layout.mechanism_transforms.size() == new_stage.mechanism_loadout.size(),
+		"%s must carry a complete current glyph placement" % stage_id
+	)
+	_assert_true(
+		new_layout.decoration_model_ids.size() == new_layout.decoration_local_xz.size() \
+				and new_layout.decoration_model_ids.size() == new_layout.decoration_yaws.size() \
+				and new_layout.decoration_model_ids.size() == new_layout.decoration_scales.size(),
+		"%s must carry a complete current decoration placement" % stage_id
+	)
 	_assert_true(
 		old_stage.terrain_center.is_equal_approx(new_stage.terrain_center) \
 				and old_stage.terrain_size.is_equal_approx(new_stage.terrain_size) \

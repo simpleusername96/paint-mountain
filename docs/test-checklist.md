@@ -76,8 +76,14 @@ interaction and gameplay-HUD acceptance; historical rows do not override it.
   at native size.
 - [x] Focused placement tests prove eligible Burst anchors prefer normalized
   terrain height 0.55..0.85.
-- [ ] Rebuild and promote the complete 30-stage baked catalog, inspect
-  representative glyph stages, and run its catalog/certificate checks.
+- [x] The approved all-30 build promoted v10 manifest
+  `c45d547056e5421953571cb7aadf07341df02023334754087a3622c97a519c25`.
+  The generation-free bundle check, v10 materialization/bake checks, and Stage
+  02/03/08 glyph contracts pass. Optional exhaustive certificate and preview
+  arrays remain empty under the bounded-witness contract.
+- [x] Final Windows-release Stage 02, 03, 08, and 30 Aim View captures were
+  inspected at 1280x720. Burst, Splitter, Uphill, and mixed glyphs occupy
+  middle/upper terrain without HUD, trajectory, overlap, or clipping blockers.
 
 Current evidence:
 
@@ -88,6 +94,10 @@ Current evidence:
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/runtime-settings-1280x720-ko.png`
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/release-aim-1280x720-ko.png`
 - `.agents/evidence/sparse-instrument-hud-2026-08-09/release-aim-1920x1080-en.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_02-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_03-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_08-1280x720-ko.png`
+- `.agents/evidence/sparse-instrument-hud-2026-08-09/final-release-aim-stage_30-1280x720-ko.png`
 
 ## Historical exact terrain-targeted aiming and truthful-flight gate (2026-08-08)
 

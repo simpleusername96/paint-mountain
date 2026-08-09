@@ -12,6 +12,7 @@ var _output_path: String = ""
 var _background_capture := false
 var _capture_size := BACKGROUND_CAPTURE_SIZE
 var _capture_language: StringName = &"ko"
+var _capture_settle_frames := -1
 var _failed: bool = false
 
 
@@ -28,6 +29,10 @@ func _ready() -> void:
 		elif argument.begins_with("--capture-language="):
 			_capture_language = StringName(
 				argument.trim_prefix("--capture-language=")
+			)
+		elif argument.begins_with("--capture-settle-frames="):
+			_capture_settle_frames = maxi(
+				int(argument.trim_prefix("--capture-settle-frames=")), 0
 			)
 		elif argument == "--capture-background":
 			_background_capture = true
@@ -169,6 +174,8 @@ func _run_capture() -> void:
 		settle_frames = 0
 	elif _screen == "two_family":
 		settle_frames = 1
+	if _capture_settle_frames >= 0:
+		settle_frames = _capture_settle_frames
 	for _frame in range(settle_frames):
 		await get_tree().process_frame
 	var absolute_path := ProjectSettings.globalize_path(_output_path)
