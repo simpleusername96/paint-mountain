@@ -15,5 +15,7 @@ reports/
 # Delivery screenshots are evidence, not runtime texture assets.
 screenshots/*.png.import
 docs/remediation-report-assets/*.import
+docs/experience-audit-assets/*.import
 docs/concepts/**/*.import
 docs/handoffs/**/*.import
+resources/generated_stage_catalogs/.*.staging/
