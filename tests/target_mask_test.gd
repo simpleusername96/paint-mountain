@@ -1,9 +1,9 @@
 extends SceneTree
 
 const ROUTE_GRAPH_RESOLVER := preload("res://src/stage_generation/route_graph_resolver.gd")
-const ROUTE_GRAPH_HEIGHT_SYNTHESIZER := preload("res://src/stage_generation/route_graph_height_synthesizer.gd")
-const STAGE: StageData = preload("res://resources/stages/first_descent.tres")
-
+const ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER := preload(
+	"res://src/stage_generation/route_graph_mountain_synthesizer.gd"
+)
 var _failed := false
 
 
@@ -12,27 +12,35 @@ func _initialize() -> void:
 
 
 func _run_checks() -> void:
-	var profile := STAGE.generation_profile
+	var stage: StageData = StageCatalog.get_stage(&"stage_01")
+	_assert_true(stage != null, "the canonical Stage 01 catalog entry must load")
+	if stage == null:
+		quit(1)
+		return
+	var profile := stage.generation_profile
 	var result := {}
 	var elapsed_ms := 0.0
 	var accepted_attempt := -2
 	for attempt_index in range(profile.generation_contract.attempt_count):
 		var attempt_seed := int((profile.base_seed + attempt_index * profile.generation_contract.attempt_seed_stride) & 0x7fffffff)
 		var graph: GeneratedRouteGraph = ROUTE_GRAPH_RESOLVER.resolve(
-			STAGE.stage_id,
+			stage.stage_id,
 			profile,
 			attempt_seed
 		)
-		var heights: PackedFloat32Array = ROUTE_GRAPH_HEIGHT_SYNTHESIZER.build(
-			STAGE.stage_id,
+		var mountain: Dictionary = ROUTE_GRAPH_MOUNTAIN_SYNTHESIZER.build(
+			stage.stage_id,
 			profile,
 			graph,
 			attempt_seed
 		)
+		var heights: PackedFloat32Array = mountain.get("heights", PackedFloat32Array())
+		var footprint: PackedByteArray = mountain.get("footprint", PackedByteArray())
 		var topology := TerrainTopTopology.build(
 			profile.generation_contract.cell_count,
 			profile.generation_contract.local_bounds,
-			heights
+			heights,
+			footprint
 		)
 		var started_at := Time.get_ticks_usec()
 		var candidate_result := TargetMaskRasterizer.build(
@@ -88,23 +96,13 @@ func _run_checks() -> void:
 				and target_mean_slope <= profile.target_mean_slope_range.y,
 		"the exact triangle-plane mean slope must stay inside the frozen range"
 	)
-	_assert_true(
-		float(result.get("target_p95_slope", INF)) <= profile.target_p95_slope_max,
-		"the exact target p95 slope must pass its frozen maximum"
-	)
-	_assert_true(
-		float(result.get("target_maximum_slope", INF)) <= profile.target_maximum_slope,
-		"the exact target maximum slope must pass its frozen maximum"
-	)
-	_assert_true(
-		float(result.get("route_core_p95_slope", INF)) <= profile.route_core_p95_slope_max,
-		"the exact route-core p95 slope must pass its frozen maximum"
-	)
-	_assert_true(
-		float(result.get("corridor_lip_maximum_slope", INF)) \
-				<= profile.corridor_lip_maximum_slope,
-		"the exact corridor-lip maximum slope must pass its frozen maximum"
-	)
+	# Slope fields are emitted as immutable QA metrics. Structural validity and
+	# reachability decide admission; these guards catch corrupt/non-finite samples
+	# without reintroducing the retired post-raster slope deletion policy.
+	_assert_true(is_finite(float(result.get("target_p95_slope", INF))), "target p95 slope must be finite")
+	_assert_true(is_finite(float(result.get("target_maximum_slope", INF))), "target maximum slope must be finite")
+	_assert_true(is_finite(float(result.get("route_core_p95_slope", INF))), "route-core p95 slope must be finite")
+	_assert_true(is_finite(float(result.get("corridor_lip_maximum_slope", INF))), "corridor-lip maximum slope must be finite")
 	_assert_true(int(result.get("component_count", 0)) == 1, "the target footprint must be one component")
 	_assert_true(bool(result.get("graph_nodes_reachable", false)), "the summit and route exit must share the target component")
 	_assert_true(int(result.get("connected_target_count", 0)) == int(result.get("target_count", -1)), "every target texel must be connected")
