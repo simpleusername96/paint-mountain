@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: blocked
 created: 2026-08-09
 scope: complete retirement of wind gameplay, presentation, data, diagnostics, tests, and active documentation while preserving the non-wind coverage loop
 related:
@@ -205,6 +205,8 @@ Source owners: repository checks, export preset, `.agents/evidence/wind-retireme
 - [ ] **5.3** Commit and publish the scoped branch.
   - Change: inspect the final diff, stage only task-owned files, commit tersely, push `agent/remove-wind-system`, and open a draft PR against the remote default branch.
   - Accept: worktree is clean; commit, remote branch, and draft PR URLs resolve; no unrelated file is included.
+  - Evidence: implementation commit `a9b47d1` and both `master` and `agent/remove-wind-system` resolve on `origin`; the remote was initialized from the existing local history.
+  - Blocker: GitHub MCP and local `gh` both return pull-request permission errors for the configured personal access token. Browser fallback requires separate user approval, so the draft PR remains the only unfinished action.
 
 ## Validation and Rework Controls
 
@@ -242,9 +244,9 @@ Implementation-local discoveries may be handled inside the locked contract when 
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 5.
-- Next task: 5.3 commit and publish the scoped branch.
-- Last completed gate: Task 5.2 rendered evidence and diff-scoped quality audit.
+- Current phase: Phase 5, blocked only on draft PR creation.
+- Next task: grant pull-request permission or explicitly approve a logged-in browser fallback, then open the draft PR from `master` to `agent/remove-wind-system`.
+- Last completed gate: implementation commit `a9b47d1` and both required remote branch pushes.
 - Update rule: after a checkpoint passes, record concise evidence, check the task, and advance this pointer in the same edit.
 - Anti-rework rule: on resume, read this contract and inspect the worktree only enough to confirm checkpoint inputs, then continue from the first unchecked task whose prerequisites pass.
 

@@ -35,7 +35,7 @@ effect.
 - The Windows Desktop release export completed with exit 0. A clean rebuild of
   Godot's generated export cache removed stale pre-removal binary conversions.
 - The exported application captured Stage 30 Aim View at 1280x720 in Korean
-  with exit 0 and empty stderr. Runtime output is saved beside the image.
+  with exit 0 and empty stderr.
 
 ## Rendered Review
 
@@ -62,6 +62,3 @@ prediction contracts were executed directly and passed.
 ## Files
 
 - `release-aim-stage30-1280x720-ko.png`: inspected exported-game capture.
-- `release-aim-stage30-1280x720-ko.stdout.log`: successful capture output.
-- `release-aim-stage30-1280x720-ko.stderr.log`: empty error stream.
-
