@@ -302,13 +302,14 @@
     <div class="hero-inner">
       <p class="eyebrow">Paint Mountain · Screen Audit · 2026-08-10</p>
       <h1>화면별 UX·비주얼 감사와 개선 시안</h1>
-      <p class="hero-lede">현재 Windows 릴리스의 실제 화면 10개를 새로 캡처하고, Quiet Context 디자인 원칙과 핵심 플레이 흐름에 맞춰 문제를 분석한 뒤, 각 화면의 개선 방향을 이미지로 시각화했습니다.</p>
+      <p class="hero-lede">현재 Windows 릴리스의 실제 화면 10개를 캡처해 분석하고, Quiet Context 스타일을 유지한 개선안을 만들었습니다. 이후 불필요한 메타 텍스트·중복 단축키·장식용 얇은 선을 걷어내는 피드백을 반영해 핵심 7개 화면을 다시 다듬었습니다.</p>
       <div class="hero-meta">
         <span class="chip">기준 화면 1280×720</span>
         <span class="chip">대표 검증 1920×1080</span>
         <span class="chip">한국어 기본</span>
         <span class="chip">실제 릴리스 캡처</span>
-        <span class="chip">ImageGen 개선 시안 10종</span>
+        <span class="chip">개선 시안 10종</span>
+        <span class="chip">피드백 정제 7종</span>
       </div>
     </div>
   </header>
@@ -326,8 +327,8 @@
       <div class="summary-grid">
         <div class="summary-item"><strong>잘 된 점</strong><span>일관된 색·서체, 한 개의 명확한 주 행동, 실제 기능만 노출</span></div>
         <div class="summary-item"><strong>가장 큰 문제</strong><span>지도 보기의 지나치게 작은 산과 큰 빈 공간</span></div>
-        <div class="summary-item"><strong>반복 문제</strong><span>중앙 가림, 과도하게 넓은 버튼, 촘촘한 카드 텍스트</span></div>
-        <div class="summary-item"><strong>개선 원칙</strong><span>세계를 키우고, 상태를 가장자리로 밀며, 행동 위계를 단순화</span></div>
+        <div class="summary-item"><strong>반복 문제</strong><span>중앙 가림, 과도한 설명, 중복 단축키, 장식용 얇은 선</span></div>
+        <div class="summary-item"><strong>개선 원칙</strong><span>세계를 키우고, 필요한 정보만 남기며, 경계는 의미가 있을 때만 사용</span></div>
       </div>
 
       <div class="table-wrap">
@@ -346,6 +347,30 @@
       <p class="note"><strong>중요:</strong> 오른쪽 이미지는 구현 완료 화면이 아니라, 현재 화면을 기준으로 만든 개선 개념입니다. 실제 3D 지형·물리·정확한 한국어 렌더·키보드 동작을 증명하지 않습니다.</p>
     </section>
 
+    <section class="section-card" id="refinement">
+      <div class="section-heading">
+        <div>
+          <h2>피드백 반영 기준</h2>
+          <p>스타일은 유지하고, 화면의 역할과 직접 관계없는 설명만 제거했습니다.</p>
+        </div>
+        <span class="status good">v2 기준 확정</span>
+      </div>
+      <div class="table-wrap">
+        <table class="evidence-table">
+          <thead><tr><th>구분</th><th>화면에 남김</th><th>일반 화면에서 제거</th></tr></thead>
+          <tbody>
+            <tr><td>텍스트</td><td>화면·스테이지·모드 이름, 실제 수치, 실제 행동, 종료 사유, 오류·로딩</td><td>홍보 문구, 전략 설명, 반복 목표 문장, 자동 저장·언어 도움말, 결과 계산 설명</td></tr>
+            <tr><td>학습</td><td>현재 모드에 맞는 하단 조작 가이드 한 줄</td><td>버튼 안의 Space/F/Tab, 별도 마우스 힌트, 곳곳에 반복되는 튜토리얼 문장</td></tr>
+            <tr><td>브리핑</td><td>스테이지 정체성, 지형 확인 모드, 실제 지형 문양, 뒤로·조준 시작</td><td>목표 설명 패널, 지형 위 장치 이름, 중복 지형 확인 문장</td></tr>
+            <tr><td>선·경계</td><td>초점, 선택, 입력 컨트롤, 진행 레일, 목표 표식, 모달 외곽</td><td>전체 폭 구분선, 열 구분선, 결과 내부 선, 선택되지 않은 카드의 반복 테두리</td></tr>
+            <tr><td>설명 위치</td><td>향후 가이드북, 최초 튜토리얼, 전용 UI 가이드</td><td>매번 보는 메뉴·브리핑·설정·결과 화면</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><strong>보존 원칙:</strong> 접근성 이름, 툴팁, 오류·로딩·비활성 사유, 스테이지 목표와 장치 설명의 원문 데이터는 삭제 대상이 아닙니다. 화면에서 숨긴 설명은 향후 학습 표면에서 재사용할 수 있게 남깁니다.</p>
+      <p>최종 시안을 실제 Godot 화면으로 옮기기 위한 파일별 책임, 수치 기준, 테스트, 캡처, 재작업 조건은 <a href="../../../.agents/execplans/2026-08-10-essential-ui-fidelity.md">상세 구현 계획문서</a>에 정리했습니다.</p>
+    </section>
+
     <section class="section-card" id="screen-01">
       <div class="section-heading">
         <div><h2><span class="screen-number">01</span>메인 메뉴</h2><p>첫 진입에서 게임의 성격과 시작 행동을 전달하는 화면</p></div>
@@ -353,12 +378,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/01-main-menu.png"><img src="assets/current/01-main-menu.png" alt="현재 메인 메뉴 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/01-main-menu-improved.png"><img src="assets/improved/01-main-menu-improved.png" alt="메인 메뉴 개선 시안"></a><figcaption>개선 시안 · 메뉴 폭 제한 + 산 프리뷰 강화</figcaption></figure>
+        <figure><a href="assets/refined/01-main-menu-refined.png"><img src="assets/refined/01-main-menu-refined.png" alt="메인 메뉴 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 제목과 네 가지 실제 행동만 유지</figcaption></figure>
       </div>
       <div class="audit-grid">
-        <div class="audit-block"><h3>강점</h3><p>제목, 한 줄 설명, 플레이 순서가 명확합니다. 플레이만 파란 주 행동으로 처리한 점도 좋습니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>버튼 열이 너무 넓고, 보조 행동의 경계·초점이 어색합니다. 산은 밝은 바탕에 묻혀 게임의 촉각적 성격을 충분히 보여주지 못합니다. 1920×1080에서는 버튼 폭과 빈 공간이 더 커집니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>메뉴 최대 폭을 제한하고 보조 행동은 텍스트 중심으로 정리합니다. 산 프리뷰의 대비·크기를 높여 제목과 균형을 맞춥니다.</p></div>
+        <div class="audit-block"><h3>강점</h3><p>게임 제목과 실제 행동 목록이 분명하고, 플레이만 파란 주 행동으로 처리한 위계가 좋습니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>영문 눈썹 문구와 한국어 태그라인은 다음 행동을 고르는 데 필요하지 않습니다. 넓은 버튼 열과 반복 경계는 산 프리뷰보다 먼저 보입니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>제목과 네 가지 실제 행동만 남기고 메뉴 폭을 제한합니다. 보조 행동은 조용하게 처리하며, 산 프리뷰의 대비·크기를 높여 빈 공간을 게임의 물성으로 채웁니다.</p></div>
       </div>
     </section>
 
@@ -369,12 +394,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/02-stage-select.png"><img src="assets/current/02-stage-select.png" alt="현재 스테이지 선택 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/02-stage-select-improved.png"><img src="assets/improved/02-stage-select-improved.png" alt="스테이지 선택 개선 시안"></a><figcaption>개선 시안 · 카드 내부 계층과 여백 재구성</figcaption></figure>
+        <figure><a href="assets/refined/02-stage-select-refined.png"><img src="assets/refined/02-stage-select-refined.png" alt="스테이지 선택 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 목표 문장과 장식 경계 제거</figcaption></figure>
       </div>
       <div class="audit-grid">
         <div class="audit-block"><h3>강점</h3><p>선택 목록과 상세 설명이 분리되어 있고, 선택 상태는 색과 테두리로 드러납니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>번호·이름·목표·최고 기록이 거의 한 줄로 붙어 카드 경계와 충돌합니다. 특히 한국어 이름이 길어질수록 읽는 속도가 떨어집니다. 시작 버튼은 상세 영역 전체 폭을 차지해 필요 이상으로 무겁습니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>카드 안에서 번호/이름과 목표/기록을 두 줄로 분리하고 16px 이상 여백을 확보합니다. 시작 버튼은 상세 내용 폭에 맞춰 줄이고 페이지 이동은 한 줄로 정렬합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>목표 문장이 선택 목록과 상세 영역에서 반복되고, 모든 카드 테두리와 중앙 구분선이 정보보다 강합니다. 시작 버튼도 상세 영역 전체 폭을 차지해 필요 이상으로 무겁습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>카드에는 번호·이름·목표 수치·기록만 남기고 전략 문장은 뺍니다. 선택된 카드만 파란 외곽선을 사용하고, 나머지는 부드러운 면과 여백으로 묶습니다. 시작 버튼은 내용 폭에 맞춥니다.</p></div>
       </div>
     </section>
 
@@ -385,12 +410,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/03-briefing.png"><img src="assets/current/03-briefing.png" alt="현재 브리핑 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/03-briefing-improved.png"><img src="assets/improved/03-briefing-improved.png" alt="브리핑 개선 시안"></a><figcaption>개선 시안 · 산 확대 + 목표 패널을 모서리로 이동</figcaption></figure>
+        <figure><a href="assets/refined/03-briefing-refined.png"><img src="assets/refined/03-briefing-refined.png" alt="브리핑 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 지형과 무명 문양만 중심에 유지</figcaption></figure>
       </div>
       <div class="audit-grid">
-        <div class="audit-block"><h3>강점</h3><p>목표 문구와 조준 시작이 한 표면에 모여 다음 행동은 명확합니다. 장치 이름도 세계에 직접 표시됩니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>산이 작고 중앙 목표 패널이 핵심 지형을 가립니다. 지형 확인 화면인데 실제 조사 대상보다 안내 카드가 더 강합니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>산을 세로·가로 모두 확대하고 목표 표면을 하단 모서리로 옮깁니다. 중앙에는 지형과 장치만 남기고, 시작 버튼만 파란색으로 유지합니다.</p></div>
+        <div class="audit-block"><h3>강점</h3><p>지형을 둘러보고 조준으로 넘어간다는 상태 전환 자체는 명확하며, 실제 문양의 색과 형태가 장치 존재를 전달합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>산이 작고 중앙 목표 패널이 지형을 가립니다. 문양 위의 장치 이름과 별도 마우스 힌트는 하단 가이드와 역할이 겹칩니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>산을 크게 프레이밍하고 목표 문장을 제거합니다. 좌상단에는 스테이지와 지형 확인 상태만, 좌하단에는 뒤로·조준 시작만 둡니다. 지형에는 이름 없는 실제 문양만 남깁니다.</p></div>
       </div>
     </section>
 
@@ -401,12 +426,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/04-aim-view.png"><img src="assets/current/04-aim-view.png" alt="현재 조준 보기 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/04-aim-view-improved.png"><img src="assets/improved/04-aim-view-improved.png" alt="조준 보기 개선 시안"></a><figcaption>개선 시안 · 기존 구조를 유지한 대비·정렬 보정</figcaption></figure>
+        <figure><a href="assets/refined/04-aim-view-refined.png"><img src="assets/refined/04-aim-view-refined.png" alt="조준 보기 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 버튼 안 중복 단축키와 하단 선 제거</figcaption></figure>
       </div>
       <div class="audit-grid">
         <div class="audit-block"><h3>강점</h3><p>산과 궤적이 중심이고, 발사가 유일한 파란 주 행동입니다. 각도·파워와 하단 맥락 안내도 실제 조작에 맞습니다. 1920×1080에서도 겹침은 보이지 않습니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>밝은 면이 서로 가까워 일부 경사·지지면이 약하게 구분됩니다. 1280×720 하단에서는 대포, 발사, 각도·파워, 설명이 가까워 밀도가 높습니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>지지면 명도 차를 조금 키우고 하단 요소의 기준선을 더 명확히 맞춥니다. 기존 기능과 구조는 유지하는 편이 안전합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>발사 옆 Space, 완료 옆 F, 보기 전환 옆 Tab이 하단 가이드와 중복됩니다. 하단 전체 폭 선과 파워 내부 구분선도 조작 이해에 기여하지 않습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>실제 버튼에는 발사·완료·조준/지도 보기처럼 행동 이름만 남깁니다. 단축키는 하단 가이드가 단독으로 소유하고, 장식 선은 제거하되 입력 레일·초점·진행 표식은 유지합니다.</p></div>
       </div>
     </section>
 
@@ -465,12 +490,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/08-settings.png"><img src="assets/current/08-settings.png" alt="현재 설정 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/08-settings-improved.png"><img src="assets/improved/08-settings-improved.png" alt="설정 개선 시안"></a><figcaption>개선 시안 · 조작 상태와 행 리듬 강화</figcaption></figure>
+        <figure><a href="assets/refined/08-settings-refined.png"><img src="assets/refined/08-settings-refined.png" alt="설정 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 도움말과 중앙 구분선 제거</figcaption></figure>
       </div>
       <div class="audit-grid">
         <div class="audit-block"><h3>강점</h3><p>두 열 구성이 논리적이며 화면·언어 선택은 자연스럽습니다. 설정 안에 다시 시작을 넣지 않은 흐름도 올바릅니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>슬라이더 트랙·손잡이와 토글이 얇고 작아 조작 가능성이 약합니다. 켜짐/꺼짐은 위치와 색에 크게 의존합니다. 회색 도움말은 밝은 배경에서 대비가 약할 수 있습니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>행 전체를 44px 이상 클릭 영역으로 보고, 토글 상태를 텍스트와 위치로 함께 표시합니다. 슬라이더 값 표시를 가까이 두어 조작 결과를 즉시 확인하게 합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>자동 저장과 언어 적용 도움말은 설정값이 아니며 매번 볼 필요가 없습니다. 중앙 열 구분선과 각 토글 행의 반복 외곽선도 화면을 잘게 나눕니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>실제 설정과 값만 남깁니다. 두 열은 간격과 제목 정렬로 구분하고, 토글 행은 테두리 없는 클릭 영역으로 처리합니다. 스위치 트랙과 슬라이더처럼 조작에 필요한 경계는 굵고 분명하게 유지합니다.</p></div>
       </div>
     </section>
 
@@ -481,12 +506,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/09-manual-result.png"><img src="assets/current/09-manual-result.png" alt="현재 직접 종료 결과 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/09-manual-result-improved.png"><img src="assets/improved/09-manual-result-improved.png" alt="직접 종료 결과 개선 시안"></a><figcaption>개선 시안 · 결과 수치와 다음 행동 위계 강화</figcaption></figure>
+        <figure><a href="assets/refined/09-manual-result-refined.png"><img src="assets/refined/09-manual-result-refined.png" alt="직접 종료 결과 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 설명 대신 결과와 행동만 유지</figcaption></figure>
       </div>
       <div class="audit-grid">
         <div class="audit-block"><h3>강점</h3><p>도색률, 등급, 이전 최고, 시간과 사용 탄 수가 한 패널에 모여 있습니다. 재도전이 주 행동인 점도 명확합니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>패널이 넓고 버튼 세 개가 비슷한 무게로 보입니다. 1920×1080에서는 산이 더 작아져 최종 결과를 세계에서 확인하기 어렵습니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>재도전만 파란 버튼으로 유지하고 다음은 보조, 스테이지 선택은 텍스트 행동으로 낮춥니다. 산을 확대해 수치와 실제 도색 자국이 함께 보이게 합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>‘최종 목표 영역’과 계산 설명은 큰 도색률 수치가 이미 전달하는 내용을 반복합니다. 넓은 패널과 같은 무게의 세 버튼은 산과 다음 행동의 위계를 약하게 만듭니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>완료, 큰 도색률, 짧은 목표 수치, 등급·최고·시간·탄 수만 남깁니다. 재도전만 파란 버튼으로 유지하고 다음은 보조, 스테이지 선택은 텍스트 행동으로 낮춥니다.</p></div>
       </div>
     </section>
 
@@ -497,12 +522,12 @@
       </div>
       <div class="compare-grid">
         <figure><a href="assets/current/10-timeout-result.png"><img src="assets/current/10-timeout-result.png" alt="현재 시간 종료 결과 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
-        <figure><a href="assets/improved/10-timeout-result-improved.png"><img src="assets/improved/10-timeout-result-improved.png" alt="시간 종료 결과 개선 시안"></a><figcaption>개선 시안 · 시계 형태와 제목으로 종료 사유 구분</figcaption></figure>
+        <figure><a href="assets/refined/10-timeout-result-refined.png"><img src="assets/refined/10-timeout-result-refined.png" alt="시간 종료 결과 최종 개선 시안"></a><figcaption>피드백 반영 시안 · 종료 사유와 결과만 유지</figcaption></figure>
       </div>
       <div class="audit-grid">
         <div class="audit-block"><h3>강점</h3><p>제목이 직접 종료 결과와 다르며, 최종 파란 페인트 경로가 세계에 남아 있습니다.</p></div>
-        <div class="audit-block"><h3>문제</h3><p>종료 사유의 차이는 제목 한 줄에 거의 전부 의존합니다. 나머지 패널 구조가 직접 종료와 같아 빠르게 구분하기 어렵습니다.</p></div>
-        <div class="audit-block"><h3>개선</h3><p>시계 형태와 제목을 함께 사용해 색에만 의존하지 않고 시간 종료를 표시합니다. 결과 수치와 행동 위계는 직접 종료 화면과 일관되게 유지합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>종료 사유의 차이는 제목 한 줄에 거의 전부 의존하면서, 반복 설명은 직접 종료 화면과 같은 밀도를 만듭니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>시계 형태와 제목을 함께 사용해 시간 종료를 표시하고, 나머지는 큰 도색률·목표·기록·행동만 남깁니다. 내부 장식 선 없이 직접 종료 결과와 같은 정보 위계를 유지합니다.</p></div>
       </div>
     </section>
 
@@ -550,14 +575,14 @@
             <tr><th>제품·사용자 목표</th><td>고정 대포에서 목표, 각도, 파워를 계획하고 발사 후 물리 접촉과 도색 결과를 이해하는 Windows 데스크톱 3D 퍼즐.</td></tr>
             <tr><th>검토 기준</th><td>유효한 source brief, 현재 구현 기록, Quiet Context UI 지침, 승인된 시각 기준, UI/UX 접근성 차단 기준.</td></tr>
             <tr><th>실제 캡처</th><td>현재 Windows 릴리스 실행 파일의 숨김 Delivery Capture 경로. 한국어 1280×720 전체 10상태 + 1920×1080 대표 5상태.</td></tr>
-            <tr><th>개선 이미지</th><td>각 현재 캡처를 편집 기준 이미지로 첨부한 built-in ImageGen UI mockup. 실제 기능과 문구를 보존하고 한 화면당 한 개선 방향 생성.</td></tr>
+            <tr><th>개선 이미지</th><td>각 현재 캡처와 승인된 1차 시안을 편집 기준 이미지로 첨부한 built-in ImageGen UI mockup. 7개 화면은 피드백을 반영한 v2를 최종 시각 목표로 사용.</td></tr>
             <tr><th>미포함 상태</th><td>스테이지 로딩/재시도는 전용 캡처 케이스가 없어 포함하지 못함. 과거 STAGE_FAILED 화면은 현재 상태 기계에서 도달 불가하므로 사용하지 않음.</td></tr>
             <tr><th>검증 한계</th><td>스크린샷은 키보드 동작, 스크린리더 이름, 실제 대비 수치, 모션, 입력 누출, 3D 깊이, 물리 정확성, 성능을 증명하지 않음.</td></tr>
           </tbody>
         </table>
       </div>
       <p class="note"><strong>UIUX gate evidence:</strong> Surface = Windows desktop game flow · Depth = Level 4 audit/redesign · Viewports = 1280×720 전체, 1920×1080 대표 · States = 10 · Result = 현재 구현 blocked. 이유는 지도 보기의 조사 대상 축소, 브리핑/탄환 추적의 중앙 가림, 선택 카드의 여백 부족입니다.</p>
-      <p>이미지 생성에 사용한 최종 프롬프트 세트는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>에 보존했습니다.</p>
+      <p>1차 이미지 프롬프트는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>, 피드백 반영 최종 프롬프트는 <a href="refined-imagegen-prompts.txt">refined-imagegen-prompts.txt</a>에 보존했습니다.</p>
     </section>
   </main>
 

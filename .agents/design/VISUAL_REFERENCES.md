@@ -2,7 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-06
+last_reviewed: 2026-08-10
 topic: Paint Mountain visual references and anti-references
 scope: provenance, authority, and permitted interpretation of project visual evidence
 source: ../../docs/handoffs/gameplay-visual-reset-2026-08-03/source-map.md
@@ -10,6 +10,8 @@ related:
   - DESIGN.md
   - ART_DIRECTION.md
   - UIUX_GUIDELINES.md
+  - ../execplans/2026-08-10-essential-ui-fidelity.md
+  - ../../docs/reports/screen-audit-2026-08-10/index.html
 ---
 
 # Paint Mountain Visual References
@@ -115,7 +117,7 @@ concepts, or asset previews from silently becoming product requirements.
   `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`.
 - Current use: direct edge-aligned status, warm paper-white field, navy type,
   blue primary action, left coverage rail, centered Fire, right-side
-  angle/power instruments, hairline separation, minimal containment, and one
+  angle/power instruments, minimal containment, and one
   quiet lower-edge context legend with inline input/action pairs.
 - Apply across: Main Menu, Stage Select, Briefing, Aim View, Map View, Shot
   Follow, Pause, Settings, transient feedback, and Result using the same Theme,
@@ -128,6 +130,46 @@ concepts, or asset previews from silently becoming product requirements.
   retain detached dark keycap tiles or visible target-derived yaw.
 - Status: approved visual authority for the UI system. Running-build captures
   remain required implementation and acceptance evidence.
+
+### Approved Essential UI fidelity set
+
+- Report: [2026-08-10 screen audit and refined targets](../../docs/reports/screen-audit-2026-08-10/index.html)
+- Provenance: seven ImageGen edits grounded in the matching running-game
+  captures and the already approved Quiet Context redesigns. The user explicitly
+  approved the retained style and requested this copy-and-boundary refinement on
+  2026-08-10.
+- Images and SHA-256:
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/01-main-menu-refined.png`
+    — `3180F3CBE62ADBE6A7C4EF9DDB20B790199037551CC69CA3A4D47CACF761A0AB`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/02-stage-select-refined.png`
+    — `534AE4D710034E7812CBC9463A8F1E33CD02A790010B6C683D17680497CC788B`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/03-briefing-refined.png`
+    — `6A391F80DAF526A4785CF7189FDE779C6B2DD1DADB2A4F03DBDD5A3245B5D6D5`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/04-aim-view-refined.png`
+    — `38F75235B126CC5995BA53E61665AEE9DCD397B27CA92939B08BE90ED10E76B1`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/08-settings-refined.png`
+    — `F6C5A4C34D0B32A14C2D8908ACCDE35D2630C623DF6F2B9B458AA3EBB99B845E`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/09-manual-result-refined.png`
+    — `BAB75443FE83FE5D5034ACE8A03FB844E2ED8252BBE4BD7693754D04BE449604`
+  - `../../docs/reports/screen-audit-2026-08-10/assets/refined/10-timeout-result-refined.png`
+    — `178BB88187B11BF6CCD87D17348AA8DEE61908E74228A53A5735B198D474F28B`
+- Use literally for: which normal-screen copy is visible, the absence of
+  duplicated key names inside actions, the absence of decorative hairlines and
+  repeated unselected-card outlines, primary/secondary/tertiary action hierarchy,
+  and the intended relative UI/world occupancy at a 16:9 baseline.
+- Use directionally for: exact responsive coordinates, mountain shape, terrain
+  seed, paint marks, lighting details, glyph placement, camera interpolation,
+  and text rasterization. Runtime layout must use real translated strings and
+  authoritative game state.
+- Screen scope: Main Menu, Stage Select, Briefing, Aim View, Settings, Manual
+  Result, and Timeout Result. The approved Quiet Context image and the existing
+  three screen-audit improvements remain the direction for Map View, Shot Follow,
+  and Pause until a later user revision replaces them.
+- Status: approved fidelity targets for the named screens. They supersede the
+  earlier screen-audit improvement images only for those seven screens, and
+  supersede the Quiet Context reference only where visible copy, separator use,
+  or screen composition conflicts. Running-build captures remain required
+  implementation and acceptance evidence.
 
 ### Historical remediation report
 

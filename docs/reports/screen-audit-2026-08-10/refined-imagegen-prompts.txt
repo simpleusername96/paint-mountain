@@ -1,0 +1,38 @@
+Paint Mountain · Essential UI refinement prompts · 2026-08-10
+
+Shared edit contract
+--------------------
+- Edit the attached approved Paint Mountain screen; preserve its exact 16:9 composition, warm paper-white background, navy Pretendard-like Korean typography, electric-blue primary action, faceted white mountain, restrained rounded surfaces, and sparse Quiet Context style.
+- Remove only the named redundant copy and decorative boundaries. Do not invent new controls, metrics, navigation, illustrations, icons, or gameplay state.
+- Use spacing, alignment, typography, and soft surface fill before dividers or outlines.
+- Keep boundaries only for focus, selection, modal containment, an editable control, a slider/progress rail, or a target marker.
+- Render clean production-quality Korean UI with no clipped text, malformed glyphs, duplicated letters, or illegible microcopy.
+- Target dimensions: match the attached 1672 × 941 image exactly. Do not add a device frame or browser chrome.
+
+01 · Main Menu
+--------------
+Keep the approved main-menu style and mountain preview. Remove the small English eyebrow above the title and remove the Korean marketing/tagline sentence below the title. Keep only the large “페인트 마운틴” title and four real actions: “플레이”, “스테이지 선택”, “설정”, “종료”. Keep Play as the sole compact blue primary button. Make the remaining three actions quiet and text-led. Do not add divider lines, card outlines, helper copy, or new icons. Preserve the large tactile faceted mountain on the right and the generous open composition.
+
+02 · Stage Select
+-----------------
+Keep the approved stage-select layout and all real stage facts. Remove the objective/strategy sentence from the selected-stage detail area. Show only stage number, stage name, target percentage, best percentage, duration, shot count, and the real Start action. Remove the vertical divider between list and detail and remove any footer hairline. Give unselected stage rows a soft fill with no border and no internal separator; only the selected row uses a purposeful blue outline. Keep paging and Back quiet and Start compact blue. Do not invent stage data or extra descriptions.
+
+03 · Briefing
+-------------
+Keep the approved briefing screen’s Quiet Context style but make the world the dominant content. Remove the objective paragraph/card and remove the duplicate standalone mouse instruction. In the upper-left show only compact stage identity (“스테이지 02”, “폭발 분지”) and the mode label “지형 확인”. In the lower-left keep only “뒤로” and the blue “조준 시작” action. Keep the single lower-edge context guide. Enlarge and frame the complete mountain. Show the actual amber mechanism glyph on the terrain but remove the floating world-space word “폭발” and every other mechanism-name label. Remove the decorative bottom hairline. Do not change the glyph shape or invent a new mechanism.
+
+04 · Aim View
+-------------
+Preserve the approved aiming HUD, world, cannon, mountain, coverage gauge, values, and all real actions. Change the mode control to the semantic label “조준” only, with no “Tab” inside it. Change Finish to “완료” only, with no “F” inside it. Change the primary button to “발사” only, with no “Space” beside it. Keep S/W, mouse wheel, Space, Tab, F, and Esc exactly once in the lower-edge context guide. Remove the full-width bottom hairline and remove the thin separator inside the power control. Keep functional slider/progress rails, target markers, selection/focus outlines, and button boundaries. Do not add or remove gameplay actions.
+
+08 · Settings
+-------------
+Preserve the approved two-column Settings layout, title, values, real controls, primary colors, and warm Quiet Context style. Remove the “설정은 자동으로 저장됩니다” helper text and remove the language-application note. Remove the vertical column divider. Make the Camera Shake, Reduced Motion, and Trajectory Preview rows unboxed: no repeated row border, while keeping a clear large switch track, state text, and at least 44px implied hit area. Keep functional slider rails, dropdown/input boundaries, focus state, Back, and Restore Defaults. Use spacing and aligned section titles to separate the two columns. Do not invent settings.
+
+09 · Manual Result
+------------------
+Preserve the approved manual-result scene, final painted mountain, Quiet Context palette, and truthful actions. Remove the “최종 목표 영역” caption and remove the explanatory coverage sentence. Show “완료”, the large authoritative coverage value “0.4%”, a compact “목표 5%”, grade, previous best, elapsed time, shots, and the real actions. Make Retry the sole blue primary button, Next a quiet secondary button, and Stage Select a tertiary text action. Remove decorative internal divider lines. Keep one restrained outer result surface and enlarge the complete mountain beside it. Do not invent rewards or change result values.
+
+10 · Timeout Result
+-------------------
+Preserve the approved timeout-result scene, final painted mountain, Quiet Context palette, and truthful actions. Use the existing text-safe clock motif with “시간 종료” so the terminal reason does not rely on color alone. Remove the “최종 목표 영역” caption and remove the explanatory coverage sentence. Show the large authoritative coverage value “4.6%”, compact “목표 5%”, grade, previous best, elapsed time, shots, and the real actions. Make Retry the sole blue primary button, Next a quiet secondary button, and Stage Select a tertiary text action. Remove decorative internal divider lines. Keep one restrained outer result surface and enlarge the complete mountain. Do not invent rewards or change result values.

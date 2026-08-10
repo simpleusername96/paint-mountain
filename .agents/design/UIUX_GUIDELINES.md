@@ -20,7 +20,9 @@ related:
   - ../execplans/2026-08-08-casual-shared-ui-refresh.md
   - ../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md
   - ../execplans/2026-08-09-quiet-context-ui-system.md
+  - ../execplans/2026-08-10-essential-ui-fidelity.md
   - ../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
+  - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -63,7 +65,8 @@ real navigation, tactile primary actions, and Korean-first interaction
 contracts.
 
 - Put status and labels directly at the screen edges when containment is not
-  required. Use spacing and hairline dividers before panels.
+  required. Use spacing, alignment, typography, and surface fill to group
+  content before adding any boundary.
 - Reserve a filled blue surface for the current primary action. Routine and
   secondary actions use quiet neutral or text-led treatment; disabled state
   remains explicit.
@@ -75,10 +78,15 @@ contracts.
 - Aim View exposes angle and power only. The target-derived horizontal yaw is
   not a player control or useful planning instrument, so `↔`, a yaw degree, A,
   and D are absent from the visible HUD.
-- Apply the same paper-white, navy, blue-accent, hairline-divider, restrained
-  radius, type, focus, and state rules to Main Menu, Stage Select, Briefing,
-  Map View, Shot Follow, Pause, Settings, and Result. The approved image decides
-  the system, not literal generated terrain pixels or omitted real actions.
+- Apply the same paper-white, navy, blue-accent, restrained radius, type, focus,
+  and state rules to Main Menu, Stage Select, Briefing, Map View, Shot Follow,
+  Pause, Settings, and Result. Use a thin rule or outline only for semantic
+  focus, selection, containment, editable controls, slider/progress rails, or a
+  target marker. Do not use decorative full-width or repeated internal lines.
+- The seven user-approved 2026-08-10 refined screens registered in
+  `VISUAL_REFERENCES.md` are the fidelity targets for their named screens. They
+  refine copy density, boundary use, and composition without replacing the
+  Quiet Context color, typography, action, or focus system.
 
 ### Aiming HUD hierarchy
 
@@ -225,12 +233,13 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
-- Input-token styling is Theme-owned and quiet: navy text with an optional thin
-  neutral outline only when a key name needs separation from its action label.
-  The shared context legend groups S/W with angle, the mouse-wheel glyph with
-  power, Space with Fire, Tab with Aim/Map or Shot Follow return, and Esc with
-  menu/Continue without owning input. F may remain inside the real Finish
-  action. Terrain-target yaw shows no A/D token.
+- Input-token styling is Theme-owned and quiet. The shared lower-edge context
+  legend uses inline text and the existing mouse-wheel asset; it groups S/W with
+  angle, the wheel with power, Space with Fire, Tab with Aim/Map or Shot Follow
+  return, F with Finish, and Esc with menu/Continue without owning input. Fire,
+  Finish, and Aim/Map controls show semantic action labels only and do not
+  repeat those key names. Terrain-target yaw shows no A/D token. Do not use
+  detached or outlined keycap tiles in the normal gameplay legend.
 - Aim steppers keep decrement, current value, and increment in one row and
   disable the matching direct-control button at its numeric boundary.
 - Keyboard focus uses the shared visible 2 px accent treatment.
@@ -242,8 +251,23 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Pretendard is the shared project font and must be loaded through the Theme.
 - Korean is the default locale; English remains switchable and persistent.
 - Store translation keys rather than visible display text in gameplay Resources.
-- Use short, direct Korean gameplay terms. Avoid design commentary, tutorial
-  filler, and obsolete payload-language.
+- Use short, direct Korean gameplay terms. Normal screens may show only screen
+  or stage identity, authoritative values, real actions, a terminal reason,
+  conditional loading/error/disabled reasons, and the single current-context
+  guide. Remove marketing eyebrow/tagline copy, duplicated objective or strategy
+  prose, duplicate mouse hints, autosave/language helper notes, result
+  explanation captions, and shortcuts repeated inside controls.
+- Explanatory copy belongs in a future guidebook page, the first tutorial, or a
+  dedicated UI guide. Preserve useful stage-objective and mechanism-description
+  translation content for those owners, accessibility, and diagnostics; do not
+  render it as normal-screen filler.
+- Briefing shows compact stage number/name and inspection mode, the complete
+  terrain with unlabelled surface glyphs, Back/Start actions, and the lower-edge
+  context guide. It does not show an objective paragraph, mechanism name floating
+  over the terrain, or a second instruction line.
+- Results show the terminal title, coverage value, compact target value, grade,
+  best value, elapsed time, shots, and supported actions. They do not label the
+  metric as “final target coverage” or explain the calculation in body copy.
 - Check every visible Korean label for clipping, overlap, awkward forced wrap,
   and insufficient button width. Do not solve text fit by making essential text
   unreadably small.
@@ -271,8 +295,9 @@ A UI change conforms when:
   keyboard-focus states;
 - no panel overlaps another, escapes its container, hides fixed content, or
   blocks the world-space impact point; and
-- no reachable screen contains detached dark shortcut tiles, avoidable nested
-  card framing, or a visible yaw readout; and
+- no reachable screen contains detached shortcut tiles, decorative full-width
+  hairlines, repeated unselected-card outlines, avoidable nested card framing,
+  duplicated shortcut labels, or a visible yaw readout; and
 - every visible action is connected to real functionality.
 
 Every substantial UI or visual-composition change requires direct inspection of

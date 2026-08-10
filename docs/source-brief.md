@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-10
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -12,6 +12,7 @@ related:
   - test-checklist.md
   - ../.agents/execplans/2026-08-06-ballistic-terrain-preparation.md
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
+  - ../.agents/execplans/2026-08-10-essential-ui-fidelity.md
   - ../.agents/Plan.md
 ---
 
@@ -2230,6 +2231,49 @@ speed, duration, shot-summary, and mechanism-message requirements:
   instruments, context legend, Pause/Settings, loading/failure, and Results.
 
 All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-10): Essential-Only Screen Copy and Semantic Boundaries
+
+After reviewing the generated screen-audit refinements, the user approved the
+existing Quiet Context visual style and requested a quieter final pass. These
+clauses supersede only conflicting visible-copy, shortcut-prompt, briefing-label,
+and decorative-separator requirements:
+
+- **Put explanation on learning surfaces:** normal menus, selection, briefing,
+  aiming, settings, and result screens show only identity, authoritative state,
+  real actions, terminal reasons, conditional errors, and one current-context
+  input guide. Strategy explanations and instructional prose belong in a future
+  guidebook page, the first tutorial, or a dedicated UI guide instead of being
+  repeated across ordinary screens.
+- **Keep content without exposing filler:** stage objective keys, mechanism
+  descriptions, and other useful teaching copy may remain as content inventory
+  for those learning surfaces, accessibility, diagnostics, and localization.
+  Hiding normal-screen copy must not delete gameplay rules or replace truthful
+  loading, failure, disabled-reason, tooltip, or accessible-name text.
+- **Make briefing visual:** briefing shows the complete terrain and its actual
+  surface glyphs without world-space mechanism names, an objective paragraph,
+  or a duplicate mouse hint. It retains compact stage identity, the inspection
+  mode, Back and Start Aiming, and the one lower-edge context guide.
+- **Own shortcuts in one place:** the lower-edge context guide is the sole
+  visible shortcut explanation during interactive gameplay. Fire, Finish, and
+  Aim/Map action labels contain their semantic Korean or English labels only;
+  they do not repeat `Space`, `F`, or `Tab`. This replaces earlier instructions
+  to place those key names inside the corresponding controls.
+- **Use semantic boundaries only:** spacing, alignment, typography, and surface
+  fill establish groups before rules or outlines. Do not use decorative
+  full-width hairlines, repeated card borders, internal result separators, or
+  column dividers. Keep boundaries only when they communicate focus, selection,
+  containment, an editable control, a slider/progress rail, or a target marker.
+- **Use the refined images as fidelity targets:** the seven approved refinements
+  in `docs/reports/screen-audit-2026-08-10/assets/refined/` are the visual targets
+  for Main Menu, Stage Select, Briefing, Aim View, Settings, Manual Result, and
+  Timeout Result. Written behavior and runtime truth still override generated
+  pixels, invented geometry, or accidental text artifacts.
+
+No guidebook or tutorial implementation, gameplay-rule change, new action,
+input change, stage-resource migration, or second paint representation is
+introduced by this revision. All earlier requirements not contradicted here
+remain in force.
 
 ## Acceptance Criteria
 
