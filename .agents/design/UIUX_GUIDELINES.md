@@ -107,11 +107,15 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   survives supported desktop aspect and resolution changes. Do not freeze every
   child to viewport offsets.
 - Keep one Fire control. Do not place Restart in the aiming HUD.
-- Do not expose the old Follow/Wide/Cannon preset rail, gameplay speed, or
-  gameplay Pause strips. Shot Follow uses one contextual return action only.
+- Do not expose the old Follow/Wide/Cannon preset rail, a gameplay-speed toggle,
+  or gameplay Pause strips. Active play already uses the fixed two-times pace;
+  Shot Follow uses one contextual return action only.
 - Keep the top-center and center of the world view free of duplicate status
   cards, and keep visible mountain routes free of
   persistent panels, explanatory text, or modal overlays.
+- Do not show passive per-shot summaries or mechanism briefing/activation
+  message cards. Preserve internal observation and activation facts without a
+  replacement toast or banner.
 - Trajectory and impact feedback belong in world space; the HUD must not pretend
   to predict post-impact paint.
 

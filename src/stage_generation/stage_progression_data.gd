@@ -40,10 +40,10 @@ static func shots_for(stage_number: int) -> int:
 static func duration_seconds_for(stage_number: int) -> int:
 	var n := clampi(stage_number, 1, STAGE_COUNT)
 	if n <= 10:
-		return 90
+		return 60
 	if n <= 20:
-		return 120
-	return 180
+		return 90
+	return 120
 
 
 static func normalized_t(stage_number: int) -> float:

@@ -1,11 +1,13 @@
 class_name TrajectoryPredictionJob
 extends RefCounted
 
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
+
 ## Sole fixed-step prediction implementation. Runtime advances it cooperatively;
 ## offline callers drive the same job to completion.
 
-const PHYSICS_STEP := 1.0 / 60.0
-const MAXIMUM_STEPS := 720
+const PHYSICS_STEP := GAMEPLAY_PACE.ACTIVE_SIMULATION_STEP_SECONDS
+const MAXIMUM_STEPS := GAMEPLAY_PACE.PREDICTION_MAXIMUM_STEPS
 const COLLISION_MASK := 1 | 4
 const REST_PROBE_DISTANCE := 0.01
 

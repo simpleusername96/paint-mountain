@@ -71,7 +71,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `SplitterNode` | Consume input and request a bounded, route-readable three-child fan | Stage decisions or recursive splitting |
 | `UphillReboundNode` | Redirect a retained ball toward a stored meaningful local ascent with cooldown | Direct coverage changes |
 | `CameraDirector` | Authored `AIM_VIEW`, safe `MAP_VIEW`, specific-root `SHOT_FOLLOW`, impact hold, return-to-cannon, result framing, and transitions; existing internal enum names may migrate independently | Board Phase, aim values, Fire admission, prediction solving, projectile selection policy, or game rules |
-| `HUDController` and screen controllers | Display Board Phase/readiness/activity/presentation mode and emit typed aim, fire, return-to-cannon, and game-menu intents | Reconstruct Fire admission, authoritative state mutation, direct pause/settings mutation, camera transforms, or alternate coverage |
+| `GameplayPace` | Fixed normal/active time-scale constants and the active 60 Hz simulation step shared by runtime and prediction | Stage-clock accumulation, player settings, or a speed-selection UI |
+| `HUDController` and screen controllers | Display Board Phase/readiness/presentation mode and emit typed aim, fire, return-to-cannon, and game-menu intents | Reconstruct Fire admission, consume diagnostic observations, present passive shot/mechanism messages, authoritative state mutation, direct pause/settings mutation, camera transforms, or alternate coverage |
 | `StageLayoutRepository` | Async persisted-layout load, selected/prefetch ordering, accepted identity checks, and a three-entry LRU | Runtime generation, aim solving, scene-tree, render, physics-world, paint, preview-artifact, or stage-outcome work |
 | `PauseOverlay`, `SettingsScreen`, `AppRoot` | Full-input game-menu barrier/focus, separate settings form, navigation/return layering, fail-closed repository scheduling, and main-thread gameplay/preview materialization | Terrain generation rules, stage-state ownership, restart rules, aim/fire forwarding, or hidden simulation progress |
 | `ShotObservation` | One shot's commanded aim, ordered contacts/effects/children, settlement, coverage, paint-command drain, and checksum facts | Stage transitions, HUD formatting, or independent reconstruction |
@@ -395,12 +396,18 @@ Human / GameplayAgentApi actions
   while prediction status is a separate advisory presentation. Map View and Shot
   Follow also block aim/Fire at the input boundary; returning to Aim View
   restores the stored tuple without changing simulation.
+- `GameplayPace` applies a fixed 2.0 time scale during active `AIMING` board
+  play and 1.0 outside it. The project remains at 60 physics callbacks per wall
+  second; trajectory prediction uses the matching 1/30 simulation step, while
+  `StageController` advances the run clock by one real callback and therefore
+  keeps the 60/90/120-second tiers independent of time scale.
 - The edge HUD, bottom-center sole Fire action, interaction-mode toggle, compact
   time, remaining/maximum shots, Finish, gear,
   and input-capturing paused game menu have one typed state/action path. Shot
   Follow adds only one contextual
-  return-to-cannon action; the old Follow/Wide/Cannon preset rail, normal-play
-  1x/2x, duplicate Pause, aiming Restart, and Settings Restart are absent.
+  return-to-cannon action. Passive shot-summary and mechanism-message cards are
+  absent; the old Follow/Wide/Cannon preset rail, player-facing speed selection,
+  duplicate Pause, aiming Restart, and Settings Restart are also absent.
 - Save and observation formats include explicit versions and deterministic failure behavior.
 - The project passes `scripts/verify.ps1` after architectural changes.
 

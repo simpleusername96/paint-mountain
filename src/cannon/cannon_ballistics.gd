@@ -1,6 +1,8 @@
 class_name CannonBallistics
 extends RefCounted
 
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
+
 ## These offsets are the fixed cannon geometry contract used by both the scene
 ## controller and generation-time ballistic admission. Keep cannon.tscn aligned
 ## with them; CannonController asserts that alignment when it becomes ready.
@@ -206,13 +208,13 @@ static func _sample_damped(
 		maximum_seconds: float,
 		linear_damp: float
 ) -> PackedVector3Array:
-	const PHYSICS_STEP := 1.0 / 60.0
+	var physics_step := GAMEPLAY_PACE.ACTIVE_SIMULATION_STEP_SECONDS
 	var samples := PackedVector3Array([origin])
 	var position := origin
 	var elapsed := 0.0
 	var next_sample := sample_step
 	while elapsed < maximum_seconds - 0.0001:
-		var delta := minf(PHYSICS_STEP, maximum_seconds - elapsed)
+		var delta := minf(physics_step, maximum_seconds - elapsed)
 		velocity *= maxf(0.0, 1.0 - linear_damp * delta)
 		velocity += gravity * delta
 		position += velocity * delta

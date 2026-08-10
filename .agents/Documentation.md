@@ -25,6 +25,8 @@ related:
   - execplans/2026-08-08-instant-approximate-landing-feedback.md
   - execplans/2026-08-09-quiet-context-ui-system.md
   - execplans/2026-08-09-remove-wind-system.md
+  - execplans/2026-08-10-double-pace-and-quiet-feedback.md
+  - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
@@ -115,6 +117,47 @@ player choose a target, angle, power, Fire, or Finish action.
 
 This change removes presentation only. It does not remove resident projectiles,
 their internal activity signal, or diagnostic observations.
+
+## Current Double-Pace and Quiet-Feedback Revision (2026-08-10)
+
+### Context
+
+Normal ball travel and presentation required too much waiting, while the
+temporary shot-summary and mechanism cards repeated visible coverage, world
+glyph, effect, and objective information over the mountain.
+
+### Decision
+
+Active `AIMING` board play uses a fixed 2.0 time scale on the retained 60 Hz
+physics tick. Matching ballistic prediction uses a 1/30 simulation step and the
+first-impact follow hold is 24 real physics callbacks. The first launch starts a
+wall-clock duration of 60/90/120 seconds across Stages 01-10/11-20/21-30.
+`ShotSummary` and `MechanismInfoCard` presentation and their exclusive wiring
+are removed.
+
+### Rationale
+
+The fixed faster pace shortens non-decision waiting. A real-tick stage clock
+keeps difficulty limits predictable, while removing passive messages restores
+the mountain as the main source of causal feedback.
+
+### Consequences
+
+- `GameplayPace` owns normal/active scale and the derived prediction step;
+  `StageController` continues to own the wall clock and results.
+- Sealed `ShotObservation` and mechanism selection/activation events remain for
+  gameplay, agent, attempt, effects, audio, camera shake, and diagnostics.
+- Briefing actions/objective, Return to Cannon, run status/Finish, coverage and
+  aim instruments, context legend, Pause/Settings, and Results remain visible.
+
+### Limitations
+
+This change makes no measured CPU, GPU, memory, FPS, or player-performance
+claim. The fixed 60 Hz tick means scaled live and predicted motion use a larger
+simulation step; focused collision, readiness, and parity checks remain required.
+
+Implemented evidence is recorded in
+[`evidence/double-pace-and-quiet-feedback-2026-08-10/README.md`](evidence/double-pace-and-quiet-feedback-2026-08-10/README.md).
 
 ## Current Quiet Context UI System (2026-08-09)
 

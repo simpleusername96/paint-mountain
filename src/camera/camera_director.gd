@@ -1,6 +1,8 @@
 class_name CameraDirector
 extends Node
 
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
+
 signal mode_changed(mode: int)
 signal interaction_mode_changed(mode: int)
 
@@ -24,7 +26,7 @@ const CAMERA_CLEARANCE := 1.5
 const CORRECTION_SMOOTH_TIME := 0.20
 const AIM_SUMMIT_HEADROOM := 8.0
 const AIM_SUMMIT_HEIGHT_TOLERANCE := 0.25
-const FOLLOW_IMPACT_HOLD_TICKS := 48
+const FOLLOW_IMPACT_HOLD_TICKS := GAMEPLAY_PACE.FOLLOW_IMPACT_HOLD_TICKS
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025

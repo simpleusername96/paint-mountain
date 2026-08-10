@@ -7,6 +7,7 @@ const MAIN_MENU_SCENE := preload("res://scenes/ui/screens/main_menu.tscn")
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const STAGE_LAYOUT_REPOSITORY_SCRIPT := preload("res://src/app/stage_layout_repository.gd")
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
@@ -226,7 +227,7 @@ func _on_gameplay_navigation(destination: StringName) -> void:
 
 
 func _remove_gameplay() -> void:
-	Engine.time_scale = 1.0
+	GAMEPLAY_PACE.apply_normal()
 	get_tree().paused = false
 	if _gameplay != null and is_instance_valid(_gameplay):
 		_gameplay.queue_free()

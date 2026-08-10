@@ -1,6 +1,8 @@
 class_name DebugOverlay
 extends CanvasLayer
 
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
+
 signal mechanism_labels_toggled(visible: bool)
 
 var _stage_data: StageData
@@ -62,6 +64,8 @@ func configure(
 	_set_overlay_visible(visible)
 	_controller.shot_result.connect(func(gain: float, _total: float) -> void: _last_gain = gain)
 	_controller.restart_completed.connect(func(elapsed_ms: float) -> void: _last_restart_ms = elapsed_ms)
+	if not _controller.state_changed.is_connected(_on_stage_state_changed):
+		_controller.state_changed.connect(_on_stage_state_changed)
 
 
 func _process(_delta: float) -> void:
@@ -240,7 +244,20 @@ func _spawn_test_projectile() -> void:
 
 func _toggle_slow_motion() -> void:
 	_slow_motion = not _slow_motion
-	Engine.time_scale = 0.35 if _slow_motion else 1.0
+	_apply_time_scale_for_stage_state()
+
+
+func _on_stage_state_changed(_current_state: int, _previous_state: int) -> void:
+	_apply_time_scale_for_stage_state()
+
+
+func _apply_time_scale_for_stage_state() -> void:
+	if _controller == null or _controller.current_state != StageController.State.AIMING:
+		GAMEPLAY_PACE.apply_normal()
+	elif _slow_motion:
+		GAMEPLAY_PACE.apply_debug_slow_motion()
+	else:
+		GAMEPLAY_PACE.apply_active()
 
 
 func _toggle_labels() -> void:

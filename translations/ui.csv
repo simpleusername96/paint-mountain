@@ -59,9 +59,6 @@ hud.power_decrease,DECREASE POWER BY 2%,파워 2% 낮추기
 hud.power_increase,INCREASE POWER BY 2%,파워 2% 높이기
 hud.total,TOTAL,누적
 hud.coverage_format,Target area %.1f%% / Goal %.1f%%,목표 영역 %.1f%% / 목표 %.1f%%
-hud.summary_split,Split %d×,분열 %d회
-hud.summary_balls,%d balls,공 %d개
-hud.summary_direct,Direct route,직접 경로
 hud.aim_context,TERRAIN CLICK/DRAG · W S ANGLE · WHEEL POWER,지형 클릭·드래그 · W S 각도 · 휠 파워
 hud.map_context,DRAG TO ROTATE · WHEEL ZOOM,드래그 회전 · 휠 확대
 hud.map,MAP,지도
@@ -102,7 +99,6 @@ mechanism.burst.description,Paints a broad mark on the nearby target surface whe
 mechanism.splitter.description,Creates three balls that paint independently along multiple routes.,각자 칠하는 공 세 개를 만들어 여러 경로로 보냅니다.
 mechanism.bumper.description,Redirects the ball toward the next slope in the arrow direction.,공을 화살표 방향의 다음 경사로 되돌려 보냅니다.
 mechanism.uphill_rebound.description,Launches the ball back toward the steepest uphill direction.,공을 지형에서 가장 높은 오르막 방향으로 다시 튕겨 보냅니다.
-mechanism.activated,ACTIVATED,장치 작동
 mechanism.none,NONE,없음
 mechanism.no_mechanisms,NO MECHANISMS · FOLLOW THE NATURAL DESCENT,장치 없음 · 자연 경사를 따라가세요
 settings.title,SETTINGS,설정

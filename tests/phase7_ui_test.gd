@@ -166,6 +166,11 @@ func _assert_theme_contract() -> void:
 
 
 func _assert_aiming_hud_contract(hud_root: Control) -> void:
+	_assert_true(
+		hud_root.get_node_or_null("ShotSummary") == null \
+				and hud_root.get_node_or_null("MechanismInfoCard") == null,
+		"normal gameplay must not contain passive shot or mechanism message cards"
+	)
 	var rendered_hud_rect := hud_root.get_global_rect()
 	var logical_size := Vector2(
 		float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),

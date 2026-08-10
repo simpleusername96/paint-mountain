@@ -2203,6 +2203,34 @@ resident-ball counts or moving/resting activity:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-10): Double Active Pace and Remove Passive Messages
+
+After reviewing the pace and the remaining message overlays in the running
+game, the user requested faster active play, shorter difficulty-scaled run
+limits, and a quieter HUD. These clauses supersede only conflicting gameplay
+speed, duration, shot-summary, and mechanism-message requirements:
+
+- **Two-times active play:** while the board is active, projectile physics,
+  camera motion, and effects run at two times the former pace. This is the fixed
+  normal gameplay pace, not a player-facing speed toggle. Briefing, result, and
+  non-gameplay screens remain at normal UI time.
+- **Wall-clock stage limits:** the first actual launch starts a real-time limit
+  of 60 seconds for Stages 01-10, 90 seconds for Stages 11-20, and 120 seconds
+  for Stages 21-30. Simulation time scale must not shorten these wall-clock
+  limits a second time.
+- **Remove passive message UI:** remove the temporary sealed-shot summary and
+  the mechanism briefing/activation message card, including their scene nodes,
+  HUD methods, message-only localization, and message-specific tests. Do not
+  replace them with another toast, banner, or explanation overlay.
+- **Preserve gameplay truth:** sealed shot observations, mechanism activation
+  and selection events, agent/attempt diagnostics, paint, coverage, scoring,
+  Finish, timeout, and result calculations remain independent of the removed UI.
+- **Preserve actionable and terminal UI:** keep the briefing objective with its
+  Start/Back actions, Return to Cannon, run status and Finish, coverage and aim
+  instruments, context legend, Pause/Settings, loading/failure, and Results.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

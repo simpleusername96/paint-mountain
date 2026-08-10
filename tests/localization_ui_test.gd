@@ -190,14 +190,13 @@ func _assert_control_inside_viewport(control: Control, label: String) -> void:
 func _assert_translation_contract(locale: String) -> void:
 	var required := [
 		"hud.direction", "hud.direction_left", "hud.direction_right", "hud.direction_center",
-		"hud.coverage", "hud.coverage_format", "hud.summary_split", "hud.summary_balls",
-		"hud.summary_direct", "hud.aim_context", "hud.map_context", "hud.aim_lock", "hud.map_inspection",
+		"hud.coverage", "hud.coverage_format", "hud.aim_context", "hud.map_context", "hud.aim_lock", "hud.map_inspection",
 		"hud.switch_to_map_inspection", "hud.switch_to_aim_lock", "mechanism.burst.description",
 		"hud.time",
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
 		"fire.aim_revision_pending",
 		"result.completed", "result.time_expired", "result.final", "result.grade", "result.elapsed",
-		"mechanism.splitter.description", "mechanism.uphill_rebound.description", "mechanism.activated",
+		"mechanism.splitter.description", "mechanism.uphill_rebound.description",
 		"settings.reduced_motion",
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
 		"hud.angle_decrease", "hud.angle_increase", "hud.power_decrease", "hud.power_increase",
@@ -205,6 +204,13 @@ func _assert_translation_contract(locale: String) -> void:
 	]
 	for key in required:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
+	for retired_key in [
+		"hud.summary_split", "hud.summary_balls", "hud.summary_direct", "mechanism.activated",
+	]:
+		_assert_true(
+			tr(retired_key) == retired_key,
+			"%s translation must not retain passive message key %s" % [locale, retired_key]
+		)
 	if locale == "ko":
 		_assert_true(tr("hud.coverage") == "목표 영역", "Korean coverage caption must name the target area")
 		_assert_true(tr("hud.coverage_format") == "목표 영역 %.1f%% / 목표 %.1f%%", "Korean coverage format must distinguish the target area from its goal")

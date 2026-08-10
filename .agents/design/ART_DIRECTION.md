@@ -151,10 +151,13 @@ owned by `UIUX_GUIDELINES.md`.
   Area overlap affects coverage. The Support Shell, bottom, apron, decorations,
   mechanisms, and airborne travel remain unpainted.
 - Shot Follow keeps the newly launched root paintball readable through flight,
-  then holds its first terrain contact briefly so impact, paint, and terrain
-  response form one legible cause-and-effect beat.
+  then holds its first terrain contact for about 0.4 wall seconds at the fixed
+  two-times active pace so impact, paint, and terrain response form one legible
+  cause-and-effect beat.
 - Muzzle, contact, mechanism, Finish, and timeout effects are brief and bounded.
   They explain cause and effect rather than covering it.
+- World motion and effects communicate shot and mechanism outcomes directly;
+  passive summary or activation cards must not cover the mountain.
 
 ### Asset use
 

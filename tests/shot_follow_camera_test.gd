@@ -88,15 +88,15 @@ func _run() -> void:
 	manager.projectile_contact_reported.emit(first_root, contact)
 	_assert(
 		director._follow_impact_hold_ticks == CameraDirector.FOLLOW_IMPACT_HOLD_TICKS,
-		"first playable-surface impact must start the exact 0.8-second hold"
+		"first playable-surface impact must start the exact 0.4-second wall-clock hold"
 	)
 	for _tick in range(CameraDirector.FOLLOW_IMPACT_HOLD_TICKS - 1):
 		director._update_follow_state()
-	_assert(director.current_mode == CameraDirector.Mode.FOLLOW, "impact must remain visible for 47 ticks")
+	_assert(director.current_mode == CameraDirector.Mode.FOLLOW, "impact must remain visible until the final hold tick")
 	director._update_follow_state()
 	_assert(
 		director.current_mode == CameraDirector.Mode.AIMING,
-		"the 48th hold tick must restore Aim View"
+		"the 24th hold tick must restore Aim View"
 	)
 
 	var second_root := manager.spawn_projectile(
@@ -120,7 +120,7 @@ func _run() -> void:
 	host.queue_free()
 	await process_frame
 	if not _failed:
-		print("Shot Follow camera passed: exact root, child stability, 48-tick impact hold, and camera-only return.")
+		print("Shot Follow camera passed: exact root, child stability, 24-tick impact hold, and camera-only return.")
 	quit(1 if _failed else 0)
 
 

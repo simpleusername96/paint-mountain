@@ -28,6 +28,15 @@ func _initialize() -> void:
 		"late clear targets must follow the shot-tier plateaus"
 	)
 	_assert(StageProgressionData.shots_for(1) == 4 and StageProgressionData.shots_for(30) == 7, "shot endpoints must remain locked")
+	_assert(
+		StageProgressionData.duration_seconds_for(1) == 60 \
+				and StageProgressionData.duration_seconds_for(10) == 60 \
+				and StageProgressionData.duration_seconds_for(11) == 90 \
+				and StageProgressionData.duration_seconds_for(20) == 90 \
+				and StageProgressionData.duration_seconds_for(21) == 120 \
+				and StageProgressionData.duration_seconds_for(30) == 120,
+		"duration tiers must remain 60/90/120 wall-clock seconds"
+	)
 	var previous_difficulty := -INF
 	var profile_ids: Dictionary = {}
 	for index in range(catalog.stages.size()):

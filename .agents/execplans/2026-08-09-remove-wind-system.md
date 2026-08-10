@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: archived
 created: 2026-08-09
 scope: complete retirement of wind gameplay, presentation, data, diagnostics, tests, and active documentation while preserving the non-wind coverage loop
 related:
@@ -16,6 +16,11 @@ related:
 ---
 
 # Remove the Wind System - Execution Contract
+
+> Archived on 2026-08-10. The implementation, validation, commits, and remote
+> branch publication completed. Draft-PR creation remained unavailable because
+> the configured GitHub token lacked pull-request permission; the newer gameplay
+> pace and quiet-feedback contract is now the only active ExecPlan.
 
 Paint Mountain will no longer contain a wind gameplay or presentation system. The current deterministic implementation is retired as a documented product experiment because it changes simulation outcomes without establishing a sufficiently legible player-controlled planning decision. Persistent paintballs, mechanism impulses, the stage clock, Finish, coverage scoring, terrain generation, and gravity/collision trajectory prediction remain authoritative.
 

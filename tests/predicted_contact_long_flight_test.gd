@@ -2,6 +2,7 @@ extends SceneTree
 
 const FIXTURE_SCENE := preload("res://tests/fixtures/terrain_surface_fixture.tscn")
 const PROJECTILE_DATA := preload("res://resources/projectiles/basic_paintball.tres")
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
 
 var _failed := false
 
@@ -10,6 +11,8 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	var original_time_scale := Engine.time_scale
+	GAMEPLAY_PACE.apply_active()
 	var host := Node3D.new()
 	root.add_child(host)
 	var terrain := FIXTURE_SCENE.instantiate() as TerrainSurface
@@ -33,6 +36,7 @@ func _run() -> void:
 		manager.cleanup()
 		host.queue_free()
 		await process_frame
+		Engine.time_scale = original_time_scale
 		quit(1)
 		return
 	var contacts: Array[ProjectileContact] = []
@@ -53,12 +57,12 @@ func _run() -> void:
 		if not contacts.is_empty(): break
 	_assert(not contacts.is_empty(), "protected live root must reach terrain after six seconds")
 	if not contacts.is_empty():
-		var live_contact_seconds := float(contacts[0].physics_tick - spawn_tick) \
-				/ float(Engine.physics_ticks_per_second)
-		_assert(live_contact_seconds > data.never_contacted_timeout \
-				and live_contact_seconds <= root_projectile.never_contacted_deadline \
+		var live_simulation_seconds := float(contacts[0].physics_tick - spawn_tick) \
+				/ float(Engine.physics_ticks_per_second) * Engine.time_scale
+		_assert(live_simulation_seconds > data.never_contacted_timeout \
+				and live_simulation_seconds <= root_projectile.never_contacted_deadline \
 						+ TrajectoryPredictionJob.PHYSICS_STEP,
-			"live top contact must occur after six seconds and before the protected deadline")
+			"live top contact must occur after six simulation seconds and before the protected deadline")
 		_assert(contacts[0].world_position.distance_to(prediction.collision_contact_point()) <= 0.2,
 			"live first top contact must match predicted contact")
 		_assert(contacts[0].is_first_contact and root_projectile.terminal_reason != ProjectileSettlementReason.MISSED_TERRAIN,
@@ -85,9 +89,11 @@ func _run() -> void:
 	manager.cleanup()
 	host.queue_free()
 	await process_frame
+	var active_time_scale := Engine.time_scale
+	Engine.time_scale = original_time_scale
 	if not _failed:
 		var live_seconds := float(contacts[0].physics_tick - spawn_tick) \
-				/ float(Engine.physics_ticks_per_second)
+				/ float(Engine.physics_ticks_per_second) * active_time_scale
 		print("Long-flight parity passed: predicted %.3fs, live contact %.3fs, protected terminal=terrain_contact, unmatched terminal=%s, bounds terminal=%s." % [
 			prediction.duration, live_seconds, ProjectileSettlementReason.MISSED_TERRAIN,
 			ProjectileSettlementReason.ESCAPED_BOUNDS,

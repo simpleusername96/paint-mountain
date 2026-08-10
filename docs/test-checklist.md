@@ -27,6 +27,8 @@ related:
   - ../.agents/execplans/2026-08-08-terrain-targeted-aiming.md
   - ../.agents/execplans/2026-08-09-quiet-context-ui-system.md
   - ../.agents/execplans/2026-08-09-remove-wind-system.md
+  - ../.agents/execplans/2026-08-10-double-pace-and-quiet-feedback.md
+  - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
@@ -45,6 +47,37 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed double-pace and quiet-feedback gate (2026-08-10)
+
+- [x] Active `AIMING` board play uses a fixed 2.0 time scale while briefing,
+  finishing, result, app teardown, and non-gameplay screens use 1.0. The project
+  remains at a fixed 60 Hz physics tick.
+- [x] Live projectile physics and advisory prediction use the matching 1/30
+  scaled simulation step, retain a 12-simulation-second prediction horizon, and
+  pass representative prediction/live, readiness, tunneling, and stage checks.
+- [x] Stages 01/10 use a 60-second wall-clock limit, 11/20 use 90 seconds, and
+  21/30 use 120 seconds. The first launch starts the timer and scaled `delta`
+  does not change the real-time limit.
+- [x] The first-impact Shot Follow hold is 24 real physics callbacks/about 0.4
+  wall seconds. Return to Cannon remains visible and does not stop the ball.
+- [x] `ShotSummary` and `MechanismInfoCard` scenes, scripts, HUD nodes, facade
+  methods, gameplay calls, and message-only localization are absent without a
+  replacement toast, banner, or prose overlay.
+- [x] Sealed shot observations and mechanism selection/activation gameplay,
+  agent, attempt, effect, audio, shake, paint, score, and result paths remain.
+- [x] Focused pace/progression/state/prediction/camera/HUD/localization checks,
+  `scripts/verify.ps1`, and the Windows release export pass.
+- [x] The implementing agent inspects separate 1280x720 Korean Windows release
+  captures for briefing, aiming, and post-impact Shot Follow. Required actions
+  remain visible with no passive message, overlap, clipping, or replacement gap.
+
+Current evidence:
+
+- `.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md`
+- `.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/release-briefing-stage02-1280x720-ko.png`
+- `.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/release-aiming-stage02-1280x720-ko.png`
+- `.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/release-impact-hold-stage01-1280x720-ko.png`
 
 ## Completed resident-activity HUD removal gate (2026-08-10)
 

@@ -6,6 +6,7 @@ const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
 const UPHILL_REBOUND_SCENE := preload("res://scenes/mechanisms/uphill_rebound_node.tscn")
 const PAINT_SURFACE_TUNING := preload("res://resources/paint/default_paint_surface_tuning.tres")
+const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
 
 @export var stage_data: StageData
 
@@ -40,6 +41,7 @@ var _prepared_layout_checksum: int = 0
 
 
 func _ready() -> void:
+	GAMEPLAY_PACE.apply_normal()
 	assert(stage_data != null, "GameplayScene requires StageData.")
 	var game_state := get_node_or_null("/root/GameState")
 	var selected_stage := StageCatalog.get_stage(game_state.selected_stage_id if game_state != null else stage_data.stage_id)
@@ -107,6 +109,10 @@ func _ready() -> void:
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
+
+
+func _exit_tree() -> void:
+	GAMEPLAY_PACE.apply_normal()
 
 
 func generated_layout() -> GeneratedStageLayout:
@@ -231,7 +237,6 @@ func _connect_systems() -> void:
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
 	_stage_controller.shot_fired.connect(_on_shot_fired)
-	_stage_controller.shot_result.connect(_on_shot_result)
 	_stage_controller.shot_observation_sealed.connect(_on_shot_observation_sealed)
 	_stage_controller.aim_action_accepted.connect(_on_aim_action_accepted)
 	_stage_controller.fire_action_accepted.connect(_on_fire_action_accepted)
@@ -278,12 +283,7 @@ func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float)
 	_audio_cue(&"fire")
 
 
-func _on_shot_result(gain: float, total: float) -> void:
-	_hud.show_shot_result(gain, total)
-
-
 func _on_shot_observation_sealed(observation: ShotObservation) -> void:
-	_hud.show_shot_observation(observation)
 	_attempt_recorder.record_shot_observation(observation)
 
 
@@ -353,12 +353,13 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 	_hud.show_state(state)
 	match state:
 		StageController.State.BRIEFING:
+			GAMEPLAY_PACE.apply_normal()
 			_set_mechanism_labels_visible(true)
 			_trajectory_preview.visible = false
 			_camera_director.set_mode(CameraDirector.Mode.BRIEFING)
 		StageController.State.AIMING:
 			_set_mechanism_labels_visible(false)
-			Engine.time_scale = 1.0
+			GAMEPLAY_PACE.apply_active()
 			_trajectory_preview.visible = _setting_bool("trajectory_preview", true)
 			if _trajectory_preview.visible:
 				_trajectory_preview.refresh()
@@ -366,8 +367,10 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 			# or locked into aim. All other entries to Aiming start in Aim Lock.
 			if previous_state != StageController.State.PAUSED:
 				_camera_director.set_mode(CameraDirector.Mode.AIMING)
+		StageController.State.PAUSED:
+			GAMEPLAY_PACE.apply_normal()
 		StageController.State.FINISHING, StageController.State.RESULT:
-			Engine.time_scale = 1.0
+			GAMEPLAY_PACE.apply_normal()
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
 	_update_prediction_consumers()
 
@@ -450,7 +453,6 @@ func _spawn_mechanisms() -> void:
 func _on_mechanism_selected(mechanism: TerrainGlyphMechanism) -> void:
 	if _stage_controller.current_state == StageController.State.BRIEFING:
 		_camera_director.focus_briefing_target(mechanism.global_position)
-		_hud.show_mechanism_brief(mechanism.data.kind)
 
 
 func _on_mechanism_activated(
@@ -463,7 +465,6 @@ func _on_mechanism_activated(
 		"position": mechanism.global_position,
 	}
 	_agent_api.notify_event(&"mechanism_activated", payload)
-	_hud.show_mechanism_activation(kind)
 	_presentation_effects.mechanism_burst(mechanism.global_position)
 	_audio_cue(&"mechanism")
 	_camera_director.add_impact_shake(0.32)

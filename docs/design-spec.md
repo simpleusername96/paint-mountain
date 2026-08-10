@@ -107,9 +107,11 @@ exactly three mechanism types.
   target and aim revisions; keep only permitted stale arc dots subdued and
   hide stale impact or exit markers. Use shape with the existing blue role.
   Never preview post-impact solution paths or exact coverage.
-- The complete pre-impact preview uses the same radius, fixed-tick gravity,
-  damping, launch origin, speed, shared collision geometry, and collision layers
-  as the real ball. It ends at the first physical collision or open-bounds exit.
+- The complete pre-impact preview uses the same radius, active fixed-step
+  gravity, damping, launch origin, speed, shared collision geometry, and
+  collision layers as the real ball. Active board play uses a fixed two-times
+  time scale on the 60 Hz physics tick, so prediction uses the matching 1/30
+  simulation step. It ends at the first physical collision or open-bounds exit.
   It is advisory: preview pending or a predicted miss never blocks Fire. A Human
   target selection or target-preserving elevation/power edit commits the best
   bounded approximate inverse candidate immediately, without an exact collision
@@ -140,10 +142,12 @@ exactly three mechanism types.
   waits until every current body has reached that surface or terminated;
   resident terrain balls may therefore
   remain physically active without permanently exhausting Fire capacity.
-- Family coverage feedback is nonmodal. Reaching target coverage or spending all
-  shots neither clears nor fails the run. After the first shot, Finish may end
-  the run; otherwise the stage duration ends it. Final unique target coverage is
-  the sole score and star thresholds remain grades.
+- Coverage remains visible in its authoritative nonmodal gauge. There is no
+  temporary per-shot summary or mechanism briefing/activation message card.
+  Reaching target coverage or spending all shots neither clears nor fails the
+  run. After the first shot, Finish may end the run; otherwise the stage duration
+  ends it. Final unique target coverage is the sole score and star thresholds
+  remain grades.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
 - The current catalog shares one canonical terrain-family seed. Stage and
   profile identity still make the thirty stages distinct, and each stage has
@@ -290,10 +294,12 @@ exactly three mechanism types.
 
 ### Results and persistence
 
-- The first actual launch starts the stage duration, which is 90, 120, or 180
-  seconds according to progression. Finish ends an active run after that first
-  shot; timer expiry also ends it. Results use final unique target coverage as
-  the sole score, with existing star thresholds as grades.
+- The first actual launch starts a wall-clock stage duration of 60, 90, or 120
+  seconds for Stages 01-10, 11-20, or 21-30. The active simulation runs at a
+  fixed two-times pace, but the real-time clock does not scale with it. Finish
+  ends an active run after that first shot; timer expiry also ends it. Results
+  use final unique target coverage as the sole score, with existing star
+  thresholds as grades.
 - Results show stage, final coverage, time outcome, shots used/remaining,
   previous best, new best, rank/stars, final mountain, retry, next, and stage
   select. They do not present target coverage or spent shots as an automatic

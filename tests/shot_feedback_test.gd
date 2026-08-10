@@ -104,14 +104,18 @@ func _run() -> void:
 	for ordinal in range(1, 4):
 		observation.record_child_spawn(ordinal, 1, Engine.get_physics_frames(), 3)
 	observation.seal(20.4, -1, 0x12345678)
-	hud.show_shot_observation(observation)
-	var summary: ShotSummary = hud_root.get_node("ShotSummary")
-	_assert_true(summary.visible and "분열 1회" in summary.summary.text and "공 3개" in summary.summary.text, "sealed shot summary must explain gain and observed causes")
-	_assert_true(absf(summary.timer.wait_time - 1.2) <= 0.1, "shot summary lifetime must be 1.2 ± 0.1 seconds")
-	hud.show_mechanism_activation(MechanismData.Kind.SPLITTER)
-	var mechanism_card: MechanismInfoCard = hud_root.get_node("MechanismInfoCard")
-	_assert_true(mechanism_card.visible and mechanism_card.title.text == "분열", "mechanism callout must show the localized mechanism name")
-	_assert_true(absf(mechanism_card.timer.wait_time - 1.2) <= 0.1, "mechanism callout lifetime must be 1.2 ± 0.1 seconds")
+	_assert_true(
+		hud_root.get_node_or_null("ShotSummary") == null \
+				and hud_root.get_node_or_null("MechanismInfoCard") == null,
+		"passive shot and mechanism message UI must be absent without replacement nodes"
+	)
+	_assert_true(
+		observation.is_sealed \
+				and observation.mechanism_activations.size() == 1 \
+				and observation.spawned_child_count == 3 \
+				and is_equal_approx(observation.coverage_gain, 8.4),
+		"removing message consumers must preserve sealed shot and mechanism facts"
+	)
 	var shader_source := FileAccess.get_file_as_string("res://src/paint/terrain_paint.gdshader")
 	_assert_true(not shader_source.contains("EMISSION"), "terrain shader must not write emission")
 	_assert_true(shader_source.contains("mix(0.88, 0.24, painted)"), "terrain shader must bind 0.88 dry and 0.24 painted roughness")
@@ -119,7 +123,7 @@ func _run() -> void:
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shot feedback passed: direction, camera interaction state, target, causal summary, and callout timing.")
+		print("Shot feedback passed: sparse controls, target truth, quiet HUD, and retained observation facts.")
 	quit(1 if _failed else 0)
 
 

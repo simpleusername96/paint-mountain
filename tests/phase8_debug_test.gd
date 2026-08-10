@@ -27,7 +27,14 @@ func _run_checks() -> void:
 	_assert_true(overlay.visible, "debug builds must allow F3 overlay visibility")
 	_assert_true(_count_buttons(overlay) == 8, "debug overlay must expose the eight current actions")
 	_assert_true(_count_texture_rects(overlay) == 4, "debug overlay must expose paint, target, recent, and non-target masks")
+	overlay._toggle_slow_motion()
+	_assert_true(is_equal_approx(Engine.time_scale, 1.0), "debug slow motion must not alter briefing time")
+	overlay._toggle_slow_motion()
 	_assert_true(controller.begin_aiming(), "debug log shot must enter aiming")
+	overlay._toggle_slow_motion()
+	_assert_true(is_equal_approx(Engine.time_scale, 0.7), "debug slow motion must scale from the active 2x baseline")
+	overlay._toggle_slow_motion()
+	_assert_true(is_equal_approx(Engine.time_scale, 2.0), "debug slow-motion release must restore the active baseline")
 	var original_aim := AimTuple.canonicalize(
 		cannon.yaw_degrees,
 		cannon.elevation_degrees,

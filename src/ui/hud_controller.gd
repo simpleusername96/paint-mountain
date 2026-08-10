@@ -22,9 +22,7 @@ signal angle_step_requested(direction: float)
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
 @onready var _return_to_cannon: Button = %ReturnToCannon
-@onready var _shot_summary: ShotSummary = %ShotSummary
 @onready var _result: ResultPanel = %ResultPanel
-@onready var _mechanism: MechanismInfoCard = %MechanismInfoCard
 @onready var _briefing: PanelContainer = %BriefingPanel
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
@@ -65,10 +63,6 @@ func configure(stage_data: StageData) -> void:
 	%BriefingTitle.text = tr(String(stage_data.display_name_key))
 	%BriefingObjective.text = tr(String(stage_data.objective_key))
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
-	if stage_data.mechanism_loadout.is_empty():
-		_mechanism.hide_card()
-	else:
-		_mechanism.show_brief(stage_data.mechanism_loadout[0].kind)
 
 
 func update_aim(yaw: float, elevation: float, power: float) -> void:
@@ -101,8 +95,6 @@ func show_state(state: StageController.State) -> void:
 	var aiming_surface := state in [
 		StageController.State.AIMING,
 	]
-	if aiming_surface:
-		_mechanism.hide_card()
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
@@ -125,10 +117,6 @@ func show_state(state: StageController.State) -> void:
 		_pause.focus_resume.call_deferred()
 
 
-func show_shot_observation(observation: ShotObservation) -> void:
-	_shot_summary.show_observation(observation)
-
-
 func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 	_current_interaction_mode = mode
 	_interaction.set_interaction_mode(mode)
@@ -145,20 +133,6 @@ func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
 	_refresh_context_legend()
-
-
-func show_shot_result(_gain: float, _total: float) -> void:
-	# ShotSummary consumes the sealed ShotObservation; this remains for the legacy signal connection.
-	pass
-
-
-func show_mechanism_brief(kind: MechanismData.Kind) -> void:
-	if _current_state == StageController.State.BRIEFING:
-		_mechanism.show_brief(kind)
-
-
-func show_mechanism_activation(kind: MechanismData.Kind) -> void:
-	_mechanism.show_activation(kind)
 
 
 func show_coverage_result(
@@ -241,8 +215,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_context_legend.refresh_locale()
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
-		if _current_state == StageController.State.BRIEFING and not _stage_data.mechanism_loadout.is_empty():
-			_mechanism.show_brief(_stage_data.mechanism_loadout[0].kind)
 	show_state(_current_state)
 
 
