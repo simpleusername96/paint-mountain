@@ -14,7 +14,10 @@ func _ready() -> void:
 	%Play.pressed.connect(func() -> void: play_requested.emit())
 	%StageSelect.pressed.connect(func() -> void: stage_select_requested.emit())
 	%Settings.pressed.connect(func() -> void: settings_requested.emit())
-	%Quit.pressed.connect(func() -> void: quit_requested.emit())
+	if OS.has_feature("web"):
+		%Quit.hide()
+	else:
+		%Quit.pressed.connect(func() -> void: quit_requested.emit())
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null:
 		game_state.settings_changed.connect(_on_settings_changed)

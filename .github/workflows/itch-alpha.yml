@@ -30,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish the verified build to the itch.io alpha channel
+        description: Publish the verified builds to the itch.io alpha channels
         required: true
         default: false
         type: boolean
@@ -45,7 +45,8 @@ concurrency:
 env:
   GODOT_RELEASE: 4.7.1-stable
   GODOT_TEMPLATE_VERSION: 4.7.1.stable
-  ITCH_TARGET: itchioprofile1351321/paint-mountain:windows-alpha
+  ITCH_WINDOWS_TARGET: itchioprofile1351321/paint-mountain:windows-alpha
+  ITCH_WEB_TARGET: itchioprofile1351321/paint-mountain:html5
 
 jobs:
   verify-build-publish:
@@ -74,9 +75,11 @@ jobs:
           path: |
             ~/.cache/paint-mountain/godot/4.7.1-stable
             ~/.local/share/godot/export_templates/4.7.1.stable
-          key: paint-mountain-godot-${{ runner.os }}-4.7.1-stable-windows-x86-64-v1
+          key: paint-mountain-godot-${{ runner.os }}-4.7.1-stable-windows-web-v2
+          restore-keys: |
+            paint-mountain-godot-${{ runner.os }}-4.7.1-stable-windows-x86-64-v1
 
-      - name: Prepare pinned Godot editor and Windows templates
+      - name: Prepare pinned Godot editor and export templates
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
@@ -88,12 +91,14 @@ jobs:
           $templateRoot = Join-Path $env:HOME ".local/share/godot/export_templates/$env:GODOT_TEMPLATE_VERSION"
           $templateNames = @(
               'windows_release_x86_64.exe',
-              'windows_release_x86_64_console.exe'
+              'windows_release_x86_64_console.exe',
+              'web_nothreads_release.zip'
           )
 
-          $cacheReady = (Test-Path -LiteralPath $godotPath -PathType Leaf)
+          $editorReady = Test-Path -LiteralPath $godotPath -PathType Leaf
+          $templatesReady = $true
           foreach ($templateName in $templateNames) {
-              $cacheReady = $cacheReady -and (Test-Path -LiteralPath (Join-Path $templateRoot $templateName) -PathType Leaf)
+              $templatesReady = $templatesReady -and (Test-Path -LiteralPath (Join-Path $templateRoot $templateName) -PathType Leaf)
           }
 
           function Assert-FileHash {
@@ -112,23 +117,25 @@ jobs:
               }
           }
 
-          if (-not $cacheReady) {
+          if (-not $editorReady) {
               New-Item -ItemType Directory -Path $toolRoot -Force | Out-Null
-              New-Item -ItemType Directory -Path $templateRoot -Force | Out-Null
 
               $godotArchive = Join-Path $env:RUNNER_TEMP "Godot_v$($env:GODOT_RELEASE)_linux.x86_64.zip"
               $godotUrl = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_RELEASE/Godot_v$($env:GODOT_RELEASE)_linux.x86_64.zip"
               Invoke-WebRequest -UseBasicParsing -Uri $godotUrl -OutFile $godotArchive
               Assert-FileHash -Path $godotArchive -Algorithm SHA512 -Expected '4CCDAB7A48EECCBE8819A2FC1F6262F8D72065D98601BCB3743FCBD7EBD39F373758A788EE3293A05EC5B2C48538266C437404312E372225CD2DF273945A2DE9'
               Expand-Archive -LiteralPath $godotArchive -DestinationPath $toolRoot -Force
+          }
 
+          if (-not $templatesReady) {
+              New-Item -ItemType Directory -Path $templateRoot -Force | Out-Null
               $templateArchive = Join-Path $env:RUNNER_TEMP "Godot_v$($env:GODOT_RELEASE)_export_templates.tpz"
               $templateUrl = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_RELEASE/Godot_v$($env:GODOT_RELEASE)_export_templates.tpz"
               Invoke-WebRequest -UseBasicParsing -Uri $templateUrl -OutFile $templateArchive
               Assert-FileHash -Path $templateArchive -Algorithm SHA512 -Expected 'AFCC83D8D3D298038F19C58744A0D660FA75DD4BAA33CB55D1011BB2565A2A8C2381728924564CB909E37C205A23F21B521B23BD057993AFD43AE4DA0B2F9D47'
 
               # The official archive contains every platform. Cache only the two
-              # Windows x86-64 release templates this workflow can consume.
+              # Windows x86-64 files and the single-threaded Web release template.
               Add-Type -AssemblyName System.IO.Compression.FileSystem
               $archive = [System.IO.Compression.ZipFile]::OpenRead($templateArchive)
               try {
@@ -161,44 +168,98 @@ jobs:
         shell: pwsh
         run: ./scripts/test.ps1 -GodotPath $env:GODOT_BIN
 
-      - name: Export Windows alpha build
+      - name: Export Windows and Web alpha builds
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
 
-          $releaseDirectory = Join-Path $env:RUNNER_TEMP "paint-mountain-windows-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-          New-Item -ItemType Directory -Path $releaseDirectory | Out-Null
-          $executablePath = Join-Path $releaseDirectory 'PaintMountain.exe'
+          function Invoke-CheckedGodotExport {
+              param(
+                  [Parameter(Mandatory = $true)]
+                  [string]$Preset,
+                  [Parameter(Mandatory = $true)]
+                  [string]$OutputPath,
+                  [Parameter(Mandatory = $true)]
+                  [string]$Label
+              )
 
-          $output = & $env:GODOT_BIN --headless --path $env:GITHUB_WORKSPACE --export-release 'Windows Desktop' $executablePath 2>&1
-          $exitCode = $LASTEXITCODE
-          $output | ForEach-Object { Write-Host $_ }
-          $outputText = $output | Out-String
-          if ($exitCode -ne 0) {
-              throw "Godot release export failed with exit code $exitCode."
+              $output = & $env:GODOT_BIN --headless --path $env:GITHUB_WORKSPACE --export-release $Preset $OutputPath 2>&1
+              $exitCode = $LASTEXITCODE
+              $output | ForEach-Object { Write-Host $_ }
+              $outputText = $output | Out-String
+              if ($exitCode -ne 0) {
+                  throw "$Label export failed with exit code $exitCode."
+              }
+              if ($outputText -match '(?m)^(SCRIPT ERROR|ERROR):') {
+                  throw "$Label export reported a script or runtime error."
+              }
+              if (-not (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
+                  throw "$Label export did not produce $OutputPath."
+              }
           }
-          if ($outputText -match '(?m)^(SCRIPT ERROR|ERROR):') {
-              throw 'Godot release export reported a script or runtime error.'
+
+          $windowsReleaseDirectory = Join-Path $env:RUNNER_TEMP "paint-mountain-windows-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $webReleaseDirectory = Join-Path $env:RUNNER_TEMP "paint-mountain-web-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          foreach ($directory in @($windowsReleaseDirectory, $webReleaseDirectory)) {
+              New-Item -ItemType Directory -Path $directory | Out-Null
           }
-          if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
-              throw 'Godot did not produce PaintMountain.exe.'
+
+          $executablePath = Join-Path $windowsReleaseDirectory 'PaintMountain.exe'
+          $webEntryPath = Join-Path $webReleaseDirectory 'index.html'
+          Invoke-CheckedGodotExport -Preset 'Windows Desktop' -OutputPath $executablePath -Label 'Windows release'
+          Invoke-CheckedGodotExport -Preset 'Web' -OutputPath $webEntryPath -Label 'Web release'
+
+          foreach ($requiredWebFile in @('index.html', 'index.js', 'index.pck', 'index.wasm')) {
+              if (-not (Test-Path -LiteralPath (Join-Path $webReleaseDirectory $requiredWebFile) -PathType Leaf)) {
+                  throw "Web release is missing $requiredWebFile."
+              }
           }
 
           $shortCommit = $env:GITHUB_SHA.Substring(0, 7)
           $buildVersion = "alpha.$env:GITHUB_RUN_NUMBER+$shortCommit"
-          $buildHash = (Get-FileHash -LiteralPath $executablePath -Algorithm SHA256).Hash
+          $windowsBuildHash = (Get-FileHash -LiteralPath $executablePath -Algorithm SHA256).Hash
+          $webBuildHash = (Get-FileHash -LiteralPath (Join-Path $webReleaseDirectory 'index.pck') -Algorithm SHA256).Hash
           @(
-              'Paint Mountain itch.io alpha build'
+              'Paint Mountain itch.io Windows alpha build'
               "version=$buildVersion"
               "commit=$env:GITHUB_SHA"
               "built_at=$([DateTime]::UtcNow.ToString('o'))"
-              "sha256=$buildHash"
-          ) | Set-Content -LiteralPath (Join-Path $releaseDirectory 'build-info.txt') -Encoding utf8
+              "executable_sha256=$windowsBuildHash"
+          ) | Set-Content -LiteralPath (Join-Path $windowsReleaseDirectory 'build-info.txt') -Encoding utf8
+          @(
+              'Paint Mountain itch.io Web alpha build'
+              "version=$buildVersion"
+              "commit=$env:GITHUB_SHA"
+              "built_at=$([DateTime]::UtcNow.ToString('o'))"
+              "pck_sha256=$webBuildHash"
+          ) | Set-Content -LiteralPath (Join-Path $webReleaseDirectory 'build-info.txt') -Encoding utf8
 
-          "RELEASE_DIRECTORY=$releaseDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $webFiles = @(Get-ChildItem -LiteralPath $webReleaseDirectory -Recurse -File)
+          if ($webFiles.Count -gt 1000) {
+              throw "Web release contains $($webFiles.Count) files; itch.io allows at most 1000."
+          }
+          $webTotalBytes = ($webFiles | Measure-Object -Property Length -Sum).Sum
+          if ($webTotalBytes -gt 500MB) {
+              throw "Web release is $webTotalBytes bytes; itch.io allows at most 500 MB extracted."
+          }
+          $oversizedWebFiles = @($webFiles | Where-Object Length -gt 200MB)
+          if ($oversizedWebFiles.Count -gt 0) {
+              throw "Web release contains a file larger than itch.io's 200 MB per-file limit: $($oversizedWebFiles[0].Name)"
+          }
+          foreach ($webFile in $webFiles) {
+              $relativePath = [System.IO.Path]::GetRelativePath($webReleaseDirectory, $webFile.FullName).Replace('\', '/')
+              if ($relativePath.Length -gt 240) {
+                  throw "Web release path exceeds itch.io's 240-character limit: $relativePath"
+              }
+          }
+
+          "WINDOWS_RELEASE_DIRECTORY=$windowsReleaseDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WEB_RELEASE_DIRECTORY=$webReleaseDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILD_SHA256=$buildHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WINDOWS_BUILD_SHA256=$windowsBuildHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WEB_BUILD_SHA256=$webBuildHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WEB_BUILD_BYTES=$webTotalBytes" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Publish verified alpha to itch.io
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)
@@ -230,16 +291,23 @@ jobs:
               throw 'Butler version check failed.'
           }
 
-          & $butlerPath push $env:RELEASE_DIRECTORY $env:ITCH_TARGET --userversion $env:BUILD_VERSION
+          & $butlerPath push $env:WEB_RELEASE_DIRECTORY $env:ITCH_WEB_TARGET --userversion $env:BUILD_VERSION
           if ($LASTEXITCODE -ne 0) {
-              throw "Butler push failed with exit code $LASTEXITCODE."
+              throw "Butler Web push failed with exit code $LASTEXITCODE."
+          }
+          & $butlerPath push $env:WINDOWS_RELEASE_DIRECTORY $env:ITCH_WINDOWS_TARGET --userversion $env:BUILD_VERSION
+          if ($LASTEXITCODE -ne 0) {
+              throw "Butler Windows push failed with exit code $LASTEXITCODE."
           }
 
           @(
               '### itch.io alpha deployment'
               ''
-              "- Channel: ``$env:ITCH_TARGET``"
+              "- Browser channel: ``$env:ITCH_WEB_TARGET``"
+              "- Windows channel: ``$env:ITCH_WINDOWS_TARGET``"
               "- Version: ``$env:BUILD_VERSION``"
               "- Commit: ``$env:GITHUB_SHA``"
-              "- PaintMountain.exe SHA-256: ``$env:BUILD_SHA256``"
+              "- Web extracted bytes: ``$env:WEB_BUILD_BYTES``"
+              "- index.pck SHA-256: ``$env:WEB_BUILD_SHA256``"
+              "- PaintMountain.exe SHA-256: ``$env:WINDOWS_BUILD_SHA256``"
           ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

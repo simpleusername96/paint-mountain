@@ -2275,6 +2275,35 @@ input change, stage-resource migration, or second paint representation is
 introduced by this revision. All earlier requirements not contradicted here
 remain in force.
 
+## Later User Supersession (2026-08-11): Browser-Playable Internet Delivery
+
+After the first automated itch.io upload produced only a downloadable Windows
+build, the user clarified that internet distribution means playing Paint
+Mountain directly in the browser without installing the game. These clauses
+supersede only conflicting delivery-platform and release-automation wording:
+
+- **Browser play is the primary internet build:** every releasable `master`
+  revision exports a Godot Web build with `index.html` and publishes it to an
+  itch.io channel that is tagged playable in the browser.
+- **Use the compatible Web path:** keep the Compatibility renderer, use the
+  official single-threaded Godot Web release template, and resize the canvas
+  adaptively to the browser viewport. Do not require cross-origin-isolation
+  headers or a custom third-party runtime.
+- **Preserve the Windows companion build:** the verified Windows executable may
+  remain available as an optional download, but it is not a substitute for the
+  browser build and must not be described as satisfying browser delivery.
+- **Keep platform actions truthful:** hide the native Quit action in Web builds;
+  retain supported gameplay, settings, keyboard, mouse, persistence, and host
+  fullscreen behavior. This revision does not add a mobile-specific layout.
+- **Automate both verified artifacts:** a qualifying `master` push runs project
+  verification and the complete test suite before exporting and publishing the
+  Web and Windows alpha channels with one traceable version.
+- **Keep visibility user-controlled:** browser upload and playable-channel
+  configuration do not make the itch.io project public. Draft, restricted, or
+  public visibility remains a separate user decision.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
