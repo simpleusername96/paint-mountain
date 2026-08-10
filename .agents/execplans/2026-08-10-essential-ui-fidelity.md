@@ -858,6 +858,8 @@ No implementation work remains in this plan. Use
 
 - Implementation commit:
   `3fe50727e89002ebc49adc244dd73ad9de144a3f`.
+- Documentation and release-evidence closeout commit:
+  `a2639468c84d5f80c067bd05c73910d6f6af68ab`.
 - `scripts/verify.ps1`: passed.
 - Windows Desktop release export: passed; executable SHA-256
   `13D098963544B4878D648370E35C9402139D0AE1D75D81A66A4AE1D97611E2DB`.
