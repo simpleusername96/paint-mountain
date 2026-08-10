@@ -1,0 +1,38 @@
+Built-in ImageGen prompt set
+Generated: 2026-08-10
+Mode: built-in image_gen with local Paint Mountain references
+
+Reference images used for every asset:
+1. docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
+   Role: approved Paint Mountain art-direction reference.
+2. .agents/evidence/resident-activity-hud-removal-2026-08-10/release-aim-stage30-1280x720-ko.png
+   Role: current running-game product-identity reference.
+
+Shared prompt:
+Use case: stylized-concept
+Asset type: explanatory concept image for a Korean HTML game-design report
+Input images: Image 1 is the approved Paint Mountain art-direction reference; Image 2 is the current running-game identity reference. Preserve only the visual language and product identity, not exact geometry or UI.
+Scene/backdrop: one broad, distant, visibly thick low-poly puzzle mountain in an open warm paper-white environment, viewed from behind a small stationary foreground cannon.
+Style/medium: polished Godot-like 3D low-poly game concept render, tactile faceted terrain, physically plausible routes, clean daylight.
+Color palette: warm off-white and pale gray terrain, dark navy cannon, saturated glossy blue paint, amber Burst glyphs, violet Splitter glyphs, coral uphill-rebound glyphs.
+Composition/framing: wide 16:9 landscape, full mountain readable, cannon subordinate in lower foreground, mechanic consequence clearly visible at a glance.
+Constraints: continuous paint appears only on physically traversed terrain; mechanisms are flat terrain-conforming circular glyphs; no people; no text; no letters; no numbers; no HUD; no captions; no watermark.
+Avoid: photorealism, enclosed wall, tabletop board, floating UI panels, impossible caves, noisy terrain, excessive particles.
+
+01-route-objective.png
+Primary request: Explain an ordered route-objective puzzle. Show one especially legible continuous blue paint route beginning near the upper ridge, passing through three distinct ring-shaped route checkpoints in obvious descending order, then activating a violet Splitter and ending as three painted branches in a lower basin. The route checkpoints are physical-looking flat markings embedded on the terrain, each visibly crossed by the same continuous trail. Other mountain areas remain mostly dry so the intended sequence is unmistakable.
+
+02-stateful-paint.png
+Primary request: Explain stateful paint that changes later physics. Show evidence of an earlier setup shot as a broad glossy dark-blue wet track down one selected channel. A newly fired blue paintball is currently sliding fast along that already-painted slick track, leaving a brighter fresh trace and traveling much farther downhill. On a nearby parallel dry gray slope, a second comparable ball has nearly stopped after a short path, creating a clear visual contrast between prepared slippery terrain and untreated terrain. Keep the scene coherent as one gameplay moment, not a split-screen.
+
+03-mechanism-sequence.png
+Primary request: Explain a multi-shot mechanism sequence. Show a connected blue trail through three terrain glyphs whose persistent states are visibly different: an amber Burst glyph already spent and dim with a painted splash around it, a violet Splitter newly charged and glowing with three outward route cues, and a coral uphill-rebound glyph rotated toward a higher shelf where the next ball will travel. Use restrained light links or state rings between the glyphs to make cause-and-effect order clear while keeping them terrain-bound.
+
+04-arcade-combo.png
+Primary request: Explain a rapid-fire arcade combo direction. Show two or three paintballs active at once on different connected mountain routes, with one triggering an amber Burst splash, another entering a violet Splitter that launches three child balls, and a third being redirected uphill by a coral glyph. A single restrained chain of bright activation pulses visually connects these events, and the resulting blue paint creates one spectacular but readable cascading composition. Make it feel fast, joyful, and skillful without showing any score UI.
+
+05-projectile-roles.png
+Primary request: Explain pre-shot paintball role selection. In the foreground beside the stationary cannon, show a small integrated three-slot ammunition cradle containing three clearly different blue paintballs: a large dense heavy ball with a dark metal core, a glossy soft sticky gel ball with a flattened contact patch, and a patterned split-shell ball formed from three joined lobes. On the mountain beyond, show three restrained ghosted trajectory examples ending in distinct consequences: long straight impact, clinging paint path on a steep face, and three-way branching route. Keep the actual cannon and mountain dominant enough to read as Paint Mountain, and make the ammo choices tactile game objects rather than UI icons.
+
+06-pre-shot-device.png
+Primary request: Explain one adjustable pre-shot terrain device. Show a single solid coral circular rebound glyph placed on a middle mountain shelf, with an unmistakable physical arrow orientation that redirects the predicted blue trajectory into a valuable upper route and then down into a basin. Two faint semi-transparent ghost outlines of the same glyph at nearby alternative positions or rotations communicate that the player chooses its setup before firing. The solid chosen placement and resulting route must be visually dominant; ghost options stay subtle and terrain-conforming.
