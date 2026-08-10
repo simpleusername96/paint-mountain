@@ -1,38 +1,147 @@
-Built-in ImageGen prompt set
-Generated: 2026-08-10
-Mode: built-in image_gen with local Paint Mountain references
+Paint Mountain — 스포츠 규칙 기반 코어 루프 이미지 프롬프트
+생성일: 2026-08-10
+생성 방식: OpenAI 내장 ImageGen
+공통 참고 이미지: docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
+참고 이미지 역할: 낮은 폴리곤 산, 따뜻한 오프화이트 지형, 고정 포대, 파란 접촉 페인트, 밝고 열린 배경, 읽기 쉬운 3D 깊이만 참고. 기존 HUD, 문구, 산 형상, 기믹 위치는 복제하지 않음.
 
-Reference images used for every asset:
-1. docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
-   Role: approved Paint Mountain art-direction reference.
-2. .agents/evidence/resident-activity-hud-removal-2026-08-10/release-aim-stage30-1280x720-ko.png
-   Role: current running-game product-identity reference.
+모든 최종 이미지는 16:9 가로형 3패널 스토리보드다. 세 패널은 같은 산·카메라·포대·오브젝트를 유지하며 ‘발사 전 → 충돌/판정 → 다음 판단’을 보여 준다. 공중 비행에는 페인트가 없고 실제 지형 접촉 뒤에만 연속 페인트가 생긴다.
 
-Shared prompt:
-Use case: stylized-concept
-Asset type: explanatory concept image for a Korean HTML game-design report
-Input images: Image 1 is the approved Paint Mountain art-direction reference; Image 2 is the current running-game identity reference. Preserve only the visual language and product identity, not exact geometry or UI.
-Scene/backdrop: one broad, distant, visibly thick low-poly puzzle mountain in an open warm paper-white environment, viewed from behind a small stationary foreground cannon.
-Style/medium: polished Godot-like 3D low-poly game concept render, tactile faceted terrain, physically plausible routes, clean daylight.
-Color palette: warm off-white and pale gray terrain, dark navy cannon, saturated glossy blue paint, amber Burst glyphs, violet Splitter glyphs, coral uphill-rebound glyphs.
-Composition/framing: wide 16:9 landscape, full mountain readable, cannon subordinate in lower foreground, mechanic consequence clearly visible at a glance.
-Constraints: continuous paint appears only on physically traversed terrain; mechanisms are flat terrain-conforming circular glyphs; no people; no text; no letters; no numbers; no HUD; no captions; no watermark.
-Avoid: photorealism, enclosed wall, tabletop board, floating UI panels, impossible caves, noisy terrain, excessive particles.
+================================================================================
+01. 컬링 — Mountain House End
+파일: assets/01-curling-house-end.png
+================================================================================
 
-01-route-objective.png
-Primary request: Explain an ordered route-objective puzzle. Show one especially legible continuous blue paint route beginning near the upper ridge, passing through three distinct ring-shaped route checkpoints in obvious descending order, then activating a violet Splitter and ending as three painted branches in a lower basin. The route checkpoints are physical-looking flat markings embedded on the terrain, each visibly crossed by the same continuous trail. Other mountain areas remain mostly dry so the intended sequence is unmistakable.
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a curling-inspired "Mountain House End" core loop in one exact three-panel image. This is not a curling-themed skin; it must show how persistent paintballs create positional strategy across shots.
 
-02-stateful-paint.png
-Primary request: Explain stateful paint that changes later physics. Show evidence of an earlier setup shot as a broad glossy dark-blue wet track down one selected channel. A newly fired blue paintball is currently sliding fast along that already-painted slick track, leaving a brighter fresh trace and traveling much farther downhill. On a nearby parallel dry gray slope, a second comparable ball has nearly stopped after a short path, creating a clear visual contrast between prepared slippery terrain and untreated terrain. Keep the scene coherent as one gameplay moment, not a split-screen.
+Scene/backdrop: one connected thick low-poly mountain diorama in an open warm daylight environment. A broad upper basin is carved with four subtle concentric terrain rings and a small center button. The same mountain, cannon, camera, and object positions continue consistently across all three panels.
 
-03-mechanism-sequence.png
-Primary request: Explain a multi-shot mechanism sequence. Show a connected blue trail through three terrain glyphs whose persistent states are visibly different: an amber Burst glyph already spent and dim with a painted splash around it, a violet Splitter newly charged and glowing with three outward route cues, and a coral uphill-rebound glyph rotated toward a higher shelf where the next ball will travel. Use restrained light links or state rings between the glyphs to make cause-and-effect order clear while keeping them terrain-bound.
+Subject and panel sequence:
+- PANEL 1 — BEFORE: fixed cannon in the lower foreground. In the upper basin, three matte amber defender stones and two glossy blue player paintballs already rest as persistent physical balls. One blue ball is near the center button but partly protected by a blue guard ball on the approach shelf. Show dry terrain around them and old blue contact trails that end exactly beneath the resting balls.
+- PANEL 2 — CONTACT: a newly fired glossy blue paintball follows a high ballistic arc from the same cannon, touches the mountain, paints a continuous blue surface trail, then collides side-on with the nearest amber defender stone. Freeze the instant of contact with a small physical impact burst and two clear motion arrows: amber moving outward, blue deflecting inward. No magic beam and no airborne paint.
+- PANEL 3 — END SCORE STATE: all balls have stopped. The struck amber stone now lies outside the outer ring. Two blue balls are closer to the center than every remaining amber stone, while the guard remains in front. Make relative distance to the center visually undeniable. Preserve every painted contact trail from prior panels. The image should communicate that scoring is decided only after the end, by final relative positions.
 
-04-arcade-combo.png
-Primary request: Explain a rapid-fire arcade combo direction. Show two or three paintballs active at once on different connected mountain routes, with one triggering an amber Burst splash, another entering a violet Splitter that launches three child balls, and a third being redirected uphill by a coral glyph. A single restrained chain of bright activation pulses visually connects these events, and the resulting blue paint creates one spectacular but readable cascading composition. Make it feel fast, joyful, and skillful without showing any score UI.
+Style/medium: polished stylized 3D game-design storyboard, clean low-poly faceting, realistic physical contact, diagram clarity over cinematic drama.
+Composition/framing: 16:9 landscape divided into three equal vertical panels with thin navy separators; identical high three-quarter behind-cannon camera in every panel; entire mountain silhouette visible; objects large enough to compare.
+Lighting/mood: calm bright daylight, restrained shadows, tactile and analytical.
+Color palette: warm off-white terrain, slightly darker support faces, dark navy/off-white cannon, glossy saturated blue player paint/balls, restrained matte amber defender stones.
+Constraints: exactly three panels; exactly one fixed cannon per panel; persistent balls and their positions must remain consistent across panels; no people, brushes, ice sheet, curling handles, snow, stadium, scoreboard, text, numbers, letters, HUD, labels, logos, watermark, or extra mechanisms.
+Avoid: generic sports poster, literal flat curling rink, decorative paint splashes unrelated to ball contact, mismatched before/after positions, extra projectiles, impossible floating balls, rear wall, photorealism.
 
-05-projectile-roles.png
-Primary request: Explain pre-shot paintball role selection. In the foreground beside the stationary cannon, show a small integrated three-slot ammunition cradle containing three clearly different blue paintballs: a large dense heavy ball with a dark metal core, a glossy soft sticky gel ball with a flattened contact patch, and a patterned split-shell ball formed from three joined lobes. On the mountain beyond, show three restrained ghosted trajectory examples ending in distinct consequences: long straight impact, clinging paint path on a steep face, and three-way branching route. Keep the actual cannon and mountain dominant enough to read as Paint Mountain, and make the ammo choices tactile game objects rather than UI icons.
+================================================================================
+02. 텐핀 볼링 — Mountain Frame and Spare
+파일: assets/02-bowling-frame-spare.png
+================================================================================
 
-06-pre-shot-device.png
-Primary request: Explain one adjustable pre-shot terrain device. Show a single solid coral circular rebound glyph placed on a middle mountain shelf, with an unmistakable physical arrow orientation that redirects the predicted blue trajectory into a valuable upper route and then down into a basin. Two faint semi-transparent ghost outlines of the same glyph at nearby alternative positions or rotations communicate that the player chooses its setup before firing. The solid chosen placement and resulting route must be visually dominant; ghost options stay subtle and terrain-conforming.
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a ten-pin-bowling-inspired "Mountain Frame and Spare" core loop. The key idea is that the first shot creates the second shot's real problem, and a strike or spare changes the value of later frames.
+
+Scene/backdrop: one connected thick low-poly mountain diorama. A broad mid-mountain terrace acts as a target deck. Ten small upright off-white stone markers with blue cap dots are arranged in a clear 1-2-3-4 triangular formation on that terrace. These are terrain targets, not literal bowling pins. Same camera, mountain, and marker identities continue across panels.
+
+Subject and panel sequence:
+- PANEL 1 — FRAME START: fixed dark navy/off-white cannon in lower foreground. All ten upright markers are dry and present on the terrace. A faint dotted ballistic preview points toward the front marker. No paint has touched the target deck yet.
+- PANEL 2 — FIRST DELIVERY LEAVE: show the result after one shot. Seven markers have been physically knocked flat or pushed off their small bases and are stained blue along the actual contact route. Exactly three upright dry markers remain in a visibly difficult split: one isolated far left, one isolated far right, and one rear-center, with empty space between them. Preserve the first blue surface trail from the cannon-side slope through the center of the formation.
+- PANEL 3 — SPARE CONVERSION: a second blue paintball has used a different bank angle from the fixed cannon. Its continuous surface paint trail clips the rear-center remaining marker first, causing it to ricochet into the left marker while the ball deflects into the right marker. Freeze just after all three fall. All ten markers are now down/blue. Add one restrained carry-forward visual: a single small blue bonus bead flowing from this completed frame toward a fresh, unpainted next-frame terrace in the far background, so the image suggests that a spare changes the value of the next shot.
+
+Style/medium: polished stylized 3D game-design storyboard, low-poly tactile diorama, exact physical cause and effect, diagram clarity.
+Composition/framing: 16:9 landscape, three equal vertical panels with thin navy separators, identical high three-quarter behind-cannon camera, complete mountain visible, terrace and remaining markers large enough to count.
+Constraints: exactly three panels; exactly ten target markers at frame start; exactly three standing after first delivery; exactly zero standing after second; one fixed cannon per panel; no resetting between panel 2 and panel 3; no people, bowling alley, lane, gutters, bowling pin shapes, sports logos, text, numbers, letters, scoreboards, HUD, watermark, or extra mechanisms.
+Avoid: a generic bowling illustration, ten ordinary pins, all targets falling on the first shot, random paint everywhere, airborne paint, inconsistent target positions, magical explosions, rear wall, photorealism.
+
+Correction pass actually used:
+Change only the far-background next-frame cue in panel 3. Remove every upright target marker from the distant upper terrace. Replace them with one completely empty dry terrace and exactly one small glossy blue bonus bead traveling toward it along a short dotted connector. Preserve panel 1's ten upright markers, panel 2's exact three standing split and seven fallen markers, panel 3's current foreground deck with all current markers fallen/blue, the bank path, cannon, camera, lighting, and style.
+
+================================================================================
+03. 다트 501 — Exact Checkout Mountain
+파일: assets/03-darts-exact-checkout.png
+================================================================================
+
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a darts-501-inspired "Exact Checkout Mountain" core loop. The mechanic is not maximum coverage: the player must reduce a remaining total to exactly zero within up to three shots, and the final shot must land in a narrow doubled-value finish band.
+
+Scene/backdrop: one connected thick low-poly mountain. Its playable top faces are naturally separated by ridges into broad score terraces, each terrace carrying one simple large engraved numeral. A narrow paired finish band is made of two adjacent concentric blue-inlaid terrain arcs around one small terrace. Same mountain and fixed cannon continue across all panels.
+
+Text (verbatim): panel 1 score tile "40"; panel 2 score tile "18"; panel 3 score tile "0". Render each exact numeral once in a large simple navy sans-serif on a warm white physical tile. No other words or letters.
+
+Subject and panel sequence:
+- PANEL 1 — TURN START: fixed cannon lower foreground, mountain dry except for old contact paint. A physical score tile near the cannon reads 40. Three small unspent blue shot beads sit beside it. A dotted ballistic preview aims at a broad upper-left terrace engraved 22.
+- PANEL 2 — TWO SHOTS HAVE CHANGED THE CHECKOUT: keep the same score tile location but it now reads 18. Two blue shot beads are spent/dim and one remains bright. Show two continuous blue surface contact trails ending on legal score terraces; the first clearly reaches the engraved 22 terrace. Make it visually clear that the mountain paint remains while only the numerical remainder changes.
+- PANEL 3 — EXACT DOUBLE FINISH: the last ball contacts the narrow paired finish band engraved with a large 9 and a clear geometric double-ring motif, representing double nine. It paints only after terrain contact and stops inside that paired band. The score tile reads 0 and all three shot beads are spent. A restrained blue completion halo surrounds the score tile. On a small side ledge, show one translucent red ghost ball and a curved reset arrow beside a faded 40 tile to suggest the alternative bust outcome: overshooting would restore the turn-start score while the physical blue paint trails stay on the mountain.
+
+Style/medium: polished stylized 3D educational game-mechanic storyboard, low-poly tactile diorama, exact state continuity, clear arithmetic story.
+Composition/framing: 16:9 landscape divided into three equal vertical panels by thin navy lines; identical behind-cannon high three-quarter camera; entire mountain visible; score tile and finish band readable.
+Constraints: exactly three panels; exactly one fixed cannon per panel; exact visible score sequence 40 then 18 then 0; no score increase; airborne arc is unpainted; paint contact trails persist; no flat dartboard pasted on the mountain; no darts, people, pub, literal dartboard, sports branding, Korean text, extra English text, HUD chrome, logos, watermark, or unrelated mechanisms.
+Avoid: generic target practice, maximum-coverage imagery, wrong numbers, illegible numeral tiles, all score regions as flat concentric rings, random paint splashes, floating balls, rear wall, photorealism.
+
+================================================================================
+04. 포켓볼 — Called Carom and Leave
+파일: assets/04-pool-called-carom.png
+================================================================================
+
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a pocket-billiards-inspired "Called Carom and Leave" core loop. The player must declare which resident object ball will enter which terrain pocket, contact that object first, and leave the remaining balls in a useful arrangement for the next shot.
+
+Scene/backdrop: one thick connected low-poly mountain. On a broad stepped central shelf rest four persistent spherical object stones: yellow, violet, coral, and matte white. Two round bowl-shaped terrain pockets are carved into the left and right ends of the shelf. Same camera, mountain, balls, and pockets remain consistent across panels.
+
+Subject and panel sequence:
+- PANEL 1 — CALL BEFORE FIRING: fixed cannon in lower foreground. A clean thin yellow outline highlights only the yellow resident object ball, and a matching thin yellow outline highlights only the left terrain pocket, visually pairing the called ball and called pocket. A dotted unpainted ballistic preview points to a first-contact point on the yellow ball. Violet is farther behind it, coral is near the right pocket, white is safely out of line.
+- PANEL 2 — LEGAL FIRST CONTACT AND CAROM: freeze the exact physical chain. A newly launched glossy blue paintball has touched terrain and laid one continuous blue contact trail, hits the yellow object ball first, and sends yellow along a short yellow motion path into the left pocket. The blue ball deflects off the yellow contact and comes to rest on the central shelf. Do not hit violet, coral, or white.
+- PANEL 3 — POCKET MADE, NEXT POSITION CREATED: yellow now rests visibly inside the left bowl and is dim/spent. The blue launched ball has stopped without falling into either pocket. The remaining violet object ball now has a clear unobstructed geometric line from the fixed cannon-side approach to the right pocket for the next called shot. Show this future line only as a thin violet dotted planning line, not as paint. Coral and white remain exactly where they were.
+
+Style/medium: polished stylized 3D game-mechanic storyboard, tactile low-poly diorama, precise physical causality and state continuity.
+Composition/framing: 16:9 landscape split into three equal vertical panels with thin navy separators; identical high three-quarter behind-cannon camera; complete mountain visible; resident balls and two pockets large enough to read.
+Constraints: exactly three panels; exactly one fixed cannon per panel; exactly four resident object balls at start; exactly two terrain pockets; yellow must be contacted first and end in left pocket; blue ball must remain on shelf; violet, coral, and white positions stay unchanged; no people, cue stick, pool table, green felt, billiard rails, numbered balls, text, letters, numbers, HUD, sports branding, logos, watermark, or unrelated mechanisms.
+Avoid: literal billiards room, all balls moving, generic ricochet spectacle, multiple collisions, airborne paint, ball teleportation, mismatched ball colors or positions, rear wall, photorealism.
+
+Correction pass actually used:
+Change only the terrain-pocket visibility and the final violet planning line. Add one clearly visible round bowl-shaped terrain pocket at the far right end of the shelf in all three panels, matching the existing left pocket. There must be exactly two visible pockets per panel. In panel 3 only, redirect the violet dotted planning line so it begins at the fixed cannon approach, passes through the violet ball, and terminates visibly inside the new right pocket. Preserve every ball identity and position, the yellow-in-left-pocket result, blue paint, camera, lighting, and style.
+
+================================================================================
+05. 스키점프 — Distance plus Landing Quality
+파일: assets/05-ski-jump-distance-style.png
+================================================================================
+
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a ski-jumping-inspired "Distance plus Landing Quality" core loop. A shot is not judged only by where it first lands: distance, contact angle, number of bounces, and stable painted run-out all matter. A longer but violent landing can score below a slightly shorter controlled one.
+
+Scene/backdrop: one connected thick low-poly mountain shaped with a clear takeoff-facing valley and a long descending landing slope on the far side. A single bold transverse inlaid band marked "K" crosses the landing slope at the K-point. The same mountain, cannon, K-band, and camera continue across panels.
+Text (verbatim): one large simple letter "K" centered on the K-point band in each panel. No other text or numbers.
+
+Subject and panel sequence:
+- PANEL 1 — PRE-SHOT TRADEOFF: fixed cannon in lower foreground. Show two alternative unpainted dotted ballistic previews from the muzzle: a shorter blue arc that meets the slope just before the K-band at a shallow tangent, and a longer amber arc that reaches far beyond the band but meets the slope too steeply. Add small trajectory-angle wedges at each projected first contact.
+- PANEL 2 — CONTROLLED LONG LANDING: show the chosen glossy blue paintball in flight on the longer legal arc, then freeze its first terrain contact a little beyond the K-band. The airborne path has no paint. At contact, the ball velocity is nearly tangent to the descending slope, with one small impact ring and a clear shallow angle wedge. A continuous glossy blue paint trail begins exactly at contact and continues down the slope.
+- PANEL 3 — STYLE RESULT AND FAILURE COMPARISON: the blue ball has completed a long stable run-out and rests safely in a broad lower basin. Its blue trail is one continuous line with no gaps and only one tiny bounce mark. Beside it, show a separate translucent coral ghost example of an overpowered jump landing farther down but striking too steeply, making three obvious bounce gaps and exiting the mountain edge. Use a long blue distance bracket plus three small blue quality seals for shallow contact, low bounce count, and stable stop; the coral ghost gets a broken bracket and warning marks. No numerical score.
+
+Style/medium: polished stylized 3D game-design storyboard, tactile low-poly faceting, physically readable motion, diagram clarity.
+Composition/framing: 16:9 landscape divided into three equal vertical panels by thin navy separators; identical high three-quarter behind-cannon camera; entire takeoff valley, K-band, landing slope, and run-out basin visible.
+Constraints: exactly three panels; one fixed cannon per panel; exactly one K-band; no people, skis, ski jumper, snow stadium, judges, scoreboard, Korean words, extra English text, HUD, logos, watermark, or unrelated mechanisms; no paint during airborne flight; paint starts only at real terrain contact.
+Avoid: maximum-power always winning, generic long jump poster, unexplained style score, airborne paint, random splashes, multiple active blue balls, rear wall, photorealism.
+
+================================================================================
+06. 바이애슬론 — Visible Penalty Debt
+파일: assets/06-biathlon-penalty-debt.png
+================================================================================
+
+Use case: infographic-diagram
+Asset type: Paint Mountain game-mechanic storyboard for a Korean HTML design report
+Primary request: explain a biathlon-inspired "Coverage Leg plus Precision Range plus Visible Penalty Debt" loop. The sport structure is alternating broad progress and five-shot precision; each miss becomes an immediate, visible extra-distance debt for the next leg. This must not look like a generic harder target or a simple checkpoint route.
+
+Scene/backdrop: one connected thick low-poly mountain with two different functional areas visible at once: a broad open blue-paintable descent for the coverage leg, and a separate upper ridge holding exactly five round off-white precision plates. Near the lower descent is one short normal return channel plus two folded side-loop terraces that can become penalty distance. Same mountain, cannon, five plates, channels, and camera continue across panels.
+
+Subject and panel sequence:
+- PANEL 1 — COVERAGE LEG: fixed cannon in lower foreground. A glossy blue ball has already contacted the broad descent and is rolling through a long open surface sweep, leaving one continuous blue paint trail. The five precision plates on the upper ridge remain dry. Exactly five small blue shot beads near the cannon are all bright. Emphasize broad coverage and speed, not pinpoint aiming.
+- PANEL 2 — FIVE-SHOT RANGE RESULT: all five shot beads are now spent. Exactly three of the five circular plates are visibly hit and painted blue; exactly two remain dry and receive thin coral miss rings. Show three short legal blue contact marks at the hit plates, with no paint in the air.
+- PANEL 3 — MISS BECOMES PHYSICAL DEBT: because there were exactly two misses, exactly two separate compact oval side-loop terraces are illuminated in coral and connected sequentially to the next blue coverage channel. The ordinary direct channel is blocked by two restrained coral gate bars. The dotted planning route must traverse the lower loop once, then the upper loop once, then rejoin the main channel. Keep the five plates in the same three-hit/two-miss state. Make two misses equals two extra loops visually one-to-one.
+
+Style/medium: polished stylized 3D educational game-mechanic storyboard, low-poly tactile diorama, exact state continuity and readable causal mapping.
+Composition/framing: 16:9 landscape divided into three equal vertical panels by thin navy separators; identical high three-quarter behind-cannon camera; entire mountain and both functional areas visible.
+Constraints: exactly three panels; exactly one fixed cannon per panel; exactly five precision plates; exactly three hit blue and two dry missed; exactly two penalty loops, never one or three; paint only after real terrain contact; no people, skis, rifles, snow stadium, literal shooting range, clocks, text, numbers, letters, HUD, logos, watermark, or unrelated mechanisms.
+Avoid: generic obstacle course, simple ordered checkpoints, more than five targets, mismatched miss/loop count, punishment represented only as a UI number, airborne paint, random splashes, rear wall, photorealism.
+
+Correction pass actually used:
+Change only two counting errors. In panel 1, change the row near the cannon to exactly five blue shot beads. In panel 3, replace the single coral serpentine route with exactly two separate compact oval side-loop terraces, one above the other. Each loop gets its own closed circuit and connector; the dotted route traverses the lower loop once, then the upper loop once, then rejoins the main channel. Preserve exactly five targets, three blue hits, two coral misses, and everything else.
