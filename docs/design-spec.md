@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-10
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -420,7 +420,7 @@ remains the implemented-truth boundary.
 
 The active catalog pointer is `resources/stages/catalog.tres`. It selects the
 format-5 persisted thirty-stage bundle at
-`resources/generated_stage_catalogs/v10-d508dd69d5a1e23085aeb7415dafa9b574fac62e2e691db9571292fbdb4ad665`.
+`resources/generated_stage_catalogs/v10-701b3b63feeee0dc1ce064cc91953fbdab91d90db1f004ef247dc4b8b22d1b4e`.
 Each accepted layout carries default and summit witnesses. Runtime loads this
 bundle through `StageLayoutRepository`; it asynchronously serves the selected
 layout, may prefetch nearby work, retains three entries, and never substitutes
@@ -440,7 +440,7 @@ Its exact HUD placement, literal geometry, seed/silhouette, mechanism positions,
 and painted still states are not runtime or acceptance authority.
 
 The prior Windows release and screenshots remain historical evidence only. The
-current format-4 implementation passed `scripts/verify.ps1`, exported
+current format-5 implementation passed `scripts/verify.ps1`, exported
 `builds/windows/PaintMountain.exe`, and produced eight reviewed 1280x720
 background running-game captures with exit-0 runs and empty final stderr logs
 under `.agents/evidence/fast-stage-entry-and-fire-capacity/`. Exported entry

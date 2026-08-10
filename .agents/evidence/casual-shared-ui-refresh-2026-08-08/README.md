@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-08
 scope: running-release evidence for the casual shared UI refresh
 related:

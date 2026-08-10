@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-09
 scope: sparse gameplay instruments, immediate terrain aiming, and display-setting stability
 related:

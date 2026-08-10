@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-04
 topic: Phase 8 actual running-game visual inspection
 scope: 1280x720 Windows release aiming and continuous-contact paint evidence

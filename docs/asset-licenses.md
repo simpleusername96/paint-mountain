@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-03
-last_reviewed: 2026-08-08
+last_reviewed: 2026-08-10
 scope: approved third-party runtime assets, provenance, hashes, licenses, and uses
 related:
   - ../.agents/Plan.md
@@ -60,7 +60,7 @@ unlisted member of the downloaded archives is committed.
 
 ## Project-generated UI assets
 
-The Stage Select and Settings fidelity assets under `assets/ui/icons/` are
+The Stage Select, Settings, and Timeout Result fidelity assets under `assets/ui/icons/` are
 original project-generated raster files, not third-party package members. Their
 generation source, runtime role, and SHA-256 values are recorded in
 `assets/ui/icons/GENERATED_ASSETS.md`.

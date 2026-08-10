@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: superseded
+status: archived
 created: 2026-08-06
 last_reviewed: 2026-08-07
 topic: current gameplay audit and revised wind-driven coverage loop

@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-04
 last_reviewed: 2026-08-04
 scope: bounded off-desktop evidence for Phase 10 Fire, rendered follow-camera, and verified-contact paint responsiveness

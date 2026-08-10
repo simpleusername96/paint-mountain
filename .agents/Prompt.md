@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-10
 source: ../docs/source-brief.md
 scope: repository purpose and non-negotiable product constraints
 related:
@@ -31,9 +31,9 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
 ## Requirements
 
 - Deliver thirty all-open, gradually harder stages, the full menu-to-result loop,
-  Aim Lock/Map Inspection/result cameras, continuous physical-contact paint,
-  target-mask coverage, saving, replay, debug tools, audio/visual feedback, and
-  exactly Burst, Splitter, and Uphill Rebound mechanisms.
+  Aim View/Map Inspection/result cameras, continuous physical-contact paint,
+  target-mask coverage, saving, debug tools, audio/visual feedback, and exactly
+  Burst, Splitter, and Uphill Rebound mechanisms. Player replay is removed.
 - Use Godot 4.x and GDScript with no backend, Docker, or unnecessary external dependencies.
 - Make visual paint and calculated coverage share one authoritative mask.
 - Generate a thick, collidable, one-height-per-XZ route-graph mountain whose
@@ -55,10 +55,12 @@ behavior is in `docs/design-spec.md`; runtime ownership is in
   delete target pixels to force admission.
 - Keep the next yaw/elevation/power aim and trajectory usable after Fire while up
   to two root-shot families move; motion is not an input-blocking stage phase.
-- Use the current `1.20 m` parent physical radius with `1.40 m` continuous and
-  `1.75 m` impact paint radii, all reconstructed through the authoritative mask;
+- Use the current `2.40 m` parent physical radius with `2.80 m` continuous and
+  `3.50 m` impact paint radii, all reconstructed through the authoritative mask;
   map power `0..100` linearly to `32..160 m/s`.
 - Keep repeated launches effectively deterministic and the initial trajectory preview consistent with real launch physics.
+- Keep exact pre-impact prediction latest-only and advisory. It never blocks
+  Fire independently of a pending human target/elevation/power revision.
 - Keep menu and stage-select navigation responsive: load validated baked layouts
   asynchronously, retain only a bounded selected/nearby set, and create scene,
   render, physics, preview, and paint state on the main thread.

@@ -7,16 +7,18 @@ source: ../../../docs/reports/screen-audit-2026-08-10/assets/refined/08-settings
 related:
   - ../../../docs/reports/screen-audit-2026-08-10/assets/refined/02-stage-select-refined.png
   - ../../../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
+  - ../../../.agents/execplans/2026-08-10-essential-ui-fidelity.md
 ---
 
 # Generated UI Asset Record
 
 ## Context
 
-The approved Stage Select and Settings images contain a selected-card badge,
-seven semantic setting icons, full-size switch states, and a slider grabber that
-did not exist in the repository. Text symbols, emoji, handcrafted SVG, and
-code-drawn stand-ins were excluded by the fidelity contract.
+The approved Stage Select, Settings, and Timeout Result images contain a
+selected-card badge, seven semantic setting icons, full-size switch states, a
+slider grabber, and a timeout clock that did not exist in the repository. Text
+symbols, emoji, handcrafted SVG, and code-drawn stand-ins were excluded by the
+fidelity contracts.
 
 ## Decision
 
@@ -40,6 +42,7 @@ size and padding normalization.
 | `settings/switch_on.png` | checked switch, 52 by 28 px | `1DA9556E45B9573FD77D98F5DB60D8505428D13EDC67D08E793F1794EAC17D31` |
 | `settings/switch_off.png` | unchecked switch, 52 by 28 px | `F88FA1F4128E33E5AA51A7F4BA7D5EF35DD3243F5D55DB953DA1D8FA0584A7B8` |
 | `settings/slider_grabber.png` | audio slider grabber, 18 px | `C7A6A29AC44DD7283AAD6923D53EA3B3E397E9FA47DBB0A9341EA37EAC327E72` |
+| `result_timeout_clock.png` | timeout-result clock | `A2D4B6D57114BB3236413D10598D553301EF92102C1E0B8EA81AF1375F175E46` |
 
 ## Rationale
 

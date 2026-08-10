@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-05
 last_reviewed: 2026-08-05
 topic: Runtime-grounded Paint Mountain screen concepts for user review

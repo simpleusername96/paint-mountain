@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-06
 last_reviewed: 2026-08-06
 topic: Current-runtime-grounded Aim Lock HUD layout direction selection

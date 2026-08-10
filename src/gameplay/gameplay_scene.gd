@@ -131,10 +131,6 @@ func terrain_layout_read_only() -> GeneratedStageLayout:
 	return _generated_layout
 
 
-func prediction_compute_count() -> int:
-	return _prediction_scheduler.prediction_compute_count()
-
-
 ## Delivery-only frame hold used to capture the real pending-preview surface
 ## before the bounded predictor publishes the latest aim key.
 func hold_prediction_refresh_for_delivery(duration_seconds: float = 0.15) -> void:

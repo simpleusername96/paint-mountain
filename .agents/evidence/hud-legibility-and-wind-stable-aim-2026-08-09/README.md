@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: done
+status: archived
 created: 2026-08-09
 scope: rendered Aim View HUD legibility and wind-stable target-preserving aim edits
 source: ../../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md

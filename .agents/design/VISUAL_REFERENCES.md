@@ -182,8 +182,9 @@ concepts, or asset previews from silently becoming product requirements.
 
 - `../../docs/source-brief.md`: baseline product and presentation requirements.
 - `../../docs/design-spec.md`: working UI, art, camera, and interaction interpretation.
-- `../execplans/2026-08-03-gameplay-visual-reset.md`: active
-  implementation sequence and currently accepted composition details.
+- `../execplans/2026-08-03-gameplay-visual-reset.md`: superseded historical
+  implementation sequence; consult only for decisions not replaced by current
+  design guidance or later evidence.
 - `../../docs/asset-licenses.md`: approved local asset and license record.
 - `../../resources/ui/paint_mountain_theme.tres`: current implemented UI token
   owner, not independent design authority.

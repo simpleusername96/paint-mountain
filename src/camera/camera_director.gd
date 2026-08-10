@@ -56,7 +56,6 @@ var _safe_source_focus := Vector3.ZERO
 var _safe_pose_valid := false
 var _safe_pose_dirty := true
 var _safety_solve_elapsed := SAFETY_SOLVE_INTERVAL
-var _safety_solve_count := 0
 var _camera_velocity := Vector3.ZERO
 var _briefing_yaw_offset: float = 0.0
 var _briefing_zoom_offset: float = 0.0
@@ -286,10 +285,6 @@ func camera_focus_position() -> Vector3:
 	return _safe_cached_focus if _safe_pose_valid else _safe_focus(_desired_focus)
 
 
-func follow_wide_is_latched() -> bool:
-	return false
-
-
 func return_to_aim_view(immediate: bool = false) -> bool:
 	if current_mode != Mode.FOLLOW:
 		return false
@@ -305,10 +300,6 @@ func aiming_interest_build_count() -> int:
 
 func presentation_pose_build_count() -> int:
 	return _presentation_pose_build_count
-
-
-func safety_solve_count() -> int:
-	return _safety_solve_count
 
 
 func safe_position_for(desired: Vector3, focus: Vector3, terrain_focus: bool = false) -> Vector3:
@@ -702,7 +693,6 @@ func _resolve_safe_pose() -> void:
 	_safe_pose_valid = true
 	_safe_pose_dirty = false
 	_safety_solve_elapsed = 0.0
-	_safety_solve_count += 1
 
 
 func _presentation_focus_on_view_ray(position: Vector3, optical_focus: Vector3) -> Vector3:

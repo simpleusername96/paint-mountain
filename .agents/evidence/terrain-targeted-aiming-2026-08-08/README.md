@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-08
 scope: terrain-targeted aiming, same-target ballistic adjustment, and protected long-flight release QA
 source: ../../execplans/2026-08-08-terrain-targeted-aiming.md

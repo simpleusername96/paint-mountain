@@ -15,13 +15,6 @@ const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitte
 const UPHILL_REBOUND_DATA: MechanismData = preload(
 	"res://resources/mechanisms/uphill_rebound_node.tres"
 )
-const SOURCE_STAGE_PATHS := [
-	"res://resources/stages/first_descent.tres",
-	"res://resources/stages/burst_basin.tres",
-	"res://resources/stages/split_ridge.tres",
-]
-
-
 func _initialize() -> void:
 	var promotion_root := _bundle_promotion_argument()
 	if not promotion_root.is_empty():
@@ -142,7 +135,7 @@ func _bundle_promotion_argument() -> String:
 func _check_active_catalog() -> void:
 	var existing := load(CATALOG_PATH) as StageCatalogData
 	if existing == null or not _verify_catalog_bundle(existing):
-		push_error("Serialized format-4 catalog pointer is missing or invalid.")
+		push_error("Serialized format-5 catalog pointer is missing or invalid.")
 		quit(1); return
 	print("Stage catalog check passed: %d stages manifest=%s" % [existing.stages.size(), existing.manifest_sha256])
 	quit()
@@ -152,18 +145,11 @@ func _build_catalog() -> Dictionary:
 	var result = CATALOG_DATA_SCRIPT.new()
 	result.catalog_version = StageGenerationContract.CONTRACT_VERSION
 	result.progression = load(_progression_path()) as StageProgressionData
-	var source_stages: Array[StageData] = []
-	var existing = load(CATALOG_PATH)
-	if existing != null and existing.has_method("ordered_stages"):
-		source_stages = existing.ordered_stages()
-	if source_stages.size() < StageProgressionData.STAGE_COUNT:
-		for path in SOURCE_STAGE_PATHS:
-			var legacy_stage := load(path) as StageData
-			if legacy_stage != null:
-				source_stages.append(legacy_stage)
-		if source_stages.size() < StageProgressionData.STAGE_COUNT:
-			push_error("The offline builder needs the reviewed thirty-stage source catalog.")
-			return {}
+	var existing := load(CATALOG_PATH) as StageCatalogData
+	if existing == null or not existing.is_valid(false):
+		push_error("The offline builder needs the complete reviewed thirty-stage source catalog.")
+		return {}
+	var source_stages: Array[StageData] = existing.ordered_stages()
 	var manifest_parts: Array[String] = []
 	var layouts: Array[BakedStageLayoutData] = []
 	for source_index in range(StageProgressionData.STAGE_COUNT):

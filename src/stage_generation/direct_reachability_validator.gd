@@ -1,24 +1,17 @@
 class_name DirectReachabilityValidator
 extends RefCounted
 
-## Headless fairness proof for one materialized layout. Predictor witnesses are
-## never exposed to gameplay; the serialized certificate keeps only canonical
-## aim tuples, target assignments, margins, and deterministic checksums.
+## Bounded offline entry-witness solver and real-body parity validator for one
+## materialized layout. Its witnesses are never exposed as player auto-aim.
 
-# A witness is accepted when its first top-surface contact lands inside the
-# authoritative impact mark. The radius is intentionally the same 2.10 m
-# value used by ProjectileData. Requiring the exact sampled triangle would
-# reject legitimate contacts on adjacent facets even though the impact mark
-# fully covers the scoreable texel.
+# A witness is accepted when its first top-surface contact lands within the
+# bounded entry-sample tolerance. Requiring the exact sampled triangle would
+# reject legitimate adjacent-facet contacts; this solver tolerance is separate
+# from the current runtime paint footprint radius.
 const TARGET_DISTANCE_TOLERANCE := 2.10
-# The predictor is an analytical center-path approximation while the proof
-# body uses a discrete rigid sphere. Keep target assignments conservative here
-# so the real contact remains inside the authoritative 2.10 m paint mark.
-const CERTIFICATION_DISTANCE_TOLERANCE := 1.70
 const RIGIDBODY_IDENTITY_DISTANCE_TOLERANCE := \
 		StageEntryAimWitness.TERRAIN_FACET_PARITY_TOLERANCE
 const RIGIDBODY_TARGET_RADIUS_CLEARANCE := 0.10
-const SUMMIT_CONTACT_DISTANCE_TOLERANCE := 0.75
 const MAXIMUM_PERPENDICULAR_MISS := 1.02
 const ELEVATION_SAMPLE_STEP_DEGREES := 1.0
 const ELEVATION_BISECTION_ITERATIONS := 12
@@ -26,249 +19,12 @@ const ELEVATION_BISECTION_ITERATIONS := 12
 # wider offline batch keeps the real-body parity proof bounded without changing
 # gameplay physics or the witness semantics.
 const RIGIDBODY_BATCH_SIZE := 256
-const MAXIMUM_UNCOVERED_DIAGNOSTICS := 32
 const WITNESS_SPATIAL_BUCKET_METERS := TARGET_DISTANCE_TOLERANCE
 const CHECKSUM_OFFSET := 2166136261
 const CHECKSUM_PRIME := 16777619
 const DEFAULT_PAINT_SURFACE_TUNING := preload(
 	"res://resources/paint/default_paint_surface_tuning.tres"
 )
-
-
-static func validate_predictor(
-		space_state: PhysicsDirectSpaceState3D,
-		cannon: CannonController,
-		terrain_surface: TerrainSurface,
-		layout: GeneratedStageLayout,
-		stage_bounds: AABB,
-		maximum_uncovered_diagnostics: int = MAXIMUM_UNCOVERED_DIAGNOSTICS,
-		progress_callback: Callable = Callable()
-) -> Dictionary:
-	var started := Time.get_ticks_msec()
-	if space_state == null or cannon == null or cannon.projectile_data == null \
-			or terrain_surface == null or layout == null or not layout.is_valid() \
-			or not layout.has_valid_target_mask():
-		return _failure(&"invalid_input", started)
-	var mask := layout.target_mask
-	var mask_size := StageGenerationContract.REQUIRED_MASK_SIZE
-	if mask.size() != mask_size * mask_size:
-		return _failure(&"invalid_target_mask_size", started)
-
-	var witnesses: Array[AimTuple] = []
-	var witness_impacts := PackedVector3Array()
-	var witness_identities: Array[TrajectoryHitIdentity] = []
-	var witness_range_margins := PackedFloat32Array()
-	var witness_maximum_distances := PackedFloat32Array()
-	var target_witness_indices := PackedInt32Array()
-	var target_pixel_indices := PackedInt32Array()
-	var target_points := PackedVector3Array()
-	var witnesses_by_triangle: Dictionary = {}
-	var witnesses_by_spatial_bucket: Dictionary = {}
-	var prediction_cache: Dictionary = {}
-	var solver_cache := _build_solver_cache(cannon)
-	var predictor_call_count := 0
-	var candidate_tuple_count := 0
-	var reused_target_count := 0
-	var full_mark_fallback_count := 0
-	var uncovered_diagnostics: Array[Dictionary] = []
-	var uncovered_count := 0
-	var centroid_sum := Vector2.ZERO
-
-	for pixel_y in range(mask_size):
-		for pixel_x in range(mask_size):
-			var pixel_index := pixel_y * mask_size + pixel_x
-			if mask[pixel_index] < 128:
-				continue
-			var local_xz := _pixel_center_local(Vector2i(pixel_x, pixel_y), layout.local_bounds, mask_size)
-			var sample := layout.top_topology.surface_sample_at_local(local_xz.x, local_xz.y, false)
-			if sample.is_empty():
-				return _failure(&"target_surface_sample", started)
-			var target_world_point: Vector3 = terrain_surface.to_global(sample.point as Vector3)
-			var target_world_normal: Vector3 = (
-				terrain_surface.global_transform.basis.inverse().transposed() * (sample.normal as Vector3)
-			).normalized()
-			centroid_sum += Vector2(target_world_point.x, target_world_point.z)
-			target_pixel_indices.append(pixel_index)
-			target_points.append(target_world_point)
-			if progress_callback.is_valid() and target_points.size() % 512 == 0:
-				progress_callback.call({
-					"visited_target_count": target_points.size(),
-					"witness_count": witnesses.size(),
-					"reused_target_count": reused_target_count,
-					"predictor_call_count": predictor_call_count,
-					"candidate_tuple_count": candidate_tuple_count,
-					"elapsed_ms": Time.get_ticks_msec() - started,
-				})
-
-			var triangle_key := _triangle_key(sample.cell, int(sample.triangle))
-			var reused_index := _nearest_reusable_witness(
-				witnesses_by_triangle.get(triangle_key, PackedInt32Array()),
-				witness_impacts,
-				target_world_point,
-				CERTIFICATION_DISTANCE_TOLERANCE
-			)
-			if reused_index < 0:
-				reused_index = _nearest_spatial_reusable_witness(
-					witnesses_by_spatial_bucket,
-					witness_impacts,
-					target_world_point,
-					CERTIFICATION_DISTANCE_TOLERANCE
-				)
-			if reused_index >= 0:
-				var reused_distance := witness_impacts[reused_index].distance_to(target_world_point)
-				witness_maximum_distances[reused_index] = maxf(
-					witness_maximum_distances[reused_index],
-					reused_distance
-				)
-				witness_range_margins[reused_index] = minf(
-					witness_range_margins[reused_index],
-					_range_margin_for_target(cannon, witnesses[reused_index], target_world_point)
-				)
-				target_witness_indices.append(reused_index)
-				reused_target_count += 1
-				continue
-
-			var solved := _solve_target(
-				space_state,
-				cannon,
-				layout,
-				stage_bounds,
-				target_world_point,
-				target_world_normal,
-				sample,
-				prediction_cache,
-				solver_cache,
-				CERTIFICATION_DISTANCE_TOLERANCE
-			)
-			if not bool(solved.get("valid", false)):
-				# A small number of lattice positions can be reachable only near the
-				# outer edge of the 2.10 m mark. Keep those explicit and let the real
-				# rigid-body pass decide whether the physical contact still qualifies.
-				var fallback := _solve_target(
-					space_state,
-					cannon,
-					layout,
-					stage_bounds,
-					target_world_point,
-					target_world_normal,
-					sample,
-					prediction_cache,
-					solver_cache,
-					TARGET_DISTANCE_TOLERANCE
-				)
-				if bool(fallback.get("valid", false)):
-					solved = fallback
-					full_mark_fallback_count += 1
-			predictor_call_count += int(solved.get("predictor_calls", 0))
-			candidate_tuple_count += int(solved.get("candidate_count", 0))
-			if not bool(solved.get("valid", false)):
-				uncovered_count += 1
-				if uncovered_diagnostics.size() < maximum_uncovered_diagnostics:
-					uncovered_diagnostics.append({
-						"pixel": Vector2i(pixel_x, pixel_y),
-						"pixel_index": pixel_index,
-						"local_xz": local_xz,
-						"world_point": target_world_point,
-						"cell": sample.cell,
-						"triangle": int(sample.triangle),
-						"candidate_count": int(solved.get("candidate_count", 0)),
-						"predictor_calls": int(solved.get("predictor_calls", 0)),
-					})
-				# One uncovered target rejects the layout. Continue only long enough to
-				# provide bounded diagnostics instead of spending hours on a failed seed.
-				if uncovered_count >= maxi(maximum_uncovered_diagnostics, 1):
-					return _uncovered_failure(
-						started,
-						uncovered_count,
-						uncovered_diagnostics,
-						target_pixel_indices.size(),
-						predictor_call_count,
-						candidate_tuple_count
-					)
-				continue
-
-			var witness: AimTuple = solved.aim
-			var prediction: TrajectoryPrediction = solved.prediction
-			var witness_index := witnesses.size()
-			witnesses.append(witness)
-			witness_impacts.append(prediction.collision_contact_point())
-			witness_identities.append(prediction.hit_identity)
-			witness_range_margins.append(float(solved.range_margin))
-			witness_maximum_distances.append(
-				prediction.collision_contact_point().distance_to(target_world_point)
-			)
-			target_witness_indices.append(witness_index)
-			var triangle_witnesses: PackedInt32Array = witnesses_by_triangle.get(
-				triangle_key,
-				PackedInt32Array()
-			)
-			triangle_witnesses.append(witness_index)
-			witnesses_by_triangle[triangle_key] = triangle_witnesses
-			_register_spatial_witness(
-				witnesses_by_spatial_bucket,
-				prediction.collision_contact_point(),
-				witness_index
-			)
-
-	if uncovered_count > 0:
-		return _uncovered_failure(
-			started,
-			uncovered_count,
-			uncovered_diagnostics,
-			target_pixel_indices.size(),
-			predictor_call_count,
-			candidate_tuple_count
-		)
-	if target_points.is_empty() or witnesses.is_empty() \
-			or target_witness_indices.size() != target_points.size():
-		return _failure(&"empty_reachability_proof", started)
-
-	var distance_margins := PackedFloat32Array()
-	for maximum_distance in witness_maximum_distances:
-		distance_margins.append(maxf(TARGET_DISTANCE_TOLERANCE - maximum_distance, 0.0))
-	var centroid := centroid_sum / float(target_points.size())
-	var default_index := select_witness_index(
-		witnesses,
-		witness_impacts,
-		centroid
-	)
-	if default_index < 0 or Vector2(
-		witness_impacts[default_index].x,
-		witness_impacts[default_index].z
-	).distance_to(centroid) > 8.0:
-		return _failure(&"default_aim_outside_centroid_gate", started)
-
-	return {
-		"valid": true,
-		"rejection": &"",
-		"target_count": target_points.size(),
-		"visited_target_count": target_points.size(),
-		"uncovered_count": 0,
-		"uncovered_diagnostics": [],
-		"witnesses": witnesses,
-		"witness_impacts": witness_impacts,
-		"witness_identities": witness_identities,
-		"target_witness_indices": target_witness_indices,
-		"target_pixel_indices": target_pixel_indices,
-		"target_points": target_points,
-		"minimum_distance_margins": distance_margins,
-		"minimum_range_margins": witness_range_margins,
-		"default_witness_index": default_index,
-		"target_centroid_xz": centroid,
-		"reachable_target_checksum": layout.reachable_target_checksum(
-			target_witness_indices
-		),
-		"predictor_reachability_checksum": _prediction_checksum(
-			witnesses,
-			witness_identities,
-			witness_impacts
-		),
-		"predictor_call_count": predictor_call_count,
-		"candidate_tuple_count": candidate_tuple_count,
-		"reused_target_count": reused_target_count,
-		"full_mark_fallback_count": full_mark_fallback_count,
-		"elapsed_ms": Time.get_ticks_msec() - started,
-	}
 
 
 static func select_witness_index(
@@ -701,204 +457,6 @@ static func validate_rigidbody_batches(
 	}
 
 
-static func build_certificate(
-		stage_id: StringName,
-		layout: GeneratedStageLayout,
-		predictor_result: Dictionary,
-		rigidbody_result: Dictionary,
-		summit_result: Dictionary = {},
-		summit_rigidbody_result: Dictionary = {}
-) -> DirectReachabilityCertificate:
-	if layout == null or not bool(predictor_result.get("valid", false)) \
-			or not bool(rigidbody_result.get("valid", false)):
-		return null
-	if not summit_result.is_empty() and (
-			not bool(summit_result.get("valid", false))
-			or not bool(summit_rigidbody_result.get("valid", false))
-		):
-		return null
-	var witnesses: Array[AimTuple] = []
-	for value in predictor_result.get("witnesses", []):
-		witnesses.append(value as AimTuple)
-	var angles := PackedInt32Array()
-	var powers := PackedInt32Array()
-	for witness in witnesses:
-		angles.append(roundi(witness.yaw_degrees * 10.0))
-		angles.append(roundi(witness.elevation_degrees * 10.0))
-		# Certificate storage is deliberately integer-only for catalog identity.
-		powers.append(int(witness.power_percent))
-	var certificate_target_indices: PackedInt32Array = rigidbody_result.get(
-		"target_witness_indices",
-		predictor_result.target_witness_indices
-	)
-	var certificate_distance_margins: PackedFloat32Array = rigidbody_result.get(
-		"minimum_distance_margins",
-		predictor_result.minimum_distance_margins
-	)
-	var certificate_default_index := int(predictor_result.default_witness_index)
-	var physical_impacts: PackedVector3Array = rigidbody_result.get(
-		"physical_witness_impacts",
-		PackedVector3Array()
-	)
-	if physical_impacts.size() == witnesses.size():
-		certificate_default_index = select_witness_index(
-			witnesses,
-			physical_impacts,
-			predictor_result.target_centroid_xz
-		)
-	var expected_target_count := int(predictor_result.get("target_count", -1))
-	if expected_target_count < 0:
-		expected_target_count = certificate_target_indices.size()
-	if certificate_target_indices.size() != expected_target_count \
-			or certificate_default_index < 0:
-		return null
-	var summit_region_checksum := 0
-	var summit_triangle_ids := PackedInt32Array()
-	var summit_witness_index := -1
-	var summit_witness_angle_tenths := PackedInt32Array()
-	var summit_witness_power := -1
-	var summit_predictor_checksum := 0
-	var summit_rigidbody_checksum := 0
-	var summit_height_margin := 0.0
-	if not summit_result.is_empty():
-		summit_region_checksum = layout.summit_region_checksum()
-		summit_triangle_ids = layout.summit_triangle_ids()
-		summit_predictor_checksum = int(summit_result.get(
-			"predictor_reachability_checksum", 0
-		))
-		summit_rigidbody_checksum = int(summit_rigidbody_result.get(
-			"rigidbody_reachability_checksum", 0
-		))
-		var summit_witnesses: Array = summit_result.get("witnesses", [])
-		if summit_witnesses.is_empty():
-			return null
-		# Keep summit proof independent from target coverage. The summit may be
-		# outside the scoreable route mask, so it must not be forced into the
-		# centroid witness table.
-		var summit_aim := summit_witnesses[0] as AimTuple
-		if summit_aim == null or not summit_aim.is_valid():
-			return null
-		summit_witness_angle_tenths.append(roundi(summit_aim.yaw_degrees * 10.0))
-		summit_witness_angle_tenths.append(roundi(summit_aim.elevation_degrees * 10.0))
-		summit_witness_power = int(summit_aim.power_percent)
-		var summit_physical_impacts: PackedVector3Array = summit_rigidbody_result.get(
-			"physical_witness_impacts",
-			PackedVector3Array()
-		)
-		if summit_physical_impacts.size() > 0:
-			var summit_predicted_impacts: PackedVector3Array = summit_result.get(
-				"witness_impacts",
-				PackedVector3Array()
-			)
-			if summit_predicted_impacts.is_empty() \
-					or summit_physical_impacts[0].distance_to(summit_predicted_impacts[0]) \
-					> SUMMIT_CONTACT_DISTANCE_TOLERANCE:
-				return null
-		summit_height_margin = _summit_height_margin(
-			layout,
-			summit_result,
-			0,
-			summit_physical_impacts
-		)
-		if summit_height_margin > 1.0:
-			return null
-	var certificate := DirectReachabilityCertificate.create(
-		stage_id,
-		layout.profile_version,
-		layout.terrain_seed,
-		layout.checksum,
-		layout.target_mask_checksum,
-		layout.placement_checksum(),
-		layout.play_bounds.checksum(),
-		layout.reachable_target_checksum(certificate_target_indices),
-		int(predictor_result.predictor_reachability_checksum),
-		int(rigidbody_result.rigidbody_reachability_checksum),
-		angles,
-		powers,
-		certificate_target_indices,
-		certificate_distance_margins,
-		predictor_result.minimum_range_margins,
-		certificate_default_index,
-		summit_region_checksum,
-		summit_triangle_ids,
-		summit_witness_index,
-		summit_predictor_checksum,
-		summit_rigidbody_checksum,
-		summit_height_margin,
-		summit_witness_angle_tenths,
-		summit_witness_power
-	)
-	return certificate if certificate.is_valid() else null
-
-
-static func _summit_height_margin(
-		layout: GeneratedStageLayout,
-		summit_result: Dictionary,
-		summit_index: int,
-		physical_impacts: PackedVector3Array = PackedVector3Array()
-) -> float:
-	var maximum_height := -INF
-	for height in layout.heights:
-		maximum_height = maxf(maximum_height, height)
-	var target_points: PackedVector3Array = summit_result.get(
-		"target_points",
-		PackedVector3Array()
-	)
-	var witness_impacts: PackedVector3Array = physical_impacts
-	if witness_impacts.is_empty():
-		witness_impacts = summit_result.get(
-			"witness_impacts",
-			PackedVector3Array()
-		)
-	if summit_index < 0 or summit_index >= target_points.size() \
-			or summit_index >= witness_impacts.size():
-		return INF
-	var local_samples := layout.summit_region(0.25)
-	if summit_index >= local_samples.size():
-		return INF
-	var world_offset_y := target_points[summit_index].y \
-			- float(local_samples[summit_index].point.y)
-	return maxf(
-		(world_offset_y + maximum_height) - witness_impacts[summit_index].y,
-		0.0
-	)
-
-
-static func certificate_matches(
-		expected: DirectReachabilityCertificate,
-		actual: DirectReachabilityCertificate
-) -> bool:
-	if expected == null or actual == null or not expected.is_valid() or not actual.is_valid():
-		return false
-	var summit_matches := true
-	var summit_fields_present := expected.summit_region_checksum != 0 \
-			or actual.summit_region_checksum != 0
-	if summit_fields_present:
-		summit_matches = expected.summit_region_checksum == actual.summit_region_checksum \
-				and expected.summit_triangle_ids == actual.summit_triangle_ids \
-				and expected.summit_witness != null \
-				and actual.summit_witness != null \
-				and expected.summit_witness.is_equal_to(actual.summit_witness) \
-				and expected.summit_predictor_reachability_checksum == actual.summit_predictor_reachability_checksum \
-				and expected.summit_rigidbody_reachability_checksum == actual.summit_rigidbody_reachability_checksum \
-				and is_equal_approx(expected.summit_minimum_height_margin, actual.summit_minimum_height_margin)
-	return expected.stage_id == actual.stage_id \
-			and expected.profile_version == actual.profile_version \
-			and expected.terrain_seed == actual.terrain_seed \
-			and expected.height_checksum == actual.height_checksum \
-			and expected.target_checksum == actual.target_checksum \
-			and expected.placement_checksum == actual.placement_checksum \
-			and expected.play_bounds_checksum == actual.play_bounds_checksum \
-			and expected.reachable_target_checksum == actual.reachable_target_checksum \
-			and expected.predictor_reachability_checksum == actual.predictor_reachability_checksum \
-			and expected.rigidbody_reachability_checksum == actual.rigidbody_reachability_checksum \
-			and expected.witness_angle_tenths_read_only() == actual.witness_angle_tenths_read_only() \
-			and expected.witness_powers_read_only() == actual.witness_powers_read_only() \
-			and expected.target_witness_indices == actual.target_witness_indices \
-			and expected.minimum_distance_margins == actual.minimum_distance_margins \
-			and expected.minimum_range_margins == actual.minimum_range_margins \
-			and expected.default_witness_index == actual.default_witness_index \
-			and summit_matches
 
 
 ## MVP-only bounded entry point. It solves exactly one supplied target sample;
@@ -947,6 +505,8 @@ static func _solve_target(
 ) -> Dictionary:
 	if solver_cache.is_empty():
 		solver_cache = _build_solver_cache(cannon)
+	if solver_cache.is_empty():
+		return {"valid": false, "rejection": &"invalid_ballistic_cache"}
 	var nominations: Array[Dictionary] = []
 	var nomination_by_key: Dictionary = {}
 	# At 90 degrees the barrel's muzzle offset has no XZ component, exposing the
@@ -1106,6 +666,8 @@ static func _collision_free_endpoint_error(
 ) -> Dictionary:
 	if solver_cache.is_empty():
 		solver_cache = _build_solver_cache(cannon)
+	if solver_cache.is_empty():
+		return {}
 	var origin := cannon.get_launch_origin_for(yaw_degrees, elevation_degrees)
 	var direction := CannonBallistics.launch_direction(yaw_degrees, elevation_degrees)
 	var horizontal_direction := Vector2(direction.x, direction.z).normalized()
@@ -1184,7 +746,7 @@ static func _collision_free_endpoint_values(
 	if projected_range <= 0.0 or perpendicular_miss > MAXIMUM_PERPENDICULAR_MISS \
 			or horizontal_speed <= 0.000001:
 		return Vector4(INF, INF, INF, INF)
-	var relative := _damped_position_at_horizontal_range_cached(
+	var relative := CannonBallistics.damped_position_at_horizontal_range(
 		horizontal_speed,
 		vertical_speed,
 		projected_range,
@@ -1207,27 +769,20 @@ static func _collision_free_endpoint_values(
 
 static func _build_solver_cache(cannon: CannonController) -> Dictionary:
 	var step := TrajectoryPredictor.PHYSICS_STEP
-	var damping := maxf(1.0 - cannon.projectile_data.linear_damp * step, 0.0)
 	var gravity_magnitude := float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 	var gravity_direction := Vector3(ProjectSettings.get_setting(
 		"physics/3d/default_gravity_vector",
 		Vector3.DOWN
 	)).normalized()
 	var gravity_y := gravity_direction.y * gravity_magnitude
-	var horizontal_factors := PackedFloat64Array()
-	var gravity_offsets := PackedFloat64Array()
-	horizontal_factors.resize(TrajectoryPredictor.MAXIMUM_STEPS + 1)
-	gravity_offsets.resize(TrajectoryPredictor.MAXIMUM_STEPS + 1)
-	for step_count in range(1, TrajectoryPredictor.MAXIMUM_STEPS + 1):
-		if is_equal_approx(damping, 1.0):
-			horizontal_factors[step_count] = step * float(step_count)
-			gravity_offsets[step_count] = gravity_y * step * step \
-					* float(step_count * (step_count + 1)) * 0.5
-		else:
-			var damping_sum := damping * (1.0 - pow(damping, step_count)) / (1.0 - damping)
-			horizontal_factors[step_count] = step * damping_sum
-			gravity_offsets[step_count] = step * gravity_y * step / (1.0 - damping) \
-					* (float(step_count) - damping_sum)
+	var cache := CannonBallistics.build_damped_motion_cache(
+		cannon.projectile_data.linear_damp,
+		gravity_y,
+		step,
+		TrajectoryPredictor.MAXIMUM_STEPS
+	)
+	if cache.is_empty():
+		return {}
 	var speeds := PackedFloat32Array()
 	speeds.resize(AimTuple.MAXIMUM_POWER_PERCENT + 1)
 	for power in range(AimTuple.MAXIMUM_POWER_PERCENT + 1):
@@ -1242,58 +797,10 @@ static func _build_solver_cache(cannon: CannonController) -> Dictionary:
 		var elevation := float(ceili(AimTuple.MINIMUM_ELEVATION_DEGREES) + index)
 		sines[index] = sin(deg_to_rad(elevation))
 		cosines[index] = cos(deg_to_rad(elevation))
-	return {
-		"step": step,
-		"damping": damping,
-		"log_damping": log(damping) if not is_equal_approx(damping, 1.0) else 0.0,
-		"asymptotic_factor": step * damping / (1.0 - damping) \
-				if not is_equal_approx(damping, 1.0) else INF,
-		"horizontal_factors": horizontal_factors,
-		"gravity_offsets": gravity_offsets,
-		"speeds": speeds,
-		"sines": sines,
-		"cosines": cosines,
-	}
-
-
-static func _damped_position_at_horizontal_range_cached(
-		horizontal_speed: float,
-		vertical_speed: float,
-		projected_range: float,
-		solver_cache: Dictionary
-) -> Vector2:
-	var step: float = solver_cache.step
-	var damping: float = solver_cache.damping
-	if damping <= 0.0:
-		return Vector2.INF
-	var step_count := 0
-	if is_equal_approx(damping, 1.0):
-		step_count = ceili(projected_range / maxf(horizontal_speed * step, 0.000001))
-	else:
-		var asymptotic_range := horizontal_speed * float(solver_cache.asymptotic_factor)
-		if projected_range >= asymptotic_range:
-			return Vector2.INF
-		var remaining_ratio := 1.0 - projected_range / asymptotic_range
-		step_count = ceili(log(remaining_ratio) / float(solver_cache.log_damping))
-	step_count = clampi(step_count, 1, TrajectoryPredictor.MAXIMUM_STEPS)
-	var horizontal_factors: PackedFloat64Array = solver_cache.horizontal_factors
-	var gravity_offsets: PackedFloat64Array = solver_cache.gravity_offsets
-	var previous := Vector2(
-		horizontal_speed * horizontal_factors[step_count - 1],
-		vertical_speed * horizontal_factors[step_count - 1] + gravity_offsets[step_count - 1]
-	)
-	var current := Vector2(
-		horizontal_speed * horizontal_factors[step_count],
-		vertical_speed * horizontal_factors[step_count] + gravity_offsets[step_count]
-	)
-	if current.x + 0.000001 < projected_range:
-		return Vector2.INF
-	var fraction := clampf(
-		(projected_range - previous.x) / maxf(current.x - previous.x, 0.000001),
-		0.0,
-		1.0
-	)
-	return previous.lerp(current, fraction)
+	cache["speeds"] = speeds
+	cache["sines"] = sines
+	cache["cosines"] = cosines
+	return cache
 
 
 static func _bisect_elevation(
@@ -1525,54 +1032,6 @@ static func _finalize_prediction_diagnostics(diagnostics: Dictionary) -> Diction
 	return diagnostics
 
 
-static func _nearest_reusable_witness(
-		candidate_indices: PackedInt32Array,
-		witness_impacts: PackedVector3Array,
-		target_world_point: Vector3,
-		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
-) -> int:
-	var best_index := -1
-	var best_distance := INF
-	for witness_index in candidate_indices:
-		var distance := witness_impacts[witness_index].distance_to(target_world_point)
-		if distance <= maximum_distance \
-				and (distance < best_distance or (distance == best_distance and witness_index < best_index)):
-			best_index = witness_index
-			best_distance = distance
-	return best_index
-
-
-static func _nearest_spatial_reusable_witness(
-		buckets: Dictionary,
-		witness_impacts: PackedVector3Array,
-		target_world_point: Vector3,
-		maximum_distance: float = TARGET_DISTANCE_TOLERANCE
-) -> int:
-	var center := _spatial_bucket_for(target_world_point)
-	var candidates := PackedInt32Array()
-	for offset_z in range(-1, 2):
-		for offset_x in range(-1, 2):
-			var bucket_key := center + Vector2i(offset_x, offset_z)
-			var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
-			for witness_index in bucket:
-				candidates.append(witness_index)
-	return _nearest_reusable_witness(
-		candidates,
-		witness_impacts,
-		target_world_point,
-		maximum_distance
-	)
-
-
-static func _register_spatial_witness(
-		buckets: Dictionary,
-		world_point: Vector3,
-		witness_index: int
-) -> void:
-	var bucket_key := _spatial_bucket_for(world_point)
-	var bucket: PackedInt32Array = buckets.get(bucket_key, PackedInt32Array())
-	bucket.append(witness_index)
-	buckets[bucket_key] = bucket
 
 
 static func _rigidbody_identity_compatible(
@@ -1652,13 +1111,6 @@ static func _runtime_contact_identity(
 	return identity if identity.is_valid() else null
 
 
-static func _pixel_center_local(pixel: Vector2i, bounds: Rect2, mask_size: int) -> Vector2:
-	return Vector2(
-		lerpf(bounds.position.x, bounds.end.x, (float(pixel.x) + 0.5) / float(mask_size)),
-		lerpf(bounds.position.y, bounds.end.y, (float(pixel.y) + 0.5) / float(mask_size))
-	)
-
-
 static func _triangle_key(cell: Vector2i, triangle: int) -> int:
 	return ((cell.y * StageGenerationContract.REQUIRED_CELL_COUNT.x + cell.x) * 2) + triangle
 
@@ -1729,24 +1181,6 @@ static func _hash_int(hash: int, value: int) -> int:
 	return hash
 
 
-static func _uncovered_failure(
-		started: int,
-		uncovered_count: int,
-		diagnostics: Array[Dictionary],
-		visited_target_count: int,
-		predictor_call_count: int,
-		candidate_tuple_count: int
-) -> Dictionary:
-	return {
-		"valid": false,
-		"rejection": &"uncovered_target",
-		"uncovered_count": uncovered_count,
-		"uncovered_diagnostics": diagnostics,
-		"visited_target_count": visited_target_count,
-		"predictor_call_count": predictor_call_count,
-		"candidate_tuple_count": candidate_tuple_count,
-		"elapsed_ms": Time.get_ticks_msec() - started,
-	}
 
 
 static func _failure(rejection: StringName, started: int) -> Dictionary:

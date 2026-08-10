@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-05
 last_reviewed: 2026-08-05
 scope: execution proof for the physical, progression, and runtime-interface ExecPlans

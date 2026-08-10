@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-10
 scope: repository documentation, visual evidence, runtime media assets, and project-local generated artifacts
 related:
@@ -121,18 +121,18 @@ choice.
 
 ### Phase 1: Establish current truth
 
-- [ ] Record the commit, worktree state, tracked-file inventory, ignored
+- [x] Record the commit, worktree state, tracked-file inventory, ignored
   project-local output categories, and byte totals without modifying files.
-- [ ] Build the instruction graph from protected instructions through the
+- [x] Build the instruction graph from protected instructions through the
   canonical product, architecture, design, implemented-state, test, and asset
   provenance sources.
-- [ ] Classify all agent-relevant documents by primary lifecycle type and
+- [x] Classify all agent-relevant documents by primary lifecycle type and
   truthful status; flag mixed roles, duplicate canonical claims, active
   historical evidence, dead links, and protected-file concerns.
-- [ ] Build the asset inventory by role: runtime, editor/import metadata,
+- [x] Build the asset inventory by role: runtime, editor/import metadata,
   generated source, license/provenance, test fixture, delivery evidence,
   exploratory concept, prototype, and ignored local output.
-- [ ] Remove any disposition option that conflicts with a verified authority,
+- [x] Remove any disposition option that conflicts with a verified authority,
   runtime/export/test consumer, license duty, or design-reference obligation.
 
 Phase gate:
@@ -143,20 +143,20 @@ Phase gate:
 
 ### Phase 2: Gather decisive evidence
 
-- [ ] Trace inbound Markdown links and canonical index claims for every
+- [x] Trace inbound Markdown links and canonical index claims for every
   document proposed for repair, archive, or deletion.
-- [ ] Trace exact and dynamic asset loading across scenes, Resources, Theme,
+- [x] Trace exact and dynamic asset loading across scenes, Resources, Theme,
   scripts, shaders, tests, project settings, export settings, and import
   metadata; record unresolved dynamic loaders as blockers.
-- [ ] Compare exact hashes and content roles to identify byte-identical or
+- [x] Compare exact hashes and content roles to identify byte-identical or
   semantically duplicated media without assuming that resized comparisons or
   captures are interchangeable.
-- [ ] Verify license, source, generated-asset, and reproducibility obligations
+- [x] Verify license, source, generated-asset, and reproducibility obligations
   for every non-project-original asset candidate.
-- [ ] Use targeted Git history only when current content and references cannot
+- [x] Use targeted Git history only when current content and references cannot
   establish why a candidate exists or whether history alone is an adequate
   recovery path.
-- [ ] Populate the evidence report with one row per candidate: path, role,
+- [x] Populate the evidence report with one row per candidate: path, role,
   authority/consumer evidence, provenance, bytes, recommended disposition,
   confidence, exact approval boundary, and blocker if any.
 
@@ -168,15 +168,15 @@ Phase gate:
 
 ### Phase 3: Decide and record
 
-- [ ] Summarize counts and bytes for retain, lifecycle repair, archive/move,
+- [x] Summarize counts and bytes for retain, lifecycle repair, archive/move,
   delete-after-approval, and blocked categories without changing the tree.
-- [ ] Separate non-destructive lifecycle corrections from move/delete batches
+- [x] Separate non-destructive lifecycle corrections from move/delete batches
   so approval for one category cannot authorize another.
-- [ ] Record rejected cleanup candidates when the rationale prevents the same
+- [x] Record rejected cleanup candidates when the rationale prevents the same
   risky proposal from recurring.
-- [ ] Present the exact proposed move/delete batches and optional ignored-output
+- [x] Present the exact proposed move/delete batches and optional ignored-output
   reclaim as separate user approval decisions.
-- [ ] If the user approves implementation, create a new Mode 3 execution
+- [x] If the user approves implementation, create a new Mode 3 execution
   contract with exact paths, link/index updates, asset-import consequences,
   validation commands, rollback behavior, and scoped commits. Do not convert
   this research checklist into the cleanup implementation plan.
@@ -189,11 +189,12 @@ Phase gate:
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this checklist.
-- Current phase: Phase 1.
-- Next task: Record the commit, worktree state, inventories, categories, and
-  byte totals.
-- Last completed gate: Artifact scope and evidence contract defined from the
-  current repository structure.
+- Current phase: Complete.
+- Next task: Execute the non-destructive repairs in
+  `2026-08-10-repository-maintenance-corrections.md`; request exact approval
+  before any delete or local-output reclaim batch.
+- Last completed gate: The disposition report records retained, repair,
+  blocked, and exact delete-after-approval paths with byte totals.
 - Update rule: Check an item only when its evidence exists. Do not repeat a
   completed repository-wide pass unless the commit, authority graph, or
   candidate set changes materially.

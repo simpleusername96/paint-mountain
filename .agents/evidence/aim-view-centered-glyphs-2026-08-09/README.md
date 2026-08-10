@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: done
+status: archived
 created: 2026-08-09
 scope: projected Aim View terrain-glyph placement and representative Windows-release review
 source: ../../execplans/2026-08-09-aim-view-centered-glyphs.md

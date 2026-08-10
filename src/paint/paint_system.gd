@@ -103,9 +103,6 @@ var _texture_upload_batch_count: int = 0
 var _paint_texture_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
 var _recent_diagnostics_enabled: bool = false
-var _surface_sample_cache_miss_count: int = 0
-var _last_nonempty_drain_duration_usec: int = 0
-var _last_nonempty_drain_new_surface_sample_count: int = 0
 
 
 func _init() -> void:
@@ -215,8 +212,6 @@ func drain_pending_commands() -> Dictionary:
 			"newly_painted_pixel_count": 0,
 			"paint_mask_checksum": _paint_mask_checksum,
 		}
-	var drain_started_at := Time.get_ticks_usec()
-	var cache_misses_before := _surface_sample_cache_miss_count
 	_clear_recent_region()
 	if _pending_commands.size() > 1:
 		_pending_commands.sort_custom(_typed_command_less)
@@ -243,9 +238,6 @@ func drain_pending_commands() -> Dictionary:
 	_last_drained_physics_tick = drained_tick
 	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
 	var checksum := _paint_mask_checksum
-	_last_nonempty_drain_new_surface_sample_count = \
-			_surface_sample_cache_miss_count - cache_misses_before
-	_last_nonempty_drain_duration_usec = Time.get_ticks_usec() - drain_started_at
 	paint_commands_drained.emit(drained_tick, commands.size(), checksum)
 	return {
 		"last_drained_physics_tick": drained_tick,
@@ -587,8 +579,6 @@ func clear() -> void:
 	_pending_commands.clear()
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
-	_last_nonempty_drain_duration_usec = 0
-	_last_nonempty_drain_new_surface_sample_count = 0
 	_paint_bytes.fill(0)
 	if _recent_diagnostics_enabled:
 		_recent_bytes.fill(0)
@@ -701,18 +691,6 @@ func texture_upload_batch_count() -> int:
 	return _texture_upload_batch_count
 
 
-func last_nonempty_drain_duration_milliseconds() -> float:
-	return float(_last_nonempty_drain_duration_usec) / 1000.0
-
-
-func last_nonempty_drain_new_surface_sample_count() -> int:
-	return _last_nonempty_drain_new_surface_sample_count
-
-
-func surface_sample_cache_miss_count() -> int:
-	return _surface_sample_cache_miss_count
-
-
 func dirty_region_read_only() -> Rect2i:
 	return _paint_dirty_rect
 
@@ -817,9 +795,6 @@ func _create_masks_and_surface_cache() -> void:
 	_texture_upload_batch_count = 0
 	_paint_texture_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
-	_surface_sample_cache_miss_count = 0
-	_last_nonempty_drain_duration_usec = 0
-	_last_nonempty_drain_new_surface_sample_count = 0
 
 
 ## Caches the two independent mask-to-topology axes and the much smaller accepted
@@ -878,7 +853,6 @@ func _ensure_surface_sample(index: int) -> bool:
 	var state := int(_surface_sample_states[index])
 	if state != SURFACE_SAMPLE_UNKNOWN:
 		return state == SURFACE_SAMPLE_ACTIVE
-	_surface_sample_cache_miss_count += 1
 	var pixel := Vector2i(index % MASK_SIZE, index / MASK_SIZE)
 	var cell := Vector2i(
 		_surface_column_cells[pixel.x],

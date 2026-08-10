@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-10
 scope: read-only architecture, maintainability, failure-path, and measured runtime-efficiency review of the Godot codebase
 related:
@@ -127,18 +127,18 @@ Apply one option to each investigated candidate or finding.
 
 ### Phase 1: Establish current truth and automatic triage
 
-- [ ] Record the commit and worktree state, then run `scripts/verify.ps1` from
+- [x] Record the commit and worktree state, then run `scripts/verify.ps1` from
   the repository root to establish import, parse, and startup health. Stop and
   report a baseline failure rather than attributing it to the review.
-- [ ] Inventory production scripts, shaders, scenes, Resources, automation, and
+- [x] Inventory production scripts, shaders, scenes, Resources, automation, and
   tests; collect size, symbol, dependency, signal, resource-loading, and current
   Git-churn signals without editing generated files.
-- [ ] Map the explicit owners and forbidden responsibilities from the technical
+- [x] Map the explicit owners and forbidden responsibilities from the technical
   architecture to their current implementations and direct consumers.
-- [ ] Rank candidates using combined signals. Seed the queue with the observed
+- [x] Rank candidates using combined signals. Seed the queue with the observed
   large and high-churn files above, but remove any candidate supported only by
   line count or churn.
-- [ ] Select at most 12 deep-trace candidates and record why each could affect
+- [x] Select at most 12 deep-trace candidates and record why each could affect
   ownership, contract safety, repeated work, runtime cost, or validation.
 
 Phase gate:
@@ -149,28 +149,28 @@ Phase gate:
 
 ### Phase 2: Trace responsibility, contracts, failures, and cost
 
-- [ ] For each candidate, state its current responsibility, each distinct
+- [x] For each candidate, state its current responsibility, each distinct
   reason it changes, the suspected added responsibility or repeated work, and
   the nearest existing owner that could own or hide it.
-- [ ] Trace direct and indirect consumers, typed signals, Resource/schema
+- [x] Trace direct and indirect consumers, typed signals, Resource/schema
   contracts, scene paths, test fixtures, and compatibility expectations before
   recommending any boundary change.
-- [ ] Trace reachable invalid, empty, partial, cancellation, retry,
+- [x] Trace reachable invalid, empty, partial, cancellation, retry,
   long-running, import, and process-exit paths that apply to the candidate;
   record the exact guard or missing guard.
-- [ ] Search for competing implementations of stage decisions, paint/coverage,
+- [x] Search for competing implementations of stage decisions, paint/coverage,
   projectile settlement, generation validation, UI formatting, persistence,
   capture/process control, and other rules only when the candidate reaches
   those concerns.
-- [ ] For suspected runtime inefficiency, use an existing deterministic test or
+- [x] For suspected runtime inefficiency, use an existing deterministic test or
   fixed stage/seed workload and repeat the same measurement enough to separate
   the signal from startup/import noise. If no controlled workload exists,
   record a measurement gap rather than create an unapproved benchmark.
-- [ ] Run the smallest existing focused test that exercises each surviving
+- [x] Run the smallest existing focused test that exercises each surviving
   finding. Do not run the broad `scripts/test.ps1` suite merely to regain
   confidence; reserve it for a later approved implementation gate unless a
   specific audit conclusion depends on suite-wide behavior.
-- [ ] Apply `$codebase-quality-auditor` in read-only review mode to the surviving
+- [x] Apply `$codebase-quality-auditor` in read-only review mode to the surviving
   candidates and record findings by impact with exact evidence. Include clean
   candidates so the report does not imply that every heuristic signal was a
   defect.
@@ -183,18 +183,18 @@ Phase gate:
 
 ### Phase 3: Decide and record
 
-- [ ] Separate observed fact, inference, measured result, recommendation, and
+- [x] Separate observed fact, inference, measured result, recommendation, and
   user-owned implementation decision in the evidence report.
-- [ ] Classify each surviving finding as clean/no action, local simplification,
+- [x] Classify each surviving finding as clean/no action, local simplification,
   responsibility extraction, measured optimization, separate architecture
   proposal, or deferred with one named blocker.
-- [ ] Order findings by impact and confidence, not file size. Include exact
+- [x] Order findings by impact and confidence, not file size. Include exact
   paths and symbols, affected contracts, suggested task boundary, acceptance
   check, and residual risk.
-- [ ] Group only mutually coherent follow-up changes into proposed batches;
+- [x] Group only mutually coherent follow-up changes into proposed batches;
   keep unrelated cleanup, product changes, visual changes, and dependency work
   separate.
-- [ ] If the user authorizes fixes, create one or more Mode 3 execution
+- [x] If the user authorizes fixes, create one or more Mode 3 execution
   contracts from accepted batches. Do not edit this research checklist into an
   implementation plan and do not fix issues during the review.
 
@@ -207,11 +207,12 @@ Phase gate:
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this checklist.
-- Current phase: Phase 1.
-- Next task: Record the commit/worktree baseline and run the existing smoke
-  verification.
-- Last completed gate: Artifact scope, initial candidate signals, and evidence
-  contract defined from the current repository.
+- Current phase: Complete.
+- Next task: Execute the accepted catalog, ballistics, and dead-surface batch in
+  `2026-08-10-repository-maintenance-corrections.md`; queue-budget policy remains
+  a separate deferred architecture decision.
+- Last completed gate: The review report records findings, clean candidates,
+  focused baseline checks, smallest-safe directions, and the named blocker.
 - Update rule: Check an item only when its evidence exists. Do not repeat a
   passing check unless the relevant source, Resource, scene, test, Godot
   version, or workload changes.

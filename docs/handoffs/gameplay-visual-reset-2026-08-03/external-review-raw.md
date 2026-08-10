@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-03
 last_reviewed: 2026-08-03
 scope: intake record for the unedited external Claude review response

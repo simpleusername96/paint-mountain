@@ -36,7 +36,8 @@ func is_valid(require_bundle: bool = true) -> bool:
 			or progression.progression_version != catalog_version \
 			or progression.stage_count != StageProgressionData.STAGE_COUNT:
 		return false
-	if stage_ids.is_empty() or stage_ids.size() != stages.size() \
+	if stage_ids.size() != StageProgressionData.STAGE_COUNT \
+			or stage_ids.size() != stages.size() \
 			or layout_paths.size() != stages.size():
 		return false
 	var seen := {}

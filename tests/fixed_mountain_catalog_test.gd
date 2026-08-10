@@ -10,6 +10,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 	_assert(catalog.catalog_version == 10 and catalog.stages.size() == 30, "v10 catalog must contain thirty stages")
+	_assert_partial_catalogs_fail_closed(catalog)
 	var manifest_text := FileAccess.get_file_as_string(catalog.bundle_manifest_path)
 	var manifest = JSON.parse_string(manifest_text)
 	_assert(manifest is Dictionary, "v10 manifest must parse")
@@ -51,6 +52,18 @@ func _initialize() -> void:
 	if not _failed:
 		print("fixed_mountain_catalog_test passed: one canonical seed, thirty distinct persisted v10 layouts")
 	quit(1 if _failed else 0)
+
+
+func _assert_partial_catalogs_fail_closed(catalog: StageCatalogData) -> void:
+	for partial_count in [27, 28, 29]:
+		var partial := catalog.duplicate(true) as StageCatalogData
+		partial.stage_ids.resize(partial_count)
+		partial.stages.resize(partial_count)
+		partial.layout_paths.resize(partial_count)
+		_assert(
+			not partial.is_valid(false),
+			"a %d-stage source catalog must fail closed" % partial_count
+		)
 
 
 func _assert(condition: bool, message: String) -> void:

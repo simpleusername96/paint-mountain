@@ -13,7 +13,18 @@ related:
 
 # Approved Image Fidelity Correction Evidence
 
-## Outcome
+## Purpose
+
+Record source-backed runtime, comparison, and validation evidence for the seven
+approved-image fidelity corrections.
+
+## Sources
+
+- The approved screen-audit source linked in frontmatter.
+- The completed execution contract, focused Godot 4.7.1 checks, Windows release
+  export, task-owned captures, combined comparisons, and `design-qa.md`.
+
+## Findings
 
 The exported Godot 4.7.1 Windows runtime now reproduces the recognizable
 composition, hierarchy, assets, spacing, and neutral terrain values of all

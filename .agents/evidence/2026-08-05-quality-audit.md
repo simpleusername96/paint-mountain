@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-05
 last_reviewed: 2026-08-05
 scope: task-scoped ownership and responsibility audit for ExecPlan implementation

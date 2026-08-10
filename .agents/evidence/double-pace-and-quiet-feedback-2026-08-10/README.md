@@ -11,7 +11,18 @@ related:
 
 # Double Pace and Quiet Feedback Evidence
 
-## Outcome
+## Purpose
+
+Record the automated, release, and visual evidence for two-times active
+gameplay, wall-clock duration tiers, and removal of passive message UI.
+
+## Sources
+
+- The completed execution contract linked in frontmatter.
+- Focused Godot 4.7.1 checks, `scripts/verify.ps1`, the Windows release export,
+  and the task-owned release captures below.
+
+## Findings
 
 The stabilized Godot 4.7.1 source, Windows release export, and three release
 capture processes passed. Active board play uses time scale 2.0 on the retained

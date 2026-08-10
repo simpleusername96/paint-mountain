@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-07
 last_reviewed: 2026-08-07
 topic: target-coverage clarity and authored-first safe Aim Lock framing

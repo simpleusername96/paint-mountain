@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-03
 last_reviewed: 2026-08-03
 scope: evidence index and trust guidance for external review

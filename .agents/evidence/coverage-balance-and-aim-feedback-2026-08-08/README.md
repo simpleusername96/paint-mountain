@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: done
+status: archived
 created: 2026-08-08
 last_reviewed: 2026-08-08
 scope: two-times projectile, attainable coverage curve, and latest-only first-impact prediction

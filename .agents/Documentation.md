@@ -28,6 +28,9 @@ related:
   - execplans/2026-08-10-double-pace-and-quiet-feedback.md
   - execplans/2026-08-10-essential-ui-fidelity.md
   - execplans/2026-08-10-approved-image-fidelity-correction.md
+  - execplans/2026-08-10-repository-maintenance-corrections.md
+  - evidence/2026-08-10-repository-hygiene-disposition.md
+  - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
@@ -44,6 +47,44 @@ related:
 ---
 
 # Project Record
+
+## Current Repository Maintenance Corrections (2026-08-10)
+
+### Context
+
+A bounded document/asset disposition audit and codebase efficiency review found
+stale current guidance, historical evidence still marked active, a missing
+generated-icon provenance entry, documentation import noise, incomplete source
+catalog acceptance, duplicated ballistic recurrence, and no-caller diagnostics.
+
+### Decision
+
+- Historical evidence remains at its existing paths but uses `archived`
+  lifecycle status. Current README, prompt, visual-reference, catalog-format,
+  evidence-structure, and generated-icon provenance claims were repaired.
+- Documentation-local Godot `.import` sidecars are ignored as generated state.
+- `StageCatalogData.is_valid()` requires exactly 30 ordered stages, and the
+  offline builder accepts only a complete valid current source catalog.
+- `DirectReachabilityValidator` delegates damped recurrence and range
+  interpolation to `CannonBallistics`. The retired exhaustive certification
+  builder/comparator and unconsumed paint, camera, and gameplay diagnostics are
+  removed; optional certificate data compatibility remains.
+
+### Consequences
+
+- Partial 27/28/29-stage catalogs fail the focused regression check. The active
+  30-stage format-5 bundle still verifies with manifest `701b3b63...`.
+- Focused catalog, ballistic range/generation, paint queue, camera safety, and
+  prediction scheduler checks pass. `scripts/verify.ps1` passes Godot import,
+  script parsing, and main-scene startup.
+- No asset, evidence, generated bundle, build, report, or Godot cache path was
+  deleted or moved.
+
+### Limitations
+
+The exact eight-file tracked media deletion batch and all local-output reclaim
+remain pending explicit approval. Queue budgets remain a separate architecture
+decision because no typed owner, values, or rejection semantics are defined.
 
 ## Current Approved-Image Fidelity Correction (2026-08-10)
 

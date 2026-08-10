@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-08
 scope: exploratory ImageGen directions for three Paint Mountain screens
 related:

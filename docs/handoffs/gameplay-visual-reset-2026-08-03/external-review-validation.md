@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-03
 last_reviewed: 2026-08-03
 topic: Claude gameplay and visual reset review validation

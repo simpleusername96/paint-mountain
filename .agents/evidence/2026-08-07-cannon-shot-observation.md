@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: done
+status: archived
 created: 2026-08-07
 last_reviewed: 2026-08-07
 scope: fixed v9 terrain, open play bounds, qualitative Aim View, wind flag, Shot Follow, and release capture validation

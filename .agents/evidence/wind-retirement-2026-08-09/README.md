@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-09
 topic: complete wind-system retirement
 scope: runtime contracts, serialized resources, HUD, diagnostics, release export, and rendered Aim View
