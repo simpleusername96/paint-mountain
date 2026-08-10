@@ -33,7 +33,8 @@ function Invoke-GodotCheck {
         [Parameter(Mandatory = $true)]
         [string[]]$Arguments,
         [Parameter(Mandatory = $true)]
-        [string]$Label
+        [string]$Label,
+        [switch]$AllowReportedErrors
     )
 
     $output = & $resolvedGodot @Arguments 2>&1
@@ -43,10 +44,15 @@ function Invoke-GodotCheck {
     if ($exitCode -ne 0) {
         throw "$Label failed with exit code $exitCode."
     }
-    if ($text -match '(?m)^(SCRIPT ERROR|ERROR):') {
+    if (-not $AllowReportedErrors -and $text -match '(?m)^(SCRIPT ERROR|ERROR):') {
         throw "$Label reported a Godot script or runtime error."
     }
 }
+
+Write-Host 'Importing project assets...'
+Invoke-GodotCheck -Label 'Godot asset import' -AllowReportedErrors -Arguments @(
+    '--headless', '--path', $projectRoot, '--import'
+)
 
 Write-Host 'Checking project import and script parsing...'
 Invoke-GodotCheck -Label 'Godot editor smoke check' -Arguments @(
