@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain 화면별 UX·비주얼 감사</title>
+  <style>
+    :root {
+      --ink: #172538;
+      --muted: #5e6b7d;
+      --paper: #fffdfc;
+      --canvas: #eef1f5;
+      --line: #d8dee6;
+      --blue: #2584ff;
+      --blue-soft: #e9f2ff;
+      --amber: #a86400;
+      --amber-soft: #fff4d8;
+      --coral: #c33f3f;
+      --coral-soft: #fff0f0;
+      --green: #28734d;
+      --green-soft: #eaf7f0;
+      --shadow: 0 18px 50px rgba(23, 37, 56, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.65;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    a { color: #1768d1; }
+
+    .hero {
+      padding: 72px 24px 64px;
+      color: #f8fbff;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(37, 132, 255, 0.22), transparent 34%),
+        linear-gradient(145deg, #111d2d, #1d3048);
+    }
+
+    .hero-inner,
+    main,
+    .footer-inner {
+      width: min(1440px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #81b8ff;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 900px;
+      margin-bottom: 18px;
+      font-size: clamp(36px, 6vw, 72px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-lede {
+      max-width: 820px;
+      margin-bottom: 26px;
+      color: #cbd7e7;
+      font-size: clamp(17px, 2vw, 22px);
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip,
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .chip {
+      color: #e8f2ff;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    main { padding: 42px 0 88px; }
+
+    section { scroll-margin-top: 20px; }
+
+    .section-card {
+      margin-bottom: 28px;
+      padding: clamp(22px, 3vw, 40px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .section-heading h2 {
+      margin-bottom: 6px;
+      font-size: clamp(26px, 3.4vw, 42px);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+
+    .section-heading p { margin-bottom: 0; color: var(--muted); }
+
+    .status.good { color: var(--green); background: var(--green-soft); }
+    .status.warn { color: var(--amber); background: var(--amber-soft); }
+    .status.high { color: var(--coral); background: var(--coral-soft); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 20px;
+      border-left: 3px solid var(--blue);
+      background: #f7f9fc;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 20px;
+    }
+
+    .summary-item span { color: var(--muted); font-size: 14px; }
+
+    .priority-table,
+    .evidence-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #425167;
+      background: #f5f7fa;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 22px 0;
+    }
+
+    figure {
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f4f6f8;
+    }
+
+    figure a {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #dfe4ea;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    figcaption {
+      padding: 11px 14px 13px;
+      color: var(--muted);
+      background: var(--paper);
+      font-size: 13px;
+    }
+
+    .audit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .audit-block {
+      min-width: 0;
+      padding-top: 14px;
+      border-top: 2px solid var(--line);
+    }
+
+    .audit-block h3 { margin-bottom: 8px; font-size: 17px; }
+    .audit-block p, .audit-block ul { margin-bottom: 0; color: #46566b; }
+    .audit-block ul { padding-left: 20px; }
+
+    .screen-number {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      margin-right: 8px;
+      border-radius: 12px;
+      color: white;
+      background: var(--ink);
+      font-size: 15px;
+      vertical-align: 4px;
+    }
+
+    .note {
+      margin: 20px 0 0;
+      padding: 15px 18px;
+      border-left: 3px solid var(--blue);
+      background: var(--blue-soft);
+      color: #33455d;
+    }
+
+    .wide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .wide-grid figure:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+    footer {
+      padding: 34px 0 48px;
+      color: #b9c6d7;
+      background: #111d2d;
+    }
+
+    footer p { margin-bottom: 7px; }
+
+    @media (max-width: 980px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .audit-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .hero-inner, main, .footer-inner { width: min(100% - 28px, 1440px); }
+      .hero { padding: 48px 0 42px; }
+      main { padding-top: 22px; }
+      .section-card { border-radius: 16px; }
+      .section-heading { display: block; }
+      .section-heading .status { margin-top: 8px; }
+      .compare-grid, .wide-grid, .summary-grid { grid-template-columns: 1fr; }
+      .wide-grid figure:last-child:nth-child(odd) { grid-column: auto; }
+      .table-wrap { overflow-x: auto; }
+      .priority-table, .evidence-table { min-width: 720px; }
+    }
+
+    @media print {
+      body { background: white; }
+      .hero { padding: 32px 0; background: #172538 !important; }
+      main { width: 100%; padding: 20px 0; }
+      .section-card { break-inside: avoid; box-shadow: none; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Paint Mountain · Screen Audit · 2026-08-10</p>
+      <h1>화면별 UX·비주얼 감사와 개선 시안</h1>
+      <p class="hero-lede">현재 Windows 릴리스의 실제 화면 10개를 새로 캡처하고, Quiet Context 디자인 원칙과 핵심 플레이 흐름에 맞춰 문제를 분석한 뒤, 각 화면의 개선 방향을 이미지로 시각화했습니다.</p>
+      <div class="hero-meta">
+        <span class="chip">기준 화면 1280×720</span>
+        <span class="chip">대표 검증 1920×1080</span>
+        <span class="chip">한국어 기본</span>
+        <span class="chip">실제 릴리스 캡처</span>
+        <span class="chip">ImageGen 개선 시안 10종</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section-card" id="verdict">
+      <div class="section-heading">
+        <div>
+          <h2>종합 판정</h2>
+          <p>구조와 기능은 안정적이지만, 몇몇 화면은 플레이 대상보다 빈 공간이나 UI가 더 강하게 보입니다.</p>
+        </div>
+        <span class="status high">현재 구현: 개선 필요</span>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-item"><strong>잘 된 점</strong><span>일관된 색·서체, 한 개의 명확한 주 행동, 실제 기능만 노출</span></div>
+        <div class="summary-item"><strong>가장 큰 문제</strong><span>지도 보기의 지나치게 작은 산과 큰 빈 공간</span></div>
+        <div class="summary-item"><strong>반복 문제</strong><span>중앙 가림, 과도하게 넓은 버튼, 촘촘한 카드 텍스트</span></div>
+        <div class="summary-item"><strong>개선 원칙</strong><span>세계를 키우고, 상태를 가장자리로 밀며, 행동 위계를 단순화</span></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="priority-table">
+          <thead><tr><th>우선순위</th><th>대상</th><th>문제</th><th>권장 조치</th></tr></thead>
+          <tbody>
+            <tr><td><span class="status high">높음</span></td><td>지도 보기</td><td>산이 화면 중앙의 작은 섬처럼 보여 지형 조사 목적을 약화함</td><td>안전 여백 안에서 산을 2배 이상 키우고, 중심 표식을 산과 함께 읽히게 배치</td></tr>
+            <tr><td><span class="status high">높음</span></td><td>브리핑·탄환 추적</td><td>중앙 패널 또는 복귀 버튼이 관찰해야 할 지형과 물리 장면을 가림</td><td>오버레이를 모서리 안전 영역으로 이동하고 중앙은 세계에 양보</td></tr>
+            <tr><td><span class="status high">높음</span></td><td>스테이지 선택</td><td>카드 텍스트가 경계에 가까우며 시작 버튼이 지나치게 넓음</td><td>번호·이름·기록을 2단 계층으로 나누고, CTA를 내용 폭에 맞춤</td></tr>
+            <tr><td><span class="status warn">중간</span></td><td>메뉴·결과</td><td>1920×1080에서 버튼과 빈 공간이 커지고 산의 존재감은 상대적으로 약해짐</td><td>최대 폭을 두고 세계 프리뷰·결과 산의 화면 점유율을 유지</td></tr>
+            <tr><td><span class="status warn">중간</span></td><td>설정</td><td>얇은 슬라이더와 작은 토글이 조작 상태를 약하게 전달</td><td>클릭 영역을 넓히고 켜짐/꺼짐을 텍스트·형태로 함께 표시</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note"><strong>중요:</strong> 오른쪽 이미지는 구현 완료 화면이 아니라, 현재 화면을 기준으로 만든 개선 개념입니다. 실제 3D 지형·물리·정확한 한국어 렌더·키보드 동작을 증명하지 않습니다.</p>
+    </section>
+
+    <section class="section-card" id="screen-01">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">01</span>메인 메뉴</h2><p>첫 진입에서 게임의 성격과 시작 행동을 전달하는 화면</p></div>
+        <span class="status warn">보통 · 개선 권장</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/01-main-menu.png"><img src="assets/current/01-main-menu.png" alt="현재 메인 메뉴 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/01-main-menu-improved.png"><img src="assets/improved/01-main-menu-improved.png" alt="메인 메뉴 개선 시안"></a><figcaption>개선 시안 · 메뉴 폭 제한 + 산 프리뷰 강화</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>제목, 한 줄 설명, 플레이 순서가 명확합니다. 플레이만 파란 주 행동으로 처리한 점도 좋습니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>버튼 열이 너무 넓고, 보조 행동의 경계·초점이 어색합니다. 산은 밝은 바탕에 묻혀 게임의 촉각적 성격을 충분히 보여주지 못합니다. 1920×1080에서는 버튼 폭과 빈 공간이 더 커집니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>메뉴 최대 폭을 제한하고 보조 행동은 텍스트 중심으로 정리합니다. 산 프리뷰의 대비·크기를 높여 제목과 균형을 맞춥니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-02">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">02</span>스테이지 선택</h2><p>30개 산 중 하나를 비교하고 시작하는 화면</p></div>
+        <span class="status high">주의 · 우선 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/02-stage-select.png"><img src="assets/current/02-stage-select.png" alt="현재 스테이지 선택 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/02-stage-select-improved.png"><img src="assets/improved/02-stage-select-improved.png" alt="스테이지 선택 개선 시안"></a><figcaption>개선 시안 · 카드 내부 계층과 여백 재구성</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>선택 목록과 상세 설명이 분리되어 있고, 선택 상태는 색과 테두리로 드러납니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>번호·이름·목표·최고 기록이 거의 한 줄로 붙어 카드 경계와 충돌합니다. 특히 한국어 이름이 길어질수록 읽는 속도가 떨어집니다. 시작 버튼은 상세 영역 전체 폭을 차지해 필요 이상으로 무겁습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>카드 안에서 번호/이름과 목표/기록을 두 줄로 분리하고 16px 이상 여백을 확보합니다. 시작 버튼은 상세 내용 폭에 맞춰 줄이고 페이지 이동은 한 줄로 정렬합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-03">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">03</span>브리핑</h2><p>지형과 장치를 살핀 뒤 조준으로 넘어가는 화면</p></div>
+        <span class="status high">주의 · 우선 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/03-briefing.png"><img src="assets/current/03-briefing.png" alt="현재 브리핑 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/03-briefing-improved.png"><img src="assets/improved/03-briefing-improved.png" alt="브리핑 개선 시안"></a><figcaption>개선 시안 · 산 확대 + 목표 패널을 모서리로 이동</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>목표 문구와 조준 시작이 한 표면에 모여 다음 행동은 명확합니다. 장치 이름도 세계에 직접 표시됩니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>산이 작고 중앙 목표 패널이 핵심 지형을 가립니다. 지형 확인 화면인데 실제 조사 대상보다 안내 카드가 더 강합니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>산을 세로·가로 모두 확대하고 목표 표면을 하단 모서리로 옮깁니다. 중앙에는 지형과 장치만 남기고, 시작 버튼만 파란색으로 유지합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-04">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">04</span>조준 보기</h2><p>목표점을 정하고 각도·파워를 조정한 뒤 발사하는 핵심 화면</p></div>
+        <span class="status good">양호 · 미세 조정</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/04-aim-view.png"><img src="assets/current/04-aim-view.png" alt="현재 조준 보기 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/04-aim-view-improved.png"><img src="assets/improved/04-aim-view-improved.png" alt="조준 보기 개선 시안"></a><figcaption>개선 시안 · 기존 구조를 유지한 대비·정렬 보정</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>산과 궤적이 중심이고, 발사가 유일한 파란 주 행동입니다. 각도·파워와 하단 맥락 안내도 실제 조작에 맞습니다. 1920×1080에서도 겹침은 보이지 않습니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>밝은 면이 서로 가까워 일부 경사·지지면이 약하게 구분됩니다. 1280×720 하단에서는 대포, 발사, 각도·파워, 설명이 가까워 밀도가 높습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>지지면 명도 차를 조금 키우고 하단 요소의 기준선을 더 명확히 맞춥니다. 기존 기능과 구조는 유지하는 편이 안전합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-05">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">05</span>지도 보기</h2><p>산의 전체 구조를 회전·확대해 조사하는 화면</p></div>
+        <span class="status high">주의 · 최우선 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/05-map-view.png"><img src="assets/current/05-map-view.png" alt="현재 지도 보기 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/05-map-view-improved.png"><img src="assets/improved/05-map-view-improved.png" alt="지도 보기 개선 시안"></a><figcaption>개선 시안 · 전체 산을 중앙 작업 영역으로 확대</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>발사와 조준 조작이 숨겨져 관찰 모드임은 분명합니다. 하단 문구도 드래그·휠·Tab·Esc만 보여줍니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>산이 화면의 약 20% 정도로 축소되어 경로와 장치 위치를 읽기 어렵습니다. 커다란 빈 공간이 조사 작업의 초점을 약화합니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>산을 중앙 작업 영역의 55–65%까지 확대합니다. 좌측 상태와 상단 메뉴의 안전 여백만 남기고, 초점 표식은 지형과 함께 읽히게 합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-06">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">06</span>탄환 추적</h2><p>발사한 공과 첫 접촉·페인트 결과를 관찰하는 화면</p></div>
+        <span class="status high">주의 · 우선 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/06-shot-follow.png"><img src="assets/current/06-shot-follow.png" alt="현재 탄환 추적 화면"></a><figcaption>현재 릴리스 · 첫 접촉 홀드</figcaption></figure>
+        <figure><a href="assets/improved/06-shot-follow-improved.png"><img src="assets/improved/06-shot-follow-improved.png" alt="탄환 추적 개선 시안"></a><figcaption>개선 시안 · 복귀 행동을 안전한 가장자리로 이동</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>조준 컨트롤이 사라지고 공이 크게 보이므로 상태 전환은 이해하기 쉽습니다. 복귀 행동도 명시되어 있습니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>복귀 버튼이 화면 중앙에 떠 있어 공의 그림자와 접촉 지형을 가립니다. 핵심 원인-결과 장면과 직접 경쟁합니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>복귀 행동을 좌상단 또는 좌하단 안전 영역으로 이동합니다. 중앙에는 공, 접촉, 페인트만 남기고 하단 문구는 보조 수단으로 유지합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-07">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">07</span>일시정지</h2><p>플레이 입력을 막고 다음 내비게이션을 선택하는 화면</p></div>
+        <span class="status good">양호 · 미세 조정</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/07-pause.png"><img src="assets/current/07-pause.png" alt="현재 일시정지 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/07-pause-improved.png"><img src="assets/improved/07-pause-improved.png" alt="일시정지 개선 시안"></a><figcaption>개선 시안 · 행 높이·초점·배경 차단 강화</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>한 개 모달, 분명한 계속 행동, 올바른 메뉴 순서가 안정적입니다. 배경이 어두워져 입력 차단 상태도 읽힙니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>보조 행은 텍스트만 떠 있는 느낌이고 실제 클릭 영역을 시각적으로 추정하기 어렵습니다. 배경의 Gear도 약하게나마 조작 가능한 것처럼 보입니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>각 행의 높이와 경계를 더 일관되게 보여주고, 배경 조작 요소는 더 확실히 비활성화합니다. 계속의 파란 초점은 유지합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-08">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">08</span>설정</h2><p>오디오·게임플레이·화면·언어를 조정하는 화면</p></div>
+        <span class="status warn">보통 · 접근성 보강</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/08-settings.png"><img src="assets/current/08-settings.png" alt="현재 설정 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/08-settings-improved.png"><img src="assets/improved/08-settings-improved.png" alt="설정 개선 시안"></a><figcaption>개선 시안 · 조작 상태와 행 리듬 강화</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>두 열 구성이 논리적이며 화면·언어 선택은 자연스럽습니다. 설정 안에 다시 시작을 넣지 않은 흐름도 올바릅니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>슬라이더 트랙·손잡이와 토글이 얇고 작아 조작 가능성이 약합니다. 켜짐/꺼짐은 위치와 색에 크게 의존합니다. 회색 도움말은 밝은 배경에서 대비가 약할 수 있습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>행 전체를 44px 이상 클릭 영역으로 보고, 토글 상태를 텍스트와 위치로 함께 표시합니다. 슬라이더 값 표시를 가까이 두어 조작 결과를 즉시 확인하게 합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-09">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">09</span>직접 종료 결과</h2><p>플레이어가 완료를 선택해 현재 도색 결과를 확정한 상태</p></div>
+        <span class="status warn">보통 · 위계 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/09-manual-result.png"><img src="assets/current/09-manual-result.png" alt="현재 직접 종료 결과 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/09-manual-result-improved.png"><img src="assets/improved/09-manual-result-improved.png" alt="직접 종료 결과 개선 시안"></a><figcaption>개선 시안 · 결과 수치와 다음 행동 위계 강화</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>도색률, 등급, 이전 최고, 시간과 사용 탄 수가 한 패널에 모여 있습니다. 재도전이 주 행동인 점도 명확합니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>패널이 넓고 버튼 세 개가 비슷한 무게로 보입니다. 1920×1080에서는 산이 더 작아져 최종 결과를 세계에서 확인하기 어렵습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>재도전만 파란 버튼으로 유지하고 다음은 보조, 스테이지 선택은 텍스트 행동으로 낮춥니다. 산을 확대해 수치와 실제 도색 자국이 함께 보이게 합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="screen-10">
+      <div class="section-heading">
+        <div><h2><span class="screen-number">10</span>시간 종료 결과</h2><p>제한 시간이 끝나 현재 도색 결과가 확정된 상태</p></div>
+        <span class="status warn">보통 · 상태 구분 개선</span>
+      </div>
+      <div class="compare-grid">
+        <figure><a href="assets/current/10-timeout-result.png"><img src="assets/current/10-timeout-result.png" alt="현재 시간 종료 결과 화면"></a><figcaption>현재 릴리스 · 1280×720</figcaption></figure>
+        <figure><a href="assets/improved/10-timeout-result-improved.png"><img src="assets/improved/10-timeout-result-improved.png" alt="시간 종료 결과 개선 시안"></a><figcaption>개선 시안 · 시계 형태와 제목으로 종료 사유 구분</figcaption></figure>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-block"><h3>강점</h3><p>제목이 직접 종료 결과와 다르며, 최종 파란 페인트 경로가 세계에 남아 있습니다.</p></div>
+        <div class="audit-block"><h3>문제</h3><p>종료 사유의 차이는 제목 한 줄에 거의 전부 의존합니다. 나머지 패널 구조가 직접 종료와 같아 빠르게 구분하기 어렵습니다.</p></div>
+        <div class="audit-block"><h3>개선</h3><p>시계 형태와 제목을 함께 사용해 색에만 의존하지 않고 시간 종료를 표시합니다. 결과 수치와 행동 위계는 직접 종료 화면과 일관되게 유지합니다.</p></div>
+      </div>
+    </section>
+
+    <section class="section-card" id="accessibility">
+      <div class="section-heading">
+        <div><h2>접근성·상태 검토</h2><p>스크린샷에서 확인할 수 있는 범위와 확인하지 못한 범위를 분리했습니다.</p></div>
+        <span class="status warn">정적 화면 기준</span>
+      </div>
+      <div class="table-wrap">
+        <table class="evidence-table">
+          <thead><tr><th>항목</th><th>확인 결과</th><th>한계</th></tr></thead>
+          <tbody>
+            <tr><td>한국어 맞춤</td><td>1280×720과 대표 1920×1080에서 잘림은 보이지 않음. 스테이지 카드는 여백이 부족함.</td><td>더 긴 번역 문자열과 200% 텍스트 확대는 미검증.</td></tr>
+            <tr><td>초점 표시</td><td>주 행동에 2px 수준의 파란 초점/외곽선이 보임.</td><td>전체 키보드 이동 순서와 초점 복원은 스크린샷만으로 확인 불가.</td></tr>
+            <tr><td>색 이외의 상태</td><td>장치 문양은 색과 형태를 함께 사용. 시간 종료 개선안도 시계 형태를 병행.</td><td>현재 토글과 일부 선택 상태는 색·위치 의존이 큼.</td></tr>
+            <tr><td>대비</td><td>남색 본문과 파란 주 행동은 대체로 읽힘.</td><td>회색 도움말, 비활성 완료, 밝은 지형 면은 수치 측정하지 않음.</td></tr>
+            <tr><td>대상 크기</td><td>주 버튼은 충분히 큼.</td><td>슬라이더 손잡이, 작은 토글, Gear의 실제 키보드 이름과 클릭 영역은 정적 화면만으로 확정 불가.</td></tr>
+            <tr><td>모션·입력 차단</td><td>일시정지 스크림과 탄환 추적 전용 상태가 시각적으로 구분됨.</td><td>감소된 모션, 입력 누출, 실시간 상태 알림은 실행 상호작용 테스트가 필요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-card" id="wide-evidence">
+      <div class="section-heading">
+        <div><h2>대표 1920×1080 교차 확인</h2><p>같은 현재 릴리스에서 메뉴, 선택, 조준, 설정, 결과를 추가 캡처했습니다.</p></div>
+        <span class="status good">겹침 없음</span>
+      </div>
+      <div class="wide-grid">
+        <figure><a href="assets/wide/main-menu-1920x1080.png"><img src="assets/wide/main-menu-1920x1080.png" alt="1920x1080 메인 메뉴"></a><figcaption>메인 메뉴 · 폭이 커지면서 메뉴 버튼도 과도하게 확장</figcaption></figure>
+        <figure><a href="assets/wide/stage-select-1920x1080.png"><img src="assets/wide/stage-select-1920x1080.png" alt="1920x1080 스테이지 선택"></a><figcaption>스테이지 선택 · 잘림은 없지만 카드 텍스트 밀도는 그대로</figcaption></figure>
+        <figure><a href="assets/wide/aim-view-1920x1080.png"><img src="assets/wide/aim-view-1920x1080.png" alt="1920x1080 조준 보기"></a><figcaption>조준 보기 · 산과 HUD가 안정적으로 확장</figcaption></figure>
+        <figure><a href="assets/wide/settings-1920x1080.png"><img src="assets/wide/settings-1920x1080.png" alt="1920x1080 설정"></a><figcaption>설정 · 구조는 안정적이나 컨트롤 상태 표현은 여전히 약함</figcaption></figure>
+        <figure><a href="assets/wide/manual-result-1920x1080.png"><img src="assets/wide/manual-result-1920x1080.png" alt="1920x1080 직접 종료 결과"></a><figcaption>직접 종료 결과 · 패널은 커지고 최종 산은 상대적으로 작아짐</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="section-card" id="method">
+      <div class="section-heading">
+        <div><h2>방법·증거·한계</h2><p>결론이 무엇을 근거로 하는지 명시합니다.</p></div>
+      </div>
+      <div class="table-wrap">
+        <table class="evidence-table">
+          <tbody>
+            <tr><th>제품·사용자 목표</th><td>고정 대포에서 목표, 각도, 파워를 계획하고 발사 후 물리 접촉과 도색 결과를 이해하는 Windows 데스크톱 3D 퍼즐.</td></tr>
+            <tr><th>검토 기준</th><td>유효한 source brief, 현재 구현 기록, Quiet Context UI 지침, 승인된 시각 기준, UI/UX 접근성 차단 기준.</td></tr>
+            <tr><th>실제 캡처</th><td>현재 Windows 릴리스 실행 파일의 숨김 Delivery Capture 경로. 한국어 1280×720 전체 10상태 + 1920×1080 대표 5상태.</td></tr>
+            <tr><th>개선 이미지</th><td>각 현재 캡처를 편집 기준 이미지로 첨부한 built-in ImageGen UI mockup. 실제 기능과 문구를 보존하고 한 화면당 한 개선 방향 생성.</td></tr>
+            <tr><th>미포함 상태</th><td>스테이지 로딩/재시도는 전용 캡처 케이스가 없어 포함하지 못함. 과거 STAGE_FAILED 화면은 현재 상태 기계에서 도달 불가하므로 사용하지 않음.</td></tr>
+            <tr><th>검증 한계</th><td>스크린샷은 키보드 동작, 스크린리더 이름, 실제 대비 수치, 모션, 입력 누출, 3D 깊이, 물리 정확성, 성능을 증명하지 않음.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><strong>UIUX gate evidence:</strong> Surface = Windows desktop game flow · Depth = Level 4 audit/redesign · Viewports = 1280×720 전체, 1920×1080 대표 · States = 10 · Result = 현재 구현 blocked. 이유는 지도 보기의 조사 대상 축소, 브리핑/탄환 추적의 중앙 가림, 선택 카드의 여백 부족입니다.</p>
+      <p>이미지 생성에 사용한 최종 프롬프트 세트는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>에 보존했습니다.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <p><strong>Paint Mountain 화면 감사</strong> · 2026-08-10</p>
+      <p>현재 캡처는 구현 증거이며, 개선 이미지는 구현 전 디자인 방향입니다.</p>
+    </div>
+  </footer>
+</body>
+</html>

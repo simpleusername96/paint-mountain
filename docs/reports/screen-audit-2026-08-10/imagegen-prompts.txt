@@ -1,0 +1,103 @@
+Paint Mountain screen audit — final ImageGen prompt set
+Mode: built-in ImageGen
+Input role for every prompt: the matching current release screenshot was attached as the edit target.
+
+01 Main Menu
+Use case: ui-mockup
+Asset type: Paint Mountain desktop game main menu improvement concept, 1280 x 720
+Primary request: Improve only the main-menu presentation using the current screenshot and the approved Quiet Context direction.
+Layout: keep the Korean title and four real actions on the left, but shorten the action width, use one clear blue Play primary action, quiet text-led secondary actions, stronger spacing rhythm, and a balanced relationship between the menu and the mountain preview. Enlarge and reframe the painted mountain preview so it reads as a tactile distant low-poly puzzle mountain rather than a washed-out empty field.
+Style/medium: realistic production-quality Godot game UI mockup, warm paper-white surface, navy Korean type, blue accent, subtle hairlines, restrained radii, no giant enclosing card.
+Text (verbatim): "물리 기반 페인트 퍼즐", "페인트 마운틴", "한 번 조준하고 중력을 믿으세요. 불가능한 경로를 칠하세요.", "플레이", "스테이지 선택", "설정", "종료"
+Constraints: preserve the exact Korean copy and all four actions; preserve 1280x720 landscape framing; no added features; no device frame; no watermark; no nested cards; no clipping; keep the mountain visually secondary to the title but materially present.
+Avoid: oversized buttons, button pile, generic dashboard cards, gradients, glassmorphism, invented navigation, English text.
+
+02 Stage Select
+Use case: ui-mockup
+Asset type: Paint Mountain desktop stage-selection screen improvement concept, 1280 x 720
+Primary request: Improve only the stage-selection screen hierarchy and Korean text fit.
+Layout: preserve the 8 visible stage choices and the selected-stage detail. Rebuild the left list as a clean two-column grid with generous 16px internal padding, stronger separation between stage number/name and target/best values, no text touching borders, and an unmistakable selected state using blue tint plus outline. Keep the right detail area visually dominant enough to explain the selected stage. Change the oversized full-width start bar into a normal tactile primary button aligned with the detail content. Keep Previous, 1-8 / 30, and Next in a calm footer.
+Style/medium: realistic production-quality Godot game UI mockup, approved Quiet Context system, warm paper-white, navy type, blue accent, thin dividers, restrained radii, no card mosaic feel.
+Text (verbatim): "뒤로", "산을 선택하세요", "01 첫 번째 하강", "목표 4.0% · 최고 기록 0.0%", "02 폭발 분지", "03 분열 능선", "04 네 번째 산맥", "05 다섯 번째 산맥", "06 여섯 번째 산맥", "07 일곱 번째 산맥", "08 여덟 번째 산맥", "첫 번째 하강", "넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.", "목표 4.0% · 탄 수 4", "장치 없음", "최고 기록 0.0%  ☆☆☆", "이전", "1-8 / 30", "다음", "스테이지 시작"
+Constraints: preserve all actual actions and the selected Stage 01 state; no invented features; no clipped or syllable-by-syllable Korean; match the current screenshot aspect ratio; no device frame; no watermark.
+Avoid: giant empty buttons, dense one-line card copy, nested cards, gradients, glass, fake filters, locked states.
+
+03 Briefing
+Use case: ui-mockup
+Asset type: Paint Mountain desktop stage briefing screen improvement concept, 1280 x 720
+Primary request: Improve the briefing so the terrain can be inspected before starting and the objective remains clear without hiding the mountain.
+Layout: enlarge and raise the low-poly mountain to occupy the middle of the frame; keep the Stage 02 identity at upper left and Gear at upper right. Move the objective surface away from the mountain center into a compact lower-left or lower-right briefing panel with one containment level. Give Back and Start distinct hierarchy, with Start as the only blue primary action. Keep the quiet bottom context legend aligned along the safe edge. Preserve the visible Burst glyph label on the mountain.
+Style/medium: realistic production-quality Godot game UI mockup, warm paper-white, navy Korean type, blue accent, hairline divider, restrained radius, strong world visibility.
+Text (verbatim): "스테이지 02", "지형 확인", "폭발 분지", "높은 폭발 장치를 맞혀 아래 분지를 넓게 칠하세요.", "왼쪽 드래그 회전 · 휠 확대", "뒤로", "조준 시작", "드래그 회전 · 휠 확대", "폭발"
+Constraints: preserve only the real controls; mountain must remain unobstructed and legible; exact Korean; no new tutorial, metrics, or actions; no nested cards; match current aspect ratio; no device frame; no watermark.
+Avoid: centered modal covering the target, tiny distant mountain, oversized empty panel, detached keycap tiles, gradients, glass.
+
+04 Aim View
+Use case: ui-mockup
+Asset type: Paint Mountain desktop Aim View improvement concept, 1280 x 720
+Primary request: Refine the current Aim View without changing its interaction model. Keep the mountain and cannon as the visual story, with the entire lower-wide mountain readable and no dashboard panels.
+Layout: retain Stage 30 and Aim View at the upper-left edge; coverage rail at left; time, shots 7 / 7, disabled Finish, and Gear at upper right; one centered blue Fire button; compact angle and power steppers at lower right; one quiet bottom context sentence. Increase contrast between playable facets and support faces, keep mechanism glyphs readable by shape, and make the target/trajectory marker unmistakable. Give every edge control safe breathing room and align all bottom controls on one intentional baseline.
+Style/medium: realistic production-quality Godot low-poly physics-puzzle UI, approved Quiet Context system, warm paper-white, navy type, saturated blue primary action and trajectory, restrained dividers, no panels over the world.
+Text (verbatim): "스테이지 30", "조준", "Tab", "도색률", "0.0%", "목표 10%", "02:00", "7 / 7", "완료 F", "발사 Space", "각도", "28.4°", "파워", "100.0%", "S/W 각도 · 휠 파워 · Space 발사 · Tab 지도 · Esc 메뉴"
+Constraints: preserve all real current controls and no yaw or A/D; keep one Fire; no Restart; no wind; no resident-ball indicator; no passive message cards; exact Korean; no clipping; match current landscape aspect; no device frame; no watermark.
+Avoid: new features, giant panels, detached keycap tiles, central instructions, gradient/glass UI, mountain occlusion.
+
+05 Map View
+Use case: ui-mockup
+Asset type: Paint Mountain desktop Map View improvement concept, 1280 x 720
+Primary request: Fix the Map View's weak scale and empty composition while preserving inspection-only behavior.
+Layout: enlarge the full mountain to occupy roughly the central 55-65% of the viewport, leaving safe margins for the existing edge HUD. Show enough top and support faces to read route structure and mechanism glyph positions. Keep Stage 30, Map View Tab toggle, coverage rail, time, shots, disabled Finish, and Gear at the edges. Keep Fire and aim controls absent. Add only the existing selected inspection focus marker, subtle and readable. Keep the bottom context sentence as the only instruction line.
+Style/medium: realistic production-quality Godot low-poly physics-puzzle UI, Quiet Context system, warm paper-white, navy type, blue focus accents, tactile faceted mountain, restrained world contrast.
+Text (verbatim): "스테이지 30", "지도 보기", "Tab", "도색률", "0.0%", "목표 10%", "02:00", "7 / 7", "완료 F", "드래그 회전 · 휠 확대 · Tab 조준 · Esc 메뉴"
+Constraints: preserve inspection-only mode and all real controls; no Fire; no aim steppers; no extra mini-map, legend, feature, or panel; exact Korean; no clipped content; match current landscape aspect; no device frame; no watermark.
+Avoid: tiny floating mountain, excessive blank center, HUD over terrain, detached shortcut tiles, invented compass or telemetry, gradients, glass.
+
+06 Shot Follow
+Use case: ui-mockup
+Asset type: Paint Mountain desktop Shot Follow improvement concept, 1280 x 720
+Primary request: Keep the paintball and first terrain contact as the dominant cause-and-effect moment, and remove UI obstruction from the action.
+Layout: retain Stage 02, coverage rail, time, shots 3 / 4, Finish, and Gear at the safe edges. Move the real "대포로 돌아가기" action from the center of the mountain to a compact blue-accent or neutral action at the lower-left or upper-left safe edge, away from the ball, shadow, impact, and paint. Keep only the bottom context line for Tab return and Esc menu. Frame the glossy blue ball at a readable size against faceted terrain with clear depth and contact shadow.
+Style/medium: realistic production-quality Godot low-poly physics-puzzle UI, Quiet Context system, warm paper-white and pale mountain, navy text, saturated glossy blue ball and paint, no central overlays.
+Text (verbatim): "스테이지 02", "도색률", "0.4%", "목표 5%", "01:00", "3 / 4", "완료 F", "대포로 돌아가기", "Tab 대포로 돌아가기 · Esc 메뉴"
+Constraints: preserve all real controls and no in-flight steering; no new telemetry or action; exact Korean; leave the ball and first contact unobstructed; no clipping; match current landscape aspect; no device frame; no watermark.
+Avoid: centered return button, passive message card, aim controls, Fire button, direction prompts, giant ball, gradients, glass.
+
+07 Pause
+Use case: ui-mockup
+Asset type: Paint Mountain desktop Pause overlay improvement concept, 1280 x 720
+Primary request: Refine the pause overlay for clear focus, strong keyboard readability, and lighter visual weight while preserving the full input barrier.
+Layout: keep one centered modal surface over a clearly dimmed but still recognizable gameplay scene. Use a compact title, a single normal-width blue Continue action, then four quiet full-width rows for Restart, Settings, Stage Select, and Main Menu. Keep 48px-like target height, consistent vertical spacing, visible focus on Continue, and no nested borders. Suppress the unrelated gear as an active-looking control behind the modal. Keep the bottom Esc Continue context line quiet and aligned.
+Style/medium: realistic production-quality Godot game UI mockup, Quiet Context system, warm paper-white modal, navy type, blue primary action, restrained radius and shadow, neutral dim scrim.
+Text (verbatim): "일시정지", "계속", "다시 시작", "설정", "스테이지 선택", "메인 메뉴로", "Esc 계속"
+Constraints: preserve the exact five real actions and order; exact Korean; no extra close icon or destructive confirmation; one containment surface; no clipping; match current landscape aspect; no device frame; no watermark.
+Avoid: oversized modal, equal blue weight on every row, nested cards, active-looking background controls, gradients, glass, decorative icons.
+
+08 Settings
+Use case: ui-mockup
+Asset type: Paint Mountain desktop Settings overlay improvement concept, 1280 x 720
+Primary request: Improve scan speed, control affordance, and Korean fit while preserving every current setting and the one-modal paused flow.
+Layout: keep one large centered settings surface. Use two balanced columns separated by one hairline. Left: Audio with three clearly labeled sliders, then Gameplay with three stable switch rows. Right: Display with fullscreen switch, resolution and quality selects, then Language select and one short helper line. Use consistent 44-48px row heights, labels close to their controls, clear on/off switch states beyond color, and generous but efficient spacing. Keep Restore Defaults as a quiet text action and Close as the single blue primary action at bottom right. Keep the autosave note small in the header.
+Style/medium: realistic production-quality Godot game UI mockup, Quiet Context system, warm paper-white, navy type, blue section accents, subtle gray rails and dividers, visible keyboard focus, no nested cards.
+Text (verbatim): "설정", "변경 사항은 자동 저장됩니다", "오디오", "전체 음량", "음악 음량", "효과음", "게임플레이", "카메라 흔들림", "장식 움직임 줄이기", "궤적 미리 보기", "화면", "전체 화면", "해상도", "1280 × 720", "그래픽 품질", "보통", "언어", "한국어", "한국어가 기본값입니다. 한국어와 영어를 언제든 바꿀 수 있습니다.", "기본값 복원", "닫기"
+Constraints: preserve all current settings and actual actions; no Restart; exact Korean; no clipping; controls must read as operable; one containment surface; match current landscape aspect; no device frame; no watermark.
+Avoid: tiny slider thumbs, ambiguous switches, excessive empty lower area, nested cards, new tabs, gradients, glass, invented settings.
+
+09 Manual Result
+Use case: ui-mockup
+Asset type: Paint Mountain desktop manually-finished Result screen improvement concept, 1280 x 720
+Primary request: Make the completed run understandable at a glance while keeping the final painted mountain visible.
+Layout: enlarge the final mountain in the left/middle view and keep the coverage rail at the far left. Use one compact right-side result surface, with "완료" and the large 0.4% first, then target-area explanation, rank, previous best, time, and shots in a clear vertical rhythm. Use one normal-width blue Retry primary action, Next as the secondary button, and Stage Select as a quiet tertiary action; avoid three equal competing buttons. Keep Stage 02 and Gear at safe edges. Maintain one containment level.
+Style/medium: realistic production-quality Godot low-poly physics-puzzle UI, Quiet Context system, warm paper-white, navy type, blue result number and primary action, subtle divider, restrained radius, mountain not washed out.
+Text (verbatim): "스테이지 02", "결과", "도색률", "0.4%", "목표 5%", "완료", "최종 목표 영역", "목표 영역 안에서 실제로 칠한 표면", "등급 ☆☆☆", "이전 최고 0.0%", "경과 시간 00:00 · 사용한 탄 1", "재도전", "다음", "스테이지 선택"
+Constraints: preserve all actual values and three actions; do not claim success or failure; exact Korean; no Replay; no new metric; no clipping; final mountain and blue painted mark must remain readable; match current landscape aspect; no device frame; no watermark.
+Avoid: oversized result panel, equal action weights, hidden mountain, confetti, invented rewards/currency, gradients, glass, nested cards.
+
+10 Timeout Result
+Use case: ui-mockup
+Asset type: Paint Mountain desktop time-expired Result screen improvement concept, 1280 x 720
+Primary request: Distinguish the time-expired terminal reason immediately, without obscuring the final painted mountain or inventing failure/reward systems.
+Layout: enlarge the final mountain in the left/middle view and keep the coverage rail at far left. Use one compact right-side result surface. Pair a small clock outline with the title "시간 종료" so the reason is not color-only. Show the large 4.6% next, then target-area explanation, rank, previous best, elapsed time and shots in a clear rhythm. Use Retry as the blue primary action, Next as secondary, and Stage Select as quiet tertiary. Keep Stage 02 and Gear at safe edges. One containment level only.
+Style/medium: realistic production-quality Godot low-poly physics-puzzle UI, Quiet Context system, warm paper-white, navy type, blue coverage and primary action, restrained coral only for the clock/reason cue, subtle divider and radius.
+Text (verbatim): "스테이지 02", "결과", "도색률", "4.6%", "목표 5%", "시간 종료", "최종 목표 영역", "목표 영역 안에서 실제로 칠한 표면", "등급 ★☆☆", "이전 최고 0.0%", "경과 시간 01:00 · 사용한 탄 1", "재도전", "다음", "스테이지 선택"
+Constraints: preserve actual values and three actions; do not label it stage failure or success; exact Korean; no Replay; no new metric; final blue paint path must be clearly visible; no clipping; match current landscape aspect; no device frame; no watermark.
+Avoid: alarm-style red takeover, oversized panel, equal action weights, hidden mountain, confetti, invented rewards/currency, gradients, glass, nested cards.
