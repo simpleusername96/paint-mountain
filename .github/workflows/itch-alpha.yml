@@ -1,0 +1,245 @@
+name: Verify and deploy itch.io alpha
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - ".agents/**"
+      - "docs/**"
+      - "screenshots/**"
+      - ".editorconfig"
+      - ".gitattributes"
+      - ".gitignore"
+      - "AGENTS.md"
+      - "README.md"
+      - "design-qa.md"
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - ".agents/**"
+      - "docs/**"
+      - "screenshots/**"
+      - ".editorconfig"
+      - ".gitattributes"
+      - ".gitignore"
+      - "AGENTS.md"
+      - "README.md"
+      - "design-qa.md"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the verified build to the itch.io alpha channel
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: itch-alpha-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_RELEASE: 4.7.1-stable
+  GODOT_TEMPLATE_VERSION: 4.7.1.stable
+  ITCH_TARGET: itchioprofile1351321/paint-mountain:windows-alpha
+
+jobs:
+  verify-build-publish:
+    name: Verify, build, and publish when authorized
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check deployment credential
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        shell: pwsh
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:BUTLER_API_KEY)) {
+              throw 'The BUTLER_API_KEY GitHub Actions secret is missing.'
+          }
+
+      - name: Restore pinned Godot tools
+        id: godot-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cache/paint-mountain/godot/4.7.1-stable
+            ~/.local/share/godot/export_templates/4.7.1.stable
+          key: paint-mountain-godot-${{ runner.os }}-4.7.1-stable-windows-x86-64-v1
+
+      - name: Prepare pinned Godot editor and Windows templates
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+
+          $toolRoot = Join-Path $env:HOME ".cache/paint-mountain/godot/$env:GODOT_RELEASE"
+          $godotName = "Godot_v$($env:GODOT_RELEASE)_linux.x86_64"
+          $godotPath = Join-Path $toolRoot $godotName
+          $templateRoot = Join-Path $env:HOME ".local/share/godot/export_templates/$env:GODOT_TEMPLATE_VERSION"
+          $templateNames = @(
+              'windows_release_x86_64.exe',
+              'windows_release_x86_64_console.exe'
+          )
+
+          $cacheReady = (Test-Path -LiteralPath $godotPath -PathType Leaf)
+          foreach ($templateName in $templateNames) {
+              $cacheReady = $cacheReady -and (Test-Path -LiteralPath (Join-Path $templateRoot $templateName) -PathType Leaf)
+          }
+
+          function Assert-FileHash {
+              param(
+                  [Parameter(Mandatory = $true)]
+                  [string]$Path,
+                  [Parameter(Mandatory = $true)]
+                  [string]$Algorithm,
+                  [Parameter(Mandatory = $true)]
+                  [string]$Expected
+              )
+
+              $actual = (Get-FileHash -LiteralPath $Path -Algorithm $Algorithm).Hash
+              if ($actual -ne $Expected) {
+                  throw "Checksum mismatch for $Path. Expected $Expected, received $actual."
+              }
+          }
+
+          if (-not $cacheReady) {
+              New-Item -ItemType Directory -Path $toolRoot -Force | Out-Null
+              New-Item -ItemType Directory -Path $templateRoot -Force | Out-Null
+
+              $godotArchive = Join-Path $env:RUNNER_TEMP "Godot_v$($env:GODOT_RELEASE)_linux.x86_64.zip"
+              $godotUrl = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_RELEASE/Godot_v$($env:GODOT_RELEASE)_linux.x86_64.zip"
+              Invoke-WebRequest -UseBasicParsing -Uri $godotUrl -OutFile $godotArchive
+              Assert-FileHash -Path $godotArchive -Algorithm SHA512 -Expected '4CCDAB7A48EECCBE8819A2FC1F6262F8D72065D98601BCB3743FCBD7EBD39F373758A788EE3293A05EC5B2C48538266C437404312E372225CD2DF273945A2DE9'
+              Expand-Archive -LiteralPath $godotArchive -DestinationPath $toolRoot -Force
+
+              $templateArchive = Join-Path $env:RUNNER_TEMP "Godot_v$($env:GODOT_RELEASE)_export_templates.tpz"
+              $templateUrl = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_RELEASE/Godot_v$($env:GODOT_RELEASE)_export_templates.tpz"
+              Invoke-WebRequest -UseBasicParsing -Uri $templateUrl -OutFile $templateArchive
+              Assert-FileHash -Path $templateArchive -Algorithm SHA512 -Expected 'AFCC83D8D3D298038F19C58744A0D660FA75DD4BAA33CB55D1011BB2565A2A8C2381728924564CB909E37C205A23F21B521B23BD057993AFD43AE4DA0B2F9D47'
+
+              # The official archive contains every platform. Cache only the two
+              # Windows x86-64 release templates this workflow can consume.
+              Add-Type -AssemblyName System.IO.Compression.FileSystem
+              $archive = [System.IO.Compression.ZipFile]::OpenRead($templateArchive)
+              try {
+                  foreach ($templateName in $templateNames) {
+                      $entry = $archive.GetEntry("templates/$templateName")
+                      if ($null -eq $entry) {
+                          throw "Godot template archive does not contain templates/$templateName."
+                      }
+                      $destination = Join-Path $templateRoot $templateName
+                      [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destination, $true)
+                  }
+              }
+              finally {
+                  $archive.Dispose()
+              }
+          }
+
+          & chmod '+x' '--' $godotPath
+          $reportedVersion = (& $godotPath --version).Trim()
+          if ($LASTEXITCODE -ne 0 -or $reportedVersion -notlike '4.7.1.stable*') {
+              throw "Unexpected Godot version: $reportedVersion"
+          }
+          "GODOT_BIN=$godotPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Verify project import and startup
+        shell: pwsh
+        run: ./scripts/verify.ps1 -GodotPath $env:GODOT_BIN
+
+      - name: Run complete headless test suite
+        shell: pwsh
+        run: ./scripts/test.ps1 -GodotPath $env:GODOT_BIN
+
+      - name: Export Windows alpha build
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+
+          $releaseDirectory = Join-Path $env:RUNNER_TEMP "paint-mountain-windows-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          New-Item -ItemType Directory -Path $releaseDirectory | Out-Null
+          $executablePath = Join-Path $releaseDirectory 'PaintMountain.exe'
+
+          $output = & $env:GODOT_BIN --headless --path $env:GITHUB_WORKSPACE --export-release 'Windows Desktop' $executablePath 2>&1
+          $exitCode = $LASTEXITCODE
+          $output | ForEach-Object { Write-Host $_ }
+          $outputText = $output | Out-String
+          if ($exitCode -ne 0) {
+              throw "Godot release export failed with exit code $exitCode."
+          }
+          if ($outputText -match '(?m)^(SCRIPT ERROR|ERROR):') {
+              throw 'Godot release export reported a script or runtime error.'
+          }
+          if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
+              throw 'Godot did not produce PaintMountain.exe.'
+          }
+
+          $shortCommit = $env:GITHUB_SHA.Substring(0, 7)
+          $buildVersion = "alpha.$env:GITHUB_RUN_NUMBER+$shortCommit"
+          $buildHash = (Get-FileHash -LiteralPath $executablePath -Algorithm SHA256).Hash
+          @(
+              'Paint Mountain itch.io alpha build'
+              "version=$buildVersion"
+              "commit=$env:GITHUB_SHA"
+              "built_at=$([DateTime]::UtcNow.ToString('o'))"
+              "sha256=$buildHash"
+          ) | Set-Content -LiteralPath (Join-Path $releaseDirectory 'build-info.txt') -Encoding utf8
+
+          "RELEASE_DIRECTORY=$releaseDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILD_SHA256=$buildHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish verified alpha to itch.io
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        shell: pwsh
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+
+          $butlerArchive = Join-Path $env:RUNNER_TEMP 'butler-linux-amd64-v15.30.0.zip'
+          $butlerUrl = 'https://github.com/itchio/butler/releases/download/v15.30.0/butler-linux-amd64.zip'
+          Invoke-WebRequest -UseBasicParsing -Uri $butlerUrl -OutFile $butlerArchive
+          $butlerHash = (Get-FileHash -LiteralPath $butlerArchive -Algorithm SHA256).Hash
+          $expectedButlerHash = 'F2CAE7D24EBA0605048F71D0CC056F65C3B7FF9F73724F504C731CF3645BEF08'
+          if ($butlerHash -ne $expectedButlerHash) {
+              throw "Butler checksum mismatch. Expected $expectedButlerHash, received $butlerHash."
+          }
+
+          $butlerRoot = Join-Path $env:RUNNER_TEMP 'butler-v15.30.0'
+          Expand-Archive -LiteralPath $butlerArchive -DestinationPath $butlerRoot -Force
+          $butlerPath = Join-Path $butlerRoot 'linux-amd64/butler'
+          if (-not (Test-Path -LiteralPath $butlerPath -PathType Leaf)) {
+              throw 'The Butler archive did not contain linux-amd64/butler.'
+          }
+          & chmod '+x' '--' $butlerPath
+          & $butlerPath version
+          if ($LASTEXITCODE -ne 0) {
+              throw 'Butler version check failed.'
+          }
+
+          & $butlerPath push $env:RELEASE_DIRECTORY $env:ITCH_TARGET --userversion $env:BUILD_VERSION
+          if ($LASTEXITCODE -ne 0) {
+              throw "Butler push failed with exit code $LASTEXITCODE."
+          }
+
+          @(
+              '### itch.io alpha deployment'
+              ''
+              "- Channel: ``$env:ITCH_TARGET``"
+              "- Version: ``$env:BUILD_VERSION``"
+              "- Commit: ``$env:GITHUB_SHA``"
+              "- PaintMountain.exe SHA-256: ``$env:BUILD_SHA256``"
+          ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

@@ -75,10 +75,16 @@ function Invoke-GodotTest {
         $arguments += '--'
         $arguments += $UserArguments
     }
-    & $resolvedGodot @arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "$ScriptName failed with exit code $LASTEXITCODE."
-    }
+	$output = & $resolvedGodot @arguments 2>&1
+	$exitCode = $LASTEXITCODE
+	$output | ForEach-Object { Write-Host $_ }
+	$text = $output | Out-String
+	if ($exitCode -ne 0) {
+		throw "$ScriptName failed with exit code $exitCode."
+	}
+	if ($text -match '(?m)^(SCRIPT ERROR|ERROR):') {
+		throw "$ScriptName reported a Godot script or runtime error."
+	}
 }
 
 $primaryFailure = $null
