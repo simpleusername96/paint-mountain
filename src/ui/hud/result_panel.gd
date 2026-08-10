@@ -8,7 +8,7 @@ signal stages_requested
 @onready var title: Label = %Title
 @onready var stars: Label = %Stars
 @onready var coverage: Label = %Coverage
-@onready var coverage_explanation: Label = %CoverageExplanation
+@onready var target: Label = %Target
 @onready var previous_best: Label = %PreviousBest
 @onready var metadata: Label = %Metadata
 
@@ -18,6 +18,7 @@ var _previous_best := 0.0
 var _elapsed_seconds := -1.0
 var _shots_used := -1
 var _finish_reason: StringName = &"manual"
+var _target_coverage := 0.0
 
 
 func _ready() -> void:
@@ -28,6 +29,11 @@ func _ready() -> void:
 
 func configure_has_next(has_next: bool) -> void:
 	%Next.disabled = not has_next
+
+
+func configure_target(target_coverage: float) -> void:
+	_target_coverage = clampf(target_coverage, 0.0, 100.0)
+	_refresh_copy()
 
 
 func show_coverage_result(
@@ -57,8 +63,9 @@ func focus_retry() -> void:
 
 func _refresh_copy() -> void:
 	title.text = tr("result.time_expired") if _finish_reason == &"timeout" else tr("result.completed")
+	%TimeoutClock.visible = _finish_reason == &"timeout"
 	coverage.text = "%.1f%%" % _final_coverage
-	coverage_explanation.text = tr("result.coverage_explanation")
+	target.text = "%s %.0f%%" % [tr("stage.target"), _target_coverage]
 	stars.text = "%s  %s" % [
 		tr("result.grade"),
 		"★".repeat(_star_count) + "☆".repeat(maxi(0, 3 - _star_count)),

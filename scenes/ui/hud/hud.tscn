@@ -83,59 +83,27 @@ theme_type_variation = &"HudModeButton"
 tooltip_text = "hud.return_to_cannon_hint"
 text = "hud.return_to_cannon"
 
-[node name="BriefingPanel" type="PanelContainer" parent="HUDRoot"]
+[node name="BriefingActions" type="Control" parent="HUDRoot"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 340.0
-offset_top = 492.0
-offset_right = 940.0
-offset_bottom = 646.0
+offset_left = 24.0
+offset_top = 574.0
+offset_right = 380.0
+offset_bottom = 630.0
 
-[node name="Margin" type="MarginContainer" parent="HUDRoot/BriefingPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 14
-
-[node name="Content" type="VBoxContainer" parent="HUDRoot/BriefingPanel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="BriefingTitle" type="Label" parent="HUDRoot/BriefingPanel/Margin/Content"]
+[node name="Back" type="Button" parent="HUDRoot/BriefingActions"]
 unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"HudValue"
-text = "stage.first_descent.name"
-
-[node name="BriefingObjective" type="Label" parent="HUDRoot/BriefingPanel/Margin/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_type_variation = &"HudBody"
-text = "stage.first_descent.objective"
-autowrap_mode = 2
-
-[node name="Footer" type="HBoxContainer" parent="HUDRoot/BriefingPanel/Margin/Content"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Hint" type="Label" parent="HUDRoot/BriefingPanel/Margin/Content/Footer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_type_variation = &"HudCaption"
-text = "hud.camera_hint"
-
-[node name="Back" type="Button" parent="HUDRoot/BriefingPanel/Margin/Content/Footer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(96, 40)
-layout_mode = 2
+layout_mode = 0
+offset_right = 108.0
+offset_bottom = 52.0
 text = "ui.back"
 
-[node name="Start" type="Button" parent="HUDRoot/BriefingPanel/Margin/Content/Footer"]
+[node name="Start" type="Button" parent="HUDRoot/BriefingActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 40)
-layout_mode = 2
+layout_mode = 0
+offset_left = 120.0
+offset_right = 356.0
+offset_bottom = 52.0
 theme_type_variation = &"PrimaryButton"
 text = "ui.start_aiming"
 
@@ -144,10 +112,10 @@ unique_name_in_owner = true
 layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -444.0
-offset_top = 110.0
+offset_left = -380.0
+offset_top = 98.0
 offset_right = -24.0
-offset_bottom = 610.0
+offset_bottom = 614.0
 grow_horizontal = 0
 
 [node name="PauseOverlay" parent="HUDRoot" instance=ExtResource("11")]

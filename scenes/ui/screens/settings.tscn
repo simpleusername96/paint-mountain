@@ -58,15 +58,10 @@ size_flags_horizontal = 3
 theme_type_variation = &"ScreenTitle"
 text = "settings.title"
 
-[node name="Autosave" type="Label" parent="SettingsRoot/Panel/Margin/Content/Header"]
-layout_mode = 2
-theme_type_variation = &"HudCaption"
-text = "settings.autosave"
-
 [node name="Columns" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 24
+theme_override_constants/separation = 52
 
 [node name="Audio" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
 custom_minimum_size = Vector2(484, 0)
@@ -113,20 +108,20 @@ text = "settings.gameplay"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+theme_type_variation = &"SettingsSwitchRow"
 text = "settings.camera_shake"
 [node name="ReducedMotion" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+theme_type_variation = &"SettingsSwitchRow"
 text = "settings.reduced_motion"
 [node name="Trajectory" type="CheckButton" parent="SettingsRoot/Panel/Margin/Content/Columns/Audio"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+theme_type_variation = &"SettingsSwitchRow"
 text = "settings.trajectory"
-
-[node name="ColumnDivider" type="VSeparator" parent="SettingsRoot/Panel/Margin/Content/Columns"]
-layout_mode = 2
 
 [node name="Display" type="VBoxContainer" parent="SettingsRoot/Panel/Margin/Content/Columns"]
 custom_minimum_size = Vector2(484, 0)
@@ -141,6 +136,7 @@ text = "settings.display"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+theme_type_variation = &"SettingsSwitchRow"
 text = "settings.fullscreen"
 [node name="ResolutionLabel" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
 layout_mode = 2
@@ -164,12 +160,6 @@ text = "settings.language"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-[node name="LanguageNote" type="Label" parent="SettingsRoot/Panel/Margin/Content/Columns/Display"]
-custom_minimum_size = Vector2(484, 40)
-layout_mode = 2
-theme_type_variation = &"HudCaption"
-text = "settings.language_note"
-autowrap_mode = 2
 
 [node name="Footer" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content"]
 layout_mode = 2

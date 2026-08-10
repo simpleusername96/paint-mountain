@@ -28,9 +28,21 @@ vertical_alignment = 1
 visible = false
 layout_mode = 0
 offset_left = 24.0
-offset_top = 72.0
-offset_right = 172.0
-offset_bottom = 116.0
+offset_top = 96.0
+offset_right = 220.0
+offset_bottom = 136.0
+
+[node name="StageName" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 24.0
+offset_top = 54.0
+offset_right = 300.0
+offset_bottom = 90.0
+theme_type_variation = &"HudValue"
+text = "stage.first_descent.name"
+vertical_alignment = 1
 
 [node name="ModeValue" type="Label" parent="ModeChip"]
 unique_name_in_owner = true

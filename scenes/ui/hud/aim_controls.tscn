@@ -72,13 +72,6 @@ focus_mode = 2
 tooltip_text = "hud.angle_increase"
 theme_type_variation = &"HudIconButton"
 
-[node name="PowerDivider" type="VSeparator" parent="Content"]
-layout_mode = 0
-offset_left = 280.0
-offset_top = 8.0
-offset_right = 282.0
-offset_bottom = 74.0
-
 [node name="PowerValue" type="Label" parent="Content"]
 unique_name_in_owner = true
 layout_mode = 0

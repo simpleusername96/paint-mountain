@@ -63,7 +63,7 @@ func focus_finish() -> void:
 func refresh_locale() -> void:
 	%TimeValue.tooltip_text = tr("hud.time")
 	%ShotsValue.tooltip_text = tr("hud.shots")
-	%Finish.text = "%s  F" % tr("ui.finish")
+	%Finish.text = tr("ui.finish")
 	_refresh_values()
 	set_finish_available(finish_is_available())
 

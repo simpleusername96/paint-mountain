@@ -195,7 +195,7 @@ func _assert_translation_contract(locale: String) -> void:
 		"hud.time",
 		"hud.finish_tooltip", "hud.finish_disabled_tooltip", "ui.finish",
 		"fire.aim_revision_pending",
-		"result.completed", "result.time_expired", "result.final", "result.grade", "result.elapsed",
+		"result.completed", "result.time_expired", "result.grade", "result.elapsed", "stage.target",
 		"mechanism.splitter.description", "mechanism.uphill_rebound.description",
 		"settings.reduced_motion",
 		"settings.quality_low", "settings.quality_medium", "settings.quality_high",
@@ -206,6 +206,8 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr(key) != key, "%s translation must define %s" % [locale, key])
 	for retired_key in [
 		"hud.summary_split", "hud.summary_balls", "hud.summary_direct", "mechanism.activated",
+		"app.eyebrow", "app.subtitle", "settings.autosave", "settings.language_note",
+		"result.final", "result.coverage_explanation",
 	]:
 		_assert_true(
 			tr(retired_key) == retired_key,
@@ -215,7 +217,6 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr("hud.coverage") == "목표 영역", "Korean coverage caption must name the target area")
 		_assert_true(tr("hud.coverage_format") == "목표 영역 %.1f%% / 목표 %.1f%%", "Korean coverage format must distinguish the target area from its goal")
 		_assert_true(tr("hud.finish_tooltip") == "목표 영역 칠함으로 완료 (F)", "Korean Finish tooltip must state that it scores target-area coverage")
-		_assert_true(tr("result.final") == "최종 목표 영역", "Korean result caption must name target coverage")
 		_assert_true(tr("stage.first_descent.objective") == "넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.", "First Descent Korean copy must describe rolling contact paint")
 		_assert_true(tr("stage.split_ridge.objective") == "분열과 오르막 반동 문양으로 세 갈래 경로를 모두 공략하세요.", "Split Ridge Korean copy must name the surface glyphs")
 		_assert_true(tr("mechanism.burst.description") == "명중하면 주변 목표 표면에 넓은 자국을 칠합니다.", "Burst Korean copy must match continuous-paint terminology")
@@ -225,7 +226,6 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr("hud.coverage") == "TARGET AREA", "English coverage caption must name the target area")
 		_assert_true(tr("hud.coverage_format") == "Target area %.1f%% / Goal %.1f%%", "English coverage format must distinguish the target area from its goal")
 		_assert_true(tr("hud.finish_tooltip") == "Finish and score target-area coverage (F)", "English Finish tooltip must state that it scores target-area coverage")
-		_assert_true(tr("result.final") == "FINAL TARGET COVERAGE", "English result caption must name target coverage")
 
 
 func _assert_true(condition: bool, message: String) -> void:

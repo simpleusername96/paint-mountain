@@ -354,7 +354,7 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 	match state:
 		StageController.State.BRIEFING:
 			GAMEPLAY_PACE.apply_normal()
-			_set_mechanism_labels_visible(true)
+			_set_mechanism_labels_visible(false)
 			_trajectory_preview.visible = false
 			_camera_director.set_mode(CameraDirector.Mode.BRIEFING)
 		StageController.State.AIMING:

@@ -8,9 +8,12 @@ const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const STAGE_LAYOUT_REPOSITORY_SCRIPT := preload("res://src/app/stage_layout_repository.gd")
 const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
+const PREVIEW_SAFE_RECT := Rect2(0.42, 0.10, 0.56, 0.82)
+const PREVIEW_FRAME_MARGIN := 1.04
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
+var _preview_camera: Camera3D
 var _main_menu: MainMenuScreen
 var _stage_select: StageSelectScreen
 var _settings: SettingsScreen
@@ -29,6 +32,7 @@ func _ready() -> void:
 	_layout_repository.layout_ready.connect(_on_layout_ready)
 	_layout_repository.layout_failed.connect(_on_layout_failed)
 	_build_preview_world()
+	get_viewport().size_changed.connect(_on_preview_viewport_size_changed)
 	_main_menu = MAIN_MENU_SCENE.instantiate()
 	_main_menu.name = "MainMenu"
 	add_child(_main_menu)
@@ -282,12 +286,12 @@ func _build_preview_world() -> void:
 	sun.light_energy = 0.94
 	sun.shadow_enabled = true
 	_preview_world.add_child(sun)
-	var camera := Camera3D.new()
-	camera.position = Vector3(94.0, 58.0, 20.0)
-	camera.fov = 48.0
-	camera.current = true
-	_preview_world.add_child(camera)
-	camera.look_at(Vector3(0.0, 24.0, -112.0), Vector3.UP)
+	_preview_camera = Camera3D.new()
+	_preview_camera.position = Vector3(94.0, 58.0, 20.0)
+	_preview_camera.fov = 48.0
+	_preview_camera.current = true
+	_preview_world.add_child(_preview_camera)
+	_preview_camera.look_at(Vector3(0.0, 24.0, -112.0), Vector3.UP)
 	_preview_mountain = MeshInstance3D.new()
 	_preview_mountain.name = "PreviewMountain"
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
@@ -326,6 +330,43 @@ func _set_preview_stage(stage: StageData) -> void:
 	if dressing != null:
 		dressing.visible = true
 	_active_preview_stage_id = stage.stage_id
+	_fit_preview_camera(artifact.get("presentation_points", PackedVector3Array()))
+
+
+func _fit_preview_camera(local_points: PackedVector3Array) -> void:
+	if _preview_camera == null or _preview_mountain == null or _preview_mountain.mesh == null:
+		return
+	var world_bounds := _preview_mountain.global_transform * _preview_mountain.mesh.get_aabb()
+	if not world_bounds.has_volume() or local_points.is_empty():
+		return
+	var points := PackedVector3Array()
+	for local_point in local_points:
+		points.append(_preview_mountain.to_global(local_point))
+	var viewport_size := get_viewport().get_visible_rect().size
+	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
+	var authored_position := Vector3(94.0, 58.0, 20.0)
+	var authored_focus := Vector3(0.0, 24.0, -112.0)
+	var framed := TerrainCameraFramer.framed_pose_in_normalized_rect(
+		points,
+		world_bounds.get_center(),
+		authored_position,
+		authored_focus,
+		_preview_camera.fov,
+		aspect_ratio,
+		PREVIEW_SAFE_RECT,
+		PREVIEW_FRAME_MARGIN
+	)
+	if framed.is_empty():
+		return
+	_preview_camera.global_position = framed[0]
+	_preview_camera.look_at(framed[1], Vector3.UP)
+
+
+func _on_preview_viewport_size_changed() -> void:
+	if _preview_world == null or not _preview_world.visible or _active_preview_stage_id.is_empty():
+		return
+	var artifact: Dictionary = _preview_artifact_cache.get(_active_preview_stage_id, {})
+	_fit_preview_camera(artifact.get("presentation_points", PackedVector3Array()))
 
 
 func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
@@ -365,6 +406,10 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 		"material": material,
 		"paint_texture": paint_texture,
 		"target_texture": target_texture,
+		"presentation_points": TerrainSurface.local_presentation_points(
+			layout,
+			geometry.render_mesh.get_aabb()
+		),
 		"dressing": dressing,
 	}
 	_preview_artifact_cache[stage.stage_id] = artifact
@@ -396,6 +441,7 @@ func _preview_artifact_matches_stage(artifact: Dictionary, stage: StageData) -> 
 			and artifact.get("material") is ShaderMaterial \
 			and artifact.get("paint_texture") is ImageTexture \
 			and artifact.get("target_texture") is ImageTexture \
+			and artifact.get("presentation_points") is PackedVector3Array \
 			and dressing != null and is_instance_valid(dressing)
 
 

@@ -26,6 +26,9 @@ const CAMERA_CLEARANCE := 1.5
 const CORRECTION_SMOOTH_TIME := 0.20
 const AIM_SUMMIT_HEADROOM := 8.0
 const AIM_SUMMIT_HEIGHT_TOLERANCE := 0.25
+const PRESENTATION_FRAME_MARGIN := 1.04
+const BRIEFING_SAFE_RECT := Rect2(0.27, 0.07, 0.69, 0.79)
+const RESULT_SAFE_RECT := Rect2(0.06, 0.08, 0.64, 0.82)
 const FOLLOW_IMPACT_HOLD_TICKS := GAMEPLAY_PACE.FOLLOW_IMPACT_HOLD_TICKS
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
@@ -78,6 +81,10 @@ var _aim_pose_key := ""
 var _aim_pose: Array[Vector3] = []
 var _aim_interest_points := PackedVector3Array()
 var _aim_interest_build_count := 0
+var _presentation_pose_cache: Dictionary = {}
+var _presentation_points := PackedVector3Array()
+var _presentation_points_checksum := 0
+var _presentation_pose_build_count := 0
 var _follow_projectile: PaintProjectile
 var _follow_impact_hold_ticks := 0
 var _follow_impact_focus := Vector3.ZERO
@@ -296,6 +303,10 @@ func aiming_interest_build_count() -> int:
 	return _aim_interest_build_count
 
 
+func presentation_pose_build_count() -> int:
+	return _presentation_pose_build_count
+
+
 func safety_solve_count() -> int:
 	return _safety_solve_count
 
@@ -354,6 +365,8 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 		return _composed_aiming_bookmark(authored)
 	if _terrain_surface == null or _camera == null:
 		return authored
+	if mode in [Mode.BRIEFING, Mode.RESULT]:
+		return _presentation_bookmark(mode, authored)
 	var bounds := _terrain_surface.render_world_aabb()
 	if not bounds.has_volume():
 		return authored
@@ -371,6 +384,66 @@ func _bookmark_for(mode: Mode) -> Array[Vector3]:
 		_camera.fov,
 		aspect_ratio
 	)
+
+
+func _presentation_bookmark(mode: Mode, authored: Array[Vector3]) -> Array[Vector3]:
+	var points := _presentation_interest_points()
+	if points.is_empty():
+		return authored
+	var viewport_size := _camera.get_viewport().get_visible_rect().size
+	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
+	var safe_rect := BRIEFING_SAFE_RECT if mode == Mode.BRIEFING else RESULT_SAFE_RECT
+	var layout := _terrain_surface.layout_read_only()
+	var checksum := layout.checksum if layout != null else 0
+	var key := "%d|%d|%.4f|%.6f|%s|%s|%s" % [
+		checksum,
+		mode,
+		_camera.fov,
+		aspect_ratio,
+		str(safe_rect),
+		str(authored[0]),
+		str(authored[1]),
+	]
+	if _presentation_pose_cache.has(key):
+		var cached_pose: Array[Vector3] = _presentation_pose_cache[key]
+		return cached_pose
+	var framed := TerrainCameraFramer.framed_pose_in_normalized_rect(
+		points,
+		_points_center(points),
+		authored[0],
+		authored[1],
+		_camera.fov,
+		aspect_ratio,
+		safe_rect,
+		PRESENTATION_FRAME_MARGIN
+	)
+	if framed.is_empty():
+		return authored
+	var cached_pose: Array[Vector3] = [framed[0], framed[1]]
+	_presentation_pose_cache[key] = cached_pose
+	_presentation_pose_build_count += 1
+	return cached_pose
+
+
+func _presentation_interest_points() -> PackedVector3Array:
+	if _terrain_surface == null:
+		return PackedVector3Array()
+	var layout := _terrain_surface.layout_read_only()
+	var checksum := layout.checksum if layout != null else 0
+	if checksum != 0 and checksum == _presentation_points_checksum \
+			and not _presentation_points.is_empty():
+		return _presentation_points
+	_presentation_points = _terrain_surface.presentation_world_points()
+	_presentation_points_checksum = checksum
+	_presentation_pose_cache.clear()
+	return _presentation_points
+
+
+func _points_center(points: PackedVector3Array) -> Vector3:
+	var bounds := AABB(points[0], Vector3.ZERO)
+	for point_index in range(1, points.size()):
+		bounds = bounds.expand(points[point_index])
+	return bounds.get_center()
 
 
 func _composed_aiming_bookmark(authored: Array[Vector3]) -> Array[Vector3]:
@@ -445,7 +518,11 @@ func _apply_briefing_orbit() -> void:
 	var base_offset := bookmark[0] - bookmark[1]
 	var rotated := base_offset.rotated(Vector3.UP, deg_to_rad(_briefing_yaw_offset))
 	var direction := rotated.normalized()
-	var distance := clampf(rotated.length() + _briefing_zoom_offset, 82.0, 152.0)
+	var distance := clampf(
+		rotated.length() + _briefing_zoom_offset,
+		_inspection_min_distance,
+		_inspection_max_distance
+	)
 	_move_to(bookmark[1] + direction * distance, bookmark[1], false)
 
 
@@ -601,16 +678,42 @@ func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
 func _resolve_safe_pose() -> void:
 	_safe_source_position = _desired_position
 	_safe_source_focus = _desired_focus
-	_safe_cached_focus = _safe_focus(_desired_focus)
+	var presentation_mode := current_mode in [Mode.BRIEFING, Mode.RESULT]
+	_safe_cached_focus = _presentation_focus_on_view_ray(_desired_position, _desired_focus) \
+			if presentation_mode else _safe_focus(_desired_focus)
+	var terrain_focus := presentation_mode or _focus_is_terrain(_desired_focus)
 	_safe_position = safe_position_for(
 		_desired_position,
 		_safe_cached_focus,
-		_focus_is_terrain(_desired_focus)
+		terrain_focus
 	)
+	if _camera != null and not view_ray_is_clear(
+		_camera.global_position,
+		_safe_cached_focus,
+		terrain_focus
+	):
+		# A smooth path between two safe poses can still sweep through a ridge.
+		# Snap only when the current path is blocked; unobstructed transitions keep
+		# their normal damping.
+		_camera.global_position = _safe_position
+		_camera_velocity = Vector3.ZERO
+		if not _camera.global_position.is_equal_approx(_safe_cached_focus):
+			_look_at_focus(_safe_cached_focus)
 	_safe_pose_valid = true
 	_safe_pose_dirty = false
 	_safety_solve_elapsed = 0.0
 	_safety_solve_count += 1
+
+
+func _presentation_focus_on_view_ray(position: Vector3, optical_focus: Vector3) -> Vector3:
+	var hit := _terrain_ray(position, optical_focus)
+	if hit.is_empty():
+		return optical_focus
+	var collider: Object = hit.get("collider")
+	if not _terrain_surface.is_top_collider(collider) \
+			and not _terrain_surface.is_skirt_collider(collider):
+		return optical_focus
+	return Vector3(hit.position)
 
 
 func _safe_focus(focus: Vector3) -> Vector3:

@@ -10,7 +10,7 @@ func _ready() -> void:
 
 
 func refresh_locale() -> void:
-	%FireButton.text = "%s  Space" % tr("ui.fire")
+	%FireButton.text = tr("ui.fire")
 
 
 func set_fire_readiness(snapshot: Dictionary) -> void:

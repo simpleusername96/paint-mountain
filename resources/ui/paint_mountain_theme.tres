@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=37 format=3]
+[gd_resource type="Theme" load_steps=38 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png" id="2_neutral_depth"]
@@ -207,6 +207,32 @@ corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxEmpty" id="QuietButtonNormal"]
 
+[sub_resource type="StyleBoxFlat" id="StageCardNormal"]
+bg_color = Color(1, 0.992157, 0.988235, 0.52)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StageCardHover"]
+bg_color = Color(0.921569, 0.952941, 1, 0.78)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StageCardSelected"]
+bg_color = Color(0.921569, 0.952941, 1, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.145098, 0.517647, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [sub_resource type="StyleBoxFlat" id="HudModeFocus"]
 bg_color = Color(0, 0, 0, 0)
 border_width_left = 2
@@ -240,32 +266,9 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
-[sub_resource type="StyleBoxLine" id="HorizontalSeparator"]
-color = Color(0.85098, 0.866667, 0.890196, 1)
-
-[sub_resource type="StyleBoxLine" id="VerticalSeparator"]
-color = Color(0.85098, 0.866667, 0.890196, 1)
-vertical = true
-
 [sub_resource type="StyleBoxLine" id="TargetMarker"]
 color = Color(0.145098, 0.517647, 1, 1)
 thickness = 2
-
-[sub_resource type="StyleBoxFlat" id="HudKeycap"]
-content_margin_left = 6.0
-content_margin_top = 1.0
-content_margin_right = 6.0
-content_margin_bottom = 1.0
-bg_color = Color(1, 0.992157, 0.988235, 0.72)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.407843, 0.45098, 0.517647, 0.72)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
 
 [resource]
 default_font = ExtResource("1_font")
@@ -289,8 +292,6 @@ Label/font_sizes/font_size = 16
 PanelContainer/styles/panel = SubResource("Panel")
 ProgressBar/styles/background = SubResource("ProgressBackground")
 ProgressBar/styles/fill = SubResource("ProgressFill")
-HSeparator/styles/separator = SubResource("HorizontalSeparator")
-VSeparator/styles/separator = SubResource("VerticalSeparator")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
@@ -329,12 +330,6 @@ HudLegend/base_type = &"Label"
 HudLegend/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudLegend/fonts/font = SubResource("FontWeight500")
 HudLegend/font_sizes/font_size = 14
-HudKeycap/base_type = &"Label"
-HudKeycap/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
-HudKeycap/fonts/font = SubResource("FontWeight600")
-HudKeycap/font_sizes/font_size = 11
-HudKeycapPanel/base_type = &"PanelContainer"
-HudKeycapPanel/styles/panel = SubResource("HudKeycap")
 HudBody/base_type = &"Label"
 HudBody/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudBody/fonts/font = SubResource("FontWeight500")
@@ -401,12 +396,19 @@ StageCardButton/colors/font_hover_pressed_color = Color(0.090196, 0.145098, 0.21
 StageCardButton/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 StageCardButton/fonts/font = SubResource("FontWeight600")
 StageCardButton/font_sizes/font_size = 15
-StageCardButton/styles/normal = SubResource("ButtonNormal")
-StageCardButton/styles/hover = SubResource("ButtonHover")
-StageCardButton/styles/pressed = SubResource("ButtonPressed")
-StageCardButton/styles/hover_pressed = SubResource("ButtonPressed")
-StageCardButton/styles/disabled = SubResource("ButtonDisabled")
+StageCardButton/styles/normal = SubResource("StageCardNormal")
+StageCardButton/styles/hover = SubResource("StageCardHover")
+StageCardButton/styles/pressed = SubResource("StageCardSelected")
+StageCardButton/styles/hover_pressed = SubResource("StageCardSelected")
+StageCardButton/styles/disabled = SubResource("StageCardNormal")
 StageCardButton/styles/focus = SubResource("Focus")
+SettingsSwitchRow/base_type = &"CheckButton"
+SettingsSwitchRow/styles/normal = SubResource("QuietButtonNormal")
+SettingsSwitchRow/styles/hover = SubResource("StageCardHover")
+SettingsSwitchRow/styles/pressed = SubResource("QuietButtonNormal")
+SettingsSwitchRow/styles/hover_pressed = SubResource("StageCardHover")
+SettingsSwitchRow/styles/disabled = SubResource("QuietButtonNormal")
+SettingsSwitchRow/styles/focus = SubResource("Focus")
 HudStagePanel/base_type = &"PanelContainer"
 HudStagePanel/styles/panel = SubResource("HudStagePanel")
 HudRailPanel/base_type = &"PanelContainer"

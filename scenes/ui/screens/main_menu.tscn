@@ -26,10 +26,10 @@ color = Color(0.035, 0.055, 0.08, 0.1)
 
 [node name="BrandPanel" type="Control" parent="Root"]
 layout_mode = 0
-offset_left = 48.0
-offset_top = 92.0
-offset_right = 472.0
-offset_bottom = 628.0
+offset_left = 56.0
+offset_top = 160.0
+offset_right = 360.0
+offset_bottom = 620.0
 
 [node name="Margin" type="MarginContainer" parent="Root/BrandPanel"]
 layout_mode = 1
@@ -45,12 +45,7 @@ theme_override_constants/margin_bottom = 0
 
 [node name="Content" type="VBoxContainer" parent="Root/BrandPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="Eyebrow" type="Label" parent="Root/BrandPanel/Margin/Content"]
-layout_mode = 2
-theme_type_variation = &"MenuEyebrow"
-text = "app.eyebrow"
+theme_override_constants/separation = 16
 
 [node name="Title" type="Label" parent="Root/BrandPanel/Margin/Content"]
 layout_mode = 2
@@ -58,41 +53,34 @@ theme_type_variation = &"MenuTitle"
 text = "app.title"
 autowrap_mode = 2
 
-[node name="Subtitle" type="Label" parent="Root/BrandPanel/Margin/Content"]
-custom_minimum_size = Vector2(392, 72)
-layout_mode = 2
-theme_type_variation = &"MenuSubtitle"
-text = "app.subtitle"
-autowrap_mode = 2
-
 [node name="ActionSpacer" type="Control" parent="Root/BrandPanel/Margin/Content"]
-custom_minimum_size = Vector2(0, 8)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 
 [node name="Play" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "ui.play"
 
 [node name="StageSelect" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"QuietButton"
 text = "ui.stage_select"
 
 [node name="Settings" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"QuietButton"
 text = "ui.settings"
 
 [node name="Quit" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 46)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"QuietButton"
 text = "ui.quit"

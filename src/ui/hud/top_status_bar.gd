@@ -4,6 +4,7 @@ extends Control
 signal settings_requested
 
 @onready var stage_value: Label = %StageValue
+@onready var stage_name: Label = %StageName
 @onready var mode_value: Label = %ModeValue
 
 
@@ -13,9 +14,11 @@ func _ready() -> void:
 
 func configure(stage: StageData) -> void:
 	stage_value.text = "▲ %s %02d" % [tr("hud.stage"), stage.stage_number]
+	stage_name.text = tr(String(stage.display_name_key))
 
 
 func update_mode(state: StageController.State) -> void:
+	stage_name.visible = state == StageController.State.BRIEFING
 	var key: String = String({
 		StageController.State.BRIEFING: "hud.briefing",
 		StageController.State.AIMING: "hud.aiming",

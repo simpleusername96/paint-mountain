@@ -7,10 +7,13 @@ const SHELL_SHAPE_ID := &"TerrainShellShape"
 const NORMAL_TERRAIN_PHYSICS_MATERIAL := preload(
 	"res://resources/physics/normal_terrain_physics_material.tres"
 )
+const PRESENTATION_SUMMIT_HEADROOM := 8.0
+const PRESENTATION_SUMMIT_HEIGHT_TOLERANCE := 0.25
 
 var _layout: GeneratedStageLayout
 var _geometry: TerrainGeometry
 var _playable_top_world_points := PackedVector3Array()
+var _presentation_world_points := PackedVector3Array()
 
 
 func configure(layout: GeneratedStageLayout) -> void:
@@ -18,6 +21,7 @@ func configure(layout: GeneratedStageLayout) -> void:
 	_layout = layout
 	_geometry = TerrainGeometryFactory.build(layout)
 	_playable_top_world_points = _build_playable_top_world_points()
+	_presentation_world_points = _build_presentation_world_points()
 	var terrain_mesh := get_node_or_null("TerrainMesh") as MeshInstance3D
 	var top_body := get_node_or_null("TerrainTopBody") as StaticBody3D
 	var top_collision := get_node_or_null("TerrainTopBody/CollisionShape3D") as CollisionShape3D
@@ -94,6 +98,12 @@ func playable_top_world_points() -> PackedVector3Array:
 	return _playable_top_world_points.duplicate()
 
 
+## Cached perimeter and summit landmarks used by presentation cameras. Callers
+## receive a copy and cannot mutate the accepted terrain geometry.
+func presentation_world_points() -> PackedVector3Array:
+	return _presentation_world_points.duplicate()
+
+
 func _build_playable_top_world_points() -> PackedVector3Array:
 	if _layout == null or _layout.top_topology == null:
 		return PackedVector3Array()
@@ -112,6 +122,43 @@ func _build_playable_top_world_points() -> PackedVector3Array:
 						continue
 					seen_source_indices[source_index] = true
 					result.append(to_global(topology.vertex_at(source_index)))
+	return result
+
+
+func _build_presentation_world_points() -> PackedVector3Array:
+	if _layout == null or _geometry == null or _geometry.render_mesh == null:
+		return PackedVector3Array()
+	var result := PackedVector3Array()
+	for local_point in local_presentation_points(_layout, _geometry.render_mesh.get_aabb()):
+		result.append(to_global(local_point))
+	return result
+
+
+## View-independent presentation landmarks: the real top/base perimeter plus
+## authored summit landmarks. Interior vertices do not describe a silhouette
+## and would make framing reserve empty projected space behind the mountain.
+static func local_presentation_points(layout: GeneratedStageLayout, render_bounds: AABB) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	if layout == null or layout.top_topology == null or not render_bounds.has_volume():
+		return result
+	var topology := layout.top_topology
+	# The open-play apron meets the terrain at local Y=0 and hides the authored
+	# shell/bottom below it. Frame the visible base intersection, not the buried
+	# -28 m support geometry.
+	var visible_base_y := maxf(render_bounds.position.y, 0.0)
+	var boundary_indices := topology.boundary_edges_read_only()
+	var seen_boundary_indices: Dictionary = {}
+	for source_index in boundary_indices:
+		if seen_boundary_indices.has(source_index):
+			continue
+		seen_boundary_indices[source_index] = true
+		var boundary_point := topology.vertex_at(source_index)
+		result.append(boundary_point)
+		result.append(Vector3(boundary_point.x, visible_base_y, boundary_point.z))
+	for summit in layout.summit_region(PRESENTATION_SUMMIT_HEIGHT_TOLERANCE):
+		var summit_point := summit.point as Vector3
+		result.append(summit_point)
+		result.append(summit_point + Vector3.UP * PRESENTATION_SUMMIT_HEADROOM)
 	return result
 
 

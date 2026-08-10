@@ -32,9 +32,18 @@ func _run() -> void:
 	_assert_true(result_panel.visible, "the completed run must expose the result panel")
 	_assert_true(result_panel.get_node_or_null("Margin/Content/Replay") == null,
 		"the result panel must not retain a replay action")
-	for action_path in ["Margin/Content/Retry", "Margin/Content/Row/Next", "Margin/Content/Row/Stages"]:
+	for action_path in ["Margin/Content/Retry", "Margin/Content/Next", "Margin/Content/Stages"]:
 		_assert_true(result_panel.get_node(action_path) is Button,
 			"the result panel must retain %s" % action_path)
+	result_panel.configure_target(5.0)
+	result_panel.show_coverage_result(4.6, 1, 0.0, 60.0, 1, &"manual")
+	_assert_true(not result_panel.get_node("Margin/Content/TitleRow/TimeoutClock").visible,
+		"manual results must not show the timeout clock")
+	_assert_true((result_panel.get_node("Margin/Content/Target") as Label).text == "%s 5%%" % tr("stage.target"),
+		"result target must use the configured authoritative percentage")
+	result_panel.show_coverage_result(4.6, 1, 0.0, 60.0, 1, &"timeout")
+	_assert_true(result_panel.get_node("Margin/Content/TitleRow/TimeoutClock").visible,
+		"timeout results must show the real clock asset")
 
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	_assert_true(settings.icon != null, "Settings must keep the approved icon asset")

@@ -37,8 +37,8 @@ func _refresh_copy() -> void:
 	theme_type_variation = &"HudModeButtonCompact"
 	icon = _mode_icon
 	if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
-		text = "%s    Tab" % tr("hud.aim_lock")
+		text = tr("hud.aim_lock")
 		tooltip_text = tr("hud.switch_to_map_inspection")
 	else:
-		text = "%s    Tab" % tr("hud.map_inspection")
+		text = tr("hud.map_inspection")
 		tooltip_text = tr("hud.switch_to_aim_lock")

@@ -22,6 +22,7 @@ enum Mode {
 	%PowerItem,
 	%FireItem,
 	%ModeItem,
+	%FinishItem,
 	%MenuItem,
 ]
 
@@ -47,6 +48,7 @@ func _refresh() -> void:
 	%PowerItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.BRIEFING]
 	%FireItem.visible = context_mode == Mode.AIM
 	%ModeItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.FOLLOW]
+	%FinishItem.visible = context_mode == Mode.AIM
 	%MenuItem.visible = context_mode != Mode.BRIEFING
 
 	%AngleItem.get_node("Action").text = tr("hud.angle")
@@ -56,6 +58,7 @@ func _refresh() -> void:
 		"hud.zoom" if context_mode in [Mode.MAP, Mode.BRIEFING] else "hud.power"
 	)
 	%FireItem.get_node("Action").text = tr("ui.fire")
+	%FinishItem.get_node("Action").text = tr("ui.finish")
 	match context_mode:
 		Mode.AIM:
 			%ModeItem.get_node("Action").text = tr("hud.map")

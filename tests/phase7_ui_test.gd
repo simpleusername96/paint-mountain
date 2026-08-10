@@ -25,6 +25,7 @@ func _run_checks() -> void:
 	_assert_true(ProjectSettings.get_setting("display/window/size/viewport_width") == 1280 and ProjectSettings.get_setting("display/window/size/viewport_height") == 720, "UI must use the 1280x720 logical viewport")
 	_assert_theme_contract()
 	_assert_true(main_menu.visible and not stage_select.visible and not settings.visible, "app must open on a separate main-menu screen")
+	await _assert_main_preview_safe(app, main_menu)
 	app._set_catalog_load_failed()
 	await process_frame
 	var retry_load := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
@@ -75,7 +76,11 @@ func _run_checks() -> void:
 	var controller: StageController = gameplay.get_node("StageController")
 	var hud_root := gameplay.get_node("HUD/HUDRoot") as Control
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
-	_assert_true(hud_root.get_node("BriefingPanel").visible, "briefing panel must be visible before aiming")
+	_assert_true(hud_root.get_node("BriefingActions").visible, "briefing action lane must be visible before aiming")
+	for mechanism in gameplay.get_node("Mechanisms").get_children():
+		var label := mechanism.get_node_or_null("BriefingLabel") as Label3D
+		_assert_true(mechanism.visible, "%s glyph geometry must remain visible in briefing" % mechanism.name)
+		_assert_true(label != null and not label.visible, "%s briefing text label must stay hidden" % mechanism.name)
 	_assert_true(controller.begin_aiming(), "UI flow test must enter aiming")
 	await process_frame
 	_assert_aiming_hud_contract(hud_root)
@@ -106,6 +111,7 @@ func _run_checks() -> void:
 	_assert_true(hud_root.get_node("ResultPanel").size.x <= 1280.0 * 0.35, "result panel must use no more than 35 percent of the viewport width")
 	var result_content := hud_root.get_node("ResultPanel/Margin/Content")
 	_assert_true(result_content.get_node("Retry") is Button, "result must expose retry as a real button")
+	_assert_true(result_content.get_node("Target") is Label, "result must retain the authoritative target fact")
 
 	app._on_gameplay_navigation(&"stage_select")
 	await process_frame
@@ -129,6 +135,38 @@ func _wait_for_child(parent: Node, path: NodePath, timeout_ms: int = 60000) -> N
 	return null
 
 
+func _assert_main_preview_safe(app: AppRoot, main_menu: MainMenuScreen) -> void:
+	var deadline := Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < deadline and app._active_preview_stage_id != &"stage_01":
+		await process_frame
+	_assert_true(app._active_preview_stage_id == &"stage_01", "Main Menu preview must resolve the real Stage 01 artifact")
+	if app._active_preview_stage_id != &"stage_01":
+		return
+	var artifact: Dictionary = app._preview_artifact_cache.get(&"stage_01", {})
+	var local_points := artifact.get("presentation_points", PackedVector3Array()) as PackedVector3Array
+	var world_points := PackedVector3Array()
+	for local_point in local_points:
+		world_points.append(app._preview_mountain.to_global(local_point))
+	var camera := app._preview_camera
+	var focus := camera.global_position - camera.global_transform.basis.z * 10.0
+	_assert_true(
+		TerrainCameraFramer.pose_fits_points_in_normalized_rect(
+			world_points,
+			camera.global_position,
+			focus,
+			camera.fov,
+			16.0 / 9.0,
+			AppRoot.PREVIEW_SAFE_RECT
+		),
+		"Main Menu preview landmarks must remain inside the right-side safe region"
+	)
+	var menu_rect: Rect2 = (main_menu.get_node("Root/BrandPanel") as Control).get_global_rect()
+	_assert_true(
+		menu_rect.end.x <= 1280.0 * AppRoot.PREVIEW_SAFE_RECT.position.x,
+		"Main Menu action column must not overlap the preview safe region"
+	)
+
+
 func _assert_true(condition: bool, message: String) -> void:
 	if condition:
 		return
@@ -144,13 +182,14 @@ func _assert_theme_contract() -> void:
 	var primary := theme.get_stylebox("normal", "PrimaryButton") as StyleBoxTexture
 	var focus := theme.get_stylebox("focus", "Button") as StyleBoxFlat
 	var debug_panel := theme.get_stylebox("panel", "DebugPanel") as StyleBoxFlat
-	var keycap := theme.get_stylebox("panel", "HudKeycapPanel") as StyleBoxFlat
 	_assert_true(panel != null and panel.corner_radius_top_left == 14, "shared panels must use the quiet 14px radius token")
 	_assert_true(routine_button != null and routine_button.corner_radius_top_left == 10, "routine actions must use the flat quiet button token")
 	_assert_true(primary != null and primary.texture != null, "primary actions must use the shared textured button asset")
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
-	_assert_true(keycap != null and keycap.bg_color.get_luminance() > 0.8 and keycap.border_width_left == 1, "shortcut keycaps must be light outlined context tokens")
+	_assert_true(not theme.is_type_variation(&"HudKeycapPanel", &"PanelContainer"), "obsolete outlined shortcut keycaps must be absent")
+	_assert_true(theme.is_type_variation(&"StageCardButton", &"Button"), "stage selection must use a semantic card role")
+	_assert_true(theme.is_type_variation(&"SettingsSwitchRow", &"CheckButton"), "settings switches must use the shared unboxed row role")
 	for variation in [
 		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"HudLegend", &"ScreenTitle",
 	]:

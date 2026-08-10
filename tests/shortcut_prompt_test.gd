@@ -32,7 +32,19 @@ func _run_checks() -> void:
 		legend.visible and legend.context_mode == ContextLegend.Mode.AIM,
 		"Aim View must expose one shared Aim context legend"
 	)
-	_assert_legend_contains(legend, ["S/W", "Space", "Tab", "Esc", "각도", "파워", "발사"])
+	_assert_legend_contains(legend, ["S/W", "Space", "F", "Tab", "Esc", "각도", "파워", "발사", "완료"])
+	_assert_true(
+		"Space" not in (root_control.get_node("ActionButtons/FireButton") as Button).text,
+		"Fire control must leave Space to the context legend"
+	)
+	_assert_true(
+		"F" not in (root_control.get_node("RunStatusCard/Finish") as Button).text,
+		"Finish control must leave F to the context legend"
+	)
+	_assert_true(
+		"Tab" not in (root_control.get_node("CameraInteractionControl") as Button).text,
+		"camera mode control must leave Tab to the context legend"
+	)
 	_assert_true(
 		(legend.get_node("Center/Items/PowerItem/Input") as TextureRect).texture != null,
 		"Aim context must use the real mouse-wheel glyph"

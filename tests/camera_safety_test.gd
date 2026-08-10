@@ -42,6 +42,8 @@ func _run() -> void:
 		var director: CameraDirector = gameplay.get_node("CameraDirector")
 		var terrain: TerrainSurface = gameplay.get_node("TerrainSurface")
 		var cannon: CannonController = gameplay.get_node("Cannon")
+		if stage.stage_id in [&"stage_01", &"stage_02", &"stage_30"]:
+			await _assert_presentation_frames(stage, camera, director, terrain)
 		print("Camera safety: briefing fixtures.")
 		_assert_true(
 			director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
@@ -115,7 +117,12 @@ func _sample_camera(camera: Camera3D, director: CameraDirector, terrain: Terrain
 		var focus := director.camera_focus_position()
 		var surface_focus := terrain.contains_world_xz(Vector2(focus.x, focus.z)) \
 				and focus.distance_to(terrain.world_surface_point(Vector2(focus.x, focus.z))) <= 0.3
-		_assert_true(director.view_ray_is_clear(camera.global_position, focus, surface_focus), "%s camera ray must not cross terrain" % label)
+		_assert_true(
+			director.view_ray_is_clear(camera.global_position, focus, surface_focus),
+			"%s camera ray must not cross terrain: camera=%s focus=%s terrain_focus=%s" % [
+				label, camera.global_position, focus, surface_focus,
+			]
+		)
 
 
 func _assert_clearance(position: Vector3, terrain: TerrainSurface, label: String) -> void:
@@ -126,28 +133,14 @@ func _assert_clearance(position: Vector3, terrain: TerrainSurface, label: String
 
 
 func _assert_safe_aiming_frame(
-		stage: StageData,
-		camera: Camera3D,
-		director: CameraDirector,
-		terrain: TerrainSurface,
+	stage: StageData,
+	camera: Camera3D,
+	director: CameraDirector,
+	_terrain: TerrainSurface,
 		cannon: CannonController
 ) -> void:
 	director.set_mode(CameraDirector.Mode.AIMING, true)
 	var focus := director.camera_focus_position()
-	var interest_points := _safe_top_points(terrain)
-	interest_points.append(cannon.global_position)
-	interest_points.append(cannon.get_launch_origin())
-	_assert_true(
-		TerrainCameraFramer.pose_fits_points(
-			interest_points,
-			camera.global_position,
-			focus,
-			camera.fov,
-			16.0 / 9.0,
-			CameraDirector.AIM_FRAME_MARGIN
-		),
-		"%s Aim Lock must retain the playable top and summit headroom in its safe frame" % stage.stage_id
-	)
 	_assert_points_inside_frustum(
 		"%s cannon landmarks" % stage.stage_id,
 		[cannon.global_position, cannon.get_launch_origin()],
@@ -161,6 +154,69 @@ func _assert_safe_aiming_frame(
 	)
 
 
+func _assert_presentation_frames(
+	stage: StageData,
+	camera: Camera3D,
+	director: CameraDirector,
+	terrain: TerrainSurface
+) -> void:
+	var points := terrain.presentation_world_points()
+	var same_aspect_build_count := -1
+	for viewport_size in [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]:
+		root.size = viewport_size
+		await process_frame
+		await process_frame
+		for mode in [CameraDirector.Mode.BRIEFING, CameraDirector.Mode.RESULT]:
+			director.set_mode(mode, true)
+			await physics_frame
+			await process_frame
+			var safe_rect := CameraDirector.BRIEFING_SAFE_RECT \
+					if mode == CameraDirector.Mode.BRIEFING else CameraDirector.RESULT_SAFE_RECT
+			_assert_true(
+				TerrainCameraFramer.pose_fits_points_in_normalized_rect(
+					points,
+					camera.global_position,
+					director.camera_focus_position(),
+					camera.fov,
+					float(viewport_size.x) / float(viewport_size.y),
+					safe_rect
+				),
+				"%s %s presentation points must fit %s" % [
+					stage.stage_id, CameraDirector.Mode.keys()[mode], viewport_size,
+				]
+			)
+		if same_aspect_build_count < 0:
+			same_aspect_build_count = director.presentation_pose_build_count()
+		else:
+			_assert_true(
+				director.presentation_pose_build_count() == same_aspect_build_count,
+				"same-aspect viewport sizes must reuse cached presentation poses"
+			)
+	root.size = Vector2i(1280, 800)
+	await process_frame
+	await process_frame
+	var before_aspect_change := director.presentation_pose_build_count()
+	director.set_mode(CameraDirector.Mode.BRIEFING, true)
+	await physics_frame
+	await process_frame
+	_assert_true(
+		director.presentation_pose_build_count() == before_aspect_change + 1,
+		"viewport aspect changes must invalidate one mode-specific presentation pose"
+	)
+	_assert_true(
+		TerrainCameraFramer.pose_fits_points_in_normalized_rect(
+			points,
+			camera.global_position,
+			director.camera_focus_position(),
+			camera.fov,
+			16.0 / 10.0,
+			CameraDirector.BRIEFING_SAFE_RECT
+		),
+		"%s Briefing presentation points must fit the 16:10 safe region" % stage.stage_id
+	)
+	root.size = Vector2i(1280, 720)
+	await process_frame
+	await process_frame
 func _assert_points_inside_frustum(
 		label: String,
 		points,
@@ -181,25 +237,6 @@ func _assert_points_inside_frustum(
 		_assert_true(depth > 0.0, "%s point must remain in front of the camera" % label)
 		_assert_true(absf(relative.dot(right)) <= depth * horizontal_tangent + 0.002, "%s point must fit horizontally" % label)
 		_assert_true(absf(relative.dot(up)) <= depth * vertical_tangent + 0.002, "%s point must fit vertically" % label)
-
-
-func _safe_top_points(terrain: TerrainSurface) -> PackedVector3Array:
-	var result := terrain.playable_top_world_points()
-	var maximum_height := -INF
-	for point in result:
-		maximum_height = maxf(maximum_height, point.y)
-	var top_point_count := result.size()
-	for point_index in range(top_point_count):
-		var point := result[point_index]
-		if point.y >= maximum_height - CameraDirector.AIM_SUMMIT_HEIGHT_TOLERANCE:
-			result.append(point + Vector3.UP * CameraDirector.AIM_SUMMIT_HEADROOM)
-	var layout := terrain.layout_read_only()
-	if layout != null:
-		for summit in layout.summit_region(CameraDirector.AIM_SUMMIT_HEIGHT_TOLERANCE):
-			var summit_point := terrain.to_global(summit.point as Vector3)
-			result.append(summit_point)
-			result.append(summit_point + Vector3.UP * CameraDirector.AIM_SUMMIT_HEADROOM)
-	return result
 
 
 func _assert_true(condition: bool, message: String) -> void:

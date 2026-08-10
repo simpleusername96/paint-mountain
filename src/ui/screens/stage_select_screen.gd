@@ -18,7 +18,6 @@ var _preparation_stage_id: StringName = &""
 var _preparation_ready := false
 var _preparation_failed := false
 @onready var _preview_title: Label = %PreviewTitle
-@onready var _preview_objective: Label = %PreviewObjective
 @onready var _preview_stats: Label = %PreviewStats
 @onready var _preview_best: Label = %PreviewBest
 @onready var _start_button: Button = %Start
@@ -53,6 +52,7 @@ func _build_pager() -> void:
 	for index in range(PAGE_SIZE):
 		var card := Button.new()
 		card.custom_minimum_size = Vector2(0.0, 120.0)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.toggle_mode = true
 		card.focus_mode = Control.FOCUS_ALL
@@ -177,10 +177,10 @@ func _update_preview() -> void:
 	var game_state := get_node_or_null("/root/GameState")
 	var best: Dictionary = game_state.best_for(_selected_stage.stage_id) if game_state != null else {}
 	_preview_title.text = _display_name(_selected_stage)
-	_preview_objective.text = _display_objective(_selected_stage)
-	_preview_stats.text = "%s %.1f%% · %s %d\n%s %s" % [
+	_preview_stats.text = "%s %.1f%% · %s %d\n%s %s · %s %s" % [
 		tr("stage.target"), _selected_stage.target_coverage,
 		tr("stage.shots"), _selected_stage.maximum_shots,
+		tr("hud.time"), _format_duration(_selected_stage.resolved_duration_seconds()),
 		tr("stage.mechanisms"), _mechanism_names(_selected_stage),
 	]
 	_preview_best.text = "%s %.1f%%  %s" % [
@@ -212,11 +212,6 @@ func _display_name(stage: StageData) -> String:
 	return translated if translated != String(stage.display_name_key) else "Stage %02d" % stage.stage_number
 
 
-func _display_objective(stage: StageData) -> String:
-	var translated := tr(String(stage.objective_key))
-	return translated if translated != String(stage.objective_key) else tr("stage.generated.objective")
-
-
 func _mechanism_names(stage: StageData) -> String:
 	if stage.mechanism_loadout.is_empty():
 		return tr("mechanism.none")
@@ -234,6 +229,11 @@ func _mechanism_names(stage: StageData) -> String:
 
 func _stars_text(stars: int) -> String:
 	return "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
+
+
+func _format_duration(seconds: float) -> String:
+	var total_seconds := maxi(roundi(seconds), 0)
+	return "%02d:%02d" % [total_seconds / 60, total_seconds % 60]
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:

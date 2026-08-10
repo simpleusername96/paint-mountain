@@ -23,7 +23,7 @@ signal angle_step_requested(direction: float)
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
 @onready var _return_to_cannon: Button = %ReturnToCannon
 @onready var _result: ResultPanel = %ResultPanel
-@onready var _briefing: PanelContainer = %BriefingPanel
+@onready var _briefing: Control = %BriefingActions
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
@@ -60,8 +60,7 @@ func configure(stage_data: StageData) -> void:
 	_clock_finished = false
 	_run_status.reset_for_stage(stage_data.maximum_shots, stage_data.resolved_duration_seconds())
 	_result.configure_has_next(not StageCatalog.next_stage_id(stage_data.stage_id).is_empty())
-	%BriefingTitle.text = tr(String(stage_data.display_name_key))
-	%BriefingObjective.text = tr(String(stage_data.objective_key))
+	_result.configure_target(stage_data.target_coverage)
 	update_shots(stage_data.maximum_shots, stage_data.maximum_shots)
 
 
@@ -205,8 +204,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_top.update_mode(_current_state)
 		_run_status.refresh_locale()
 		_run_status.update_shots(_shots_remaining)
-		%BriefingTitle.text = tr(String(_stage_data.display_name_key))
-		%BriefingObjective.text = tr(String(_stage_data.objective_key))
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)
 		_interaction.refresh_locale()
 		_return_to_cannon.text = tr("hud.return_to_cannon")

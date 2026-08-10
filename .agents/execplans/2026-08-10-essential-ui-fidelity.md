@@ -277,7 +277,10 @@ pixel-fixed.
 
 - Outer safe margin: 48 px at 1280x720; 24 px minimum at smaller supported
   16:9 windows.
-- Left list width: 372-400 px; inter-column gap: 56-72 px; no separator node.
+- Left two-column list width: 600-616 px; inter-column gap: 56-72 px; no
+  separator node. This corrects the earlier single-column-width transcription
+  against the approved 1672x941 reference, which maps to about 612 logical px
+  at the 1280x720 baseline.
 - Stage rows: minimum 44 px high and 16 px horizontal padding; number/name left,
   target/best facts right or on a stable second line when localization requires.
 - Only the selected row receives the accent outline; hover uses a soft fill and
@@ -400,7 +403,7 @@ pixel-fixed.
 
 ### Phase 1 — Contracts and shared visual primitives
 
-- [ ] **EUI-01 — Build the essential-copy contract test before deleting nodes.**
+- [x] **EUI-01 — Build the essential-copy contract test before deleting nodes.**
   - Add `tests/essential_ui_copy_test.gd`.
   - Instantiate Main Menu, Stage Select, Settings, HUD Briefing, Aim View, and
     Result without requiring live physics.
@@ -413,7 +416,7 @@ pixel-fixed.
   - Stopping condition: the test fails for the current implementation for the
     intended reasons and has no gameplay-rule assertions.
 
-- [ ] **EUI-02 — Replace decorative shared boundaries with semantic Theme roles.**
+- [x] **EUI-02 — Replace decorative shared boundaries with semantic Theme roles.**
   - Update `paint_mountain_theme.tres` with selected-stage and unboxed settings
     switch-row variations; preserve global action, focus, rail, and target styles.
   - Update `context_legend.tscn` to remove its HSeparator and replace Tab/Esc
@@ -428,7 +431,7 @@ pixel-fixed.
 
 ### Phase 2 — Entry screens
 
-- [ ] **EUI-03 — Make Main Menu title-and-actions only.**
+- [x] **EUI-03 — Make Main Menu title-and-actions only.**
   - Remove `Eyebrow` and `Subtitle` from `main_menu.tscn`.
   - Constrain the action column to 288-304 px at the baseline and keep Play the
     only filled blue action.
@@ -439,7 +442,7 @@ pixel-fixed.
   - Acceptance: no dead vertical gap replaces the deleted copy and 1920x1080
     does not widen the actions beyond their logical maximum.
 
-- [ ] **EUI-04 — Fit and rebalance the real Main Menu preview.**
+- [x] **EUI-04 — Fit and rebalance the real Main Menu preview.**
   - Route `AppRoot` preview framing through the new deterministic safe-rectangle
     framer after the Stage 01 artifact is available.
   - Preserve actual generated mesh, material, target mask, paint preview,
@@ -450,7 +453,7 @@ pixel-fixed.
     and does not flash between fixed and fitted poses when the layout becomes
     ready.
 
-- [ ] **EUI-05 — Simplify Stage Select without reducing selection truth.**
+- [x] **EUI-05 — Simplify Stage Select without reducing selection truth.**
   - Remove `Divider` and `PreviewObjective` from `stage_select.tscn` and their
     references/assignments from `stage_select_screen.gd`.
   - Keep target, best, duration, shots, selected identity, page state, Start,
@@ -464,7 +467,7 @@ pixel-fixed.
 
 ### Phase 3 — Gameplay HUD, Briefing, and presentation framing
 
-- [ ] **EUI-06 — Make the lower context legend the single visible shortcut owner.**
+- [x] **EUI-06 — Make the lower context legend the single visible shortcut owner.**
   - Change `ActionButtons.refresh_locale()` to set only `tr("ui.fire")`.
   - Change `RunStatusCard.refresh_locale()` to set only `tr("ui.finish")`; retain
     the real F `Shortcut` and truthful enabled/disabled tooltips.
@@ -476,7 +479,7 @@ pixel-fixed.
   - Acceptance: no screenshot state contains a duplicate key name, and keyboard
     input continues to work when controls have focus.
 
-- [ ] **EUI-07 — Recompose Briefing around the terrain.**
+- [x] **EUI-07 — Recompose Briefing around the terrain.**
   - Replace the central `BriefingPanel` with a responsibility-named lower-left
     action lane containing only Back and Start.
   - Add stage display name to `TopStatusBar`, populated from StageData and shown
@@ -494,7 +497,7 @@ pixel-fixed.
   - Acceptance: identity/actions do not overlap the terrain safe region, no
     objective/name/hint text remains, and Start Aiming is the sole blue action.
 
-- [ ] **EUI-08 — Implement mode-specific deterministic terrain framing.**
+- [x] **EUI-08 — Implement mode-specific deterministic terrain framing.**
   - Add the framer API, presentation-point API, cache keys, validation tests, and
     CameraDirector integration described in “Camera and World Framing Design.”
   - Use the locked Briefing and Result safe rectangles and occupancy ranges.
@@ -506,7 +509,7 @@ pixel-fixed.
     full silhouette remains visible, UI reserve is respected, and Aim/Follow
     framing tests are unchanged.
 
-- [ ] **EUI-09 — Check untouched gameplay states for shared-style regressions.**
+- [x] **EUI-09 — Check untouched gameplay states for shared-style regressions.**
   - Capture Map View, Shot Follow impact hold, and Pause after EUI-02/EUI-06.
   - Verify the removed legend divider/keycaps do not cause overlap or unclear
     prompts, Return to Cannon stays edge-aligned, and Pause still blocks world
@@ -517,7 +520,7 @@ pixel-fixed.
 
 ### Phase 4 — Settings and Results
 
-- [ ] **EUI-10 — Remove Settings helper copy and repeated row boxes.**
+- [x] **EUI-10 — Remove Settings helper copy and repeated row boxes.**
   - Remove `Autosave`, `LanguageNote`, and `ColumnDivider` from `settings.tscn`.
   - Apply the shared unboxed switch-row variation to Camera Shake, Reduced
     Motion, Trajectory Preview, and Fullscreen where the same row language fits.
@@ -529,7 +532,7 @@ pixel-fixed.
   - Acceptance: no helper/divider text remains, all controls work, and Korean/
     English fit without clipping at 1280x720, 1600x900, and 1920x1080.
 
-- [ ] **EUI-11 — Rebuild Results as compact fact-and-action panels.**
+- [x] **EUI-11 — Rebuild Results as compact fact-and-action panels.**
   - Remove `CoverageLabel` and `CoverageExplanation` from `result_panel.tscn` and
     the script onready/refresh path.
   - Add a compact target label driven from `StageData.target_coverage`; add the
@@ -547,7 +550,7 @@ pixel-fixed.
 
 ### Phase 5 — Localization, tests, release evidence, and records
 
-- [ ] **EUI-12 — Close automated behavior and localization validation.**
+- [x] **EUI-12 — Close automated behavior and localization validation.**
   - Update `localization_ui_test.gd` for removed exclusive keys and retained
     target/tooltip/objective content.
   - Update `phase7_ui_test.gd` for the Briefing action lane, result target, new
@@ -594,7 +597,8 @@ to `D:\tools\Godot\4.7.1-stable\Godot_v4.7.1-stable_win64_console.exe`.
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase7_user_qa_contract_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_aiming_composition_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_hud_truth_test.gd
-& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/camera_framing_test.gd
+& $env:GODOT_BIN --headless --path . --script res://tests/terrain_camera_safe_rect_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/camera_safety_test.gd
 ```
 
 If the existing camera-framing test uses another verified filename, extend that
@@ -846,6 +850,5 @@ test updates already resolved by this plan.
 
 ## Next Step
 
-Begin EUI-01 by adding the failing essential-copy contract test, then implement
-EUI-02. Do not start with per-screen styling before shared copy and boundary
-ownership is protected by tests.
+Continue EUI-13 with the Windows release export, final capture matrix,
+side-by-side Design QA, evidence index, and documentation closeout.
