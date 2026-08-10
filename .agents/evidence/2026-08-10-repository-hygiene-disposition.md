@@ -95,10 +95,13 @@ report index retains only improved states 05, 06, and 07:
   proved they had no live consumer. The v9 bundle remains because the
   materialization regression uses it.
 - The user approved exact-path local-output cleanup. The host execution policy
-  nevertheless rejected deletion of `.godot/`, `builds/`, and root `reports/`.
-  Ignored logs and documentation `.import` sidecars were removed, and four
-  `.gdignore` boundaries prevent those sidecars from returning. A final Godot
-  verification regenerated only required `.godot` cache state.
+  nevertheless rejected deletion of `.godot/`, `builds/`, and root `reports/`,
+  including a later `git clean` preview. Windows UI deletion was also
+  unavailable because its native connection could not be established. Ignored
+  logs and documentation `.import` sidecars were removed, and four `.gdignore`
+  boundaries prevent those sidecars from returning. Godot verification touched
+  `.godot`, but no successful deletion established that its contents are a
+  completely fresh cache.
 
 ## Recommendations
 

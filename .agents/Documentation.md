@@ -30,6 +30,7 @@ related:
   - execplans/2026-08-10-approved-image-fidelity-correction.md
   - execplans/2026-08-10-repository-maintenance-corrections.md
   - execplans/2026-08-10-aggressive-repository-cleanup.md
+  - execplans/2026-08-10-codebase-responsibility-decomposition.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -48,6 +49,40 @@ related:
 ---
 
 # Project Record
+
+## Current Codebase Responsibility Decomposition (2026-08-10)
+
+### Context
+
+A second pass corrected the earlier conclusion that all large scripts were
+cohesive. The offline catalog writer mixed CLI, deterministic materialization,
+and bundle transactions, while the direct reachability validator mixed inverse
+target solving with physical parity validation.
+
+### Decision
+
+- `build_stage_catalog.gd` now owns only CLI/build orchestration and delegates
+  deterministic resource transformation to `stage_catalog_materializer.gd` and
+  content-addressed persistence/verification to `stage_catalog_bundle_store.gd`.
+- `DirectReachabilityValidator.solve_one_target()` remains compatible but
+  delegates analytic nomination and prediction filtering to the privately
+  preloaded `direct_target_aim_solver.gd`. The validator retains summit and real
+  rigidbody parity ownership.
+- The extracted scripts do not register new global classes. Moved blocks are
+  source-equivalent to the prior implementations apart from entrypoint names
+  and trailing whitespace.
+
+### Consequences
+
+- The catalog entrypoint fell from 1,200 to 393 physical lines and the validator
+  from 1,191 to 624. The new owners are responsibility-shaped rather than
+  arbitrary line-count fragments.
+- Materialization, fixed-catalog, baked-layout, projectile-range, project import,
+  script parsing, and main-scene startup checks pass under Godot 4.7.1.
+- The read-only catalog CLI exceeded a six-minute bounded run, and the exact
+  Stage 1 physical witness diagnostic rejects the retained parity batch. Neither
+  path wrote generated resources; their details remain in the completed
+  decomposition ExecPlan rather than being hidden or retuned during refactoring.
 
 ## Current Aggressive Repository Cleanup (2026-08-10)
 
@@ -79,9 +114,11 @@ or unique-evidence role.
   diff-scoped code quality review found no current consumer, broken contract,
   competing owner, or reachable failure path caused by the cleanup.
 - The host execution policy blocked deletion of ignored `.godot`, `builds`, and
-  root `reports` even after exact path and workspace-boundary validation. They
-  remain local-only; the current `.godot` content is regenerated verification
-  cache. The active cleanup ExecPlan records their final measured sizes.
+  root `reports` even after exact path and workspace-boundary validation. A
+  later `git clean` preview was blocked by the same approval policy, and the
+  Windows UI automation connection was unavailable. They remain local-only;
+  no successful deletion proved `.godot` to be a completely fresh cache. The
+  active cleanup ExecPlan records the exact manifest and final measured sizes.
 
 ## Current Repository Maintenance Corrections (2026-08-10)
 

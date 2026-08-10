@@ -134,11 +134,14 @@ Source owners: `.gdignore`, `.gitignore`, `.godot/`, `builds/`, `reports/`, igno
     and ignored log files.
   - Accept: `builds` and root `reports` are absent; ignored historical logs are
     absent; any `.godot` state present after validation is newly regenerated.
-  - Blocker: the host execution policy rejected both exact-path recursive
-    deletion and a verified file-by-file removal of `.godot`, `builds`, and
-    root `reports`. The cleanup did remove 124 ignored logs and the prior
-    `.godot` state; validation then regenerated `.godot`. The remaining local
-    directories require a deletion-capable executor and remain outside Git.
+  - Blocker: the host execution policy rejected exact-path recursive deletion,
+    verified file-by-file removal, and even `git clean` dry-run preview for
+    `.godot`, `builds`, and root `reports`. Windows UI deletion was unavailable
+    because the native automation connection could not be established. No
+    attempt removed these three directories; `.godot` may contain both earlier
+    cache and state refreshed by validation. The cleanup did remove 124 ignored
+    logs. The remaining directories require a deletion-capable executor and
+    remain outside Git.
 
 ### Phase 3: Prove unchanged runtime and review quality
 
@@ -210,6 +213,27 @@ safety, or acceptance.
   path caused by the tracked cleanup.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
+
+### Local reclaim attempt record
+
+The 2026-08-10 retry used the same targeted PowerShell inventory before and
+after the failed deletion paths. All targets resolved directly below
+`D:\npjt\paint-mountain`, had no root or child reparse point, and had no running
+Godot or Paint Mountain owner process. Deletion was intended to be permanent;
+the targets are ignored and not recoverable from Git.
+
+| ID | Exact path | Owner | Files | Logical bytes | Result |
+| --- | --- | --- | ---: | ---: | --- |
+| CACHE | `D:\npjt\paint-mountain\.godot` | repo/regenerable Godot cache | 2,237 | 113,112,464 | retained; deletion tools blocked |
+| BUILD | `D:\npjt\paint-mountain\builds` | repo/regenerable export | 39 | 759,200,615 | retained; deletion tools blocked |
+| REPORT | `D:\npjt\paint-mountain\reports` | repo/regenerable local reports | 20 | 2,126,686 | retained; deletion tools blocked |
+
+- D: free bytes before: `85,382,729,728`.
+- D: free bytes after: `85,382,684,672`; the 45,056-byte decrease is not a
+  cleanup result because every target count and logical byte total remained
+  unchanged.
+- Protected boundary: `.git`, tracked source, active catalog, v9 fixture, and
+  all paths outside the three manifest targets were untouched.
 
 ## Completion and Stop Conditions
 
