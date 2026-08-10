@@ -5,9 +5,9 @@
 
 [node name="ResultPanel" type="PanelContainer"]
 visible = false
-custom_minimum_size = Vector2(356, 516)
-offset_right = 356.0
-offset_bottom = 516.0
+custom_minimum_size = Vector2(340, 540)
+offset_right = 340.0
+offset_bottom = 540.0
 script = ExtResource("1")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -19,7 +19,7 @@ theme_override_constants/margin_bottom = 24
 
 [node name="Content" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
 [node name="TitleRow" type="HBoxContainer" parent="Margin/Content"]
 layout_mode = 2
@@ -39,7 +39,7 @@ stretch_mode = 5
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = &"HudMetric"
+theme_type_variation = &"ResultTitle"
 text = "완료"
 
 [node name="Coverage" type="Label" parent="Margin/Content"]
@@ -51,45 +51,45 @@ text = "75.0%"
 [node name="Target" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudCaption"
+theme_type_variation = &"ResultTarget"
 text = "목표 5%"
 
 [node name="Stars" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudAccentValue"
+theme_type_variation = &"ResultGrade"
 text = "등급  ★★★"
 
 [node name="PreviousBest" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudBody"
+theme_type_variation = &"ResultFact"
 text = "이전 최고  62.0%"
 
 [node name="Metadata" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_type_variation = &"HudCaption"
+theme_type_variation = &"ResultMetadata"
 text = "경과 시간  01:24 · 사용한 탄  4"
 autowrap_mode = 2
 
 [node name="Retry" type="Button" parent="Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "ui.retry"
 
 [node name="Next" type="Button" parent="Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "ui.next"
 
 [node name="Stages" type="Button" parent="Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"QuietButton"
 text = "ui.stages"

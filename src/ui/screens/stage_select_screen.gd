@@ -6,9 +6,10 @@ signal start_requested(stage_id: StringName)
 signal selection_changed(stage: StageData)
 
 const PAGE_SIZE := 8
+const STAGE_CARD_SCENE := preload("res://scenes/ui/components/stage_card_button.tscn")
 
 var _selected_stage: StageData
-var _cards: Array[Button] = []
+var _cards: Array[StageCardButton] = []
 var _page_index := 0
 var _page_label: Label
 var _previous_page: Button
@@ -50,13 +51,8 @@ func _build_pager() -> void:
 	_cards.clear()
 	_cards_container.columns = 2
 	for index in range(PAGE_SIZE):
-		var card := Button.new()
-		card.custom_minimum_size = Vector2(0.0, 120.0)
+		var card := STAGE_CARD_SCENE.instantiate() as StageCardButton
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		card.toggle_mode = true
-		card.focus_mode = Control.FOCUS_ALL
-		card.theme_type_variation = &"StageCardButton"
 		_cards_container.add_child(card)
 		_cards.append(card)
 		card.pressed.connect(_on_card_pressed.bind(index))
@@ -137,15 +133,15 @@ func _set_page(requested_page: int) -> void:
 		var game_state := get_node_or_null("/root/GameState")
 		var best: Dictionary = game_state.best_for(stage.stage_id) if game_state != null else {}
 		card.disabled = false # Every stage is intentionally open in the MVP.
-		card.text = "%02d  %s\n%s %.1f%% · %s %.1f%%" % [
+		card.present(
 			stage.stage_number,
 			_display_name(stage),
 			tr("stage.target"),
 			stage.target_coverage,
 			tr("stage.best"),
 			float(best.get("coverage", 0.0)),
-		]
-		card.set_pressed_no_signal(stage == _selected_stage)
+			stage == _selected_stage
+		)
 	if _page_label != null:
 		var first_stage := _page_index * PAGE_SIZE + 1
 		var last_stage := mini(first_stage + PAGE_SIZE - 1, stages.size())

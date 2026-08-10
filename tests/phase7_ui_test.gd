@@ -160,11 +160,13 @@ func _assert_main_preview_safe(app: AppRoot, main_menu: MainMenuScreen) -> void:
 		),
 		"Main Menu preview landmarks must remain inside the right-side safe region"
 	)
-	var menu_rect: Rect2 = (main_menu.get_node("Root/BrandPanel") as Control).get_global_rect()
-	_assert_true(
-		menu_rect.end.x <= 1280.0 * AppRoot.PREVIEW_SAFE_RECT.position.x,
-		"Main Menu action column must not overlap the preview safe region"
-	)
+	var preview_boundary := 1280.0 * AppRoot.PREVIEW_SAFE_RECT.position.x
+	for action_name in ["Play", "StageSelect", "Settings", "Quit"]:
+		var action := main_menu.get_node("Root/BrandPanel/Margin/Content/%s" % action_name) as Button
+		_assert_true(
+			action.get_global_rect().end.x <= preview_boundary,
+			"Main Menu action column must not overlap the preview safe region"
+		)
 
 
 func _assert_true(condition: bool, message: String) -> void:
@@ -190,8 +192,22 @@ func _assert_theme_contract() -> void:
 	_assert_true(not theme.is_type_variation(&"HudKeycapPanel", &"PanelContainer"), "obsolete outlined shortcut keycaps must be absent")
 	_assert_true(theme.is_type_variation(&"StageCardButton", &"Button"), "stage selection must use a semantic card role")
 	_assert_true(theme.is_type_variation(&"SettingsSwitchRow", &"CheckButton"), "settings switches must use the shared unboxed row role")
+	_assert_true(
+		theme.get_icon(&"checked", &"SettingsSwitchRow") != null \
+				and theme.get_icon(&"unchecked", &"SettingsSwitchRow") != null,
+		"settings switches must use the approved full-size checked and unchecked assets"
+	)
+	_assert_true(
+		theme.get_stylebox(&"slider", &"HSlider") != null \
+				and theme.get_stylebox(&"grabber_area", &"HSlider") != null \
+				and theme.get_icon(&"grabber", &"HSlider") != null,
+		"settings sliders must use the shared rail, fill, and grabber assets"
+	)
 	for variation in [
 		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"HudLegend", &"ScreenTitle",
+		&"StageCardNumber", &"StageCardName", &"StageCardFacts", &"StagePreviewFacts", &"StagePreviewBest",
+		&"SettingsLabel", &"SettingsValue", &"ResultTitle", &"ResultCoverage", &"ResultTarget",
+		&"ResultGrade", &"ResultFact", &"ResultMetadata",
 	]:
 		_assert_true(theme.is_type_variation(variation, &"Label"), "%s must be a shared Label variation" % variation)
 	for variation in [&"HudModeButton", &"HudIconButton", &"HudFinishButton", &"PrimaryButton"]:

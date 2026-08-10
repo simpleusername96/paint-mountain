@@ -8,8 +8,8 @@ const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const STAGE_LAYOUT_REPOSITORY_SCRIPT := preload("res://src/app/stage_layout_repository.gd")
 const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
-const PREVIEW_SAFE_RECT := Rect2(0.42, 0.10, 0.56, 0.82)
-const PREVIEW_FRAME_MARGIN := 1.04
+const PREVIEW_SAFE_RECT := Rect2(0.30, 0.08, 0.68, 0.86)
+const PREVIEW_FRAME_MARGIN := 1.02
 
 var _preview_world: Node3D
 var _preview_mountain: MeshInstance3D
@@ -74,7 +74,7 @@ func _show_stage_select() -> void:
 	_audio_ui()
 	_pending_start_stage_id = &""
 	_remove_gameplay()
-	_preview_world.visible = true
+	_preview_world.visible = false
 	_main_menu.visible = false
 	_stage_select.visible = true
 	_stage_select.refresh()
@@ -274,16 +274,16 @@ func _build_preview_world() -> void:
 	var environment := WorldEnvironment.new()
 	var environment_resource := Environment.new()
 	environment_resource.background_mode = Environment.BG_COLOR
-	environment_resource.background_color = Color(0.93, 0.91, 0.88, 1.0)
+	environment_resource.background_color = Color("FFFDFC")
 	environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment_resource.ambient_light_color = Color(0.78, 0.8, 0.84, 1.0)
-	environment_resource.ambient_light_energy = 0.72
+	environment_resource.ambient_light_color = Color("E9EDF2")
+	environment_resource.ambient_light_energy = 0.34
 	environment.environment = environment_resource
 	_preview_world.add_child(environment)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48.0, -30.0, 0.0)
 	sun.light_color = Color(1.0, 0.95, 0.86, 1.0)
-	sun.light_energy = 0.94
+	sun.light_energy = 1.08
 	sun.shadow_enabled = true
 	_preview_world.add_child(sun)
 	_preview_camera = Camera3D.new()
@@ -297,16 +297,6 @@ func _build_preview_world() -> void:
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
 	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	_preview_world.add_child(_preview_mountain)
-	var ground := MeshInstance3D.new()
-	var ground_mesh := PlaneMesh.new()
-	ground_mesh.size = Vector2(360.0, 360.0)
-	var ground_material := StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.79, 0.78, 0.75, 1.0)
-	ground_material.roughness = 1.0
-	ground_mesh.material = ground_material
-	ground.mesh = ground_mesh
-	ground.position = Vector3(0.0, -2.7, -100.0)
-	_preview_world.add_child(ground)
 
 
 func _set_preview_stage(stage: StageData) -> void:
@@ -387,8 +377,8 @@ func _preview_artifact_for_stage(stage: StageData) -> Dictionary:
 	material.set_shader_parameter(&"paint_mask", paint_texture)
 	material.set_shader_parameter(&"target_mask", target_texture)
 	material.set_shader_parameter(&"paint_color", stage.paint_color)
-	material.set_shader_parameter(&"rock_color", Color("F2F4F7"))
-	material.set_shader_parameter(&"shadow_tint", Color("C4CBD5"))
+	material.set_shader_parameter(&"rock_color", Color("9FA3A9"))
+	material.set_shader_parameter(&"shadow_tint", Color("626D7B"))
 	var dressing: Node3D = ENVIRONMENT_DRESSING_SCRIPT.new()
 	dressing.name = "PreviewDressing_%s" % stage.stage_id
 	dressing.visible = false

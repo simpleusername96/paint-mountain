@@ -22,13 +22,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.035, 0.055, 0.08, 0.1)
+color = Color(0, 0, 0, 0)
 
 [node name="BrandPanel" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 56.0
-offset_top = 160.0
-offset_right = 360.0
+offset_top = 176.0
+offset_right = 470.0
 offset_bottom = 620.0
 
 [node name="Margin" type="MarginContainer" parent="Root/BrandPanel"]
@@ -54,33 +54,37 @@ text = "app.title"
 autowrap_mode = 2
 
 [node name="ActionSpacer" type="Control" parent="Root/BrandPanel/Margin/Content"]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 
 [node name="Play" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(240, 56)
 layout_mode = 2
+size_flags_horizontal = 0
 theme_type_variation = &"PrimaryButton"
 text = "ui.play"
 
 [node name="StageSelect" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
+size_flags_horizontal = 0
 theme_type_variation = &"QuietButton"
 text = "ui.stage_select"
 
 [node name="Settings" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
+size_flags_horizontal = 0
 theme_type_variation = &"QuietButton"
 text = "ui.settings"
 
 [node name="Quit" type="Button" parent="Root/BrandPanel/Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
+size_flags_horizontal = 0
 theme_type_variation = &"QuietButton"
 text = "ui.quit"

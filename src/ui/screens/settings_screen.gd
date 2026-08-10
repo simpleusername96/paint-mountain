@@ -4,6 +4,7 @@ extends CanvasLayer
 signal close_requested
 
 var _controls: Dictionary = {}
+var _volume_values: Dictionary = {}
 var _syncing := false
 var _display_mutation_count := 0
 
@@ -20,6 +21,11 @@ func _ready() -> void:
 		&"resolution": %Resolution,
 		&"quality": %Quality,
 		&"language": %Language,
+	}
+	_volume_values = {
+		&"master_volume": %MasterValue,
+		&"music_volume": %MusicValue,
+		&"sfx_volume": %SfxValue,
 	}
 	_setup_options()
 	_connect_controls()
@@ -52,7 +58,7 @@ func _add_options(option: OptionButton, values: Array[String]) -> void:
 
 func _connect_controls() -> void:
 	for key in [&"master_volume", &"music_volume", &"sfx_volume"]:
-		(_controls[key] as HSlider).value_changed.connect(func(value: float) -> void: _store(key, value / 100.0))
+		(_controls[key] as HSlider).value_changed.connect(_on_volume_changed.bind(key))
 	for key in [&"camera_shake", &"reduced_motion", &"trajectory_preview", &"fullscreen"]:
 		(_controls[key] as CheckButton).toggled.connect(func(value: bool) -> void: _store(key, value))
 	for key in [&"resolution", &"quality", &"language"]:
@@ -77,6 +83,22 @@ func _sync_from_state() -> void:
 					break
 	_syncing = false
 	_sync_display_controls()
+	_refresh_volume_values()
+
+
+func _on_volume_changed(value: float, key: StringName) -> void:
+	var value_label := _volume_values.get(key) as Label
+	if value_label != null:
+		value_label.text = "%d%%" % roundi(value)
+	_store(key, value / 100.0)
+
+
+func _refresh_volume_values() -> void:
+	for key in _volume_values:
+		var slider := _controls.get(key) as HSlider
+		var value_label := _volume_values.get(key) as Label
+		if slider != null and value_label != null:
+			value_label.text = "%d%%" % roundi(slider.value)
 
 
 func _store(key: StringName, value) -> void:

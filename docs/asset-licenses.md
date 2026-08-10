@@ -57,3 +57,10 @@ Upstream license texts are stored under `assets/licenses/` or beside their
 tightly scoped imported subset. The UI Pack copy has whitespace-only
 normalization; its archive hash identifies the byte-exact source package. No
 unlisted member of the downloaded archives is committed.
+
+## Project-generated UI assets
+
+The Stage Select and Settings fidelity assets under `assets/ui/icons/` are
+original project-generated raster files, not third-party package members. Their
+generation source, runtime role, and SHA-256 values are recorded in
+`assets/ui/icons/GENERATED_ASSETS.md`.

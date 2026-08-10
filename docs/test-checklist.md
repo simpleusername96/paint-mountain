@@ -29,10 +29,12 @@ related:
   - ../.agents/execplans/2026-08-09-remove-wind-system.md
   - ../.agents/execplans/2026-08-10-double-pace-and-quiet-feedback.md
   - ../.agents/execplans/2026-08-10-essential-ui-fidelity.md
+  - ../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/essential-ui-fidelity-2026-08-10/README.md
+  - evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -49,6 +51,40 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed approved-image fidelity correction gate (2026-08-10)
+
+- [x] Main Menu uses a large readable title/action lane and a substantial real
+  Stage 01 mountain on the right. The obsolete preview ground plane, seam, and
+  full-screen gray wash are absent.
+- [x] Stage Select owns a warm solid field, eight large shared stage cards,
+  selected-only outline and check asset, strong selected-stage facts, complete
+  pagination, and a low Start action.
+- [x] Briefing uses one wider shared safe rectangle so the complete real terrain
+  dominates the center without colliding with identity, Gear, Back/Start, or
+  the single lower guide. Aim retains its stable HUD geometry.
+- [x] Shared terrain values are neutral off-white and preserve readable target
+  area, Support Shell, glyph, trajectory, paint, decoration, and cannon
+  contrast in the final captures.
+- [x] Settings contains seven real project-generated raster icons, three live
+  volume percentages, blue sliders with real grabbers, and four 52x28 switch
+  assets. Korean and English have no clipping, overlap, or awkward wrapping at
+  the checked sizes.
+- [x] Manual and Timeout Results use the approved compact title, value, facts,
+  metadata, and action rhythm while preserving authoritative state and the
+  coral timeout clock.
+- [x] Focused UI/copy/localization/camera checks, `scripts/verify.ps1`, the
+  canonical Windows release export, and the task-owned code-quality audit pass.
+- [x] Seven final 2560x764 combined sheets were inspected with the approved
+  image and exported runtime in the same frame. `design-qa.md` records no
+  actionable P0, P1, or P2 issue and ends with `final result: passed`.
+
+Current evidence:
+
+- `evidence/approved-image-fidelity-correction-2026-08-10/README.md`
+- `evidence/approved-image-fidelity-correction-2026-08-10/design-qa.md`
+- `evidence/approved-image-fidelity-correction-2026-08-10/comparisons/`
+- `evidence/approved-image-fidelity-correction-2026-08-10/runtime/`
 
 ## Completed Essential UI fidelity gate (2026-08-10)
 

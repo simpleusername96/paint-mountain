@@ -177,8 +177,8 @@ func _build_stage_world() -> bool:
 	paint_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	# The mountain must read as a faceted 3D mass against the open sky and quiet
 	# apron. Reserve this cooler mid-value range for terrain relief.
-	paint_material.set_shader_parameter("rock_color", Color("74839A"))
-	paint_material.set_shader_parameter("shadow_tint", Color("46546A"))
+	paint_material.set_shader_parameter("rock_color", Color("94979E"))
+	paint_material.set_shader_parameter("shadow_tint", Color("5F6875"))
 	paint_material.set_shader_parameter("support_floor_y", stage_data.terrain_center.y)
 	paint_material.set_shader_parameter(
 		"support_rear_z",

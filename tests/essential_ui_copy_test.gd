@@ -57,8 +57,16 @@ func _run_checks() -> void:
 		"SettingsRoot/Panel/Margin/Content/Columns/Display/LanguageNote",
 	])
 	_assert_present(settings, [
-		"SettingsRoot/Panel/Margin/Content/Columns/Audio/Master",
-		"SettingsRoot/Panel/Margin/Content/Columns/Audio/CameraShake",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/MasterGroup/Header/Icon",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/MasterGroup/Header/MasterValue",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/MasterGroup/Master",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/MusicGroup/Header/MusicValue",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/SfxGroup/Header/SfxValue",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/CameraRow/Icon",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/CameraRow/CameraShake",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/MotionRow/Icon",
+		"SettingsRoot/Panel/Margin/Content/Columns/Audio/TrajectoryRow/Icon",
+		"SettingsRoot/Panel/Margin/Content/Columns/Display/FullscreenRow/Icon",
 		"SettingsRoot/Panel/Margin/Content/Columns/Display/Resolution",
 		"SettingsRoot/Panel/Margin/Content/Columns/Display/Language",
 		"SettingsRoot/Panel/Margin/Content/Footer/Defaults",

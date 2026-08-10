@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=38 format=3]
+[gd_resource type="Theme" load_steps=43 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png" id="2_neutral_depth"]
@@ -6,6 +6,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/button_primary_depth.png" id="4_primary_depth"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/button_primary_flat.png" id="5_primary_flat"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/button_danger_depth.png" id="6_danger_depth"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/settings/switch_on.png" id="7_switch_on"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/settings/switch_off.png" id="8_switch_off"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/settings/slider_grabber.png" id="9_slider_grabber"]
 
 [sub_resource type="FontVariation" id="FontWeight500"]
 base_font = ExtResource("1_font")
@@ -208,11 +211,14 @@ corner_radius_bottom_left = 10
 [sub_resource type="StyleBoxEmpty" id="QuietButtonNormal"]
 
 [sub_resource type="StyleBoxFlat" id="StageCardNormal"]
-bg_color = Color(1, 0.992157, 0.988235, 0.52)
+bg_color = Color(0.968627, 0.972549, 0.980392, 0.62)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
+shadow_color = Color(0.090196, 0.145098, 0.219608, 0.04)
+shadow_size = 2
+shadow_offset = Vector2(0, 1)
 
 [sub_resource type="StyleBoxFlat" id="StageCardHover"]
 bg_color = Color(0.921569, 0.952941, 1, 0.78)
@@ -259,6 +265,24 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
+[sub_resource type="StyleBoxFlat" id="SettingsSliderRail"]
+bg_color = Color(0.788235, 0.803922, 0.823529, 1)
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="SettingsSliderFill"]
+bg_color = Color(0.145098, 0.517647, 1, 1)
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
 [sub_resource type="StyleBoxFlat" id="Danger"]
 bg_color = Color(0.85098, 0.298039, 0.298039, 1)
 corner_radius_top_left = 16
@@ -292,6 +316,11 @@ Label/font_sizes/font_size = 16
 PanelContainer/styles/panel = SubResource("Panel")
 ProgressBar/styles/background = SubResource("ProgressBackground")
 ProgressBar/styles/fill = SubResource("ProgressFill")
+HSlider/icons/grabber = ExtResource("9_slider_grabber")
+HSlider/icons/grabber_highlight = ExtResource("9_slider_grabber")
+HSlider/styles/slider = SubResource("SettingsSliderRail")
+HSlider/styles/grabber_area = SubResource("SettingsSliderFill")
+HSlider/styles/grabber_area_highlight = SubResource("SettingsSliderFill")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 1, 1, 1)
@@ -365,7 +394,7 @@ HudAccentValue/font_sizes/font_size = 22
 ResultCoverage/base_type = &"Label"
 ResultCoverage/colors/font_color = Color(0.145098, 0.517647, 1, 1)
 ResultCoverage/fonts/font = SubResource("FontWeight700")
-ResultCoverage/font_sizes/font_size = 46
+ResultCoverage/font_sizes/font_size = 52
 HudAccentCaption/base_type = &"Label"
 HudAccentCaption/colors/font_color = Color(0.145098, 0.517647, 1, 1)
 HudAccentCaption/fonts/font = SubResource("FontWeight500")
@@ -383,32 +412,93 @@ MenuEyebrow/font_sizes/font_size = 15
 MenuTitle/base_type = &"Label"
 MenuTitle/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 MenuTitle/fonts/font = SubResource("FontWeight700")
-MenuTitle/font_sizes/font_size = 46
+MenuTitle/font_sizes/font_size = 64
 MenuSubtitle/base_type = &"Label"
 MenuSubtitle/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
 MenuSubtitle/fonts/font = SubResource("FontWeight500")
 MenuSubtitle/font_sizes/font_size = 17
 StageCardButton/base_type = &"Button"
-StageCardButton/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
-StageCardButton/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
-StageCardButton/colors/font_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
-StageCardButton/colors/font_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
-StageCardButton/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+StageCardButton/colors/font_color = Color(0, 0, 0, 0)
+StageCardButton/colors/font_hover_color = Color(0, 0, 0, 0)
+StageCardButton/colors/font_pressed_color = Color(0, 0, 0, 0)
+StageCardButton/colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+StageCardButton/colors/font_focus_color = Color(0, 0, 0, 0)
 StageCardButton/fonts/font = SubResource("FontWeight600")
-StageCardButton/font_sizes/font_size = 15
+StageCardButton/font_sizes/font_size = 1
 StageCardButton/styles/normal = SubResource("StageCardNormal")
 StageCardButton/styles/hover = SubResource("StageCardHover")
 StageCardButton/styles/pressed = SubResource("StageCardSelected")
 StageCardButton/styles/hover_pressed = SubResource("StageCardSelected")
 StageCardButton/styles/disabled = SubResource("StageCardNormal")
 StageCardButton/styles/focus = SubResource("Focus")
+StageCardNumber/base_type = &"Label"
+StageCardNumber/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+StageCardNumber/fonts/font = SubResource("FontWeight700")
+StageCardNumber/font_sizes/font_size = 17
+StageCardNumberSelected/base_type = &"StageCardNumber"
+StageCardNumberSelected/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+StageCardName/base_type = &"Label"
+StageCardName/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+StageCardName/fonts/font = SubResource("FontWeight700")
+StageCardName/font_sizes/font_size = 20
+StageCardFacts/base_type = &"Label"
+StageCardFacts/colors/font_color = Color(0.180392, 0.243137, 0.329412, 1)
+StageCardFacts/fonts/font = SubResource("FontWeight600")
+StageCardFacts/font_sizes/font_size = 14
+StagePreviewFacts/base_type = &"Label"
+StagePreviewFacts/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+StagePreviewFacts/fonts/font = SubResource("FontWeight500")
+StagePreviewFacts/font_sizes/font_size = 16
+StagePreviewBest/base_type = &"Label"
+StagePreviewBest/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+StagePreviewBest/fonts/font = SubResource("FontWeight600")
+StagePreviewBest/font_sizes/font_size = 19
 SettingsSwitchRow/base_type = &"CheckButton"
+SettingsSwitchRow/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsSwitchRow/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsSwitchRow/colors/font_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsSwitchRow/colors/font_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsSwitchRow/colors/font_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsSwitchRow/fonts/font = SubResource("FontWeight500")
+SettingsSwitchRow/font_sizes/font_size = 16
+SettingsSwitchRow/icons/checked = ExtResource("7_switch_on")
+SettingsSwitchRow/icons/unchecked = ExtResource("8_switch_off")
+SettingsSwitchRow/icons/checked_disabled = ExtResource("7_switch_on")
+SettingsSwitchRow/icons/unchecked_disabled = ExtResource("8_switch_off")
 SettingsSwitchRow/styles/normal = SubResource("QuietButtonNormal")
 SettingsSwitchRow/styles/hover = SubResource("StageCardHover")
 SettingsSwitchRow/styles/pressed = SubResource("QuietButtonNormal")
 SettingsSwitchRow/styles/hover_pressed = SubResource("StageCardHover")
 SettingsSwitchRow/styles/disabled = SubResource("QuietButtonNormal")
 SettingsSwitchRow/styles/focus = SubResource("Focus")
+SettingsLabel/base_type = &"Label"
+SettingsLabel/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+SettingsLabel/fonts/font = SubResource("FontWeight500")
+SettingsLabel/font_sizes/font_size = 16
+SettingsValue/base_type = &"Label"
+SettingsValue/colors/font_color = Color(0.180392, 0.243137, 0.329412, 1)
+SettingsValue/fonts/font = SubResource("FontWeight600")
+SettingsValue/font_sizes/font_size = 16
+ResultTitle/base_type = &"Label"
+ResultTitle/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+ResultTitle/fonts/font = SubResource("FontWeight700")
+ResultTitle/font_sizes/font_size = 30
+ResultTarget/base_type = &"Label"
+ResultTarget/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+ResultTarget/fonts/font = SubResource("FontWeight500")
+ResultTarget/font_sizes/font_size = 15
+ResultGrade/base_type = &"Label"
+ResultGrade/colors/font_color = Color(0.145098, 0.517647, 1, 1)
+ResultGrade/fonts/font = SubResource("FontWeight600")
+ResultGrade/font_sizes/font_size = 21
+ResultFact/base_type = &"Label"
+ResultFact/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
+ResultFact/fonts/font = SubResource("FontWeight500")
+ResultFact/font_sizes/font_size = 17
+ResultMetadata/base_type = &"Label"
+ResultMetadata/colors/font_color = Color(0.407843, 0.45098, 0.517647, 1)
+ResultMetadata/fonts/font = SubResource("FontWeight500")
+ResultMetadata/font_sizes/font_size = 15
 HudStagePanel/base_type = &"PanelContainer"
 HudStagePanel/styles/panel = SubResource("HudStagePanel")
 HudRailPanel/base_type = &"PanelContainer"

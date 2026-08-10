@@ -21,21 +21,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.035, 0.055, 0.08, 0.08)
+mouse_filter = 2
+color = Color(1, 0.992157, 0.988235, 1)
 
 [node name="Back" type="Button" parent="Root"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 48.0
+offset_left = 24.0
 offset_top = 24.0
-offset_right = 144.0
+offset_right = 104.0
 offset_bottom = 68.0
 text = "ui.back"
 theme_type_variation = &"QuietButton"
 
 [node name="Heading" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 176.0
+offset_left = 120.0
 offset_top = 24.0
 offset_right = 600.0
 offset_bottom = 68.0
@@ -44,7 +45,7 @@ text = "ui.choose_mountain"
 
 [node name="CardsPanel" type="Control" parent="Root"]
 layout_mode = 0
-offset_left = 48.0
+offset_left = 36.0
 offset_top = 88.0
 offset_right = 656.0
 offset_bottom = 688.0
@@ -131,12 +132,12 @@ text = "첫 번째 하강"
 [node name="PreviewStats" type="Label" parent="Root/PreviewPanel/Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudCaption"
+theme_type_variation = &"StagePreviewFacts"
 
 [node name="PreviewBest" type="Label" parent="Root/PreviewPanel/Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudSection"
+theme_type_variation = &"StagePreviewBest"
 
 [node name="ActionSpacer" type="Control" parent="Root/PreviewPanel/Margin/Content"]
 custom_minimum_size = Vector2(0, 12)

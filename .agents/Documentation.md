@@ -27,8 +27,10 @@ related:
   - execplans/2026-08-09-remove-wind-system.md
   - execplans/2026-08-10-double-pace-and-quiet-feedback.md
   - execplans/2026-08-10-essential-ui-fidelity.md
+  - execplans/2026-08-10-approved-image-fidelity-correction.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
+  - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
@@ -42,6 +44,47 @@ related:
 ---
 
 # Project Record
+
+## Current Approved-Image Fidelity Correction (2026-08-10)
+
+### Context
+
+The first Essential UI implementation removed the correct copy and decorative
+noise, but its exported runtime still under-matched the seven approved images
+in type scale, world occupancy, terrain value, card hierarchy, Settings assets,
+control size, and Result rhythm.
+
+### Decision
+
+The approved images now act as a literal composition and hierarchy target while
+real terrain topology, mechanisms, paint, coverage, and preference values remain
+authoritative runtime content. Main Menu owns a larger seam-free Stage 01
+preview; Stage Select owns a clean warm field and shared semantic cards;
+Briefing uses a wider central terrain frame; Settings uses real generated raster
+icons, live percentages, blue sliders, and full switch assets; Results use a
+stronger compact fact/action hierarchy. Shared gameplay terrain is neutral
+off-white rather than blue-gray.
+
+### Consequences
+
+- All seven normalized approved/runtime sheets were rebuilt from the final
+  Windows release and inspected together. There is no actionable P0, P1, or P2
+  finding.
+- Korean 1280x720 covers every approved state. Korean 1600x900 and English
+  1920x1080 separately prove Stage Select and Settings fit and localization.
+- The Main Menu Fire-adjacent shortcut label remains absent. Space appears only
+  in the shared lower Aim guide, and Briefing retains only stage identity, its
+  concise mode label, actions, Gear, real terrain glyphs, and one input guide.
+- Generated icon/switch assets have project provenance and no dependency,
+  plugin, external pack, or runtime network requirement was added.
+- Current evidence and the final severity record are indexed in
+  [`../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md`](../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md).
+
+### Limitations
+
+The generated mountains are visual direction, not playable geometry. Runtime
+silhouettes, glyph positions, paint paths, and fact values therefore differ
+where they must represent the real selected stage and captured state.
 
 ## Current Essential UI Fidelity Revision (2026-08-10)
 
