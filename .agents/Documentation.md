@@ -26,7 +26,9 @@ related:
   - execplans/2026-08-09-quiet-context-ui-system.md
   - execplans/2026-08-09-remove-wind-system.md
   - execplans/2026-08-10-double-pace-and-quiet-feedback.md
+  - execplans/2026-08-10-essential-ui-fidelity.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
+  - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
@@ -40,6 +42,57 @@ related:
 ---
 
 # Project Record
+
+## Current Essential UI Fidelity Revision (2026-08-10)
+
+### Context
+
+The accepted Quiet Context system still exposed meta copy, repeated shortcut
+labels, decorative separators, boxed rows, and central Briefing/Result surfaces
+that reduced the mountain's visual priority. Seven approved refined images
+defined the bounded correction.
+
+### Decision
+
+Normal screens now show only current identity, authoritative facts, real
+actions, terminal reasons, conditional failure/readiness copy, and one
+mode-specific bottom input guide. Main Menu, Stage Select, Briefing, Aim,
+Settings, and Results follow the approved Essential UI composition. Map,
+Follow, and Pause retain their existing behavior with the simplified shared
+legend.
+
+### Rationale
+
+Explanatory content belongs in a future guidebook, first tutorial, UI guide,
+accessibility surface, or diagnostic path. During normal play the terrain,
+glyphs, trajectory, paint, values, and actions should carry the decision.
+
+### Consequences
+
+- Main Menu meta labels, Stage Select objective detail, Briefing objective and
+  duplicate hint, Settings helper rows, and Result explanation captions are no
+  longer visible. Retained stage objectives and mechanism descriptions remain
+  in typed data and localization inventory.
+- `ContextLegend` is the single visible owner of Space, Tab, F, Escape, and the
+  wheel prompt for its active mode. The former outlined `ShortcutHint` owner
+  and decorative legend rule are deleted.
+- Stage rows use selected-only outline; Settings switches use an unboxed row
+  role; general decorative separators are absent while focus, selection,
+  control, modal, progress, and target boundaries remain.
+- Briefing shows real terrain glyphs without floating names. Main Menu,
+  Briefing, and Results use deterministic, cached presentation-point framing
+  with screen-specific safe rectangles.
+- Results use a compact right panel and authoritative facts. Timeout adds a real
+  coral clock raster asset rather than an emoji, glyph, or code-drawn icon.
+- Korean 1280x720, Korean 1600x900, and English 1920x1080 Windows release
+  captures, plus seven normalized comparison sheets, are indexed in
+  [`../docs/evidence/essential-ui-fidelity-2026-08-10/README.md`](../docs/evidence/essential-ui-fidelity-2026-08-10/README.md).
+  The latest [`../design-qa.md`](../design-qa.md) result is `passed`.
+
+### Limitations
+
+This revision does not create the guidebook, tutorial, or UI guide. It preserves
+their source content and removes it only from routine screen presentation.
 
 ## Current Wind Retirement (2026-08-09)
 
@@ -147,7 +200,7 @@ the mountain as the main source of causal feedback.
   `StageController` continues to own the wall clock and results.
 - Sealed `ShotObservation` and mechanism selection/activation events remain for
   gameplay, agent, attempt, effects, audio, camera shake, and diagnostics.
-- Briefing actions/objective, Return to Cannon, run status/Finish, coverage and
+- Briefing actions and terrain identity, Return to Cannon, run status/Finish, coverage and
   aim instruments, context legend, Pause/Settings, and Results remain visible.
 
 ### Limitations
@@ -170,9 +223,9 @@ and the final comparison report is [`../design-qa.md`](../design-qa.md).
   SHA-256
   `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`.
 - `paint_mountain_theme.tres` remains the only UI token owner. Routine panels
-  and buttons are flat and quiet, primary actions alone use filled blue, focus
-  remains 2 px, and the small shortcut keycap is paper-white with a thin navy
-  outline.
+  and buttons are flat and quiet, primary actions alone use filled blue, and
+  focus remains 2 px. The later Essential UI revision removes shortcut keycap
+  boxes and uses one inline bottom context legend.
 - `ContextLegend` owns one responsive bottom input/action sentence for Aim,
   Map, Follow, Briefing, and Pause. Detached dark keycap tiles are removed.
   Aim View shows remaining/maximum ammunition as `n / n`, contains no yaw or

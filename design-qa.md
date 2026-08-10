@@ -1,141 +1,171 @@
 ---
 type: evidence
-status: archived
-created: 2026-08-09
-topic: quiet-context-ui-system
-scope: all production UI surfaces and selected Stage 30 Aim View fidelity
-source: docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
+status: active
+created: 2026-08-10
+last_reviewed: 2026-08-10
+topic: essential-ui-fidelity
+scope: seven approved UI refinements plus supporting gameplay and responsive states
+source: docs/reports/screen-audit-2026-08-10/assets/refined/
 related:
-  - .agents/execplans/2026-08-09-quiet-context-ui-system.md
+  - .agents/execplans/2026-08-10-essential-ui-fidelity.md
+  - docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - .agents/design/UIUX_GUIDELINES.md
 ---
 
-# Historical Quiet Context UI Design QA
+# Essential UI Fidelity Design QA
 
 ## Purpose
 
-This report records the pre-wind-retirement production build. Its wind flag,
-wind HUD, and related verification statements are historical evidence, not the
-current interface contract.
-
-Verify that the production Windows build applies the selected Quiet Context
-direction to every reachable UI surface, and that the Stage 30 Aim View remains
-faithful to the exact approved visual target without changing gameplay behavior.
+Verify that the exported Windows build applies the seven approved Essential UI
+refinements while preserving the Quiet Context style, real gameplay state,
+localization, keyboard operation, and mountain-first composition.
 
 ## Sources
 
-- Source visual truth:
-  `docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`
-  (`1280x720`, SHA-256
-  `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`).
-- Final implementation screenshot:
-  `.agents/evidence/quiet-context-ui-system-2026-08-09/final-ko-1280x720-progression_aiming.png`
-  (`1280x720`).
-- Full-view combined comparison:
-  `.agents/evidence/quiet-context-ui-system-2026-08-09/final-reference-vs-runtime-aim.png`
-  (`2584x720`, source left and production runtime right).
-- Cross-page Korean evidence:
-  `.agents/evidence/quiet-context-ui-system-2026-08-09/final-ko-1280x720-contact-sheet.png`.
-- Responsive English evidence:
-  `.agents/evidence/quiet-context-ui-system-2026-08-09/final-en-1920x1080-contact-sheet.png`.
-- Responsive Korean evidence:
-  `.agents/evidence/quiet-context-ui-system-2026-08-09/final-ko-1600x900-contact-sheet.png`.
+- Source visual truth: the seven `1672x941` refined images under
+  `docs/reports/screen-audit-2026-08-10/assets/refined/`.
+- Primary implementation evidence: Korean `1280x720` Windows release captures
+  under `docs/evidence/essential-ui-fidelity-2026-08-10/runtime/`.
+- Full-view combined comparisons: seven labeled `2560x764` images under
+  `docs/evidence/essential-ui-fidelity-2026-08-10/comparisons/`.
+- Responsive implementation evidence: English `1920x1080` Main Menu, Stage
+  Select, Aim, Settings, and Manual Result captures, plus Korean `1600x900`
+  Stage Select and Settings captures in the runtime evidence directory.
+- Supporting-state evidence: Korean `1280x720` Map Inspection, Shot Follow
+  impact hold, and Pause captures in the runtime evidence directory.
 
 ## Comparison Setup
 
-- State: Stage 30, Aim View, Korean, default target, default angle/power,
-  pre-launch Finish-disabled state.
-- Viewport and CSS size: not applicable to this native Godot build; the source
-  and primary runtime capture are both exactly `1280x720` physical pixels.
-- Density normalization: none; both primary images are 1:1 at the same pixel
-  dimensions.
+- State: the screen, locale, selected stage, and terminal reason match each
+  named reference. Aim fidelity uses Stage 30 on both sides so its complete
+  glyph set and camera state are directly comparable.
+- Viewport: the primary exported runtime is exactly `1280x720` physical pixels.
+  CSS size and browser density do not apply to this native Godot build.
+- Normalization: each `1672x941` reference was resized proportionally into a
+  `1280x720` frame and centered with at most one padding pixel. It was not
+  stretched. The runtime half remains its native `1280x720` pixels.
 - Renderer: Godot 4.7.1 Compatibility renderer, Windows release export.
-- Focused evidence: the equal-size combined image was reviewed at full
-  resolution. The separate English `1920x1080` Aim capture was also inspected
-  for small legend, keycap, label, and stepper details, so no additional crop
-  was required.
+- Full-view evidence: each final comparison sheet was opened and inspected
+  directly after normalization.
+- Focused evidence: the native `1280x720` and `1920x1080` runtime captures were
+  also opened separately to read small labels, controls, legends, result facts,
+  and switch states. Extra crops were unnecessary because those captures were
+  readable at native size.
 
 ## Findings
 
 - No actionable P0, P1, or P2 issue remains.
-- Fonts and typography: Pretendard remains the single shared family. The runtime
-  preserves the reference hierarchy: stage and run values are dominant,
-  captions are restrained, and Korean/English labels do not clip or wrap
-  awkwardly at the checked sizes.
-- Spacing and layout rhythm: the production Aim View keeps the 24 px edge
-  rhythm, centered Fire action, right-aligned angle/power instruments, direct
-  top status, left coverage rail, and one shallow bottom context line. Main
-  Menu and Stage Select no longer use giant enclosing cards; Pause and Settings
-  retain only the one containment surface their interruption model requires.
-- Colors and tokens: navy, off-white, cool gray, and blue remain Theme-owned.
-  Routine surfaces are flat and quiet; only primary actions use filled blue.
-  Focus, disabled, selected, and hover states remain visually distinct.
-- Image quality and assets: the running terrain, glyphs, trajectory, cannon,
-  flag, target icon, settings icon, mouse-wheel image, plus/minus images, and
-  paint-splash image are real project assets or renderer output. No new
-  placeholder or code-drawn visible asset was introduced.
-- Copy and content: ammunition uses `n / n`; yaw and A/D are absent; Finish,
-  Gear, Map, Follow, Briefing, Result, loading, retry, and settings behavior stay
-  truthful. The context legend changes with Aim, Map, Follow, Briefing, and
-  Pause.
-- Responsiveness: Korean `1280x720` covers all core pages; English `1920x1080`
-  covers Main Menu, Stage Select, Aim, Settings, and Result; Korean `1600x900`
-  covers Stage Select and Settings. No persistent control clips, overlaps, or
-  escapes the viewport in these captures.
-- Accessibility and interaction states: all interactive controls remain native
-  focusable controls with a 2 px focus token. Disabled Finish/Next/Previous and
-  active stage/check states do not rely on text alone. Target-preserving W/S,
-  wheel, and direct stepper behavior passed its focused runtime contracts.
+- Fonts and typography: Pretendard remains the shared family. Screen identity,
+  stage facts, coverage, results, and actions retain the approved hierarchy.
+  Korean and English labels do not clip or wrap awkwardly in the checked
+  viewports. English Main Menu uses an intentional two-line brand lockup within
+  the fixed logical action column.
+- Spacing and layout rhythm: Main Menu keeps a restrained left action lane and
+  a real Stage 01 preview on the right. Stage Select uses a two-column list,
+  fact-only detail, and selected-only outline. Briefing and Results reserve
+  screen-specific safe regions for the full mountain. Settings keeps two equal
+  columns without a divider. No persistent action or fact overlaps or clips.
+- Colors and tokens: navy, warm paper, cool gray, blue, coral timeout, focus,
+  selection, disabled, and progress colors remain Theme-owned and consistent.
+  Filled blue is reserved for the primary action in each state.
+- Image quality and asset fidelity: all mountains, paint, cannon, trajectory,
+  target and mechanism glyphs, wheel, gear, and paint-splash visuals are real
+  project assets or renderer output. Timeout uses the generated raster clock
+  asset at its intended native-size role; it has no chroma halo, emoji, text
+  glyph, or code-drawn substitute.
+- Copy and content: Main Menu meta copy, Stage Select prose, Briefing objective
+  and floating mechanism names, Settings helper rows, and Result explanation
+  labels are absent. Fire, Finish, and Aim/Map controls show semantic actions
+  only; Space, F, and Tab appear once in the lower context legend. Tooltips and
+  retained objective/mechanism localization inventory remain available to
+  accessibility and future learning surfaces.
+- Icons and boundaries: focus, selected stage, modal/result containment,
+  controls, switches, rails, and the target tick retain semantic boundaries.
+  Decorative legend, column, result, and aim-group dividers and shortcut
+  keycap boxes are absent.
+- States and interactions: Main Menu and stage navigation, Briefing Back/Start,
+  Aim/Map, Fire, Follow return, Pause, Settings, manual Finish, timeout Result,
+  Retry, Next, and Stage Select remain represented by real enabled, disabled,
+  selected, or terminal states. Timeout is distinguished by both the clock and
+  localized title.
+- Responsiveness: the Korean `1280x720`, Korean `1600x900`, and English
+  `1920x1080` captures show no persistent control overflow, viewport escape,
+  collision, or unreadable scaling. Logical control widths remain stable while
+  the renderer scales the native viewport.
+- Accessibility: interactive elements remain native focusable Godot controls;
+  the shared focus treatment and non-color state labels remain. Tooltips and
+  shortcuts continue to be checked by focused runtime contracts.
 
-### Accepted P3 differences
+## Accepted P3 Differences
 
-- The real mountain framing and procedural surface detail differ slightly from
-  the generated concept pixels; the approved world composition and glyph band
-  remain intact, and generated world pixels are not an implementation contract.
-- The production Finish action uses the existing text action instead of the
-  concept's decorative flag because no approved Finish icon asset exists.
-- Fire renders `Space` at the same optical weight as `FIRE` inside the native
-  Button. The input also appears in the context line, and the difference does
-  not reduce clarity.
+- Procedural mountain topology, real tree placement, lighting, glyph placement,
+  paint traces, and coverage values differ from the illustrative generated
+  pixels. The references mark these as directional, and the shipped hierarchy,
+  safe regions, and world prominence remain intact.
+- Native switch tracks are optically smaller than the concept switches. Their
+  on/off state, hover/pressed behavior, focus, label, and minimum row target are
+  still explicit, while the requested outer row boxes remain removed.
+- Stage rows use slightly denser real localized facts than the concept. All
+  thirty stages and pagination remain reachable without clipping.
+
+## Open Questions
+
+- None.
+
+## Implementation Checklist
+
+- [x] Remove normal-screen meta and explanatory copy while retaining future
+  guide/tutorial/accessibility content inventory.
+- [x] Remove decorative separators, repeated row boxes, and keycap outlines.
+- [x] Make the bottom context legend the single visible shortcut owner.
+- [x] Fit Main Menu, Briefing, and Result terrain into deterministic UI-safe
+  presentation rectangles.
+- [x] Integrate a real timeout clock asset and compact fact/action Result panel.
+- [x] Verify Korean/English copy, focus, disabled/selected states, and responsive
+  layouts from the exported Windows executable.
+
+## Follow-up Polish
+
+- No follow-up is required for acceptance. A future visual-art pass may refine
+  procedural mountain material contrast independently of this UI contract.
 
 ## Comparison History
 
-1. Initial combined comparison:
-   `.agents/evidence/quiet-context-ui-system-2026-08-09/iteration-01-reference-vs-runtime.png`.
-   - P2: detached mode surface and dense status treatment drifted from the
-     direct-edge reference.
-   - Fix: made the mode control transparent at rest, added the two-line wind
-     treatment, and integrated `Space` into the primary Fire action.
-2. Second rendered comparison before final correction:
-   `.agents/evidence/quiet-context-ui-system-2026-08-09/iteration-02-reference-vs-runtime.png`.
-   - P2: the goal label shared the coverage marker baseline, so the blue line
-     struck through localized copy at larger scales; the wheel image had weak
-     contrast.
-   - Fix: placed the goal label immediately below its authoritative rail tick
-     and tinted the existing mouse-wheel image with the shared navy token.
-3. Post-fix production comparison:
-   `.agents/evidence/quiet-context-ui-system-2026-08-09/final-reference-vs-runtime-aim.png`.
-   - Result: no actionable P0/P1/P2 difference remains.
+1. Initial final Aim comparison paired the Stage 30 reference with
+   `runtime/ko-1280x720-aiming.png`, which is Stage 02.
+   - P2 evidence mismatch: different mechanism inventory and terrain state made
+     direct fidelity judgment invalid.
+   - Fix: captured Stage 30 from the same exported executable and rebuilt the
+     comparison with proportional, non-stretched normalization.
+2. Post-fix evidence:
+   `comparisons/04-aim-view-comparison.png`, using
+   `runtime/ko-1280x720-aiming-stage30.png`.
+   - Result: the state matches and no actionable P0/P1/P2 difference remains.
+3. The other six first-pass final comparison sheets matched their named state
+   and required no P0/P1/P2 rework.
 
 ## Verification
 
-- `scripts/verify.ps1`: passed.
-- Gameplay HUD, UI flow, localization, shortcut, wind/result, shot-feedback,
-  and target-preserving aim contracts: passed.
-- `Windows Desktop` release export: passed.
-- Primary interactions exercised by tests/captures: menu and stage navigation,
-  Briefing start/back, Aim/Map switch, target-preserving angle/power controls,
-  Fire/Follow return, Pause, Settings open/close, manual Finish, timeout Result,
-  Retry/Next/Stages states.
-- Runtime capture output and Godot validation output were checked for script and
-  recurring runtime errors; none remain.
+- `scripts/verify.ps1`: passed after the final scene, script, resource,
+  localization, and test changes.
+- Focused copy, shortcut, localization, UI composition, HUD truth, camera safe
+  rectangle, and complete camera safety contracts: passed.
+- `Windows Desktop` release export to
+  `builds/windows/PaintMountain.exe`: passed.
+- Exported capture processes: 18 of 18 exited with code 0. Seventeen satisfy the
+  required matrix; the additional Stage 30 Aim capture normalizes QA state.
+- Primary interactions exercised by tests and captures: Main Menu and stage
+  navigation, Briefing Back/Start, Aim/Map, angle/power input, Fire, Follow
+  return, Pause, Settings, manual Finish, timeout Result, Retry, Next, and
+  Stages.
+- Runtime and verification output were checked for script failures and recurring
+  errors; none remain.
 
 ## Limitations
 
-- Hover-only animation was not recorded as video; static hover/focus/disabled
-  states are covered by Theme contracts and captured focus/selection states.
-- The selected concept provides an Aim View target only. Other pages were
-  evaluated against its approved hierarchy and surface principles rather than
-  invented pixel-for-pixel page mocks.
+- Hover animation and reduced-motion transitions were not recorded as video;
+  their static states and behavior remain covered by Theme and focused tests.
+- The generated references define composition and UI fidelity, not exact
+  procedural world pixels.
 
 final result: passed

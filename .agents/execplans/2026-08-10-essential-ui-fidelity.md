@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-10
 last_reviewed: 2026-08-10
 objective: implement the approved Essential UI refinements faithfully across Paint Mountain's normal player-facing screens
@@ -566,7 +566,7 @@ pixel-fixed.
   - Acceptance: no stale deleted-node lookup, dead localization use, competing
     shortcut owner, second result formula, or catch-all UI responsibility remains.
 
-- [ ] **EUI-13 — Export, capture, compare, rework, and record.**
+- [x] **EUI-13 — Export, capture, compare, rework, and record.**
   - Export the release executable with the canonical Windows preset.
   - Capture the matrix below from the exported executable through the existing
     hidden background delivery path.
@@ -844,11 +844,29 @@ test updates already resolved by this plan.
   test owners inspected.
 - [x] Source brief and active UI/visual guidance updated with the new bounded
   requirement and reference authority.
-- [ ] EUI-01 through EUI-13 implemented and verified.
-- [ ] Final release evidence reviewed and indexed.
-- [ ] Documentation updated and plan marked done.
+- [x] EUI-01 through EUI-13 implemented and verified.
+- [x] Final release evidence reviewed and indexed.
+- [x] Documentation updated and plan marked done.
 
 ## Next Step
 
-Continue EUI-13 with the Windows release export, final capture matrix,
-side-by-side Design QA, evidence index, and documentation closeout.
+No implementation work remains in this plan. Use
+`docs/evidence/essential-ui-fidelity-2026-08-10/README.md` and
+`design-qa.md` as the release evidence for later UI changes.
+
+## Completion Record
+
+- Implementation commit:
+  `3fe50727e89002ebc49adc244dd73ad9de144a3f`.
+- `scripts/verify.ps1`: passed.
+- Windows Desktop release export: passed; executable SHA-256
+  `13D098963544B4878D648370E35C9402139D0AE1D75D81A66A4AE1D97611E2DB`.
+- Required capture matrix: 17 exported-runtime captures, all native-size and
+  exit code 0.
+- Additional same-state QA capture: Korean Stage 30 Aim at 1280x720, exit code
+  0.
+- Final comparisons: seven proportional, unstretched, equal-frame sheets
+  directly inspected.
+- Final Product Design QA: `passed`; no actionable P0/P1/P2 issue remains.
+- Evidence index:
+  `docs/evidence/essential-ui-fidelity-2026-08-10/README.md`.

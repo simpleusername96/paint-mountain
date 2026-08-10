@@ -28,9 +28,11 @@ related:
   - ../.agents/execplans/2026-08-09-quiet-context-ui-system.md
   - ../.agents/execplans/2026-08-09-remove-wind-system.md
   - ../.agents/execplans/2026-08-10-double-pace-and-quiet-feedback.md
+  - ../.agents/execplans/2026-08-10-essential-ui-fidelity.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
+  - evidence/essential-ui-fidelity-2026-08-10/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -47,6 +49,47 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed Essential UI fidelity gate (2026-08-10)
+
+- [x] Main Menu contains only the title and four real actions; the real Stage 01
+  preview is fitted to the right-side safe region without entering the action
+  lane or clipping its presentation silhouette.
+- [x] Stage Select presents two columns of selectable facts, selected-only
+  outline, fact-only detail, compact Start, and complete 30-stage pagination
+  without objective prose or a decorative column divider.
+- [x] Briefing contains upper-left stage identity, lower-left Back/Start actions,
+  one bottom interaction guide, and the actual terrain glyphs. Objective prose,
+  duplicate hints, and normal world-space mechanism labels are absent.
+- [x] Fire, Finish, and Aim/Map controls contain semantic action text only.
+  Space, F, and Tab remain functional and appear once in the mode-specific
+  bottom context legend, which has no decorative top rule or keycap boxes.
+- [x] Settings contains only real controls and values. Autosave/language helper
+  rows and the column divider are absent; switch rows remain focusable and show
+  explicit state without repeated outer boxes.
+- [x] Manual and timeout Results use a compact 356 px fact/action panel, large
+  unobstructed world region, authoritative coverage/target/grade/best/time/shot
+  values, and one primary Retry action. Timeout adds the real coral clock asset
+  and localized reason; repeated coverage captions and explanations are absent.
+- [x] Deterministic presentation framing projects cached terrain presentation
+  points into the Main Menu, Briefing, and Result safe rectangles across the
+  checked 1280x720, 1600x900, and 1920x1080 aspects without changing Aim/Follow
+  gameplay ownership.
+- [x] Korean 1280x720 captures cover all ten required states; English 1920x1080
+  covers Main Menu, Stage Select, Aim, Settings, and Manual Result; Korean
+  1600x900 covers Stage Select and Settings. An additional Korean 1280x720
+  Stage 30 Aim capture gives the reference/runtime comparison identical state.
+- [x] Seven proportional, unstretched reference/runtime comparison sheets were
+  inspected directly. `design-qa.md` records no remaining P0/P1/P2 issue.
+- [x] Focused UI, copy, localization, shortcut, HUD truth, and camera contracts,
+  `scripts/verify.ps1`, and the canonical Windows Desktop release export pass.
+
+Current evidence:
+
+- `evidence/essential-ui-fidelity-2026-08-10/README.md`
+- `evidence/essential-ui-fidelity-2026-08-10/comparisons/`
+- `evidence/essential-ui-fidelity-2026-08-10/runtime/`
+- `../design-qa.md`
 
 ## Completed double-pace and quiet-feedback gate (2026-08-10)
 
