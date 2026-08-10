@@ -16,7 +16,6 @@ Only these upstream files are retained:
 | `button_primary_depth.png` | `PNG/Blue/Default/button_rectangle_depth_flat.png` |
 | `button_primary_flat.png` | `PNG/Blue/Default/button_rectangle_flat.png` |
 | `button_danger_depth.png` | `PNG/Red/Default/button_rectangle_depth_flat.png` |
-| `divider.png` | `PNG/Extra/Default/divider.png` |
 
 These PNGs are presentation inputs only. No upstream font, sound, script, URL shortcut, or executable is included.
 The bundled license preserves the upstream wording with whitespace-only

@@ -29,6 +29,7 @@ related:
   - execplans/2026-08-10-essential-ui-fidelity.md
   - execplans/2026-08-10-approved-image-fidelity-correction.md
   - execplans/2026-08-10-repository-maintenance-corrections.md
+  - execplans/2026-08-10-aggressive-repository-cleanup.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -47,6 +48,40 @@ related:
 ---
 
 # Project Record
+
+## Current Aggressive Repository Cleanup (2026-08-10)
+
+### Context
+
+After the maintenance corrections were committed, the user approved every
+remaining audit-backed deletion that had no runtime, test-fixture, provenance,
+or unique-evidence role.
+
+### Decision
+
+- Removed 290 tracked files: three inactive v10 generated catalogs, the unused
+  pause/restart/divider source-import pairs, one exact duplicate evidence image,
+  and seven superseded screen-audit images. The active v10 catalog and v9
+  migration fixture remain complete.
+- Added `.gdignore` boundaries at `docs/`, `.agents/`, `screenshots/`, and
+  `prototypes/`; removed the redundant nested boundary, 143 ignored Godot
+  documentation sidecars, and 124 ignored logs.
+- Updated the asset ledger and Kenney subset record to describe only retained
+  files. No production code, scene, test, dependency, or project setting
+  changed in this cleanup.
+
+### Consequences
+
+- The tracked reclaim is 11,315,576 bytes and is recoverable from Git. The
+  active asset ledger has 19 resolvable, hash-matching bundled-file rows.
+- The fixed catalog test, v9-to-v10 materialization test, read-only 30-stage
+  catalog verifier, and `scripts/verify.ps1` all passed with Godot 4.7.1. The
+  diff-scoped code quality review found no current consumer, broken contract,
+  competing owner, or reachable failure path caused by the cleanup.
+- The host execution policy blocked deletion of ignored `.godot`, `builds`, and
+  root `reports` even after exact path and workspace-boundary validation. They
+  remain local-only; the current `.godot` content is regenerated verification
+  cache. The active cleanup ExecPlan records their final measured sizes.
 
 ## Current Repository Maintenance Corrections (2026-08-10)
 

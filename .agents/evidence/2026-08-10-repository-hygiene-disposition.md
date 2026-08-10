@@ -2,6 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-10
+last_reviewed: 2026-08-10
 scope: repository documentation, tracked visual and runtime assets, and ignored project-local output
 source: ../execplans/2026-08-10-repository-hygiene-disposition.md
 related:
@@ -64,17 +65,14 @@ provenance, and recoverability before any destructive cleanup.
   surfaces but not this one; the correct repair is an ignore rule, not tracking
   or treating the sidecars as source assets.
 
-### Exact delete-after-approval batch
+### Approved and executed tracked cleanup
 
-No file in this section is authorized for deletion by this report.
-
-- Retain `.agents/evidence/current/aiming_after_physical.png`; delete its exact
-  same-directory duplicate
-  `.agents/evidence/current/aiming_after_physical2.png` only after approval
-  (86,310 bytes).
-- The following seven superseded `improved` report images may be deleted only
-  after approval; the refined set replaced them and the report index retains
-  only improved states 05, 06, and 07:
+The user approved the audit-backed deletion batch after this report was first
+written. The cleanup retained
+`.agents/evidence/current/aiming_after_physical.png` and removed its exact
+same-directory duplicate (86,310 bytes). It also removed the following seven
+superseded `improved` report images; the refined set replaced them and the
+report index retains only improved states 05, 06, and 07:
   - `docs/reports/screen-audit-2026-08-10/assets/improved/01-main-menu-improved.png`
   - `docs/reports/screen-audit-2026-08-10/assets/improved/02-stage-select-improved.png`
   - `docs/reports/screen-audit-2026-08-10/assets/improved/03-briefing-improved.png`
@@ -82,33 +80,35 @@ No file in this section is authorized for deletion by this report.
   - `docs/reports/screen-audit-2026-08-10/assets/improved/08-settings-improved.png`
   - `docs/reports/screen-audit-2026-08-10/assets/improved/09-manual-result-improved.png`
   - `docs/reports/screen-audit-2026-08-10/assets/improved/10-timeout-result-improved.png`
-- Exact tracked reclaim for the eight-file batch is 8,484,888 bytes. Git
-  history makes it recoverable, but deletion still requires explicit approval.
+- The cleanup also removed the zero-consumer `pause.png`, `restart.png`, and
+  Kenney `divider.png` source/import pairs and repaired the two provenance
+  records. It removed the three inactive v10 catalog bundles while retaining
+  the complete active v10 bundle and the complete v9 migration fixture.
+- The tracked cleanup removed 290 files and reclaimed 11,315,576 bytes. Git
+  history keeps those deletions recoverable.
 
-### Blocked or separate cleanup
+### Retained and locally blocked cleanup
 
 - `docs/concepts/aim-view-glyph-placement-2026-08-09/` lacks an adjacent owner
   decision, so its four files remain retained pending evidence.
-- Three non-active v10 catalog bundles total 2,796,745 bytes, but generated
-  resources are outside the media audit and retain historical references. The
-  v9 bundle is also a live migration-test fixture. No catalog bundle deletion
-  is proposed here.
-- Ignored local outputs are separate from tracked cleanup: `.godot/`
-  113,263,262 bytes, `builds/` 759,224,928 bytes, and `reports/` 2,126,686
-  bytes at audit time. Their contents may include useful caches, the current
-  release build, or transient results; exact-path approval is required before
-  reclaim.
+- The three non-active v10 bundles were removed after a wider catalog audit
+  proved they had no live consumer. The v9 bundle remains because the
+  materialization regression uses it.
+- The user approved exact-path local-output cleanup. The host execution policy
+  nevertheless rejected deletion of `.godot/`, `builds/`, and root `reports/`.
+  Ignored logs and documentation `.import` sidecars were removed, and four
+  `.gdignore` boundaries prevent those sidecars from returning. A final Godot
+  verification regenerated only required `.godot` cache state.
 
 ## Recommendations
 
-1. Apply the non-destructive authority, lifecycle, provenance, and ignore-rule
-   repairs in a decision-complete implementation contract.
-2. Keep all blocked assets and generated catalogs unchanged.
-3. Request separate approval for the exact eight-file tracked deletion batch
-   and for any local-output reclaim batch.
+1. Keep the active v10 bundle, the v9 migration fixture, current runtime assets,
+   and unique evidence unchanged.
+2. Remove the three remaining ignored local-output directories when a
+   deletion-capable executor is available.
 
 ## Limitations
 
-The inventory is tied to the recorded commit. Godot import sidecars and ignored
-output byte totals are local state and can change after another import, build,
-or validation run.
+The inventory is tied to the reviewed cleanup worktree. Ignored output byte
+totals are local state and can change after another import, build, or validation
+run.

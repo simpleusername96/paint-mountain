@@ -36,17 +36,14 @@ Only the files listed below are approved and bundled. Runtime loading is entirel
 | `assets/nature/kenney/rock_smallA.glb` | `DF9FFF9D711E61370E8DF0CAA2514C89B8F8A8DC6C6FAFAF4EB2EC79C5AE07C1` | small rock |
 | `assets/nature/kenney/rock_largeA.glb` | `6DD15390FD96501DCD1454765A17BA61DBBD8D47705DFE5149C8DD92B353CE25` | large rock |
 | `assets/ui/icons/target.png` | `AFD40325569FA91BFC690856DC4C70901BBD7C2E27DEDC9FE3847258C61BBC81` | aim mode |
-| `assets/ui/icons/restart.png` | `99B425EC6D8E49633DDCEA55E7485ADF44A4CA8614ABF39E59B7A83602EE3866` | restart |
 | `assets/ui/icons/minus.png` | `5F4E70ADEA9061D0105DB1860108B669E348D0D99314542A77DD96F707800EC7` | decrease power |
 | `assets/ui/icons/plus.png` | `DC5D564FFE3AE546F2E72CE19EA8349124CF48256418DE50BB045A5D97AB9872` | increase power |
-| `assets/ui/icons/pause.png` | `5C940AD60DD46B3252D4F991F24E9C21865722FE401947830228629BAED28774` | pause |
 | `assets/ui/icons/settings.png` | `50B313FFE97DB1733E529D5B0F5AC91EED5C0C8FFEE1034BBB7766508E4F720C` | settings |
 | `assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png` | `7DE9BA1D4BCA313FD2C02E3595F3D699C1201D84D70A3C69828E56782D585CE7` | shared tactile neutral button/card edge |
 | `assets/ui/external/kenney_ui_pack_2/panel_neutral_flat.png` | `C91EE37858BE6035143A8AE26588741E9350E5F42AED548E3EE00910092239E8` | shared neutral button/card surface |
 | `assets/ui/external/kenney_ui_pack_2/button_primary_depth.png` | `6C709A45AAE0330FFFF5B060D9F14CC2297839F664E0A4C9E516D90AD085EC0B` | shared primary button normal state |
 | `assets/ui/external/kenney_ui_pack_2/button_primary_flat.png` | `83084C953E57D7506F90600DF77F36A8C6156ABEA0B8EA0E4B3885A596CEE2C8` | shared primary button hover/pressed state |
 | `assets/ui/external/kenney_ui_pack_2/button_danger_depth.png` | `8DD648EA9B80A780FB387C235D4F6BBDADD4F4768C663639EDB2C7E5174A69F0` | shared danger button state |
-| `assets/ui/external/kenney_ui_pack_2/divider.png` | `234015EC6516217532D413751953D08482EE9CE0B95C0FC14D5EC55716F9FEEC` | approved divider source retained for future shared role |
 | `assets/vfx/kenney/muzzle_ring.png` | `4B2D03683BF0FE4A946567ADC3BD86B8BA045DA84CEE58DC2CF8AEF63BBFAA06` | muzzle ring |
 | `assets/vfx/kenney/impact_ripple.png` | `742DA1A1B96B93AE446700F6085385D1F62844352DA870C89427307B7B7CF03B` | impact ripple |
 | `assets/vfx/kenney/paint_mist.png` | `A71F8ABCAC64F8D73A94625CC9A10033DBEAFA7EAEA750560CBA0DAA73FE8752` | paint mist |
