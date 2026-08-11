@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: archived
 created: 2026-08-11
 scope: correct browser and native focus/orbit behavior, remove stage-entry and first-use stalls, and add Web runtime release evidence
 source: https://itchioprofile1351321.itch.io/paint-mountain
@@ -21,6 +21,11 @@ This contract covers the shared Godot behavior reported in native testing and
 the browser build currently uploaded to itch.io. The user activated this
 contract on 2026-08-11; the unrelated repository-cleanup plan is archived with
 its unfinished local-output task preserved.
+
+This contract was archived on 2026-08-11 when the user moved current work to
+the separately scoped grounded-environment asset integration. Its unchecked
+foreground browser and post-deploy tasks remain historical unfinished work and
+must not be treated as passing evidence.
 
 ## Purpose
 

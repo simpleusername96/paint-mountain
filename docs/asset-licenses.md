@@ -2,13 +2,15 @@
 type: record
 status: active
 created: 2026-08-03
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 scope: approved third-party runtime assets, provenance, hashes, licenses, and uses
 related:
   - ../.agents/Plan.md
   - ../assets/licenses/Kenney-Nature-Kit-CC0.txt
   - ../assets/licenses/Kenney-Game-Icons-CC0.txt
   - ../assets/licenses/Kenney-Particle-Pack-CC0.txt
+  - ../assets/licenses/Kenney-Skyboxes-CC0.txt
+  - ../assets/licenses/ambientCG-Ground003-CC0.txt
   - ../assets/licenses/Pretendard-OFL-1.1.txt
 ---
 
@@ -23,6 +25,8 @@ Only the files listed below are approved and bundled. Runtime loading is entirel
 | Kenney Nature Kit | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip` | `FA7974A0D342BFE63C38664BA9F8EC1A4AAB8EA25F099BDC56870E33588C4D9D` |
 | Kenney Game Icons | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/game-icons/1ebf9c14af-1677661579/kenney_game-icons.zip` | `7A86D8D58E0B851E22004B3C70BF90B003632BBF9AC633424DAA3BB17D9E7E4E` |
 | Kenney Particle Pack | official archive retrieved 2026-08-03 | CC0 1.0 | `https://kenney.nl/media/pages/assets/particle-pack/f8fe0f8cb8-1677578741/kenney_particle-pack.zip` | `B631D4B07F7002549FDCF155F01141AD482F79F3440E4E301EED49CE5F1D8958` |
+| Kenney Skyboxes | official archive retrieved 2026-08-11 | CC0 1.0 | `https://kenney.nl/media/pages/assets/skyboxes/6736ff5c10-1784123473/kenney_skyboxes.zip` | `FF339713105FE1B777ECAFA0B66094E8FB1431CFCF88DF761B9AD015AADF4028` |
+| ambientCG Ground 003 | official 1K JPG archive retrieved 2026-08-11 | CC0 1.0 | `https://ambientcg.com/get?file=Ground003_1K-JPG.zip` | `ADCA98D94C5934F9DE184712540A51AF2591194B6C020F3831CA6B788388CE11` |
 | Kenney UI Pack | 2.0, 2024-06-12; retrieved 2026-08-08 | CC0 1.0 | `https://kenney.nl/media/pages/assets/ui-pack/f651646eab-1718203990/kenney_ui-pack.zip` | `A8A14A234911EB648C062622915C93E79E94E97CB7F9F375A70F6617F1174318` |
 | Pretendard | 1.3.9 | SIL Open Font License 1.1 | `https://github.com/orioncactus/pretendard/releases/download/v1.3.9/Pretendard-1.3.9.zip` | `04BE351A74D6BF7D60C480A3087E51D185485D35A52023142AF1DF19EB8C428A` |
 
@@ -35,6 +39,8 @@ Only the files listed below are approved and bundled. Runtime loading is entirel
 | `assets/nature/kenney/tree_pineTallA.glb` | `E0A56EB196D8A64BA86C7304D607136E17E6F9AD748DFFCF86BD53B18B91B196` | tall pine |
 | `assets/nature/kenney/rock_smallA.glb` | `DF9FFF9D711E61370E8DF0CAA2514C89B8F8A8DC6C6FAFAF4EB2EC79C5AE07C1` | small rock |
 | `assets/nature/kenney/rock_largeA.glb` | `6DD15390FD96501DCD1454765A17BA61DBBD8D47705DFE5149C8DD92B353CE25` | large rock |
+| `assets/environment/kenney/skybox-day.png` | `B7D98FE95157E74B3899A1DD468A1E478005BCD1F668B29B5B42A48CB5358FA2` | restrained daytime panorama sky |
+| `assets/environment/ambientcg/Ground003_1K-JPG_Color.jpg` | `97849943AD98437D84FBB257A5D498134FBE52308EBB3985DAB6577514A86037` | muted open-ground color variation |
 | `assets/ui/icons/target.png` | `AFD40325569FA91BFC690856DC4C70901BBD7C2E27DEDC9FE3847258C61BBC81` | aim mode |
 | `assets/ui/icons/minus.png` | `5F4E70ADEA9061D0105DB1860108B669E348D0D99314542A77DD96F707800EC7` | decrease power |
 | `assets/ui/icons/plus.png` | `DC5D564FFE3AE546F2E72CE19EA8349124CF48256418DE50BB045A5D97AB9872` | increase power |

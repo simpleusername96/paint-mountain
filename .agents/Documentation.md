@@ -32,12 +32,14 @@ related:
   - execplans/2026-08-10-aggressive-repository-cleanup.md
   - execplans/2026-08-10-codebase-responsibility-decomposition.md
   - execplans/2026-08-11-web-runtime-responsiveness.md
+  - execplans/2026-08-11-grounded-environment-assets.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - ../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
@@ -51,6 +53,48 @@ related:
 ---
 
 # Project Record
+
+## Grounded Environment Asset Integration (2026-08-11)
+
+### Implemented state
+
+- The generated mountain and the fixed apron still meet at world Y `-2.0`.
+  `ApronGeometryFactory` keeps the original finite collision faces and stable
+  contact IDs, while its low-cost render faces extend 480 m beyond each side so
+  Map Inspection cannot expose the collision rectangle as a floating world edge.
+- `OpenPlayEnvironment` uses one lit Compatibility-renderer shader with the
+  ambientCG Ground 003 color map. The source is deliberately desaturated,
+  contrast-reduced, and mixed under a muted olive base; the ground remains
+  non-target, non-paintable, and non-scoring.
+- Gameplay uses the Kenney day panorama. `AppRoot` explicitly releases the menu
+  preview `WorldEnvironment` whenever the preview is hidden, so the gameplay
+  sky and authored color-based ambient light own the viewport during a stage.
+- The existing five Kenney Nature Kit trees and rocks remain the only dressing
+  models. No decoration identity, collision, route, mechanism, camera, stage,
+  paint, or score rule changed.
+- Only the selected CC0 source files are bundled. The byte-exact source sky and
+  ground remain tracked, while Godot import limits them to 1024 and 512 pixels
+  respectively to protect Web payload size. Provenance, archive hashes,
+  member hashes, and notices are recorded in `docs/asset-licenses.md`.
+
+### Verified state and limits
+
+- `scripts/verify.ps1`, the full ordered Godot suite, focused environment,
+  bounds, decoration, camera, Map Inspection, and prepared-entry checks, fresh
+  Windows/Web release exports, and `scripts/verify-web-release.ps1` pass.
+- The final Web artifact contains 12 files, measures 49,708,547 raw bytes and
+  17,296,016 gzip bytes, and is 26,292 bytes (0.15%) above the explicit
+  17,269,724-byte baseline. It passes both the 20 MiB ceiling and 10% allowance.
+- Four final Korean Stage 02 Windows-release captures at 1280x720 and 1920x1080
+  were inspected. The finite ground edge is absent, the Aim View shows the
+  stylized panorama, and the mountain, glyphs, trajectory, and UI remain primary.
+- The Korean report and before/after evidence are under
+  `docs/reports/environment-grounding-2026-08-11/`. Its six image references,
+  responsive breakpoints, horizontal table guard, required sections, and 19
+  official-source links pass static verification. Chrome policy blocked local
+  `file://` rendering, so no browser-rendered report-layout claim is made.
+- The itch.io upload was not changed. This work validates local production-style
+  Windows and Web artifacts only.
 
 ## Web Runtime Responsiveness Correction (2026-08-11)
 

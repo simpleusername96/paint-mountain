@@ -2,6 +2,7 @@ class_name ApronGeometryFactory
 extends RefCounted
 
 const LOOP_VERTEX_COUNT := 8
+const VISUAL_GROUND_MARGIN := 480.0
 
 
 static func build(
@@ -22,8 +23,8 @@ static func build(
 	assert(outer_bottom_bounds.encloses(terrain_world_bounds), "The inset apron bottom must still enclose the terrain join.")
 	var outer_bottom := _rectangle_loop(outer_bottom_bounds, spec.apron_bottom_y)
 
-	var faces := PackedVector3Array()
-	var normals := PackedVector3Array()
+	var collision_faces := PackedVector3Array()
+	var collision_normals := PackedVector3Array()
 	# The mountain intersects one uninterrupted platform. Leaving a terrain-sized
 	# hole here exposes the mountain's structural closure shell to the player and
 	# makes a distant 3D mass read as a dark open slab.
@@ -31,38 +32,72 @@ static func build(
 		spec.apron_xz_bounds,
 		spec.apron_y,
 		Vector3.UP,
-		faces,
-		normals
+		collision_faces,
+		collision_normals
 	)
-	var top_vertex_count := faces.size()
-	_append_wall(outer_top, outer_bottom, true, faces, normals)
+	var top_vertex_count := collision_faces.size()
+	_append_wall(outer_top, outer_bottom, true, collision_faces, collision_normals)
 	_append_filled_rectangle(
 		outer_bottom_bounds,
 		spec.apron_bottom_y,
 		Vector3.DOWN,
-		faces,
-		normals
+		collision_faces,
+		collision_normals
+	)
+
+	# The finite miss collider is intentionally smaller than the visible world.
+	# Render the same low-cost closed apron beyond the camera far plane so Map
+	# Inspection cannot reveal a floating rectangular collision boundary.
+	var visual_bounds := spec.apron_xz_bounds.grow(VISUAL_GROUND_MARGIN)
+	var visual_bottom_bounds := visual_bounds.grow(-bottom_inset)
+	var visual_outer_top := _rectangle_loop(visual_bounds, spec.apron_y)
+	var visual_outer_bottom := _rectangle_loop(
+		visual_bottom_bounds,
+		spec.apron_bottom_y
+	)
+	var render_faces := PackedVector3Array()
+	var render_normals := PackedVector3Array()
+	_append_filled_rectangle(
+		visual_bounds,
+		spec.apron_y,
+		Vector3.UP,
+		render_faces,
+		render_normals
+	)
+	_append_wall(
+		visual_outer_top,
+		visual_outer_bottom,
+		true,
+		render_faces,
+		render_normals
+	)
+	_append_filled_rectangle(
+		visual_bottom_bounds,
+		spec.apron_bottom_y,
+		Vector3.DOWN,
+		render_faces,
+		render_normals
 	)
 
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = faces
-	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_VERTEX] = render_faces
+	arrays[Mesh.ARRAY_NORMAL] = render_normals
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var shape := ConcavePolygonShape3D.new()
 	shape.backface_collision = true
-	shape.set_faces(faces)
+	shape.set_faces(collision_faces)
 
 	var geometry := ApronGeometry.new()
 	geometry.render_mesh = mesh
 	geometry.collision_shape = shape
-	geometry.collision_faces = faces
+	geometry.collision_faces = collision_faces
 	geometry.top_vertex_count = top_vertex_count
 	geometry.top_triangle_count = top_vertex_count / 3
-	geometry.total_triangle_count = faces.size() / 3
+	geometry.total_triangle_count = collision_faces.size() / 3
 	geometry.top_xz_bounds = _xz_bounds(outer_top)
-	geometry.minimum_top_y = _minimum_y(faces, top_vertex_count)
+	geometry.minimum_top_y = _minimum_y(collision_faces, top_vertex_count)
 	geometry.terrain_join_gap = _maximum_loop_gap(
 		inner_top,
 		_rectangle_loop(terrain_world_bounds, terrain_world_join_y)

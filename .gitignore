@@ -9,7 +9,7 @@ Thumbs.db
 
 # Local builds and transient validation output
 builds/
-reports/
+/reports/
 *.log
 
 # Delivery screenshots are evidence, not runtime texture assets.

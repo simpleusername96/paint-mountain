@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://src/gameplay/gameplay_scene.gd" id="1_root"]
 [ext_resource type="Resource" path="res://resources/stages/first_descent.tres" id="2_stage"]
@@ -16,16 +16,14 @@
 [ext_resource type="Script" path="res://src/debug/debug_overlay.gd" id="14_debug"]
 [ext_resource type="Script" path="res://src/input/aim_input_controller.gd" id="15_aim_input"]
 [ext_resource type="Script" path="res://src/terrain/terrain_surface.gd" id="16_terrain_surface"]
+[ext_resource type="Texture2D" path="res://assets/environment/kenney/skybox-day.png" id="17_sky_panorama"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/open_play_environment.tscn" id="18_open_environment"]
 [ext_resource type="Script" path="res://src/cannon/trajectory_prediction_scheduler.gd" id="21_prediction_scheduler"]
 [ext_resource type="Script" path="res://src/cannon/terrain_target_preview.gd" id="22_target_preview"]
 [ext_resource type="Script" path="res://src/cannon/terrain_aim_controller.gd" id="23_target_controller"]
 
-[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
-sky_top_color = Color(0.78, 0.84, 0.91, 1)
-sky_horizon_color = Color(0.988, 0.972, 0.94, 1)
-ground_bottom_color = Color(0.64, 0.66, 0.7, 1)
-ground_horizon_color = Color(0.9, 0.88, 0.84, 1)
+[sub_resource type="PanoramaSkyMaterial" id="SkyMaterial"]
+panorama = ExtResource("17_sky_panorama")
 
 [sub_resource type="Sky" id="Sky"]
 sky_material = SubResource("SkyMaterial")
@@ -33,11 +31,10 @@ sky_material = SubResource("SkyMaterial")
 [sub_resource type="Environment" id="Environment_gameplay"]
 background_mode = 2
 sky = SubResource("Sky")
-ambient_light_source = 3
-ambient_light_color = Color(0.78, 0.81, 0.86, 1)
-ambient_light_energy = 0.36
-reflected_light_source = 2
-tonemap_mode = 2
+ambient_light_source = 2
+ambient_light_color = Color(0.913725, 0.929412, 0.94902, 1)
+ambient_light_energy = 0.34
+reflected_light_source = 1
 
 [sub_resource type="StandardMaterial3D" id="Material_platform"]
 albedo_color = Color(0.36, 0.37, 0.39, 1)

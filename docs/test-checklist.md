@@ -31,12 +31,14 @@ related:
   - ../.agents/execplans/2026-08-10-essential-ui-fidelity.md
   - ../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
   - ../.agents/execplans/2026-08-11-web-runtime-responsiveness.md
+  - ../.agents/execplans/2026-08-11-grounded-environment-assets.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/essential-ui-fidelity-2026-08-10/README.md
   - evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - reports/environment-grounding-2026-08-11/index.html
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -53,6 +55,41 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed grounded environment asset gate (2026-08-11)
+
+- [x] The mountain/apron join remains world Y `-2.0`; the render-only apron
+  extends beyond the camera far plane without changing the single finite apron
+  collider, stable contact IDs, open exit bounds, or rear/side-wall absence.
+- [x] The open ground uses the approved ambientCG Ground 003 color map through
+  one muted lit shader. It remains non-target, non-paintable, and non-scoring.
+- [x] Gameplay uses the approved Kenney day panorama. The hidden menu preview
+  releases its `WorldEnvironment`, and authored color-based ambient light keeps
+  the off-white mountain faceted instead of overexposed.
+- [x] The existing five Kenney Nature Kit trees and rocks remain sparse,
+  non-gameplay scale cues. No new collision, placement identity, route, or
+  mechanism obstruction was introduced.
+- [x] New CC0 source archives, selected members, SHA-256 hashes, import limits,
+  and local notices are recorded in `docs/asset-licenses.md`; no plugin,
+  dependency, install script, runtime download, or unselected archive member is
+  bundled.
+- [x] Focused environment/bounds/decoration/camera/Map Inspection/prepared-entry
+  checks, `scripts/verify.ps1`, the full ordered Godot suite, and fresh Windows
+  and Web exports pass under Godot 4.7.1 Compatibility.
+- [x] Web static verification passes with 12 files, 49,708,547 raw bytes, and
+  17,296,016 gzip bytes: +26,292 bytes (+0.15%) over the 17,269,724-byte
+  baseline and below both active payload limits.
+- [x] The final Windows release produced separately inspected Korean Stage 02
+  Briefing, Map Inspection, and Aim View captures at 1280x720 plus Map
+  Inspection at 1920x1080. No finite ground edge, debug overlay, focus artifact,
+  UI clipping, rear wall, or side wall is visible.
+- [x] The Korean HTML report contains Purpose, Findings, Sources, before/after
+  evidence, candidate comparison, license facts, Web cost, recommendations, and
+  limitations. All six local images resolve and responsive/static overflow
+  guards pass; local `file://` browser rendering was policy-blocked and is not
+  claimed.
+
+Evidence: `reports/environment-grounding-2026-08-11/index.html`.
 
 ## Active Web runtime responsiveness gate (2026-08-11)
 

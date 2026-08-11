@@ -13,6 +13,8 @@ const PREVIEW_SAFE_RECT := Rect2(0.30, 0.08, 0.68, 0.86)
 const PREVIEW_FRAME_MARGIN := 1.02
 
 var _preview_world: Node3D
+var _preview_environment: WorldEnvironment
+var _preview_environment_resource: Environment
 var _preview_mountain: MeshInstance3D
 var _preview_camera: Camera3D
 var _main_menu: MainMenuScreen
@@ -76,7 +78,7 @@ func _show_main_menu() -> void:
 	_pending_start_stage_id = &""
 	if _gameplay_presented:
 		_remove_gameplay()
-	_preview_world.visible = true
+	_set_preview_world_active(true)
 	_main_menu.visible = true
 	_stage_select.visible = false
 	_main_menu.begin_passive_focus_session()
@@ -90,7 +92,7 @@ func _show_stage_select() -> void:
 	_pending_start_stage_id = &""
 	if _gameplay_presented:
 		_remove_gameplay()
-	_preview_world.visible = false
+	_set_preview_world_active(false)
 	_main_menu.visible = false
 	_stage_select.visible = true
 	_stage_select.refresh()
@@ -127,7 +129,7 @@ func _enter_stage(selected_stage: StageData) -> void:
 	_runtime_preparer.cancel_except(selected_stage.stage_id)
 	_pending_start_stage_id = &""
 	_audio_ui()
-	_preview_world.visible = false
+	_set_preview_world_active(false)
 	_main_menu.visible = false
 	_stage_select.visible = false
 	_gameplay.name = "ActiveGameplay"
@@ -396,15 +398,15 @@ func _build_preview_world() -> void:
 	_preview_world = Node3D.new()
 	_preview_world.name = "PreviewWorld"
 	add_child(_preview_world)
-	var environment := WorldEnvironment.new()
-	var environment_resource := Environment.new()
-	environment_resource.background_mode = Environment.BG_COLOR
-	environment_resource.background_color = Color("FFFDFC")
-	environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment_resource.ambient_light_color = Color("E9EDF2")
-	environment_resource.ambient_light_energy = 0.34
-	environment.environment = environment_resource
-	_preview_world.add_child(environment)
+	_preview_environment = WorldEnvironment.new()
+	_preview_environment_resource = Environment.new()
+	_preview_environment_resource.background_mode = Environment.BG_COLOR
+	_preview_environment_resource.background_color = Color("FFFDFC")
+	_preview_environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	_preview_environment_resource.ambient_light_color = Color("E9EDF2")
+	_preview_environment_resource.ambient_light_energy = 0.34
+	_preview_environment.environment = _preview_environment_resource
+	_preview_world.add_child(_preview_environment)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48.0, -30.0, 0.0)
 	sun.light_color = Color(1.0, 0.95, 0.86, 1.0)
@@ -422,6 +424,13 @@ func _build_preview_world() -> void:
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
 	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	_preview_world.add_child(_preview_mountain)
+
+
+func _set_preview_world_active(active: bool) -> void:
+	_preview_world.visible = active
+	# Node3D visibility does not deactivate a WorldEnvironment. Release the
+	# preview resource so the gameplay panorama owns the viewport in a stage.
+	_preview_environment.environment = _preview_environment_resource if active else null
 
 
 func _set_preview_stage(stage: StageData) -> void:
