@@ -3,6 +3,7 @@ extends SceneTree
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const AIM_CONTROLS_SCENE := preload("res://scenes/ui/hud/aim_controls.tscn")
+const COVERAGE_METER_SCENE := preload("res://scenes/ui/hud/coverage_meter.tscn")
 const MIGRATION_PATH := "user://paint_mountain_localization_v1.json"
 
 var _failed := false
@@ -53,15 +54,18 @@ func _run() -> void:
 	var stage_select := STAGE_SELECT_SCENE.instantiate() as StageSelectScreen
 	var settings := SETTINGS_SCENE.instantiate() as SettingsScreen
 	var aim_controls := AIM_CONTROLS_SCENE.instantiate() as AimControls
+	var coverage_meter := COVERAGE_METER_SCENE.instantiate() as CoverageMeter
 	root.add_child(stage_select)
 	root.add_child(settings)
 	root.add_child(aim_controls)
+	root.add_child(coverage_meter)
 	await process_frame
 	await process_frame
 	stage_select.visible = true
 	stage_select.refresh()
 	await process_frame
 	_assert_true(not stage_select._cards.is_empty(), "stage select must build its card controls")
+	_assert_coverage_icon_contract(coverage_meter, "ko")
 	if not stage_select._cards.is_empty():
 		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "stage cards must render in Korean")
 
@@ -70,6 +74,8 @@ func _run() -> void:
 	aim_controls.refresh_locale()
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
 	_assert_translation_contract("en")
+	coverage_meter.refresh_locale()
+	_assert_coverage_icon_contract(coverage_meter, "en")
 	if not stage_select._cards.is_empty():
 		_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
 	var language_option: OptionButton = settings._controls.get(&"language")
@@ -153,6 +159,7 @@ func _run() -> void:
 	stage_select.queue_free()
 	settings.queue_free()
 	aim_controls.queue_free()
+	coverage_meter.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
@@ -231,6 +238,14 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr("hud.coverage") == "TARGET AREA", "English coverage caption must name the target area")
 		_assert_true(tr("hud.coverage_format") == "Target area %.1f%% / Goal %.1f%%", "English coverage format must distinguish the target area from its goal")
 		_assert_true(tr("hud.finish_tooltip") == "Finish and score target-area coverage (F)", "English Finish tooltip must state that it scores target-area coverage")
+
+
+func _assert_coverage_icon_contract(coverage_meter: CoverageMeter, locale: String) -> void:
+	coverage_meter.configure(10.0)
+	var icon := coverage_meter.get_node_or_null("CoverageCaption") as TextureRect
+	_assert_true(icon != null and icon.texture != null, "%s coverage caption must use the approved target texture" % locale)
+	_assert_true(icon.tooltip_text == tr("hud.coverage"), "%s coverage icon must retain a localized text alternative" % locale)
+	_assert_true(icon.get_rect().size == Vector2(18.0, 18.0), "%s coverage icon must keep its restrained 18px size" % locale)
 
 
 func _assert_true(condition: bool, message: String) -> void:

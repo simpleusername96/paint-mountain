@@ -1,6 +1,8 @@
 extends Node3D
 
 signal navigation_requested(destination: StringName)
+signal stage_prepared(stage_id: StringName)
+signal stage_preparation_failed(stage_id: StringName)
 
 const BURST_SCENE := preload("res://scenes/mechanisms/burst_node.tscn")
 const SPLITTER_SCENE := preload("res://scenes/mechanisms/splitter_node.tscn")
@@ -36,21 +38,25 @@ var _mechanisms: Array[TerrainGlyphMechanism] = []
 var _mechanism_resolver := TerrainMechanismResolver.new()
 var _generated_layout: GeneratedStageLayout
 var _prepared_layout: GeneratedStageLayout
+var _prepared_artifact: StageRuntimeArtifact
 var _prepared_stage_id: StringName = &""
 var _prepared_layout_checksum: int = 0
+var _stage_preparation_complete := false
+var _terrain_paint_material: ShaderMaterial
+var _stage_presented_requested := true
+var _delivery_markers: Dictionary = {}
 
 
 func _ready() -> void:
 	GAMEPLAY_PACE.apply_normal()
-	assert(stage_data != null, "GameplayScene requires StageData.")
-	var game_state := get_node_or_null("/root/GameState")
-	var selected_stage := StageCatalog.get_stage(game_state.selected_stage_id if game_state != null else stage_data.stage_id)
-	if selected_stage != null:
-		stage_data = selected_stage
+	if stage_data == null:
+		_fail_stage_preparation("GameplayScene requires StageData.")
+		return
 	if not _prepared_layout_matches_stage():
-		push_error("GameplayScene requires a prepared runtime-ready baked layout.")
+		_fail_stage_preparation("GameplayScene requires a prepared runtime-ready baked layout.")
 		return
 	if not _build_stage_world():
+		_fail_stage_preparation("GameplayScene could not bind the prepared stage world.")
 		return
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface, _cannon)
@@ -65,14 +71,15 @@ func _ready() -> void:
 		_terrain_surface,
 		_mechanisms
 	):
-		push_error("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
+		_fail_stage_preparation("GameplayScene cannot enter briefing without a runtime-ready generated layout.")
 		return
+	_stage_controller.set_actions_enabled(_stage_presented_requested)
 	_aim_input.configure(_cannon, _stage_controller, _camera_director)
 	if not _prediction_scheduler.configure(
 		_cannon,
 		_generated_layout.play_bounds.bounds
 	):
-		push_error("GameplayScene could not configure trajectory prediction scheduling.")
+		_fail_stage_preparation("GameplayScene could not configure trajectory prediction scheduling.")
 		return
 	if not _terrain_aim.configure(
 		_camera,
@@ -81,7 +88,7 @@ func _ready() -> void:
 		_stage_controller,
 		_target_preview
 	):
-		push_error("GameplayScene could not configure terrain-targeted aiming.")
+		_fail_stage_preparation("GameplayScene could not configure terrain-targeted aiming.")
 		return
 	_update_prediction_consumers()
 	_agent_api.configure(
@@ -109,9 +116,15 @@ func _ready() -> void:
 	_debug_overlay.mechanism_labels_toggled.connect(_set_mechanism_labels_visible)
 	_hud.show_state(_stage_controller.current_state)
 	print("Paint Mountain gameplay scene ready in %s." % _stage_controller.state_name())
+	_complete_stage_preparation.call_deferred()
 
 
 func _exit_tree() -> void:
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_soak_end", {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+		"active_projectiles": _projectile_manager.active_count() \
+				if _projectile_manager != null else 0,
+	})
 	GAMEPLAY_PACE.apply_normal()
 
 
@@ -119,12 +132,45 @@ func generated_layout() -> GeneratedStageLayout:
 	return _generated_layout
 
 
-func prepare_stage(selected_stage: StageData, cached_layout: GeneratedStageLayout) -> void:
+func prepare_stage(selected_stage: StageData, prepared_source: Variant) -> bool:
 	assert(not is_inside_tree(), "Gameplay stage preparation must finish before entering the tree.")
+	_stage_preparation_complete = false
 	stage_data = selected_stage
-	_prepared_layout = cached_layout
+	_prepared_artifact = prepared_source as StageRuntimeArtifact
+	if selected_stage == null:
+		return false
+	if _prepared_artifact != null and not _prepared_artifact.is_complete_for(
+		selected_stage,
+		PAINT_SURFACE_TUNING,
+		PaintSystem.MASK_SIZE
+	):
+		_prepared_artifact = null
+		_prepared_layout = null
+		return false
+	_prepared_layout = _prepared_artifact.runtime_layout \
+			if _prepared_artifact != null else prepared_source as GeneratedStageLayout
 	_prepared_stage_id = selected_stage.stage_id if selected_stage != null else &""
-	_prepared_layout_checksum = cached_layout.checksum if cached_layout != null else 0
+	_prepared_layout_checksum = _prepared_layout.checksum if _prepared_layout != null else 0
+	return _prepared_layout_matches_stage()
+
+
+func is_stage_prepared() -> bool:
+	return _stage_preparation_complete
+
+
+func prepared_artifact_read_only() -> StageRuntimeArtifact:
+	return _prepared_artifact
+
+
+func set_stage_presented(presented: bool) -> void:
+	_stage_presented_requested = presented
+	visible = presented
+	var hud_layer := get_node_or_null("HUD") as CanvasLayer
+	if hud_layer != null:
+		hud_layer.visible = presented
+	if _stage_controller != null:
+		_stage_controller.set_actions_enabled(presented)
+	process_mode = Node.PROCESS_MODE_INHERIT if presented else Node.PROCESS_MODE_DISABLED
 
 
 func terrain_layout_read_only() -> GeneratedStageLayout:
@@ -156,12 +202,21 @@ func focus_pause_settings() -> void:
 func _build_stage_world() -> bool:
 	_terrain_surface.position = stage_data.terrain_center
 	assert(stage_data.generation_profile != null, "Gameplay stages require a generation profile.")
-	_generated_layout = _prepared_layout.copy_for_runtime() \
-			if _prepared_layout_matches_stage() else null
+	_generated_layout = _prepared_artifact.runtime_layout \
+			if _prepared_artifact != null else _prepared_layout.copy_for_runtime() \
+					if _prepared_layout_matches_stage() else null
 	if not _layout_matches_stage(_generated_layout, stage_data):
 		push_error("GameplayScene cannot construct a stage without its prepared baked layout.")
 		return false
-	_terrain_surface.configure(_generated_layout)
+	if not _terrain_surface.configure(
+		_generated_layout,
+		_prepared_artifact.geometry if _prepared_artifact != null else null,
+		_prepared_artifact.playable_local_points \
+				if _prepared_artifact != null else PackedVector3Array(),
+		_prepared_artifact.presentation_local_points \
+				if _prepared_artifact != null else PackedVector3Array()
+	):
+		return false
 	_open_play_environment.configure(
 		_generated_layout.play_bounds,
 		stage_data.paint_world_bounds(),
@@ -186,7 +241,8 @@ func _build_stage_world() -> bool:
 		paint_material,
 		stage_data.paint_color,
 		_generated_layout,
-		PAINT_SURFACE_TUNING
+		PAINT_SURFACE_TUNING,
+		_prepared_artifact.paint_bootstrap if _prepared_artifact != null else null
 	)
 	var top_body := _terrain_surface.get_node("TerrainTopBody") as StaticBody3D
 	_paint_system.configure_top_surface_identity(
@@ -196,7 +252,18 @@ func _build_stage_world() -> bool:
 		0
 	)
 	_terrain_mesh.material_override = paint_material
-	_environment_dressing.configure(stage_data, _generated_layout)
+	_terrain_paint_material = paint_material
+	var prepared_decorations: Array[DecorationPlacement] = []
+	var prepared_decoration_scenes: Dictionary = {}
+	if _prepared_artifact != null:
+		prepared_decorations = _prepared_artifact.decoration_placements
+		prepared_decoration_scenes = _prepared_artifact.decoration_scenes
+	_environment_dressing.configure(
+		stage_data,
+		_generated_layout,
+		prepared_decorations,
+		prepared_decoration_scenes
+	)
 	_spawn_mechanisms()
 	return true
 
@@ -208,6 +275,39 @@ func _prepared_layout_matches_stage() -> bool:
 			and _prepared_layout.checksum == _prepared_layout_checksum \
 			and _layout_matches_stage(_prepared_layout, stage_data) \
 			and _prepared_layout.is_runtime_ready()
+
+
+func _publish_stage_prepared() -> void:
+	if _stage_preparation_complete or stage_data == null:
+		return
+	_stage_preparation_complete = true
+	stage_prepared.emit(stage_data.stage_id)
+
+
+func _complete_stage_preparation() -> void:
+	if _stage_preparation_complete or not is_inside_tree():
+		return
+	var warmup := GameplayFirstUseWarmup.new()
+	warmup.name = "GameplayFirstUseWarmup"
+	add_child(warmup)
+	await warmup.run(
+		_terrain_mesh.mesh as ArrayMesh,
+		_terrain_paint_material,
+		_cannon.projectile_data,
+		_presentation_effects.warmup_sources()
+	)
+	if not is_inside_tree():
+		return
+	if not warmup.is_complete():
+		_fail_stage_preparation("Gameplay first-use render warm-up did not complete.")
+		return
+	warmup.queue_free()
+	_publish_stage_prepared()
+
+
+func _fail_stage_preparation(message: String) -> void:
+	push_error(message)
+	stage_preparation_failed.emit(stage_data.stage_id if stage_data != null else &"")
 
 
 func _layout_matches_stage(layout: GeneratedStageLayout, selected_stage: StageData) -> bool:
@@ -229,6 +329,7 @@ func _connect_systems() -> void:
 	_projectile_manager.projectile_woke.connect(_on_projectile_woke)
 	_projectile_manager.projectile_terrain_recovered.connect(_on_projectile_terrain_recovered)
 	_projectile_manager.projectile_stopped.connect(_on_projectile_stopped)
+	_projectile_manager.projectile_spawned.connect(_on_delivery_projectile_spawned)
 	_paint_system.coverage_changed.connect(_hud.update_coverage)
 	_stage_controller.state_changed.connect(_on_state_changed)
 	_stage_controller.shots_changed.connect(_hud.update_shots)
@@ -270,12 +371,14 @@ func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
 
 func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	_presentation_effects.splash(contact.world_position, clampf(contact.relative_normal_speed / 32.0, 0.7, 1.5))
+	_delivery_marker_once(&"first_paint_effect_visible")
 	_audio_cue(&"impact")
 	_camera_director.add_impact_shake(clampf(contact.relative_normal_speed / 80.0, 0.12, 0.42))
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 	_presentation_effects.muzzle_flash(_cannon.get_muzzle_position())
+	_delivery_marker_once(&"first_paint_effect_visible")
 	_audio_cue(&"fire")
 
 
@@ -288,6 +391,7 @@ func _on_aim_action_accepted(yaw: float, elevation: float, power: float, _origin
 
 
 func _on_fire_action_accepted(_origin: int) -> void:
+	_delivery_marker_once(&"fire_accepted")
 	_attempt_recorder.record_aim(
 		_cannon.yaw_degrees,
 		_cannon.elevation_degrees,
@@ -379,6 +483,8 @@ func _on_interaction_mode_requested(mode: int) -> void:
 
 func _on_camera_mode_changed(mode: int) -> void:
 	var camera_mode := mode as CameraDirector.Mode
+	if camera_mode == CameraDirector.Mode.AIMING:
+		_delivery_marker_once(&"aim_view_visible")
 	_hud.set_camera_mode(camera_mode)
 	var show_preview := _stage_controller.current_state == StageController.State.AIMING \
 			and camera_mode == CameraDirector.Mode.AIMING \
@@ -543,6 +649,21 @@ func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> 
 			projectile.spawn_ordinal,
 			reason
 		)
+
+
+func _on_delivery_projectile_spawned(_projectile: PaintProjectile) -> void:
+	_delivery_marker_once(&"first_projectile_visible")
+
+
+func _delivery_marker_once(marker: StringName) -> void:
+	if _delivery_markers.has(marker):
+		return
+	_delivery_markers[marker] = true
+	RuntimeDeliveryTelemetry.emit_marker(marker, {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+		"active_projectiles": _projectile_manager.active_count() \
+				if _projectile_manager != null else 0,
+	})
 
 
 func _live_attempt_observation() -> AttemptObservation:

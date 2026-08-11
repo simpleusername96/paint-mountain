@@ -56,6 +56,22 @@ func clear_glint(world_position: Vector3) -> void:
 	_next_glint = _emit_textured(_glint_particles, _next_glint, world_position, 8)
 
 
+## One source per distinct GPU material family for render-only warm-up. The
+## returned nodes remain owned by this pool and must never be reparented.
+func warmup_sources() -> Array[GPUParticles3D]:
+	var result: Array[GPUParticles3D] = []
+	for pool in [
+		_particles,
+		_mist_particles,
+		_impact_particles,
+		_muzzle_particles,
+		_glint_particles,
+	]:
+		if not pool.is_empty():
+			result.append(pool[0])
+	return result
+
+
 func _build_particle(index: int) -> GPUParticles3D:
 	var particle := GPUParticles3D.new()
 	particle.name = "PaintSplash%02d" % (index + 1)

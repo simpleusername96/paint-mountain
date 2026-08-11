@@ -75,6 +75,7 @@ var _run_started := false
 var _elapsed_run_ticks := 0
 var _duration_run_ticks := 0
 var _result_snapshot: Dictionary = {}
+var _actions_enabled := true
 
 
 func _init() -> void:
@@ -94,6 +95,7 @@ func configure(
 		terrain_surface: TerrainSurface,
 		mechanisms: Array[TerrainGlyphMechanism] = []
 ) -> bool:
+	_actions_enabled = true
 	if data == null or cannon == null or projectile_manager == null \
 			or paint_system == null or terrain_surface == null:
 		push_error("StageController requires complete stage runtime dependencies.")
@@ -145,7 +147,7 @@ func fire_readiness_snapshot(_origin: ActionOrigin = ActionOrigin.HUMAN) -> Dict
 		ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES - active_roots,
 		0
 	)
-	var editable := _cannon != null and _cannon.input_enabled \
+	var editable := _actions_enabled and _cannon != null and _cannon.input_enabled \
 			and current_state == State.AIMING
 	var canonical_aim_valid := _cannon != null and _cannon.canonical_aim_is_valid()
 	var reason := ""
@@ -234,8 +236,19 @@ func remaining_run_ticks() -> int:
 	return maxi(_duration_run_ticks - _elapsed_run_ticks, 0)
 
 
+func set_actions_enabled(enabled: bool) -> void:
+	_actions_enabled = enabled
+	if not enabled and _cannon != null:
+		_cannon.input_enabled = false
+	_emit_fire_readiness()
+
+
+func actions_enabled() -> bool:
+	return _actions_enabled
+
+
 func begin_aiming(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if current_state != State.BRIEFING:
+	if not _actions_enabled or current_state != State.BRIEFING:
 		return false
 	_cannon.input_enabled = true
 	var transitioned := _transition_to(State.AIMING)
@@ -247,7 +260,7 @@ func begin_aiming(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func enter_briefing(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if current_state != State.AIMING or _run_started:
+	if not _actions_enabled or current_state != State.AIMING or _run_started:
 		return false
 	_cannon.input_enabled = false
 	var transitioned := _transition_to(State.BRIEFING)
@@ -257,7 +270,7 @@ func enter_briefing(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if current_state != State.AIMING \
+	if not _actions_enabled or current_state != State.AIMING \
 			or not _cannon.input_enabled:
 		return false
 	_cannon.set_aim(yaw, elevation, power)
@@ -348,7 +361,7 @@ func restart(
 		return_to_briefing: bool = true,
 		origin: ActionOrigin = ActionOrigin.HUMAN
 ) -> bool:
-	if current_state == State.FINISHING:
+	if not _actions_enabled or current_state == State.FINISHING:
 		return false
 	if stage_data == null or _generated_layout == null or _cannon == null \
 			or _projectile_manager == null or _paint_system == null:
@@ -401,6 +414,8 @@ func restart(
 
 
 func toggle_pause(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
+	if not _actions_enabled:
+		return false
 	if current_state == State.PAUSED:
 		get_tree().paused = false
 		return _transition_to(_state_before_pause, true)
@@ -416,7 +431,7 @@ func toggle_pause(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
-	if origin not in [ActionOrigin.HUMAN, ActionOrigin.AGENT] \
+	if not _actions_enabled or origin not in [ActionOrigin.HUMAN, ActionOrigin.AGENT] \
 			or current_state != State.AIMING \
 			or not _run_started or _terminal_pending:
 		return false
@@ -424,6 +439,8 @@ func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 
 
 func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
+	if not _actions_enabled:
+		return
 	# Debug and capture tooling still pass through the authoritative result barrier.
 	if current_state == State.PAUSED:
 		get_tree().paused = false
@@ -434,7 +451,7 @@ func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
 
 
 func debug_refill_shots(_origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
-	if not OS.is_debug_build() or stage_data == null:
+	if not _actions_enabled or not OS.is_debug_build() or stage_data == null:
 		return
 	shots_remaining = stage_data.maximum_shots
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -551,6 +568,8 @@ func _on_shot_family_finished(shot_id: int) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if not _actions_enabled:
+		return
 	# Initial-flight families and resident paintballs have separate lifecycles.
 	# Once every current family body has reached valid top or terminated, only its
 	# observation waits for authoritative paint queues to stay drained for two

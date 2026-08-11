@@ -115,7 +115,8 @@ func configure(
 		terrain_material: ShaderMaterial,
 		paint_color: Color,
 		generated_layout: GeneratedStageLayout,
-		paint_surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING
+		paint_surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING,
+		prepared_bootstrap: PaintSurfaceBootstrap = null
 ) -> void:
 	assert(generated_layout != null and generated_layout.is_valid(), "PaintSystem requires the accepted generated layout.")
 	assert(generated_layout.has_valid_target_mask(), "PaintSystem requires an authoritative target mask.")
@@ -135,7 +136,7 @@ func configure(
 	_pending_commands.clear()
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
-	_create_masks_and_surface_cache()
+	_create_masks_and_surface_cache(prepared_bootstrap)
 	_reset_paint_mask_checksum()
 	if _terrain_material != null:
 		_terrain_material.set_shader_parameter(&"paint_mask", _paint_texture)
@@ -740,8 +741,15 @@ func terrain_surface_normal(world_xz: Vector2) -> Vector3:
 	return _surface_sample_at_world(world_xz).normal
 
 
-func _create_masks_and_surface_cache() -> void:
+func _create_masks_and_surface_cache(prepared_bootstrap: PaintSurfaceBootstrap = null) -> void:
 	var pixel_count := MASK_SIZE * MASK_SIZE
+	var use_prepared := prepared_bootstrap != null and prepared_bootstrap.is_valid_for(
+		_generated_layout,
+		_world_bounds,
+		_terrain_origin_y,
+		_surface_tuning,
+		MASK_SIZE
+	)
 	_paint_bytes.resize(pixel_count)
 	_paint_bytes.fill(0)
 	_paintable_surface_bytes.resize(pixel_count)
@@ -749,15 +757,20 @@ func _create_masks_and_surface_cache() -> void:
 	_surface_sample_states.resize(pixel_count)
 	_surface_sample_states.fill(SURFACE_SAMPLE_UNKNOWN)
 	_recent_bytes = PackedByteArray()
-	_target_bytes = _generated_layout.target_mask
+	_target_bytes = prepared_bootstrap.target_bytes \
+			if use_prepared else _generated_layout.target_mask
 	assert(_target_bytes.size() == pixel_count, "Generated layout target mask must be 512 square.")
-	assert(
-		TargetMaskRasterizer.byte_checksum(_target_bytes) == _generated_layout.target_mask_checksum,
-		"PaintSystem target-mask copy must match the accepted layout checksum."
-	)
+	if not use_prepared:
+		assert(
+			TargetMaskRasterizer.byte_checksum(_target_bytes) == _generated_layout.target_mask_checksum,
+			"PaintSystem target-mask copy must match the accepted layout checksum."
+		)
 	_surface_positions.resize(pixel_count)
 	_surface_normals.resize(pixel_count)
-	_build_surface_axis_mappings()
+	if use_prepared:
+		_install_surface_bootstrap(prepared_bootstrap)
+	else:
+		_build_surface_axis_mappings()
 	_candidate_generation.resize(pixel_count)
 	_candidate_generation.fill(0)
 	_visited_generation.resize(pixel_count)
@@ -772,20 +785,29 @@ func _create_masks_and_surface_cache() -> void:
 	)
 	assert(_total_target_surface_area > 0.0 and _projected_texel_area > 0.0)
 	_paint_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _paint_bytes)
-	_target_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes)
-	var nontarget_bytes := PackedByteArray()
-	nontarget_bytes.resize(pixel_count)
-	for index in range(pixel_count):
-		nontarget_bytes[index] = 0 \
-				if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
-	_nontarget_image = Image.create_from_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes)
+	_target_image = prepared_bootstrap.target_image if use_prepared else Image.create_from_data(
+		MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes
+	)
+	if use_prepared:
+		_nontarget_image = prepared_bootstrap.nontarget_image
+	else:
+		var nontarget_bytes := PackedByteArray()
+		nontarget_bytes.resize(pixel_count)
+		for index in range(pixel_count):
+			nontarget_bytes[index] = 0 \
+					if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
+		_nontarget_image = Image.create_from_data(
+			MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes
+		)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
 	_recent_image = null
 	_recent_texture = null
 	if _recent_diagnostics_enabled:
 		_allocate_recent_diagnostics()
-	_target_texture = ImageTexture.create_from_image(_target_image)
-	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
+	_target_texture = prepared_bootstrap.target_texture \
+			if use_prepared else ImageTexture.create_from_image(_target_image)
+	_nontarget_texture = prepared_bootstrap.nontarget_texture \
+			if use_prepared else ImageTexture.create_from_image(_nontarget_image)
 	_painted_target_pixels = 0
 	_painted_target_surface_area = 0.0
 	_paint_dirty_rect = Rect2i()
@@ -795,6 +817,19 @@ func _create_masks_and_surface_cache() -> void:
 	_texture_upload_batch_count = 0
 	_paint_texture_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
+
+
+func _install_surface_bootstrap(bootstrap: PaintSurfaceBootstrap) -> void:
+	_surface_column_cells = bootstrap.surface_column_cells
+	_surface_row_cells = bootstrap.surface_row_cells
+	_surface_column_fractions = bootstrap.surface_column_fractions
+	_surface_row_fractions = bootstrap.surface_row_fractions
+	_surface_world_x = bootstrap.surface_world_x
+	_surface_world_z = bootstrap.surface_world_z
+	_topology_cell_cache_states = bootstrap.topology_cell_cache_states
+	_topology_cell_triangle_vertices = bootstrap.topology_cell_triangle_vertices
+	_topology_cell_triangle_normals = bootstrap.topology_cell_triangle_normals
+	_topology_cell_count = bootstrap.topology_cell_count
 
 
 ## Caches the two independent mask-to-topology axes and the much smaller accepted

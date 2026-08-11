@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -31,11 +31,13 @@ related:
   - execplans/2026-08-10-repository-maintenance-corrections.md
   - execplans/2026-08-10-aggressive-repository-cleanup.md
   - execplans/2026-08-10-codebase-responsibility-decomposition.md
+  - execplans/2026-08-11-web-runtime-responsiveness.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
+  - ../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/coverage-balance-and-aim-feedback-2026-08-08/README.md
@@ -49,6 +51,48 @@ related:
 ---
 
 # Project Record
+
+## Web Runtime Responsiveness Correction (2026-08-11)
+
+### Implemented state
+
+- Main Menu no longer assigns passive startup focus. Keyboard navigation uses a
+  loading-safe fallback and transfers to Play only while that fallback remains
+  the user's active focus choice.
+- Map Inspection horizontal drag uses the requested direct-grab direction;
+  vertical orbit and Aim View targeting retain their prior equations.
+- `StageRuntimePreparer` incrementally creates one identity-checked
+  `StageRuntimeArtifact` per stage/checksum and retains at most three LRU entries.
+  Main Menu preview and hidden Gameplay share its geometry, presentation points,
+  dressing inputs, and immutable paint bootstrap.
+- `PaintSystem` remains the sole mutable runtime paint/coverage authority.
+  `TerrainSurface`, `EnvironmentDressing`, and Gameplay bind prepared inputs
+  without rebuilding the selected stage during visible handoff.
+- Hidden Gameplay rejects actions and time progression until preparation and
+  render-only first-use warm-up complete. The warm-up covers terrain paint,
+  projectile visuals, and all presentation-effect material families without
+  creating physics or gameplay side effects.
+- CoverageMeter uses the approved target texture with accessible text. The Web
+  release path now validates referenced runtime files, worklets/icons, the
+  single-thread contract, exact case, and raw/gzip payload budgets.
+- Delivery telemetry is local and opt-in through capture or
+  `--delivery-telemetry` arguments; it does not add a network service.
+
+### Verified state and limits
+
+- Focused tests, the full ordered Godot suite, `scripts/verify.ps1`, fresh Web
+  and Windows release exports, the Web artifact validator, local Chromium
+  functional smoke, and five inspected Windows release captures pass.
+- The fresh encoded Web payload is 16,779,326 bytes, 2.84% below its accepted
+  baseline and below the 20 MiB cap. Local Chromium used WebGL2/Compatibility,
+  loaded all three audio worklets, retained its context, and logged no warning or
+  error during the checked interaction path.
+- Foreground frame budgets and three-cycle memory growth are not verified. The
+  available automated Chrome window ran animation frames at about 1 Hz, so all
+  trace timing samples were discarded rather than reported as game performance.
+- The itch upload was not changed. Publishing and post-deploy verification still
+  require explicit user authorization. The active execution contract and full
+  evidence are linked above.
 
 ## Current Codebase Responsibility Decomposition (2026-08-10)
 

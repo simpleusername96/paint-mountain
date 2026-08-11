@@ -16,12 +16,30 @@ var _playable_top_world_points := PackedVector3Array()
 var _presentation_world_points := PackedVector3Array()
 
 
-func configure(layout: GeneratedStageLayout) -> void:
+func configure(
+		layout: GeneratedStageLayout,
+		prepared_geometry: TerrainGeometry = null,
+		prepared_playable_local_points: PackedVector3Array = PackedVector3Array(),
+		prepared_presentation_local_points: PackedVector3Array = PackedVector3Array()
+) -> bool:
 	assert(layout != null and layout.is_valid(), "TerrainSurface requires a valid generated layout.")
 	_layout = layout
-	_geometry = TerrainGeometryFactory.build(layout)
-	_playable_top_world_points = _build_playable_top_world_points()
-	_presentation_world_points = _build_presentation_world_points()
+	if prepared_geometry != null:
+		if not prepared_geometry.is_valid() \
+				or prepared_geometry.top_topology != layout.top_topology \
+				or prepared_geometry.local_bounds != layout.local_bounds \
+				or prepared_playable_local_points.is_empty() \
+				or prepared_presentation_local_points.is_empty():
+			return false
+		_geometry = prepared_geometry
+	else:
+		_geometry = TerrainGeometryFactory.build(layout)
+	_playable_top_world_points = _world_points_from_local(prepared_playable_local_points) \
+			if not prepared_playable_local_points.is_empty() \
+			else _build_playable_top_world_points()
+	_presentation_world_points = _world_points_from_local(prepared_presentation_local_points) \
+			if not prepared_presentation_local_points.is_empty() \
+			else _build_presentation_world_points()
 	var terrain_mesh := get_node_or_null("TerrainMesh") as MeshInstance3D
 	var top_body := get_node_or_null("TerrainTopBody") as StaticBody3D
 	var top_collision := get_node_or_null("TerrainTopBody/CollisionShape3D") as CollisionShape3D
@@ -43,6 +61,7 @@ func configure(layout: GeneratedStageLayout) -> void:
 	shell_body.collision_layer = 1
 	shell_body.collision_mask = 0
 	shell_body.physics_material_override = NORMAL_TERRAIN_PHYSICS_MATERIAL
+	return true
 
 
 func world_surface_point(world_xz: Vector2) -> Vector3:
@@ -131,6 +150,14 @@ func _build_presentation_world_points() -> PackedVector3Array:
 	var result := PackedVector3Array()
 	for local_point in local_presentation_points(_layout, _geometry.render_mesh.get_aabb()):
 		result.append(to_global(local_point))
+	return result
+
+
+func _world_points_from_local(local_points: PackedVector3Array) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	result.resize(local_points.size())
+	for index in range(local_points.size()):
+		result[index] = to_global(local_points[index])
 	return result
 
 

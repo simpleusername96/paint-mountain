@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -30,11 +30,13 @@ related:
   - ../.agents/execplans/2026-08-10-double-pace-and-quiet-feedback.md
   - ../.agents/execplans/2026-08-10-essential-ui-fidelity.md
   - ../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
+  - ../.agents/execplans/2026-08-11-web-runtime-responsiveness.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/essential-ui-fidelity-2026-08-10/README.md
   - evidence/approved-image-fidelity-correction-2026-08-10/README.md
+  - evidence/web-runtime-responsiveness-2026-08-11/README.md
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
 ---
@@ -51,6 +53,42 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Active Web runtime responsiveness gate (2026-08-11)
+
+- [x] Passive/pointer startup has no automatic control focus ring. The first
+  keyboard navigation focuses a reachable action, and a loading fallback moves
+  to Play only when the user has not moved focus elsewhere.
+- [x] Right-to-left Map Inspection drag follows the requested clockwise/direct
+  grab convention. Vertical orbit, Aim View, and committed cannon aim are
+  unchanged and covered by a dedicated projection test.
+- [x] Preview and Gameplay reuse one identity-checked, at-most-three-entry
+  prepared artifact. Cooperative terrain preparation yields between bounded
+  phases; hidden Gameplay cannot advance stage actions or time before handoff.
+- [x] A render-only, idempotent warm-up covers terrain paint, projectile visuals,
+  and all five presentation-effect families without physics, shots, paint, or
+  stage-state side effects.
+- [x] Coverage uses the approved target texture and accessible text instead of
+  the Web-risk font glyph. Korean 1280x720 and English 1920x1080 release captures
+  show no missing glyph, clipping, or alignment defect.
+- [x] The dependency-free Web release validator checks exact-case HTML/runtime
+  references, icons, audio worklets, disabled threads/worker absence, raw/gzip
+  sizes, the 20 MiB cap, and the accepted 10% growth allowance. The fresh
+  encoded payload is 16,779,326 bytes, 2.84% below baseline.
+- [x] New focused tests, the full ordered Godot suite, `scripts/verify.ps1`,
+  fresh Web/Windows release exports, local Chromium functional smoke, and five
+  separately inspected Windows release captures pass.
+- [ ] Foreground Chrome cold/warm launch, transition, drag, and first/second
+  Fire traces meet the p95/p99/maximum and response-time budgets. The automated
+  window was limited to about 1 Hz, so its timing samples were discarded.
+- [ ] Three enter/fire/restart/exit cycles, settled memory comparison, save and
+  reload, host fullscreen, background/resume, and unlocked-audio checks pass in
+  a foreground browser session.
+- [ ] After explicit publish authorization, the actual itch revision passes the
+  same foreground checks. The current work did not change itch Draft visibility
+  or upload any artifact.
+
+Evidence: `docs/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
 
 ## Completed approved-image fidelity correction gate (2026-08-10)
 

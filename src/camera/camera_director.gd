@@ -227,7 +227,7 @@ func aim_is_locked() -> bool:
 func orbit_inspection(relative: Vector2) -> bool:
 	if not _can_inspect_map() or relative.is_zero_approx():
 		return false
-	_inspection_yaw_radians += deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x)
+	_inspection_yaw_radians -= deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x)
 	_inspection_pitch_radians = clampf(
 		_inspection_pitch_radians - deg_to_rad(relative.y * INSPECTION_ORBIT_DEGREES_PER_PIXEL.y),
 		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),

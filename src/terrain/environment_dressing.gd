@@ -13,17 +13,26 @@ var _stage_data: StageData
 var _generated_layout: GeneratedStageLayout
 
 
-func configure(stage_data: StageData, generated_layout: GeneratedStageLayout = null) -> void:
+func configure(
+		stage_data: StageData,
+		generated_layout: GeneratedStageLayout = null,
+		prepared_placements: Array[DecorationPlacement] = [],
+		prepared_scenes: Dictionary = {}
+) -> void:
 	_stage_data = stage_data
 	_generated_layout = generated_layout
 	for child in get_children():
 		child.queue_free()
-	for placement in _generated_layout.decoration_placements:
-		_add_decoration(placement)
+	var placements := prepared_placements \
+			if not prepared_placements.is_empty() else _generated_layout.decoration_placements
+	for placement in placements:
+		_add_decoration(placement, prepared_scenes.get(placement.model_id) as PackedScene)
 
 
-func _add_decoration(placement: DecorationPlacement) -> void:
-	var packed_scene := load(String(MODEL_PATHS.get(placement.model_id, ""))) as PackedScene
+func _add_decoration(placement: DecorationPlacement, prepared_scene: PackedScene = null) -> void:
+	var packed_scene := prepared_scene
+	if packed_scene == null:
+		packed_scene = load(model_path_for(placement.model_id)) as PackedScene
 	assert(packed_scene != null, "Approved decoration model must import as a PackedScene.")
 	var decoration := packed_scene.instantiate() as Node3D
 	decoration.name = String(placement.model_id)
@@ -37,6 +46,10 @@ func _add_decoration(placement: DecorationPlacement) -> void:
 	decoration.scale = Vector3.ONE * placement.uniform_scale
 	_apply_muted_material(decoration, String(placement.model_id).begins_with("tree_"))
 	add_child(decoration)
+
+
+static func model_path_for(model_id: StringName) -> String:
+	return String(MODEL_PATHS.get(model_id, ""))
 
 
 func _apply_muted_material(node: Node, is_tree: bool) -> void:

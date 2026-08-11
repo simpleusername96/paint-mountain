@@ -12,6 +12,7 @@ related:
   - ../../docs/source-brief.md
   - ../../docs/technical-architecture.md
   - ../../docs/test-checklist.md
+  - ../../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
 ---
 
 # Web Runtime Responsiveness and Interaction Correction - Execution Contract
@@ -238,7 +239,7 @@ Source owners: `src/ui/screens/main_menu_screen.gd`,
 `src/camera/camera_director.gd`, `scenes/ui/hud/coverage_meter.tscn`, existing
 Theme and approved icon assets
 
-- [ ] **1.1** Add focus-visible startup semantics and safe loading fallback.
+- [x] **1.1** Add focus-visible startup semantics and safe loading fallback.
   - Change: do not auto-grab a control on passive or pointer-led application
     launch. On the first keyboard navigation input, focus Play when ready or
     Stage Select while Play is loading. Track whether Stage Select then owns
@@ -253,7 +254,7 @@ Theme and approved icon assets
   - Accept: no button looks selected on passive/pointer launch; Tab/Shift+Tab or
     directional keyboard navigation shows the shared 2 px accent on the correct
     action and every action remains reachable.
-- [ ] **1.2** Reverse horizontal Map Inspection drag and lock screen semantics.
+- [x] **1.2** Reverse horizontal Map Inspection drag and lock screen semantics.
   - Change: subtract horizontal mouse motion in
     `CameraDirector.orbit_inspection()`; leave the vertical equation and all Aim
     View input unchanged.
@@ -263,7 +264,7 @@ Theme and approved icon assets
     assert unchanged pitch and unchanged cannon aim.
   - Accept: runtime left/right drags match the user's convention at both target
     viewports and do not change the committed aim.
-- [ ] **1.3** Replace the coverage font glyph with the approved target icon.
+- [x] **1.3** Replace the coverage font glyph with the approved target icon.
   - Change: use `assets/ui/icons/target.png` in the existing CoverageMeter
     component with the current restrained size/alignment; preserve its
     accessible label and tooltip.
@@ -288,7 +289,7 @@ new `src/app/stage_runtime_artifact.gd`, `src/terrain/terrain_geometry_factory.g
 `src/terrain/terrain_surface.gd`, `src/paint/paint_system.gd`,
 `src/gameplay/gameplay_scene.gd`, `src/terrain/environment_dressing.gd`
 
-- [ ] **2.1** Add the progressive, identity-scoped preparation owner.
+- [x] **2.1** Add the progressive, identity-scoped preparation owner.
   - Change: implement cancellation, 8 ms step budget, typed progress/ready/fail
     signals, full identity/checksum validation, and an at-most-three-entry LRU.
   - Test: add `tests/stage_runtime_preparer_test.gd` for cancellation, obsolete
@@ -296,7 +297,7 @@ new `src/app/stage_runtime_artifact.gd`, `src/terrain/terrain_geometry_factory.g
     artifact checksums.
   - Accept: selecting another card never publishes the old stage and at least
     one rendered frame occurs between bounded build steps.
-- [ ] **2.2** Build the immutable artifact once and reuse it for preview.
+- [x] **2.2** Build the immutable artifact once and reuse it for preview.
   - Change: move preview geometry, local presentation/summit points, immutable
     target/non-target bytes/textures, topology-axis tables, and dressing inputs
     into `StageRuntimeArtifact`; retire AppRoot's untyped preview dictionary and
@@ -305,7 +306,7 @@ new `src/app/stage_runtime_artifact.gd`, `src/terrain/terrain_geometry_factory.g
     preview activation does not create a second geometry or target texture.
   - Accept: Stage 01 preview, arbitrary selected preview, and cache eviction
     retain exact layout identity and appearance.
-- [ ] **2.3** Make Gameplay bind prepared data without rebuilding it.
+- [x] **2.3** Make Gameplay bind prepared data without rebuilding it.
   - Change: extend `GameplayScene.prepare_stage()`, `TerrainSurface.configure()`,
     and `PaintSystem.configure()` to accept the artifact/bootstrap. Gameplay
     creates only per-run mutable paint/material/state data. Environment dressing
@@ -316,7 +317,7 @@ new `src/app/stage_runtime_artifact.gd`, `src/terrain/terrain_geometry_factory.g
   - Accept: paint coverage, collision identity, camera framing, mechanisms, and
     restart behavior remain bit-for-bit/contract equivalent to the current
     prepared layout.
-- [ ] **2.4** Switch screens only after hidden Gameplay preparation completes.
+- [x] **2.4** Switch screens only after hidden Gameplay preparation completes.
   - Change: keep the current menu/select screen visible and interactive, expose
     truthful loading/failure state, add the hidden Gameplay instance, and enable
     Play/Start only after `stage_prepared`. The button then performs an immediate
@@ -341,7 +342,7 @@ Source owners: `src/gameplay/gameplay_scene.gd`, new
 `src/effects/presentation_effects.gd`, `src/projectile/paint_projectile.gd`,
 `src/paint/terrain_paint.gdshader`
 
-- [ ] **3.1** Add a stage-owned render-only warm-up component.
+- [x] **3.1** Add a stage-owned render-only warm-up component.
   - Change: in a temporary `SubViewport`, render one representative terrain
     paint material, projectile visual, and each existing particle/effect material
     one family per frame. Free the viewport after the rendering server has
@@ -373,7 +374,7 @@ Preconditions:
 Source owners: `.github/workflows/itch-alpha.yml`, `export_presets.cfg`,
 `docs/test-checklist.md`, delivery/debug evidence owner
 
-- [ ] **4.1** Harden dependency-free Web artifact checks.
+- [x] **4.1** Harden dependency-free Web artifact checks.
   - Change: parse references from the exported `index.html` and `index.js`,
     require every referenced icon/worklet/runtime file, record raw and gzip
     sizes for Wasm/PCK/JS and total payload, and verify the no-thread export
@@ -413,21 +414,21 @@ Source owners: `.github/workflows/itch-alpha.yml`, `export_presets.cfg`,
 
 ## Acceptance Criteria
 
-- [ ] On passive/pointer launch no control ring appears. On keyboard navigation,
+- [x] On passive/pointer launch no control ring appears. On keyboard navigation,
   Stage Select never retains loading fallback focus after Play becomes ready;
   keyboard focus remains visible and reachable.
-- [ ] Right-to-left Map Inspection drag produces the requested clockwise/direct
+- [x] Right-to-left Map Inspection drag produces the requested clockwise/direct
   grab behavior; vertical orbit and Aim View behavior do not regress.
 - [ ] Menu/Stage Select stays responsive while preparing a selected stage, and
   activating a ready stage shows Briefing in at most 100 ms with no frame over
   50 ms.
-- [ ] Preview and Gameplay share one identity-matched immutable geometry/paint
+- [x] Preview and Gameplay share one identity-matched immutable geometry/paint
   bootstrap artifact; `PaintSystem` remains the single live paint/coverage owner.
 - [ ] The first shot and later shots meet the same 50 ms maximum-frame gate and
   show a response within 100 ms.
-- [ ] The coverage icon renders consistently at both required viewports in
+- [x] The coverage icon renders consistently at both required viewports in
   Korean and English.
-- [ ] The Web export remains official, single-threaded, WebGL2/Compatibility,
+- [x] The Web export remains official, single-threaded, WebGL2/Compatibility,
   adaptively sized, under the payload budget, and free of missing referenced
   files or console errors.
 - [ ] Three lifecycle cycles show no context loss, node leak, artifact-cache
@@ -499,23 +500,33 @@ dependencies, persistence, or acceptance.
 ## Progress
 
 - Canonical progress: the task checkboxes in this plan after activation.
-- Current phase: Phase 1 interaction corrections.
-- Current status: active by explicit user instruction on 2026-08-11; runtime
-  implementation has not started.
-- Evidence complete: source/owner trace, itch launch and viewport inspection,
-  foreground rAF frame samples, first/warm shot comparison, network/header
-  inspection, and official Web/itch/Chrome guidance review.
-- Code, scene, resource, project setting, CI, and test files changed: none.
+- Current phase: Phase 4 local release validation; post-deploy and valid
+  foreground performance qualification remain open.
+- Current status: interaction, preparation, hidden handoff, first-use warm-up,
+  coverage icon, telemetry, and static Web release implementation are complete.
+- Validation complete: new focused regressions, the full ordered Godot suite,
+  `scripts/verify.ps1`, fresh Web and Windows exports, Web artifact validation,
+  local Chromium functional smoke, and five inspected running-game captures.
+- Web payload: 16,779,326 gzip bytes across 12 files, 2.84% below the accepted
+  baseline and below the 20 MiB cap. The export is official, single-threaded,
+  and has no missing exact-case runtime reference.
+- Measurement limit: the automated Chrome window supplied animation frames at
+  about 1 Hz. Its apparent load time and first/second-shot frame samples are
+  invalid under this contract and were discarded. No foreground p95, p99,
+  maximum-frame, response-time, or three-cycle memory pass is claimed.
+- Deployment limit: no artifact was uploaded and itch Draft visibility was not
+  changed because publication requires explicit user authorization.
+- Evidence:
+  `docs/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
 
 ## Next Steps
 
-1. Execute Phase 1 and retain before/after running-game evidence for focus,
-   orbit direction, and the coverage icon.
-2. Execute Phase 2 with targeted identity/paint/terrain checks before any broad
-   test run.
-3. Execute Phase 3 and keep cold and warm Chrome traces separate.
-4. Run Phase 4 once, complete the scoped `$codebase-quality-auditor` pass, and
-   request authorization before any push/publish action.
+1. Repeat the cold/warm launch, stage-entry, drag, and first/second Fire traces
+   with Chrome genuinely foreground and presenting at normal refresh cadence.
+2. Complete the three-cycle memory, save/reload, fullscreen, audio unlock, and
+   background/resume smoke in that foreground session.
+3. Request explicit authorization before any upload, then repeat the accepted
+   matrix against the deployed itch revision without changing Draft visibility.
 
 ## Risks
 

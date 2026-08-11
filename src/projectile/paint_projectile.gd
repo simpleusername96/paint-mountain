@@ -619,9 +619,21 @@ func _build_body() -> void:
 	collision.name = "CollisionShape3D"
 	collision.shape = sphere_shape
 	add_child(collision)
+	var sphere_mesh := visual_mesh(projectile_data, 0.78 if split_generation > 0 else 1.0)
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "PaintballMesh"
+	mesh_instance.mesh = sphere_mesh
+	add_child(mesh_instance)
+
+
+## Render-only projectile representation shared by live bodies and the stage
+## warm-up path. It never creates physics state or emits gameplay signals.
+static func visual_mesh(data: ProjectileData, radius_multiplier: float = 1.0) -> SphereMesh:
+	assert(data != null, "Paint projectile visual requires ProjectileData.")
 	var sphere_mesh := SphereMesh.new()
-	sphere_mesh.radius = physical_radius()
-	sphere_mesh.height = physical_radius() * 2.0
+	var radius := data.radius * radius_multiplier
+	sphere_mesh.radius = radius
+	sphere_mesh.height = radius * 2.0
 	sphere_mesh.radial_segments = 16
 	sphere_mesh.rings = 8
 	var paint_material := StandardMaterial3D.new()
@@ -629,7 +641,4 @@ func _build_body() -> void:
 	paint_material.metallic = 0.16
 	paint_material.roughness = 0.24
 	sphere_mesh.material = paint_material
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "PaintballMesh"
-	mesh_instance.mesh = sphere_mesh
-	add_child(mesh_instance)
+	return sphere_mesh

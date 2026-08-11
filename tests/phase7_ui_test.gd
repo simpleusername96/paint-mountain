@@ -25,6 +25,7 @@ func _run_checks() -> void:
 	_assert_true(ProjectSettings.get_setting("display/window/size/viewport_width") == 1280 and ProjectSettings.get_setting("display/window/size/viewport_height") == 720, "UI must use the 1280x720 logical viewport")
 	_assert_theme_contract()
 	_assert_true(main_menu.visible and not stage_select.visible and not settings.visible, "app must open on a separate main-menu screen")
+	_assert_main_menu_focus_startup(main_menu)
 	await _assert_main_preview_safe(app, main_menu)
 	app._set_catalog_load_failed()
 	await process_frame
@@ -142,8 +143,12 @@ func _assert_main_preview_safe(app: AppRoot, main_menu: MainMenuScreen) -> void:
 	_assert_true(app._active_preview_stage_id == &"stage_01", "Main Menu preview must resolve the real Stage 01 artifact")
 	if app._active_preview_stage_id != &"stage_01":
 		return
-	var artifact: Dictionary = app._preview_artifact_cache.get(&"stage_01", {})
-	var local_points := artifact.get("presentation_points", PackedVector3Array()) as PackedVector3Array
+	var stage := StageCatalog.get_stage(&"stage_01")
+	var artifact: StageRuntimeArtifact = app._runtime_preparer.ready_artifact(stage)
+	_assert_true(artifact != null, "Main Menu preview must reuse the typed runtime artifact")
+	if artifact == null:
+		return
+	var local_points := artifact.presentation_local_points
 	var world_points := PackedVector3Array()
 	for local_point in local_points:
 		world_points.append(app._preview_mountain.to_global(local_point))
@@ -167,6 +172,41 @@ func _assert_main_preview_safe(app: AppRoot, main_menu: MainMenuScreen) -> void:
 			action.get_global_rect().end.x <= preview_boundary,
 			"Main Menu action column must not overlap the preview safe region"
 		)
+
+
+func _assert_main_menu_focus_startup(main_menu: MainMenuScreen) -> void:
+	var play := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
+	var stage_select := main_menu.get_node("Root/BrandPanel/Margin/Content/StageSelect") as Button
+	var settings := main_menu.get_node("Root/BrandPanel/Margin/Content/Settings") as Button
+	_assert_true(
+		not play.has_focus() and not stage_select.has_focus() and not settings.has_focus(),
+		"passive Main Menu launch must not show a keyboard focus ring"
+	)
+	main_menu.set_play_preparation_state(false)
+	main_menu._unhandled_key_input(_keyboard_navigation_event())
+	_assert_true(stage_select.has_focus(), "first keyboard navigation while loading must focus Stage Select")
+	main_menu.set_play_preparation_state(true)
+	_assert_true(play.has_focus(), "Play readiness must replace only the loading fallback focus")
+	main_menu.begin_passive_focus_session()
+	main_menu.set_play_preparation_state(false)
+	main_menu._unhandled_key_input(_keyboard_navigation_event())
+	main_menu._input(_keyboard_navigation_event())
+	settings.grab_focus()
+	stage_select.grab_focus()
+	main_menu.set_play_preparation_state(true)
+	_assert_true(
+		stage_select.has_focus(),
+		"Play readiness must preserve a later focus choice even after returning to Stage Select"
+	)
+	main_menu.set_play_preparation_state(false, true)
+	_assert_true(not play.disabled, "load failure must retain its reachable retry action")
+
+
+func _keyboard_navigation_event() -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = KEY_TAB
+	event.pressed = true
+	return event
 
 
 func _assert_true(condition: bool, message: String) -> void:

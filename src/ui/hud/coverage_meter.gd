@@ -2,6 +2,7 @@ class_name CoverageMeter
 extends Control
 
 @onready var progress: ProgressBar = %Progress
+@onready var coverage_caption: TextureRect = %CoverageCaption
 @onready var value_label: Label = %CoverageValue
 @onready var target_label: Label = %TargetValue
 @onready var target_line: HSeparator = %TargetLine
@@ -11,6 +12,8 @@ var _target := 0.0
 func configure(target: float) -> void:
 	_target = clampf(target, 0.0, 100.0)
 	tooltip_text = tr("hud.coverage_tooltip")
+	coverage_caption.tooltip_text = tr("hud.coverage")
+	coverage_caption.accessibility_name = tr("hud.coverage")
 	target_label.text = "%s %.0f%%" % [tr("hud.target"), _target]
 	var target_y := progress.position.y + progress.size.y * (1.0 - _target / 100.0)
 	target_line.position.y = target_y - target_line.size.y * 0.5
