@@ -84,6 +84,10 @@ related:
   or error. Its background-tab timing is not treated as foreground performance
   evidence. Durable evidence is under
   `docs/evidence/stage-selection-readiness-2026-08-11/`.
+- Source commit `9c2c8e5` is pushed to `agent/remove-wind-system`. GitHub Actions
+  run `31469680310` passed its independent gates and published itch.io version
+  `alpha.4+9c2c8e5` to both `html5` and `windows-alpha`; Draft visibility is
+  unchanged.
 
 ## Fast Stage Readiness (2026-08-11)
 

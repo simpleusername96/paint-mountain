@@ -82,8 +82,9 @@ capture is pre-resident-activity-removal history.
 - [x] Local Chrome WebGL2/Compatibility single-thread smoke selects and enters
   Stage 02 without a console warning or error. Background-tab time is excluded
   from performance evidence.
-- [ ] The scoped correction is pushed to GitHub.
-- [ ] The existing GitHub Actions workflow publishes this production source to
+- [x] The scoped correction is pushed to GitHub as source commit `9c2c8e5` on
+  `agent/remove-wind-system`.
+- [x] GitHub Actions run `31469680310` publishes version `alpha.4+9c2c8e5` to
   the itch.io HTML5 and Windows alpha channels without changing Draft visibility.
 
 Evidence: `evidence/stage-selection-readiness-2026-08-11/README.md`.

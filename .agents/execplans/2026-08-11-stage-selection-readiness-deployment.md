@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-11
 scope: remove the stage-selection readiness deadlock, prove the production transition, and publish the same revision to GitHub and itch.io
 related:
@@ -85,8 +85,8 @@ Readiness statement:
 
 ### Phase 3: Publish the verified revision
 
-- [ ] **3.1** Commit only task-owned files and push the current branch to GitHub; create or update a review link when repository permissions permit.
-- [ ] **3.2** Dispatch the existing itch.io workflow with publishing enabled, wait for success, and confirm both HTML5 and Windows alpha channel uploads use the pushed revision.
+- [x] **3.1** Commit only task-owned files and push the current branch to GitHub; create or update a review link when repository permissions permit.
+- [x] **3.2** Dispatch the existing itch.io workflow with publishing enabled, wait for success, and confirm both HTML5 and Windows alpha channel uploads use the pushed revision.
   - Guard: do not change Draft/public visibility.
 
 ## Validation and Rework Controls
@@ -109,12 +109,18 @@ Readiness statement:
 
 ## Progress
 
-- Current phase: Phase 3.
-- Next task: 3.1.
+- Current phase: Complete.
+- Next task: None.
 - Evidence so far: the focused regression passes; the full suite, verification,
   Windows/Web exports, and Web validator pass. A real Windows release Stage
   01→30 selection reaches Start-ready in 679.278 ms and visible Briefing in
   695.411 ms. Local Chrome selects and enters Stage 02 without console errors.
+- Delivery evidence: source commit `9c2c8e5b33522a8b7b388ed44a5ee0f3eadf8c40`
+  is pushed to `agent/remove-wind-system`. GitHub Actions run `31469680310`
+  completed successfully and Butler uploaded version `alpha.4+9c2c8e5` to
+  `html5` and `windows-alpha`. Draft visibility was not changed. The available
+  token could push and dispatch workflows but GitHub denied pull-request API
+  access, so no new review link was created.
 
 ## Completion and Stop Conditions
 

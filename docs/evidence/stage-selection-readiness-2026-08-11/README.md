@@ -58,3 +58,16 @@ selected stage becomes Start-ready or visible.
   is not used as a Web performance claim.
 - Canonical Windows executable SHA-256:
   `3827C12BAB6082FF33F65CCE41A40D508AEC40C679B48F92AD5E52B4746DFB3C`.
+
+## Delivery
+
+- Production source commit:
+  `9c2c8e5b33522a8b7b388ed44a5ee0f3eadf8c40` on
+  `agent/remove-wind-system`.
+- GitHub Actions run `31469680310` completed successfully. It independently
+  passed verification, the full suite, Windows/Web exports, Web validation, and
+  the authorized Butler publish step.
+- itch.io version: `alpha.4+9c2c8e5`.
+- Updated channels: `itchioprofile1351321/paint-mountain:html5` and
+  `itchioprofile1351321/paint-mountain:windows-alpha`.
+- itch.io Draft/public visibility was not changed.
