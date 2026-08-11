@@ -34,6 +34,7 @@ related:
   - ../.agents/execplans/2026-08-11-grounded-environment-assets.md
   - ../.agents/execplans/2026-08-11-terrain-centered-orbit.md
   - ../.agents/execplans/2026-08-11-fast-stage-readiness.md
+  - ../.agents/execplans/2026-08-11-stage-selection-readiness-deployment.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -41,6 +42,7 @@ related:
   - evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
   - evidence/fast-stage-readiness-2026-08-11/README.md
+  - evidence/stage-selection-readiness-2026-08-11/README.md
   - reports/environment-grounding-2026-08-11/index.html
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
@@ -58,6 +60,33 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Active stage-selection readiness and deployment gate (2026-08-11)
+
+- [x] Selecting a stage that differs from `GameState.selected_stage_id`
+  prepares matching hidden Gameplay without committing GameState before Start.
+- [x] Layout, artifact, Gameplay success/failure, and obsolete-completion paths
+  are guarded by the latest requested stage identity. A stale request cannot
+  install or remove the current Gameplay.
+- [x] A focused regression exercises the real Stage 02 card, waits for its Start
+  action, verifies pre-Start persistence, and enters Stage 02 immediately.
+- [x] Focused UI/repository/preparer checks, `scripts/verify.ps1`, and the full
+  ordered suite pass. Fresh Windows and Web release exports and Web static
+  validation also pass.
+- [x] The real Windows-release Stage 01→Stage 30 card selection reaches
+  Start-ready in 679.278 ms and visible Briefing in 695.411 ms. Its maximum
+  artifact slice is 12.015 ms.
+- [x] The implementing agent inspected the Korean 1280x720 release capture.
+  Stage 30 terrain, environment, mechanisms, copy, actions, and framing are
+  complete with no loading state, clipping, or debug overlay.
+- [x] Local Chrome WebGL2/Compatibility single-thread smoke selects and enters
+  Stage 02 without a console warning or error. Background-tab time is excluded
+  from performance evidence.
+- [ ] The scoped correction is pushed to GitHub.
+- [ ] The existing GitHub Actions workflow publishes this production source to
+  the itch.io HTML5 and Windows alpha channels without changing Draft visibility.
+
+Evidence: `evidence/stage-selection-readiness-2026-08-11/README.md`.
 
 ## Completed fast stage-readiness gate (2026-08-11)
 

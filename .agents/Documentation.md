@@ -35,6 +35,7 @@ related:
   - execplans/2026-08-11-grounded-environment-assets.md
   - execplans/2026-08-11-terrain-centered-orbit.md
   - execplans/2026-08-11-fast-stage-readiness.md
+  - execplans/2026-08-11-stage-selection-readiness-deployment.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -56,6 +57,33 @@ related:
 ---
 
 # Project Record
+
+## Stage Selection Readiness Correction (2026-08-11)
+
+### Implemented state
+
+- `AppRoot` distinguishes the latest user-requested preparation identity from
+  the persisted `GameState.selected_stage_id`. Stage Select remains local and
+  cancellable until Start; it no longer waits on the previously committed
+  stage after another card is selected.
+- Layout, runtime-artifact, hidden-Gameplay completion, and failure callbacks
+  accept only the latest request. A late obsolete completion cannot install or
+  remove Gameplay owned by the current selection.
+- The delivery transition fixture now follows the real Stage Select page,
+  card, readiness, and Start controls rather than calling direct stage entry.
+
+### Verified state and limits
+
+- The focused readiness regression, existing UI/repository/preparer checks,
+  `scripts/verify.ps1`, and the complete ordered suite pass. Fresh Godot 4.7.1
+  Windows and single-thread Web releases plus Web static validation pass.
+- A Windows/Compatibility release run changes from Stage 01 to Stage 30 in
+  679.278 ms to Start-ready and 695.411 ms to visible Briefing. The Korean
+  1280x720 capture was inspected with no loading state, clipping, or error.
+- Local Chrome WebGL2 smoke selects and enters Stage 02 without console warning
+  or error. Its background-tab timing is not treated as foreground performance
+  evidence. Durable evidence is under
+  `docs/evidence/stage-selection-readiness-2026-08-11/`.
 
 ## Fast Stage Readiness (2026-08-11)
 

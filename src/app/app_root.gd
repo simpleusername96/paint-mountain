@@ -28,6 +28,7 @@ var _settings_return: StringName = &"main_menu"
 var _preview_dressing: Node3D
 var _preview_material: ShaderMaterial
 var _active_preview_stage_id: StringName = &""
+var _requested_user_stage_id: StringName = &""
 var _pending_start_stage_id: StringName = &""
 
 
@@ -114,6 +115,7 @@ func _start_stage(stage_id: StringName) -> void:
 	if selected_stage == null:
 		_set_catalog_load_failed()
 		return
+	_requested_user_stage_id = selected_stage.stage_id
 	if _prepared_gameplay_matches(selected_stage):
 		_enter_stage(selected_stage)
 		return
@@ -153,6 +155,9 @@ func _request_user_stage(stage: StageData) -> void:
 	if stage == null:
 		_set_catalog_load_failed()
 		return
+	# Stage Select does not commit GameState until Start. Keep the newest
+	# asynchronous preparation desire separate from that persisted selection.
+	_requested_user_stage_id = stage.stage_id
 	if not _gameplay_presented and _gameplay != null and is_instance_valid(_gameplay):
 		var preparing_stage := _gameplay.get("stage_data") as StageData
 		if preparing_stage == null or preparing_stage.stage_id != stage.stage_id:
@@ -216,6 +221,8 @@ func _prepare_hidden_gameplay(stage: StageData, artifact: StageRuntimeArtifact) 
 
 
 func _on_gameplay_prepared(stage_id: StringName) -> void:
+	if _requested_user_stage_id != stage_id:
+		return
 	var stage := StageCatalog.get_stage(stage_id)
 	if stage == null or not _prepared_gameplay_matches(stage):
 		_remove_gameplay()
@@ -232,6 +239,8 @@ func _on_gameplay_prepared(stage_id: StringName) -> void:
 
 
 func _on_gameplay_preparation_failed(stage_id: StringName) -> void:
+	if _requested_user_stage_id != stage_id:
+		return
 	_remove_gameplay()
 	_on_artifact_failed(stage_id)
 
@@ -240,6 +249,7 @@ func _on_gameplay_preparation_failed(stage_id: StringName) -> void:
 ## must still leave the player with the same explicit retry state as a failed
 ## selected layout. Retry only re-reads the catalog/artifact; it never generates.
 func _set_catalog_load_failed() -> void:
+	_requested_user_stage_id = &""
 	if _main_menu != null:
 		_main_menu.set_play_preparation_state(false, true)
 	if _stage_select != null:
@@ -266,8 +276,7 @@ func _on_layout_ready(stage_id: StringName, layout: GeneratedStageLayout) -> voi
 	if stage == null or not _layout_matches_stage(layout, stage):
 		_on_layout_failed(stage_id)
 		return
-	var game_state := get_node_or_null("/root/GameState")
-	var selected: bool = game_state != null and game_state.selected_stage_id == stage_id
+	var selected := _requested_user_stage_id == stage_id
 	RuntimeDeliveryTelemetry.emit_marker(&"layout_ready", {
 		"stage_id": String(stage_id),
 		"layout_checksum": layout.checksum,
@@ -279,11 +288,14 @@ func _on_layout_ready(stage_id: StringName, layout: GeneratedStageLayout) -> voi
 
 
 func _on_layout_failed(stage_id: StringName) -> void:
+	if _requested_user_stage_id != stage_id:
+		return
 	var stage := StageCatalog.get_stage(stage_id)
 	if stage != null:
 		_set_stage_preparation_state(stage, false, true)
 	if _pending_start_stage_id == stage_id:
 		_pending_start_stage_id = &""
+	_requested_user_stage_id = &""
 
 
 func _on_artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact) -> void:
@@ -300,16 +312,19 @@ func _on_artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact) ->
 	if game_state != null and game_state.selected_stage_id == stage_id \
 			and _preview_world.visible:
 		_set_menu_preview_if_visible.call_deferred(stage)
-	if game_state != null and game_state.selected_stage_id == stage_id:
+	if _requested_user_stage_id == stage_id:
 		_prepare_hidden_gameplay(stage, artifact)
 
 
 func _on_artifact_failed(stage_id: StringName) -> void:
+	if _requested_user_stage_id != stage_id:
+		return
 	var stage := StageCatalog.get_stage(stage_id)
 	if stage != null:
 		_set_stage_preparation_state(stage, false, true)
 	if _pending_start_stage_id == stage_id:
 		_pending_start_stage_id = &""
+	_requested_user_stage_id = &""
 
 
 func _request_menu_preview() -> void:

@@ -49,7 +49,8 @@ func _ready() -> void:
 	var game_state := get_node("/root/GameState") as GameState
 	game_state.persistence_enabled = false
 	var initial_data: Dictionary = get_node("/root/SaveSystem").default_data()
-	initial_data.selected_stage_id = _capture_stage
+	initial_data.selected_stage_id = &"stage_01" \
+			if _screen == "stage_transition_briefing" else _capture_stage
 	_initialize_capture_game_state(game_state, initial_data)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run_capture.call_deferred()
@@ -70,6 +71,8 @@ func _run_capture() -> void:
 			await _start_stage(_capture_stage, false)
 		"stage_briefing":
 			await _start_stage(_capture_stage, false)
+		"stage_transition_briefing":
+			await _capture_stage_transition()
 		"aiming":
 			await _capture_aiming(_capture_stage)
 		"shot_follow_midflight":
@@ -264,6 +267,49 @@ func _capture_aiming(stage_id: StringName) -> void:
 		_fail_capture("aiming capture did not enter Aim Lock")
 		return
 	await get_tree().process_frame
+
+
+func _capture_stage_transition() -> void:
+	var first := await _start_stage(&"stage_01", false)
+	if first == null:
+		return
+	_app._show_stage_select()
+	await get_tree().process_frame
+	var target_stage := StageCatalog.get_stage(_capture_stage)
+	var stage_select := _app.get_node("StageSelect") as StageSelectScreen
+	var page := (target_stage.stage_number - 1) / StageSelectScreen.PAGE_SIZE
+	var slot := (target_stage.stage_number - 1) % StageSelectScreen.PAGE_SIZE
+	stage_select.set_page_for_capture(page)
+	await get_tree().process_frame
+	RuntimeDeliveryTelemetry.emit_marker(&"stage_selection_started", {
+		"from_stage_id": "stage_01",
+		"to_stage_id": String(_capture_stage),
+	})
+	stage_select._cards[slot].pressed.emit()
+	var deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
+	while Time.get_ticks_msec() < deadline:
+		if _app._prepared_gameplay_matches(target_stage) \
+				and not stage_select._start_button.disabled:
+			break
+		await get_tree().process_frame
+	if not _app._prepared_gameplay_matches(target_stage) \
+			or stage_select._start_button.disabled:
+		_fail_capture("selected stage %s never became Start-ready" % _capture_stage)
+		return
+	var game_state := get_node("/root/GameState") as GameState
+	if game_state.selected_stage_id != &"stage_01":
+		_fail_capture("Stage Select committed the target before Start")
+		return
+	RuntimeDeliveryTelemetry.emit_marker(&"stage_selection_ready", {
+		"stage_id": String(_capture_stage),
+	})
+	stage_select._start_button.pressed.emit()
+	var second := await _wait_for_active_gameplay(_capture_stage)
+	if second == null:
+		return
+	RuntimeDeliveryTelemetry.emit_marker(&"stage_selection_complete", {
+		"stage_id": String(_capture_stage),
+	})
 
 
 func _capture_shot_follow_midflight(stage_id: StringName) -> void:

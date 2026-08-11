@@ -27,6 +27,7 @@ $ordinaryTests = @(
 	'stage_runtime_preparer_test.gd',
 	'prepared_gameplay_entry_test.gd',
 	'gameplay_first_use_warmup_test.gd',
+	'stage_selection_readiness_test.gd',
     'play_bounds_test.gd',
     'open_play_environment_test.gd',
     'terrain_surface_paint_scope_test.gd',

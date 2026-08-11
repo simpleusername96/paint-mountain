@@ -1,0 +1,78 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+OpenGL API 3.3.0 - Build 32.0.101.7088 - Compatibility - Using Device: Intel - Intel(R) Iris(R) Xe Graphics
+
+{"memory_static":0,"object_count":2371,"paint_mountain_marker":"app_root_ready","render_video_memory":21577991,"selected_stage_id":"stage_01","time_usec":1395096}
+{"layout_checksum":3726189036,"memory_static":0,"object_count":2418,"paint_mountain_marker":"layout_ready","render_video_memory":22579005,"stage_id":"stage_01","time_usec":1552210}
+{"memory_static":0,"object_count":2419,"paint_mountain_marker":"artifact_prepare_started","render_video_memory":22579005,"selected":true,"stage_id":"stage_01","time_usec":1560687}
+{"memory_static":0,"object_count":2421,"paint_mountain_marker":"artifact_phase","phase":"START_GEOMETRY","render_video_memory":22579005,"stage_id":"stage_01","time_usec":1567925}
+{"memory_static":0,"object_count":2422,"paint_mountain_marker":"artifact_phase","phase":"BUILD_GEOMETRY","render_video_memory":22579005,"stage_id":"stage_01","time_usec":1568373}
+{"memory_static":0,"object_count":2426,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PLAYABLE_POINTS","render_video_memory":26522053,"stage_id":"stage_01","time_usec":1640278}
+{"memory_static":0,"object_count":2426,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PRESENTATION_POINTS","render_video_memory":26522053,"stage_id":"stage_01","time_usec":1646795}
+{"memory_static":0,"object_count":2426,"paint_mountain_marker":"artifact_phase","phase":"INIT_DRESSING","render_video_memory":26522053,"stage_id":"stage_01","time_usec":1653132}
+{"memory_static":0,"object_count":2426,"paint_mountain_marker":"artifact_phase","phase":"BUILD_DRESSING","render_video_memory":26522053,"stage_id":"stage_01","time_usec":1684622}
+{"memory_static":0,"object_count":2436,"paint_mountain_marker":"artifact_phase","phase":"PRELOAD_DRESSING","render_video_memory":26522053,"stage_id":"stage_01","time_usec":1685149}
+{"memory_static":0,"object_count":2466,"paint_mountain_marker":"artifact_phase","phase":"INIT_PAINT","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1691581}
+{"memory_static":0,"object_count":2467,"paint_mountain_marker":"artifact_phase","phase":"BUILD_TOPOLOGY","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1691962}
+{"memory_static":0,"object_count":2467,"paint_mountain_marker":"artifact_phase","phase":"BUILD_X_AXIS","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1734161}
+{"memory_static":0,"object_count":2467,"paint_mountain_marker":"artifact_phase","phase":"BUILD_Y_AXIS","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1735107}
+{"memory_static":0,"object_count":2467,"paint_mountain_marker":"artifact_phase","phase":"CREATE_TARGET_IMAGE","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1735904}
+{"memory_static":0,"object_count":2468,"paint_mountain_marker":"artifact_phase","phase":"CREATE_TARGET_TEXTURE","render_video_memory":26541045,"stage_id":"stage_01","time_usec":1736124}
+{"memory_static":0,"object_count":2469,"paint_mountain_marker":"artifact_phase","phase":"INIT_PREVIEW_PAINT","render_video_memory":26890570,"stage_id":"stage_01","time_usec":1736752}
+{"memory_static":0,"object_count":2469,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PREVIEW_PAINT","render_video_memory":26890570,"stage_id":"stage_01","time_usec":1736926}
+{"memory_static":0,"object_count":2469,"paint_mountain_marker":"artifact_phase","phase":"CREATE_PREVIEW_TEXTURE","render_video_memory":26890570,"stage_id":"stage_01","time_usec":1771924}
+{"memory_static":0,"object_count":2470,"paint_mountain_marker":"artifact_phase","phase":"COMPLETE","render_video_memory":26902856,"stage_id":"stage_01","time_usec":1772910}
+{"elapsed_usec":221512,"max_slice_usec":8975,"memory_static":0,"object_count":2470,"paint_mountain_marker":"artifact_prepare_complete","render_video_memory":26902856,"stage_id":"stage_01","time_usec":1782195}
+{"artifact_cache_entries":1,"layout_checksum":3726189036,"memory_static":0,"object_count":2470,"paint_mountain_marker":"artifact_ready","render_video_memory":26902856,"stage_id":"stage_01","time_usec":1789048}
+{"memory_static":0,"object_count":2947,"paint_mountain_marker":"gameplay_binding_started","render_video_memory":26961216,"stage_id":"stage_01","time_usec":1834052}
+{"memory_static":0,"object_count":2984,"paint_mountain_marker":"gameplay_world_bound","render_video_memory":27311941,"stage_id":"stage_01","time_usec":1852249}
+Paint Mountain gameplay scene ready in BRIEFING.
+{"memory_static":0,"object_count":3015,"paint_mountain_marker":"gameplay_warmup_started","render_video_memory":27316033,"stage_id":"stage_01","time_usec":1866216}
+{"effect_family_count":5,"memory_static":0,"object_count":3020,"paint_mountain_marker":"gameplay_warmup_complete","render_video_memory":33706609,"stage_id":"stage_01","time_usec":1969745}
+{"artifact_cache_entries":1,"memory_static":0,"object_count":3020,"paint_mountain_marker":"gameplay_prepared","render_video_memory":33706609,"stage_id":"stage_01","time_usec":1978469}
+{"artifact_cache_entries":1,"memory_static":0,"object_count":3022,"paint_mountain_marker":"gameplay_visible","render_video_memory":33706609,"stage_id":"stage_01","time_usec":1991223}
+Delivery stage entry ready: stage=stage_01
+{"active_projectiles":0,"memory_static":0,"object_count":3021,"paint_mountain_marker":"gameplay_soak_end","render_video_memory":34171979,"stage_id":"stage_01","time_usec":2047807}
+{"memory_static":0,"object_count":3488,"paint_mountain_marker":"gameplay_binding_started","render_video_memory":34208059,"stage_id":"stage_01","time_usec":2105267}
+{"memory_static":0,"object_count":3524,"paint_mountain_marker":"gameplay_world_bound","render_video_memory":34558784,"stage_id":"stage_01","time_usec":2124195}
+Paint Mountain gameplay scene ready in BRIEFING.
+{"memory_static":0,"object_count":3529,"paint_mountain_marker":"gameplay_warmup_started","render_video_memory":36211076,"stage_id":"stage_01","time_usec":2153367}
+{"effect_family_count":5,"memory_static":0,"object_count":3530,"paint_mountain_marker":"gameplay_warmup_complete","render_video_memory":36211076,"stage_id":"stage_01","time_usec":2153726}
+{"artifact_cache_entries":1,"memory_static":0,"object_count":3530,"paint_mountain_marker":"gameplay_prepared","render_video_memory":36211076,"stage_id":"stage_01","time_usec":2163108}
+{"active_projectiles":0,"memory_static":0,"object_count":3024,"paint_mountain_marker":"gameplay_soak_end","render_video_memory":35781575,"stage_id":"stage_01","time_usec":2200991}
+{"layout_checksum":3640624526,"memory_static":0,"object_count":3138,"paint_mountain_marker":"layout_ready","render_video_memory":35577355,"stage_id":"stage_25","time_usec":2379792}
+{"memory_static":0,"object_count":3139,"paint_mountain_marker":"artifact_prepare_started","render_video_memory":35577355,"selected":true,"stage_id":"stage_25","time_usec":2388363}
+{"memory_static":0,"object_count":3141,"paint_mountain_marker":"artifact_phase","phase":"START_GEOMETRY","render_video_memory":35577355,"stage_id":"stage_25","time_usec":2396969}
+{"memory_static":0,"object_count":3142,"paint_mountain_marker":"artifact_phase","phase":"BUILD_GEOMETRY","render_video_memory":35577355,"stage_id":"stage_25","time_usec":2397890}
+{"from_stage_id":"stage_01","memory_static":0,"object_count":2639,"paint_mountain_marker":"stage_selection_started","render_video_memory":35190550,"time_usec":2435422,"to_stage_id":"stage_30"}
+{"layout_checksum":1006127995,"memory_static":0,"object_count":2752,"paint_mountain_marker":"layout_ready","render_video_memory":35190550,"stage_id":"stage_30","time_usec":2608493}
+{"memory_static":0,"object_count":2753,"paint_mountain_marker":"artifact_prepare_started","render_video_memory":35190550,"selected":true,"stage_id":"stage_30","time_usec":2616781}
+{"memory_static":0,"object_count":2755,"paint_mountain_marker":"artifact_phase","phase":"START_GEOMETRY","render_video_memory":35190550,"stage_id":"stage_30","time_usec":2624986}
+{"memory_static":0,"object_count":2756,"paint_mountain_marker":"artifact_phase","phase":"BUILD_GEOMETRY","render_video_memory":35190550,"stage_id":"stage_30","time_usec":2625658}
+{"memory_static":0,"object_count":2760,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PLAYABLE_POINTS","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2761557}
+{"memory_static":0,"object_count":2760,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PRESENTATION_POINTS","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2802742}
+{"memory_static":0,"object_count":2760,"paint_mountain_marker":"artifact_phase","phase":"INIT_DRESSING","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2813778}
+{"memory_static":0,"object_count":2760,"paint_mountain_marker":"artifact_phase","phase":"BUILD_DRESSING","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2845297}
+{"memory_static":0,"object_count":2792,"paint_mountain_marker":"artifact_phase","phase":"PRELOAD_DRESSING","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2845673}
+{"memory_static":0,"object_count":2792,"paint_mountain_marker":"artifact_phase","phase":"INIT_PAINT","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2845922}
+{"memory_static":0,"object_count":2793,"paint_mountain_marker":"artifact_phase","phase":"BUILD_TOPOLOGY","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2846267}
+{"memory_static":0,"object_count":2793,"paint_mountain_marker":"artifact_phase","phase":"BUILD_X_AXIS","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2893582}
+{"memory_static":0,"object_count":2793,"paint_mountain_marker":"artifact_phase","phase":"BUILD_Y_AXIS","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2894472}
+{"memory_static":0,"object_count":2793,"paint_mountain_marker":"artifact_phase","phase":"CREATE_TARGET_IMAGE","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2895220}
+{"memory_static":0,"object_count":2794,"paint_mountain_marker":"artifact_phase","phase":"CREATE_TARGET_TEXTURE","render_video_memory":36741526,"stage_id":"stage_30","time_usec":2895394}
+{"memory_static":0,"object_count":2795,"paint_mountain_marker":"artifact_phase","phase":"INIT_PREVIEW_PAINT","render_video_memory":37091051,"stage_id":"stage_30","time_usec":2895718}
+{"memory_static":0,"object_count":2795,"paint_mountain_marker":"artifact_phase","phase":"BUILD_PREVIEW_PAINT","render_video_memory":37091051,"stage_id":"stage_30","time_usec":2895883}
+{"memory_static":0,"object_count":2795,"paint_mountain_marker":"artifact_phase","phase":"CREATE_PREVIEW_TEXTURE","render_video_memory":37091051,"stage_id":"stage_30","time_usec":2931605}
+{"memory_static":0,"object_count":2796,"paint_mountain_marker":"artifact_phase","phase":"COMPLETE","render_video_memory":37103337,"stage_id":"stage_30","time_usec":2932264}
+{"elapsed_usec":323134,"max_slice_usec":12015,"memory_static":0,"object_count":2796,"paint_mountain_marker":"artifact_prepare_complete","render_video_memory":37103337,"stage_id":"stage_30","time_usec":2939910}
+{"artifact_cache_entries":2,"layout_checksum":1006127995,"memory_static":0,"object_count":2796,"paint_mountain_marker":"artifact_ready","render_video_memory":37103337,"stage_id":"stage_30","time_usec":2947565}
+{"memory_static":0,"object_count":3263,"paint_mountain_marker":"gameplay_binding_started","render_video_memory":37139417,"stage_id":"stage_30","time_usec":2986943}
+{"memory_static":0,"object_count":3407,"paint_mountain_marker":"gameplay_world_bound","render_video_memory":37531902,"stage_id":"stage_30","time_usec":3054459}
+Paint Mountain gameplay scene ready in BRIEFING.
+{"memory_static":0,"object_count":3411,"paint_mountain_marker":"gameplay_warmup_started","render_video_memory":37784854,"stage_id":"stage_30","time_usec":3059133}
+{"effect_family_count":5,"memory_static":0,"object_count":3412,"paint_mountain_marker":"gameplay_warmup_complete","render_video_memory":37784854,"stage_id":"stage_30","time_usec":3059504}
+{"artifact_cache_entries":2,"memory_static":0,"object_count":3412,"paint_mountain_marker":"gameplay_prepared","render_video_memory":37784854,"stage_id":"stage_30","time_usec":3067043}
+{"memory_static":0,"object_count":3411,"paint_mountain_marker":"stage_selection_ready","render_video_memory":37770622,"stage_id":"stage_30","time_usec":3114700}
+{"artifact_cache_entries":2,"memory_static":0,"object_count":3412,"paint_mountain_marker":"gameplay_visible","render_video_memory":37770622,"stage_id":"stage_30","time_usec":3130536}
+{"memory_static":0,"object_count":3412,"paint_mountain_marker":"stage_selection_complete","render_video_memory":37770622,"stage_id":"stage_30","time_usec":3130833}
+Delivery capture stage_transition_briefing -> D:\npjt\paint-mountain\docs\evidence\stage-selection-readiness-2026-08-11\stage_01-to-stage_30-briefing-1280x720.png (1280x720, OK)
+{"active_projectiles":0,"memory_static":0,"object_count":3410,"paint_mountain_marker":"gameplay_soak_end","render_video_memory":37682247,"stage_id":"stage_30","time_usec":4622302}
