@@ -27,6 +27,7 @@ var _triangle_cursor: int = 0
 var _boundary_cursor: int = 0
 var _canonical_vertices := PackedVector3Array()
 var _canonical_indices := PackedInt32Array()
+var _canonical_normals := PackedVector3Array()
 var _boundary_edges := PackedInt32Array()
 var _top_vertices := PackedVector3Array()
 var _top_normals := PackedVector3Array()
@@ -47,6 +48,7 @@ var _render_mesh: ArrayMesh
 var _top_shape: ConcavePolygonShape3D
 var _skirt_shape: ConcavePolygonShape3D
 var _result: TerrainGeometry
+var _skirt_vertex_count: int = 0
 
 
 func _init(
@@ -60,7 +62,9 @@ func _init(
 	_base_y = base_y
 	_canonical_vertices = _topology.canonical_vertices_read_only()
 	_canonical_indices = _topology.canonical_triangle_indices_read_only()
+	_canonical_normals = _topology.canonical_triangle_normals_read_only()
 	_boundary_edges = _topology.boundary_edges_read_only()
+	_preallocate_output_arrays()
 
 
 func step(budget_usec: int = 8000) -> bool:
@@ -131,24 +135,23 @@ func _step_top() -> void:
 	var a := _canonical_vertices[index_a]
 	var b := _canonical_vertices[index_b]
 	var c := _canonical_vertices[index_c]
-	var upward_normal := (b - a).cross(c - a).normalized()
-	TerrainGeometryFactory._append_triangle(
-		_top_vertices,
-		_top_normals,
-		_top_uvs,
-		_top_colors,
-		a,
-		c,
-		b,
+	var upward_normal := _canonical_normals[_triangle_cursor]
+	var classification := TerrainGeometryFactory._paintable_facet_color(a, b, c)
+	_write_triangle(
+		_top_vertices, _top_normals, _top_uvs, _top_colors, corner_offset,
+		a, c, b,
 		TerrainGeometryFactory._uv_for(_topology.local_bounds, a),
 		TerrainGeometryFactory._uv_for(_topology.local_bounds, c),
 		TerrainGeometryFactory._uv_for(_topology.local_bounds, b),
-		true,
-		upward_normal
+		upward_normal, classification
 	)
-	_top_source_vertices.append_array(PackedInt32Array([index_a, index_c, index_b]))
-	_top_source_triangles.append(_triangle_cursor)
-	_top_collision_faces.append_array(PackedVector3Array([a, b, c]))
+	_top_source_vertices[corner_offset] = index_a
+	_top_source_vertices[corner_offset + 1] = index_c
+	_top_source_vertices[corner_offset + 2] = index_b
+	_top_source_triangles[_triangle_cursor] = _triangle_cursor
+	_top_collision_faces[corner_offset] = a
+	_top_collision_faces[corner_offset + 1] = b
+	_top_collision_faces[corner_offset + 2] = c
 	_triangle_cursor += 1
 
 
@@ -162,14 +165,20 @@ func _step_skirts() -> void:
 		minf(top_a.y, top_b.y) - _base_y >= TerrainGeometryFactory.MINIMUM_SKIRT_HEIGHT,
 		"Terrain boundary must retain the minimum visible skirt height."
 	)
-	TerrainGeometryFactory._append_wall_quad(
-		top_a,
-		top_b,
-		_base_y,
-		_shell_vertices,
-		_shell_normals,
-		_shell_uvs,
-		_shell_colors
+	var bottom_a := Vector3(top_a.x, _base_y, top_a.z)
+	var bottom_b := Vector3(top_b.x, _base_y, top_b.z)
+	var vertex_offset := (_boundary_cursor / 2) * 6
+	_write_triangle(
+		_shell_vertices, _shell_normals, _shell_uvs, _shell_colors, vertex_offset,
+		top_a, top_b, bottom_a,
+		Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN,
+		(top_b - top_a).cross(bottom_a - top_a).normalized(), Color.BLACK
+	)
+	_write_triangle(
+		_shell_vertices, _shell_normals, _shell_uvs, _shell_colors, vertex_offset + 3,
+		top_b, bottom_b, bottom_a,
+		Vector2.RIGHT, Vector2.ONE, Vector2.DOWN,
+		(bottom_b - top_b).cross(bottom_a - top_b).normalized(), Color.BLACK
 	)
 	_boundary_cursor += 2
 
@@ -185,20 +194,59 @@ func _step_bottom() -> void:
 	var a := Vector3(source_a.x, _base_y, source_a.z)
 	var b := Vector3(source_b.x, _base_y, source_b.z)
 	var c := Vector3(source_c.x, _base_y, source_c.z)
-	TerrainGeometryFactory._append_triangle(
-		_shell_vertices,
-		_shell_normals,
-		_shell_uvs,
-		_shell_colors,
-		a,
-		c,
-		b,
-		Vector2.ZERO,
-		Vector2.ONE,
-		Vector2.RIGHT,
-		false
+	var vertex_offset := _skirt_vertex_count + _triangle_cursor * 3
+	_write_triangle(
+		_shell_vertices, _shell_normals, _shell_uvs, _shell_colors, vertex_offset,
+		a, c, b, Vector2.ZERO, Vector2.ONE, Vector2.RIGHT,
+		(c - a).cross(b - a).normalized(), Color.BLACK
 	)
 	_triangle_cursor += 1
+
+
+func _preallocate_output_arrays() -> void:
+	var top_corner_count := _topology.triangle_count() * TerrainTopTopology.CORNERS_PER_TRIANGLE
+	_skirt_vertex_count = (_boundary_edges.size() / 2) * 6
+	var shell_vertex_count := _skirt_vertex_count + top_corner_count
+	_top_vertices.resize(top_corner_count)
+	_top_normals.resize(top_corner_count)
+	_top_uvs.resize(top_corner_count)
+	_top_colors.resize(top_corner_count)
+	_top_source_vertices.resize(top_corner_count)
+	_top_source_triangles.resize(_topology.triangle_count())
+	_top_collision_faces.resize(top_corner_count)
+	_shell_vertices.resize(shell_vertex_count)
+	_shell_normals.resize(shell_vertex_count)
+	_shell_uvs.resize(shell_vertex_count)
+	_shell_colors.resize(shell_vertex_count)
+
+
+func _write_triangle(
+		vertices: PackedVector3Array,
+		normals: PackedVector3Array,
+		uvs: PackedVector2Array,
+		colors: PackedColorArray,
+		offset: int,
+		a: Vector3,
+		b: Vector3,
+		c: Vector3,
+		uv_a: Vector2,
+		uv_b: Vector2,
+		uv_c: Vector2,
+		normal: Vector3,
+		classification: Color
+) -> void:
+	vertices[offset] = a
+	vertices[offset + 1] = b
+	vertices[offset + 2] = c
+	normals[offset] = normal
+	normals[offset + 1] = normal
+	normals[offset + 2] = normal
+	uvs[offset] = uv_a
+	uvs[offset + 1] = uv_b
+	uvs[offset + 2] = uv_c
+	colors[offset] = classification
+	colors[offset + 1] = classification
+	colors[offset + 2] = classification
 
 
 func _create_mesh() -> void:

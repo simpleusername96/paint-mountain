@@ -146,15 +146,17 @@ static func _append_triangle(
 	vertices.append_array(PackedVector3Array([a, b, c]))
 	normals.append_array(PackedVector3Array([normal, normal, normal]))
 	uvs.append_array(PackedVector2Array([uv_a, uv_b, uv_c]))
-	var classification := Color.BLACK
-	if paintable:
-		var center := (a + b + c) / 3.0
-		var facet_seed := sin(center.x * 12.9898 + center.z * 78.233) * 43758.5453
-		var facet_tone := fposmod(facet_seed, 1.0)
-		# Red remains the binary top/shell contract. Green carries a stable
-		# per-triangle tone so the low-poly surface stays readable in bright light.
-		classification = Color(1.0, facet_tone, 0.0, 1.0)
+	var classification := _paintable_facet_color(a, b, c) if paintable else Color.BLACK
 	colors.append_array(PackedColorArray([classification, classification, classification]))
+
+
+static func _paintable_facet_color(a: Vector3, b: Vector3, c: Vector3) -> Color:
+	var center := (a + b + c) / 3.0
+	var facet_seed := sin(center.x * 12.9898 + center.z * 78.233) * 43758.5453
+	var facet_tone := fposmod(facet_seed, 1.0)
+	# Red remains the binary top/shell contract. Green carries a stable
+	# per-triangle tone so the low-poly surface stays readable in bright light.
+	return Color(1.0, facet_tone, 0.0, 1.0)
 
 
 static func _uv_for(bounds: Rect2, vertex: Vector3) -> Vector2:

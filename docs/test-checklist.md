@@ -33,12 +33,14 @@ related:
   - ../.agents/execplans/2026-08-11-web-runtime-responsiveness.md
   - ../.agents/execplans/2026-08-11-grounded-environment-assets.md
   - ../.agents/execplans/2026-08-11-terrain-centered-orbit.md
+  - ../.agents/execplans/2026-08-11-fast-stage-readiness.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
   - evidence/essential-ui-fidelity-2026-08-10/README.md
   - evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - evidence/fast-stage-readiness-2026-08-11/README.md
   - reports/environment-grounding-2026-08-11/index.html
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
@@ -56,6 +58,34 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed fast stage-readiness gate (2026-08-11)
+
+- [x] Prepared terrain uses preallocated packed arrays, topology-owned canonical
+  normals, and an index-sized playable-vertex membership set without changing
+  geometry, collision, paint classification, or prepared-artifact identity.
+- [x] Presentation effects share immutable material/mesh resources only within
+  each family. First-use warm-up covers terrain, projectile, and all five effect
+  families in two completed render frames; later matching stages reuse only a
+  successful process-local warm-up.
+- [x] Web and development preparation retain an 8 ms cooperative budget. Native
+  release preparation uses 12 ms and the measured maximum artifact slice is
+  13.312 ms, below the 16 ms release ceiling.
+- [x] Three fresh Windows-release samples measure Stage 01 readiness at
+  615.258/527.232/623.006 ms (615.258 ms median) and Stage 30 at
+  779.513/796.946/851.981 ms (796.946 ms median). Both pass the 700/900 ms
+  budgets and improve about 28%/31% over the fresh 858/1,154 ms baselines.
+- [x] Focused preparer, entry, warm-up, UI, and localization checks,
+  `scripts/verify.ps1`, the complete ordered suite, and a fresh Godot 4.7.1
+  Windows release export pass.
+- [x] The implementing agent inspected separate Korean Stage 01 and Stage 30
+  briefing captures at 1280x720. Terrain, environment, mechanisms, copy,
+  buttons, focus, and framing are complete with no clipping or debug overlay.
+- [x] The fastrun registry still launches the rebuilt
+  `builds/windows/PaintMountain.exe`. No itch.io upload or visibility change is
+  claimed.
+
+Evidence: `evidence/fast-stage-readiness-2026-08-11/README.md`.
 
 ## Completed fixed-center terrain-inspection gate (2026-08-11)
 

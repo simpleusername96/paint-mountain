@@ -129,6 +129,10 @@ func canonical_triangle_indices_read_only() -> PackedInt32Array:
 	return _triangle_indices.duplicate()
 
 
+func canonical_triangle_normals_read_only() -> PackedVector3Array:
+	return _triangle_normals.duplicate()
+
+
 func boundary_edges_read_only() -> PackedInt32Array:
 	return _boundary_edges.duplicate()
 

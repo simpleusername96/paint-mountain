@@ -34,12 +34,14 @@ related:
   - execplans/2026-08-11-web-runtime-responsiveness.md
   - execplans/2026-08-11-grounded-environment-assets.md
   - execplans/2026-08-11-terrain-centered-orbit.md
+  - execplans/2026-08-11-fast-stage-readiness.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
   - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - ../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - ../docs/evidence/fast-stage-readiness-2026-08-11/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -54,6 +56,46 @@ related:
 ---
 
 # Project Record
+
+## Fast Stage Readiness (2026-08-11)
+
+### Implemented state
+
+- `TerrainGeometryBuildJob` preallocates its top, shell, collision, and source
+  arrays; writes triangles by index; and consumes the topology-owned canonical
+  normals. It no longer creates small packed arrays or recalculates normals per
+  triangle. Geometry, collision, source identity, and paint classification are
+  unchanged.
+- `StageRuntimePreparer` uses an index-sized packed-byte membership set for
+  playable vertices. Native release preparation may spend up to 12 ms per
+  cooperative step, while Web and development builds retain the 8 ms budget.
+- `PresentationEffects` shares immutable process materials and draw meshes
+  within each effect family. Live particle nodes keep independent emission and
+  transform state. `GameplayFirstUseWarmup` batches every required family into
+  two completed render frames and reuses only a successful, matching
+  process-local warm-up for later stages.
+- Delivery-only telemetry records total artifact preparation and its longest
+  cooperative slice. Normal gameplay output and the truthful readiness gate are
+  unchanged.
+- Briefing Back and Start copy is refreshed explicitly from the active locale,
+  so the rendered action labels do not depend on scene-key auto-translation.
+
+### Verified state and limits
+
+- Focused preparer, prepared-entry, warm-up, Phase 7 UI, and localization tests,
+  `scripts/verify.ps1`, the complete ordered Godot suite, and the Godot 4.7.1
+  Windows release export pass.
+- Three fresh release samples measure `app_root_ready` to `gameplay_prepared`
+  at a 615.258 ms Stage 01 median and 796.946 ms Stage 30 median, down about 28%
+  and 31% from the fresh 858/1,154 ms pre-change medians. The largest artifact
+  slice is 13.312 ms, below the 16 ms release ceiling.
+- Korean Stage 01 and Stage 30 briefing captures were inspected at 1280x720.
+  Terrain, environment, mechanisms, copy, actions, focus, and framing are
+  complete with no clipping or debug overlay.
+- The fastrun registry still launches the rebuilt canonical
+  `builds/windows/PaintMountain.exe`. Evidence is under
+  `docs/evidence/fast-stage-readiness-2026-08-11/`. The itch.io upload was not
+  changed.
 
 ## Fixed-Center Terrain Inspection (2026-08-11)
 

@@ -17,6 +17,10 @@ var _next_mist: int = 0
 var _next_impact: int = 0
 var _next_muzzle: int = 0
 var _next_glint: int = 0
+var _shared_splash_process_material: ParticleProcessMaterial
+var _shared_splash_mesh: SphereMesh
+var _shared_textured_process_material: ParticleProcessMaterial
+var _shared_textured_meshes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -81,28 +85,8 @@ func _build_particle(index: int) -> GPUParticles3D:
 	particle.lifetime = 0.72
 	particle.randomness = 0.36
 	particle.visibility_aabb = AABB(Vector3(-18.0, -12.0, -18.0), Vector3(36.0, 32.0, 36.0))
-	var process_material := ParticleProcessMaterial.new()
-	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_material.emission_sphere_radius = 0.5
-	process_material.direction = Vector3.UP
-	process_material.spread = 78.0
-	process_material.initial_velocity_min = 5.0
-	process_material.initial_velocity_max = 11.0
-	process_material.gravity = Vector3(0.0, -16.0, 0.0)
-	process_material.scale_min = 0.5
-	process_material.scale_max = 1.45
-	process_material.color = Color(0.035, 0.38, 0.98, 0.94)
-	particle.process_material = process_material
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.14
-	mesh.height = 0.28
-	mesh.radial_segments = 8
-	mesh.rings = 4
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.035, 0.38, 0.98, 1.0)
-	material.roughness = 0.3
-	mesh.material = material
-	particle.draw_pass_1 = mesh
+	particle.process_material = _splash_process_material()
+	particle.draw_pass_1 = _splash_mesh()
 	return particle
 
 
@@ -121,18 +105,66 @@ func _build_textured_particle(
 	particle.lifetime = lifetime
 	particle.randomness = 0.3
 	particle.visibility_aabb = AABB(Vector3(-12.0, -12.0, -12.0), Vector3(24.0, 24.0, 24.0))
-	var process_material := ParticleProcessMaterial.new()
-	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_material.emission_sphere_radius = 0.55
-	process_material.direction = Vector3.UP
-	process_material.spread = 80.0
-	process_material.initial_velocity_min = 0.4
-	process_material.initial_velocity_max = 2.2
-	process_material.gravity = Vector3(0.0, -1.4, 0.0)
-	process_material.scale_min = 0.65
-	process_material.scale_max = 1.25
-	process_material.color = Color(0.035, 0.38, 1.0, 0.88)
-	particle.process_material = process_material
+	particle.process_material = _textured_process_material()
+	particle.draw_pass_1 = _textured_mesh(texture, size)
+	add_child(particle)
+	return particle
+
+
+func _splash_process_material() -> ParticleProcessMaterial:
+	if _shared_splash_process_material != null:
+		return _shared_splash_process_material
+	_shared_splash_process_material = ParticleProcessMaterial.new()
+	_shared_splash_process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	_shared_splash_process_material.emission_sphere_radius = 0.5
+	_shared_splash_process_material.direction = Vector3.UP
+	_shared_splash_process_material.spread = 78.0
+	_shared_splash_process_material.initial_velocity_min = 5.0
+	_shared_splash_process_material.initial_velocity_max = 11.0
+	_shared_splash_process_material.gravity = Vector3(0.0, -16.0, 0.0)
+	_shared_splash_process_material.scale_min = 0.5
+	_shared_splash_process_material.scale_max = 1.45
+	_shared_splash_process_material.color = Color(0.035, 0.38, 0.98, 0.94)
+	return _shared_splash_process_material
+
+
+func _splash_mesh() -> SphereMesh:
+	if _shared_splash_mesh != null:
+		return _shared_splash_mesh
+	_shared_splash_mesh = SphereMesh.new()
+	_shared_splash_mesh.radius = 0.14
+	_shared_splash_mesh.height = 0.28
+	_shared_splash_mesh.radial_segments = 8
+	_shared_splash_mesh.rings = 4
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.035, 0.38, 0.98, 1.0)
+	material.roughness = 0.3
+	_shared_splash_mesh.material = material
+	return _shared_splash_mesh
+
+
+func _textured_process_material() -> ParticleProcessMaterial:
+	if _shared_textured_process_material != null:
+		return _shared_textured_process_material
+	_shared_textured_process_material = ParticleProcessMaterial.new()
+	_shared_textured_process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	_shared_textured_process_material.emission_sphere_radius = 0.55
+	_shared_textured_process_material.direction = Vector3.UP
+	_shared_textured_process_material.spread = 80.0
+	_shared_textured_process_material.initial_velocity_min = 0.4
+	_shared_textured_process_material.initial_velocity_max = 2.2
+	_shared_textured_process_material.gravity = Vector3(0.0, -1.4, 0.0)
+	_shared_textured_process_material.scale_min = 0.65
+	_shared_textured_process_material.scale_max = 1.25
+	_shared_textured_process_material.color = Color(0.035, 0.38, 1.0, 0.88)
+	return _shared_textured_process_material
+
+
+func _textured_mesh(texture: Texture2D, size: Vector2) -> QuadMesh:
+	var key := "%s|%.3f|%.3f" % [texture.resource_path, size.x, size.y]
+	var cached := _shared_textured_meshes.get(key) as QuadMesh
+	if cached != null:
+		return cached
 	var quad := QuadMesh.new()
 	quad.size = size
 	var material := StandardMaterial3D.new()
@@ -142,9 +174,8 @@ func _build_textured_particle(
 	material.vertex_color_use_as_albedo = true
 	material.albedo_texture = texture
 	quad.material = material
-	particle.draw_pass_1 = quad
-	add_child(particle)
-	return particle
+	_shared_textured_meshes[key] = quad
+	return quad
 
 
 func _emit_textured(pool: Array[GPUParticles3D], next_index: int, world_position: Vector3, amount: int) -> int:

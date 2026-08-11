@@ -17,6 +17,7 @@ func _run_checks() -> void:
 	_assert_true(sources.size() == 5, "warm-up must cover every distinct presentation effect family")
 	for source in sources:
 		_assert_true(not source.emitting, "warm-up sources must start inactive")
+	_assert_shared_effect_resources(effects)
 
 	var warmup := GameplayFirstUseWarmup.new()
 	root.add_child(warmup)
@@ -47,6 +48,26 @@ func _run_checks() -> void:
 	for source in sources:
 		_assert_true(not source.emitting, "warm-up must not mutate the live presentation pools")
 
+	var shared_warmup := GameplayFirstUseWarmup.new()
+	root.add_child(shared_warmup)
+	var shared_completed_count := [0]
+	shared_warmup.completed.connect(func() -> void: shared_completed_count[0] += 1)
+	var shared_start_frame := Engine.get_process_frames()
+	shared_warmup.run(_triangle_mesh(), material, PROJECTILE_DATA, sources)
+	_assert_true(
+		shared_warmup.is_complete() and Engine.get_process_frames() == shared_start_frame,
+		"a later stage with the same render families must reuse process-local warm-up synchronously"
+	)
+	_assert_true(
+		shared_completed_count[0] == 1 \
+				and shared_warmup.warmed_effect_family_count() == sources.size(),
+		"shared completion must retain the exact warmed effect-family coverage"
+	)
+	_assert_true(
+		shared_warmup.get_node_or_null("FirstUseWarmupViewport") == null,
+		"shared warm-up reuse must not create another render viewport"
+	)
+
 	warmup.run(_triangle_mesh(), material, PROJECTILE_DATA, sources)
 	_assert_true(completed_count[0] == 2, "idempotent repeated warm-up must complete synchronously")
 	_assert_true(
@@ -56,6 +77,7 @@ func _run_checks() -> void:
 	if not _failed:
 		print("Gameplay first-use warm-up passed: complete families, cleanup, idempotence, and no gameplay owners.")
 	warmup.queue_free()
+	shared_warmup.queue_free()
 	effects.queue_free()
 	await process_frame
 	quit(1 if _failed else 0)
@@ -83,6 +105,23 @@ func _triangle_mesh() -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
+
+
+func _assert_shared_effect_resources(effects: PresentationEffects) -> void:
+	for pair in [
+		["PaintSplash01", "PaintSplash02"],
+		["PaintMist01", "PaintMist02"],
+		["ImpactRipple01", "ImpactRipple02"],
+		["MuzzleRing01", "MuzzleRing02"],
+		["Glint01", "Glint02"],
+	]:
+		var first := effects.get_node(String(pair[0])) as GPUParticles3D
+		var second := effects.get_node(String(pair[1])) as GPUParticles3D
+		_assert_true(
+			first.process_material == second.process_material \
+					and first.draw_pass_1 == second.draw_pass_1,
+			"effect family %s must share immutable process and draw resources" % pair[0]
+		)
 
 
 func _assert_true(condition: bool, message: String) -> void:

@@ -6,7 +6,8 @@ signal artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact)
 signal artifact_failed(stage_id: StringName)
 
 const MAX_CACHED_ARTIFACTS := 3
-const STEP_BUDGET_USEC := 8000
+const WEB_AND_DEVELOPMENT_STEP_BUDGET_USEC := 8000
+const NATIVE_RELEASE_STEP_BUDGET_USEC := 12000
 const MASK_SIZE := 512
 const PREVIEW_MASK_SIZE := 96
 const SURFACE_SAMPLE_UNKNOWN := 0
@@ -48,12 +49,19 @@ func _process(_delta: float) -> void:
 	var selected := not _selected_job.is_empty()
 	if not selected and _prefetch_job.is_empty():
 		return
+	var step_budget_usec := _step_budget_usec()
 	var started_at := Time.get_ticks_usec()
 	while not (_selected_job if selected else _prefetch_job).is_empty():
 		var elapsed := int(Time.get_ticks_usec() - started_at)
-		if elapsed >= STEP_BUDGET_USEC:
+		if elapsed >= step_budget_usec:
 			break
-		_advance_job(selected, STEP_BUDGET_USEC - elapsed)
+		_advance_job(selected, step_budget_usec - elapsed)
+
+
+func _step_budget_usec() -> int:
+	if OS.has_feature("web") or OS.has_feature("editor"):
+		return WEB_AND_DEVELOPMENT_STEP_BUDGET_USEC
+	return NATIVE_RELEASE_STEP_BUDGET_USEC
 
 
 func request_artifact(
@@ -122,7 +130,7 @@ func _new_job(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
 		"artifact": StageRuntimeArtifact.new(),
 		"geometry_job": null,
 		"playable_cell_cursor": 0,
-		"playable_seen": {},
+		"playable_seen": PackedByteArray(),
 		"playable_points": PackedVector3Array(),
 		"dressing_cursor": 0,
 		"dressing_model_ids": [],
@@ -131,10 +139,13 @@ func _new_job(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
 		"axis_cursor": 0,
 		"preview_cursor": 0,
 		"preview_bytes": PackedByteArray(),
+		"started_at_usec": Time.get_ticks_usec(),
+		"max_slice_usec": 0,
 	}
 
 
 func _advance_job(selected: bool, budget_usec: int) -> void:
+	var slice_started_at := Time.get_ticks_usec()
 	var job: Dictionary = _selected_job if selected else _prefetch_job
 	var stage := job.get("stage") as StageData
 	if stage == null:
@@ -222,6 +233,13 @@ func _advance_job(selected: bool, budget_usec: int) -> void:
 			if not artifact.is_complete_for(stage, PAINT_SURFACE_TUNING, MASK_SIZE):
 				_finish_failure(selected, stage.stage_id)
 				return
+			var current_slice_usec := int(Time.get_ticks_usec() - slice_started_at)
+			job.max_slice_usec = maxi(int(job.get("max_slice_usec", 0)), current_slice_usec)
+			RuntimeDeliveryTelemetry.emit_marker(&"artifact_prepare_complete", {
+				"stage_id": String(stage.stage_id),
+				"elapsed_usec": int(Time.get_ticks_usec() - int(job.get("started_at_usec", 0))),
+				"max_slice_usec": int(job.max_slice_usec),
+			})
 			_cache(stage.stage_id, artifact)
 			if selected:
 				_selected_job = {}
@@ -229,6 +247,10 @@ func _advance_job(selected: bool, budget_usec: int) -> void:
 				_prefetch_job = {}
 			artifact_ready.emit(stage.stage_id, artifact)
 			return
+	job.max_slice_usec = maxi(
+		int(job.get("max_slice_usec", 0)),
+		int(Time.get_ticks_usec() - slice_started_at)
+	)
 	artifact_progress.emit(stage.stage_id, Phase.keys()[int(job.phase)], _job_progress(job))
 	if int(job.phase) != phase:
 		RuntimeDeliveryTelemetry.emit_marker(&"artifact_phase", {
@@ -247,7 +269,11 @@ func _build_playable_points(job: Dictionary, budget_usec: int) -> void:
 	var topology := layout.top_topology
 	var cell_total := layout.cell_count.x * layout.cell_count.y
 	var cursor := int(job.get("playable_cell_cursor", 0))
-	var seen: Dictionary = job.get("playable_seen", {})
+	var seen: PackedByteArray = job.get("playable_seen", PackedByteArray())
+	if seen.is_empty():
+		var sample_size := topology.sample_size()
+		seen.resize(sample_size.x * sample_size.y)
+		seen.fill(0)
 	var points: PackedVector3Array = job.get("playable_points", PackedVector3Array())
 	var started_at := Time.get_ticks_usec()
 	while cursor < cell_total and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
@@ -256,8 +282,8 @@ func _build_playable_points(job: Dictionary, budget_usec: int) -> void:
 			for triangle_in_cell in range(TerrainTopTopology.TRIANGLES_PER_CELL):
 				var indices := topology.triangle_vertex_indices(cell, triangle_in_cell)
 				for source_index in [indices.x, indices.y, indices.z]:
-					if not seen.has(source_index):
-						seen[source_index] = true
+					if seen[source_index] == 0:
+						seen[source_index] = 1
 						points.append(topology.vertex_at(source_index))
 		cursor += 1
 	job.playable_cell_cursor = cursor

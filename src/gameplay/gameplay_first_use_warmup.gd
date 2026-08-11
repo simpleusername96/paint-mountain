@@ -3,6 +3,8 @@ extends Node
 
 signal completed
 
+static var _completed_signatures: Dictionary = {}
+
 var _running := false
 var _completed := false
 var _warmed_effect_family_count := 0
@@ -27,6 +29,12 @@ func run(
 	if _completed:
 		completed.emit()
 		return
+	var signature := _warmup_signature(terrain_material, projectile_data, effect_sources)
+	if _completed_signatures.has(signature):
+		_warmed_effect_family_count = int(_completed_signatures[signature])
+		_completed = true
+		completed.emit()
+		return
 	if _running:
 		await completed
 		return
@@ -49,18 +57,12 @@ func run(
 	terrain_instance.scale = Vector3.ONE * 0.008
 	terrain_instance.position = Vector3(0.0, -0.8, 0.0)
 	world_root.add_child(terrain_instance)
-	await _wait_for_render_completion(scene_tree)
-	if not is_inside_tree():
-		return
 
 	var projectile_instance := MeshInstance3D.new()
 	projectile_instance.name = "ProjectileVisualWarmup"
 	projectile_instance.mesh = PaintProjectile.visual_mesh(projectile_data)
 	projectile_instance.position = Vector3(0.0, 0.0, 0.5)
 	world_root.add_child(projectile_instance)
-	await _wait_for_render_completion(scene_tree)
-	if not is_inside_tree():
-		return
 
 	var warmed_particles: Array[GPUParticles3D] = []
 	for source in effect_sources:
@@ -72,26 +74,48 @@ func run(
 		particle.emitting = true
 		warmed_particles.append(particle)
 		_warmed_effect_family_count += 1
-	if not warmed_particles.is_empty():
+	# Submit every current material family together. Two completed render frames
+	# cover initial pipeline creation and the first GPU-particle simulation step
+	# without serializing each family behind a separate frame.
+	for _render_pass in range(2):
 		await _wait_for_render_completion(scene_tree)
 		if not is_inside_tree():
 			return
 	for particle in warmed_particles:
 		particle.emitting = false
 		particle.queue_free()
-	if not warmed_particles.is_empty():
-		await _wait_for_render_completion(scene_tree)
-		if not is_inside_tree():
-			return
 
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	viewport.queue_free()
 	await scene_tree.process_frame
 	if not is_inside_tree():
 		return
+	_completed_signatures[signature] = _warmed_effect_family_count
 	_running = false
 	_completed = true
 	completed.emit()
+
+
+func _warmup_signature(
+		terrain_material: ShaderMaterial,
+		projectile_data: ProjectileData,
+		effect_sources: Array[GPUParticles3D]
+) -> String:
+	var parts := PackedStringArray([
+		terrain_material.shader.resource_path if terrain_material.shader != null else "",
+		projectile_data.resource_path,
+	])
+	for source in effect_sources:
+		if source == null:
+			parts.append("null")
+			continue
+		parts.append("%s|%s|%d|%.6f" % [
+			source.process_material.resource_path if source.process_material != null else "",
+			source.draw_pass_1.resource_path if source.draw_pass_1 != null else "",
+			source.amount,
+			source.lifetime,
+		])
+	return "\n".join(parts)
 
 
 func _wait_for_render_completion(scene_tree: SceneTree) -> void:

@@ -49,6 +49,7 @@ func _ready() -> void:
 	_return_to_cannon.hide()
 	_connect_components()
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
+	_refresh_briefing_locale()
 	_refresh_context_legend()
 
 
@@ -197,6 +198,7 @@ func _connect_components() -> void:
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:
+	_refresh_briefing_locale()
 	_aim.refresh_locale()
 	_actions.refresh_locale()
 	if _stage_data != null:
@@ -213,6 +215,11 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
 	show_state(_current_state)
+
+
+func _refresh_briefing_locale() -> void:
+	%Back.text = tr("ui.back")
+	%Start.text = tr("ui.start_aiming")
 
 
 func _refresh_context_legend() -> void:

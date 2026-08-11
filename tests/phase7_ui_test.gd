@@ -88,6 +88,12 @@ func _run_checks() -> void:
 	)
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
 	_assert_true(hud_root.get_node("BriefingActions").visible, "briefing action lane must be visible before aiming")
+	_assert_true(
+		(hud_root.get_node("BriefingActions/Back") as Button).text == tr("ui.back") \
+				and (hud_root.get_node("BriefingActions/Start") as Button).text \
+						== tr("ui.start_aiming"),
+		"briefing actions must resolve their visible locale without renderer-dependent key translation"
+	)
 	for mechanism in gameplay.get_node("Mechanisms").get_children():
 		var label := mechanism.get_node_or_null("BriefingLabel") as Label3D
 		_assert_true(mechanism.visible, "%s glyph geometry must remain visible in briefing" % mechanism.name)
