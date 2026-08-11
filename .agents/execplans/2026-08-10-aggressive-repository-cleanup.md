@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: archived
 created: 2026-08-10
 scope: remove verified unused tracked assets and catalogs, prevent documentation imports, and clear regenerable local outputs
 related:
@@ -197,6 +197,10 @@ safety, or acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
+- Lifecycle note: archived on 2026-08-11 when the user explicitly prioritized
+  the Web runtime responsiveness execution contract. Task 2.2 remains
+  incomplete and is preserved here; archiving does not claim that local output
+  was removed.
 - Current phase: Phase 2 is blocked only on ignored local-output deletion.
 - Completed work: removed 290 tracked files (three inactive v10 bundles, six
   unused UI source/import files, and eight duplicate or superseded images),

@@ -1,6 +1,6 @@
 ---
 type: plan
-status: draft
+status: active
 created: 2026-08-11
 scope: correct browser and native focus/orbit behavior, remove stage-entry and first-use stalls, and add Web runtime release evidence
 source: https://itchioprofile1351321.itch.io/paint-mountain
@@ -17,11 +17,9 @@ related:
 # Web Runtime Responsiveness and Interaction Correction - Execution Contract
 
 This contract covers the shared Godot behavior reported in native testing and
-the browser build currently uploaded to itch.io. It is decision-complete, but
-remains `draft` because
-`2026-08-10-aggressive-repository-cleanup.md` is the repository's one active
-ExecPlan. Activate this contract only after that plan is completed, superseded,
-or archived; do not run two active plans implicitly.
+the browser build currently uploaded to itch.io. The user activated this
+contract on 2026-08-11; the unrelated repository-cleanup plan is archived with
+its unfinished local-output task preserved.
 
 ## Purpose
 
@@ -501,10 +499,9 @@ dependencies, persistence, or acceptance.
 ## Progress
 
 - Canonical progress: the task checkboxes in this plan after activation.
-- Current phase: discovery and plan drafting complete; implementation has not
-  started.
-- Current status: draft only because the unrelated repository-cleanup ExecPlan
-  remains active with its local-output cleanup task incomplete.
+- Current phase: Phase 1 interaction corrections.
+- Current status: active by explicit user instruction on 2026-08-11; runtime
+  implementation has not started.
 - Evidence complete: source/owner trace, itch launch and viewport inspection,
   foreground rAF frame samples, first/warm shot comparison, network/header
   inspection, and official Web/itch/Chrome guidance review.
@@ -512,15 +509,12 @@ dependencies, persistence, or acceptance.
 
 ## Next Steps
 
-1. Resolve the single-active-plan gate by completing, superseding, or archiving
-   `2026-08-10-aggressive-repository-cleanup.md`; then change this plan to
-   `status: active`.
-2. Execute Phase 1 and retain before/after running-game evidence for focus,
+1. Execute Phase 1 and retain before/after running-game evidence for focus,
    orbit direction, and the coverage icon.
-3. Execute Phase 2 with targeted identity/paint/terrain checks before any broad
+2. Execute Phase 2 with targeted identity/paint/terrain checks before any broad
    test run.
-4. Execute Phase 3 and keep cold and warm Chrome traces separate.
-5. Run Phase 4 once, complete the scoped `$codebase-quality-auditor` pass, and
+3. Execute Phase 3 and keep cold and warm Chrome traces separate.
+4. Run Phase 4 once, complete the scoped `$codebase-quality-auditor` pass, and
    request authorization before any push/publish action.
 
 ## Risks
