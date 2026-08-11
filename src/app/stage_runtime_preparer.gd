@@ -8,6 +8,7 @@ signal artifact_failed(stage_id: StringName)
 const MAX_CACHED_ARTIFACTS := 3
 const STEP_BUDGET_USEC := 8000
 const MASK_SIZE := 512
+const PREVIEW_MASK_SIZE := 96
 const SURFACE_SAMPLE_UNKNOWN := 0
 const SURFACE_SAMPLE_INACTIVE := 1
 const SURFACE_SAMPLE_ACTIVE := 2
@@ -25,14 +26,11 @@ enum Phase {
 	BUILD_DRESSING,
 	PRELOAD_DRESSING,
 	INIT_PAINT,
-	BUILD_NONTARGET,
 	BUILD_TOPOLOGY,
 	BUILD_X_AXIS,
 	BUILD_Y_AXIS,
 	CREATE_TARGET_IMAGE,
-	CREATE_NONTARGET_IMAGE,
 	CREATE_TARGET_TEXTURE,
-	CREATE_NONTARGET_TEXTURE,
 	INIT_PREVIEW_PAINT,
 	BUILD_PREVIEW_PAINT,
 	CREATE_PREVIEW_TEXTURE,
@@ -47,10 +45,15 @@ var _geometry_job_starts: Dictionary = {}
 
 
 func _process(_delta: float) -> void:
-	if not _selected_job.is_empty():
-		_advance_job(true)
-	elif not _prefetch_job.is_empty():
-		_advance_job(false)
+	var selected := not _selected_job.is_empty()
+	if not selected and _prefetch_job.is_empty():
+		return
+	var started_at := Time.get_ticks_usec()
+	while not (_selected_job if selected else _prefetch_job).is_empty():
+		var elapsed := int(Time.get_ticks_usec() - started_at)
+		if elapsed >= STEP_BUDGET_USEC:
+			break
+		_advance_job(selected, STEP_BUDGET_USEC - elapsed)
 
 
 func request_artifact(
@@ -69,6 +72,10 @@ func request_artifact(
 			or _job_matches(_prefetch_job, stage, layout):
 		return false
 	var job := _new_job(stage, layout)
+	RuntimeDeliveryTelemetry.emit_marker(&"artifact_prepare_started", {
+		"stage_id": String(stage.stage_id),
+		"selected": selected,
+	})
 	if selected:
 		_selected_job = job
 	else:
@@ -100,9 +107,11 @@ func geometry_job_start_count(stage_id: StringName) -> int:
 	return int(_geometry_job_starts.get(stage_id, 0))
 
 
-func cancel_selected_except(stage_id: StringName) -> void:
+func cancel_except(stage_id: StringName) -> void:
 	if not _selected_job.is_empty() and _job_stage_id(_selected_job) != stage_id:
 		_selected_job = {}
+	if not _prefetch_job.is_empty() and _job_stage_id(_prefetch_job) != stage_id:
+		_prefetch_job = {}
 
 
 func _new_job(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
@@ -118,7 +127,6 @@ func _new_job(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
 		"dressing_cursor": 0,
 		"dressing_model_ids": [],
 		"dressing_model_cursor": 0,
-		"nontarget_cursor": 0,
 		"topology_cursor": 0,
 		"axis_cursor": 0,
 		"preview_cursor": 0,
@@ -126,7 +134,7 @@ func _new_job(stage: StageData, layout: GeneratedStageLayout) -> Dictionary:
 	}
 
 
-func _advance_job(selected: bool) -> void:
+func _advance_job(selected: bool, budget_usec: int) -> void:
 	var job: Dictionary = _selected_job if selected else _prefetch_job
 	var stage := job.get("stage") as StageData
 	if stage == null:
@@ -153,11 +161,11 @@ func _advance_job(selected: bool) -> void:
 			if geometry_job == null:
 				_finish_failure(selected, stage.stage_id)
 				return
-			if geometry_job.step(STEP_BUDGET_USEC):
+			if geometry_job.step(budget_usec):
 				(job.get("artifact") as StageRuntimeArtifact).geometry = geometry_job.result()
 				job.phase = Phase.BUILD_PLAYABLE_POINTS
 		Phase.BUILD_PLAYABLE_POINTS:
-			_build_playable_points(job)
+			_build_playable_points(job, budget_usec)
 		Phase.BUILD_PRESENTATION_POINTS:
 			var artifact := job.get("artifact") as StageRuntimeArtifact
 			artifact.playable_local_points = job.get("playable_points", PackedVector3Array())
@@ -169,53 +177,41 @@ func _advance_job(selected: bool) -> void:
 		Phase.INIT_DRESSING:
 			_init_dressing(job)
 		Phase.BUILD_DRESSING:
-			if not _build_dressing(job, selected):
+			if not _build_dressing(job, selected, budget_usec):
 				return
 		Phase.PRELOAD_DRESSING:
 			if not _preload_dressing(job, selected):
 				return
 		Phase.INIT_PAINT:
 			_init_paint(job)
-		Phase.BUILD_NONTARGET:
-			_build_nontarget(job)
 		Phase.BUILD_TOPOLOGY:
-			_build_topology(job)
+			_build_topology(job, budget_usec)
 		Phase.BUILD_X_AXIS:
-			_build_axis(job, true)
+			_build_axis(job, true, budget_usec)
 		Phase.BUILD_Y_AXIS:
-			_build_axis(job, false)
+			_build_axis(job, false, budget_usec)
 		Phase.CREATE_TARGET_IMAGE:
 			var bootstrap := _bootstrap(job)
 			bootstrap.target_image = Image.create_from_data(
 				MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, bootstrap.target_bytes
 			)
-			job.phase = Phase.CREATE_NONTARGET_IMAGE
-		Phase.CREATE_NONTARGET_IMAGE:
-			var bootstrap := _bootstrap(job)
-			bootstrap.nontarget_image = Image.create_from_data(
-				MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, bootstrap.nontarget_bytes
-			)
 			job.phase = Phase.CREATE_TARGET_TEXTURE
 		Phase.CREATE_TARGET_TEXTURE:
 			var bootstrap := _bootstrap(job)
 			bootstrap.target_texture = ImageTexture.create_from_image(bootstrap.target_image)
-			job.phase = Phase.CREATE_NONTARGET_TEXTURE
-		Phase.CREATE_NONTARGET_TEXTURE:
-			var bootstrap := _bootstrap(job)
-			bootstrap.nontarget_texture = ImageTexture.create_from_image(bootstrap.nontarget_image)
 			job.phase = Phase.INIT_PREVIEW_PAINT
 		Phase.INIT_PREVIEW_PAINT:
 			var preview_bytes := PackedByteArray()
-			preview_bytes.resize(256 * 256)
+			preview_bytes.resize(PREVIEW_MASK_SIZE * PREVIEW_MASK_SIZE)
 			preview_bytes.fill(0)
 			job.preview_bytes = preview_bytes
 			job.preview_cursor = 0
 			job.phase = Phase.BUILD_PREVIEW_PAINT
 		Phase.BUILD_PREVIEW_PAINT:
-			_build_preview_paint(job)
+			_build_preview_paint(job, budget_usec)
 		Phase.CREATE_PREVIEW_TEXTURE:
 			var image := Image.create_from_data(
-				256, 256, false, Image.FORMAT_L8,
+				PREVIEW_MASK_SIZE, PREVIEW_MASK_SIZE, false, Image.FORMAT_L8,
 				job.get("preview_bytes", PackedByteArray())
 			)
 			(job.get("artifact") as StageRuntimeArtifact).preview_paint_texture = \
@@ -234,13 +230,18 @@ func _advance_job(selected: bool) -> void:
 			artifact_ready.emit(stage.stage_id, artifact)
 			return
 	artifact_progress.emit(stage.stage_id, Phase.keys()[int(job.phase)], _job_progress(job))
+	if int(job.phase) != phase:
+		RuntimeDeliveryTelemetry.emit_marker(&"artifact_phase", {
+			"stage_id": String(stage.stage_id),
+			"phase": Phase.keys()[int(job.phase)],
+		})
 	if selected:
 		_selected_job = job
 	else:
 		_prefetch_job = job
 
 
-func _build_playable_points(job: Dictionary) -> void:
+func _build_playable_points(job: Dictionary, budget_usec: int) -> void:
 	var artifact := job.get("artifact") as StageRuntimeArtifact
 	var layout := artifact.runtime_layout
 	var topology := layout.top_topology
@@ -249,7 +250,7 @@ func _build_playable_points(job: Dictionary) -> void:
 	var seen: Dictionary = job.get("playable_seen", {})
 	var points: PackedVector3Array = job.get("playable_points", PackedVector3Array())
 	var started_at := Time.get_ticks_usec()
-	while cursor < cell_total and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
+	while cursor < cell_total and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
 		var cell := Vector2i(cursor % layout.cell_count.x, cursor / layout.cell_count.x)
 		if topology.is_cell_active(cell):
 			for triangle_in_cell in range(TerrainTopTopology.TRIANGLES_PER_CELL):
@@ -272,12 +273,10 @@ func _init_paint(job: Dictionary) -> void:
 	var bootstrap := PaintSurfaceBootstrap.new()
 	bootstrap.layout_checksum = layout.checksum
 	bootstrap.target_mask_checksum = layout.target_mask_checksum
-	bootstrap.nontarget_mask_checksum = 2166136261
 	bootstrap.world_bounds = (job.get("stage") as StageData).paint_world_bounds()
 	bootstrap.terrain_origin_y = (job.get("stage") as StageData).terrain_center.y
 	bootstrap.painted_threshold_byte = PAINT_SURFACE_TUNING.painted_threshold_byte
 	bootstrap.target_bytes = layout.target_mask
-	bootstrap.nontarget_bytes.resize(MASK_SIZE * MASK_SIZE)
 	bootstrap.topology_cell_count = layout.top_topology.cell_count
 	var cell_total := bootstrap.topology_cell_count.x * bootstrap.topology_cell_count.y
 	bootstrap.topology_cell_cache_states.resize(cell_total)
@@ -296,8 +295,8 @@ func _init_paint(job: Dictionary) -> void:
 	bootstrap.surface_world_x.resize(MASK_SIZE)
 	bootstrap.surface_world_z.resize(MASK_SIZE)
 	artifact.paint_bootstrap = bootstrap
-	job.nontarget_cursor = 0
-	job.phase = Phase.BUILD_NONTARGET
+	job.topology_cursor = 0
+	job.phase = Phase.BUILD_TOPOLOGY
 
 
 func _init_dressing(job: Dictionary) -> void:
@@ -313,13 +312,13 @@ func _init_dressing(job: Dictionary) -> void:
 	job.phase = Phase.BUILD_DRESSING
 
 
-func _build_dressing(job: Dictionary, selected: bool) -> bool:
+func _build_dressing(job: Dictionary, selected: bool, budget_usec: int) -> bool:
 	var artifact := job.get("artifact") as StageRuntimeArtifact
 	var source := artifact.runtime_layout.decoration_placements
 	var cursor := int(job.get("dressing_cursor", 0))
 	var model_ids: Array = job.get("dressing_model_ids", [])
 	var started_at := Time.get_ticks_usec()
-	while cursor < source.size() and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
+	while cursor < source.size() and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
 		var placement := source[cursor]
 		if placement == null:
 			_finish_failure(selected, artifact.stage_id)
@@ -357,34 +356,14 @@ func _preload_dressing(job: Dictionary, selected: bool) -> bool:
 	return true
 
 
-func _build_nontarget(job: Dictionary) -> void:
-	var bootstrap := _bootstrap(job)
-	var cursor := int(job.get("nontarget_cursor", 0))
-	var started_at := Time.get_ticks_usec()
-	while cursor < bootstrap.target_bytes.size() \
-			and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
-		var value := 0 \
-				if bootstrap.target_bytes[cursor] >= bootstrap.painted_threshold_byte else 255
-		bootstrap.nontarget_bytes[cursor] = value
-		bootstrap.nontarget_mask_checksum = bootstrap.nontarget_mask_checksum ^ value
-		bootstrap.nontarget_mask_checksum = int(
-			(bootstrap.nontarget_mask_checksum * 16777619) & 0xffffffff
-		)
-		cursor += 1
-	job.nontarget_cursor = cursor
-	if cursor >= bootstrap.target_bytes.size():
-		job.topology_cursor = 0
-		job.phase = Phase.BUILD_TOPOLOGY
-
-
-func _build_topology(job: Dictionary) -> void:
+func _build_topology(job: Dictionary, budget_usec: int) -> void:
 	var artifact := job.get("artifact") as StageRuntimeArtifact
 	var bootstrap := artifact.paint_bootstrap
 	var topology := artifact.runtime_layout.top_topology
 	var cell_total := bootstrap.topology_cell_count.x * bootstrap.topology_cell_count.y
 	var cursor := int(job.get("topology_cursor", 0))
 	var started_at := Time.get_ticks_usec()
-	while cursor < cell_total and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
+	while cursor < cell_total and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
 		var cell := Vector2i(
 			cursor % bootstrap.topology_cell_count.x,
 			cursor / bootstrap.topology_cell_count.x
@@ -411,13 +390,13 @@ func _build_topology(job: Dictionary) -> void:
 		job.phase = Phase.BUILD_X_AXIS
 
 
-func _build_axis(job: Dictionary, horizontal: bool) -> void:
+func _build_axis(job: Dictionary, horizontal: bool, budget_usec: int) -> void:
 	var artifact := job.get("artifact") as StageRuntimeArtifact
 	var bootstrap := artifact.paint_bootstrap
 	var topology := artifact.runtime_layout.top_topology
 	var cursor := int(job.get("axis_cursor", 0))
 	var started_at := Time.get_ticks_usec()
-	while cursor < MASK_SIZE and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
+	while cursor < MASK_SIZE and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
 		var normalized := (float(cursor) + 0.5) / float(MASK_SIZE)
 		if horizontal:
 			var local_x := topology.local_bounds.position.x + normalized * topology.local_bounds.size.x
@@ -444,7 +423,7 @@ func _build_axis(job: Dictionary, horizontal: bool) -> void:
 		job.phase = Phase.CREATE_TARGET_IMAGE if not horizontal else Phase.BUILD_Y_AXIS
 
 
-func _build_preview_paint(job: Dictionary) -> void:
+func _build_preview_paint(job: Dictionary, budget_usec: int) -> void:
 	var stage := job.get("stage") as StageData
 	var bytes: PackedByteArray = job.get("preview_bytes", PackedByteArray())
 	var centers: Array[Vector2] = [
@@ -458,11 +437,12 @@ func _build_preview_paint(job: Dictionary) -> void:
 			Vector2(0.64, 0.32), Vector2(0.68, 0.43), Vector2(0.63, 0.54)
 		])
 	var cursor := int(job.get("preview_cursor", 0))
+	var denominator := float(PREVIEW_MASK_SIZE - 1)
 	var started_at := Time.get_ticks_usec()
-	while cursor < bytes.size() and Time.get_ticks_usec() - started_at < STEP_BUDGET_USEC:
-		var x := cursor % 256
-		var y := cursor / 256
-		var point := Vector2(float(x) / 255.0, float(y) / 255.0)
+	while cursor < bytes.size() and Time.get_ticks_usec() - started_at < maxi(budget_usec, 1):
+		var x := cursor % PREVIEW_MASK_SIZE
+		var y := cursor / PREVIEW_MASK_SIZE
+		var point := Vector2(float(x) / denominator, float(y) / denominator)
 		var amount := 0.0
 		for center in centers:
 			var distance := point.distance_to(center)

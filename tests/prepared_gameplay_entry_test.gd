@@ -65,6 +65,10 @@ func _run_checks() -> void:
 		paint.target_bytes_read_only() == artifact.paint_bootstrap.target_bytes,
 		"prepared target bytes must remain bit-identical in the live PaintSystem"
 	)
+	_assert_true(
+		paint.nontarget_diagnostic_build_count() == 0,
+		"normal prepared Gameplay must not build the 512-square debug-only inverse mask"
+	)
 	var controller := gameplay.get_node("StageController") as StageController
 	_assert_true(not controller.actions_enabled(), "hidden prepared Gameplay must reject stage actions")
 	_assert_true(not controller.begin_aiming(), "hidden prepared Gameplay must not advance from Briefing")

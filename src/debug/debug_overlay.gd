@@ -60,7 +60,7 @@ func configure(
 	_attempt_recorder = attempt_recorder
 	_paint_preview.texture = _paint.paint_texture()
 	_target_preview.texture = _paint.target_texture()
-	_nontarget_preview.texture = _paint.nontarget_texture()
+	_nontarget_preview.texture = null
 	_set_overlay_visible(visible)
 	_controller.shot_result.connect(func(gain: float, _total: float) -> void: _last_gain = gain)
 	_controller.restart_completed.connect(func(elapsed_ms: float) -> void: _last_restart_ms = elapsed_ms)
@@ -130,6 +130,7 @@ func _set_overlay_visible(value: bool) -> void:
 		return
 	_paint.set_recent_diagnostics_enabled(visible)
 	_recent_preview.texture = _paint.recent_texture() if visible else null
+	_nontarget_preview.texture = _paint.nontarget_texture() if visible else null
 
 
 func export_shot_log(path: String = "user://paint_mountain_shot_log.json") -> Error:

@@ -59,19 +59,29 @@ related:
 - Main Menu no longer assigns passive startup focus. Keyboard navigation uses a
   loading-safe fallback and transfers to Play only while that fallback remains
   the user's active focus choice.
-- Map Inspection horizontal drag uses the requested direct-grab direction;
-  vertical orbit and Aim View targeting retain their prior equations.
+- Map Inspection horizontal and vertical drag use the requested direct-grab
+  direction. Dirty inspection safety poses resolve at the fixed 60 Hz physics
+  cadence instead of the former 15 Hz target cadence; Aim View and committed
+  cannon aim remain unchanged.
 - `StageRuntimePreparer` incrementally creates one identity-checked
   `StageRuntimeArtifact` per stage/checksum and retains at most three LRU entries.
-  Main Menu preview and hidden Gameplay share its geometry, presentation points,
-  dressing inputs, and immutable paint bootstrap.
+  Main Menu previews the persisted selected stage, and hidden Gameplay shares
+  that artifact's geometry, presentation points, dressing inputs, and immutable
+  target/topology paint bootstrap.
 - `PaintSystem` remains the sole mutable runtime paint/coverage authority.
   `TerrainSurface`, `EnvironmentDressing`, and Gameplay bind prepared inputs
-  without rebuilding the selected stage during visible handoff.
+  without rebuilding the selected stage during visible handoff. Its inverse
+  target-mask texture is diagnostics-only and is built lazily when the debug
+  overlay opens, not during ordinary stage readiness.
+- Entering or preparing hidden Gameplay cancels obsolete selected/prefetch jobs.
+  Active Gameplay does not start the next stage's cooperative preparation.
+- Accepted layout copies reuse verified private target caches while retaining
+  isolated packed arrays. The preparer advances multiple short phases inside
+  one shared 8 ms frame budget instead of waiting a frame per phase.
 - Hidden Gameplay rejects actions and time progression until preparation and
   render-only first-use warm-up complete. The warm-up covers terrain paint,
-  projectile visuals, and all presentation-effect material families without
-  creating physics or gameplay side effects.
+  projectile visuals, and all five presentation-effect material families in a
+  batched render pass without creating physics or gameplay side effects.
 - CoverageMeter uses the approved target texture with accessible text. The Web
   release path now validates referenced runtime files, worklets/icons, the
   single-thread contract, exact case, and raw/gzip payload budgets.
@@ -82,11 +92,20 @@ related:
 
 - Focused tests, the full ordered Godot suite, `scripts/verify.ps1`, fresh Web
   and Windows release exports, the Web artifact validator, local Chromium
-  functional smoke, and five inspected Windows release captures pass.
-- The fresh encoded Web payload is 16,779,326 bytes, 2.84% below its accepted
+  functional smoke, and eight inspected Windows release captures across both
+  passes succeed.
+- Deterministic Windows/Compatibility telemetry measured Stage 01
+  `app_root_ready` to `gameplay_prepared` at 2.075 seconds and `layout_ready` to
+  `gameplay_prepared` at 1.684 seconds. Artifact preparation took 1.187 seconds,
+  57% below the reopened 2.77-second interval, with the 8 ms ceiling unchanged.
+- The fresh encoded Web payload is 16,779,451 bytes, 2.84% below its accepted
   baseline and below the 20 MiB cap. Local Chromium used WebGL2/Compatibility,
   loaded all three audio worklets, retained its context, and logged no warning or
   error during the checked interaction path.
+- The canonical Windows executable was open in a user-visible process during
+  export, so it was not stopped or overwritten. The fresh equivalent release is
+  `builds/windows/PaintMountain-phase5.exe`; its inspected captures are linked
+  from the evidence record.
 - Foreground frame budgets and three-cycle memory growth are not verified. The
   available automated Chrome window ran animation frames at about 1 Hz, so all
   trace timing samples were discarded rather than reported as game performance.

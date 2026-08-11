@@ -14,6 +14,7 @@ func _run_checks() -> void:
 	game_state.persistence_enabled = false
 	var unlocked: Dictionary = root.get_node("/root/SaveSystem").default_data()
 	unlocked.unlocked_stages = ["first_descent", "burst_basin", "split_ridge"]
+	unlocked.selected_stage_id = "stage_02"
 	game_state.initialize_from_data(unlocked)
 	var app := APP_SCENE.instantiate()
 	root.add_child(app)
@@ -26,7 +27,7 @@ func _run_checks() -> void:
 	_assert_theme_contract()
 	_assert_true(main_menu.visible and not stage_select.visible and not settings.visible, "app must open on a separate main-menu screen")
 	_assert_main_menu_focus_startup(main_menu)
-	await _assert_main_preview_safe(app, main_menu)
+	await _assert_main_preview_safe(app, main_menu, &"stage_02")
 	app._set_catalog_load_failed()
 	await process_frame
 	var retry_load := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
@@ -76,6 +77,15 @@ func _run_checks() -> void:
 		return
 	var controller: StageController = gameplay.get_node("StageController")
 	var hud_root := gameplay.get_node("HUD/HUDRoot") as Control
+	var next_stage_id := StageCatalog.next_stage_id(&"stage_01")
+	_assert_true(
+		not app._layout_repository.is_preparing(next_stage_id),
+		"active Gameplay must not compete with next-stage layout preparation"
+	)
+	_assert_true(
+		not app._runtime_preparer.is_preparing(next_stage_id),
+		"active Gameplay must not compete with next-stage artifact preparation"
+	)
 	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
 	_assert_true(hud_root.get_node("BriefingActions").visible, "briefing action lane must be visible before aiming")
 	for mechanism in gameplay.get_node("Mechanisms").get_children():
@@ -136,14 +146,22 @@ func _wait_for_child(parent: Node, path: NodePath, timeout_ms: int = 60000) -> N
 	return null
 
 
-func _assert_main_preview_safe(app: AppRoot, main_menu: MainMenuScreen) -> void:
+func _assert_main_preview_safe(
+	app: AppRoot,
+	main_menu: MainMenuScreen,
+	expected_stage_id: StringName
+) -> void:
 	var deadline := Time.get_ticks_msec() + 60000
-	while Time.get_ticks_msec() < deadline and app._active_preview_stage_id != &"stage_01":
+	while Time.get_ticks_msec() < deadline \
+			and app._active_preview_stage_id != expected_stage_id:
 		await process_frame
-	_assert_true(app._active_preview_stage_id == &"stage_01", "Main Menu preview must resolve the real Stage 01 artifact")
-	if app._active_preview_stage_id != &"stage_01":
+	_assert_true(
+		app._active_preview_stage_id == expected_stage_id,
+		"Main Menu preview must resolve the currently selected stage artifact"
+	)
+	if app._active_preview_stage_id != expected_stage_id:
 		return
-	var stage := StageCatalog.get_stage(&"stage_01")
+	var stage := StageCatalog.get_stage(expected_stage_id)
 	var artifact: StageRuntimeArtifact = app._runtime_preparer.ready_artifact(stage)
 	_assert_true(artifact != null, "Main Menu preview must reuse the typed runtime artifact")
 	if artifact == null:

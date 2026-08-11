@@ -265,14 +265,19 @@ func copy_for_runtime() -> GeneratedStageLayout:
 		result.mechanism_placements.append(placement)
 	for placement in decoration_placements:
 		result.decoration_placements.append(placement)
-	if not result.install_footprint(_footprint_cells) \
-			or not result.install_target_mask(_target_mask, _target_mask_checksum) \
-			or not result.install_target_surface_coverage(
-				_coverage_metric_version,
-				_total_target_surface_area,
-				_target_surface_area_checksum
-			):
-		return null
+	# The source passed the full readiness proof above. Copy its private mask
+	# caches directly so runtime isolation does not repeat the 512-square
+	# checksum and target-index scan on the main thread.
+	result._footprint_cells = _footprint_cells.duplicate()
+	result._target_mask = _target_mask.duplicate()
+	result._target_mask_checksum = _target_mask_checksum
+	result._target_pixel_indices = _target_pixel_indices.duplicate()
+	result._target_centroid_local_xz = _target_centroid_local_xz
+	result._target_pixel_nearest_centroid = _target_pixel_nearest_centroid
+	result._coverage_metric_version = _coverage_metric_version
+	result._total_target_surface_area = _total_target_surface_area
+	result._target_surface_area_checksum = _target_surface_area_checksum
+	result._runtime_readiness_verified = true
 	return result
 
 

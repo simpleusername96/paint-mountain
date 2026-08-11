@@ -53,6 +53,11 @@ func _ready() -> void:
 	add_child(_settings)
 	_connect_screens()
 	_show_main_menu()
+	RuntimeDeliveryTelemetry.emit_marker(&"app_root_ready", {
+		"selected_stage_id": String(
+			(get_node("/root/GameState") as GameState).selected_stage_id
+		),
+	})
 
 
 func _connect_screens() -> void:
@@ -119,6 +124,7 @@ func _enter_stage(selected_stage: StageData) -> void:
 		if selected_stage != null:
 			_set_stage_preparation_state(selected_stage, false)
 		return
+	_runtime_preparer.cancel_except(selected_stage.stage_id)
 	_pending_start_stage_id = &""
 	_audio_ui()
 	_preview_world.visible = false
@@ -131,7 +137,6 @@ func _enter_stage(selected_stage: StageData) -> void:
 		"stage_id": String(selected_stage.stage_id),
 		"artifact_cache_entries": _runtime_preparer.cached_artifact_count(),
 	})
-	_prefetch_next_stage(selected_stage.stage_id)
 
 
 func _on_stage_selection_changed(stage: StageData) -> void:
@@ -154,7 +159,7 @@ func _request_user_stage(stage: StageData) -> void:
 		_set_stage_preparation_state(stage, true)
 		return
 	_set_stage_preparation_state(stage, false)
-	_runtime_preparer.cancel_selected_except(stage.stage_id)
+	_runtime_preparer.cancel_except(stage.stage_id)
 	var artifact := _runtime_preparer.ready_artifact(stage)
 	if artifact != null:
 		_prepare_hidden_gameplay(stage, artifact)
@@ -186,6 +191,7 @@ func _prepare_hidden_gameplay(stage: StageData, artifact: StageRuntimeArtifact) 
 	if stage == null or artifact == null or not artifact.matches_stage(stage):
 		_on_artifact_failed(stage.stage_id if stage != null else &"")
 		return
+	_runtime_preparer.cancel_except(stage.stage_id)
 	if _prepared_gameplay_matches(stage):
 		_set_stage_preparation_state(stage, true)
 		if _pending_start_stage_id == stage.stage_id:
@@ -264,6 +270,9 @@ func _on_layout_ready(stage_id: StringName, layout: GeneratedStageLayout) -> voi
 		"stage_id": String(stage_id),
 		"layout_checksum": layout.checksum,
 	})
+	if not selected and (_gameplay_presented \
+			or (_gameplay != null and is_instance_valid(_gameplay))):
+		return
 	_runtime_preparer.request_artifact(stage, layout, selected)
 
 
@@ -280,14 +289,15 @@ func _on_artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact) ->
 	if stage == null or artifact == null or not artifact.matches_stage(stage):
 		_on_artifact_failed(stage_id)
 		return
+	var game_state := get_node_or_null("/root/GameState")
 	RuntimeDeliveryTelemetry.emit_marker(&"artifact_ready", {
 		"stage_id": String(stage_id),
 		"layout_checksum": artifact.layout_checksum,
 		"artifact_cache_entries": _runtime_preparer.cached_artifact_count(),
 	})
-	if stage_id == &"stage_01" and _preview_world.visible:
+	if game_state != null and game_state.selected_stage_id == stage_id \
+			and _preview_world.visible:
 		_set_menu_preview_if_visible.call_deferred(stage)
-	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null and game_state.selected_stage_id == stage_id:
 		_prepare_hidden_gameplay(stage, artifact)
 
@@ -300,26 +310,10 @@ func _on_artifact_failed(stage_id: StringName) -> void:
 		_pending_start_stage_id = &""
 
 
-func _prefetch_next_stage(stage_id: StringName) -> void:
-	var next_stage_id := StageCatalog.next_stage_id(stage_id)
-	if next_stage_id.is_empty():
-		return
-	var next_stage := StageCatalog.get_stage(next_stage_id)
-	if next_stage == null or _runtime_preparer.ready_artifact(next_stage) != null:
-		return
-	var layout := _layout_repository.ready_layout(next_stage)
-	if layout != null:
-		_runtime_preparer.request_artifact(next_stage, layout, false)
-	else:
-		_layout_repository.request_layout(
-			next_stage,
-			StageCatalog.get_layout_path(next_stage.stage_id),
-			false
-		)
-
-
 func _request_menu_preview() -> void:
-	var preview_stage := StageCatalog.get_stage(&"stage_01")
+	var game_state := get_node_or_null("/root/GameState") as GameState
+	var preview_stage := StageCatalog.get_stage(game_state.selected_stage_id) \
+			if game_state != null else null
 	if preview_stage == null:
 		return
 	if _runtime_preparer.ready_artifact(preview_stage) != null:

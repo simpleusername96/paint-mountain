@@ -24,6 +24,19 @@ func _run_checks() -> void:
 	if _failed:
 		await _finish([repository, preparer])
 		return
+	var runtime_copy := layouts[0].copy_for_runtime()
+	_assert_true(
+		runtime_copy != null and runtime_copy != layouts[0] and runtime_copy.is_runtime_ready(),
+		"accepted layout copy must retain readiness while isolating the runtime wrapper"
+	)
+	if runtime_copy != null:
+		_assert_true(
+			runtime_copy.target_mask_checksum == layouts[0].target_mask_checksum \
+					and runtime_copy.target_pixel_count() == layouts[0].target_pixel_count() \
+					and runtime_copy.target_centroid_local_xz() \
+							== layouts[0].target_centroid_local_xz(),
+			"fast runtime copy must retain the verified target-mask caches"
+		)
 
 	var ready_ids: Array[StringName] = []
 	var failed_ids: Array[StringName] = []
@@ -61,6 +74,13 @@ func _run_checks() -> void:
 		preparer.geometry_job_start_count(stages[1].stage_id) == 1,
 		"one stage identity must start exactly one canonical geometry job"
 	)
+	preparer.request_artifact(stages[2], layouts[2], false)
+	_assert_true(preparer.is_preparing(stages[2].stage_id), "prefetch cancellation proof requires an active job")
+	preparer.cancel_except(stages[1].stage_id)
+	_assert_true(
+		not preparer.is_preparing(stages[2].stage_id),
+		"entering Gameplay must cancel obsolete selected and prefetch artifact jobs"
+	)
 
 	for index in [0, 2, 3]:
 		preparer.request_artifact(stages[index], layouts[index], true)
@@ -86,8 +106,8 @@ func _run_checks() -> void:
 			original.layout_checksum == comparison.layout_checksum \
 					and original.geometry.top_vertex_count == comparison.geometry.top_vertex_count \
 					and original.geometry.total_triangle_count() == comparison.geometry.total_triangle_count() \
-					and original.paint_bootstrap.nontarget_mask_checksum \
-							== comparison.paint_bootstrap.nontarget_mask_checksum \
+					and original.paint_bootstrap.topology_cell_triangle_normals \
+							== comparison.paint_bootstrap.topology_cell_triangle_normals \
 					and TargetMaskRasterizer.byte_checksum(
 						original.preview_paint_texture.get_image().get_data()
 					) == TargetMaskRasterizer.byte_checksum(

@@ -44,15 +44,19 @@ func _ready() -> void:
 		return
 	_configure_capture_window()
 	_app = get_parent() as AppRoot
+	# Child _ready() runs before AppRoot._ready(). Initialize deterministic capture
+	# state here so AppRoot never starts preparing a persisted user selection.
+	var game_state := get_node("/root/GameState") as GameState
+	game_state.persistence_enabled = false
+	var initial_data: Dictionary = get_node("/root/SaveSystem").default_data()
+	initial_data.selected_stage_id = _capture_stage
+	_initialize_capture_game_state(game_state, initial_data)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run_capture.call_deferred()
 
 
 func _run_capture() -> void:
 	_configure_capture_window()
-	var game_state := get_node("/root/GameState")
-	game_state.persistence_enabled = false
-	_initialize_capture_game_state(game_state, get_node("/root/SaveSystem").default_data())
 	match _screen:
 		"main_menu":
 			_app._show_main_menu()

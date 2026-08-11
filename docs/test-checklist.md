@@ -60,24 +60,36 @@ capture is pre-resident-activity-removal history.
   keyboard navigation focuses a reachable action, and a loading fallback moves
   to Play only when the user has not moved focus elsewhere.
 - [x] Right-to-left Map Inspection drag follows the requested clockwise/direct
-  grab convention. Vertical orbit, Aim View, and committed cannon aim are
-  unchanged and covered by a dedicated projection test.
+  grab convention, and bottom-to-top drag follows the user's corrected vertical
+  convention. A sustained-drag regression proves dirty safety targets and the
+  rendered camera change on consecutive fixed ticks; Aim View and committed
+  cannon aim remain unchanged.
 - [x] Preview and Gameplay reuse one identity-checked, at-most-three-entry
   prepared artifact. Cooperative terrain preparation yields between bounded
   phases; hidden Gameplay cannot advance stage actions or time before handoff.
+  The Main Menu reuses the persisted selected-stage artifact, and active
+  Gameplay runs no next-stage layout/artifact preparation.
+- [x] Normal readiness does not build the 512-square diagnostics-only inverse
+  target mask. Opening the debug overlay builds that preview lazily exactly once.
+  Accepted-layout copies retain verified target caches, the procedural preview
+  uses a 96-square mask, and all short phases share the fixed 8 ms frame budget.
 - [x] A render-only, idempotent warm-up covers terrain paint, projectile visuals,
-  and all five presentation-effect families without physics, shots, paint, or
-  stage-state side effects.
+  and all five presentation-effect families in a batched effect render pass
+  without physics, shots, paint, or stage-state side effects.
 - [x] Coverage uses the approved target texture and accessible text instead of
   the Web-risk font glyph. Korean 1280x720 and English 1920x1080 release captures
   show no missing glyph, clipping, or alignment defect.
 - [x] The dependency-free Web release validator checks exact-case HTML/runtime
   references, icons, audio worklets, disabled threads/worker absence, raw/gzip
   sizes, the 20 MiB cap, and the accepted 10% growth allowance. The fresh
-  encoded payload is 16,779,326 bytes, 2.84% below baseline.
+  encoded payload is 16,779,451 bytes, 2.84% below baseline.
 - [x] New focused tests, the full ordered Godot suite, `scripts/verify.ps1`,
-  fresh Web/Windows release exports, local Chromium functional smoke, and five
-  separately inspected Windows release captures pass.
+  fresh Web/Windows release exports, local Chromium functional smoke, and eight
+  separately inspected Windows release captures across both passes succeed.
+- [x] Deterministic Windows/Compatibility telemetry measures Stage 01
+  `app_root_ready` to `gameplay_prepared` at 2.075 seconds, `layout_ready` to
+  `gameplay_prepared` at 1.684 seconds, and artifact preparation at 1.187
+  seconds. The artifact segment is 57% below the reopened 2.77-second baseline.
 - [ ] Foreground Chrome cold/warm launch, transition, drag, and first/second
   Fire traces meet the p95/p99/maximum and response-time budgets. The automated
   window was limited to about 1 Hz, so its timing samples were discarded.

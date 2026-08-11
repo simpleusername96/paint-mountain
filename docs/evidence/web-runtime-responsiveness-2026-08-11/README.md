@@ -12,24 +12,35 @@ related:
 
 # Web Runtime Responsiveness Evidence
 
-## Outcome
+## Purpose
 
-The reported startup focus, Map Inspection drag direction, stage-entry build
-ownership, cold first-use render work, and Web coverage icon defects are
-corrected in the local source and release exports. Automated and functional
-checks passed. Foreground frame budgets, three-cycle memory growth, and the
-deployed itch revision are not certified by this evidence.
+Preserve the observed native/Web defects, implemented corrections, release
+artifacts, measured limits, and rendered evidence for the active execution
+contract without promoting this evidence into product policy.
+
+## Findings
+
+The reported startup focus, horizontal and vertical Map Inspection direction,
+15 Hz inspection target pacing, active-gameplay preparation contention,
+selected-stage readiness, cold first-use render work, and Web coverage icon
+defects are corrected in the local source and release exports. Automated,
+functional, release, and rendered-image checks passed. Foreground browser frame
+budgets, three-cycle memory growth, and the deployed itch revision are not
+certified by this evidence.
 
 ## Release Artifacts
 
 - Engine: Godot `4.7.1.stable.official.a13da4feb`, Compatibility renderer,
   fixed 60 Hz physics, official single-thread Web template.
-- Windows executable: `builds/windows/PaintMountain.exe`, 118,996,224 bytes,
-  SHA-256 `7DD9F9FF568762D7B0880194A3D87FF9A08C9DDFD8EA568DE0DBE9F7AF77426A`.
-- Web encoded initial payload: 16,779,326 bytes across 12 files. This is 2.84%
+- Windows executable: `builds/windows/PaintMountain-phase5.exe`, 118,996,608
+  bytes, SHA-256
+  `E1F105283D7D00F967610B6480CBECE9B7CAB9C304905E6C3C306A444A247322`.
+  The canonical `PaintMountain.exe` remained open in user-visible PID 36856, so
+  the task did not stop it or overwrite that path.
+- Web encoded initial payload: 16,779,451 bytes across 12 files. This is 2.84%
   below the accepted 17,269,724-byte baseline and below the 20 MiB cap.
-- Main Web files: Wasm 39,513,091 raw / 10,263,400 gzip bytes; PCK 8,981,924
-  raw / 6,402,378 gzip bytes; JavaScript 279,815 raw / 69,462 gzip bytes.
+- Main Web files: Wasm 39,513,091 raw / 10,263,400 gzip bytes; PCK 8,982,308
+  raw / 6,402,503 gzip bytes; JavaScript 279,815 raw / 69,462 gzip bytes.
 - The release validator found eight exact-case runtime references, all required
   icons and audio worklets, no worker artifact, and thread support disabled.
 
@@ -46,9 +57,39 @@ deployed itch revision are not certified by this evidence.
   driver activated the Map control.
 - `runtime/aiming-stage02-en-1920x1080.png`: English Aim View and coverage icon
   fit without clipping or missing glyphs.
+- `runtime/main-menu-loading-phase5-ko-1280x720.png`: the reopened loading state
+  is readable and has no automatic focus ring.
+- `runtime/main-menu-ready-phase5-ko-1280x720.png`: the fresh Phase 5 release
+  shows the prepared selected-stage preview and ready Play action without
+  clipping; the 96-square procedural paint preview retains its intended shape.
+- `runtime/map-inspection-phase5-stage02-ko-1920x1080.png`: the fresh Phase 5
+  Map Inspection view fits at 1920x1080. The Map control border is intentional
+  because the delivery driver activated that control.
 
-All five images came from the fresh Windows release executable and were opened
-and inspected at their native dimensions.
+All eight images across the original and reopened passes came from Windows
+release executables and were opened and inspected at their native dimensions.
+
+## Reopened Native Readiness and Camera Evidence
+
+- The direct-manipulation regression projects stable horizontal and vertical
+  landmarks, verifies the user's drag convention, and proves at least 10 safety
+  solves plus 10 rendered-camera changes over 12 sustained fixed ticks.
+- Entering prepared Gameplay leaves no next-stage layout or artifact job active.
+  Obsolete selected and prefetch artifact jobs are cancelled, and a late
+  non-selected layout cannot start artifact work while Gameplay is hidden or
+  visible.
+- Ordinary stage preparation creates no inverse non-target diagnostic texture;
+  opening the debug overlay builds it lazily once and still exposes all four
+  diagnostic previews.
+- In a deterministic Windows/Compatibility profiling run, Stage 01 reached
+  `gameplay_prepared` 2.075 seconds after `app_root_ready` and 1.684 seconds
+  after `layout_ready`. Artifact preparation took 1.187 seconds versus the
+  reopened 2.77-second baseline, a 57% reduction. The preparer retained its
+  shared 8 ms per-frame ceiling.
+- The remaining 2.075-second interval includes baked-layout hydration and hash
+  validation, cooperative terrain/collision construction, hidden Gameplay
+  binding, and render-only warm-up. It is readiness latency, not work running
+  behind active Map Inspection.
 
 ## Local Chromium Functional Smoke
 
@@ -83,13 +124,26 @@ claimed from these samples.
 
 ## Verification
 
-- New focused focus/orbit/preparation/prepared-entry/warm-up checks: passed.
+- New focused focus/orbit/preparation/prepared-entry/warm-up/debug checks:
+  passed, including vertical direction, sustained 60 Hz targets, cancellation,
+  fast verified-layout copying, and lazy inverse-mask construction.
 - Full ordered Godot suite: passed.
 - `scripts/verify.ps1`: passed.
 - `scripts/verify-web-release.ps1`: passed.
-- Fresh Web and Windows release exports: passed.
-- Scoped codebase-quality audit: no unresolved task-scoped contract break,
-  competing owner, reachable failure path, or missing required automated gate.
+- Fresh Web and Windows release exports: passed. The Windows artifact uses the
+  Phase 5 filename because the canonical executable was open.
+- Scoped codebase-quality audit: no unresolved task-scoped responsibility
+  creep, competing owner, contract break, reachable failure path, or missing
+  required automated gate.
+
+## Sources
+
+- Active contract:
+  `../../../.agents/execplans/2026-08-11-web-runtime-responsiveness.md`.
+- Current source, focused Godot regressions, full ordered suite, release exports,
+  delivery telemetry, and the running-game images listed above.
+- User-reported reopened symptoms: choppy terrain inspection, reversed vertical
+  drag, and approximately three seconds of initial loading.
 
 ## Remaining Gates
 

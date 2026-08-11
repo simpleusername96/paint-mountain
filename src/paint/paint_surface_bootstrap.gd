@@ -5,16 +5,12 @@ extends RefCounted
 ## mutable paint mask, dirty regions, and coverage counters.
 var layout_checksum: int = 0
 var target_mask_checksum: int = 0
-var nontarget_mask_checksum: int = 0
 var world_bounds := Rect2()
 var terrain_origin_y: float = 0.0
 var painted_threshold_byte: int = 0
 var target_bytes := PackedByteArray()
-var nontarget_bytes := PackedByteArray()
 var target_image: Image
-var nontarget_image: Image
 var target_texture: ImageTexture
-var nontarget_texture: ImageTexture
 var surface_column_cells := PackedInt32Array()
 var surface_row_cells := PackedInt32Array()
 var surface_column_fractions := PackedFloat32Array()
@@ -37,7 +33,6 @@ func is_valid_for(
 	if layout == null or tuning == null or layout_checksum == 0 \
 			or layout_checksum != layout.checksum \
 			or target_mask_checksum != layout.target_mask_checksum \
-			or nontarget_mask_checksum == 0 \
 			or world_bounds != expected_world_bounds \
 			or not is_equal_approx(terrain_origin_y, expected_terrain_origin_y) \
 			or painted_threshold_byte != tuning.painted_threshold_byte:
@@ -46,10 +41,8 @@ func is_valid_for(
 	var topology_cells := layout.top_topology.cell_count if layout.top_topology != null else Vector2i.ZERO
 	var topology_cell_total := topology_cells.x * topology_cells.y
 	return target_bytes.size() == pixel_count \
-			and nontarget_bytes.size() == pixel_count \
 			and target_image != null and not target_image.is_empty() \
-			and nontarget_image != null and not nontarget_image.is_empty() \
-			and target_texture != null and nontarget_texture != null \
+			and target_texture != null \
 			and surface_column_cells.size() == mask_size \
 			and surface_row_cells.size() == mask_size \
 			and surface_column_fractions.size() == mask_size \

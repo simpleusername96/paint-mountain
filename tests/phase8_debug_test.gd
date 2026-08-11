@@ -22,9 +22,15 @@ func _run_checks() -> void:
 	var controller: StageController = gameplay.get_node("StageController")
 	var cannon: CannonController = gameplay.get_node("Cannon")
 	var overlay: DebugOverlay = gameplay.get_node("DebugOverlay")
+	var paint := gameplay.get_node("PaintSystem") as PaintSystem
 	_assert_true(not overlay.visible, "debug overlay must be disabled by default")
 	overlay.set_debug_visible(true)
 	_assert_true(overlay.visible, "debug builds must allow F3 overlay visibility")
+	_assert_true(
+		overlay._nontarget_preview.texture != null \
+				and paint.nontarget_diagnostic_build_count() == 1,
+		"opening the debug overlay must lazily build its inverse target-mask preview once"
+	)
 	_assert_true(_count_buttons(overlay) == 8, "debug overlay must expose the eight current actions")
 	_assert_true(_count_texture_rects(overlay) == 4, "debug overlay must expose paint, target, recent, and non-target masks")
 	overlay._toggle_slow_motion()

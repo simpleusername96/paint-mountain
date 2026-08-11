@@ -43,8 +43,8 @@ In scope:
 
 - Main Menu automatic-focus behavior while the selected stage changes from
   loading to ready.
-- Horizontal left-drag semantics in Map Inspection; vertical orbit, Aim View
-  targeting, cannon yaw, and camera safety remain unchanged.
+- Horizontal and vertical direct-grab semantics in Map Inspection; Aim View
+  targeting, cannon yaw, and terrain clearance/occlusion policy remain unchanged.
 - The selected-stage path from baked-layout hydration through terrain,
   collision, paint bootstrap, dressing, mechanisms, gameplay scene readiness,
   and first-use render work.
@@ -65,8 +65,8 @@ Out of scope:
   change.
 - Removing the shared 2 px keyboard-focus style. It is an approved accessibility
   contract and must remain visible when keyboard focus is meaningful.
-- Optimizing Map Inspection safety raycasts without new evidence. The current
-  warmed drag path was smooth in the measured browser run.
+- Changing Map Inspection terrain-clearance or occlusion policy beyond resolving
+  a dirty inspection target at the fixed 60 Hz physics cadence.
 - Installing Firefox or another browser. Chromium on Windows is the required
   first-delivery browser; Firefox and Safari remain explicitly unverified until
   the owner supplies an approved test environment.
@@ -136,12 +136,12 @@ game becomes playable or whether a physics/render frame stalls after Fire.
 | Requirement or concern | Verified current owner and behavior | Direct evidence | Locked decision | Task IDs |
 | --- | --- | --- | --- | --- |
 | Initial focus | `AppRoot._show_main_menu()` defers `MainMenuScreen.focus_primary()`. If Play is disabled, `focus_primary()` gives Stage Select fallback focus; later readiness enables Play without transferring focus. Web also focuses the canvas on start. | `src/app/app_root.gd`, `src/ui/screens/main_menu_screen.gd`, `export_presets.cfg`, running itch capture | Keep the shared focus style and canvas focus. Add focus-visible semantics: passive/pointer launch shows no control ring; the first keyboard-navigation input focuses Play when ready or Stage Select while loading. If keyboard fallback still owns focus when Play becomes ready, transfer it to Play unless the player moved focus. | 1.1 |
-| Orbit direction | `CameraDirector.orbit_inspection()` adds horizontal mouse delta to inspection yaw. | `src/camera/camera_director.gd`; running interaction; no direction assertion in current tests | Negate the horizontal contribution. Keep pitch, cannon yaw, target selection, zoom, smoothing, and safety policy unchanged. Prove the visible landmark direction, not only the internal yaw sign. | 1.2 |
+| Orbit direction and pacing | `CameraDirector.orbit_inspection()` originally applied both axes opposite the user's direct-grab convention, while dirty inspection safety poses resolved at 15 Hz. | `src/camera/camera_director.gd`; user correction; deterministic projected-landmark and sustained-drag regressions | Negate horizontal yaw, reverse the vertical contribution, and resolve dirty inspection safety poses at the fixed 60 Hz cadence. Keep cannon yaw, Aim View, zoom, smoothing, and terrain-safety policy unchanged. | 1.2, 5.1 |
 | Coverage glyph | `coverage_meter.tscn` uses literal `◎`; the Web font path did not render it reliably. | 1280x720 itch capture; approved local `assets/ui/icons/target.png` exists | Replace the font glyph with the approved target texture inside the existing component. Do not introduce another icon or font dependency. | 1.3 |
 | Stage-entry stall | `AppRoot._enter_stage()` instantiates and adds Gameplay immediately. `GameplayScene._ready()` synchronously copies the layout, rebuilds terrain mesh/concave collision, initializes 512-square paint data/textures, dresses the environment, and spawns mechanisms before the next useful frame. | `src/app/app_root.gd`, `src/gameplay/gameplay_scene.gd`, `src/terrain/terrain_surface.gd`, `src/paint/paint_system.gd`; 1466.6 ms entry frame | Add a separate, identity-scoped `StageRuntimePreparer` and immutable `StageRuntimeArtifact`. Prepare in bounded phases while the current screen stays interactive; enable entry only when the artifact and a hidden prepared Gameplay scene are ready. | 2.1-2.4 |
 | Duplicate preview/gameplay work | `AppRoot` builds and caches a preview `TerrainGeometry`, then clears it when another preview is built; Gameplay independently calls `TerrainGeometryFactory.build()` again. | `src/app/app_root.gd:362-443`, `src/terrain/terrain_surface.gd:19-45` | The runtime artifact owns one immutable geometry result and local presentation points. Preview and Gameplay may share those immutable resources; mutable materials and live paint remain per Gameplay run. | 2.2-2.3 |
-| Paint bootstrap | `PaintSystem.configure()` allocates masks, verifies the target checksum, scans all 262,144 pixels for the non-target mask, creates three images/textures, and builds topology-axis caches during entry. | `src/paint/paint_system.gd:743-845` | Prepare immutable target/non-target bytes and topology-axis tables before entry. PaintSystem still allocates its zeroed live mask and publishes coverage; it copies or references only immutable bootstrap inputs. | 2.2-2.3 |
-| First-shot cold path | Presentation effect pools exist at `_ready()`, but the first emitted particle/material/projectile/paint-render path is not rendered before the real shot. The second shot removes the large stall. | `src/effects/presentation_effects.gd`, `src/projectile/projectile_manager.gd`, first/warm shot frame samples | Add a no-gameplay-side-effect warm-up stage. Render one representative paint material, projectile visual, and each effect material one family per frame in a temporary stage-owned `SubViewport`; do not emit signals, consume shots, mutate paint, or create physics bodies. | 3.1-3.2 |
+| Paint bootstrap | `PaintSystem.configure()` originally scanned all 262,144 pixels for an inverse non-target debug texture during every entry even though normal terrain rendering does not consume it. | `src/paint/paint_system.gd`; `src/debug/debug_overlay.gd`; prepared-entry and debug regressions | Prepare only the immutable target texture and topology-axis tables. Keep the inverse view derived and diagnostics-only, and build it lazily when the debug overlay opens. PaintSystem still owns the zeroed live mask and coverage. | 2.2-2.3, 5.3 |
+| First-shot cold path | Presentation effect pools exist at `_ready()`, but the first emitted particle/material/projectile/paint-render path is not rendered before the real shot. The second shot removes the large stall. | `src/effects/presentation_effects.gd`, `src/projectile/projectile_manager.gd`, first/warm shot frame samples | Add a no-gameplay-side-effect warm-up stage. Render representative paint and projectile visuals, then batch all effect families into one temporary-viewport render pass; do not emit signals, consume shots, mutate paint, or create physics bodies. | 3.1-3.2 |
 | Aim-entry composition | Aim composition calculates and caches interest points, including summit work. It can contribute to Start Aiming latency but is not the measured 1.47 s stage-build owner. | `src/camera/camera_director.gd`, `src/terrain/terrain_surface.gd`, existing caching test | Move immutable presentation/summit points into the runtime artifact and retain one-time camera pose caching. Do not change framing policy. | 2.2, 2.3 |
 | Web release validation | CI verifies native tests, export success, four files, and itch archive limits, but not the actual iframe runtime, referenced worklet/icon files, payload regression, or canvas journey. | `.github/workflows/itch-alpha.yml`, `scripts/verify.ps1`, `scripts/test.ps1` | Add dependency-free export/reference/size checks to CI and a required manual foreground runtime evidence gate. Do not add Playwright or another browser dependency in this plan. | 4.1-4.4 |
 
@@ -161,23 +161,26 @@ Readiness statement:
 ### StageRuntimePreparer
 
 Add `src/app/stage_runtime_preparer.gd` as an AppRoot-owned coordinator. It
-accepts `(StageData, GeneratedStageLayout)`, cancels obsolete selections, and
-emits typed ready/failed/progress signals keyed by full stage identity and
-layout checksum. It owns an LRU of at most three artifacts: Stage 01 preview,
-the selected stage, and the prefetched next stage.
+accepts `(StageData, GeneratedStageLayout)`, cancels obsolete selections and
+prefetches, and emits typed ready/failed/progress signals keyed by full stage identity and
+layout checksum. It owns an LRU of at most three artifacts. The Main Menu
+previews the persisted selected stage from that same artifact, and active
+Gameplay starts no next-stage preparation.
 
 Preparation is cooperative on the main thread because Godot render and physics
 resources are not delegated to unsafe worker code. Split work into bounded
-steps and yield at least one `process_frame` between them:
+steps, advance short steps inside one shared frame budget, and yield when the
+8 ms budget is exhausted:
 
 1. create the isolated runtime layout copy;
 2. incrementally collect terrain vertex/index/normal arrays in row batches;
 3. create the ArrayMesh, top collision, and shell collision as separate steps;
 4. build local playable/presentation/summit point arrays;
-5. build immutable target/non-target bytes and topology-axis tables;
-6. create immutable target/non-target textures as separate steps;
+5. build immutable target bytes and topology-axis tables;
+6. create the immutable target texture;
 7. prepare dressing placement inputs and preload existing PackedScenes;
-8. run first-use rendering warm-up one material/effect family per frame.
+8. run first-use rendering warm-up, batching the five effect families in one
+   render pass after terrain and projectile warm-up.
 
 `TerrainGeometryFactory` must expose a progressive build job rather than
 duplicating geometry math in AppRoot. A step uses an elapsed-time budget and
@@ -254,16 +257,17 @@ Theme and approved icon assets
   - Accept: no button looks selected on passive/pointer launch; Tab/Shift+Tab or
     directional keyboard navigation shows the shared 2 px accent on the correct
     action and every action remains reachable.
-- [x] **1.2** Reverse horizontal Map Inspection drag and lock screen semantics.
-  - Change: subtract horizontal mouse motion in
-    `CameraDirector.orbit_inspection()`; leave the vertical equation and all Aim
+- [x] **1.2** Correct Map Inspection drag and lock screen semantics.
+  - Change: subtract horizontal mouse motion and apply the user's later vertical
+    direct-grab correction in `CameraDirector.orbit_inspection()`; leave all Aim
     View input unchanged.
   - Test: add `tests/map_inspection_direction_test.gd`. Project a stable terrain
     landmark before and after a synthetic drag and assert that right-to-left
     drag produces the requested clockwise/direct-grab screen movement. Also
-    assert unchanged pitch and unchanged cannon aim.
-  - Accept: runtime left/right drags match the user's convention at both target
-    viewports and do not change the committed aim.
+    assert vertical landmark motion, 60 Hz dirty safety targets, and unchanged
+    cannon aim.
+  - Accept: runtime horizontal and vertical drags match the user's convention at
+    both target viewports and do not change the committed aim.
 - [x] **1.3** Replace the coverage font glyph with the approved target icon.
   - Change: use `assets/ui/icons/target.png` in the existing CoverageMeter
     component with the current restrained size/alignment; preserve its
@@ -299,9 +303,9 @@ new `src/app/stage_runtime_artifact.gd`, `src/terrain/terrain_geometry_factory.g
     one rendered frame occurs between bounded build steps.
 - [x] **2.2** Build the immutable artifact once and reuse it for preview.
   - Change: move preview geometry, local presentation/summit points, immutable
-    target/non-target bytes/textures, topology-axis tables, and dressing inputs
-    into `StageRuntimeArtifact`; retire AppRoot's untyped preview dictionary and
-    duplicate full-mask scan.
+    target bytes/texture, topology-axis tables, and dressing inputs into
+    `StageRuntimeArtifact`; retire AppRoot's untyped preview dictionary and the
+    normal-path inverse-mask scan.
   - Test: assert one `TerrainGeometryFactory` job per stage identity and that
     preview activation does not create a second geometry or target texture.
   - Accept: Stage 01 preview, arbitrary selected preview, and cache eviction
@@ -344,9 +348,9 @@ Source owners: `src/gameplay/gameplay_scene.gd`, new
 
 - [x] **3.1** Add a stage-owned render-only warm-up component.
   - Change: in a temporary `SubViewport`, render one representative terrain
-    paint material, projectile visual, and each existing particle/effect material
-    one family per frame. Free the viewport after the rendering server has
-    completed the warm-up.
+    paint material and projectile visual, then render all existing
+    particle/effect material families together. Free the viewport after the
+    rendering server has completed the warm-up.
   - Guard: do not add a RigidBody, call `ProjectileManager.spawn_projectile()`,
     emit gameplay/effect signals, consume a shot, write a paint byte, publish
     coverage, or change `StageController`.
@@ -417,8 +421,8 @@ Source owners: `.github/workflows/itch-alpha.yml`, `export_presets.cfg`,
 - [x] On passive/pointer launch no control ring appears. On keyboard navigation,
   Stage Select never retains loading fallback focus after Play becomes ready;
   keyboard focus remains visible and reachable.
-- [x] Right-to-left Map Inspection drag produces the requested clockwise/direct
-  grab behavior; vertical orbit and Aim View behavior do not regress.
+- [x] Right-to-left and bottom-to-top Map Inspection drags produce the requested
+  direct-grab behavior; Aim View behavior does not regress.
 - [ ] Menu/Stage Select stays responsive while preparing a selected stage, and
   activating a ready stage shows Briefing in at most 100 ms with no frame over
   50 ms.
@@ -500,16 +504,22 @@ dependencies, persistence, or acceptance.
 ## Progress
 
 - Canonical progress: the task checkboxes in this plan after activation.
-- Current phase: Phase 4 local release validation; post-deploy and valid
-  foreground performance qualification remain open.
-- Current status: interaction, preparation, hidden handoff, first-use warm-up,
-  coverage icon, telemetry, and static Web release implementation are complete.
-- Validation complete: new focused regressions, the full ordered Godot suite,
-  `scripts/verify.ps1`, fresh Web and Windows exports, Web artifact validation,
-  local Chromium functional smoke, and five inspected running-game captures.
-- Web payload: 16,779,326 gzip bytes across 12 files, 2.84% below the accepted
+- Current phase: Phase 4 foreground browser and deployment gates remain after
+  the completed local Phase 5 correction.
+- Current status: horizontal/vertical direct manipulation, 60 Hz inspection
+  safety targets, active-gameplay preparation cancellation, selected-stage menu
+  preview reuse, lazy debug inverse-mask creation, fast accepted-layout copying,
+  and batched effect warm-up are implemented.
+- Validation complete: focused regressions, the full ordered Godot suite,
+  `scripts/verify.ps1`, fresh Web and Windows release exports, Web artifact
+  validation, local Chromium functional smoke, and eight inspected running-game
+  captures across the original and reopened passes.
+- Web payload: 16,779,451 gzip bytes across 12 files, 2.84% below the accepted
   baseline and below the 20 MiB cap. The export is official, single-threaded,
   and has no missing exact-case runtime reference.
+- Windows release: `builds/windows/PaintMountain-phase5.exe` passed export and
+  background capture. The canonical executable was open in user-visible PID
+  36856, so this task neither stopped that process nor overwrote its file.
 - Measurement limit: the automated Chrome window supplied animation frames at
   about 1 Hz. Its apparent load time and first/second-shot frame samples are
   invalid under this contract and were discarded. No foreground p95, p99,
@@ -518,6 +528,62 @@ dependencies, persistence, or acceptance.
   changed because publication requires explicit user authorization.
 - Evidence:
   `docs/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
+- Reopened evidence on 2026-08-11: the user reported visibly choppy terrain
+  inspection, reversed vertical drag, and about three seconds of initial stage
+  loading. Source tracing found Map Inspection safety targets resolving at only
+  15 Hz. A Windows release log showed Stage 02 becoming visible at 6.53 seconds
+  while the next-stage artifact continued until 9.44 seconds, and selected
+  artifact preparation consumed about 2.77 seconds after layout readiness.
+- Corrected deterministic Windows/Compatibility evidence: Stage 01 reached
+  `gameplay_prepared` 2.075 seconds after `app_root_ready` and 1.684 seconds
+  after `layout_ready`. Artifact preparation itself took 1.187 seconds, down
+  57% from the reopened 2.77-second artifact interval, while the cooperative
+  ceiling remained 8 ms.
+
+## Phase 5: Reopen direct manipulation and first readiness
+
+Goal: make the real inspection camera update at the physics/render cadence and
+remove eager preparation that does not serve the first playable frame.
+
+- [x] **5.1** Correct vertical direct manipulation and inspection pacing.
+  - Change: invert the vertical drag contribution per the user's explicit
+    correction. Resolve a dirty Map Inspection safety target at the fixed 60 Hz
+    physics cadence instead of 15 Hz; collapse multiple mouse events into one
+    solve per physics tick and retain terrain clearance/occlusion policy.
+  - Test: extend the projection regression to cover visible vertical landmark
+    motion and add a sustained-drag assertion that the rendered camera changes
+    on consecutive fixed ticks rather than in four-tick steps.
+  - Accept: horizontal and vertical drags follow the user's convention, the
+    committed aim is unchanged, and a stable drag no longer presents a 15 Hz
+    camera target.
+- [x] **5.2** Stop preparation work from competing with active inspection.
+  - Change: do not start a next-stage layout or runtime-artifact prefetch when
+    Gameplay becomes visible. Keep the existing selected-stage cache and prepare
+    a later stage only when a visible menu/select/result flow requests it.
+  - Test: entering a prepared stage leaves no next-stage layout or artifact job
+    active while Map Inspection is reachable.
+  - Accept: the first seconds of active Gameplay contain no task-owned
+    cooperative preparation budget from another stage.
+- [x] **5.3** Shorten selected-stage readiness without increasing frame budget.
+  - Change: remove the eager inverse non-target mask/image/texture from the
+    runtime artifact because the terrain shader does not consume it. Build that
+    derived diagnostic texture only when the debug overlay is opened. Reduce
+    the procedural menu-preview mask work while preserving its rendered shape
+    and keep the fixed 8 ms cooperative ceiling.
+  - Test: artifact identity/paint tests retain the target-mask and topology
+    contracts; debug activation still exposes all four mask previews; delivery
+    telemetry records app, layout, artifact, and Gameplay-ready boundaries.
+  - Accept: the normal selected-stage path performs no 262,144-pixel inverse
+    scan, preview-only work is bounded and visually equivalent at menu scale,
+    and the measured layout-to-prepared interval materially improves from the
+    2.77-second reopened baseline.
+- [x] **5.4** Re-run final native/Web evidence and audit.
+  - Change: run focused camera/preparation/debug tests, `scripts/verify.ps1`, the
+    full suite, both release exports, Web static verification, production-style
+    captures, and the scoped quality audit. Keep foreground Chrome timing and
+    post-deploy itch checks separate as already required.
+  - Accept: no interaction, paint, debug, preparation identity, visual, build,
+    or payload regression remains in the local final artifact.
 
 ## Next Steps
 

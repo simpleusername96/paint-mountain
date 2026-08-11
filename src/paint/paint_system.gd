@@ -103,6 +103,7 @@ var _texture_upload_batch_count: int = 0
 var _paint_texture_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
 var _recent_diagnostics_enabled: bool = false
+var _nontarget_diagnostic_build_count: int = 0
 
 
 func _init() -> void:
@@ -677,7 +678,13 @@ func set_recent_diagnostics_enabled(value: bool) -> void:
 
 
 func nontarget_texture() -> ImageTexture:
+	if _nontarget_texture == null and _target_bytes.size() == MASK_SIZE * MASK_SIZE:
+		_build_nontarget_diagnostic_texture()
 	return _nontarget_texture
+
+
+func nontarget_diagnostic_build_count() -> int:
+	return _nontarget_diagnostic_build_count
 
 
 func pending_work_count() -> int:
@@ -788,17 +795,6 @@ func _create_masks_and_surface_cache(prepared_bootstrap: PaintSurfaceBootstrap =
 	_target_image = prepared_bootstrap.target_image if use_prepared else Image.create_from_data(
 		MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, _target_bytes
 	)
-	if use_prepared:
-		_nontarget_image = prepared_bootstrap.nontarget_image
-	else:
-		var nontarget_bytes := PackedByteArray()
-		nontarget_bytes.resize(pixel_count)
-		for index in range(pixel_count):
-			nontarget_bytes[index] = 0 \
-					if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
-		_nontarget_image = Image.create_from_data(
-			MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes
-		)
 	_paint_texture = ImageTexture.create_from_image(_paint_image)
 	_recent_image = null
 	_recent_texture = null
@@ -806,8 +802,9 @@ func _create_masks_and_surface_cache(prepared_bootstrap: PaintSurfaceBootstrap =
 		_allocate_recent_diagnostics()
 	_target_texture = prepared_bootstrap.target_texture \
 			if use_prepared else ImageTexture.create_from_image(_target_image)
-	_nontarget_texture = prepared_bootstrap.nontarget_texture \
-			if use_prepared else ImageTexture.create_from_image(_nontarget_image)
+	_nontarget_image = null
+	_nontarget_texture = null
+	_nontarget_diagnostic_build_count = 0
 	_painted_target_pixels = 0
 	_painted_target_surface_area = 0.0
 	_paint_dirty_rect = Rect2i()
@@ -817,6 +814,22 @@ func _create_masks_and_surface_cache(prepared_bootstrap: PaintSurfaceBootstrap =
 	_texture_upload_batch_count = 0
 	_paint_texture_publish_elapsed = 0.0
 	_coverage_changed_since_publish = false
+
+
+## The inverse target view is diagnostics-only. Building its 262,144 pixels
+## during ordinary stage entry delayed readiness even though gameplay rendering
+## samples the target texture directly.
+func _build_nontarget_diagnostic_texture() -> void:
+	var nontarget_bytes := PackedByteArray()
+	nontarget_bytes.resize(_target_bytes.size())
+	for index in range(_target_bytes.size()):
+		nontarget_bytes[index] = 0 \
+				if _target_bytes[index] >= _surface_tuning.painted_threshold_byte else 255
+	_nontarget_image = Image.create_from_data(
+		MASK_SIZE, MASK_SIZE, false, Image.FORMAT_L8, nontarget_bytes
+	)
+	_nontarget_texture = ImageTexture.create_from_image(_nontarget_image)
+	_nontarget_diagnostic_build_count += 1
 
 
 func _install_surface_bootstrap(bootstrap: PaintSurfaceBootstrap) -> void:

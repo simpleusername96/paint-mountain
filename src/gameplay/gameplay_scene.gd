@@ -49,6 +49,9 @@ var _delivery_markers: Dictionary = {}
 
 func _ready() -> void:
 	GAMEPLAY_PACE.apply_normal()
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_binding_started", {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+	})
 	if stage_data == null:
 		_fail_stage_preparation("GameplayScene requires StageData.")
 		return
@@ -58,6 +61,9 @@ func _ready() -> void:
 	if not _build_stage_world():
 		_fail_stage_preparation("GameplayScene could not bind the prepared stage world.")
 		return
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_world_bound", {
+		"stage_id": String(stage_data.stage_id),
+	})
 	_connect_systems()
 	_camera_director.configure(_camera, stage_data, _projectile_manager, _terrain_surface, _cannon)
 	_trajectory_preview.configure(_cannon)
@@ -287,6 +293,9 @@ func _publish_stage_prepared() -> void:
 func _complete_stage_preparation() -> void:
 	if _stage_preparation_complete or not is_inside_tree():
 		return
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_warmup_started", {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+	})
 	var warmup := GameplayFirstUseWarmup.new()
 	warmup.name = "GameplayFirstUseWarmup"
 	add_child(warmup)
@@ -301,6 +310,10 @@ func _complete_stage_preparation() -> void:
 	if not warmup.is_complete():
 		_fail_stage_preparation("Gameplay first-use render warm-up did not complete.")
 		return
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_warmup_complete", {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+		"effect_family_count": warmup.warmed_effect_family_count(),
+	})
 	warmup.queue_free()
 	_publish_stage_prepared()
 

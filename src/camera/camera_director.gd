@@ -32,6 +32,7 @@ const RESULT_SAFE_RECT := Rect2(0.06, 0.08, 0.64, 0.82)
 const FOLLOW_IMPACT_HOLD_TICKS := GAMEPLAY_PACE.FOLLOW_IMPACT_HOLD_TICKS
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
+const INSPECTION_SAFETY_SOLVE_INTERVAL := 1.0 / 60.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
 const FOLLOW_DIRECTION := Vector3(18.0, 10.0, 24.0)
 const INSPECTION_ORBIT_DEGREES_PER_PIXEL := Vector2(0.18, 0.14)
@@ -84,6 +85,7 @@ var _presentation_pose_cache: Dictionary = {}
 var _presentation_points := PackedVector3Array()
 var _presentation_points_checksum := 0
 var _presentation_pose_build_count := 0
+var _safety_solve_count := 0
 var _follow_projectile: PaintProjectile
 var _follow_impact_hold_ticks := 0
 var _follow_impact_focus := Vector3.ZERO
@@ -118,7 +120,9 @@ func _physics_process(delta: float) -> void:
 	if current_mode == Mode.FOLLOW:
 		_update_follow_state()
 	_safety_solve_elapsed += delta
-	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= SAFETY_SOLVE_INTERVAL):
+	var solve_interval := INSPECTION_SAFETY_SOLVE_INTERVAL \
+			if _can_inspect_map() else SAFETY_SOLVE_INTERVAL
+	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= solve_interval):
 		_resolve_safe_pose()
 
 
@@ -229,7 +233,7 @@ func orbit_inspection(relative: Vector2) -> bool:
 		return false
 	_inspection_yaw_radians -= deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x)
 	_inspection_pitch_radians = clampf(
-		_inspection_pitch_radians - deg_to_rad(relative.y * INSPECTION_ORBIT_DEGREES_PER_PIXEL.y),
+		_inspection_pitch_radians + deg_to_rad(relative.y * INSPECTION_ORBIT_DEGREES_PER_PIXEL.y),
 		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),
 		deg_to_rad(INSPECTION_MAX_PITCH_DEGREES)
 	)
@@ -300,6 +304,10 @@ func aiming_interest_build_count() -> int:
 
 func presentation_pose_build_count() -> int:
 	return _presentation_pose_build_count
+
+
+func safety_solve_count() -> int:
+	return _safety_solve_count
 
 
 func safe_position_for(desired: Vector3, focus: Vector3, terrain_focus: bool = false) -> Vector3:
@@ -667,6 +675,7 @@ func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
 
 
 func _resolve_safe_pose() -> void:
+	_safety_solve_count += 1
 	_safe_source_position = _desired_position
 	_safe_source_focus = _desired_focus
 	var presentation_mode := current_mode in [Mode.BRIEFING, Mode.RESULT]

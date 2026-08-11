@@ -62,6 +62,7 @@ func run(
 	if not is_inside_tree():
 		return
 
+	var warmed_particles: Array[GPUParticles3D] = []
 	for source in effect_sources:
 		if source == null:
 			continue
@@ -69,11 +70,16 @@ func run(
 		world_root.add_child(particle)
 		particle.restart()
 		particle.emitting = true
+		warmed_particles.append(particle)
+		_warmed_effect_family_count += 1
+	if not warmed_particles.is_empty():
 		await _wait_for_render_completion(scene_tree)
 		if not is_inside_tree():
 			return
-		_warmed_effect_family_count += 1
+	for particle in warmed_particles:
+		particle.emitting = false
 		particle.queue_free()
+	if not warmed_particles.is_empty():
 		await _wait_for_render_completion(scene_tree)
 		if not is_inside_tree():
 			return
