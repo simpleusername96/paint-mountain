@@ -64,9 +64,11 @@ The repository is also registered in fastrun-manager with the canonical project 
 - `Esc`: pause; Resume returns to the prior gameplay state.
 - `F3`: toggle the developer overlay in debug builds only.
 
-Map Inspection clicks change only the inspection focus. The dotted preview is
-latest-only advisory presentation through first collision or playable-bounds
-exit; it does not predict paint coverage, bounces, or mechanism results.
+In Briefing and Map Inspection, left-drag orbits around the fixed visual center
+of the mountain and the wheel changes radius. Clicks do not pan or refocus the
+inspection camera. The dotted preview is latest-only advisory presentation
+through first collision or playable-bounds exit; it does not predict paint
+coverage, bounces, or mechanism results.
 
 ## Project Structure
 

@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -140,11 +140,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   last successful explicit elevation or power constraint whenever a legal tuple
   exists. The authored view keeps the cannon large in the foreground and the
   complete mountain distant and visible.
-- In Map View, terrain click changes the inspection focus, left drag
-  orbits the safe camera, the wheel zooms, and aim and Fire input are blocked.
+- In Map View, left drag changes yaw/pitch around the immutable center of the
+  visible terrain mass, the wheel changes radius, and aim and Fire input are
+  blocked. Terrain and mechanism clicks do not pan or refocus the camera.
 - Tab and one visible focusable toggle switch modes without changing the stored
-  committed aim or preview. Mode changes, target selection, and terrain refocus
-  must acknowledge without a visible stall. The shared lower-edge context
+  committed aim or preview. Mode changes, target selection, orbit, and zoom must
+  acknowledge without a visible stall. The shared lower-edge context
   legend exposes the active inputs and mouse behavior; no detached prompt set or
   timed first-session hint is used.
 - Accepted Fire enters Shot Follow for the newly launched root paintball. Hide

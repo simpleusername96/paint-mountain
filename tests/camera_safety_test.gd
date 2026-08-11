@@ -49,6 +49,10 @@ func _run() -> void:
 			director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION,
 			"%s briefing must begin in Map Inspection" % stage.stage_id
 		)
+		_assert_true(
+			director.camera_focus_position().is_equal_approx(terrain.visual_world_center()),
+			"%s briefing must focus the fixed terrain visual center" % stage.stage_id
+		)
 		for yaw in [-22.0, 0.0, 22.0]:
 			for zoom in [-22.0, 28.0]:
 				director.set_mode(CameraDirector.Mode.BRIEFING, true)
@@ -59,11 +63,6 @@ func _run() -> void:
 			await _sample_camera(camera, director, terrain, 6, "%s bookmark %s" % [stage.stage_id, CameraDirector.Mode.keys()[mode]])
 		_assert_safe_aiming_frame(stage, camera, director, terrain, cannon)
 		print("Camera safety: bookmarks complete.")
-		for mechanism in gameplay.get_node("Mechanisms").get_children():
-			director.set_mode(CameraDirector.Mode.BRIEFING, true)
-			_assert_true(director.focus_briefing_target(mechanism.global_position), "mechanism focus must be accepted in briefing")
-			await _sample_camera(camera, director, terrain, 6, "%s mechanism %s" % [stage.stage_id, mechanism.name])
-		print("Camera safety: mechanism fixtures complete.")
 		var center_surface := terrain.world_surface_point(Vector2(stage.terrain_center.x, stage.terrain_center.z))
 		var safe_top := director.safe_position_for(center_surface - Vector3.UP * 12.0, center_surface, true)
 		_assert_clearance(safe_top, terrain, "%s top fixture" % stage.stage_id)
@@ -96,13 +95,20 @@ func _exercise_map_inspection(
 		director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true),
 		"%s must allow Map Inspection during Aiming" % stage.stage_id
 	)
-	var center := terrain.world_surface_point(Vector2(stage.terrain_center.x, stage.terrain_center.z))
-	_assert_true(director.focus_inspection_target(center), "%s terrain focus must be selectable" % stage.stage_id)
+	var center := terrain.visual_world_center()
+	_assert_true(
+		director.camera_focus_position().is_equal_approx(center),
+		"%s Map Inspection must use the fixed terrain visual center" % stage.stage_id
+	)
 	var distance_before := director.inspection_distance()
 	_assert_true(director.orbit_inspection(Vector2(80.0, -30.0)), "%s inspection orbit must accept drag" % stage.stage_id)
 	_assert_true(director.zoom_inspection(1.0), "%s inspection zoom must accept wheel input" % stage.stage_id)
 	_assert_true(director.inspection_distance() < distance_before, "%s wheel up must zoom closer" % stage.stage_id)
 	await _sample_camera(camera, director, terrain, 8, "%s map inspection" % stage.stage_id)
+	_assert_true(
+		director.camera_focus_position().is_equal_approx(center),
+		"%s orbit and zoom must not move the terrain visual center" % stage.stage_id
+	)
 	_assert_true(
 		director.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED, true),
 		"%s must return to Aim Lock" % stage.stage_id
@@ -115,6 +121,18 @@ func _sample_camera(camera: Camera3D, director: CameraDirector, terrain: Terrain
 		await physics_frame
 		_assert_clearance(camera.global_position, terrain, label)
 		var focus := director.camera_focus_position()
+		if director.current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION \
+				and director.current_mode in [CameraDirector.Mode.BRIEFING, CameraDirector.Mode.AIMING]:
+			_assert_true(
+				focus.is_equal_approx(terrain.visual_world_center()),
+				"%s inspection focus must remain at the terrain visual center" % label
+			)
+			var camera_forward := -camera.global_transform.basis.z.normalized()
+			_assert_true(
+				camera_forward.dot((focus - camera.global_position).normalized()) >= 0.999,
+				"%s inspection camera must look at the fixed center" % label
+			)
+			continue
 		var surface_focus := terrain.contains_world_xz(Vector2(focus.x, focus.z)) \
 				and focus.distance_to(terrain.world_surface_point(Vector2(focus.x, focus.z))) <= 0.3
 		_assert_true(

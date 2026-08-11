@@ -14,6 +14,7 @@ var _layout: GeneratedStageLayout
 var _geometry: TerrainGeometry
 var _playable_top_world_points := PackedVector3Array()
 var _presentation_world_points := PackedVector3Array()
+var _visual_world_center := Vector3.ZERO
 
 
 func configure(
@@ -40,6 +41,7 @@ func configure(
 	_presentation_world_points = _world_points_from_local(prepared_presentation_local_points) \
 			if not prepared_presentation_local_points.is_empty() \
 			else _build_presentation_world_points()
+	_visual_world_center = _build_visual_world_center()
 	var terrain_mesh := get_node_or_null("TerrainMesh") as MeshInstance3D
 	var top_body := get_node_or_null("TerrainTopBody") as StaticBody3D
 	var top_collision := get_node_or_null("TerrainTopBody/CollisionShape3D") as CollisionShape3D
@@ -123,6 +125,12 @@ func presentation_world_points() -> PackedVector3Array:
 	return _presentation_world_points.duplicate()
 
 
+## Fixed pivot for interactive terrain inspection. It centers the visible
+## mountain mass while excluding virtual framing headroom and the buried shell.
+func visual_world_center() -> Vector3:
+	return _visual_world_center
+
+
 func _build_playable_top_world_points() -> PackedVector3Array:
 	if _layout == null or _layout.top_topology == null:
 		return PackedVector3Array()
@@ -151,6 +159,29 @@ func _build_presentation_world_points() -> PackedVector3Array:
 	for local_point in local_presentation_points(_layout, _geometry.render_mesh.get_aabb()):
 		result.append(to_global(local_point))
 	return result
+
+
+func _build_visual_world_center() -> Vector3:
+	if _playable_top_world_points.is_empty():
+		return global_position
+	var visible_bounds := AABB(_playable_top_world_points[0], Vector3.ZERO)
+	for point_index in range(1, _playable_top_world_points.size()):
+		visible_bounds = visible_bounds.expand(_playable_top_world_points[point_index])
+	var visible_base_y := global_position.y
+	if _geometry != null and _geometry.render_mesh != null:
+		var local_base_y := maxf(_geometry.render_mesh.get_aabb().position.y, 0.0)
+		visible_base_y = to_global(Vector3(0.0, local_base_y, 0.0)).y
+	visible_bounds = visible_bounds.expand(Vector3(
+		visible_bounds.position.x,
+		visible_base_y,
+		visible_bounds.position.z
+	))
+	visible_bounds = visible_bounds.expand(Vector3(
+		visible_bounds.end.x,
+		visible_base_y,
+		visible_bounds.end.z
+	))
+	return visible_bounds.get_center()
 
 
 func _world_points_from_local(local_points: PackedVector3Array) -> PackedVector3Array:

@@ -559,16 +559,10 @@ func _spawn_mechanisms() -> void:
 		elif mechanism is UphillReboundNode:
 			mechanism.configure_uphill_tangent(placement.uphill_tangent)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
-		mechanism.mechanism_selected.connect(_on_mechanism_selected)
 		_mechanisms.append(mechanism)
 	_mechanism_resolver.configure(_terrain_surface)
 	for mechanism in _mechanisms:
 		_mechanism_resolver.register_glyph(mechanism)
-
-func _on_mechanism_selected(mechanism: TerrainGlyphMechanism) -> void:
-	if _stage_controller.current_state == StageController.State.BRIEFING:
-		_camera_director.focus_briefing_target(mechanism.global_position)
-
 
 func _on_mechanism_activated(
 		mechanism: TerrainGlyphMechanism,

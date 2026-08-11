@@ -32,14 +32,13 @@ const RESULT_SAFE_RECT := Rect2(0.06, 0.08, 0.64, 0.82)
 const FOLLOW_IMPACT_HOLD_TICKS := GAMEPLAY_PACE.FOLLOW_IMPACT_HOLD_TICKS
 const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
-const INSPECTION_SAFETY_SOLVE_INTERVAL := 1.0 / 60.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
 const FOLLOW_DIRECTION := Vector3(18.0, 10.0, 24.0)
 const INSPECTION_ORBIT_DEGREES_PER_PIXEL := Vector2(0.18, 0.14)
 const INSPECTION_MIN_PITCH_DEGREES := 12.0
 const INSPECTION_MAX_PITCH_DEGREES := 78.0
 const INSPECTION_ZOOM_FACTOR := 0.90
-const INSPECTION_CLICK_DRAG_THRESHOLD := 6.0
+const INSPECTION_CLEARANCE_SEARCH_STEPS := 20
 
 var current_mode: Mode = Mode.AIMING
 var current_interaction_mode: InteractionMode = InteractionMode.MAP_INSPECTION
@@ -58,8 +57,6 @@ var _safe_pose_valid := false
 var _safe_pose_dirty := true
 var _safety_solve_elapsed := SAFETY_SOLVE_INTERVAL
 var _camera_velocity := Vector3.ZERO
-var _briefing_yaw_offset: float = 0.0
-var _briefing_zoom_offset: float = 0.0
 var _shake_remaining: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_phase: float = 0.0
@@ -73,10 +70,6 @@ var _inspection_min_distance := 30.0
 var _inspection_max_distance := 280.0
 var _inspection_pose_initialized := false
 var _inspection_drag_active := false
-var _inspection_press_position := Vector2.ZERO
-var _inspection_drag_distance := 0.0
-var _queued_inspection_pick := false
-var _queued_inspection_screen_position := Vector2.ZERO
 var _aim_pose_key := ""
 var _aim_pose: Array[Vector3] = []
 var _aim_interest_points := PackedVector3Array()
@@ -114,15 +107,10 @@ func configure(
 func _physics_process(delta: float) -> void:
 	if _camera == null or _stage_data == null:
 		return
-	if _queued_inspection_pick:
-		_queued_inspection_pick = false
-		_focus_inspection_from_screen(_queued_inspection_screen_position)
 	if current_mode == Mode.FOLLOW:
 		_update_follow_state()
 	_safety_solve_elapsed += delta
-	var solve_interval := INSPECTION_SAFETY_SOLVE_INTERVAL \
-			if _can_inspect_map() else SAFETY_SOLVE_INTERVAL
-	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= solve_interval):
+	if _safe_pose_dirty and (not _safe_pose_valid or _safety_solve_elapsed >= SAFETY_SOLVE_INTERVAL):
 		_resolve_safe_pose()
 
 
@@ -150,17 +138,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if button.button_index == MOUSE_BUTTON_LEFT:
 			if button.pressed:
 				_inspection_drag_active = true
-				_inspection_press_position = button.position
-				_inspection_drag_distance = 0.0
-			elif _inspection_drag_active:
+			else:
 				_inspection_drag_active = false
-				_inspection_drag_distance = maxf(
-					_inspection_drag_distance,
-					button.position.distance_to(_inspection_press_position)
-				)
-				if _inspection_drag_distance <= INSPECTION_CLICK_DRAG_THRESHOLD:
-					_queued_inspection_screen_position = button.position
-					_queued_inspection_pick = true
 			get_viewport().set_input_as_handled()
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP:
 			zoom_inspection(1.0)
@@ -171,7 +150,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		var motion := event as InputEventMouseMotion
 		if _inspection_drag_active and motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
-			_inspection_drag_distance += motion.relative.length()
 			orbit_inspection(motion.relative)
 			get_viewport().set_input_as_handled()
 		elif not (motion.button_mask & MOUSE_BUTTON_MASK_LEFT):
@@ -231,7 +209,11 @@ func aim_is_locked() -> bool:
 func orbit_inspection(relative: Vector2) -> bool:
 	if not _can_inspect_map() or relative.is_zero_approx():
 		return false
-	_inspection_yaw_radians -= deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x)
+	_inspection_yaw_radians = wrapf(
+		_inspection_yaw_radians - deg_to_rad(relative.x * INSPECTION_ORBIT_DEGREES_PER_PIXEL.x),
+		-PI,
+		PI
+	)
 	_inspection_pitch_radians = clampf(
 		_inspection_pitch_radians + deg_to_rad(relative.y * INSPECTION_ORBIT_DEGREES_PER_PIXEL.y),
 		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),
@@ -253,18 +235,6 @@ func zoom_inspection(wheel_steps: float) -> bool:
 	return true
 
 
-func focus_inspection_target(world_position: Vector3) -> bool:
-	if not _can_inspect_map() or _terrain_surface == null:
-		return false
-	var world_xz := Vector2(world_position.x, world_position.z)
-	if not _terrain_surface.contains_world_xz(world_xz):
-		return false
-	_inspection_focus = _terrain_surface.world_surface_point(world_xz) \
-			+ Vector3.UP * OCCLUSION_END_TOLERANCE
-	_apply_inspection_orbit()
-	return true
-
-
 func inspection_distance() -> float:
 	return _inspection_distance
 
@@ -273,16 +243,28 @@ func mode_name() -> String:
 	return Mode.keys()[current_mode]
 
 
-func focus_briefing_target(world_position: Vector3) -> bool:
-	if current_mode != Mode.BRIEFING:
-		return false
-	return focus_inspection_target(world_position)
-
-
 func set_briefing_offsets(yaw_degrees: float, zoom_distance: float) -> void:
-	_briefing_yaw_offset = clampf(yaw_degrees, -22.0, 22.0)
-	_briefing_zoom_offset = clampf(zoom_distance, -22.0, 28.0)
-	_apply_briefing_orbit()
+	if current_mode != Mode.BRIEFING or not _inspection_pose_initialized:
+		return
+	var bookmark := _bookmark_for(Mode.BRIEFING)
+	var base_offset := bookmark[0] - _inspection_focus
+	var base_distance := maxf(base_offset.length(), 0.001)
+	_inspection_yaw_radians = wrapf(
+		atan2(base_offset.x, base_offset.z) + deg_to_rad(clampf(yaw_degrees, -22.0, 22.0)),
+		-PI,
+		PI
+	)
+	_inspection_pitch_radians = clampf(
+		asin(clampf(base_offset.y / base_distance, -1.0, 1.0)),
+		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),
+		deg_to_rad(INSPECTION_MAX_PITCH_DEGREES)
+	)
+	_inspection_distance = clampf(
+		base_distance + clampf(zoom_distance, -22.0, 28.0),
+		_inspection_min_distance,
+		_inspection_max_distance
+	)
+	_apply_inspection_orbit()
 
 
 func camera_focus_position() -> Vector3:
@@ -406,16 +388,30 @@ func _presentation_bookmark(mode: Mode, authored: Array[Vector3]) -> Array[Vecto
 	if _presentation_pose_cache.has(key):
 		var cached_pose: Array[Vector3] = _presentation_pose_cache[key]
 		return cached_pose
-	var framed := TerrainCameraFramer.framed_pose_in_normalized_rect(
-		points,
-		_points_center(points),
-		authored[0],
-		authored[1],
-		_camera.fov,
-		aspect_ratio,
-		safe_rect,
-		PRESENTATION_FRAME_MARGIN
-	)
+	var framed: Array[Vector3]
+	if mode == Mode.BRIEFING:
+		# Interactive inspection must keep its optical center on the fixed terrain
+		# pivot. Increase distance to respect the safe region instead of shifting it.
+		framed = TerrainCameraFramer.framed_pose_around_points(
+			points,
+			_terrain_surface.visual_world_center(),
+			authored[0],
+			authored[1],
+			_camera.fov,
+			aspect_ratio,
+			PRESENTATION_FRAME_MARGIN / minf(safe_rect.size.x, safe_rect.size.y)
+		)
+	else:
+		framed = TerrainCameraFramer.framed_pose_in_normalized_rect(
+			points,
+			_points_center(points),
+			authored[0],
+			authored[1],
+			_camera.fov,
+			aspect_ratio,
+			safe_rect,
+			PRESENTATION_FRAME_MARGIN
+		)
 	if framed.is_empty():
 		return authored
 	var cached_pose: Array[Vector3] = [framed[0], framed[1]]
@@ -512,24 +508,18 @@ func _move_to(position: Vector3, target: Vector3, immediate: bool) -> void:
 		_look_at_focus(target)
 
 
-func _apply_briefing_orbit() -> void:
-	var bookmark := _bookmark_for(Mode.BRIEFING)
-	var base_offset := bookmark[0] - bookmark[1]
-	var rotated := base_offset.rotated(Vector3.UP, deg_to_rad(_briefing_yaw_offset))
-	var direction := rotated.normalized()
-	var distance := clampf(
-		rotated.length() + _briefing_zoom_offset,
-		_inspection_min_distance,
-		_inspection_max_distance
-	)
-	_move_to(bookmark[1] + direction * distance, bookmark[1], false)
-
-
 func _set_interaction_mode(mode: InteractionMode, immediate: bool) -> void:
 	var changed := current_interaction_mode != mode
 	current_interaction_mode = mode
 	_inspection_drag_active = false
 	if mode == InteractionMode.AIM_LOCKED:
+		if changed:
+			# The direct inspection cache belongs to a different optical pivot.
+			# Invalidate it before the next rendered frame so Aim View cannot
+			# momentarily look back at the terrain-center orbit target.
+			_safe_pose_valid = false
+			_safe_pose_dirty = true
+			_safety_solve_elapsed = SAFETY_SOLVE_INTERVAL
 		var aiming_bookmark := _bookmark_for(Mode.AIMING)
 		_move_to(aiming_bookmark[0], aiming_bookmark[1], immediate)
 	else:
@@ -544,11 +534,15 @@ func _initialize_inspection_pose(bookmark: Array[Vector3], force: bool) -> void:
 	if _inspection_pose_initialized and not force:
 		return
 	var position := bookmark[0]
-	_inspection_focus = bookmark[1]
+	_inspection_focus = _terrain_surface.visual_world_center()
 	var offset := position - _inspection_focus
 	_inspection_distance = maxf(offset.length(), 0.001)
 	_inspection_yaw_radians = atan2(offset.x, offset.z)
-	_inspection_pitch_radians = asin(clampf(offset.y / _inspection_distance, -1.0, 1.0))
+	_inspection_pitch_radians = clampf(
+		asin(clampf(offset.y / _inspection_distance, -1.0, 1.0)),
+		deg_to_rad(INSPECTION_MIN_PITCH_DEGREES),
+		deg_to_rad(INSPECTION_MAX_PITCH_DEGREES)
+	)
 	var span := maxf(_stage_data.terrain_size.x, _stage_data.terrain_size.y)
 	_inspection_min_distance = maxf(30.0, minf(_stage_data.terrain_size.x, _stage_data.terrain_size.y) * 0.24)
 	_inspection_max_distance = maxf(_inspection_distance, span * 1.4)
@@ -565,29 +559,65 @@ func _apply_inspection_orbit(immediate: bool = false) -> void:
 		sin(_inspection_pitch_radians) * _inspection_distance,
 		cos(_inspection_yaw_radians) * horizontal_scale
 	)
-	_move_to(_inspection_focus + offset, _inspection_focus, immediate)
+	_set_desired_pose(_inspection_focus + offset, _inspection_focus)
+	_cache_inspection_pose()
+	if immediate:
+		_camera.global_position = _safe_position
+		_camera_velocity = Vector3.ZERO
+		_look_at_focus(_inspection_focus)
+
+
+func _cache_inspection_pose() -> void:
+	_safe_source_position = _desired_position
+	_safe_source_focus = _inspection_focus
+	_safe_cached_focus = _inspection_focus
+	_safe_position = _safe_inspection_position(_desired_position)
+	_safe_pose_valid = true
+	_safe_pose_dirty = false
+	_safety_solve_elapsed = 0.0
+
+
+## Keeps terrain clearance by increasing radius on the selected spherical ray.
+## It never changes the terrain pivot, yaw, or pitch.
+func _safe_inspection_position(desired: Vector3) -> Vector3:
+	var direction := (desired - _inspection_focus).normalized()
+	if direction.is_zero_approx():
+		return desired
+	var requested_distance := clampf(
+		desired.distance_to(_inspection_focus),
+		_inspection_min_distance,
+		_inspection_max_distance
+	)
+	var requested := _inspection_focus + direction * requested_distance
+	if _inspection_position_has_clearance(requested):
+		return requested
+	var maximum := _inspection_focus + direction * _inspection_max_distance
+	if not _inspection_position_has_clearance(maximum):
+		return maximum
+	var lower_distance := requested_distance
+	var upper_distance := _inspection_max_distance
+	for _step in range(INSPECTION_CLEARANCE_SEARCH_STEPS):
+		var candidate_distance := (lower_distance + upper_distance) * 0.5
+		var candidate := _inspection_focus + direction * candidate_distance
+		if _inspection_position_has_clearance(candidate):
+			upper_distance = candidate_distance
+		else:
+			lower_distance = candidate_distance
+	return _inspection_focus + direction * upper_distance
+
+
+func _inspection_position_has_clearance(position: Vector3) -> bool:
+	if _terrain_surface == null \
+			or not _terrain_surface.contains_world_xz(Vector2(position.x, position.z)):
+		return true
+	var surface := _terrain_surface.world_surface_point(Vector2(position.x, position.z))
+	return position.y >= surface.y + CAMERA_CLEARANCE
 
 
 func _can_inspect_map() -> bool:
 	return _camera != null and _stage_data != null \
 			and current_mode in [Mode.BRIEFING, Mode.AIMING] \
 			and current_interaction_mode == InteractionMode.MAP_INSPECTION
-
-
-func _focus_inspection_from_screen(screen_position: Vector2) -> bool:
-	var ray_origin := _camera.project_ray_origin(screen_position)
-	var ray_end := ray_origin + _camera.project_ray_normal(screen_position) * _camera.far
-	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_end, 1)
-	query.collide_with_areas = false
-	query.collide_with_bodies = true
-	var hit := _camera.get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return false
-	var collider: Object = hit.get("collider")
-	if not _terrain_surface.is_top_collider(collider) \
-			and not _terrain_surface.is_skirt_collider(collider):
-		return false
-	return focus_inspection_target(Vector3(hit.position))
 
 
 func _update_follow_target() -> void:
@@ -651,6 +681,12 @@ func _update_rendered_camera(delta: float) -> void:
 		return
 	var target_position := _safe_position
 	var target_focus := _safe_cached_focus
+	if _can_inspect_map():
+		_camera.global_position = target_position
+		_camera_velocity = Vector3.ZERO
+		if not target_position.is_equal_approx(target_focus):
+			_look_at_focus(target_focus)
+		return
 	if current_mode == Mode.FOLLOW and _follow_impact_hold_ticks == 0 \
 			and _compute_follow_pose(true, false):
 		target_position = _computed_follow_position \
@@ -675,6 +711,9 @@ func _set_desired_pose(position: Vector3, focus: Vector3) -> void:
 
 
 func _resolve_safe_pose() -> void:
+	if _can_inspect_map():
+		_cache_inspection_pose()
+		return
 	_safety_solve_count += 1
 	_safe_source_position = _desired_position
 	_safe_source_focus = _desired_focus

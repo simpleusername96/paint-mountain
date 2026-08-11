@@ -33,6 +33,7 @@ related:
   - execplans/2026-08-10-codebase-responsibility-decomposition.md
   - execplans/2026-08-11-web-runtime-responsiveness.md
   - execplans/2026-08-11-grounded-environment-assets.md
+  - execplans/2026-08-11-terrain-centered-orbit.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -53,6 +54,41 @@ related:
 ---
 
 # Project Record
+
+## Fixed-Center Terrain Inspection (2026-08-11)
+
+### Implemented state
+
+- `TerrainSurface.visual_world_center()` caches one stage-specific pivot from
+  the real playable-top bounds and the visible ground-join base. Virtual summit
+  headroom and the buried support shell do not bias the pivot.
+- Briefing and the Map Inspection interaction use that same immutable pivot.
+  Left drag changes yaw/pitch, the wheel changes requested radius, and the
+  camera always looks at the pivot. Pitch and radius use the existing shared
+  limits.
+- Terrain clearance can only increase effective radius on the selected
+  center-to-camera ray. Inspection pose updates no longer wait for or repeatedly
+  run the generic fixed-physics safety solver, so pointer motion reaches the
+  rendered camera directly without moving the pivot.
+- Terrain click-to-focus, mechanism-selection camera movement, and capture-only
+  focus changes are removed. Inspection clicks have no pan/refocus behavior.
+- Leaving Map Inspection invalidates its optical cache before Aim View renders.
+  Aim composition, committed cannon aim, Shot Follow, Result, stage rules, and
+  the noninteractive stage-select preview remain separate and unchanged.
+
+### Verified state and limits
+
+- The focused fixed-center/direction contract passes, and camera safety passes
+  for Stages 01, 10, 20, and 30. Aim interaction, Aim View composition, Shot
+  Follow, `scripts/verify.ps1`, and the complete ordered Godot suite pass.
+- A fresh Godot 4.7.1 Windows release export passes. Three Korean release
+  captures were inspected at native size: Stage 02 Briefing and Map Inspection
+  at 1280x720, plus Stage 30 Map Inspection at 1920x1080. The terrain remains
+  centered and complete, with no clipping, floating-ground edge, focus ring,
+  or debug overlay.
+- Evidence is under
+  `.agents/evidence/terrain-centered-orbit-2026-08-11/`. The itch.io upload and
+  project visibility were not changed.
 
 ## Grounded Environment Asset Integration (2026-08-11)
 

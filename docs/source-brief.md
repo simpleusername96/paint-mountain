@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -2301,6 +2301,32 @@ supersede only conflicting delivery-platform and release-automation wording:
 - **Keep visibility user-controlled:** browser upload and playable-channel
   configuration do not make the itch.io project public. Draft, restricted, or
   public visibility remains a separate user decision.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-11): Fixed-Center Terrain Inspection
+
+After reviewing the running terrain-inspection camera, the user required every
+terrain-lookaround function to use one stable mountain-centered orbit. These
+clauses supersede only conflicting inspection-focus and camera-navigation
+wording above:
+
+- **One terrain visual center:** Briefing inspection and the Map Inspection
+  available from Aim View use the same immutable pivot at the center of the
+  visible terrain mass. The pivot is derived from the actual playable-top bounds
+  and visible ground-join base; it is not a stage origin, camera bookmark target,
+  clicked surface point, virtual framing headroom, or buried support-shell center.
+- **Spherical orbit only:** left drag changes yaw and pitch around that pivot,
+  the wheel changes radius, and the camera always looks at the pivot. Pitch and
+  radius remain limited, and terrain clearance may increase effective radius
+  only along the same center-to-camera ray.
+- **No inspection pan or refocus:** terrain clicks, mechanism clicks, Briefing,
+  and Map Inspection cannot move the pivot. There is no independent pan,
+  click-to-focus, or focus-target drift.
+- **Preserve separate camera responsibilities:** Aim View target selection,
+  committed cannon aim, Shot Follow, Result presentation, and the noninteractive
+  stage-select preview retain their existing owners and behavior. Inspection
+  orbit and zoom never modify stored aim or projectile rules.
 
 All earlier requirements not contradicted here remain in force.
 

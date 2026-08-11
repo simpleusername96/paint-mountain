@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -73,7 +73,8 @@ exactly three mechanism types.
   it keeps the cannon, muzzle, trajectory, major rises, and aiming context clear.
   Keep the authored 48-degree FOV and one shared composition; do not solve the
   view with per-stage camera repairs or geometry changes made only for a ratio.
-- Briefing begins in `Map View` with limited three-quarter orbit/zoom. `Aim View`
+- Briefing begins in `Map View` with a limited three-quarter spherical orbit and
+  zoom around the immutable center of the visible terrain mass. `Aim View`
   uses one authored, recoverable cannon composition and terrain-targeted aiming;
   it does not add independent camera navigation. Map View remains the deliberate
   whole-board inspection mode and never changes the stored aim or launch target.
@@ -89,18 +90,20 @@ exactly three mechanism types.
 
 ### Controls and information
 
-- Briefing starts in Map View: terrain click changes inspection focus, left-drag
-  orbits, wheel zooms, Enter/Start enters Aim View, and Escape pauses.
+- Briefing starts in Map View: left-drag changes yaw/pitch around the fixed
+  terrain visual center, wheel changes radius, Enter/Start enters Aim View, and
+  Escape pauses. Terrain and mechanism clicks never pan or refocus the camera.
 - Gameplay has Aim View and Map View interaction modes while Board Phase remains
   `AIMING`. In Aim View, click selects a valid Playable Terrain Surface top point
   and drag retargets to the latest valid top point; invalid drag gaps retain the
   last valid target. Elevation controls and W/S pin elevation while solving yaw/
   power for that target; existing power controls and wheel pin power while
-  solving yaw/elevation. A/D is not a human target-mode control. Map View terrain
-  click changes inspection focus, left-drag orbits, wheel zooms, and aim/Fire
-  input is blocked. Tab and one visible focusable toggle switch modes without
-  changing the stored aim or preview, and the switch never performs terrain-scale
-  work in the input callback.
+  solving yaw/elevation. A/D is not a human target-mode control. Map View
+  left-drag changes yaw/pitch around the same fixed terrain visual center, wheel
+  changes radius, and aim/Fire input is blocked. It has no pan or click-refocus.
+  Tab and one visible focusable toggle switch modes without changing the stored
+  aim or preview, and the switch never performs terrain-scale work in the input
+  callback.
 - Show the selected target, current coverage, shots, elevation, power, a dotted
   initial ballistic arc, and a first-impact marker. The selected target is
   independent of an exact prediction: show a confirmed impact only for matching

@@ -336,15 +336,8 @@ func _capture_map_inspection(stage_id: StringName) -> void:
 	if gameplay == null:
 		return
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
-	var terrain := gameplay.get_node("TerrainSurface") as TerrainSurface
-	var center := terrain.global_position
 	if not director.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION, true):
 		_fail_capture("map inspection capture could not leave Aim Lock")
-		return
-	if not director.focus_inspection_target(
-		terrain.world_surface_point(Vector2(center.x, center.z))
-	):
-		_fail_capture("map inspection capture could not focus the terrain")
 		return
 	if not director.orbit_inspection(Vector2(42.0, -14.0)) \
 			or not director.zoom_inspection(-1.0):

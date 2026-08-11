@@ -32,6 +32,7 @@ related:
   - ../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
   - ../.agents/execplans/2026-08-11-web-runtime-responsiveness.md
   - ../.agents/execplans/2026-08-11-grounded-environment-assets.md
+  - ../.agents/execplans/2026-08-11-terrain-centered-orbit.md
   - ../.agents/evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
   - ../.agents/evidence/resident-activity-hud-removal-2026-08-10/README.md
   - ../.agents/evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -55,6 +56,37 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed fixed-center terrain-inspection gate (2026-08-11)
+
+- [x] Briefing and in-run Map Inspection share one immutable pivot derived from
+  the real playable-top bounds and visible ground-join base. It excludes virtual
+  summit headroom, the stage origin, camera bookmark targets, and the buried
+  support shell.
+- [x] Left drag changes only spherical yaw/pitch, wheel changes requested
+  radius, and the camera always looks at the fixed pivot. Existing pitch/radius
+  bounds and direct-grab horizontal/vertical signs remain covered.
+- [x] Terrain clicks, mechanism clicks, and delivery fixtures cannot pan or
+  refocus inspection. Terrain clearance changes effective radius only on the
+  selected spherical ray, and inspection does not churn the generic physics
+  safety solver.
+- [x] Map-to-Aim return immediately drops the inspection optical cache. Aim
+  View, committed cannon aim, Shot Follow, Result, and stage rules remain
+  unchanged.
+- [x] Focused fixed-center/direction, camera-safety Stages 01/10/20/30,
+  aim-interaction, Aim View composition, and Shot Follow checks pass.
+  `scripts/verify.ps1`, the complete ordered suite, and a fresh Windows release
+  export also pass.
+- [x] The implementing agent inspected all three Korean Windows-release images
+  at native size. Each shows complete centered terrain with no clipping,
+  floating-ground edge, focus artifact, or debug overlay. No itch.io upload or
+  visibility change is claimed.
+
+Final Godot 4.7.1 Windows-release captures:
+
+- `.agents/evidence/terrain-centered-orbit-2026-08-11/stage-02-briefing-ko-1280x720.png`
+- `.agents/evidence/terrain-centered-orbit-2026-08-11/stage-02-map-inspection-ko-1280x720.png`
+- `.agents/evidence/terrain-centered-orbit-2026-08-11/stage-30-map-inspection-ko-1920x1080.png`
 
 ## Completed grounded environment asset gate (2026-08-11)
 
