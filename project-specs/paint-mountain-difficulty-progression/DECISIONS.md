@@ -28,6 +28,9 @@ Select **C12, Contrastive Risk-Route Ladder**.
   advanced Interleave/Fusion stages.
 - Replace scalar monotonicity as the product contract with typed challenge
   identity and comparisons derived from actual stage and route data.
+- Lock the thirty stage briefs and fifteen comparison declarations in `PRD.md`;
+  implementation may tune numeric geometry but may not redesign those
+  relationships without revising the product decision.
 - Add only a compact localized focus label to Stage Select. Do not change the
   gameplay HUD, result score, save schema, controls, physics, or mechanisms.
 

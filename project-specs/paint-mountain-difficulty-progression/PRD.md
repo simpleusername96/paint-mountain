@@ -110,6 +110,45 @@ progression system, persistence format, or service.
   Contrast B, Transfer, Interleave, and Fusion exactly once.
 - Reason: establish an invariant before varying and combining it.
 
+#### Locked stage blueprint
+
+Numeric coordinates and slopes may be tuned during exact generation, but the
+stage focus, lesson role, content relationship, and player decision below are
+locked. A change to those fields requires a PRD and decision-record revision.
+
+| Stage | Role | Locked content brief | Player decision |
+| --- | --- | --- | --- |
+| 01 | Anchor | One broad descent and no mechanism | Relate first contact to continuous downhill paint |
+| 02 | Contrast A | Keep the forgiving descent and add the first Burst | Choose continuous travel or a terminal radial mark |
+| 03 | Contrast B | Keep width/reversal pressure bounded; expose the three-route Splitter fan | Compare one long trace with distributed child traces |
+| 04 | Transfer | Move the learned contact problem onto a laterally bent route | Transfer first-contact control away from a frontal descent |
+| 05 | Interleave | Add one gentle grade reversal and a recovery basin | Continue predicting after the route changes direction |
+| 06 | Fusion | Combine a pass, descent, and two mechanism opportunities | Select the paint-distribution consequence needed now |
+| 07 | Anchor | Present a broad route and a narrow route with restrained chains | Choose robustness or leverage before launch |
+| 08 | Contrast A | Preserve route spacing/width relationship and add the first Uphill Rebound to the challenge side | Choose direct descent or uphill continuation |
+| 09 | Contrast B | Preserve route/reversal counts and enlarge the width tradeoff | Decide whether the narrow opportunity justifies its risk |
+| 10 | Transfer | Preserve the width tradeoff but move endpoints and lateral bends | Recognize the same choice in a different silhouette |
+| 11 | Interleave | Combine the route choice with earlier Burst/Splitter distribution | Match a safe or distributed launch to current paint |
+| 12 | Fusion | First complete required `SAFE`/challenge pair | Explain and execute a robust-versus-high-leverage choice |
+| 13 | Anchor | One broad down-up-down route | Predict momentum through one readable grade reversal |
+| 14 | Contrast A | Preserve route count/width and add one grade reversal | Plan beyond the first reversal |
+| 15 | Contrast B | Preserve reversal/width pressure and add a recovery basin | Choose perfect entry or recoverable entry |
+| 16 | Transfer | Move the same reversal/basin structure onto a lateral S-route | Transfer momentum reading to a side-on route |
+| 17 | Interleave | Give the safe route a recovery catch and the challenge route an extra reversal | Combine route choice with reversal planning |
+| 18 | Fusion | Combine multiple routes, recovery terrain, and Uphill Rebound | Form a primary plan and a visible recovery plan |
+| 19 | Anchor | Make one short `Splitter -> terminal Burst` opportunity readable; distribute other glyphs elsewhere | Read order before counting glyphs |
+| 20 | Contrast A | Preserve route/reversal pressure and change the principal sequence to include Uphill before a terminal effect | Predict how sequence changes distribution |
+| 21 | Contrast B | Preserve route count/width and add one ordered slot to the challenge chain | Decide whether a longer chain merits tighter entry |
+| 22 | Transfer | Preserve the principal sequence and slot count but move it onto a lateral reversal route | Transfer sequence reasoning instead of memorizing coordinates |
+| 23 | Interleave | Put a short chain on the safe route and a longer chain on the challenge route | Compare robustness, reversal, and sequence together |
+| 24 | Fusion | Three distinct route opportunities with one explicitly higher-leverage chain | Select one useful chain and diagnose misses |
+| 25 | Anchor | Separate two large route opportunities across different mountain faces | Order launches to reduce paint overlap |
+| 26 | Contrast A | Preserve route/reversal counts and increase route endpoint span | Allocate shots across widely separated opportunities |
+| 27 | Contrast B | Preserve route/slot counts and make one route narrower and more tempting | Trade immediate yield against attempt robustness |
+| 28 | Transfer | Preserve span/width pressure but change endpoint layout and bend direction | Transfer non-overlap planning to a new topology |
+| 29 | Interleave | Combine the required safe/challenge pair with reversal and chain decisions | Recombine the first four bands against current paint |
+| 30 | Fusion | Multiple separated routes, six mechanisms, recovery terrain, and the final required pair | Plan and revise a multi-launch route portfolio |
+
 ### FR-3
 
 - Requirement: every stage has a typed challenge profile containing its band,
@@ -119,15 +158,53 @@ progression system, persistence format, or service.
 - Reason: make the authoring intention testable without treating one weighted
   scalar as the definition of difficulty.
 
+The `Axis` enum is fixed to `MECHANISM_SEQUENCE`, `ROUTE_COUNT`,
+`ROUTE_ENDPOINT_LAYOUT`, `ROUTE_SPAN`, `MIN_ROUTE_WIDTH`, `MAX_REVERSALS`,
+`BASIN_COUNT`, `PASS_COUNT`, `MAX_MECHANISM_SLOTS`, and
+`COVERAGE_PER_SHOT`.
+
+#### Locked contrast and transfer declarations
+
+| Stage | Reference | Primary changed axis | Held axes |
+| --- | --- | --- | --- |
+| 02 | 01 | `MECHANISM_SEQUENCE` | `MIN_ROUTE_WIDTH`, `MAX_REVERSALS` |
+| 03 | 01 | `ROUTE_COUNT` | `MIN_ROUTE_WIDTH`, `MAX_REVERSALS` |
+| 04 | 02 | `ROUTE_ENDPOINT_LAYOUT` | `MIN_ROUTE_WIDTH`, `MAX_REVERSALS` |
+| 08 | 07 | `MECHANISM_SEQUENCE` | `ROUTE_SPAN`, `MIN_ROUTE_WIDTH` |
+| 09 | 07 | `MIN_ROUTE_WIDTH` | `ROUTE_COUNT`, `MAX_REVERSALS` |
+| 10 | 09 | `ROUTE_ENDPOINT_LAYOUT` | `MIN_ROUTE_WIDTH`, `MAX_MECHANISM_SLOTS` |
+| 14 | 13 | `MAX_REVERSALS` | `ROUTE_COUNT`, `MIN_ROUTE_WIDTH` |
+| 15 | 13 | `BASIN_COUNT` | `MAX_REVERSALS`, `MIN_ROUTE_WIDTH` |
+| 16 | 14 | `ROUTE_ENDPOINT_LAYOUT` | `MAX_REVERSALS`, `BASIN_COUNT` |
+| 20 | 19 | `MECHANISM_SEQUENCE` | `ROUTE_COUNT`, `MAX_REVERSALS` |
+| 21 | 19 | `MAX_MECHANISM_SLOTS` | `ROUTE_COUNT`, `MIN_ROUTE_WIDTH` |
+| 22 | 20 | `ROUTE_ENDPOINT_LAYOUT` | `MECHANISM_SEQUENCE`, `MAX_MECHANISM_SLOTS` |
+| 26 | 25 | `ROUTE_SPAN` | `ROUTE_COUNT`, `MAX_REVERSALS` |
+| 27 | 25 | `MIN_ROUTE_WIDTH` | `ROUTE_COUNT`, `MAX_MECHANISM_SLOTS` |
+| 28 | 26 | `ROUTE_ENDPOINT_LAYOUT` | `ROUTE_SPAN`, `MIN_ROUTE_WIDTH` |
+
 ### FR-4
 
 - Requirement: the comparison contract derives challenge facts from the actual
   `StageData`, `StageGenerationProfile`, and `StageRouteProfile`. It must cover
-  paint-distribution mechanism set, route count and endpoint span, minimum route
-  width, maximum reversal count, maximum ordered mechanism slots on one route,
-  and target coverage per available shot. It must not store a second geometry
-  or coverage truth.
+  mechanism sequence, route count, sorted endpoint layout and span, minimum and
+  maximum route width, maximum reversal count, basin and pass count, maximum
+  ordered mechanism slots on one route, and target coverage per available shot.
+  It must not store a second geometry or coverage truth.
 - Reason: contrast must be checked against the content the game will load.
+
+Changed-axis admission rules are exact for categorical values and use these
+minimum deltas for numeric geometry: `ROUTE_COUNT >= 1 route`,
+`ROUTE_SPAN >= 8 m`, `MIN_ROUTE_WIDTH >= 4 m`, `MAX_REVERSALS >= 1`,
+`BASIN_COUNT >= 1`, `PASS_COUNT >= 1`, and
+`MAX_MECHANISM_SLOTS >= 1`. `ROUTE_ENDPOINT_LAYOUT` changes when at least one
+same-rank endpoint moves by 12 m or crosses the mountain centerline.
+
+Held-axis rules are equality for categorical/integer facts, `+/- 1 m` for
+`MIN_ROUTE_WIDTH`, `+/- 4 m` for `ROUTE_SPAN`, `+/- 2 m` per same-rank endpoint
+for `ROUTE_ENDPOINT_LAYOUT`, and `+/- 0.15` percentage points for
+`COVERAGE_PER_SHOT`. A held endpoint layout is valid only when route counts are
+equal.
 
 ### FR-5
 

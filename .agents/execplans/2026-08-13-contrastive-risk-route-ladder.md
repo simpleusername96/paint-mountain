@@ -119,6 +119,13 @@ Readiness statement:
 | 19-24 | Mechanism Chains | Anchor, Contrast A, Contrast B, Transfer, Interleave, Fusion | Predict ordered multi-mechanism consequences on different route shapes |
 | 25-30 | Fusion and Robustness | Anchor, Contrast A, Contrast B, Transfer, Interleave, Fusion | Choose complementary launches across the accumulated paint state and combine prior route skills |
 
+The per-stage content brief, player decision, reference stage, primary changed
+axis, and held axes are locked in the PRD's `Locked stage blueprint` and
+`Locked contrast and transfer declarations` tables. Treat those tables as
+execution inputs, not prompts for another content-design pass. Numeric
+coordinates and slopes may move only while preserving those relationships and
+the PRD's axis-delta rules.
+
 Stages 11, 12, 17, 18, 23, 24, 29, and 30 must contain one `SAFE` route and one
 non-`SAFE` challenge route. The safe route is at least 4 m wider. The challenge
 route has at least one additional mechanism slot or one additional grade
@@ -129,7 +136,7 @@ neither is guaranteed to clear.
 
 | Owner | Change | Must not absorb |
 | --- | --- | --- |
-| New `StageChallengeProfile` at `src/stage/stage_challenge_profile.gd` | Typed Band, LessonRole, Axis, localized focus key, reference stage ID, and held axes | Geometry copies, mutable state, result logic, or UI formatting |
+| New `StageChallengeProfile` at `src/stage/stage_challenge_profile.gd` | Typed Band, LessonRole, the PRD's closed Axis enum, localized focus key, reference stage ID, and held axes | Geometry copies, mutable state, result logic, or UI formatting |
 | New `StageChallengeContract` at `src/stage_generation/stage_challenge_contract.gd` | Pure facts/comparisons derived from `StageData`, generation profiles, and route profiles; band sequence and route-pair validation | Runtime solving, player modeling, or stored coverage |
 | `StageData` | Reference one immutable challenge profile | Difficulty decisions or mutable attempt state |
 | `StageProgressionData` | Map each stage number to band, role, focus, reference, declared axes, and current numeric tiers | Runtime adaptation or a replacement paint/geometry representation |
@@ -138,13 +145,12 @@ neither is guaranteed to clear.
 | `StageSelectScreen` and its scene | Present one localized two-to-four-word focus label in the selected-stage preview | Lesson-role prose, route hints, score changes, or gameplay state |
 | Existing observations | Supply local evidence for the representative worksheet | Save progression, replay, adaptive state, or UI messages |
 
-The comparison fact set is fixed: mechanism-kind sequence, route count and
-endpoint span, minimum route width, maximum route reversal count, maximum
-ordered mechanism slots on one route, and target coverage per available shot.
-Contrast A, Contrast B, and Transfer profiles must reference an earlier stage,
-change their declared primary axis, and declare at least two held axes that the
-pure contract confirms. This fact set is derived at validation time and is not
-serialized as a second truth.
+The comparison fact set and changed/held tolerances are fixed by PRD FR-3 and
+FR-4. They cover mechanism sequence, route count, endpoint layout/span, route
+width, reversals, basins, passes, ordered mechanism slots, and coverage per
+shot. Contrast A, Contrast B, and Transfer profiles use the exact fifteen
+reference/primary/held declarations in the PRD. The pure contract derives every
+fact at validation time; it does not serialize a second truth.
 
 ## Tasks
 
@@ -169,10 +175,12 @@ serialized as a second truth.
 ### Phase 2: Author the thirty-stage ladder
 
 - [ ] **2.1** Make `StageProgressionData` and the materializer emit the locked
-  five-band/six-role table while preserving current target, shot, duration,
-  star, canonical-seed, and early mechanism contracts.
+  five-band/six-role table and all thirty PRD content briefs while preserving
+  current target, shot, duration, star, canonical-seed, and early mechanism
+  contracts.
   - Accept: 30/30 profiles have the expected band and role; 15/15 Contrast A,
-    Contrast B, and Transfer entries pass primary/held-axis comparisons.
+    Contrast B, and Transfer entries use the exact PRD declarations and pass
+    their changed/held-axis tolerances.
 - [ ] **2.2** Retune route profiles for the five focus bands. Add the required
   `SAFE`/challenge pairs to Stages 11, 12, 17, 18, 23, 24, 29, and 30 using the
   4 m width and one-slot-or-reversal rules.
@@ -293,6 +301,23 @@ Do not repeatedly run the full suite, exports, or complete catalog build for
 small tuning changes. Use exact-stage diagnostics and focused tests until the
 content set is substantially complete.
 
+## Anti-Rework Execution Rules
+
+- On start or resume, read this contract and the active PRD, inspect the
+  worktree only enough to confirm checkpoint inputs, and continue from the
+  first unchecked task whose prerequisites are satisfied.
+- Treat checked tasks and recorded passing evidence as complete unless a
+  relevant input changed, evidence is missing, or this contract schedules the
+  final gate.
+- Run each check only at its declared cadence. Rerun a failed check only after a
+  relevant implementation change or a new hypothesis can produce new evidence.
+- Mark a task complete only after its acceptance check passes. Update the task
+  checkbox and the single Progress pointer together.
+- If current code or generated evidence contradicts a locked product,
+  architecture, schema, UX, safety, or validation decision, stop that branch
+  and revise the PRD/contract before continuing. Do not make the executor choose
+  a new direction silently.
+
 ## Predetermined Contingencies
 
 | Trigger | Response |
@@ -321,7 +346,8 @@ content set is substantially complete.
 - Current phase: ready for implementation; no implementation task has started.
 - Completed discovery: local owner map, direct precedents, distant analogues,
   four exploration rounds, twelve-candidate ledger, weighted comparison,
-  selected PRD, and Korean explanation.
+  selected PRD, a locked thirty-stage content/reference/axis blueprint, and a
+  detailed Korean explanation with a document-only route concept image.
 - Next task: Phase 1.1 after implementation is requested.
 - Canonical progress: this checklist only; `project-specs/.../TASKS.md` is a
   derived milestone index.
