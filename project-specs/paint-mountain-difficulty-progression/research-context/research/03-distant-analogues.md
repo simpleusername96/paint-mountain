@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: distant structural analogues for progressive challenge
 scope: education, psychometrics, aviation, sport, surgery, ecology, and safety

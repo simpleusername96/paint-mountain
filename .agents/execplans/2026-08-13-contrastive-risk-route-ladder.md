@@ -1,8 +1,9 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-13
 scope: implement and validate the thirty-stage Contrastive Risk-Route Ladder
+superseded_by: 2026-08-13-shared-propellant-progression.md
 related:
   - ../PLANS.md
   - ../../docs/source-brief.md

@@ -2,78 +2,48 @@
 type: evidence
 status: active
 created: 2026-08-13
-topic: pre-selection evidence synthesis
-scope: implications and candidate search regions
-related:
-  - 01-research-plan.md
-  - research/01-local-product-truth.md
-  - research/02-direct-precedents.md
-  - research/03-distant-analogues.md
+topic: replacement difficulty synthesis
+scope: synthesis of five candidates into one recommendation
 ---
 
-# Pre-Selection Synthesis
+# Synthesis
 
 ## Purpose
 
-Translate the evidence into search regions and evaluation boundaries without
-selecting a candidate.
+Explain the reasoning bridge from five fresh mechanics to Shared Propellant.
 
 ## Sources
 
+- `00-intake.md`
 - `research/01-local-product-truth.md`
-- `research/02-direct-precedents.md`
-- `research/03-distant-analogues.md`
+- `exploration/01-candidate-ledger.md`
+- `exploration/02-comparison-and-selection.md`
 
 ## Findings
 
-1. Difficulty is multidimensional. Paint Mountain already changes coverage,
-   resources, geometry, routes, and mechanisms, but a weighted scalar hides
-   which planning skill changed.
-2. Later stages should demand better planning, not only more execution
-   precision. Route choice, reversals, branch structure, and mechanism
-   opportunity are the strongest existing levers.
-3. New difficulty must remain readable before launch and diagnosable after
-   impact. Information removal, hidden forces, and mutable physics carry a high
-   fairness cost.
-4. A useful learning sequence establishes an invariant before adding
-   variation. Contrast and transfer can explain progression through the stages
-   themselves, with little or no tutorial text.
-5. Difficulty can contain safe and high-yield choices at the same time. A
-   visible bailout route preserves recovery while a narrower or more complex
-   route creates mastery depth.
-6. Full adaptation is not currently supportable. The game lacks a calibrated
-   challenge bank and a reliable way to infer why a partial-coverage attempt
-   failed.
-7. Existing local shot observations can support offline calibration without
-   expanding save data or adding network telemetry.
+The five candidates increase difficulty through different objects of thought:
 
-## Search Regions
+1. Persistent world state: where an earlier ball remains.
+2. Time: when two launches reach mechanisms.
+3. Resource allocation: how launch power is divided across the stage.
+4. Control commitment: which aim freedom is surrendered.
+5. Spatial assignment: which launch serves which target region.
 
-- Tighten existing numeric or geometric constraints.
-- Change who chooses the challenge through optional contracts or stage
-  recommendations.
-- Change the player's planning ritual by asking for predictions or evidence of
-  mastery.
-- Import contrastive learning, route setting, and recovery structures from
-  distant domains.
-- Recombine sequence structure with in-stage route structure.
+Shared Propellant is the best fit because it makes the whole shot sequence
+matter while preserving deliberate pre-launch control. It produces a visible,
+reversible decision before each shot, composes with existing mechanisms, and
+requires no new physics behavior. Its main risk is numeric feasibility, which
+can be checked and corrected by increasing authored budgets.
 
-## Hard Gates
+## Recommendations
 
-A candidate is ineligible if it requires any of the following:
-
-- post-fire steering or hidden runtime forces;
-- a fourth terrain mechanism, a new production dependency, or an online
-  service;
-- a second mutable coverage representation or a competing final score;
-- locked stages, a prescribed solution route, or a runtime route solver;
-- removal of the complete pre-impact trajectory preview required by the
-  effective source brief.
+- Use five six-stage allowance bands: 100, 90, 82, 75, and 68.
+- Charge accepted root launches only.
+- Keep the player display to one remaining-value line and one conditional
+  shortage reason.
+- Gate promotion on stage reachability and representative allocation diversity.
 
 ## Limitations
 
-- The evidence supports structures to prototype, not a claim that one is fun.
-- Structural tests can prove that a stage varies the intended axis. Only
-  running-game observation can validate readability and perceived challenge.
-- Candidate selection should prefer a reversible use of current systems over a
-  larger speculative subsystem when expected learning value is comparable.
+- Initial allowance values are hypotheses until tested against all materialized
+  stages.

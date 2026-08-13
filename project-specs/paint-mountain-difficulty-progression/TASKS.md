@@ -2,49 +2,38 @@
 type: plan
 status: draft
 created: 2026-08-13
-scope: derived implementation work for Paint Mountain difficulty progression
+scope: derived Shared Propellant implementation milestones
 related:
   - PRD.md
-  - ../../.agents/execplans/2026-08-13-contrastive-risk-route-ladder.md
+  - ../../.agents/execplans/2026-08-13-shared-propellant-progression.md
 ---
 
-# Difficulty Progression Task Outline
+# Shared Propellant Task Outline
 
 ## Purpose
 
-Provide a short derived milestone map. The execution contract under
-`.agents/execplans/` is the only canonical progress checklist.
-
-## Scope
-
-Derived implementation milestones only. Product decisions live in `PRD.md`;
-task status and stopping conditions live in the linked ExecPlan.
+Provide a short milestone index. The linked active ExecPlan is the only
+canonical implementation checklist.
 
 ## Tasks
 
-1. Add the typed challenge profile and comparison contract.
-2. Author the five-band, six-role progression while preserving core tiers and
-   early mechanism landmarks.
-3. Regenerate and promote one versioned thirty-stage catalog.
-4. Add the localized Stage Select focus label and no gameplay-HUD content.
-5. Run focused, full-suite, release-export, rendered, and representative
-   playtest validation.
-6. Update active specs and implemented-state evidence.
+1. Add typed initial budget data and authoritative runtime state.
+2. Make root-launch acceptance atomic across shots and propellant.
+3. Add one compact localized HUD value and conditional shortage reason.
+4. Materialize and validate budgets for all thirty stages.
+5. Run focused, full, export, rendered, and representative playtest checks.
+6. Update durable design, architecture, implementation, and test records.
 
 ## Progress
 
-- This file is a derived milestone index and does not track progress.
-- Canonical implementation progress is in the linked ExecPlan.
+- Product decision and initial progression values are complete.
+- Implementation has not started.
 
 ## Next Steps
 
-- Begin Phase 1 of the ExecPlan when implementation is authorized.
+- Start Phase 1 of the linked ExecPlan only after implementation is requested.
 
 ## Verification
 
-- Confirm the active PRD and ExecPlan agree before each phase boundary.
-
-## Completion and Stop Conditions
-
-- Complete when this index still matches the active PRD and ExecPlan.
-- Stop and update the source documents if a milestone would add new scope.
+- Documentation links and lifecycle status are validated in this planning pass.
+- Runtime verification belongs to the active ExecPlan.

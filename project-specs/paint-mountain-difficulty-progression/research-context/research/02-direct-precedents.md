@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: direct game and course-design precedents
 scope: recurring difficulty mechanisms and their transfer limits
