@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: local implementation facts relevant to five new candidates
 scope: current stage, projectile, mechanism, paint, and HUD ownership

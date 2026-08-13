@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: five-candidate comparison and selection
 scope: qualitative selection evidence

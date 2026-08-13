@@ -2,55 +2,75 @@
 type: record
 status: active
 created: 2026-08-13
-scope: replacement difficulty-progression decision
+scope: queued-ball and paint-ownership product decisions
+source: ../../docs/source-brief.md
 related:
   - PRD.md
   - RESEARCH.md
-  - research-context/exploration/02-comparison-and-selection.md
+  - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
 ---
 
-# Difficulty Progression Decision
+# Queued Ball and Color Decision
 
 ## Context
 
-The first Contrastive Risk-Route Ladder proposal was rejected as unclear. The
-user requested a complete restart and exactly five new ideas.
+The user replaced terrain glyph mechanisms with balls that carry their own
+behaviors, requested a Tetris-like preview with an unknown later tail, and asked
+for multiple color/overlap rules to be compared. This also replaces the earlier
+Shared Propellant selection.
 
 ## Decision
 
-Select **Shared Propellant**. Every accepted root launch spends its selected
-power from one stage budget. Progression reduces the average allowance per
-available shot over five bands while retaining occasional full-power launches.
-
-The rejected route-ladder proposal has no active product authority.
+- Show the current ball and next three. Keep the fifth and later positions
+  hidden from both the player and the public agent API.
+- Use nine ball types: Standard, Impact Burst, Apex Split, Hyper Bounce, Anchor,
+  Climber, Wide Roller, Triple Skimmer, and Contact Fuse.
+- Use fixed blue/orange stage colors, per-color minimums, and latest-writer
+  ownership. Keep total painted strength monotonic.
+- Make queues deterministic per stage and repeat them on Restart.
+- Remove the complete terrain-glyph contract after the replacement queue,
+  behaviors, paint mask, and catalog v11 work.
 
 ## Rationale
 
-- The rule is explainable in one sentence and visible as one number.
-- It deepens the existing power choice instead of adding a control.
-- It creates planning across shots without adding in-flight steering.
-- It composes with all current terrain and mechanisms.
-- It has lower implementation and predictability risk than projectile
-  collision or timing-centered alternatives.
-
-## Consequences
-
-- `StageController` gains one authoritative stage resource.
-- Stage data gains one immutable budget value.
-- The HUD gains one compact value and one conditional disabled reason.
-- Every stage requires budget-aware reachability evidence.
-- No implementation exists yet; the linked ExecPlan starts only on a later
-  implementation request.
+- Four visible positions create multi-shot planning without adding a new player
+  action or revealing the complete solution.
+- Intrinsic behaviors make the important rule visible before Fire rather than
+  depending on a distant terrain marker and post-impact surprise.
+- Fixed color quotas make order matter while preserving comparable attempts.
+- Latest-writer ownership is visible directly on terrain; cancellation and
+  mixing require hidden history or extra score states.
+- A deterministic stage queue preserves replay, testability, and learning on
+  Retry while still withholding later information on the first attempt.
 
 ## Alternatives
 
-1. **Resident Ball Bumpers:** use settled earlier projectiles as collision
-   geometry for later shots. Rejected for physics variance and capacity risk.
-2. **Two-Shot Relay:** coordinate two active root launches around mechanism
-   cooldowns. Rejected because timing dexterity can dominate planning.
-3. **Shared Propellant:** selected.
-4. **Aim-Axis Lock:** freeze one aim parameter after the first launch. Rejected
-   because it removes experimentation and can force restarts.
-5. **Target Archipelago:** divide the target mask into separated visible
-   regions. Retained as the strongest fallback, but it risks checklist-like
-   play and greater target-readability work.
+### Queue alternatives
+
+- **Runtime-random bag:** rejected because a Retry could become easier or
+  impossible for reasons outside the player's plan.
+- **Full authored queue visible:** rejected because it removes the intended
+  uncertainty and encourages solving the whole list before the first shot.
+- **Hold/swap:** rejected because it weakens queue order and adds a second
+  inventory-like control.
+- **Shared Propellant plus queue:** rejected because both systems tax the same
+  pre-shot decision and would obscure why a shot is difficult.
+
+### Color alternatives
+
+- **Complementary cancellation:** rejected because overlap can erase hard-won
+  total progress through soft contact edges.
+- **Neutral third color:** rejected because it adds a third metric and unclear
+  threshold value.
+- **Color-locked terrain zones:** rejected because it reintroduces marked world
+  regions immediately after glyph removal.
+- **Decorative color only:** rejected because color would not change planning.
+
+## Consequences
+
+- The paint representation and save schema must migrate.
+- The queue becomes part of launch, prediction, HUD, agent observation, catalog,
+  and replay-facing contracts.
+- All glyph assets and schemas can be deleted only after ball-owned replacement
+  paths and v11 catalog hydration pass.
+- Stage results gain true Clear/Failed evaluation based on total/A/B objectives.

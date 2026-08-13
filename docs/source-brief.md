@@ -2330,6 +2330,44 @@ wording above:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-13): Queued Ball Types, Glyph Removal, and Color Objectives
+
+The user replaced the terrain-glyph mechanism direction with intrinsic ball
+behaviors and a limited-preview queue. This revision supersedes earlier clauses
+that require one basic ball, exactly three terrain glyph mechanisms, their
+world/UI presentation, or preservation of their runtime and serialized
+contracts.
+
+User directive (verbatim):
+
+> 공의 색이나 성질을 다르게하자. 테트리스처럼 queue 같은 걸 만들어.
+> 다음에 올 공은 알지만, 한 4개 뒤에 어떤 공이 올 지 모르는거야.
+> 문양과 관련된 ui, 디자인, 스크립트를 지워.
+> 대신 지면에 맞닿으면 폭발하는 공, n개의 방향으로 최고점에서 나눠지는 공, 반탄력이 엄청 심해서 고각도에서 평탄한 곳에 안착시키지 않는 이상 튕겨져 나가는 공 등 추가 n개의 공에 대한 아이디어 떠올리고 계획서로 작성.
+> 색에 대해서는... 잘 모르겠네. 랜덤하게 a 색은 n퍼센트 이상, b색은 m 퍼센트 이상 색칠해야 된다는 기준을 스테이지 클리어 기준으로 두고, 뒤에 칠한 색은 이미 칠해진 색을 덮어씌운다는 설정?
+> 아니면 그냥 색과 무관하게 모든 색 생관없이 n 퍼센트 이상 색칠하되, a색과 b색은 보색이라 서로 겹치는 구간은 지워진다는 설정?
+> 아무튼 이것도 다양한 아이디어를 내고 설명.
+
+Effective requirements:
+
+- Balls differ by intrinsic behavior and may also differ by paint color. The
+  launch order uses a Tetris-like limited preview: the near future is known and
+  a later tail is hidden.
+- Remove terrain-glyph-related UI, visual design, scripts, runtime wiring, and
+  serialized active contracts after their ball-owned replacements are ready.
+- Include at least an impact-burst ball, an apex-splitting ball, a very high
+  rebound ball, and additional distinct ball concepts.
+- Explore multiple color/overlap/clear-rule alternatives and select one in the
+  implementation plan. The selected rule must keep `PaintSystem` as the one
+  authoritative runtime paint representation.
+- Preserve the stationary-cannon planning puzzle and no in-flight steering.
+  Ball effects occur through deterministic launch/contact/flight rules rather
+  than player control after Fire.
+
+All earlier requirements not contradicted here remain in force. The active
+execution plan fixes preview count, ball count, split count, color objectives,
+progression, migration, and deletion order as working implementation decisions.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

@@ -2,36 +2,43 @@
 type: evidence
 status: active
 created: 2026-08-13
-topic: Shared Propellant calibration questions
-scope: non-blocking implementation calibration
+topic: queued-ball implementation calibration questions
+scope: non-blocking tuning evidence
 related:
   - PRD.md
   - DECISIONS.md
+  - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
 ---
 
-# Open Questions
+# Open Calibration Questions
 
 ## Purpose
 
-Record bounded calibration questions. The product rule and ownership are closed.
+Record measurements that implementation must answer without reopening the
+selected product rule.
 
 ## Sources
 
 - `PRD.md`
 - `RESEARCH.md`
+- The active ExecPlan
 
 ## Findings
 
-- Are the initial 90/82/75/68 allowances generous enough for current terrain?
-  The implementation must answer with reachability and representative playtests.
-- Is integer power the exact charged value when the UI displays a rounded
-  percentage? Use the authoritative cannon value and expose the same integer to
-  the HUD; do not create a second conversion formula.
-- Where does the shortage reason fit best in the current Fire disabled-state
-  contract? Decide through a focused rendered Level 1 UI check, without adding
-  a new panel.
+- Do the initial Hyper Bounce settling threshold and Triple Skimmer retention
+  produce their intended jobs on actual generated slopes?
+- Are Impact Burst and Contact Fuse different enough in play after effects and
+  two-times active pace are applied?
+- Do the 30/35/40% per-color bands create recoverable overwrite decisions, or
+  do one or two stages need higher supply or lower authored thresholds?
+- Can all nine silhouettes and both paint channels be distinguished in the
+  36 px NEXT tokens in Korean and English layouts?
+- Which v5 best-result fields should remain visible as legacy history after the
+  v6 color-objective migration?
 
 ## Limitations
 
-None of these questions authorizes a new mechanic or a lower budget. If a stage
-is infeasible, increase the affected band or stage budget and record the reason.
+These are calibration questions, not product ambiguity. They may tune typed
+values or stage data within the active ExecPlan. They do not authorize a fifth
+preview slot, runtime randomness, Hold, color cancellation, a third color, or a
+second paint mask.

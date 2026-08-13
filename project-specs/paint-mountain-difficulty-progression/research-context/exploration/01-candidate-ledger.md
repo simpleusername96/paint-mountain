@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: five replacement difficulty candidates
 scope: frozen candidate set before selection

@@ -1,6 +1,6 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
 topic: replacement difficulty synthesis
 scope: synthesis of five candidates into one recommendation

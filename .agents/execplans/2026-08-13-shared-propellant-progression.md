@@ -1,8 +1,9 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-13
 scope: implement and validate Shared Propellant across thirty stages
+superseded_by: 2026-08-13-queued-ball-paint-ownership.md
 supersedes: 2026-08-13-contrastive-risk-route-ladder.md
 related:
   - ../PLANS.md
