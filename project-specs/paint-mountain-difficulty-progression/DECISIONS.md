@@ -1,6 +1,7 @@
 ---
 type: record
-status: active
+status: superseded
+superseded_by: ../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md
 created: 2026-08-13
 scope: queued-ball and paint-ownership product decisions
 source: ../../docs/source-brief.md
@@ -11,6 +12,10 @@ related:
 ---
 
 # Queued Ball and Color Decision
+
+> Superseded on 2026-08-14. This record preserves an earlier assistant-selected
+> design; it is not approved for implementation. Red/green, terrain reuse, queue
+> feasibility, and authoring cost reopened the product decision.
 
 ## Context
 

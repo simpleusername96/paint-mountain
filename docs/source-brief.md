@@ -2364,9 +2364,46 @@ Effective requirements:
   Ball effects occur through deterministic launch/contact/flight rules rather
   than player control after Fire.
 
-All earlier requirements not contradicted here remain in force. The active
-execution plan fixes preview count, ball count, split count, color objectives,
-progression, migration, and deletion order as working implementation decisions.
+All earlier requirements not contradicted here remain in force. The execution
+plan created from this directive captured one interpretation; the later
+clarification below withdraws its unapproved fixed roster, color, queue, and
+deletion decisions from implementation authority.
+
+## Later User Clarification (2026-08-14): Red/Green, Terrain Reuse, and Queue Feasibility
+
+The user revised the exploration after reviewing a proposed MVP. These clauses
+supersede only conflicting color identity, unconditional terrain deletion, and
+queue-authoring assumptions.
+
+User directives (verbatim):
+
+> 빨강과 초록으로 바꿔. 그리고 지금 지형들을 무조건 삭제하지는 말고 활용하는 방법을 찾아. 공은 랜덤으로 queue를 형성하나? 뭐 랜덤이든 아니든 스테이지 클리어 조건을 만족할 수는 있게 해야지. 아니면 그냥 빠르게 re-roll 하도록?
+
+> 이러면 지형에 따른 개별 큐 생성에 너무 많은 resource가 투입될 거 같은데.
+
+> 뭔가 이것도 아닌 거 같네. 일단 관련 내용을 모두 커밋. 이 '특수 능력 공, 개별 색'과 관련된 아이디이어 시작부터 지금까지의 이력을 문서화. 이 아이디어에 대한 chatgpt pro의 분석을 위한 handoff folder 생성
+
+Effective requirements and decision state:
+
+- Replace the earlier blue/orange proposal with red and green as the individual
+  paint colors. Color must not be the only readable signal for a gameplay fact.
+- Do not delete current terrain geometry by default. Analyze how its existing
+  basins, ridges, slopes, shelves, and other authored forms can support the new
+  rule even if glyph-related presentation or behavior is later removed.
+- Whether the queue is fixed or random, the supplied balls must permit the
+  stage clear condition. A reroll was raised as an option, not approved as a
+  required action.
+- Do not require expensive, individually maintained queue sets for every
+  terrain. Clearability must be achieved with a lower-authoring-cost rule or
+  validation method.
+- The per-stage prevalidated-queue proposal and the later universal paired-bag
+  proposal are not accepted. Queue generation, Retry behavior, reroll, exact
+  preview count, ball roster, color interaction, and clear thresholds remain
+  open for analysis.
+- Do not implement or delete gameplay systems until a new direction is
+  explicitly selected.
+
+All earlier requirements not contradicted here remain in force.
 
 ## Acceptance Criteria
 

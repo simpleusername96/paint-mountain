@@ -2,43 +2,51 @@
 type: evidence
 status: active
 created: 2026-08-13
-topic: queued-ball implementation calibration questions
-scope: non-blocking tuning evidence
+last_reviewed: 2026-08-14
+topic: unresolved special-ball, queue, red-green paint, and terrain-reuse decisions
+scope: product questions that must be answered before implementation planning
 related:
   - PRD.md
-  - DECISIONS.md
-  - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
+  - ../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md
 ---
 
-# Open Calibration Questions
+# Open Product Questions
 
 ## Purpose
 
-Record measurements that implementation must answer without reopening the
-selected product rule.
+Keep unresolved product choices visible while ChatGPT Pro compares alternative
+systems. None of the questions below is a selected implementation rule.
 
 ## Sources
 
-- `PRD.md`
-- `RESEARCH.md`
-- The active ExecPlan
+- `../../docs/source-brief.md`
+- `../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/idea-history.md`
+- The user's 2026-08-14 rejection of both stage-specific queue authoring and
+  the later universal paired-bag proposal.
 
 ## Findings
 
-- Do the initial Hyper Bounce settling threshold and Triple Skimmer retention
-  produce their intended jobs on actual generated slopes?
-- Are Impact Burst and Contact Fuse different enough in play after effects and
-  two-times active pace are applied?
-- Do the 30/35/40% per-color bands create recoverable overwrite decisions, or
-  do one or two stages need higher supply or lower authored thresholds?
-- Can all nine silhouettes and both paint channels be distinguished in the
-  36 px NEXT tokens in Korean and English layouts?
-- Which v5 best-result fields should remain visible as legacy history after the
-  v6 color-objective migration?
+- What single planning problem should special abilities, queue uncertainty, and
+  color create together? Which one of those elements can be removed from the MVP?
+- How many future balls should be visible, and what useful decision does the
+  hidden tail force?
+- Should the queue be fixed, seeded, constrained-random, draftable, or rerollable?
+  What happens on Retry?
+- How can every queue remain clearable without bespoke per-terrain queue lists or
+  an expensive solver for every content change?
+- Should red and green each have minimum coverage, should later paint overwrite
+  ownership, or should overlap cancel? What prevents unwinnable late states?
+- How should red/green state remain legible for red-green color-vision deficiency?
+- Which existing terrain shapes or former mechanism placements become useful
+  affordances, and which glyph UI/art/script responsibilities should be removed?
+- Which ball behaviors are genuinely different planning tools? Only Impact
+  Burst, Apex Split, and extreme rebound came directly from the user.
+- What is the smallest stage set and ball roster that can test the core rule?
 
 ## Limitations
 
-These are calibration questions, not product ambiguity. They may tune typed
-values or stage data within the active ExecPlan. They do not authorize a fifth
-preview slot, runtime randomness, Hold, color cancellation, a third color, or a
-second paint mask.
+- No special-ball queue or multi-color paint rule exists in runtime code.
+- The seven queued-ball UI images show a superseded blue/orange interpretation;
+  they are evidence of prior exploration, not visual targets.
+- Numerical stage quotas, colors beyond red/green, ball counts, and queue horizon
+  remain unapproved.

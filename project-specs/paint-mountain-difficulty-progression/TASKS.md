@@ -1,6 +1,7 @@
 ---
 type: plan
-status: draft
+status: superseded
+superseded_by: ../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md
 created: 2026-08-13
 scope: derived queued-ball and paint-ownership implementation milestones
 related:
@@ -10,10 +11,13 @@ related:
 
 # Queued Ball Task Outline
 
+> Superseded before implementation. Do not execute these milestones unless a
+> later approved design explicitly restores them.
+
 ## Purpose
 
-Provide a short milestone index. The linked active ExecPlan is the only detailed
-implementation checklist.
+Preserve the milestones from the superseded design as historical context. This
+file is not an implementation checklist.
 
 ## Tasks
 
@@ -28,15 +32,14 @@ implementation checklist.
 
 ## Progress
 
-- Product decisions and the detailed execution contract are complete.
+- These proposed product decisions were superseded before implementation.
 - Runtime implementation has not started.
 
 ## Next Steps
 
-- Start Phase 1 of the linked ExecPlan only after implementation is requested.
+- Do not start these tasks. Use the replacement handoff for product analysis.
 
 ## Verification
 
-- Validate lifecycle links, one active ExecPlan, one active PRD, and no active
-  Shared Propellant authority in this workspace.
-- Runtime verification belongs to the active ExecPlan.
+- Confirm this outline and its linked ExecPlan remain superseded.
+- Runtime verification was not needed because implementation never started.

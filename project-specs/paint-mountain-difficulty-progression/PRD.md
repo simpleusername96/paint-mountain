@@ -1,129 +1,76 @@
 ---
 type: spec
-status: active
+status: draft
 created: 2026-08-13
-canonical_for: queued ball types and paint-color difficulty progression for Paint Mountain
-scope: limited-preview launch queue, intrinsic ball behaviors, two-color objectives, and glyph removal across thirty stages
+last_reviewed: 2026-08-14
+scope: unresolved special-ability ball, limited-preview queue, red/green paint, and terrain-reuse direction
 source: ../../docs/source-brief.md
 related:
   - RESEARCH.md
   - DECISIONS.md
   - OPEN_QUESTIONS.md
   - TASKS.md
-  - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
+  - ../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md
 ---
 
-# Queued Ball Types and Paint Ownership
+# Special-Ability Balls and Individual Paint Colors
 
 ## Purpose
 
-Raise difficulty by making the player plan with a limited preview of balls that
-have different intrinsic behaviors and paint colors. Replace terrain glyph
-mechanisms instead of stacking the queue on top of them.
+Preserve the user-approved boundaries of the special-ball and individual-color
+idea while its actual game rule is reconsidered. This is a draft problem
+definition, not an implementation-ready selection.
 
 ## Scope
 
-This spec owns the player queue rule, nine-ball roster, two-color clear rule,
-introduction order, and removal of active glyph contracts. The linked ExecPlan
-owns implementation order, exact ownership boundaries, migration, and
-validation detail.
-
-## Player Rule
-
-- The player always fires the current queued ball. The HUD shows that ball and
-  the next three; the fifth and later balls remain hidden until they enter the
-  four-position horizon.
-- An accepted root launch advances the queue once. A rejected Fire or a derived
-  child advances it zero times.
-- Each stage queue is deterministic and repeats on Restart. There is no Hold,
-  swap, skip, reroll, inventory, or ball-selection action.
-- Ball behavior and paint color are separate properties. A shape/icon and name
-  identify behavior; blue/orange plus `A`/`B` identify paint ownership.
-
-## Ball Roster
-
-1. **Standard:** current continuous contact-painting ball.
-2. **Impact Burst:** makes a large paint stamp and disappears on first valid
-   ground contact.
-3. **Apex Split:** divides at its first airborne apex into three non-recursive
-   Standard children in a fixed fan.
-4. **Hyper Bounce:** retains extreme rebound and settles only on a sufficiently
-   flat, slow landing.
-5. **Anchor:** stops with high friction at its first valid contact.
-6. **Climber:** redirects once toward the local uphill tangent.
-7. **Wide Roller:** trades range for a wider continuous trail.
-8. **Triple Skimmer:** performs exactly three countable shallow skips and then
-   becomes Standard.
-9. **Contact Fuse:** arms on contact, continues moving, and bursts at a later
-   valid contact after a fixed delay.
-
-The ExecPlan fixes initial tuning, trigger boundaries, stable IDs, child
-inheritance, and non-symbolic visual silhouettes.
-
-## Paint and Clear Rule
-
-- Paint A is blue `#2584FF`; Paint B is orange `#FF8A3D`.
-- Later paint owns an overlap. Repainting may transfer an area between A and B
-  but cannot reduce total painted strength.
-- Stages 01-03 use A only. Stages 04-30 clear only when total coverage and both
-  color minimums are met at Finish or timeout.
-- Each color minimum equals 30% of the total target on Stages 04-09, 35% on
-  Stages 10-18, and 40% on Stages 19-30.
-- Requirements are fixed per stage. There are no random thresholds, color
-  cancellation, mixing, coat depth, or third neutral score.
-- Total coverage remains the score/star measure. Clear status outranks a failed
-  result when saving a best.
-
-## Progression
-
-- Stages 01-09 introduce Standard, Impact Burst, Apex Split, Anchor plus Paint
-  B, Hyper Bounce, Climber, Wide Roller, Triple Skimmer, and Contact Fuse in
-  that order.
-- Each introduction queue contains the new type at least twice and exposes it
-  inside the first visible horizon.
-- Stages 10-15 use Standard plus two non-standard types; 16-21 use Standard
-  plus three; 22-27 use Standard plus four; 28-30 use Standard plus five.
-- From Stage 04 onward, both colors occur at least twice when the shot count
-  permits and both appear within the first visible horizon.
+This draft covers only the product question. It does not authorize runtime,
+catalog, save, UI, terrain, or mechanism changes. The external-review handoff
+owns the current analysis request.
 
 ## Requirements
 
+- Preserve the stationary cannon, pre-shot yaw/elevation/power choice, and no
+  in-flight steering.
+- Explore balls with intrinsic behaviors. The user explicitly named an
+  impact-burst ball, an apex-splitting ball, and an extremely bouncy ball.
+- Use a limited-preview queue: the near future is visible and a later tail is
+  unknown. The exact horizon, generation policy, Retry behavior, and reroll
+  rule are not selected.
+- Use red and green as the individual paint colors. Never rely on red/green hue
+  alone to communicate gameplay state.
+- Reuse current terrain geometry where it helps the new rule. Do not assume the
+  terrain or its authored shapes must be deleted.
+- Any fixed or generated ball supply must allow the stage clear condition to be
+  met. Avoid a workload that requires individually authoring and maintaining a
+  bespoke queue for every terrain.
+- Reconsider glyph-related UI, art, and scripts only after the replacement rule
+  explains which terrain and mechanism responsibilities remain useful.
 - `StageController` owns queue progression and clear/failure decisions.
 - `PaintSystem` keeps one authoritative owner-aware paint representation used
-  for terrain visuals and total/A/B coverage. Separate color masks are
-  prohibited.
-- Public human and agent views expose the same four queue positions and never
-  disclose the hidden tail.
-- All ball rules remain deterministic and require no in-flight steering.
-- Terrain glyph UI, world art, scripts, scenes, resources, generated fields,
-  observations, localization, and active tests are removed after replacements
-  and catalog v11 are verified.
-- Save v6 must not claim that a v5 scalar result satisfied new color quotas.
+  for terrain visuals and coverage. Do not create a second authoritative mask.
+- Human and future agent interfaces must receive the same gameplay facts.
 
 ## Acceptance Criteria
 
-- Nine behaviors and two paint colors are readable as independent facts.
-- Queue consumption, reset, prediction invalidation, derived children, and the
-  hidden four-position boundary behave exactly as specified.
-- Total/A/B HUD values, terrain colors, terminal evaluation, result data, and
-  saved bests agree with the one authoritative paint snapshot.
-- All thirty deterministic queues satisfy progression, color-supply, capacity,
-  and feasibility validation.
-- No active terrain glyph or mechanism contract remains.
-- Korean and English running-build captures and Windows/Web production builds
-  pass the checks in the active ExecPlan.
+- A proposed MVP identifies one central planning question rather than combining
+  unrelated complexity.
+- It compares materially different queue and color-rule architectures before
+  selection, including their clearability guarantees and authoring costs.
+- It explains how existing terrain remains useful without making every stage
+  depend on a custom queue.
+- It separates user requirements, design assumptions, and tuning hypotheses.
+- It includes a cheap feasibility-validation strategy before implementation.
 
 ## Non-Goals
 
-- Shared propellant, Hold, ball inventory, upgrades, shops, adaptive odds,
-  unseeded runtime randomness, projectile steering, or post-contact path hints.
-- Complementary-color erasure, true mixing, a third paint state, a second
-  coverage mask, or automatic stage completion when thresholds are reached.
+- Implementing the earlier nine-ball roster, blue/orange colors, fixed
+  per-stage queues, prevalidated queue variants, or universal paired bag.
+- Deleting existing terrain or glyph systems during this analysis.
+- Choosing numerical quotas, all thirty stage configurations, or production UI.
 
 ## Related
 
-- `DECISIONS.md` records the selected queue/color model and rejected options.
-- `RESEARCH.md` separates local facts and cross-domain analogies from product
-  authority.
-- The active ExecPlan is
-  `../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md`.
+- `DECISIONS.md` preserves the superseded earlier selection.
+- `OPEN_QUESTIONS.md` contains the current unresolved decisions.
+- The ChatGPT Pro package starts at
+  `../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md`.

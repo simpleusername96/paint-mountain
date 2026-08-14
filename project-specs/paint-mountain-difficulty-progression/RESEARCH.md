@@ -1,7 +1,8 @@
 ---
 type: evidence
-status: active
+status: archived
 created: 2026-08-13
+last_reviewed: 2026-08-14
 topic: limited-preview queues, intrinsic projectile behaviors, and color objectives
 scope: local evidence and cross-domain analogies supporting the queued-ball spec
 related:

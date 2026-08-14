@@ -1,6 +1,7 @@
 ---
 type: plan
-status: active
+status: superseded
+superseded_by: ../../docs/handoffs/special-ball-color-system-chatgpt-pro-2026-08-14/README.md
 created: 2026-08-13
 scope: replace terrain glyph mechanisms with a limited-preview ball queue, nine intrinsic ball behaviors, and two-color paint objectives
 supersedes: 2026-08-13-shared-propellant-progression.md
@@ -16,6 +17,10 @@ related:
 ---
 
 # Queued Ball Types and Paint Ownership — Execution Contract
+
+> Superseded before implementation on 2026-08-14. The fixed roster, preview,
+> queue, color, progression, and deletion decisions below are historical only.
+> Resume from the linked ChatGPT Pro handoff, not from this plan.
 
 ## Purpose
 
@@ -436,18 +441,17 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
 
 ## Progress
 
-- Repository, design, architecture, glyph owner graph, projectile boundary,
+- Before supersession, repository, design, architecture, glyph owner graph, projectile boundary,
   paint ownership, save state, and current progression plans were inspected.
-- Nine ball behaviors, the four-slot preview, deterministic bag policy,
-  two-color overwrite rule, objective bands, UI placement, migration, and glyph
-  removal boundary are decided.
-- Shared Propellant and its product spec are superseded.
+- The nine-ball, four-slot, deterministic-bag, blue/orange overwrite, objective,
+  UI, migration, and glyph-removal choices are no longer implementation decisions.
 - No runtime code, scene, Resource, catalog, save, or UI implementation has
   started.
 
 ## Next Steps
 
-- Begin Phase 1 only after the user requests implementation.
+- Do not execute this plan. Consume the replacement handoff, obtain an approved
+  MVP, and create or activate a new ExecPlan only when implementation is requested.
 
 ## Stop Conditions
 
