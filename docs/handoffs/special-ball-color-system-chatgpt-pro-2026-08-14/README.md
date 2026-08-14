@@ -14,8 +14,8 @@ related:
 - Workspace: `D:\npjt\paint-mountain`
 - Branch: `master`
 - Review baseline: `377d71398fe526043ad0158328bbe0bac04abd2e`
-- Package commit: the `master` commit that contains this file
-- Dirty state: documentation-only changes during packaging; expected clean after commit
+- Package creation commit: `5bc26e6968a92782f482516778dbdc4b5804b2a5`
+- Dirty state: clean after the package commit
 - Remote: `https://github.com/simpleusername96/paint-mountain`
 
 ## Current State
