@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-16
 scope: Separate Paint Mountain canonical documentation, reusable concept research, validation evidence, and active handoffs
 ---
@@ -77,7 +77,8 @@ Known consumers include `docs/test-checklist.md`, `.agents/Documentation.md`, `.
 - [x] **3.2 Validate with `git diff --check`, `Test-Path`, the manifest, frontmatter inspection, and `git diff --name-status -- docs .agents AGENTS.md`.**
   - Accept: no runtime or handoff path changed and all changed links resolve.
   - Evidence: 45 changed Markdown files passed link resolution; Preflight exactly matches the agent-governor template; one active plan remains; all source paths are absent; target paths, lifecycle sections, patch hygiene, and scope checks pass; no runtime path entered the diff.
-- [ ] **3.3 Record evidence, set `status: done`, and commit only migration-owned files.**
+- [x] **3.3 Record evidence, set `status: done`, and commit only migration-owned files.**
+  - Evidence: commit `f37db3b` contains 148 moves and 27 governance, link, lifecycle, or plan-progress entries; no runtime file is included.
 
 ## Validation and Rework Controls
 
@@ -96,9 +97,9 @@ Known consumers include `docs/test-checklist.md`, `.agents/Documentation.md`, `.
 ## Progress and Next Steps
 
 - Canonical progress: this contract's checkboxes.
-- Current phase: Phase 3, migration validated.
-- Next task: 3.3 Commit the scoped migration, then close this contract in a separate plan-state commit.
-- Last completed gate: 148 byte-preserving moves plus lifecycle, Preflight, active-plan, changed-link, stale-path, patch-hygiene, and scope validation.
+- Current phase: Complete.
+- Next task: None.
+- Last completed gate: scoped migration commit `f37db3b` after lifecycle, Preflight, active-plan, changed-link, stale-path, patch-hygiene, and scope validation.
 
 ## Completion and Stop Conditions
 
