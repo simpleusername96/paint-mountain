@@ -41,10 +41,10 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Secondary concept board
 
-![Representative generated Stage 1 concept](../../docs/concepts/execplan-outcome-2026-08-03/03_stage1_default_aim.png)
+![Representative generated Stage 1 concept](../evidence/concepts/execplan-outcome-2026-08-03/03_stage1_default_aim.png)
 
-- Gallery: [generated outcome concept board](../../docs/concepts/execplan-outcome-2026-08-03/index.html)
-- Images: `../../docs/concepts/execplan-outcome-2026-08-03/01_stage_progression.png`
+- Gallery: [generated outcome concept board](../evidence/concepts/execplan-outcome-2026-08-03/index.html)
+- Images: `../evidence/concepts/execplan-outcome-2026-08-03/01_stage_progression.png`
   through `07_stage3_clear.png`.
 - Use for: warm off-white palette, faceting, apparent thickness, wall join,
   composition options, camera depth, Korean UI tone, and state readability.
@@ -53,9 +53,9 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Historical aiming-HUD direction
 
-![Selected Command Columns HUD](../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+![Selected Command Columns HUD](../research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
 
-- Image: [Command Columns HUD](../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+- Image: [Command Columns HUD](../research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
 - Provenance: generated from the current Stage 30 running render and selected by
   the user on 2026-08-06 for implementation.
 - SHA-256:
@@ -91,8 +91,8 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Current exploratory casual UI matrix
 
-- Gallery: [Casual UI Directions](../../docs/concepts/casual-ui-directions-2026-08-08/index.html)
-- Images: `../../docs/concepts/casual-ui-directions-2026-08-08/01-paper-toy-main-menu.png`
+- Gallery: [Casual UI Directions](../research/concepts/casual-ui-directions-2026-08-08/index.html)
+- Images: `../research/concepts/casual-ui-directions-2026-08-08/01-paper-toy-main-menu.png`
   through `09-field-guide-aim-view.png`.
 - Provenance: nine independent ImageGen outputs grounded in the matching
   running-game capture and the primary target comparator.
@@ -108,9 +108,9 @@ concepts, or asset previews from silently becoming product requirements.
 
 ### Approved Quiet Context UI system
 
-![Approved Quiet Context UI](../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
+![Approved Quiet Context UI](../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
 
-- Image: [approved Quiet Context UI](../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
+- Image: [approved Quiet Context UI](../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png)
 - Provenance: ImageGen revision grounded in the current running Stage 30 Aim
   View, selected explicitly by the user on 2026-08-09.
 - SHA-256:

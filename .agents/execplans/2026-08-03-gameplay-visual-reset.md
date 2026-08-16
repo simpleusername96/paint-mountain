@@ -14,7 +14,7 @@ related:
   - ../../docs/design-spec.md
   - ../../docs/technical-architecture.md
   - ../../docs/test-checklist.md
-  - ../../docs/concepts/execplan-outcome-2026-08-03/index.html
+  - ../evidence/concepts/execplan-outcome-2026-08-03/index.html
   - ../../docs/handoffs/gameplay-visual-reset-2026-08-03/README.md
   - 2026-08-03-core-interaction-redesign.md
 ---

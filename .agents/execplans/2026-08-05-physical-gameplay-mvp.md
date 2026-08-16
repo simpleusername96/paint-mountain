@@ -18,7 +18,7 @@ related:
   - ../design/DESIGN.md
   - ../design/ART_DIRECTION.md
   - ../design/UIUX_GUIDELINES.md
-  - ../../docs/concepts/runtime-grounded-ui-2026-08-05/README.md
+  - ../research/concepts/runtime-grounded-ui-2026-08-05/README.md
   - 2026-08-05-rapid-fire-thirty-stage-progression.md
   - 2026-08-05-runtime-grounded-interface.md
 ---
@@ -67,7 +67,7 @@ evidence remain authoritative inputs for those downstream changes.
    contains the current board, immediate repeat fire in the final product, and
    visible gameplay before fine optimization.
 3. The approved direction in
-   `docs/concepts/runtime-grounded-ui-2026-08-05/proposed/03-aiming-grounded.png`
+   `.agents/research/concepts/runtime-grounded-ui-2026-08-05/proposed/03-aiming-grounded.png`
    and `04-observation-grounded.png` is visual-composition evidence only. It
    cannot override collision, paint, target, or generated-stage truth.
 4. Current code is the starting implementation, not proof that the visible MVP

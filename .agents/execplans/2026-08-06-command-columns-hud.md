@@ -9,8 +9,8 @@ related:
   - ../design/DESIGN.md
   - ../design/UIUX_GUIDELINES.md
   - ../design/VISUAL_REFERENCES.md
-  - ../../docs/concepts/ui-layout-directions-2026-08-06/README.md
-  - ../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png
+  - ../research/concepts/ui-layout-directions-2026-08-06/README.md
+  - ../research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png
   - ../../docs/test-checklist.md
   - 2026-08-06-aim-view-and-coverage-opportunity.md
 ---
@@ -107,7 +107,7 @@ Exact actions requiring owner or user approval:
 
 Visual target:
 
-- `docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`
+- `.agents/research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`
   at 1280x720, SHA-256
   `1B4AF8DDFF91D5A23238296EC3C886F17CA18E2FC00F2FA93811B50EEEEDCA0F`.
 - Left column: joined stage/mode command card at upper-left, vertical absolute
@@ -151,7 +151,7 @@ Component ownership:
 | A project Theme exists but the HUD repeats presentation values | `project.godot` globally loads `paint_mountain_theme.tres`; affected UI scenes contain many `theme_override_colors` and `theme_override_font_sizes` entries | `project.godot:29`; `resources/ui/paint_mountain_theme.tres`; `scenes/ui/hud/*.tscn` | Extend the existing Theme with semantic variations; do not create a second token store | 1.1, 2.1-2.3 |
 | Font family is shared but weight roles are absent | The Theme loads `PretendardVariable.woff2` and defines sizes, but no `FontVariation` or weight-specific type exists | `resources/ui/paint_mountain_theme.tres`; Godot 4.7.1 runtime availability verified | Use Theme-owned `FontVariation` resources at weights 500, 600, and 700, with the locked type scale | 1.1 |
 | Repeated right-rail metrics are handwritten | Time, shots, and activity are separate label/value node pairs in `run_status_card.tscn` | `scenes/ui/hud/run_status_card.tscn` | Introduce one presentational `HudMetric` component and instance it three times | 1.2, 2.3 |
-| Selected visual target is resolved | The user selected the attached `command-columns-hud.png`; the file is a 1280x720 generated concept grounded in current Stage 30 | selected file and `docs/concepts/ui-layout-directions-2026-08-06/README.md` | Treat its layout/surface/type rhythm as binding while preserving supported real controls | 2.1-2.3, 3.1 |
+| Selected visual target is resolved | The user selected the attached `command-columns-hud.png`; the file is a 1280x720 generated concept grounded in current Stage 30 | selected file and `.agents/research/concepts/ui-layout-directions-2026-08-06/README.md` | Treat its layout/surface/type rhythm as binding while preserving supported real controls | 2.1-2.3, 3.1 |
 | Current HUD already has correct gameplay ownership | `HUDController` delegates state display to component scripts and emits typed intents; tests protect sole Fire, coverage ownership, interaction mode, wind, and Finish | `src/ui/hud_controller.gd`; `tests/phase7_ui_test.gd`; `tests/phase8_hud_truth_test.gd`; `tests/wind_result_hud_test.gd`; `tests/shot_feedback_test.gd` | Preserve script interfaces and authoritative data paths; change presentation and only the tests whose layout/component paths change | 2.1-2.4 |
 | The image omits or simplifies required controls | Current product contracts require Gear, visible interaction mode, yaw/elevation/power, power steps, dynamic wind text, and focus behavior | `.agents/design/UIUX_GUIDELINES.md`; running screenshot `.agents/evidence/ui-quality-audit-2026-08-06/05-aiming.png` | Keep these functions and integrate them unobtrusively into the selected composition | 2.1-2.4 |
 | Validation can become repetitive | Repository policy requires `scripts/verify.ps1` after scenes/scripts and final rendered/export evidence, while the user explicitly rejected frequent small QA loops | `AGENTS.md`; `scripts/verify.ps1`; current request | Run parser/import once per implementation batch, four focused HUD scripts once after integration, then one final verify/export/render comparison; rerun only after relevant fixes | 1.3, 2.5, 3.1-3.3 |

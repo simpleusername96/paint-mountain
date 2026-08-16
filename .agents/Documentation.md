@@ -39,10 +39,10 @@ related:
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
-  - ../docs/evidence/essential-ui-fidelity-2026-08-10/README.md
-  - ../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md
-  - ../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
-  - ../docs/evidence/fast-stage-readiness-2026-08-11/README.md
+  - evidence/essential-ui-fidelity-2026-08-10/README.md
+  - evidence/approved-image-fidelity-correction-2026-08-10/README.md
+  - evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - evidence/fast-stage-readiness-2026-08-11/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -83,7 +83,7 @@ related:
 - Local Chrome WebGL2 smoke selects and enters Stage 02 without console warning
   or error. Its background-tab timing is not treated as foreground performance
   evidence. Durable evidence is under
-  `docs/evidence/stage-selection-readiness-2026-08-11/`.
+  `.agents/evidence/stage-selection-readiness-2026-08-11/`.
 - Source commit `9c2c8e5` is pushed to `agent/remove-wind-system`. GitHub Actions
   run `31469680310` passed its independent gates and published itch.io version
   `alpha.4+9c2c8e5` to both `html5` and `windows-alpha`; Draft visibility is
@@ -126,7 +126,7 @@ related:
   complete with no clipping or debug overlay.
 - The fastrun registry still launches the rebuilt canonical
   `builds/windows/PaintMountain.exe`. Evidence is under
-  `docs/evidence/fast-stage-readiness-2026-08-11/`. The itch.io upload was not
+  `.agents/evidence/fast-stage-readiness-2026-08-11/`. The itch.io upload was not
   changed.
 
 ## Fixed-Center Terrain Inspection (2026-08-11)
@@ -408,7 +408,7 @@ off-white rather than blue-gray.
 - Generated icon/switch assets have project provenance and no dependency,
   plugin, external pack, or runtime network requirement was added.
 - Current evidence and the final severity record are indexed in
-  [`../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md`](../docs/evidence/approved-image-fidelity-correction-2026-08-10/README.md).
+  [`evidence/approved-image-fidelity-correction-2026-08-10/README.md`](evidence/approved-image-fidelity-correction-2026-08-10/README.md).
 
 ### Limitations
 
@@ -459,7 +459,7 @@ glyphs, trajectory, paint, values, and actions should carry the decision.
   coral clock raster asset rather than an emoji, glyph, or code-drawn icon.
 - Korean 1280x720, Korean 1600x900, and English 1920x1080 Windows release
   captures, plus seven normalized comparison sheets, are indexed in
-  [`../docs/evidence/essential-ui-fidelity-2026-08-10/README.md`](../docs/evidence/essential-ui-fidelity-2026-08-10/README.md).
+  [`evidence/essential-ui-fidelity-2026-08-10/README.md`](evidence/essential-ui-fidelity-2026-08-10/README.md).
   The latest [`../design-qa.md`](../design-qa.md) result is `passed`.
 
 ### Limitations
@@ -592,7 +592,7 @@ The completed implementation contract is
 and the final comparison report is [`../design-qa.md`](../design-qa.md).
 
 - The exact approved visual target is
-  `docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`,
+  `.agents/evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`,
   SHA-256
   `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`.
 - `paint_mountain_theme.tres` remains the only UI token owner. Routine panels
@@ -686,7 +686,7 @@ and [`evidence/casual-shared-ui-refresh-2026-08-08/`](evidence/casual-shared-ui-
 - Korean 1280x720 Main Menu, Stage Select, Aim, Pause, and Settings captures plus
   an English 1920x1080 Aim capture were inspected directly. Godot verification
   and the Windows Desktop release export passed.
-- The nine-image [Casual UI Directions gallery](../docs/concepts/casual-ui-directions-2026-08-08/index.html)
+- The nine-image [Casual UI Directions gallery](research/concepts/casual-ui-directions-2026-08-08/index.html)
   is exploratory only. The recommended next direction combines Paper Toy menu
   surfaces with Quiet Field Guide HUD restraint; it does not supersede the
   running Theme until the user selects it.
@@ -890,7 +890,7 @@ and interaction freedom; implementation completion is not product acceptance.
 The completed execution record is
 [`execplans/2026-08-06-command-columns-hud.md`](execplans/2026-08-06-command-columns-hud.md).
 The user-selected
-[`command-columns-hud.png`](../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
+[`command-columns-hud.png`](research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png)
 was the aiming-HUD visual authority at that revision. This UI record does not add or
 restore target-wide first-hit certification, prescribed stage success routes,
 camera redesign, gameplay approval, or balance approval.

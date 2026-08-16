@@ -6,7 +6,7 @@ last_reviewed: 2026-08-14
 scope: unresolved special-ability ball, limited-preview queue, red/green paint, and terrain-reuse direction
 source: ../../docs/source-brief.md
 related:
-  - RESEARCH.md
+  - ../../.agents/research/paint-mountain-difficulty-progression/RESEARCH.md
   - DECISIONS.md
   - OPEN_QUESTIONS.md
   - TASKS.md

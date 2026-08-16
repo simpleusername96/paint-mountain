@@ -4,7 +4,7 @@ status: done
 created: 2026-08-09
 scope: Faithfully implement the user-approved Quiet Context UI across every reachable Paint Mountain interface surface
 related:
-  - ../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
+  - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../design/DESIGN.md
   - ../design/UIUX_GUIDELINES.md
   - ../design/VISUAL_REFERENCES.md
@@ -99,7 +99,7 @@ Exact actions requiring owner or user approval:
 
 | Requirement or concern | Verified current owner and behavior | Evidence | Locked decision | Task IDs |
 | --- | --- | --- | --- | --- |
-| Selected visual authority | The user selected `docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`, SHA-256 `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A` | Attached 1280x720 image and direct inspection | Treat its UI hierarchy and restraint as the approved target; preserve real functions that the generated still omits | 1.1, 2.1, 4.1 |
+| Selected visual authority | The user selected `.agents/evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`, SHA-256 `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A` | Attached 1280x720 image and direct inspection | Treat its UI hierarchy and restraint as the approved target; preserve real functions that the generated still omits | 1.1, 2.1, 4.1 |
 | Shared styling | `resources/ui/paint_mountain_theme.tres` owns Pretendard, palette, panels, buttons, focus, and progress; current Kenney depth surfaces create heavier card/button framing than the selected image | Theme inspection and current captures | Keep existing palette/font/assets but flatten routine surfaces, use hairlines and spacing, reserve filled blue for primary actions, and keep a 2 px visible focus state | 1.2 |
 | Shortcut language | `ShortcutHint`, six HUD/pause scenes, and `tests/shortcut_prompt_test.gd` currently attach dark keycaps to individual controls | Current Aim/Pause captures and scene/test inspection | Replace detached prompts with one shared responsive `ContextLegend`; keep short inline `Tab`, `Esc`, `F`, or `Space` text only when it is part of the associated action surface | 1.3, 2.1, 3.3 |
 | Gameplay HUD | `hud.tscn`, `TopStatusBar`, `RunStatusCard`, `CoverageMeter`, `AimControls`, `ActionButtons`, `CameraInteractionControl`, and `HUDController` own visible composition and intents | Source inspection plus current Stage 30 capture | Match the approved 24 px edge rhythm, center Fire, move aim/power above the legend, remove visible yaw, keep Gear/Finish/status truthful, and switch the legend by Aim/Map/Follow state | 2.1, 2.2, 2.3 |

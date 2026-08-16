@@ -6,11 +6,11 @@ last_reviewed: 2026-08-06
 topic: Current-runtime-grounded Aim Lock HUD layout direction selection
 scope: Three 1280x720 concepts and the user-selected Command Columns implementation reference
 source:
-  - ../../../.agents/evidence/fast-stage-entry-and-fire-capacity/stage_30_aiming-1280x720.png
+  - ../../../evidence/fast-stage-entry-and-fire-capacity/stage_30_aiming-1280x720.png
   - ../runtime-grounded-ui-2026-08-05/proposed/03-aiming-grounded.png
 related:
-  - ../../../.agents/design/UIUX_GUIDELINES.md
-  - ../../../.agents/design/ART_DIRECTION.md
+  - ../../../design/UIUX_GUIDELINES.md
+  - ../../../design/ART_DIRECTION.md
 ---
 
 # Aim Lock HUD Layout Directions

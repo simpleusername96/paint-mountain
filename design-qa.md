@@ -8,7 +8,7 @@ scope: seven approved UI refinements plus supporting gameplay and responsive sta
 source: docs/reports/screen-audit-2026-08-10/assets/refined/
 related:
   - .agents/execplans/2026-08-10-essential-ui-fidelity.md
-  - docs/evidence/essential-ui-fidelity-2026-08-10/README.md
+  - .agents/evidence/essential-ui-fidelity-2026-08-10/README.md
   - .agents/design/UIUX_GUIDELINES.md
 ---
 
@@ -25,9 +25,9 @@ localization, keyboard operation, and mountain-first composition.
 - Source visual truth: the seven `1672x941` refined images under
   `docs/reports/screen-audit-2026-08-10/assets/refined/`.
 - Primary implementation evidence: Korean `1280x720` Windows release captures
-  under `docs/evidence/essential-ui-fidelity-2026-08-10/runtime/`.
+  under `.agents/evidence/essential-ui-fidelity-2026-08-10/runtime/`.
 - Full-view combined comparisons: seven labeled `2560x764` images under
-  `docs/evidence/essential-ui-fidelity-2026-08-10/comparisons/`.
+  `.agents/evidence/essential-ui-fidelity-2026-08-10/comparisons/`.
 - Responsive implementation evidence: English `1920x1080` Main Menu, Stage
   Select, Aim, Settings, and Manual Result captures, plus Korean `1600x900`
   Stage Select and Settings captures in the runtime evidence directory.

@@ -6,9 +6,9 @@ last_reviewed: 2026-08-14
 topic: limited-preview queues, intrinsic projectile behaviors, and color objectives
 scope: local evidence and cross-domain analogies supporting the queued-ball spec
 related:
-  - PRD.md
-  - DECISIONS.md
-  - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
+  - ../../../project-specs/paint-mountain-difficulty-progression/PRD.md
+  - ../../../project-specs/paint-mountain-difficulty-progression/DECISIONS.md
+  - ../../execplans/2026-08-13-queued-ball-paint-ownership.md
 ---
 
 # Queued Ball and Color Research
@@ -20,14 +20,14 @@ paint rule. This file supports judgment; it does not override the PRD.
 
 ## Sources
 
-- `../../docs/source-brief.md`
-- `../../.agents/Documentation.md`
-- `../../docs/design-spec.md`
-- `../../docs/technical-architecture.md`
-- `../../src/stage/stage_controller.gd`
-- `../../src/projectile/projectile_manager.gd`
-- `../../src/projectile/paint_projectile.gd`
-- `../../src/paint/paint_system.gd`
+- `../../../docs/source-brief.md`
+- `../../Documentation.md`
+- `../../../docs/design-spec.md`
+- `../../../docs/technical-architecture.md`
+- `../../../src/stage/stage_controller.gd`
+- `../../../src/projectile/projectile_manager.gd`
+- `../../../src/projectile/paint_projectile.gd`
+- `../../../src/paint/paint_system.gd`
 - [Official Tetris website](https://tetris.com/)
 - [World Curling: guards, draws, and last-stone advantage](https://worldcurling.org/about/curling/)
 - [Exploratorium: elasticity and coefficient of restitution](https://annex.exploratorium.edu/baseball/features/how-far-can-you-hit-one.html)

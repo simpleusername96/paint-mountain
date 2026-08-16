@@ -229,7 +229,7 @@ Evidence: `reports/environment-grounding-2026-08-11/index.html`.
   same foreground checks. The current work did not change itch Draft visibility
   or upload any artifact.
 
-Evidence: `docs/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
+Evidence: `.agents/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
 
 ## Completed approved-image fidelity correction gate (2026-08-10)
 
@@ -645,7 +645,7 @@ coverage rows at the time. Its layout and weather rows are historical after the
 Quiet Context and wind-retirement gates; they do not define the current HUD.
 
 - [x] The selected 1280x720 reference is registered at
-  `docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`; the
+  `.agents/research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png`; the
   implementation keeps its left-command, bottom-action, and right-status
   hierarchy while retaining supported real controls omitted from the concept.
 - [x] `resources/ui/paint_mountain_theme.tres` is the single reusable visual

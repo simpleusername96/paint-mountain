@@ -4,11 +4,11 @@ status: active
 created: 2026-08-10
 last_reviewed: 2026-08-10
 scope: release captures, combined comparisons, and validation record for the approved-image fidelity correction
-source: ../../reports/screen-audit-2026-08-10/index.html
+source: ../../../docs/reports/screen-audit-2026-08-10/index.html
 related:
   - design-qa.md
-  - ../../../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
-  - ../../test-checklist.md
+  - ../../execplans/2026-08-10-approved-image-fidelity-correction.md
+  - ../../../docs/test-checklist.md
 ---
 
 # Approved Image Fidelity Correction Evidence

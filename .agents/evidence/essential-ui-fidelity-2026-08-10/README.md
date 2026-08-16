@@ -4,11 +4,11 @@ status: active
 created: 2026-08-10
 topic: essential-ui-fidelity
 scope: Windows release captures and reference comparisons for EUI-13
-source: ../../reports/screen-audit-2026-08-10/assets/refined/
+source: ../../../docs/reports/screen-audit-2026-08-10/assets/refined/
 related:
-  - ../../../.agents/execplans/2026-08-10-essential-ui-fidelity.md
+  - ../../execplans/2026-08-10-essential-ui-fidelity.md
   - ../../../design-qa.md
-  - ../../test-checklist.md
+  - ../../../docs/test-checklist.md
 ---
 
 # Essential UI Fidelity Evidence

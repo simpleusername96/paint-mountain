@@ -5,7 +5,7 @@ created: 2026-08-08
 scope: running-release evidence for the casual shared UI refresh
 related:
   - ../../execplans/2026-08-08-casual-shared-ui-refresh.md
-  - ../../../docs/concepts/casual-ui-directions-2026-08-08/index.html
+  - ../../research/concepts/casual-ui-directions-2026-08-08/index.html
   - ../../../resources/ui/paint_mountain_theme.tres
 ---
 

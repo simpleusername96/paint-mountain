@@ -667,7 +667,7 @@ Start-Process builds/windows/PaintMountain.exe -WindowStyle Hidden `
 ```
 
 Store final evidence under a new task-specific directory, for example
-`docs/evidence/essential-ui-fidelity-2026-08-10/`, with `runtime/`,
+`.agents/evidence/essential-ui-fidelity-2026-08-10/`, with `runtime/`,
 `comparisons/`, and a short evidence index. Use `$doc-lifecycle-steward` for the
 evidence index and mark its lifecycle truthfully.
 
@@ -851,7 +851,7 @@ test updates already resolved by this plan.
 ## Next Step
 
 No implementation work remains in this plan. Use
-`docs/evidence/essential-ui-fidelity-2026-08-10/README.md` and
+`.agents/evidence/essential-ui-fidelity-2026-08-10/README.md` and
 `design-qa.md` as the release evidence for later UI changes.
 
 ## Completion Record
@@ -871,4 +871,4 @@ No implementation work remains in this plan. Use
   directly inspected.
 - Final Product Design QA: `passed`; no actionable P0/P1/P2 issue remains.
 - Evidence index:
-  `docs/evidence/essential-ui-fidelity-2026-08-10/README.md`.
+  `.agents/evidence/essential-ui-fidelity-2026-08-10/README.md`.

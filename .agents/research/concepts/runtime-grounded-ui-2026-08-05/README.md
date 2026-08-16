@@ -5,13 +5,13 @@ created: 2026-08-05
 last_reviewed: 2026-08-05
 topic: Runtime-grounded Paint Mountain screen concepts for user review
 scope: Current 1280x720 screen evidence, proposed visual direction, and generation provenance
-source: ../../../docs/source-brief.md
+source: ../../../../docs/source-brief.md
 related:
-  - ../../../.agents/design/DESIGN.md
-  - ../../../.agents/design/ART_DIRECTION.md
-  - ../../../.agents/design/UIUX_GUIDELINES.md
-  - ../../../.agents/design/VISUAL_REFERENCES.md
-  - ../../handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
+  - ../../../design/DESIGN.md
+  - ../../../design/ART_DIRECTION.md
+  - ../../../design/UIUX_GUIDELINES.md
+  - ../../../design/VISUAL_REFERENCES.md
+  - ../../../../docs/handoffs/gameplay-visual-reset-2026-08-03/visuals/01-target-reference.png
 ---
 
 # Runtime-Grounded Screen Concepts

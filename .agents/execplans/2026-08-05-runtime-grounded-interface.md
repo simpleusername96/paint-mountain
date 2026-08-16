@@ -18,7 +18,7 @@ related:
   - ../design/ART_DIRECTION.md
   - ../design/UIUX_GUIDELINES.md
   - ../design/VISUAL_REFERENCES.md
-  - ../../docs/concepts/runtime-grounded-ui-2026-08-05/README.md
+  - ../research/concepts/runtime-grounded-ui-2026-08-05/README.md
   - 2026-08-05-physical-gameplay-mvp.md
   - 2026-08-05-rapid-fire-thirty-stage-progression.md
 ---
@@ -110,7 +110,7 @@ Out of scope:
 ## Visual Evidence Set
 
 Each proposed file is paired with the corresponding current runtime capture in
-`docs/concepts/runtime-grounded-ui-2026-08-05/current/`:
+`.agents/research/concepts/runtime-grounded-ui-2026-08-05/current/`:
 
 | State | Selected direction |
 | --- | --- |

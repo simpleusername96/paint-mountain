@@ -4,12 +4,12 @@ status: active
 created: 2026-08-10
 last_reviewed: 2026-08-10
 scope: final combined visual review of the approved-image fidelity correction
-source: ../../reports/screen-audit-2026-08-10/index.html
+source: ../../../docs/reports/screen-audit-2026-08-10/index.html
 related:
   - README.md
-  - ../../../.agents/execplans/2026-08-10-approved-image-fidelity-correction.md
-  - ../../../.agents/design/ART_DIRECTION.md
-  - ../../../.agents/design/UIUX_GUIDELINES.md
+  - ../../execplans/2026-08-10-approved-image-fidelity-correction.md
+  - ../../design/ART_DIRECTION.md
+  - ../../design/UIUX_GUIDELINES.md
 ---
 
 # Approved Image Fidelity Correction — Design QA

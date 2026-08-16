@@ -120,7 +120,7 @@ Preconditions:
 
 - Phase 2 and its batch gate pass.
 
-Source owners: `export_presets.cfg`, `src/delivery/delivery_capture_runner.gd`, `.agents/evidence/casual-shared-ui-refresh-2026-08-08/`, `docs/concepts/casual-ui-directions-2026-08-08/`
+Source owners: `export_presets.cfg`, `src/delivery/delivery_capture_runner.gd`, `.agents/evidence/casual-shared-ui-refresh-2026-08-08/`, `.agents/research/concepts/casual-ui-directions-2026-08-08/`
 
 - [x] **3.1** Export and inspect the implemented UI.
   - Change: export Windows Desktop once; capture Main Menu, Stage Select, Stage 30 Aim View, and one 1920x1080 Aim View using `--capture-background`; create a before/after comparison.
@@ -175,7 +175,7 @@ Completion evidence:
 - Six running-release states and two comparison boards were opened and inspected
   under `.agents/evidence/casual-shared-ui-refresh-2026-08-08/`.
 - Nine independent ImageGen outputs, prompt recipes, and a Korean HTML gallery
-  are stored under `docs/concepts/casual-ui-directions-2026-08-08/`.
+  are stored under `.agents/research/concepts/casual-ui-directions-2026-08-08/`.
 - The diff-scoped quality audit confirmed Theme ownership and found one local
   state defect: DangerButton hover/pressed styling fell back to the neutral
   base. The shared Theme now keeps its red surface and white text in those states.

@@ -3,10 +3,10 @@ type: evidence
 status: active
 created: 2026-08-11
 topic: stage readiness performance
-source: builds/windows/PaintMountain.exe
+source: ../../../builds/windows/PaintMountain.exe
 related:
-  - ../../../.agents/execplans/2026-08-11-fast-stage-readiness.md
-  - ../../test-checklist.md
+  - ../../execplans/2026-08-11-fast-stage-readiness.md
+  - ../../../docs/test-checklist.md
 ---
 
 # Fast Stage Readiness Evidence

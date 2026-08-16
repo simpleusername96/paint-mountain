@@ -20,11 +20,11 @@ related:
   - ../design/ART_DIRECTION.md
   - ../design/UIUX_GUIDELINES.md
   - ../design/VISUAL_REFERENCES.md
-  - ../../docs/concepts/rapid-fire-progression-2026-08-04/01-stage-select.png
-  - ../../docs/concepts/rapid-fire-progression-2026-08-04/02-aiming.png
-  - ../../docs/concepts/rapid-fire-progression-2026-08-04/03-rapid-multishot.png
-  - ../../docs/concepts/rapid-fire-progression-2026-08-04/04-pause-settings.png
-  - ../../docs/concepts/rapid-fire-progression-2026-08-04/05-stage-clear.png
+  - ../evidence/concepts/rapid-fire-progression-2026-08-04/01-stage-select.png
+  - ../evidence/concepts/rapid-fire-progression-2026-08-04/02-aiming.png
+  - ../evidence/concepts/rapid-fire-progression-2026-08-04/03-rapid-multishot.png
+  - ../evidence/concepts/rapid-fire-progression-2026-08-04/04-pause-settings.png
+  - ../evidence/concepts/rapid-fire-progression-2026-08-04/05-stage-clear.png
   - 2026-08-05-physical-gameplay-mvp.md
   - 2026-08-05-rapid-fire-thirty-stage-progression.md
   - 2026-08-05-runtime-grounded-interface.md

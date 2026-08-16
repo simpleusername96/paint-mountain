@@ -11,7 +11,7 @@ related:
   - ART_DIRECTION.md
   - VISUAL_REFERENCES.md
   - ../../docs/design-spec.md
-  - ../../docs/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png
+  - ../research/concepts/ui-layout-directions-2026-08-06/command-columns-hud.png
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-06-command-columns-hud.md
@@ -21,7 +21,7 @@ related:
   - ../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md
   - ../execplans/2026-08-09-quiet-context-ui-system.md
   - ../execplans/2026-08-10-essential-ui-fidelity.md
-  - ../../docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
+  - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../resources/ui/paint_mountain_theme.tres
 ---
@@ -56,7 +56,7 @@ state.
 ### Approved Quiet Context system
 
 The user-approved 2026-08-09 reference
-`docs/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`
+`.agents/evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`
 (SHA-256
 `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`)
 is the current interface direction. It supersedes the heavier card and detached

@@ -5,7 +5,7 @@ created: 2026-08-13
 topic: distant structural analogues for progressive challenge
 scope: education, psychometrics, aviation, sport, surgery, ecology, and safety
 related:
-  - ../01-research-plan.md
+  - ../../../../execplans/2026-08-13-difficulty-progression-idea-research.md
 ---
 
 # Distant Analogues

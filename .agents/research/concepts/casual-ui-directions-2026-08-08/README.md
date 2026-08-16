@@ -5,7 +5,7 @@ created: 2026-08-08
 scope: exploratory ImageGen directions for three Paint Mountain screens
 related:
   - index.html
-  - ../../../.agents/evidence/casual-shared-ui-refresh-2026-08-08/README.md
+  - ../../../evidence/casual-shared-ui-refresh-2026-08-08/README.md
 ---
 
 # Casual UI Direction Prompts

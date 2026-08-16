@@ -3,10 +3,10 @@ type: evidence
 status: active
 created: 2026-08-11
 topic: Stage Select readiness and production transition
-source: builds/windows/PaintMountain.exe
+source: ../../../builds/windows/PaintMountain.exe
 related:
-  - ../../../.agents/execplans/2026-08-11-stage-selection-readiness-deployment.md
-  - ../../test-checklist.md
+  - ../../execplans/2026-08-11-stage-selection-readiness-deployment.md
+  - ../../../docs/test-checklist.md
 ---
 
 # Stage Selection Readiness Evidence
@@ -18,7 +18,14 @@ persisted current stage, waits for truthful readiness, and starts that exact
 stage. The timing begins at the real Stage Select card press and ends when the
 selected stage becomes Start-ready or visible.
 
-## Root cause and correction
+## Sources
+
+- `../../../builds/windows/PaintMountain.exe`
+- `stage_01-to-stage_30-release.log`
+- `stage_01-to-stage_30-briefing-1280x720.png`
+- `../../execplans/2026-08-11-stage-selection-readiness-deployment.md`
+
+## Findings
 
 - Stage Select intentionally kept its choice local until Start, but AppRoot
   accepted layout and artifact completion only when it matched the older

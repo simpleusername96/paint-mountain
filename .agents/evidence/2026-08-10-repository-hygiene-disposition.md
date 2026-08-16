@@ -89,7 +89,7 @@ report index retains only improved states 05, 06, and 07:
 
 ### Retained and locally blocked cleanup
 
-- `docs/concepts/aim-view-glyph-placement-2026-08-09/` lacks an adjacent owner
+- `.agents/evidence/concepts/aim-view-glyph-placement-2026-08-09/` lacks an adjacent owner
   decision, so its four files remain retained pending evidence.
 - The three non-active v10 bundles were removed after a wider catalog audit
   proved they had no live consumer. The v9 bundle remains because the

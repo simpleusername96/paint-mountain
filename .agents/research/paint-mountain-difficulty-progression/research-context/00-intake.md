@@ -17,7 +17,7 @@ Translate the user's reset into a bounded exploration brief.
 - User correction: the previous proposal was not understandable; restart and
   provide five new ideas.
 - `docs/source-brief.md`
-- Current implementation owners listed in `RESEARCH.md`
+- Current implementation owners listed in `../RESEARCH.md`
 
 ## Findings
 

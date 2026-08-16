@@ -285,7 +285,7 @@ glyphs, target area, or support faces unreadable.
   captures, responsive/localization density checks, and the task-owned quality
   audit passed.
 - Seven final combined sheets were inspected directly. The active evidence is
-  `docs/evidence/approved-image-fidelity-correction-2026-08-10/`; its
+  `.agents/evidence/approved-image-fidelity-correction-2026-08-10/`; its
   `design-qa.md` ends with `final result: passed`.
 - No gameplay rule, paint/coverage owner, save schema, input mapping,
   dependency, plugin, renderer, stage data, or generated terrain topology was

@@ -10,7 +10,9 @@ Keep one evolving, agent-ready PRD and its supporting files so future sessions c
 
 - `PRD.md` is the canonical source of truth.
 - `DECISIONS.md` records key decisions and rejected alternatives.
-- `RESEARCH.md` records external options and supporting evidence.
+- `.agents/research/paint-mountain-difficulty-progression/RESEARCH.md` records
+  archived external options and supporting evidence; it does not define the
+  product.
 - `OPEN_QUESTIONS.md` records unresolved issues that still affect implementation.
 - `TASKS.md` contains implementation-oriented work items derived from the PRD.
 
@@ -22,6 +24,9 @@ Keep one evolving, agent-ready PRD and its supporting files so future sessions c
 4. Label guesses as `[assumption]`.
 5. Move blocking ambiguity into `OPEN_QUESTIONS.md`.
 6. Keep `PRD.md` concise and implementation-oriented.
+7. Keep reusable research under
+   `.agents/research/paint-mountain-difficulty-progression/`; link it from this
+   workspace instead of duplicating it beside the specifications.
 
 ## Completion Standard
 

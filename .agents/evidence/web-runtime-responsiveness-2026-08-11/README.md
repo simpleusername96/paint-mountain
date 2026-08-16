@@ -4,10 +4,10 @@ status: active
 created: 2026-08-11
 topic: web-runtime-responsiveness
 scope: Windows release captures, local Chromium Web smoke, release artifact checks, and measurement limitations
-source: ../../../.agents/execplans/2026-08-11-web-runtime-responsiveness.md
+source: ../../execplans/2026-08-11-web-runtime-responsiveness.md
 related:
-  - ../../../.agents/Documentation.md
-  - ../../test-checklist.md
+  - ../../Documentation.md
+  - ../../../docs/test-checklist.md
 ---
 
 # Web Runtime Responsiveness Evidence
@@ -139,7 +139,7 @@ claimed from these samples.
 ## Sources
 
 - Active contract:
-  `../../../.agents/execplans/2026-08-11-web-runtime-responsiveness.md`.
+  `../../execplans/2026-08-11-web-runtime-responsiveness.md`.
 - Current source, focused Godot regressions, full ordered suite, release exports,
   delivery telemetry, and the running-game images listed above.
 - User-reported reopened symptoms: choppy terrain inspection, reversed vertical

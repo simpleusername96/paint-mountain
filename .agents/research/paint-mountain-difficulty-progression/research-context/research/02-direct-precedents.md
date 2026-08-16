@@ -5,7 +5,7 @@ created: 2026-08-13
 topic: direct game and course-design precedents
 scope: recurring difficulty mechanisms and their transfer limits
 related:
-  - ../01-research-plan.md
+  - ../../../../execplans/2026-08-13-difficulty-progression-idea-research.md
 ---
 
 # Direct Precedents and Common-Answer Baseline

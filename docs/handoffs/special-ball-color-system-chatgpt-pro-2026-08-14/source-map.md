@@ -67,9 +67,9 @@ implemented sources without copying the repository into the handoff folder.
   detailed interpretation. Consult for discovered integration reach only.
 - `project-specs/paint-mountain-difficulty-progression/DECISIONS.md`: superseded
   assistant selection and alternatives.
-- `project-specs/paint-mountain-difficulty-progression/RESEARCH.md`: archived
+- `.agents/research/paint-mountain-difficulty-progression/RESEARCH.md`: archived
   analogy and local evidence.
-- `docs/concepts/queued-ball-ui-2026-08-14/*.png`: superseded blue/orange UI
+- `.agents/evidence/concepts/queued-ball-ui-2026-08-14/*.png`: superseded blue/orange UI
   exploration.
 
 ### Recent commits

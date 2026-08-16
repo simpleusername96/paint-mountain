@@ -12,7 +12,7 @@ related:
   - ../../docs/source-brief.md
   - ../../docs/technical-architecture.md
   - ../../docs/test-checklist.md
-  - ../../docs/evidence/web-runtime-responsiveness-2026-08-11/README.md
+  - ../evidence/web-runtime-responsiveness-2026-08-11/README.md
 ---
 
 # Web Runtime Responsiveness and Interaction Correction - Execution Contract
@@ -532,7 +532,7 @@ dependencies, persistence, or acceptance.
 - Deployment limit: no artifact was uploaded and itch Draft visibility was not
   changed because publication requires explicit user authorization.
 - Evidence:
-  `docs/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
+  `.agents/evidence/web-runtime-responsiveness-2026-08-11/README.md`.
 - Reopened evidence on 2026-08-11: the user reported visibly choppy terrain
   inspection, reversed vertical drag, and about three seconds of initial stage
   loading. Source tracing found Map Inspection safety targets resolving at only

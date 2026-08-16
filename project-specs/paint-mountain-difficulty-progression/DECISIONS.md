@@ -7,7 +7,7 @@ scope: queued-ball and paint-ownership product decisions
 source: ../../docs/source-brief.md
 related:
   - PRD.md
-  - RESEARCH.md
+  - ../../.agents/research/paint-mountain-difficulty-progression/RESEARCH.md
   - ../../.agents/execplans/2026-08-13-queued-ball-paint-ownership.md
 ---
 

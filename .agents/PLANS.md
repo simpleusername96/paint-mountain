@@ -20,6 +20,14 @@ Use an ExecPlan for cross-system gameplay work, scene/resource schema changes, s
 - Complete read-only discovery before writing a decision-complete plan.
 - Resolve product, dependency, ownership, persistence, and validation choices before execution tasks begin.
 - Include purpose, verified evidence, locked decisions, scope/non-scope, architecture ownership, ordered tasks, acceptance checks, regression guards, validation commands, contingencies, progress, next steps, and stop conditions.
+- Keep task-specific findings in the relevant ExecPlan. Store synthesized
+  evidence reused by multiple plans under `.agents/research/` and record each
+  consuming plan's accepted or rejected implications locally.
+- Store retained screenshots, logs, measurements, render comparisons, and other
+  proof under `.agents/evidence/`; link them instead of embedding large raw
+  artifacts in the plan.
+- When an accepted research conclusion becomes a project constraint, update its
+  canonical spec, record, or runbook and keep the research advisory.
 - Keep only one active ExecPlan under `.agents/execplans/` unless the user explicitly requests separately scoped concurrent work. Treat `Plan.md` as a historical index unless its lifecycle frontmatter explicitly makes it the active plan.
 - Mark a completed plan `done`; preserve lasting decisions in the active specs or `Documentation.md`.
 - Never use a plan to authorize destructive actions, new dependencies, or scope expansion that still requires user approval.

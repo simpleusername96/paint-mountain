@@ -437,7 +437,7 @@ terrain bodies do not hold that capacity. The retired wind implementation and
 its cannon-side flag remain documented only in historical plans and evidence;
 the current build has no ambient-force or wind-presentation contract.
 
-The concept board under `docs/concepts/execplan-outcome-2026-08-03/` is useful
+The concept board under `.agents/evidence/concepts/execplan-outcome-2026-08-03/` is useful
 only for composition, palette, faceting, apparent thickness, and readability.
 Its exact HUD placement, literal geometry, seed/silhouette, mechanism positions,
 and painted still states are not runtime or acceptance authority.

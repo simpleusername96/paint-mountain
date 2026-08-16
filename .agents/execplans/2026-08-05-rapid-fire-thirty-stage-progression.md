@@ -16,7 +16,7 @@ related:
   - ../../docs/test-checklist.md
   - 2026-08-05-physical-gameplay-mvp.md
   - 2026-08-05-runtime-grounded-interface.md
-  - ../../docs/concepts/runtime-grounded-ui-2026-08-05/README.md
+  - ../research/concepts/runtime-grounded-ui-2026-08-05/README.md
 ---
 
 # Rapid Fire and Thirty-Stage Progression - Execution Contract
