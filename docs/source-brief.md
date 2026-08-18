@@ -2405,6 +2405,66 @@ Effective requirements and decision state:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Selection (2026-08-18): Three-Ball Red/Green Target-Band Prototype
+
+The user selected the downloaded
+`paint-mountain-three-ball-red-green-target-band-plan.md` as the direction to
+validate, refine into an ExecPlan, implement, test compactly after feature
+completion, push, and verify on itch.io. This selection ends the 2026-08-14
+implementation hold for the bounded prototype clauses below.
+
+User directive (verbatim):
+
+> Use this plan doc to refine the game.
+>
+> C:\Users\BK\Downloads\paint-mountain-three-ball-red-green-target-band-plan.md
+>
+> First, you need to validate if it's a solid plan.
+> Then, turn this into a execplan.
+> Then, finish all tasks on that plan.
+> Do not conduct excessive performance test during the tasks, only apply necessary tests.
+> Only after all features are implemented, conduct compactperformance test.
+> Push to remote repo and make sure it works well on itch.io
+
+Effective requirements for the first implementation pass:
+
+- The MVP roster is exactly Standard, Impact Burst, and Apex Split. A ball has
+  exactly one Red or Green paint channel, and that identity remains consistent
+  through its world material, paint commands, derived children, queue token,
+  observations, and scoring.
+- Every eligible painted pixel has exclusive latest-writer Red or Green
+  ownership while its visual strength remains monotonic. `PaintSystem` remains
+  the one authoritative runtime representation and reports physical Red, Green,
+  and Total target-area percentages.
+- A stage calculates signed Paint Score from authored Red/Green weights limited
+  to `-1`, `0`, or `+1`. Clear requires the final score to lie inside an
+  inclusive authored target band. Painting above the upper bound can fail.
+- The player sees the current token and next two tokens from a finite,
+  constrained-random, deterministic deal. Successful root admission consumes
+  one token; rejected Fire and split children consume none. Retry Same Deal and
+  New Deal use the authoritative restart path.
+- Finish is available only when the score is in band and projectile/paint work
+  is quiet. Queue exhaustion auto-evaluates when quiet; timeout evaluates the
+  already accepted authoritative paint state. Stars measure distance from the
+  target-band center.
+- Preserve existing terrain. Apply the new loop to a six-stage prototype first,
+  as required by the selected plan's own definition of done. Keep stages 7–30
+  functional under their current rule during this pass.
+- Catalog-v11 migration, removal of glyph systems from all thirty stages,
+  validated seed banks for every stage/deal, and population playtest-rate goals
+  remain conditional on prototype evidence and later approval. Do not represent
+  structural generator tests as human or physical clearability evidence.
+- Use focused tests during implementation. Run one bounded performance check
+  only after feature completion, then complete production-style Windows/Web
+  validation, push task-owned commits, and verify the resulting itch.io build.
+
+The active implementation contract is
+`.agents/execplans/2026-08-18-three-ball-target-band-prototype.md`. Its scope
+corrections resolve contradictions in the downloaded proposal without changing
+the selected three-ball, two-channel, overwrite, target-band, and retry design.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.
