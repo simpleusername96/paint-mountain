@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-18
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -57,6 +57,15 @@ related:
 ---
 
 # Project Record
+
+## Three-Ball Red/Green Target-Band Prototype (2026-08-18)
+
+Stages 01–06 implement the bounded Red/Green three-ball prototype, with
+latest-valid-writer ownership, monotonic strength, and physical channel
+measurement. Six default-deal witnesses and 16 structural seeds per stage (96
+total) exist. Stages 07–30 remain legacy v10 scalar/glyph stages. Catalog v11,
+all-stage migration, physical-clear guarantees, and human-study feasibility are
+deferred; structural seed coverage is not a human-play claim.
 
 ## Stage Selection Readiness Correction (2026-08-11)
 

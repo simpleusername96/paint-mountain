@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-18
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -21,6 +21,7 @@ related:
   - ../execplans/2026-08-09-hud-legibility-and-wind-stable-aim.md
   - ../execplans/2026-08-09-quiet-context-ui-system.md
   - ../execplans/2026-08-10-essential-ui-fidelity.md
+  - ../execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../resources/ui/paint_mountain_theme.tres
@@ -104,7 +105,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Stage card | Upper-left | Primary stage identity |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident-ball activity stays internal; Gear remains the menu action |
-| Coverage gauge | Left edge | Sole coverage display; target-area coverage fills bottom-to-top and shows target |
+| Score display | Left edge | Legacy stages show the vertical coverage gauge; prototype stages show the fixed target band, current marker, Paint Score, and signed R/G values |
+| Ball queue | Right edge | Prototype stages show current plus next two tokens with shape and R/G letter; legacy stages omit it |
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
@@ -154,8 +156,9 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   the same contextual return. Returning changes only presentation; simulation,
   stored aim, and prior balls continue. First terrain contact remains framed for
   0.8 seconds before automatic return to Aim View.
-- Finish is unavailable until the first actual launch. Target coverage and spent
-  shots do not force an outcome; time expiry or Finish ends the run.
+- Finish is unavailable until the first actual launch. Legacy stages keep their
+  manual/timeout flow. Prototype Finish also requires a quiet board and an
+  in-band score; timeout or a quiet exhausted queue resolves Clear/Failed.
 
 ### Navigation and pause
 
@@ -263,12 +266,14 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   translation content for those owners, accessibility, and diagnostics; do not
   render it as normal-screen filler.
 - Briefing shows compact stage number/name and inspection mode, the complete
-  terrain with unlabelled surface glyphs, Back/Start actions, and the lower-edge
-  context guide. It does not show an objective paragraph, mechanism name floating
-  over the terrain, or a second instruction line.
-- Results show the terminal title, coverage value, compact target value, grade,
-  best value, elapsed time, shots, and supported actions. They do not label the
-  metric as “final target coverage” or explain the calculation in body copy.
+  terrain, Back/Start actions, and the lower-edge context guide. Prototype
+  stages may add one compact first-introduction rule panel and the queue rail;
+  legacy stages retain unlabelled surface glyphs and no objective paragraph or
+  floating mechanism name.
+- Legacy results show the terminal title, coverage, target, grade, best, time,
+  shots, and supported actions. Prototype results instead show Clear/Failed,
+  Paint Score, target band, R/G breakdown, grade, time, shots, and Same Deal/New
+  Deal; no result screen explains the calculation in body copy.
 - Check every visible Korean label for clipping, overlap, awkward forced wrap,
   and insufficient button width. Do not solve text fit by making essential text
   unreadably small.
@@ -285,9 +290,9 @@ A UI change conforms when:
 - Shot Follow keeps the new root paintball and first terrain impact readable,
   while the visible return action and Tab restore Aim View without implying
   in-flight steering;
-- the left vertical coverage gauge, lower-edge controls, edge status, top-right
-  gear, bottom-center Fire, and one quiet bottom context legend preserve the
-  specified hierarchy;
+- the conditional left coverage/target-band component, prototype queue,
+  lower-edge controls, edge status, top-right gear, bottom-center Fire, and one
+  quiet bottom context legend preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
   pause action;

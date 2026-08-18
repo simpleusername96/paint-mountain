@@ -234,12 +234,12 @@ visibly identify stages 1–6 as the new prototype set without locking others.
 
 ### M1 — Authority, data, and score contracts
 
-- [ ] Append the approved six-stage direction and deferred all-stage gate to
+- [x] Append the approved six-stage direction and deferred all-stage gate to
   `docs/source-brief.md`; reconcile active design/architecture language.
-- [ ] Add typed BallKind, PaintChannel, BallToken, BallDealProfile,
+- [x] Add typed BallKind, PaintChannel, BallToken, BallDealProfile,
   ColorScoreRuleData, TargetBandData, coverage snapshot, and score snapshot
   contracts with validation and pure unit tests.
-- [ ] Add the deterministic integer PRNG/deal generator, correction reserve,
+- [x] Add the deterministic integer PRNG/deal generator, correction reserve,
   bounded fallback, capacity checks, cross-platform test vectors, and 16
   structurally valid seed fixtures per prototype stage.
 
@@ -249,15 +249,15 @@ state mutation.
 
 ### M2 — Authoritative paint and intrinsic projectiles
 
-- [ ] Evolve `PaintSystem` and terrain shader to one owner-aware representation;
+- [x] Evolve `PaintSystem` and terrain shader to one owner-aware representation;
   carry channel through all paint commands and publish immutable percentages.
-- [ ] Include owner transitions in deterministic command ordering/checksum and
+- [x] Include owner transitions in deterministic command ordering/checksum and
   prove same-channel/overwrite/threshold/non-target semantics.
-- [ ] Carry token identity through root launch and residents; render matching
+- [x] Carry token identity through root launch and residents; render matching
   Red/Green projectiles and trails.
-- [ ] Implement narrow Impact Burst and Apex Split behaviors, authoritative
+- [x] Implement narrow Impact Burst and Apex Split behaviors, authoritative
   pre-contact apex event, child inheritance, and capacity/non-recursion guards.
-- [ ] Add only focused owner/order/behavior/family tests while building, then run
+- [x] Add only focused owner/order/behavior/family tests while building, then run
   `scripts/verify.ps1` once this batch stabilizes.
 
 Gate: one authoritative buffer drives both rendered ownership and coverage;
@@ -265,19 +265,19 @@ each behavior triggers at most once and cannot mutate shots/deal directly.
 
 ### M3 — Stage rule, retry, persistence, and parity
 
-- [ ] Extend StageData with an explicit legacy-or-target-band rule boundary and
+- [x] Extend StageData with an explicit legacy-or-target-band rule boundary and
   materialize the six prototype profiles without changing stages 7–30.
-- [ ] Make `StageController` own deal generation/cursor, three-token public
+- [x] Make `StageController` own deal generation/cursor, three-token public
   snapshot, root admission, Same/New Deal restart, quiet readiness, exhaustion,
   timeout, score/star/result evaluation, and terminal reason.
-- [ ] Update cannon/prediction cache identity and Apex marker without exposing
+- [x] Update cannon/prediction cache identity and Apex marker without exposing
   child paths or hidden tokens.
-- [ ] Migrate save schema v5 to v6. Archive v5 scalar bests as legacy; never
+- [x] Migrate save schema v5 to v6. Archive v5 scalar bests as legacy; never
   infer a target-band clear. Store clear-first, center-error-aware results.
-- [ ] Version shot/attempt observations and agent API for kind, channel, visible
+- [x] Version shot/attempt observations and agent API for kind, channel, visible
   horizon, seed where authorized, score/coverage deltas, effects, and retry
   actions. Keep human/agent authority identical.
-- [ ] Add focused queue progression, rejection, exhaustion, quiet-state,
+- [x] Add focused queue progression, rejection, exhaustion, quiet-state,
   timeout, retry, migration, observation, and hidden-tail tests.
 
 Gate: a scripted attempt can play/retry a prototype stage deterministically,
@@ -286,23 +286,23 @@ its existing rule.
 
 ### M4 — Level-3 player flow and six-stage calibration
 
-- [ ] Replace the scalar prototype HUD with a reusable target-band meter showing
+- [x] Replace the scalar prototype HUD with a reusable target-band meter showing
   fixed band/current marker and visible `+`, `−`, or `0` channel badges.
-- [ ] Add a quiet right-edge queue rail: 52 px NOW token and two 36 px NEXT
+- [x] Add a quiet right-edge queue rail: 52 px NOW token and two 36 px NEXT
   tokens, kind silhouette plus Red/Green pattern/letter. Show in Briefing/Aim/
   Map; hide in Shot Follow and terminal; omit empty tail slots.
-- [ ] Add first-introduction Briefing copy, Apex marker, disabled Finish truth,
+- [x] Add first-introduction Briefing copy, Apex marker, disabled Finish truth,
   Same Deal/New Deal result actions, and Clear/Failed result metrics.
-- [ ] Create shared non-symbolic Standard/Burst/Split silhouettes for projectiles
+- [x] Create shared non-symbolic Standard/Burst/Split silhouettes for projectiles
   and queue icons. Preserve center-world visibility and existing Quiet Context.
-- [ ] Update Stage Select to identify the six prototype stages and their
+- [x] Update Stage Select to identify the six prototype stages and their
   unordered allowed kinds/rule without exposing deals. Retain truthful legacy
   glyph descriptions for stages 7–30 until the later migration.
-- [ ] Add English/Korean localization and focused component/state tests.
-- [ ] Exercise 16 seeds per prototype stage through structural/runtime smoke;
+- [x] Add English/Korean localization and focused component/state tests.
+- [x] Exercise 16 seeds per prototype stage through structural/runtime smoke;
   record actual playable witness attempts where achieved, but do not claim the
   later 96-deal clearability/human-rate gate.
-- [ ] Capture and personally inspect running-game Briefing, Aim, Map, Shot
+- [x] Capture and personally inspect running-game Briefing, Aim, Map, Shot
   Follow, late queue, Clear, Failed, and Stage Select in English/Korean at
   1280×720, 1600×900, and 1920×1080. Correct clipping, overlap, color-only
   meaning, stale state, and center obstruction.
@@ -312,12 +312,12 @@ sizes and both languages remain readable; stages 7–30 remain truthfully usable
 
 ### M5 — Final audit, compact performance, production, and publication
 
-- [ ] After feature completeness, run `codebase-quality-auditor`; make only
+- [x] After feature completeness, run `codebase-quality-auditor`; make only
   small task-owned corrections for competing owners, catch-alls, contract drift,
   reachable failures, and missing validation.
-- [ ] Run the broad functional suite once. Stop at the first shared material
+- [x] Run the broad functional suite once. Stop at the first shared material
   failure, repair, and rerun only the affected gate before one final suite.
-- [ ] Only now run one compact performance scenario: six representative roots
+- [x] Only now run one compact performance scenario: six representative roots
   including two Apex Split families on a painted prototype stage, record physics
   frame health, resident peak (must be `<= 21`), paint queue drain, partial
   upload cadence, restart completion (`< 1 s` target), and no unbounded growth.
@@ -326,7 +326,7 @@ sizes and both languages remain readable; stages 7–30 remain truthfully usable
   single-thread mode, and launch both builds.
 - [ ] Serve the Web build through the repo's protected codex-lane workflow,
   browser-smoke startup/input/canvas/fullscreen/save/audio, and retain captures.
-- [ ] Update implemented truth, design/technical specs, and test checklist with
+- [x] Update implemented truth, design/technical specs, and test checklist with
   exact scope, evidence, legacy-stage boundary, and deferred rollout.
 - [ ] Commit coherent task-owned changes with explanatory bodies; push the
   branch. Use the existing release workflow or an intentional fast-forward of
@@ -363,33 +363,33 @@ multiple adjacent facts. Do not create placeholder tests or a second simulator.
 
 ### Product and rule truth
 
-- [ ] Prototype stages use exactly three kinds, two channels, current plus next
+- [x] Prototype stages use exactly three kinds, two channels, current plus next
   two visible tokens, and no hidden-tail leak.
-- [ ] Successful root admission consumes one shot/token; every rejection and
+- [x] Successful root admission consumes one shot/token; every rejection and
   derived child consumes neither. Same Deal is exact; New Deal is deterministic.
-- [ ] Latest valid writer changes owner even under stronger existing paint;
+- [x] Latest valid writer changes owner even under stronger existing paint;
   strength never decreases; Red/Green never double-count target area.
-- [ ] Five signed rules, inclusive band edges, center-distance stars, Finish
+- [x] Five signed rules, inclusive band edges, center-distance stars, Finish
   readiness, exhaustion, and timeout behave exactly as locked above.
-- [ ] Burst uses ordinary impact plus one 14-unit radial stamp and disappears.
+- [x] Burst uses ordinary impact plus one 14-unit radial stamp and disappears.
   Split occurs only at first pre-contact apex and makes three Standard children.
-- [ ] Player and public agent share action authority and visible information.
+- [x] Player and public agent share action authority and visible information.
 
 ### Compatibility and presentation
 
-- [ ] Stages 1–6 use the specified profiles; stages 7–30 retain functional and
+- [x] Stages 1–6 use the specified profiles; stages 7–30 retain functional and
   truthfully presented v10 scalar/glyph behavior.
-- [ ] Save v6 preserves settings/unlocks, archives legacy bests, and never
+- [x] Save v6 preserves settings/unlocks, archives legacy bests, and never
   upgrades an unverifiable scalar best into a target-band clear.
-- [ ] English/Korean runtime captures at all three sizes show readable band,
+- [x] English/Korean runtime captures at all three sizes show readable band,
   score, signs, current/next tokens, shots, Finish state, and results without
   clipping or reliance on color alone.
-- [ ] Active docs clearly distinguish implemented prototype, legacy stages, and
+- [x] Active docs clearly distinguish implemented prototype, legacy stages, and
   deferred 30-stage migration.
 
 ### Delivery and bounded performance
 
-- [ ] Targeted implementation checks, one final suite, and one post-feature
+- [x] Targeted implementation checks, one final suite, and one post-feature
   compact performance scenario pass with saved evidence.
 - [ ] Windows and single-thread Web production exports launch from the committed
   tree; Web validator passes official itch limits and exact-case references.
@@ -454,10 +454,16 @@ test, or tuning iteration is not by itself a stop condition.
 - [x] Confirmed clean baseline `155c401` and passing `scripts/verify.ps1`.
 - [x] Corrected lifecycle, scope, deterministic-randomness, evidence, testing,
   and remote-publication gaps in this active execution contract.
-- [ ] M1 — Authority, data, and score contracts.
-- [ ] M2 — Authoritative paint and intrinsic projectiles.
-- [ ] M3 — Stage rule, retry, persistence, and parity.
-- [ ] M4 — Player flow and six-stage calibration.
+- [x] M1 — Authority, data, and score contracts. Focused score/band/deal tests,
+  96 structural prototype seeds, and stabilized verification pass.
+- [x] M2 — Authoritative paint and intrinsic projectiles. Owner/order, Burst,
+  Split, family-capacity, and stabilized verification checks pass.
+- [x] M3 — Stage rule, retry, persistence, and parity. Six profiles and their
+  legacy boundary, queue/retry/finish flow, save v6, observation parity,
+  prediction identity, and catalog materialization pass focused runtime checks.
+- [x] M4 — Player flow and six-stage calibration. Forty-eight raw runtime frames
+  plus six contact sheets cover all required states, sizes, and locales; all six
+  default deals have bounded physical clear witnesses.
 - [ ] M5 — Audit, compact performance, production, push, and remote verification.
 
 ## Decision log
@@ -471,12 +477,15 @@ test, or tuning iteration is not by itself a stop condition.
   not delete glyph owners or misrepresent those stages.
 - 2026-08-18: Use a versioned integer PRNG and structural seed fixtures now;
   physical validated-seed banks require the deferred offline validator.
+- 2026-08-18: Chrome enterprise policy blocks approved automation against
+  `127.0.0.1`. Static Web validation remains local; interactive Web checks move
+  to the published itch origin rather than bypassing browser policy.
 
 ## Next Steps
 
-Start M1 by recording the approved source-brief revision, then implement and
-verify the pure typed contracts before any runtime owner changes. Keep this
-section synchronized with `Progress` at each milestone checkpoint.
+Features, audit, the broad functional gate, compact performance, documentation,
+and local production exports are complete. Commit and push the task-owned tree,
+then verify the workflow, matched itch channels, and remote browser runtime.
 
 ## Handoff rule
 

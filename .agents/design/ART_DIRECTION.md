@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-18
 canonical_for: Paint Mountain world art style, visual composition, and gameplay-object legibility
 scope: procedural mountain, open environment, camera, lighting, materials, cannon, paint, mechanisms, dressing, and effects
 source: ../../docs/source-brief.md
@@ -15,6 +15,7 @@ related:
   - ../execplans/2026-08-06-wind-driven-coverage-loop.md
   - ../execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../execplans/2026-08-07-cannon-shot-observation.md
+  - ../execplans/2026-08-18-three-ball-target-band-prototype.md
 ---
 
 # Paint Mountain Art Direction
@@ -104,11 +105,12 @@ owned by `UIUX_GUIDELINES.md`.
   score eligibility without reading as a second paint state or an outline.
 - Support Shell faces: visibly separated in value from the Playable Terrain Surface so the
   mass reads as thick.
-- Paint: saturated glossy blue, surface-bound, readable at distance, and not
-  dependent on emission.
+- Paint: legacy stages use saturated glossy blue. Prototype stages use saturated
+  glossy Red/Green ownership colors. Both remain surface-bound, readable at
+  distance, and independent of emission.
 - Cannon: dark navy, off-white, and blue; avoid a featureless pure-black
   silhouette.
-- Burst, Splitter, and Uphill Rebound: amber, violet, and coral respectively,
+- Legacy Burst, Splitter, and Uphill Rebound: amber, violet, and coral respectively,
   expressed as flat circular terrain glyphs with icons and direction cues that
   remain distinct without color.
 - Reserve saturated color for paint, trajectory, interactive mechanisms, and
@@ -132,6 +134,9 @@ owned by `UIUX_GUIDELINES.md`.
   agreement.
 - Burst uses a radial explosion icon, Splitter three readable arrow spokes, and
   Uphill Rebound one explicit uphill arrow. Color is supplementary.
+- Prototype ball identity is intrinsic: Standard is round, Impact Burst has a
+  spiked silhouette, and Apex Split has three lobes. Queue icons use the same
+  shapes plus an R/G letter; color remains supplementary.
 - Glyphs must be large enough to identify from the aiming and inspection cameras.
   The shared generator searches the actual Playable Terrain Surface, keeps each
   full circle inside the terrain with boundary and inter-glyph spacing, and may
@@ -146,10 +151,11 @@ owned by `UIUX_GUIDELINES.md`.
   face the camera enough for the complete icon to read.
 - The predicted trajectory uses blue depth-tested marks and ends at the first
   real collision with a readable impact ring.
-- A ball's valid Playable Terrain Surface contact produces a continuous blue
-  route over its real traversal, including outside the Target Area. Only Target
-  Area overlap affects coverage. The Support Shell, bottom, apron, decorations,
-  mechanisms, and airborne travel remain unpainted.
+- A ball's valid Playable Terrain Surface contact produces a continuous
+  channel-colored route over its real traversal, including outside the Target
+  Area. Legacy paint remains blue. Only Target Area overlap affects the active
+  rule. The Support Shell, bottom, apron, decorations, mechanisms, and airborne
+  travel remain unpainted.
 - Shot Follow keeps the newly launched root paintball readable through flight,
   then holds its first terrain contact for about 0.4 wall seconds at the fixed
   two-times active pace so impact, paint, and terrain response form one legible

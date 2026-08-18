@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-18
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -19,9 +19,19 @@ related:
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
+  - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
 ---
 
 # Paint Mountain Design Specification
+
+## Six-stage target-band prototype (2026-08-18)
+
+Stages 01–06 are the active Standard/Impact Burst/Apex Split Red/Green
+prototype. Latest threshold-valid paint owns a texel while strength remains
+monotonic, and the signed Paint Score must finish inside an inclusive band.
+Stages 07–30 remain the v10 scalar/glyph legacy path. Catalog v11, all-stage
+migration, and human feasibility remain deferred; 16 structural seeds per
+prototype stage (96 total) are not human-play evidence.
 
 ## Purpose
 

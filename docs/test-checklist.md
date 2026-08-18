@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-18
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -46,6 +46,7 @@ related:
   - reports/environment-grounding-2026-08-11/index.html
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
+  - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
 ---
 
 # Test Checklist
@@ -60,6 +61,31 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Three-ball target-band prototype status
+
+- [x] Each Stage 01–06 default deal has a bounded physical clear witness.
+- [x] Sixteen deals per prototype stage (96 total) pass structural constraints;
+  this is not catalog-wide physical-clear or human-play evidence.
+- [ ] Catalog-wide physical guarantees and human-study feasibility are deferred.
+- [x] Stages 07–30 retain legacy v10 scalar/glyph behavior.
+- [x] Focused checks, the complete ordered suite, and `scripts/verify.ps1` pass
+  after the feature set is frozen.
+- [x] The single compact Stage 06 workload launches six representative roots
+  with two Apex families, peaks at 8/21 residents, drains every paint queue,
+  sustains a 16.48 ms average fixed-physics interval, and completes visible
+  restart in 38.63 ms without retained-object growth.
+- [x] Fresh Windows and single-thread Web exports pass; Web static validation
+  confirms 12 exact-case artifacts and a 17,893,511-byte gzip estimate below
+  the 18,996,696-byte allowance.
+- [x] Three separate Windows-release captures show English Stage Select,
+  Korean Stage 06 Aim, and the three-child Apex silhouette without clipping,
+  overlap, missing localization, or stale state.
+- [ ] Chrome enterprise policy blocks local `127.0.0.1` automation. Complete
+  startup/input/canvas/fullscreen/save/audio/console checks on the deployed itch
+  origin; do not treat static validation as interactive proof.
+
+Evidence: `../.agents/evidence/three-ball-target-band-prototype-2026-08-18/README.md`.
 
 ## Active stage-selection readiness and deployment gate (2026-08-11)
 

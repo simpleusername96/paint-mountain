@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-18
 canonical_for: Agent-facing entry and map for approved Paint Mountain design direction, preserved experience contracts, and production design owners
 scope: visual world and player-facing surfaces in this repository
 source: ../../docs/source-brief.md
@@ -15,6 +15,7 @@ related:
   - ../Documentation.md
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-07-cannon-shot-observation.md
+  - ../execplans/2026-08-18-three-ball-target-band-prototype.md
 ---
 
 # Paint Mountain Design Context
@@ -107,7 +108,7 @@ remains non-canonical and must not silently alter this context.
 | Stage shape and data | `src/stage_generation/`, `resources/stage_generation/*.tres`, `resources/stages/*.tres` | Generators own construction policy; typed Resources own route/profile constraints plus per-stage paint, camera, and loadout data. |
 | Terrain and world | `src/terrain/`, `scenes/gameplay/gameplay.tscn`, `src/gameplay/gameplay_scene.gd`, current `scenes/gameplay/backstop_environment.tscn` retirement source | Terrain owners change playable mass; the gameplay scene owns the open environment, light, lens, and composition nodes. The active plan removes rear/side containment walls while keeping visible geometry, collision, queries, paint identity, and open escape rules aligned. |
 | Camera | `src/camera/camera_director.gd`, `resources/stages/*.tres`, `scenes/gameplay/gameplay.tscn` | Stage Resources own bookmarks; `CameraDirector` owns mode, safety, occlusion, orbit, and follow policy; the scene owns active lens settings. |
-| Paint presentation | `src/paint/paint_system.gd`, `src/paint/terrain_paint.gdshader`, `resources/paint/default_paint_surface_tuning.tres`, `resources/stages/*.tres` | `PaintSystem` remains the only mutable mask and coverage owner; shader, tuning Resource, and stage color are its configured visual view. |
+| Paint presentation | `src/paint/paint_system.gd`, `src/paint/terrain_paint.gdshader`, `resources/paint/default_paint_surface_tuning.tres`, `resources/stages/*.tres` | `PaintSystem` remains the only mutable strength/owner and coverage authority; shader, tuning Resource, and stage channel palette are its configured visual view. |
 | Cannon and trajectory | `scenes/gameplay/cannon.tscn`, `src/cannon/`, `resources/projectiles/` | Scene owns cannon form, Resources own tuning, and cannon/trajectory owners calculate aim and first impact; HUD only displays and requests. |
 | Mechanisms and effects | `scenes/mechanisms/`, `src/mechanisms/`, `resources/mechanisms/*.tres`, `src/effects/presentation_effects.gd` | Prefabs own collider-matched form, typed Resources own kind/copy/tuning, and effects explain events without deciding game state. |
 

@@ -1,0 +1,79 @@
+{
+	"acceptance": {
+		"failures": [],
+		"passed": true,
+		"interpretation": "The measured run passes sustained 60 Hz physics throughput. Headless callback p95 is retained as diagnostic host-scheduling jitter, not treated as rendered-frame evidence."
+	},
+	"engine": {
+		"build": "official",
+		"hash": "a13da4feb8d8aefc283c3763d33a2f170a18d541",
+		"hex": 263937,
+		"major": 4,
+		"minor": 7,
+		"patch": 1,
+		"status": "stable",
+		"string": "4.7.1-stable (official)",
+		"timestamp": 0
+	},
+	"lifecycle": {
+		"memory_static_after_restart": 68651950,
+		"memory_static_before": 66938822,
+		"memory_static_delta": 1713128,
+		"object_allowance": 64,
+		"object_delta": -1,
+		"objects_after_restart": 2745,
+		"objects_before": 2746,
+		"resident_limit": 21,
+		"resident_peak": 8,
+		"restart_call_ms": 4.446,
+		"restart_signal_ms": 2.485,
+		"visual_restart_ms": 38.632
+	},
+	"limitations": [
+		"One deterministic native headless workload measures physics-frame delivery, not rendered GPU presentation.",
+		"Headless fixed ticks may be coalesced by host scheduling, so p95 callback interval is diagnostic while sustained average throughput is the gate.",
+		"Godot Compatibility used the full-image upload fallback; the ten-hertz batched cadence is the measured guardrail.",
+		"The post-restart object bound is a compact leak sentinel, not a multi-hour soak test."
+	],
+	"paint": {
+		"command_drains": 31,
+		"commands": 126,
+		"coverage_percent": 8.97260030955529,
+		"partial_upload_api_available": false,
+		"pending_commands_after_flush": 0,
+		"pending_intents_after_flush": 0,
+		"texture_upload_batches": 11,
+		"upload_path": "full_image_fallback",
+		"written_pixels": 10709
+	},
+	"physics_frame_intervals_ms": {
+		"average": 16.480230125523,
+		"average_budget": 20.0,
+		"engine_monitor_aggregate_average": 68.5710794979081,
+		"engine_monitor_note": "TIME_PHYSICS_PROCESS is a periodically refreshed aggregate and is not used as a per-tick gate.",
+		"maximum": 61.274,
+		"p95": 30.551,
+		"p95_is_release_gate": false,
+		"p95_reference": 33.3333333333333,
+		"sample_count": 239
+	},
+	"physics_ticks_per_second": 60,
+	"renderer": "gl_compatibility",
+	"scenario": {
+		"apex_splits": 2,
+		"elapsed_ms": 3943.417,
+		"generation_one_children": 6,
+		"impact_bursts": 2,
+		"physics_ticks": 239,
+		"root_count": 6,
+		"root_mix": [
+			"apex_split_red",
+			"apex_split_green",
+			"impact_burst_red",
+			"impact_burst_green",
+			"standard_red",
+			"standard_green"
+		],
+		"stage_id": "stage_06"
+	}
+}

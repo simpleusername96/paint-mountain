@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-09
+last_reviewed: 2026-08-18
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, diagnostics, and verification
 source: source-brief.md
@@ -19,6 +19,7 @@ related:
   - ../.agents/execplans/2026-08-08-projectile-scale-balance-and-aim-performance.md
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
+  - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
 ---
 
 # Technical Architecture
@@ -27,6 +28,14 @@ related:
 
 Define stable responsibility boundaries for the Godot vertical slice so data,
 presentation, game rules, diagnostics, and future AI control remain separable.
+
+## Prototype rule boundary
+
+`PaintSystem` owns one strength/latest-owner representation and immutable
+Red/Green/Total physical-area snapshots. `StageController` alone owns deal,
+target-band, retry, and terminal rules for Stages 01–06. Stages 07–30 retain
+legacy v10 scalar/glyph behavior; 96 structural seed cases are not feasibility
+or human-study proof.
 
 ## Scope
 
