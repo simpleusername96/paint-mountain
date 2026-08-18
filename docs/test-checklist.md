@@ -81,9 +81,14 @@ capture is pre-resident-activity-removal history.
 - [x] Three separate Windows-release captures show English Stage Select,
   Korean Stage 06 Aim, and the three-child Apex silhouette without clipping,
   overlap, missing localization, or stale state.
-- [ ] Chrome enterprise policy blocks local `127.0.0.1` automation. Complete
-  startup/input/canvas/fullscreen/save/audio/console checks on the deployed itch
-  origin; do not treat static validation as interactive proof.
+- [x] GitHub Actions run `32135545451` passed verification, the complete suite,
+  Windows/Web exports, GitHub Pages deployment, and Butler publication from
+  source commit `2edb4c4`. Both `html5` and `windows-alpha` used version
+  `alpha.9+2edb4c4`.
+- [ ] Chrome enterprise policy blocks local `127.0.0.1`, the itch project, and
+  GitHub Pages automation. Manually confirm itch project kind/playability plus
+  startup, input, canvas resize/fullscreen, save, audio, and console/network
+  health; static validation and successful upload do not prove interaction.
 
 Evidence: `../.agents/evidence/three-ball-target-band-prototype-2026-08-18/README.md`.
 

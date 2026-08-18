@@ -321,19 +321,20 @@ sizes and both languages remain readable; stages 7–30 remain truthfully usable
   including two Apex Split families on a painted prototype stage, record physics
   frame health, resident peak (must be `<= 21`), paint queue drain, partial
   upload cadence, restart completion (`< 1 s` target), and no unbounded growth.
-- [ ] Build production-style Windows and Web exports with Godot 4.7.1. Validate
+- [x] Build production-style Windows and Web exports with Godot 4.7.1. Validate
   Web exact-case references, required artifacts, itch file/path/size limits,
-  single-thread mode, and launch both builds.
+  single-thread mode, and launch the Windows build.
 - [ ] Serve the Web build through the repo's protected codex-lane workflow,
   browser-smoke startup/input/canvas/fullscreen/save/audio, and retain captures.
 - [x] Update implemented truth, design/technical specs, and test checklist with
   exact scope, evidence, legacy-stage boundary, and deferred rollout.
-- [ ] Commit coherent task-owned changes with explanatory bodies; push the
+- [x] Commit coherent task-owned changes with explanatory bodies; push the
   branch. Use the existing release workflow or an intentional fast-forward of
   `master` only after all local gates pass.
-- [ ] Confirm the GitHub workflow and Butler pushes use the same commit-derived
-  version for `html5` and `windows-alpha`. Verify itch project kind/HTML5 play
-  flag without changing visibility, then remotely smoke the iframe/CDN build.
+- [x] Confirm the GitHub workflow and Butler pushes use the same commit-derived
+  version for `html5` and `windows-alpha`.
+- [ ] Verify itch project kind/HTML5 play flag without changing visibility,
+  then remotely smoke the iframe/CDN build.
 
 Gate: local and remote artifacts run the same committed rules. A missing secret,
 account permission, or itch setting is reported as an external blocker rather
@@ -391,10 +392,12 @@ multiple adjacent facts. Do not create placeholder tests or a second simulator.
 
 - [x] Targeted implementation checks, one final suite, and one post-feature
   compact performance scenario pass with saved evidence.
-- [ ] Windows and single-thread Web production exports launch from the committed
-  tree; Web validator passes official itch limits and exact-case references.
-- [ ] Pushed commit is visible remotely; both itch channels report the same
-  version; remote HTML iframe starts, accepts input, scales, saves, and has no
+- [x] Windows production export launches and the single-thread Web production
+  export validates from the committed tree against official itch limits and
+  exact-case references.
+- [x] Pushed runtime commit is visible remotely and both itch channels report
+  version `alpha.9+2edb4c4`.
+- [ ] Remote HTML iframe starts, accepts input, scales, saves, and has no
   material console/network/audio error.
 
 ## Validation commands and cost policy
@@ -480,12 +483,23 @@ test, or tuning iteration is not by itself a stop condition.
 - 2026-08-18: Chrome enterprise policy blocks approved automation against
   `127.0.0.1`. Static Web validation remains local; interactive Web checks move
   to the published itch origin rather than bypassing browser policy.
+- 2026-08-18: Commits `8e819dc`, `ebe18b9`, and `2edb4c4` were pushed to the
+  task branch and fast-forwarded to `master`. GitHub Actions run `32135545451`
+  passed verification, the complete suite, Windows/Web exports, GitHub Pages,
+  and Butler publication. Both itch channels used `alpha.9+2edb4c4`.
+- 2026-08-18: The managed Chrome policy also blocks the itch project and GitHub
+  Pages origins. Publication is proven by the successful workflow and Butler
+  output, but project-kind/playable settings and iframe interaction remain an
+  external manual browser gate; no alternate browser path will bypass policy.
 
 ## Next Steps
 
 Features, audit, the broad functional gate, compact performance, documentation,
-and local production exports are complete. Commit and push the task-owned tree,
-then verify the workflow, matched itch channels, and remote browser runtime.
+local production exports, push, and matched-channel publication are complete.
+Manually open the published itch project and verify project kind/playability,
+startup, input, resize/fullscreen, save, audio, and console/network health. Then
+record that evidence and close M5; browser policy prevents this agent from
+performing or honestly claiming that final interaction.
 
 ## Handoff rule
 

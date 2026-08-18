@@ -106,3 +106,34 @@ queue state, or special-ball silhouette defect. Chrome's enterprise policy
 blocked automated navigation to `127.0.0.1`, so no local-browser Web interaction
 is claimed. The approved fallback is an interactive smoke of the published itch
 build; static release validation remains the local Web gate.
+
+## Remote publication evidence
+
+Task commits `8e819dc`, `ebe18b9`, and `2edb4c4` were pushed to
+`codex/three-ball-target-band-prototype` and fast-forwarded to `master`. GitHub
+Actions run `32135545451` completed successfully in about 3 minutes 29 seconds.
+The run repeated import/startup verification, the complete ordered suite,
+Windows and Web exports, Web static validation, Butler publication, and GitHub
+Pages deployment.
+
+Both Butler targets used the same commit-derived version
+`alpha.9+2edb4c4`:
+
+- `itchioprofile1351321/paint-mountain:html5` (48.40 MiB upload; prior build
+  `1893371`; 1.55 MiB patch);
+- `itchioprofile1351321/paint-mountain:windows-alpha` (115.32 MiB upload; prior
+  build `1893372`; 1.36 MiB patch).
+
+The CI-produced artifact hashes were
+`D0A11245646B38FEFA406611F26706F5161363FAAB4CB68535E7D03606298D38`
+for Windows and
+`7594074F4AEE82BF53F96398549DC9C4C915BB4715355DE0CA34C8FBC6156BF5`
+for Web. The Web artifact was 50,753,295 bytes after build metadata was added.
+
+The managed Chrome policy blocked navigation to the deployed itch project and
+the GitHub Pages origin, as it had blocked localhost. In accordance with the
+browser-control policy, no alternate browser or raw protocol path was used.
+Therefore the successful upload and static artifact checks prove publication,
+but do not prove account-side HTML-project/playable settings or interactive
+iframe behavior. Startup, input, resize/fullscreen, save, audio, and console/
+network health remain one explicit manual browser gate.
