@@ -29,6 +29,7 @@ static func materialize_stage(source: StageData, stage_number: int) -> StageData
 	# depth expands in both directions instead of growing toward the cannon.
 	stage.terrain_center = Vector3(0.0, -2.0, -130.0)
 	stage.mechanism_loadout = _materialize_mechanisms(source.mechanism_loadout, stage_number)
+	_materialize_prototype_rule(stage, stage_number)
 	if stage.mechanism_loadout.size() != StageProgressionData.mechanism_count_for(stage_number):
 		return null
 	stage.generation_profile = _materialize_profile(
@@ -44,6 +45,51 @@ static func materialize_stage(source: StageData, stage_number: int) -> StageData
 			or not stage.generation_profile.is_valid():
 		return null
 	return stage
+
+
+static func _materialize_prototype_rule(stage: StageData, stage_number: int) -> void:
+	stage.rule_kind = StageData.RuleKind.LEGACY_COVERAGE
+	stage.color_score_rule = null
+	stage.target_band = null
+	stage.ball_deal_profile = null
+	stage.default_deal_seed = 1
+	if stage_number < 1 or stage_number > 6:
+		return
+	stage.rule_kind = StageData.RuleKind.TARGET_BAND
+	var rule_patterns := [
+		ColorScoreRuleData.Pattern.BOTH_ADD,
+		ColorScoreRuleData.Pattern.BOTH_ADD,
+		ColorScoreRuleData.Pattern.BOTH_ADD,
+		ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT,
+		ColorScoreRuleData.Pattern.RED_ADD_GREEN_SUBTRACT,
+		ColorScoreRuleData.Pattern.GREEN_ADD_RED_NEUTRAL,
+	]
+	var shot_counts := [4, 5, 5, 6, 6, 6]
+	var target_ranges := [
+		Vector2(7.0, 11.0),
+		Vector2(9.0, 13.0),
+		Vector2(10.0, 14.0),
+		Vector2(6.0, 10.0),
+		Vector2(7.0, 11.0),
+		Vector2(8.0, 12.0),
+	]
+	var allowed_kinds: Array[Array] = [
+		[BallKind.Value.STANDARD],
+		[BallKind.Value.STANDARD, BallKind.Value.IMPACT_BURST],
+		[BallKind.Value.STANDARD, BallKind.Value.APEX_SPLIT],
+		[BallKind.Value.STANDARD, BallKind.Value.IMPACT_BURST, BallKind.Value.APEX_SPLIT],
+		[BallKind.Value.STANDARD, BallKind.Value.IMPACT_BURST, BallKind.Value.APEX_SPLIT],
+		[BallKind.Value.STANDARD, BallKind.Value.IMPACT_BURST, BallKind.Value.APEX_SPLIT],
+	]
+	var index := stage_number - 1
+	stage.maximum_shots = shot_counts[index]
+	stage.color_score_rule = ColorScoreRuleData.from_pattern(rule_patterns[index])
+	stage.target_band = TargetBandData.new()
+	stage.target_band.target_min = target_ranges[index].x
+	stage.target_band.target_max = target_ranges[index].y
+	stage.ball_deal_profile = BallDealProfile.new()
+	stage.ball_deal_profile.allowed_kinds.assign(allowed_kinds[index])
+	stage.default_deal_seed = 1000 + stage_number
 
 
 static func _materialize_profile(

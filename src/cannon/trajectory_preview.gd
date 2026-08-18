@@ -12,8 +12,10 @@ var _dot_instances: MultiMeshInstance3D
 var _dot_multimesh: MultiMesh
 var _visible_sample_count := 0
 var _impact_marker: MeshInstance3D
+var _apex_marker: MeshInstance3D
 var _exit_marker: Node3D
 var _pending := false
+var _ball_kind: int = BallKind.Value.STANDARD
 
 
 func _ready() -> void:
@@ -32,6 +34,8 @@ func _process(_delta: float) -> void:
 		if active_camera != null:
 			_exit_marker.look_at(active_camera.global_position, Vector3.UP, true)
 		_set_marker_scale(_exit_marker, _prediction.endpoint)
+	if _apex_marker.visible:
+		_set_marker_scale(_apex_marker, _apex_marker.global_position)
 
 
 func configure(cannon: CannonController) -> void:
@@ -59,6 +63,11 @@ func set_prediction_status(status: StringName) -> void:
 	_update_process_enabled()
 
 
+func set_ball_kind(kind: int) -> void:
+	_ball_kind = kind if BallKind.is_valid(kind) else BallKind.Value.STANDARD
+	refresh()
+
+
 func visible_sample_count() -> int:
 	return _visible_sample_count
 
@@ -82,6 +91,10 @@ func refresh() -> void:
 			if has_first_collision else Vector3.ZERO
 	_impact_marker.visible = has_first_collision
 	_exit_marker.visible = _prediction != null and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
+	_apex_marker.visible = not _pending and _ball_kind == BallKind.Value.APEX_SPLIT \
+			and _prediction != null and _prediction.sampled_points.size() > 1
+	if _apex_marker.visible:
+		_apex_marker.global_position = _apex_position(_prediction.sampled_points)
 	if _prediction == null:
 		_apply_pending_presentation()
 		_update_process_enabled()
@@ -164,6 +177,18 @@ func _build_visuals() -> void:
 	_impact_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_impact_marker.visible = false
 	add_child(_impact_marker)
+	var apex_mesh := SphereMesh.new()
+	apex_mesh.radius = 0.46
+	apex_mesh.height = 0.92
+	apex_mesh.radial_segments = 8
+	apex_mesh.rings = 4
+	apex_mesh.material = _unshaded_material(Color(0.96, 0.78, 0.20, 0.95))
+	_apex_marker = MeshInstance3D.new()
+	_apex_marker.name = "ApexSplitMarker"
+	_apex_marker.mesh = apex_mesh
+	_apex_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_apex_marker.visible = false
+	add_child(_apex_marker)
 	_exit_marker = Node3D.new()
 	_exit_marker.name = "BoundsExitMarker"
 	_exit_marker.visible = false
@@ -186,6 +211,8 @@ func _apply_pending_presentation() -> void:
 	# A prior arc can remain as subdued context, but an endpoint is a promise.
 	# Hide stale collision and bounds markers until the current context publishes.
 	_impact_marker.visible = not _pending and has_first_collision
+	_apex_marker.visible = not _pending and _ball_kind == BallKind.Value.APEX_SPLIT \
+			and _prediction != null and _prediction.sampled_points.size() > 1
 	_exit_marker.visible = not _pending and _prediction != null \
 			and _prediction.kind == TrajectoryPrediction.Kind.BOUNDS_EXIT
 
@@ -214,8 +241,16 @@ func _update_dot_bounds(points: PackedVector3Array) -> void:
 func _update_process_enabled() -> void:
 	set_process(
 		is_visible_in_tree() and _prediction != null \
-				and (_impact_marker.visible or _exit_marker.visible)
+				and (_impact_marker.visible or _exit_marker.visible or _apex_marker.visible)
 	)
+
+
+func _apex_position(points: PackedVector3Array) -> Vector3:
+	var apex := points[0]
+	for point in points:
+		if point.y > apex.y:
+			apex = point
+	return apex
 
 
 func _unshaded_material(color: Color) -> StandardMaterial3D:

@@ -195,6 +195,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	match event.physical_keycode:
 		KEY_ESCAPE:
 			_stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN)
+		KEY_R:
+			if event.shift_pressed and stage_data.uses_target_band():
+				_stage_controller.restart_new_deal(false, StageController.ActionOrigin.HUMAN)
+			else:
+				_stage_controller.restart(false, StageController.ActionOrigin.HUMAN)
 
 
 func set_pause_overlay_suspended(suspended: bool) -> void:
@@ -250,6 +255,9 @@ func _build_stage_world() -> bool:
 		PAINT_SURFACE_TUNING,
 		_prepared_artifact.paint_bootstrap if _prepared_artifact != null else null
 	)
+	if stage_data.uses_target_band():
+		paint_material.set_shader_parameter(&"red_paint_color", stage_data.red_paint_color)
+		paint_material.set_shader_parameter(&"green_paint_color", stage_data.green_paint_color)
 	var top_body := _terrain_surface.get_node("TerrainTopBody") as StaticBody3D
 	_paint_system.configure_top_surface_identity(
 		top_body.get_rid(),
@@ -333,9 +341,13 @@ func _connect_systems() -> void:
 	# shots, and terminal state). Do not let the cannon's partial
 	# aim-validity signal overwrite that authoritative HUD decision.
 	_stage_controller.fire_readiness_changed.connect(_hud.set_fire_readiness)
+	_stage_controller.deal_changed.connect(_on_deal_changed)
+	_stage_controller.score_changed.connect(_hud.update_target_score)
+	_stage_controller.finish_readiness_changed.connect(_hud.set_finish_readiness)
 	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
 	_projectile_manager.surface_paint_sweep_ready.connect(_paint_system.queue_surface_paint_sweep)
 	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
+	_projectile_manager.ball_effect_triggered.connect(_on_ball_effect_triggered)
 	_projectile_manager.valid_top_traversed.connect(_on_valid_top_traversed)
 	_projectile_manager.valid_top_exited.connect(_mechanism_resolver.clear_projectile)
 	_projectile_manager.projectile_motion_state_changed.connect(_on_projectile_motion_state_changed)
@@ -362,6 +374,7 @@ func _connect_systems() -> void:
 	_hud.power_step_requested.connect(_aim_input.adjust_power_button)
 	_hud.angle_step_requested.connect(_aim_input.adjust_elevation_button)
 	_hud.restart_requested.connect(func() -> void: _stage_controller.restart(false, StageController.ActionOrigin.HUMAN))
+	_hud.new_deal_requested.connect(func() -> void: _stage_controller.restart_new_deal(false, StageController.ActionOrigin.HUMAN))
 	_hud.pause_requested.connect(func() -> void: _stage_controller.toggle_pause(StageController.ActionOrigin.HUMAN))
 	_hud.settings_requested.connect(func() -> void: _request_navigation(&"settings"))
 	_hud.stage_select_requested.connect(func() -> void: _request_navigation(&"stage_select"))
@@ -412,7 +425,14 @@ func _on_fire_action_accepted(_origin: int) -> void:
 	)
 	var observation := _stage_controller.current_shot_observation()
 	if observation != null:
-		_attempt_recorder.record_fire(observation.shot_id)
+		if stage_data.uses_target_band():
+			_attempt_recorder.record_ball_fire(
+				observation.shot_id,
+				observation.ball_kind,
+				observation.paint_channel
+			)
+		else:
+			_attempt_recorder.record_fire(observation.shot_id)
 
 
 func _on_restart_action_accepted(_origin: int) -> void:
@@ -420,7 +440,9 @@ func _on_restart_action_accepted(_origin: int) -> void:
 	_terrain_aim.reset_for_restart()
 	_attempt_recorder.start_attempt(
 		stage_data,
-		_generated_layout.terrain_seed
+		_generated_layout.terrain_seed,
+		_stage_controller.deal_seed(),
+		_stage_controller.attempt_deal_snapshot()
 	)
 
 
@@ -434,13 +456,25 @@ func _on_stage_clock_changed(_elapsed_ticks: int, _remaining_ticks: int) -> void
 
 func _on_stage_finished(result: Dictionary) -> void:
 	_mechanism_resolver.clear_all()
+	_attempt_recorder.store_final_result(result)
+	if stage_data.uses_target_band():
+		_hud.show_target_band_result_snapshot(result)
+		if bool(result.get("cleared", false)):
+			_presentation_effects.clear_glint(
+				stage_data.terrain_center
+					+ Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0)
+			)
+			_audio_cue(&"clear")
+			var target_game_state := get_node_or_null("/root/GameState")
+			if target_game_state != null:
+				target_game_state.complete_target_band_stage(stage_data.stage_id, result, true)
+		return
 	var final_coverage := float(result.get("coverage", 0.0))
 	var stars := _stars_for_coverage(final_coverage)
 	var game_state := get_node_or_null("/root/GameState")
 	var previous_best := float(game_state.best_for(stage_data.stage_id).get("coverage", 0.0)) \
 			if game_state != null else 0.0
 	_hud.show_coverage_result_snapshot(result, stars, previous_best)
-	_attempt_recorder.store_final_result(result)
 	_presentation_effects.clear_glint(
 		stage_data.terrain_center
 				+ Vector3(0.0, float(_generated_layout.metrics.get("maximum_height", 70.0)) + 5.0, 0.0)
@@ -529,6 +563,9 @@ func _update_prediction_consumers() -> void:
 
 func _spawn_mechanisms() -> void:
 	_mechanisms.clear()
+	_mechanism_resolver.configure(_terrain_surface)
+	if stage_data.uses_target_band():
+		return
 	var placements: Array[MechanismPlacement] = _generated_layout.mechanism_placements
 	for placement in placements:
 		var mechanism_scene: PackedScene
@@ -560,9 +597,23 @@ func _spawn_mechanisms() -> void:
 			mechanism.configure_uphill_tangent(placement.uphill_tangent)
 		mechanism.mechanism_activated.connect(_on_mechanism_activated)
 		_mechanisms.append(mechanism)
-	_mechanism_resolver.configure(_terrain_surface)
 	for mechanism in _mechanisms:
 		_mechanism_resolver.register_glyph(mechanism)
+
+
+func _on_deal_changed(
+		_visible_tokens: Array[Dictionary],
+		_queue_cursor: int,
+		_deal_seed: int
+) -> void:
+	var tokens := _stage_controller.visible_queue_tokens_for_hud()
+	_hud.update_queue(tokens)
+	var current_token: BallToken = tokens[0] if not tokens.is_empty() else null
+	var current_kind := current_token.kind if current_token != null else BallKind.Value.STANDARD
+	_trajectory_preview.set_ball_kind(current_kind)
+	_prediction_scheduler.set_context_discriminator(
+		current_token.stable_key() if current_token != null else &"legacy"
+	)
 
 func _on_mechanism_activated(
 		mechanism: TerrainGlyphMechanism,
@@ -585,6 +636,31 @@ func _on_mechanism_activated(
 			StringName(mechanism.get_meta("anchor_id", mechanism.name)),
 			int(kind)
 		)
+
+
+func _on_ball_effect_triggered(
+		projectile: PaintProjectile,
+		effect_id: StringName,
+		position: Vector3
+) -> void:
+	_stage_controller.record_ball_effect(projectile, effect_id)
+	var attempt := _live_attempt_observation()
+	if attempt != null and is_instance_valid(projectile):
+		attempt.record_ball_effect(
+			projectile.shot_id,
+			projectile.spawn_ordinal,
+			effect_id
+		)
+	_agent_api.notify_event(&"ball_effect_triggered", {
+		"effect_id": String(effect_id),
+		"shot_id": projectile.shot_id if is_instance_valid(projectile) else 0,
+		"spawn_ordinal": projectile.spawn_ordinal if is_instance_valid(projectile) else -1,
+		"channel": projectile.paint_channel if is_instance_valid(projectile) else -1,
+		"position": position,
+	})
+	_presentation_effects.mechanism_burst(position)
+	_audio_cue(&"mechanism")
+	_camera_director.add_impact_shake(0.24)
 
 
 func _set_mechanism_labels_visible(visible: bool) -> void:

@@ -1,7 +1,7 @@
 class_name AttemptObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 
 const EVENT_AIM := "aim"
 const EVENT_FIRE := "fire"
@@ -11,6 +11,7 @@ const EVENT_PROJECTILE_WAKE := "projectile_wake"
 const EVENT_TERRAIN_RECOVERY := "terrain_recovery"
 const EVENT_PROJECTILE_TERMINAL := "projectile_terminal"
 const EVENT_MECHANISM_ACTIVATION := "mechanism_activation"
+const EVENT_BALL_EFFECT := "ball_effect"
 const EVENT_RESULT := "result"
 
 var schema_version: int = SCHEMA_VERSION
@@ -19,6 +20,8 @@ var coverage_metric_version: int = TargetSurfaceCoverage.METRIC_VERSION
 var events: Array[Dictionary] = []
 var shot_observations: Array[Dictionary] = []
 var final_result: Dictionary = {}
+var deal_seed: int = 0
+var full_deal: Array[Dictionary] = []
 var is_sealed: bool = false
 
 var _recording_start_tick: int = 0
@@ -27,7 +30,9 @@ var _next_sequence: int = 0
 
 func configure(
 		requested_stage_id: StringName,
-		recording_start_tick: int = -1
+		recording_start_tick: int = -1,
+		requested_deal_seed: int = 0,
+		requested_full_deal: Array[Dictionary] = []
 ) -> bool:
 	if String(requested_stage_id).is_empty():
 		return false
@@ -36,6 +41,8 @@ func configure(
 	shot_observations.clear()
 	final_result.clear()
 	is_sealed = false
+	deal_seed = requested_deal_seed
+	full_deal = requested_full_deal.duplicate(true)
 	_recording_start_tick = recording_start_tick \
 			if recording_start_tick >= 0 else Engine.get_physics_frames()
 	_next_sequence = 0
@@ -63,6 +70,42 @@ func record_fire(shot_id: int, physics_tick: int = -1) -> bool:
 		"kind": EVENT_FIRE,
 		"shot_id": shot_id,
 	}, physics_tick)
+
+
+func record_ball_fire(
+		shot_id: int,
+		ball_kind: int,
+		paint_channel: int,
+		physics_tick: int = -1
+) -> bool:
+	if shot_id <= 0 or not BallKind.is_valid(ball_kind) \
+			or not PaintChannel.is_valid(paint_channel):
+		return false
+	return _append_event({
+		"kind": EVENT_FIRE,
+		"shot_id": shot_id,
+		"ball_kind": ball_kind,
+		"ball_kind_id": String(BallKind.stable_id(ball_kind)),
+		"paint_channel": paint_channel,
+		"paint_channel_id": String(PaintChannel.stable_id(paint_channel)),
+	}, physics_tick)
+
+
+func record_ball_effect(
+		shot_id: int,
+		spawn_ordinal: int,
+		effect_id: StringName,
+		physics_tick: int = -1
+) -> bool:
+	if String(effect_id).is_empty():
+		return false
+	return _append_projectile_event(
+		EVENT_BALL_EFFECT,
+		shot_id,
+		spawn_ordinal,
+		{"effect_id": String(effect_id)},
+		physics_tick
+	)
 
 
 func record_finish(reason: StringName = &"manual", physics_tick: int = -1) -> bool:
@@ -173,7 +216,8 @@ func seal(
 		paint_mask_checksum: int,
 		coverage: float,
 		elapsed_ticks: int,
-		physics_tick: int = -1
+		physics_tick: int = -1,
+		result_snapshot: Dictionary = {}
 ) -> bool:
 	if is_sealed or String(result_reason).is_empty() \
 			or paint_mask_checksum == 0 or not is_finite(coverage) \
@@ -186,6 +230,14 @@ func seal(
 		"coverage_metric_version": coverage_metric_version,
 		"elapsed_ticks": elapsed_ticks,
 	}
+	for key in [
+		"rule_kind", "cleared", "stars", "score_rule_version", "paint_score",
+		"target_min", "target_max", "distance_to_center", "red_percent",
+		"green_percent", "total_percent", "deal_seed", "queue_cursor",
+		"shots_used", "shots_remaining", "finish_reason",
+	]:
+		if result_snapshot.has(key):
+			result[key] = result_snapshot[key]
 	if not _append_event(
 		{
 			"kind": EVENT_RESULT,
@@ -214,6 +266,8 @@ func to_dictionary() -> Dictionary:
 		"events": events.duplicate(true),
 		"shot_observations": shot_observations.duplicate(true),
 		"final_result": final_result.duplicate(true),
+		"deal_seed": deal_seed,
+		"full_deal": full_deal.duplicate(true),
 		"is_sealed": is_sealed,
 	}
 
@@ -231,6 +285,10 @@ func load_dictionary(data: Dictionary) -> bool:
 	for observation in data.shot_observations:
 		shot_observations.append((observation as Dictionary).duplicate(true))
 	final_result = (data.final_result as Dictionary).duplicate(true)
+	deal_seed = int(data.get("deal_seed", 0))
+	full_deal.clear()
+	for token in data.get("full_deal", []):
+		full_deal.append((token as Dictionary).duplicate(true))
 	is_sealed = bool(data.is_sealed)
 	_next_sequence = events.size()
 	_recording_start_tick = Engine.get_physics_frames()
@@ -245,8 +303,12 @@ static func dictionary_is_valid(data: Dictionary) -> bool:
 			or not data.get("events", []) is Array \
 			or not data.get("shot_observations", []) is Array \
 			or not data.get("final_result", {}) is Dictionary \
+			or not data.get("full_deal", []) is Array \
 			or not data.has("is_sealed"):
 		return false
+	for token in data.get("full_deal", []):
+		if not token is Dictionary:
+			return false
 	var previous_tick := -1
 	var events_value: Array = data.events
 	for index in range(events_value.size()):
@@ -338,7 +400,16 @@ static func _event_is_valid(event: Dictionary) -> bool:
 					and _finite_number(event, "elevation") \
 					and _finite_number(event, "power")
 		EVENT_FIRE:
-			return int(event.get("shot_id", 0)) > 0
+			if int(event.get("shot_id", 0)) <= 0:
+				return false
+			var has_ball_identity := event.has("ball_kind") or event.has("paint_channel")
+			return not has_ball_identity or (
+				BallKind.is_valid(int(event.get("ball_kind", -1)))
+				and PaintChannel.is_valid(int(event.get("paint_channel", -1)))
+			)
+		EVENT_BALL_EFFECT:
+			return _projectile_identity_is_valid(event) \
+					and not String(event.get("effect_id", "")).is_empty()
 		EVENT_FINISH:
 			return not String(event.get("reason", "")).is_empty()
 		EVENT_PROJECTILE_REST:

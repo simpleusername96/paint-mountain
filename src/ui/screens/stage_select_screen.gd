@@ -65,7 +65,14 @@ func refresh() -> void:
 	if stages.is_empty():
 		return
 	if _selected_stage == null:
-		_selected_stage = stages[0]
+		var game_state := get_node_or_null("/root/GameState")
+		_selected_stage = StageCatalog.get_stage(game_state.selected_stage_id) \
+				if game_state != null else null
+		if _selected_stage == null:
+			_selected_stage = stages[0]
+		_page_index = maxi(floori(
+			float(_selected_stage.stage_number - 1) / float(PAGE_SIZE)
+		), 0)
 	_set_page(_page_index)
 	_update_preview()
 
@@ -136,10 +143,8 @@ func _set_page(requested_page: int) -> void:
 		card.present(
 			stage.stage_number,
 			_display_name(stage),
-			tr("stage.target"),
-			stage.target_coverage,
-			tr("stage.best"),
-			float(best.get("coverage", 0.0)),
+			_card_facts(stage, best),
+			tr("stage.prototype") if stage.uses_target_band() else "",
 			stage == _selected_stage
 		)
 	if _page_label != null:
@@ -173,15 +178,29 @@ func _update_preview() -> void:
 	var game_state := get_node_or_null("/root/GameState")
 	var best: Dictionary = game_state.best_for(_selected_stage.stage_id) if game_state != null else {}
 	_preview_title.text = _display_name(_selected_stage)
-	_preview_stats.text = "%s %.1f%% · %s %d\n%s %s · %s %s" % [
-		tr("stage.target"), _selected_stage.target_coverage,
-		tr("stage.shots"), _selected_stage.maximum_shots,
-		tr("hud.time"), _format_duration(_selected_stage.resolved_duration_seconds()),
-		tr("stage.mechanisms"), _mechanism_names(_selected_stage),
-	]
-	_preview_best.text = "%s %.1f%%  %s" % [
-		tr("stage.best"), float(best.get("coverage", 0.0)), _stars_text(int(best.get("stars", 0)))
-	]
+	if _selected_stage.uses_target_band():
+		_preview_stats.text = "%s  %s\n%s  %s\n%s  %s\n%s %d · %s %s" % [
+			tr("stage.target_band"), _band_text(_selected_stage),
+			tr("stage.score_roles"), _score_roles(_selected_stage.color_score_rule),
+			tr("stage.allowed_balls"), _ball_kind_names(_selected_stage),
+			tr("stage.shots"), _selected_stage.maximum_shots,
+			tr("hud.time"), _format_duration(_selected_stage.resolved_duration_seconds()),
+		]
+		_preview_best.text = "%s —" % tr("stage.best") if best.is_empty() else "%s %s  %s" % [
+			tr("stage.best"), _format_number(float(best.get("paint_score", 0.0))),
+			_stars_text(int(best.get("stars", 0))),
+		]
+	else:
+		_preview_stats.text = "%s %.1f%% · %s %d\n%s %s · %s %s" % [
+			tr("stage.target"), _selected_stage.target_coverage,
+			tr("stage.shots"), _selected_stage.maximum_shots,
+			tr("hud.time"), _format_duration(_selected_stage.resolved_duration_seconds()),
+			tr("stage.mechanisms"), _mechanism_names(_selected_stage),
+		]
+		_preview_best.text = "%s %.1f%%  %s" % [
+			tr("stage.best"), float(best.get("coverage", 0.0)),
+			_stars_text(int(best.get("stars", 0))),
+		]
 	_apply_start_preparation_state()
 	_set_page(_page_index)
 
@@ -221,6 +240,61 @@ func _mechanism_names(stage: StageData) -> String:
 				key = "mechanism.splitter"
 		names.append(tr(key))
 	return " + ".join(names)
+
+
+func _card_facts(stage: StageData, best: Dictionary) -> String:
+	if stage.uses_target_band():
+		return "%s %s\n%s" % [
+			tr("stage.target_band"), _band_text(stage), _ball_kind_names(stage),
+		]
+	return "%s %.1f%%  ·  %s %.1f%%" % [
+		tr("stage.target"), stage.target_coverage,
+		tr("stage.best"), float(best.get("coverage", 0.0)),
+	]
+
+
+func _band_text(stage: StageData) -> String:
+	if stage.target_band == null:
+		return "—"
+	return "%s–%s" % [
+		_format_number(stage.target_band.target_min),
+		_format_number(stage.target_band.target_max),
+	]
+
+
+func _score_roles(rule: ColorScoreRuleData) -> String:
+	if rule == null:
+		return "—"
+	return "%s %s · %s %s" % [
+		tr("paint.green"), _weight_text(rule.green_weight),
+		tr("paint.red"), _weight_text(rule.red_weight),
+	]
+
+
+func _ball_kind_names(stage: StageData) -> String:
+	if stage.ball_deal_profile == null:
+		return "—"
+	var names: Array[String] = []
+	for kind in stage.ball_deal_profile.allowed_kinds:
+		var stable_id := BallKind.stable_id(kind)
+		if stable_id.is_empty():
+			continue
+		names.append(tr("ball.%s" % stable_id))
+	return " · ".join(names)
+
+
+func _weight_text(weight: int) -> String:
+	if weight > 0:
+		return "+%d" % weight
+	if weight < 0:
+		return "−%d" % absi(weight)
+	return "0"
+
+
+func _format_number(value: float) -> String:
+	if is_equal_approx(value, roundf(value)):
+		return "%d" % roundi(value)
+	return "%.1f" % value
 
 
 func _stars_text(stars: int) -> String:

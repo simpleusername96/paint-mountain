@@ -51,7 +51,7 @@ func _run_checks() -> void:
 	_assert_true(parsed is Dictionary, "attempt observation must be JSON-safe")
 	_assert_true(
 		AttemptObservation.dictionary_is_valid(parsed),
-		"serialized schema 3 must validate"
+		"serialized current schema must validate"
 	)
 	var schema_2 := serialized.duplicate(true)
 	schema_2["schema_version"] = 2
@@ -76,7 +76,7 @@ func _run_checks() -> void:
 			"finish",
 			"result",
 		],
-		"schema 3 must retain the representative event order"
+		"current schema must retain the representative event order"
 	)
 	_assert_true(
 		int(serialized.final_result.paint_mask_checksum) == 912345 \
@@ -110,6 +110,7 @@ func _run_checks() -> void:
 		int(recorder.export_log().terrain_seed) == 4007,
 		"attempt export must preserve the generated terrain seed"
 	)
+	recorder.free()
 
 	if not _failed:
 		print("Attempt observation checks passed: schema, event order, mechanism/lifecycle facts, and authoritative result.")

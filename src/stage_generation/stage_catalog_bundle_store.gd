@@ -3,7 +3,7 @@ extends RefCounted
 ## Owns immutable catalog-bundle persistence, verification, and pointer promotion.
 
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
-const BUNDLE_FORMAT_VERSION := 5
+const BUNDLE_FORMAT_VERSION := 6
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
 
 static func manifest_stage_descriptor(stage: StageData) -> String:
@@ -29,6 +29,7 @@ static func manifest_stage_descriptor(stage: StageData) -> String:
 	var stage_line := "|".join([
 		str(stage.stage_id), str(stage.stage_number), str(stage.stage_version), str(stage.terrain_seed),
 		str(stage.terrain_center), str(stage.terrain_size), str(stage.target_coverage), str(stage.maximum_shots),
+		_stage_rule_manifest_descriptor(stage),
 		str(profile.profile_id), str(profile.profile_version), str(profile.nominal_peak),
 		str(profile.accepted_height_range), str(profile.ridge_count), str(profile.basin_count),
 		str(profile.pass_count), str(profile.undulation_amplitude), str(profile.route_width),
@@ -38,6 +39,23 @@ static func manifest_stage_descriptor(stage: StageData) -> String:
 		stage_line,
 		"routes=" + "|".join(route_parts),
 		"loadout=" + "|".join(loadout_parts),
+	])
+
+
+static func _stage_rule_manifest_descriptor(stage: StageData) -> String:
+	if stage == null or not stage.uses_target_band():
+		return "legacy_coverage"
+	return ",".join([
+		"target_band",
+		str(stage.color_score_rule.green_weight),
+		str(stage.color_score_rule.red_weight),
+		str(stage.target_band.target_min),
+		str(stage.target_band.target_max),
+		str(stage.ball_deal_profile.profile_version),
+		str(stage.ball_deal_profile.allowed_kinds),
+		str(stage.default_deal_seed),
+		str(stage.red_paint_color),
+		str(stage.green_paint_color),
 	])
 
 

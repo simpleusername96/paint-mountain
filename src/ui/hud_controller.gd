@@ -4,6 +4,7 @@ extends CanvasLayer
 signal begin_aiming_requested
 signal fire_requested
 signal restart_requested
+signal new_deal_requested
 signal pause_requested
 signal settings_requested
 signal stage_select_requested
@@ -18,12 +19,15 @@ signal angle_step_requested(direction: float)
 @onready var _top: TopStatusBar = %TopStatusBar
 @onready var _aim: AimControls = %AimControls
 @onready var _coverage: CoverageMeter = %CoverageMeter
+@onready var _target_band: TargetBandMeter = %TargetBandMeter
+@onready var _queue: QueueRail = %QueueRail
 @onready var _actions: ActionButtons = %ActionButtons
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
 @onready var _return_to_cannon: Button = %ReturnToCannon
 @onready var _result: ResultPanel = %ResultPanel
 @onready var _briefing: Control = %BriefingActions
+@onready var _briefing_rule: PanelContainer = %BriefingRule
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
@@ -31,6 +35,8 @@ var _current_state := StageController.State.LOADING
 var _shots_remaining := 0
 var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
+var _last_score_snapshot: Dictionary = {}
+var _finish_ready := false
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
 var _current_camera_mode := CameraDirector.Mode.BRIEFING
 var _run_started := false
@@ -55,8 +61,15 @@ func _ready() -> void:
 
 func configure(stage_data: StageData) -> void:
 	_stage_data = stage_data
+	_refresh_briefing_locale()
 	_top.configure(stage_data)
 	_coverage.configure(stage_data.target_coverage)
+	if stage_data.uses_target_band():
+		_target_band.configure(stage_data.target_band, stage_data.color_score_rule)
+		var empty_tokens: Array[BallToken] = []
+		_queue.configure(empty_tokens)
+	_last_score_snapshot.clear()
+	_finish_ready = false
 	_run_started = false
 	_clock_finished = false
 	_run_status.reset_for_stage(stage_data.maximum_shots, stage_data.resolved_duration_seconds())
@@ -78,6 +91,29 @@ func update_shots(remaining: int, _maximum: int) -> void:
 func update_coverage(value: float) -> void:
 	_last_coverage = value
 	_coverage.update_coverage(value)
+
+
+func update_target_score(snapshot: Dictionary) -> void:
+	_last_score_snapshot = snapshot.duplicate(true)
+	if _stage_data == null or not _stage_data.uses_target_band():
+		return
+	var coverage := PaintCoverageSnapshot.new(
+		float(snapshot.get("red_percent", 0.0)),
+		float(snapshot.get("green_percent", 0.0)),
+		float(snapshot.get("total_percent", 0.0)),
+		int(snapshot.get("paint_mask_checksum", 0))
+	)
+	_target_band.update_score(coverage, float(snapshot.get("paint_score", 0.0)))
+
+
+func update_queue(tokens: Array[BallToken]) -> void:
+	_queue.configure(tokens)
+	_apply_target_rule_visibility()
+
+
+func set_finish_readiness(snapshot: Dictionary) -> void:
+	_finish_ready = bool(snapshot.get("ready", false))
+	_apply_finish_availability()
 
 
 func set_fire_readiness(snapshot: Dictionary) -> void:
@@ -103,6 +139,7 @@ func show_state(state: StageController.State) -> void:
 	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state == StageController.State.RESULT
 	_pause.visible = state == StageController.State.PAUSED and not _pause_overlay_suspended
+	_apply_target_rule_visibility()
 	_refresh_context_legend()
 	if state == StageController.State.BRIEFING:
 		%Start.grab_focus()
@@ -132,6 +169,7 @@ func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
 	_apply_interaction_presentation(false)
+	_apply_target_rule_visibility()
 	_refresh_context_legend()
 
 
@@ -166,6 +204,26 @@ func show_coverage_result_snapshot(result: Dictionary, star_count: int, previous
 	)
 
 
+func show_target_band_result_snapshot(result: Dictionary) -> void:
+	var ticks_per_second := maxi(int(result.get("ticks_per_second", Engine.physics_ticks_per_second)), 1)
+	var coverage := PaintCoverageSnapshot.new(
+		float(result.get("red_percent", 0.0)),
+		float(result.get("green_percent", 0.0)),
+		float(result.get("total_percent", 0.0)),
+		int(result.get("paint_mask_checksum", 0))
+	)
+	_result.show_target_band_result(
+		bool(result.get("cleared", false)),
+		float(result.get("paint_score", 0.0)),
+		_stage_data.target_band,
+		int(result.get("stars", 0)),
+		coverage,
+		float(result.get("elapsed_ticks", 0)) / float(ticks_per_second),
+		int(result.get("shots_used", -1)),
+		StringName(result.get("finish_reason", &"manual"))
+	)
+
+
 func set_pause_overlay_suspended(suspended: bool) -> void:
 	_pause_overlay_suspended = suspended
 	show_state(_current_state)
@@ -188,6 +246,8 @@ func _connect_components() -> void:
 	)
 	_return_to_cannon.pressed.connect(func() -> void: return_to_cannon_requested.emit())
 	_result.retry_requested.connect(func() -> void: restart_requested.emit())
+	_result.retry_same_deal_requested.connect(func() -> void: restart_requested.emit())
+	_result.new_deal_requested.connect(func() -> void: new_deal_requested.emit())
 	_result.next_requested.connect(func() -> void: next_stage_requested.emit())
 	_result.stages_requested.connect(func() -> void: stage_select_requested.emit())
 	_pause.resume_requested.connect(func() -> void: pause_requested.emit())
@@ -214,12 +274,22 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_context_legend.refresh_locale()
 		_coverage.configure(_stage_data.target_coverage)
 		_coverage.update_coverage(_last_coverage)
+		if _stage_data.uses_target_band():
+			_target_band.configure(_stage_data.target_band, _stage_data.color_score_rule)
+			update_target_score(_last_score_snapshot)
 	show_state(_current_state)
 
 
 func _refresh_briefing_locale() -> void:
 	%Back.text = tr("ui.back")
 	%Start.text = tr("ui.start_aiming")
+	%Title.text = tr("hud.briefing_rule")
+	if _stage_data == null or not _stage_data.uses_target_band():
+		%Text.text = ""
+		return
+	var key := "stage.prototype_briefing.%d" % _stage_data.stage_number
+	var translated := tr(key)
+	%Text.text = translated if translated != key else tr("stage.prototype_briefing.default")
 
 
 func _refresh_context_legend() -> void:
@@ -259,7 +329,22 @@ func _apply_interaction_presentation(update_focus: bool) -> void:
 
 func _apply_finish_availability() -> void:
 	_run_status.set_finish_available(
-		_run_started
-		and not _clock_finished
-		and _current_state == StageController.State.AIMING
+		(_finish_ready if _stage_data != null and _stage_data.uses_target_band() else (
+			_run_started and not _clock_finished and _current_state == StageController.State.AIMING
+		))
 	)
+
+
+func _apply_target_rule_visibility() -> void:
+	var target_rule := _stage_data != null and _stage_data.uses_target_band()
+	_briefing_rule.visible = target_rule and _current_state == StageController.State.BRIEFING
+	_coverage.visible = not target_rule \
+			and _current_state not in [StageController.State.LOADING, StageController.State.BRIEFING]
+	_target_band.visible = target_rule and _current_state in [
+		StageController.State.BRIEFING,
+		StageController.State.AIMING,
+	] and _current_camera_mode != CameraDirector.Mode.FOLLOW
+	_queue.visible = target_rule and _current_state in [
+		StageController.State.BRIEFING,
+		StageController.State.AIMING,
+	] and _current_camera_mode != CameraDirector.Mode.FOLLOW

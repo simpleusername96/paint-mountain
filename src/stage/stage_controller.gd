@@ -11,9 +11,13 @@ signal aim_action_accepted(yaw: float, elevation: float, power: float, origin: i
 signal fire_action_accepted(origin: int)
 signal restart_action_accepted(origin: int)
 signal finish_action_accepted(origin: int)
+signal new_deal_action_accepted(origin: int)
 signal shot_family_activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int, fire_capacity: int)
 signal terminal_pending_changed(pending: bool)
 signal fire_readiness_changed(snapshot: Dictionary)
+signal deal_changed(visible_tokens: Array[Dictionary], queue_cursor: int, deal_seed: int)
+signal score_changed(snapshot: Dictionary)
+signal finish_readiness_changed(snapshot: Dictionary)
 signal stage_clock_started(duration_ticks: int)
 signal stage_clock_changed(elapsed_ticks: int, remaining_ticks: int)
 signal stage_finished(result: Dictionary)
@@ -45,6 +49,7 @@ const SETTLEMENT_OBSERVER_PRIORITY := 1100
 const FINISH_REASON_MANUAL := &"manual"
 const FINISH_REASON_TIMEOUT := &"timeout"
 const FINISH_REASON_DEBUG := &"debug"
+const FINISH_REASON_QUEUE_EXHAUSTED := &"queue_exhausted"
 
 var current_state: State = State.LOADING
 var stage_data: StageData
@@ -71,11 +76,16 @@ var _last_drained_paint_command_tick: int = -1
 var _last_paint_mask_checksum: int = 0
 var _terminal_pending := false
 var _last_fire_readiness_key := ""
+var _last_score_key := ""
+var _last_finish_readiness_key := ""
 var _run_started := false
 var _elapsed_run_ticks := 0
 var _duration_run_ticks := 0
 var _result_snapshot: Dictionary = {}
 var _actions_enabled := true
+var _deal_seed: int = 0
+var _deal: Array[BallToken] = []
+var _queue_cursor: int = 0
 
 
 func _init() -> void:
@@ -117,6 +127,7 @@ func configure(
 	_paint_system = paint_system
 	_terrain_surface = terrain_surface
 	_mechanisms = mechanisms
+	_deal_seed = data.default_deal_seed if data.uses_target_band() else 0
 	_projectile_manager.stage_bounds = _generated_layout.play_bounds.bounds
 	if not _projectile_manager.shot_family_finished.is_connected(_on_shot_family_finished):
 		_projectile_manager.shot_family_finished.connect(_on_shot_family_finished)
@@ -134,6 +145,8 @@ func configure(
 		_paint_system.paint_command_rejected.connect(_on_paint_command_rejected)
 	if not _paint_system.paint_commands_drained.is_connected(_on_paint_commands_drained):
 		_paint_system.paint_commands_drained.connect(_on_paint_commands_drained)
+	if not _paint_system.coverage_changed.is_connected(_on_coverage_changed):
+		_paint_system.coverage_changed.connect(_on_coverage_changed)
 	for mechanism in _mechanisms:
 		if not mechanism.mechanism_activated.is_connected(_on_mechanism_activated):
 			mechanism.mechanism_activated.connect(_on_mechanism_activated)
@@ -154,7 +167,8 @@ func fire_readiness_snapshot(_origin: ActionOrigin = ActionOrigin.HUMAN) -> Dict
 	var reason_key := "ready"
 	var fireable := editable and shots_remaining > 0 and not _terminal_pending \
 			and active_roots < ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES \
-			and canonical_aim_valid
+			and canonical_aim_valid \
+			and (not stage_data.uses_target_band() or current_ball_token() != null)
 	if not editable:
 		reason_key = "not_editable"
 		reason = tr("fire.not_editable")
@@ -182,6 +196,7 @@ func fire_readiness_snapshot(_origin: ActionOrigin = ActionOrigin.HUMAN) -> Dict
 		"fire_capacity": remaining_capacity,
 		"max_fire_capacity": ProjectileManager.MAXIMUM_ACTIVE_ROOT_LAUNCHES,
 		"shots_remaining": shots_remaining,
+		"visible_queue": visible_queue_snapshot(),
 		"terminal_pending": _terminal_pending,
 		"fireable": fireable,
 		"reason_key": reason_key,
@@ -218,6 +233,124 @@ func clock_snapshot() -> Dictionary:
 		"duration_ticks": _duration_run_ticks,
 		"finished": not _result_snapshot.is_empty(),
 	}
+
+
+func deal_seed() -> int:
+	return _deal_seed
+
+
+func queue_cursor() -> int:
+	return _queue_cursor
+
+
+func current_ball_token() -> BallToken:
+	if stage_data == null or not stage_data.uses_target_band() \
+			or _queue_cursor < 0 or _queue_cursor >= _deal.size():
+		return null
+	return _deal[_queue_cursor]
+
+
+func visible_queue_snapshot() -> Array[Dictionary]:
+	var visible: Array[Dictionary] = []
+	if stage_data == null or not stage_data.uses_target_band():
+		return visible
+	var end := mini(_queue_cursor + 3, _deal.size())
+	for index in range(_queue_cursor, end):
+		var token := _deal[index]
+		visible.append({
+			"visible_index": index - _queue_cursor,
+			"kind": token.kind,
+			"kind_id": String(BallKind.stable_id(token.kind)),
+			"channel": token.channel,
+			"channel_id": String(PaintChannel.stable_id(token.channel)),
+			"key": String(token.stable_key()),
+		})
+	return visible
+
+
+func visible_queue_tokens_for_hud() -> Array[BallToken]:
+	var visible: Array[BallToken] = []
+	if stage_data == null or not stage_data.uses_target_band():
+		return visible
+	var end := mini(_queue_cursor + 3, _deal.size())
+	for index in range(_queue_cursor, end):
+		visible.append(_deal[index])
+	return visible
+
+
+## Private attempt evidence may retain the deal, while UI and public agent state
+## must use visible_queue_snapshot().
+func attempt_deal_snapshot() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for token in _deal:
+		result.append({
+			"kind": token.kind,
+			"kind_id": String(BallKind.stable_id(token.kind)),
+			"channel": token.channel,
+			"channel_id": String(PaintChannel.stable_id(token.channel)),
+		})
+	return result
+
+
+func score_snapshot() -> Dictionary:
+	var coverage := _paint_system.coverage_snapshot() if _paint_system != null \
+			else PaintCoverageSnapshot.new()
+	var result := {
+		"rule_kind": "target_band" if stage_data != null and stage_data.uses_target_band() else "legacy_coverage",
+		"red_percent": coverage.red_percent,
+		"green_percent": coverage.green_percent,
+		"total_percent": coverage.total_percent,
+		"paint_mask_checksum": coverage.checksum,
+	}
+	if stage_data == null or not stage_data.uses_target_band():
+		result["paint_score"] = coverage.total_percent
+		result["in_target_band"] = false
+		result["stars"] = 0
+		return result
+	var score := StageScoreSnapshot.new(
+		coverage,
+		stage_data.color_score_rule,
+		stage_data.target_band
+	)
+	result.merge({
+		"score_rule_version": 1,
+		"red_weight": stage_data.color_score_rule.red_weight,
+		"green_weight": stage_data.color_score_rule.green_weight,
+		"paint_score": score.paint_score,
+		"target_min": stage_data.target_band.target_min,
+		"target_max": stage_data.target_band.target_max,
+		"in_target_band": score.in_target_band,
+		"stars": score.stars,
+		"distance_to_center": score.center_error,
+	}, true)
+	return result
+
+
+func finish_readiness_snapshot() -> Dictionary:
+	var score := score_snapshot()
+	var target_rule := stage_data != null and stage_data.uses_target_band()
+	var quiet := board_is_quiet()
+	var in_band := bool(score.get("in_target_band", false))
+	var ready := _actions_enabled and current_state == State.AIMING and _run_started \
+			and not _terminal_pending and (not target_rule or (quiet and in_band))
+	return {
+		"ready": ready,
+		"run_started": _run_started,
+		"board_quiet": quiet,
+		"in_target_band": in_band,
+		"terminal_pending": _terminal_pending,
+		"score": score,
+	}
+
+
+func board_is_quiet() -> bool:
+	if _projectile_manager == null or _paint_system == null:
+		return false
+	var resident := _projectile_manager.resident_activity_snapshot()
+	return _projectile_manager.active_root_count() == 0 \
+			and int(resident.get("moving", 0)) == 0 \
+			and _projectile_manager.pending_intent_count() == 0 \
+			and _paint_system.pending_work_count() == 0
 
 
 func result_snapshot() -> Dictionary:
@@ -288,6 +421,10 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	var launch_origin := _cannon.get_launch_origin()
 	var velocity := _cannon.get_launch_velocity()
 	var never_contacted_deadline := _root_never_contacted_deadline()
+	var ball_token := current_ball_token() if stage_data.uses_target_band() else null
+	if stage_data.uses_target_band() and ball_token == null:
+		_emit_fire_readiness()
+		return false
 	coverage_before_shot = _paint_system.coverage_percent()
 	var shot_observation := ShotObservation.new()
 	shot_observation.configure(
@@ -297,6 +434,8 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		_cannon.power_percent,
 		coverage_before_shot
 	)
+	if ball_token != null:
+		shot_observation.configure_target_context(ball_token, score_snapshot())
 	_inactive_settlement_ticks = 0
 	_last_applied_paint_command_tick = -1
 	_last_drained_paint_command_tick = _paint_system.last_drained_physics_tick()
@@ -311,7 +450,8 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		velocity,
 		0,
 		0,
-		never_contacted_deadline
+		never_contacted_deadline,
+		ball_token
 	)
 	if projectile == null:
 		return false
@@ -319,7 +459,12 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	shot_observation.peak_active_projectile_count = _projectile_manager.active_count()
 	_shot_observations[projectile.shot_id] = shot_observation
 	_shot_observation = shot_observation
-	shots_remaining -= 1
+	if stage_data.uses_target_band():
+		_queue_cursor += 1
+		shots_remaining = _deal.size() - _queue_cursor
+		_emit_deal_changed()
+	else:
+		shots_remaining -= 1
 	_start_run_clock()
 	# A second root shot may be fired while the first family is still in motion.
 	# The cannon remains interactive; only the two-family capacity guard limits fire.
@@ -333,6 +478,7 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	)
 	fire_action_accepted.emit(origin)
 	_emit_fire_readiness()
+	_refresh_score_and_finish_readiness()
 	return true
 
 
@@ -373,6 +519,17 @@ func restart(
 	if default_aim == null or not default_aim.is_valid():
 		push_error("Stage restart rejected because its generated default aim is invalid.")
 		return false
+	var next_deal: Array[BallToken] = []
+	if stage_data.uses_target_band():
+		next_deal = BallDealGenerator.generate(
+			stage_data.stage_id,
+			_deal_seed,
+			stage_data.maximum_shots,
+			stage_data.ball_deal_profile
+		)
+		if next_deal.size() != stage_data.maximum_shots:
+			push_error("Stage restart rejected because its target-band deal is invalid.")
+			return false
 	get_tree().paused = false
 	var started_at := Time.get_ticks_usec()
 	_decision_generation += 1
@@ -381,7 +538,9 @@ func restart(
 	_paint_system.clear()
 	for mechanism in _mechanisms:
 		mechanism.reset_state()
-	shots_remaining = stage_data.maximum_shots
+	_deal = next_deal
+	_queue_cursor = 0
+	shots_remaining = _deal.size() if stage_data.uses_target_band() else stage_data.maximum_shots
 	coverage_before_shot = 0.0
 	_shot_observation = null
 	_sealed_shot_observation = null
@@ -409,8 +568,38 @@ func restart(
 	var elapsed_ms := float(Time.get_ticks_usec() - started_at) / 1000.0
 	restart_completed.emit(elapsed_ms)
 	restart_action_accepted.emit(origin)
+	_emit_deal_changed()
 	_emit_fire_readiness()
+	_refresh_score_and_finish_readiness(true)
 	return true
+
+
+func restart_new_deal(
+		return_to_briefing: bool = false,
+		origin: ActionOrigin = ActionOrigin.HUMAN
+) -> bool:
+	if not _actions_enabled or current_state == State.FINISHING \
+			or stage_data == null or not stage_data.uses_target_band():
+		return false
+	var current_signature := _deal_signature(_deal)
+	var previous_seed := _deal_seed
+	for offset in range(1, BallDealGenerator.MAXIMUM_ATTEMPTS + 1):
+		var candidate_seed := _deal_seed + offset
+		var candidate := BallDealGenerator.generate(
+			stage_data.stage_id,
+			candidate_seed,
+			stage_data.maximum_shots,
+			stage_data.ball_deal_profile
+		)
+		if not candidate.is_empty() and _deal_signature(candidate) != current_signature:
+			_deal_seed = candidate_seed
+			var restarted := restart(return_to_briefing, origin)
+			if restarted:
+				new_deal_action_accepted.emit(origin)
+				return true
+			_deal_seed = previous_seed
+			return false
+	return false
 
 
 func toggle_pause(_origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
@@ -435,6 +624,9 @@ func finish_stage(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 			or current_state != State.AIMING \
 			or not _run_started or _terminal_pending:
 		return false
+	if stage_data.uses_target_band() \
+			and not bool(finish_readiness_snapshot().get("ready", false)):
+		return false
 	return _begin_finish(FINISH_REASON_MANUAL, origin, false, true)
 
 
@@ -452,6 +644,8 @@ func force_finish_debug(origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
 
 func debug_refill_shots(_origin: ActionOrigin = ActionOrigin.DEBUG) -> void:
 	if not _actions_enabled or not OS.is_debug_build() or stage_data == null:
+		return
+	if stage_data.uses_target_band():
 		return
 	shots_remaining = stage_data.maximum_shots
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
@@ -548,6 +742,17 @@ func _begin_finish(
 		"paint_mask_checksum": _last_paint_mask_checksum,
 		"paint_command_rejection_count": rejection_count,
 	}
+	if stage_data.uses_target_band():
+		var final_score := score_snapshot()
+		_result_snapshot.merge(final_score, true)
+		_result_snapshot["cleared"] = bool(final_score.get("in_target_band", false))
+		_result_snapshot["stars"] = int(final_score.get("stars", 0))
+		_result_snapshot["deal_seed"] = _deal_seed
+		_result_snapshot["queue_cursor"] = _queue_cursor
+		_result_snapshot["ticks_per_second"] = Engine.physics_ticks_per_second
+	else:
+		_result_snapshot["rule_kind"] = "legacy_coverage"
+		_result_snapshot["cleared"] = true
 
 	# Cleanup happens after the immutable score inputs above are captured.
 	_projectile_manager.cleanup()
@@ -594,6 +799,11 @@ func _physics_process(_delta: float) -> void:
 		if _run_started:
 			_elapsed_run_ticks = mini(_elapsed_run_ticks + 1, _duration_run_ticks)
 			stage_clock_changed.emit(_elapsed_run_ticks, remaining_run_ticks())
+			_refresh_score_and_finish_readiness()
+			if stage_data.uses_target_band() and _queue_cursor >= _deal.size() \
+					and board_is_quiet():
+				_begin_finish(FINISH_REASON_QUEUE_EXHAUSTED, -1)
+				return
 			if _elapsed_run_ticks >= _duration_run_ticks:
 				_begin_finish(FINISH_REASON_TIMEOUT, -1)
 	return
@@ -642,7 +852,8 @@ func _seal_observation(observation: ShotObservation, coverage: float) -> bool:
 	observation.seal(
 		coverage,
 		_last_drained_paint_command_tick,
-		_last_paint_mask_checksum
+		_last_paint_mask_checksum,
+		score_snapshot() if stage_data.uses_target_band() else {}
 	)
 	_sealed_shot_observations[observation.shot_id] = observation
 	_sealed_shot_observation = observation
@@ -738,6 +949,19 @@ func _on_projectile_spawned(projectile: PaintProjectile) -> void:
 			)
 
 
+func record_ball_effect(
+		projectile: PaintProjectile,
+		effect_id: StringName
+) -> void:
+	var observation := _observation_for_projectile(projectile)
+	if observation != null:
+		observation.record_ball_effect(
+			effect_id,
+			projectile.spawn_ordinal if is_instance_valid(projectile) else -1,
+			Engine.get_physics_frames()
+		)
+
+
 func _on_projectile_activity_changed(
 		active_shot_ids: PackedInt64Array,
 		active_projectiles: int
@@ -752,6 +976,11 @@ func _on_projectile_activity_changed(
 		)
 	)
 	_emit_fire_readiness()
+	_refresh_score_and_finish_readiness()
+
+
+func _on_coverage_changed(_coverage_percent: float) -> void:
+	_refresh_score_and_finish_readiness()
 
 
 func _set_terminal_pending(pending: bool) -> void:
@@ -760,6 +989,7 @@ func _set_terminal_pending(pending: bool) -> void:
 	_terminal_pending = pending
 	terminal_pending_changed.emit(pending)
 	_emit_fire_readiness()
+	_refresh_score_and_finish_readiness()
 
 
 func _aim_key() -> String:
@@ -781,6 +1011,36 @@ func _emit_fire_readiness() -> void:
 		return
 	_last_fire_readiness_key = key
 	fire_readiness_changed.emit(snapshot)
+
+
+func _emit_deal_changed() -> void:
+	if stage_data == null or not stage_data.uses_target_band():
+		var empty_tokens: Array[Dictionary] = []
+		deal_changed.emit(empty_tokens, 0, 0)
+		return
+	deal_changed.emit(visible_queue_snapshot(), _queue_cursor, _deal_seed)
+
+
+func _refresh_score_and_finish_readiness(force: bool = false) -> void:
+	if stage_data == null or _paint_system == null:
+		return
+	var score := score_snapshot()
+	var score_key := JSON.stringify(score)
+	if force or score_key != _last_score_key:
+		_last_score_key = score_key
+		score_changed.emit(score)
+	var readiness := finish_readiness_snapshot()
+	var readiness_key := JSON.stringify(readiness)
+	if force or readiness_key != _last_finish_readiness_key:
+		_last_finish_readiness_key = readiness_key
+		finish_readiness_changed.emit(readiness)
+
+
+func _deal_signature(tokens: Array[BallToken]) -> String:
+	var parts: Array[String] = []
+	for token in tokens:
+		parts.append("%d:%d" % [token.kind, token.channel])
+	return "|".join(parts)
 
 
 func _on_mechanism_activated(
@@ -807,6 +1067,7 @@ func _transition_to(next_state: State, force: bool = false) -> bool:
 	var previous := current_state
 	current_state = next_state
 	state_changed.emit(current_state, previous)
+	_refresh_score_and_finish_readiness()
 	return true
 
 

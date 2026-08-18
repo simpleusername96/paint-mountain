@@ -1,6 +1,7 @@
 extends Node
 
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
+const RESULT_SCHEMA_VERSION := 1
 const DEFAULT_SAVE_PATH := "user://paint_mountain_save.json"
 
 
@@ -40,8 +41,8 @@ func load_data(path: String = DEFAULT_SAVE_PATH) -> Dictionary:
 	if parse_error != OK or not parsed is Dictionary:
 		_preserve_invalid(path)
 		return default_data()
-	if int(parsed.get("version", -1)) in [1, 2, 3, 4]:
-		parsed = _migrate_to_v5(parsed)
+	if int(parsed.get("version", -1)) in [1, 2, 3, 4, 5]:
+		parsed = _migrate_to_v6(parsed)
 	elif int(parsed.get("version", -1)) != SAVE_VERSION:
 		_preserve_invalid(path)
 		return default_data()
@@ -87,7 +88,8 @@ func _merge_with_defaults(data: Dictionary) -> Dictionary:
 	for stage_id in incoming_best:
 		var entry: Variant = incoming_best[stage_id]
 		if entry is Dictionary and int(entry.get("coverage_metric_version", -1)) \
-				== TargetSurfaceCoverage.METRIC_VERSION:
+				== TargetSurfaceCoverage.METRIC_VERSION \
+				and int(entry.get("result_schema_version", -1)) == RESULT_SCHEMA_VERSION:
 			current_best[stage_id] = (entry as Dictionary).duplicate(true)
 		elif not legacy_best.has(stage_id):
 			legacy_best[stage_id] = entry
@@ -102,7 +104,7 @@ func _merge_with_defaults(data: Dictionary) -> Dictionary:
 	return merged
 
 
-func _migrate_to_v5(data: Dictionary) -> Dictionary:
+func _migrate_to_v6(data: Dictionary) -> Dictionary:
 	var migrated := data.duplicate(true)
 	var source_version := int(migrated.get("version", -1))
 	var migrated_settings: Dictionary = Dictionary(
@@ -119,9 +121,11 @@ func _migrate_to_v5(data: Dictionary) -> Dictionary:
 		"split_ridge": selected = "stage_03"
 	migrated["selected_stage_id"] = selected
 	migrated["coverage_metric_version"] = TargetSurfaceCoverage.METRIC_VERSION
-	migrated["legacy_best_results"] = Dictionary(
-		migrated.get("legacy_best_results", migrated.get("best_results", {}))
-	).duplicate(true)
+	var legacy_best := Dictionary(migrated.get("legacy_best_results", {})).duplicate(true)
+	for stage_id in Dictionary(migrated.get("best_results", {})):
+		if not legacy_best.has(stage_id):
+			legacy_best[stage_id] = Dictionary(migrated.get("best_results", {}))[stage_id]
+	migrated["legacy_best_results"] = legacy_best
 	migrated["best_results"] = {}
 	migrated["version"] = SAVE_VERSION
 	return migrated

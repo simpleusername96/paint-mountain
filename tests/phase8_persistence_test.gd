@@ -35,18 +35,22 @@ func _run() -> void:
 			quit(0)
 		_:
 			var loaded: Dictionary = save_system.load_data(TEST_PATH)
+			var archived: Dictionary = Dictionary(
+				loaded.get("legacy_best_results", {})
+			).get("split_ridge", {})
 			var passed: bool = not loaded.has("unlocked_stages") \
-					and is_equal_approx(float(loaded.best_results.split_ridge.coverage), 77.921) \
-					and int(loaded.best_results.split_ridge.coverage_metric_version) \
+					and Dictionary(loaded.get("best_results", {})).is_empty() \
+					and is_equal_approx(float(archived.get("coverage", 0.0)), 77.921) \
+					and int(archived.get("coverage_metric_version", -1)) \
 							== TargetSurfaceCoverage.METRIC_VERSION \
 					and is_equal_approx(float(loaded.settings.master_volume), 0.43) \
 					and loaded.settings.quality == "high" \
 					and loaded.settings.language == "en" \
 					and loaded.settings.language_user_selected
 			if not passed:
-				push_error("Cross-process save did not preserve metric-2 best result and settings.")
+				push_error("Cross-process save did not archive the legacy scalar best and preserve settings.")
 			else:
-				print("Phase 8 persistence read passed across a fresh process.")
+				print("Phase 8 persistence read passed: v6 legacy archive and settings survived a fresh process.")
 			quit(0 if passed else 1)
 
 

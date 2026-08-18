@@ -7,14 +7,18 @@ var _observation := AttemptObservation.new()
 
 func start_attempt(
 		stage_data: StageData,
-		requested_terrain_seed: int
+		requested_terrain_seed: int,
+		deal_seed: int = 0,
+		full_deal: Array[Dictionary] = []
 ) -> bool:
 	if stage_data == null:
 		return false
 	terrain_seed = requested_terrain_seed
 	return _observation.configure(
 		stage_data.stage_id,
-		Engine.get_physics_frames()
+		Engine.get_physics_frames(),
+		deal_seed,
+		full_deal
 	)
 
 
@@ -24,6 +28,10 @@ func record_aim(yaw: float, elevation: float, power: float) -> bool:
 
 func record_fire(shot_id: int) -> bool:
 	return _observation.record_fire(shot_id)
+
+
+func record_ball_fire(shot_id: int, ball_kind: int, paint_channel: int) -> bool:
+	return _observation.record_ball_fire(shot_id, ball_kind, paint_channel)
 
 
 func record_finish(reason: StringName = &"manual") -> bool:
@@ -39,7 +47,9 @@ func store_final_result(result: Dictionary) -> bool:
 		StringName(String(result.get("finish_reason", result.get("result_reason", "")))),
 		int(result.get("paint_mask_checksum", 0)),
 		float(result.get("coverage", -1.0)),
-		int(result.get("elapsed_ticks", -1))
+		int(result.get("elapsed_ticks", -1)),
+		-1,
+		result
 	)
 
 

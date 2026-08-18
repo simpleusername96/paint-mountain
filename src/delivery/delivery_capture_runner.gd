@@ -86,6 +86,14 @@ func _run_capture() -> void:
 			await get_tree().create_timer(1.0).timeout
 		"map_inspection":
 			await _capture_map_inspection(_capture_stage)
+		"target_late_queue":
+			await _capture_target_late_queue(_capture_stage)
+		"target_special_queue":
+			await _capture_target_special_queue(_capture_stage)
+		"impact_burst_midflight":
+			await _capture_special_ball_midflight(&"stage_02", BallKind.Value.IMPACT_BURST)
+		"apex_split_midflight":
+			await _capture_special_ball_midflight(&"stage_03", BallKind.Value.APEX_SPLIT)
 		"terrain_target_selected":
 			await _capture_terrain_target_selected(_capture_stage)
 		"terrain_target_dragged":
@@ -143,11 +151,17 @@ func _run_capture() -> void:
 			await _capture_manual_result(_capture_stage)
 		"timeout_result":
 			await _capture_timeout_result(_capture_stage)
+		"target_clear_result":
+			await _capture_target_result(_capture_stage, true)
+		"target_failed_result":
+			await _capture_target_result(_capture_stage, false)
 		_:
 			push_error("Unknown delivery capture screen: %s" % _screen)
 			get_tree().quit(1)
 			return
 	if _screen not in [
+		"impact_burst_midflight",
+		"apex_split_midflight",
 		"projectile_and_continuous_paint",
 		"summit_hit",
 		"next_aim_pending",
@@ -179,6 +193,9 @@ func _run_capture() -> void:
 		settle_frames = _capture_settle_frames
 	for _frame in range(settle_frames):
 		await get_tree().process_frame
+	# Read back only after the renderer has completed the final composed frame;
+	# immediate GPU readback can capture a partially refreshed HUD on Windows.
+	await RenderingServer.frame_post_draw
 	var absolute_path := ProjectSettings.globalize_path(_output_path)
 	DirAccess.make_dir_recursive_absolute(absolute_path.get_base_dir())
 	var image := get_viewport().get_texture().get_image()
@@ -392,6 +409,125 @@ func _capture_map_inspection(stage_id: StringName) -> void:
 	await get_tree().create_timer(4.2).timeout
 	if director.current_interaction_mode != CameraDirector.InteractionMode.MAP_INSPECTION:
 		_fail_capture("map inspection capture did not retain Map Inspection")
+
+
+func _capture_target_late_queue(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	if not controller.stage_data.uses_target_band() or controller._deal.is_empty():
+		_fail_capture("late-queue capture requires a target-band deal")
+		return
+	# Delivery-only setup publishes the genuine last token through the normal HUD
+	# signal without simulating or revealing any earlier hidden entry.
+	controller._queue_cursor = controller._deal.size() - 1
+	controller.shots_remaining = 1
+	controller._emit_deal_changed()
+	controller.shots_changed.emit(1, controller.stage_data.maximum_shots)
+	await get_tree().process_frame
+
+
+func _capture_target_special_queue(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var special_index := _first_deal_kind_index(controller, -1, true)
+	if special_index < 0:
+		_fail_capture("special-queue capture requires a deal with a special ball")
+		return
+	controller._queue_cursor = special_index
+	controller.shots_remaining = controller._deal.size() - special_index
+	controller._emit_deal_changed()
+	controller.shots_changed.emit(
+		controller.shots_remaining, controller.stage_data.maximum_shots
+	)
+	await get_tree().process_frame
+
+
+func _capture_special_ball_midflight(stage_id: StringName, kind: int) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var special_index := _first_deal_kind_index(controller, kind, false)
+	if special_index < 0:
+		_fail_capture("special-ball capture deal does not contain kind %s" % BallKind.stable_id(kind))
+		return
+	controller._queue_cursor = special_index
+	controller.shots_remaining = controller._deal.size() - special_index
+	controller._emit_deal_changed()
+	controller.shots_changed.emit(
+		controller.shots_remaining, controller.stage_data.maximum_shots
+	)
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("special-ball capture could not fire its selected token")
+		return
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	for _tick in range(6):
+		await get_tree().physics_frame
+	var matching := false
+	for projectile in manager.active_projectiles():
+		if projectile.split_generation == 0 and projectile.ball_kind == kind:
+			matching = true
+			break
+	if not matching:
+		_fail_capture("special-ball capture lost the selected root before its render frame")
+		return
+	Engine.time_scale = 0.08
+
+
+func _first_deal_kind_index(
+		controller: StageController,
+		kind: int,
+		any_special: bool
+) -> int:
+	for index in range(controller._deal.size()):
+		var token := controller._deal[index] as BallToken
+		if token != null and (
+			(any_special and BallKind.is_special(token.kind))
+			or (not any_special and token.kind == kind)
+		):
+			return index
+	return -1
+
+
+func _capture_target_result(stage_id: StringName, cleared: bool) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	if not controller.stage_data.uses_target_band():
+		_fail_capture("target result capture requires a target-band stage")
+		return
+	controller.force_finish_debug()
+	await get_tree().process_frame
+	if controller.current_state != StageController.State.RESULT:
+		_fail_capture("target result capture did not enter RESULT")
+		return
+	if not cleared:
+		if bool(controller.result_snapshot().get("cleared", true)):
+			_fail_capture("failed target result fixture unexpectedly cleared")
+		return
+	# The clear screenshot is a presentation fixture. The controller still owns
+	# the real terminal transition; only visible result values are replaced with
+	# an authored-band center score so delivery QA can inspect the Clear branch.
+	var result := controller.result_snapshot()
+	var center := controller.stage_data.target_band.center()
+	result.merge({
+		"cleared": true,
+		"paint_score": center,
+		"stars": 3,
+		"red_percent": center * 0.5,
+		"green_percent": center * 0.5,
+		"total_percent": center,
+		"shots_used": maxi(1, controller.stage_data.maximum_shots - 1),
+		"elapsed_ticks": Engine.physics_ticks_per_second * 42,
+	}, true)
+	(gameplay.get_node("HUD") as HUDController).show_target_band_result_snapshot(result)
 
 
 func _capture_terrain_target_selected(stage_id: StringName) -> void:

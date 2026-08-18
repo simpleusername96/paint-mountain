@@ -18,6 +18,7 @@ var _scheduler_tick := 0
 var _last_nomination_tick := -AIM_NOMINATION_INTERVAL_TICKS
 var _hold_physics_ticks := 0
 var _current_context_key: StringName = &""
+var _context_discriminator: StringName = &"legacy"
 var _active_request: Dictionary = {}
 var _active_job: TrajectoryPredictionJob
 var _prediction_compute_count := 0
@@ -55,6 +56,14 @@ func request_latest(immediate: bool = false) -> void:
 		or immediate
 		or not _aim_interaction_active
 	)
+
+
+func set_context_discriminator(value: StringName) -> void:
+	var canonical := value if not value.is_empty() else &"legacy"
+	if canonical == _context_discriminator:
+		return
+	_context_discriminator = canonical
+	request_latest(true)
 
 
 func set_aim_interaction_active(active: bool) -> void:
@@ -183,7 +192,7 @@ func _nominate_live_context() -> void:
 func _capture_live_request() -> Dictionary:
 	var aim_key := _cannon.aim_key()
 	return {
-		"context_key": build_context_key(aim_key),
+		"context_key": build_context_key(aim_key, _context_discriminator),
 		"aim_key": aim_key,
 		"origin": _cannon.get_launch_origin(),
 		"launch_velocity": _cannon.get_launch_velocity(),
@@ -244,7 +253,7 @@ func _complete_active_job() -> void:
 
 
 func _live_context_key() -> StringName:
-	return build_context_key(_cannon.aim_key())
+	return build_context_key(_cannon.aim_key(), _context_discriminator)
 
 
 func _live_context_is_already_owned() -> bool:
@@ -264,5 +273,9 @@ func _live_context_is_already_owned() -> bool:
 	)
 
 
-static func build_context_key(aim_key: StringName) -> StringName:
-	return aim_key
+static func build_context_key(
+		aim_key: StringName,
+		discriminator: StringName = &""
+) -> StringName:
+	return aim_key if discriminator.is_empty() \
+			else StringName("%s|%s" % [aim_key, discriminator])

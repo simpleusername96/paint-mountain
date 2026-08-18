@@ -463,10 +463,17 @@ func _set_preview_stage(stage: StageData) -> void:
 	_preview_material = ShaderMaterial.new()
 	_preview_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	_preview_material.set_shader_parameter(&"paint_mask", artifact.preview_paint_texture)
+	_preview_material.set_shader_parameter(&"paint_owner_mask", artifact.preview_paint_texture)
 	_preview_material.set_shader_parameter(
 		&"target_mask", artifact.paint_bootstrap.target_texture
 	)
-	_preview_material.set_shader_parameter(&"paint_color", stage.paint_color)
+	_preview_material.set_shader_parameter(&"use_owner_colors", false)
+	_preview_material.set_shader_parameter(
+		&"paint_color",
+		stage.red_paint_color if stage.uses_target_band() else stage.paint_color
+	)
+	_preview_material.set_shader_parameter(&"red_paint_color", stage.red_paint_color)
+	_preview_material.set_shader_parameter(&"green_paint_color", stage.green_paint_color)
 	_preview_material.set_shader_parameter(&"rock_color", Color("9FA3A9"))
 	_preview_material.set_shader_parameter(&"shadow_tint", Color("626D7B"))
 	_preview_mountain.material_override = _preview_material

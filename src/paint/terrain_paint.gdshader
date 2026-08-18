@@ -2,13 +2,19 @@ shader_type spatial;
 render_mode depth_draw_opaque, cull_disabled;
 
 uniform sampler2D paint_mask : filter_linear, repeat_disable;
+// A second sampler view of the same RG8 authority keeps owner categories from
+// blending across texel borders while strength retains its soft edge.
+uniform sampler2D paint_owner_mask : filter_nearest, repeat_disable;
 uniform sampler2D target_mask : filter_nearest, repeat_disable;
+uniform bool use_owner_colors = true;
 // Keep the mountain one readable value step below the bright wall and apron.
 // The aiming camera receives a strong daylight key, so near-white albedo
 // collapses every facet to a flat white silhouette.
 uniform vec4 rock_color : source_color = vec4(0.176, 0.227, 0.314, 1.0);
 uniform vec4 shadow_tint : source_color = vec4(0.063, 0.091, 0.150, 1.0);
 uniform vec4 paint_color : source_color = vec4(0.03, 0.38, 1.0, 1.0);
+uniform vec4 red_paint_color : source_color = vec4(0.94, 0.17, 0.20, 1.0);
+uniform vec4 green_paint_color : source_color = vec4(0.16, 0.78, 0.34, 1.0);
 uniform float support_floor_y = -2.0;
 uniform float support_rear_z = -172.0;
 
@@ -41,7 +47,9 @@ void fragment() {
 	float target = step(0.5, texture(target_mask, UV).r) * paintable_surface;
 	// Every physically traversed mountain-top texel stays visibly painted. The
 	// target mask classifies scoreable coverage; it does not erase valid paint.
-	float center = texture(paint_mask, UV).r * paintable_surface;
+	vec2 paint_sample = texture(paint_mask, UV).rg;
+	float center = paint_sample.r * paintable_surface;
+	float owner = floor(texture(paint_owner_mask, UV).g * 255.0 + 0.5);
 	// PaintSystem only counts texels at or above 0.5. Match that boundary in
 	// the visible fill so filtered edge samples cannot form an unscored blue halo.
 	float painted = step(0.5, center);
@@ -60,9 +68,12 @@ void fragment() {
 		* mix(0.90, 1.04, upwardness)
 		* mix(0.965, 1.035, facet_tone);
 	vec3 dry_rock = mix(support_rock, top_rock, paintable_surface);
-	float paint_luma = dot(paint_color.rgb, vec3(0.2126, 0.7152, 0.0722));
-	vec3 nontarget_paint = mix(paint_color.rgb, vec3(paint_luma), 0.58) * 1.28;
-	vec3 painted_color = mix(nontarget_paint, paint_color.rgb, target);
+	vec3 owner_color = use_owner_colors
+		? (owner > 1.5 ? green_paint_color.rgb : red_paint_color.rgb)
+		: paint_color.rgb;
+	float paint_luma = dot(owner_color, vec3(0.2126, 0.7152, 0.0722));
+	vec3 nontarget_paint = mix(owner_color, vec3(paint_luma), 0.58) * 1.28;
+	vec3 painted_color = mix(nontarget_paint, owner_color, target);
 	ALBEDO = mix(dry_rock, painted_color, painted);
 	ROUGHNESS = mix(0.88, 0.24, painted);
 	SPECULAR = mix(0.32, 0.72, wet_core);

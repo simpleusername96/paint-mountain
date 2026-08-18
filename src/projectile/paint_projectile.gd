@@ -19,12 +19,17 @@ signal motion_state_changed(
 signal woke(projectile: PaintProjectile, reason: StringName)
 signal terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal stopped(projectile: PaintProjectile, reason: StringName)
+signal intrinsic_effect_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal apex_split_requested(projectile: PaintProjectile, child_velocities: Array[Vector3])
 
 const IMPACT_SPEED_THRESHOLD := 8.0
 const RECONTACT_ABSENCE_TICKS := 2
 const RECOVERY_CLEARANCE_EPSILON := 0.01
 const INVALID_GEOMETRY_CONFIRMATION_TICKS := 3
 const RECOVERY_EVENT_MINIMUM_FRACTION := 0.25
+const STANDARD_BALL_BEHAVIOR := preload("res://src/projectile/standard_ball_behavior.gd")
+const IMPACT_BURST_BALL_BEHAVIOR := preload("res://src/projectile/impact_burst_ball_behavior.gd")
+const APEX_SPLIT_BALL_BEHAVIOR := preload("res://src/projectile/apex_split_ball_behavior.gd")
 
 enum MotionState {
 	MOVING_AIRBORNE,
@@ -35,6 +40,8 @@ enum MotionState {
 var projectile_data: ProjectileData
 var split_generation: int = 0
 var shot_id: int = 0
+var ball_kind: int = BallKind.Value.STANDARD
+var paint_channel: int = PaintChannel.Value.RED
 var stage_bounds := AABB(Vector3(-140.0, -30.0, -210.0), Vector3(280.0, 210.0, 260.0))
 var spawn_ordinal: int:
 	get:
@@ -75,6 +82,7 @@ var _invalid_geometry_ticks: int = 0
 var _velocity_history: Array[Vector3] = []
 var _queued_desired_velocity := Vector3.INF
 var _queued_desired_velocity_tick: int = -1
+var _behavior: RefCounted
 
 
 func paint_radius_multiplier() -> float:
@@ -102,7 +110,8 @@ func configure(
 		paint_surface_tuning: PaintSurfaceTuning = null,
 		assigned_spawn_ordinal: int = -1,
 		assigned_shot_id: int = 0,
-		assigned_never_contacted_deadline: float = -1.0
+		assigned_never_contacted_deadline: float = -1.0,
+		assigned_ball_token: BallToken = null
 ) -> void:
 	projectile_data = data
 	stage_bounds = bounds
@@ -123,6 +132,11 @@ func configure(
 	_cached_incoming_velocity = launch_velocity
 	_velocity_history.assign([launch_velocity])
 	split_generation = generation
+	var token := assigned_ball_token if assigned_ball_token != null else BallToken.new()
+	assert(token.is_valid(), "PaintProjectile requires a valid ball token.")
+	ball_kind = token.kind
+	paint_channel = token.channel
+	_behavior = _behavior_for_token(token, generation)
 
 
 func _ready() -> void:
@@ -130,6 +144,7 @@ func _ready() -> void:
 	assert(_terrain_surface != null, "PaintProjectile requires the authoritative TerrainSurface.")
 	assert(_paint_surface_tuning != null and _paint_surface_tuning.is_valid(), "PaintProjectile requires valid paint-surface tuning.")
 	assert(_spawn_ordinal >= 0, "PaintProjectile requires a stable per-shot spawn ordinal.")
+	assert(_behavior != null, "PaintProjectile requires an intrinsic behavior.")
 	mass = projectile_data.mass
 	linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
 	linear_damp = projectile_data.linear_damp
@@ -274,6 +289,26 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	_recover_terrain_embedding(state, _current_top_contact)
 	if _deactivated:
 		return
+	var has_valid_top_contact := false
+	for contact in current_contacts:
+		if SurfaceContactGapValidator.is_paintable_contact(
+			_terrain_surface,
+			_paint_surface_tuning,
+			contact
+		):
+			has_valid_top_contact = true
+			break
+	if has_valid_top_contact:
+		_behavior.note_valid_terrain_contact()
+	elif split_generation == 0:
+		var child_velocities: Array[Vector3] = _behavior.on_airborne_velocity(
+			_cached_incoming_velocity,
+			state.linear_velocity
+		)
+		if not child_velocities.is_empty():
+			apex_split_requested.emit(self, child_velocities)
+			if _deactivated:
+				return
 	_update_paintable_contact_interval(current_contacts, state.get_space_state())
 	if _queued_desired_velocity != Vector3.INF and physics_tick > _queued_desired_velocity_tick:
 		state.apply_central_impulse(mass * (_queued_desired_velocity - state.linear_velocity))
@@ -361,6 +396,14 @@ func _update_paintable_contact_interval(
 			)
 		_has_emitted_first_impact = true
 		_needs_recontact_impact = false
+		var behavior_result: Dictionary = _behavior.on_valid_terrain_contact()
+		if bool(behavior_result.get("emit_burst", false)):
+			_emit_burst_intent(current, _current_paintable_event_index)
+			intrinsic_effect_requested.emit(self, current)
+		if bool(behavior_result.get("consume", false)):
+			valid_top_traversed.emit(self, current, impact_committed)
+			deactivate(ProjectileSettlementReason.CONSUMED)
+			return
 		_seed_paint_interval(current)
 		valid_top_traversed.emit(self, current, impact_committed)
 		return
@@ -430,8 +473,9 @@ func _emit_impact_intent(contact: ProjectileContact, source_event_index: int) ->
 		contact.contact_owner_id,
 		contact.contact_shape_id,
 		contact.collider_shape_index,
-			RadialPaintMark.Kind.IMPACT,
-			shot_id
+		RadialPaintMark.Kind.IMPACT,
+			shot_id,
+			paint_channel
 	)
 	if intent.is_intent_valid():
 		radial_paint_mark_intent_requested.emit(self, intent)
@@ -459,8 +503,9 @@ func _emit_sweep_intent(
 		to_contact.contact_owner_id,
 		to_contact.contact_shape_id,
 		to_contact.collider_shape_index,
-			bridged_gap,
-			shot_id
+		bridged_gap,
+			shot_id,
+			paint_channel
 	)
 	if intent.is_intent_valid():
 		surface_paint_sweep_intent_requested.emit(self, intent)
@@ -619,16 +664,51 @@ func _build_body() -> void:
 	collision.name = "CollisionShape3D"
 	collision.shape = sphere_shape
 	add_child(collision)
-	var sphere_mesh := visual_mesh(projectile_data, 0.78 if split_generation > 0 else 1.0)
+	var sphere_mesh := visual_mesh(
+		projectile_data,
+		0.78 if split_generation > 0 else 1.0,
+		paint_channel
+	)
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "PaintballMesh"
 	mesh_instance.mesh = sphere_mesh
 	add_child(mesh_instance)
+	_add_behavior_silhouette(
+		physical_radius(),
+		sphere_mesh.material as Material
+	)
+
+
+func _emit_burst_intent(contact: ProjectileContact, source_event_index: int) -> bool:
+	var intent := RadialPaintMark.new(
+		contact.physics_tick, _spawn_ordinal, source_event_index, -1,
+		contact.world_position, contact.normal, 14.0, contact.collider_rid,
+		contact.contact_owner_id, contact.contact_shape_id, contact.collider_shape_index,
+		RadialPaintMark.Kind.BURST, shot_id, paint_channel
+	)
+	if intent.is_intent_valid():
+		radial_paint_mark_intent_requested.emit(self, intent)
+		return true
+	return false
+
+
+func _behavior_for_token(token: BallToken, generation: int) -> RefCounted:
+	if generation > 0:
+		return STANDARD_BALL_BEHAVIOR.new()
+	if token.kind == BallKind.Value.IMPACT_BURST:
+		return IMPACT_BURST_BALL_BEHAVIOR.new()
+	if token.kind == BallKind.Value.APEX_SPLIT:
+		return APEX_SPLIT_BALL_BEHAVIOR.new()
+	return STANDARD_BALL_BEHAVIOR.new()
 
 
 ## Render-only projectile representation shared by live bodies and the stage
 ## warm-up path. It never creates physics state or emits gameplay signals.
-static func visual_mesh(data: ProjectileData, radius_multiplier: float = 1.0) -> SphereMesh:
+static func visual_mesh(
+		data: ProjectileData,
+		radius_multiplier: float = 1.0,
+		channel: int = PaintChannel.Value.RED
+) -> SphereMesh:
 	assert(data != null, "Paint projectile visual requires ProjectileData.")
 	var sphere_mesh := SphereMesh.new()
 	var radius := data.radius * radius_multiplier
@@ -637,8 +717,43 @@ static func visual_mesh(data: ProjectileData, radius_multiplier: float = 1.0) ->
 	sphere_mesh.radial_segments = 16
 	sphere_mesh.rings = 8
 	var paint_material := StandardMaterial3D.new()
-	paint_material.albedo_color = Color(0.03, 0.36, 1.0, 1.0)
+	paint_material.albedo_color = PaintChannel.visual_color(channel)
 	paint_material.metallic = 0.16
 	paint_material.roughness = 0.24
 	sphere_mesh.material = paint_material
 	return sphere_mesh
+
+
+func _add_behavior_silhouette(radius: float, material: Material) -> void:
+	if split_generation > 0 or ball_kind == BallKind.Value.STANDARD:
+		return
+	if ball_kind == BallKind.Value.IMPACT_BURST:
+		for direction in [Vector3.UP, Vector3.DOWN, Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+			var spike_mesh := CylinderMesh.new()
+			spike_mesh.top_radius = radius * 0.16
+			spike_mesh.bottom_radius = radius * 0.28
+			spike_mesh.height = radius * 0.52
+			spike_mesh.radial_segments = 8
+			spike_mesh.material = material
+			var spike := MeshInstance3D.new()
+			spike.mesh = spike_mesh
+			spike.position = direction * radius * 0.92
+			spike.quaternion = Quaternion(Vector3.UP, direction)
+			spike.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			add_child(spike)
+		return
+	if ball_kind == BallKind.Value.APEX_SPLIT:
+		for angle_degrees in [-90.0, 30.0, 150.0]:
+			var lobe_mesh := SphereMesh.new()
+			lobe_mesh.radius = radius * 0.48
+			lobe_mesh.height = radius * 0.96
+			lobe_mesh.radial_segments = 10
+			lobe_mesh.rings = 6
+			lobe_mesh.material = material
+			var lobe := MeshInstance3D.new()
+			lobe.mesh = lobe_mesh
+			var angle := deg_to_rad(angle_degrees)
+			# Keep the three-lobe identity readable from the authored follow camera;
+			# collision remains the unchanged central sphere.
+			lobe.position = Vector3(cos(angle), sin(angle), 0.0) * radius * 0.84
+			add_child(lobe)

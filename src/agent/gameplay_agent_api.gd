@@ -73,7 +73,8 @@ func get_observation() -> Dictionary:
 	var fire_readiness := _stage_controller.fire_readiness_snapshot(StageController.ActionOrigin.AGENT)
 	var projectile_activity := _projectile_activity_snapshot(activity)
 	var terminal_pending := bool(activity.get("terminal_pending", false))
-	return {
+	var coverage := _paint_system.coverage_snapshot()
+	var observation := {
 		"schema_version": AttemptObservation.SCHEMA_VERSION,
 		"stage_id": String(_stage_data.stage_id),
 		"terrain_seed": _generated_layout.terrain_seed if _generated_layout != null else 0,
@@ -83,6 +84,9 @@ func get_observation() -> Dictionary:
 		"target_coverage": _stage_data.target_coverage,
 		"current_coverage": _paint_system.coverage_percent(),
 		"paint": {
+			"red_percent": coverage.red_percent,
+			"green_percent": coverage.green_percent,
+			"total_percent": coverage.total_percent,
 			"pending_command_count": _paint_system.pending_work_count(),
 			"last_drained_tick": _paint_system.last_drained_physics_tick(),
 			"mask_checksum": _paint_system.paint_mask_checksum(),
@@ -101,7 +105,7 @@ func get_observation() -> Dictionary:
 		"terrain_height_grid": _height_grid(13, 9),
 		"mechanisms": mechanism_states,
 		"clock": _stage_controller.clock_snapshot(),
-		"result": _stage_controller.result_snapshot(),
+		"result": _public_result_snapshot(),
 		"projectiles": projectile_activity,
 		"interaction": {
 			"mode": _camera_director.interaction_mode_name(),
@@ -140,6 +144,29 @@ func get_observation() -> Dictionary:
 		# readiness rather than implying that Fire has available capacity.
 		"ready_for_action": aim_ready,
 }
+	if _stage_data.uses_target_band():
+		var finish_readiness := _stage_controller.finish_readiness_snapshot()
+		observation["stage_rule"] = {
+			"kind": "target_band",
+			"target_min": _stage_data.target_band.target_min,
+			"target_max": _stage_data.target_band.target_max,
+			"red_weight": _stage_data.color_score_rule.red_weight,
+			"green_weight": _stage_data.color_score_rule.green_weight,
+		}
+		observation["visible_queue"] = _stage_controller.visible_queue_snapshot()
+		observation["score"] = _stage_controller.score_snapshot()
+		observation["finish_readiness"] = {
+			"ready": bool(finish_readiness.get("ready", false)),
+			"board_quiet": bool(finish_readiness.get("board_quiet", false)),
+			"in_target_band": bool(finish_readiness.get("in_target_band", false)),
+		}
+	else:
+		observation["stage_rule"] = {
+			"kind": "legacy_coverage",
+			"target_coverage": _stage_data.target_coverage,
+		}
+		observation["visible_queue"] = []
+	return observation
 
 
 func _sealed_shot_dictionaries() -> Array[Dictionary]:
@@ -165,6 +192,10 @@ func finish() -> bool:
 
 func restart() -> void:
 	_stage_controller.restart(false, StageController.ActionOrigin.AGENT)
+
+
+func new_deal() -> bool:
+	return _stage_controller.restart_new_deal(false, StageController.ActionOrigin.AGENT)
 
 
 func change_interaction_mode(mode: CameraDirector.InteractionMode) -> bool:
@@ -205,7 +236,19 @@ func _on_shot_observation_sealed(observation: ShotObservation) -> void:
 
 
 func _on_stage_finished(result: Dictionary) -> void:
-	gameplay_event.emit(&"stage_finished", result.duplicate(true))
+	gameplay_event.emit(&"stage_finished", _sanitize_public_result(result))
+
+
+func _public_result_snapshot() -> Dictionary:
+	return _sanitize_public_result(_stage_controller.result_snapshot())
+
+
+func _sanitize_public_result(result: Dictionary) -> Dictionary:
+	var public_result := result.duplicate(true)
+	# The seed remains private attempt evidence because Same Deal can make an
+	# unrevealed tail strategically relevant after a manual terminal state.
+	public_result.erase("deal_seed")
+	return public_result
 
 
 func _projectile_activity_snapshot(activity: Dictionary) -> Dictionary:

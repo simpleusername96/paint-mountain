@@ -41,6 +41,14 @@ mouse_filter = 2
 theme_type_variation = &"StageCardNumber"
 text = "01"
 
+[node name="RuleBadge" type="Label" parent="Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"StageCardFacts"
+text = "PROTOTYPE"
+vertical_alignment = 1
+
 [node name="SelectedMark" type="TextureRect" parent="Margin/Content/Header"]
 unique_name_in_owner = true
 visible = false
@@ -70,3 +78,4 @@ layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"StageCardFacts"
 text = "목표 4.0%  ·  최고 기록 0.0%"
+autowrap_mode = 2

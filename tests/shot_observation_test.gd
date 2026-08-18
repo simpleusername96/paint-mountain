@@ -133,7 +133,7 @@ func _run() -> void:
 	if source.sealed.size() == 1:
 		var observation: ShotObservation = source.sealed[0]
 		_assert_true(observation.is_sealed, "consumer must receive only a sealed observation")
-		_assert_true(observation.schema_version == 6, "sealed observation must use schema 6")
+		_assert_true(observation.schema_version == ShotObservation.SCHEMA_VERSION, "sealed observation must use the current schema")
 		_assert_true(observation.shot_id == fired_shot_id, "the matching finished family must own the sealed observation")
 		_assert_true(observation.shot_number == 1, "observation must retain shot order")
 		_assert_true(observation.first_contact == source.first_contact, "first contact must come from the manager signal")
@@ -160,7 +160,7 @@ func _run() -> void:
 		_assert_true(source.sealed_tick >= source.last_drain_event_tick, "sealing must not precede the final paint drain")
 		_assert_true(controller.last_sealed_shot_observation() == observation, "StageController must expose the same sealed object")
 	var agent: GameplayAgentApi = gameplay.get_node("GameplayAgentApi")
-	_assert_true(bool(agent.get_observation().previous_shot.get("is_sealed", false)) and int(agent.get_observation().previous_shot.get("schema_version", 0)) == 6, "agent observation must consume the sealed schema-6 object")
+	_assert_true(bool(agent.get_observation().previous_shot.get("is_sealed", false)) and int(agent.get_observation().previous_shot.get("schema_version", 0)) == ShotObservation.SCHEMA_VERSION, "agent observation must consume the current sealed schema object")
 	gameplay.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true

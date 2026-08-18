@@ -300,13 +300,20 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	var hud_rect := Rect2(rendered_hud_rect.position, logical_size)
 	var hud_center := hud_rect.get_center()
 	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
-	var coverage_value := coverage.get_node_or_null("CoverageValue") as Label
-	var target_value := coverage.get_node_or_null("TargetValue") as Label
-	var progress := coverage.get_node_or_null("Progress") as ProgressBar
-	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left coverage meter must be the sole target owner")
-	_assert_true(coverage_value != null and target_value != null, "the left coverage meter must own both current and target values")
-	_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the coverage rail must fill from bottom to top")
-	_assert_true(coverage.is_visible_in_tree() and coverage.get_global_rect().get_center().x < hud_center.x, "the coverage meter must remain on the left during aiming")
+	var target_band := hud_root.get_node("TargetBandMeter") as TargetBandMeter
+	var queue := hud_root.get_node("QueueRail") as QueueRail
+	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left rule meter must remain the sole score target owner")
+	if target_band.is_visible_in_tree():
+		_assert_true(not coverage.is_visible_in_tree(), "prototype aiming must replace the legacy coverage rail")
+		_assert_true(target_band.get_global_rect().get_center().x < hud_center.x, "the target-band meter must remain on the left during prototype aiming")
+		_assert_true(queue.is_visible_in_tree() and queue.get_global_rect().get_center().x > hud_center.x, "the prototype queue must remain on the right during aiming")
+	else:
+		var coverage_value := coverage.get_node_or_null("CoverageValue") as Label
+		var target_value := coverage.get_node_or_null("TargetValue") as Label
+		var progress := coverage.get_node_or_null("Progress") as ProgressBar
+		_assert_true(coverage_value != null and target_value != null, "the legacy coverage meter must own both current and target values")
+		_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the legacy coverage rail must fill from bottom to top")
+		_assert_true(coverage.is_visible_in_tree() and coverage.get_global_rect().get_center().x < hud_center.x, "the legacy coverage meter must remain on the left during aiming")
 
 	var actions := hud_root.get_node("ActionButtons") as ActionButtons
 	var fire := actions.get_node_or_null("FireButton") as Button

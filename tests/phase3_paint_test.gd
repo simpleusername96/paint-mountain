@@ -15,6 +15,8 @@ func _run_checks() -> void:
 	var paint_system := _configured_system(flat)
 	var material := paint_system.get_meta(&"test_material") as ShaderMaterial
 	_assert_true(material.get_shader_parameter(&"paint_mask") == paint_system.paint_texture(), "shader must bind the authoritative paint texture")
+	_assert_true(material.get_shader_parameter(&"paint_owner_mask") == paint_system.paint_texture(), "shader must bind ownership from the same authoritative texture")
+	_assert_true(bool(material.get_shader_parameter(&"use_owner_colors")), "runtime terrain must enable owner-aware channel colors")
 	_assert_true(material.get_shader_parameter(&"target_mask") == paint_system.target_texture(), "shader must bind the authoritative target texture")
 	_assert_true(TargetMaskRasterizer.byte_checksum(paint_system.target_bytes_read_only()) == flat.target_mask_checksum, "PaintSystem target-byte copy must retain the layout checksum")
 	_assert_true(paint_system.total_target_pixels() == 512 * 512, "full fixture mask must expose every pixel as target")

@@ -16,7 +16,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var save_system := root.get_node("/root/SaveSystem")
 	var defaults: Dictionary = save_system.default_data()
-	_assert_true(defaults.version == 5, "current saves must use format 5")
+	_assert_true(defaults.version == SaveSystem.SAVE_VERSION, "current saves must use the active format")
 	_assert_true(
 		int(defaults.coverage_metric_version) == TargetSurfaceCoverage.METRIC_VERSION,
 		"current saves must identify the physical-area coverage metric"
@@ -31,7 +31,7 @@ func _run() -> void:
 
 	_write_v1_fixture()
 	var migrated: Dictionary = save_system.load_data(MIGRATION_PATH)
-	_assert_true(migrated.version == 5, "format 1 saves must migrate to format 5")
+	_assert_true(migrated.version == SaveSystem.SAVE_VERSION, "format 1 saves must migrate to the active format")
 	_assert_true(not migrated.has("unlocked_stages"), "all-open migration must discard the obsolete lock list")
 	_assert_true(
 		migrated.best_results.is_empty() \
@@ -42,7 +42,7 @@ func _run() -> void:
 	)
 	_assert_true(is_equal_approx(float(migrated.settings.master_volume), 0.37), "migration must preserve settings")
 	_assert_true(migrated.settings.language == "ko" and not migrated.settings.language_user_selected, "migration must add the Korean default without fabricating a choice")
-	_assert_true(not migrated.settings.has("aim_sensitivity_percent"), "format-5 migration must ignore the retired sensitivity key")
+	_assert_true(not migrated.settings.has("aim_sensitivity_percent"), "current migration must ignore the retired sensitivity key")
 
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false

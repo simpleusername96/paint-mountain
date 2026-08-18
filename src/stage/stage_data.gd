@@ -1,6 +1,11 @@
 class_name StageData
 extends Resource
 
+enum RuleKind {
+	LEGACY_COVERAGE,
+	TARGET_BAND,
+}
+
 @export_category("Identity")
 @export var stage_id: StringName = &"stage_01"
 @export var stage_version: int = StageGenerationContract.CONTRACT_VERSION
@@ -14,6 +19,15 @@ extends Resource
 @export var paint_color: Color = Color(0.03, 0.38, 1.0, 1.0)
 @export var star_thresholds := Vector3(10.0, 18.0, 28.0)
 @export var objective_key: StringName = &"stage.first_descent.objective"
+
+@export_category("Prototype Target Band")
+@export var rule_kind: RuleKind = RuleKind.LEGACY_COVERAGE
+@export var color_score_rule: ColorScoreRuleData
+@export var target_band: TargetBandData
+@export var ball_deal_profile: BallDealProfile
+@export var default_deal_seed: int = 1
+@export var red_paint_color: Color = PaintChannel.RED_COLOR
+@export var green_paint_color: Color = PaintChannel.GREEN_COLOR
 
 @export_category("World")
 @export var generation_profile: StageGenerationProfile
@@ -42,6 +56,19 @@ func resolved_duration_seconds() -> float:
 	if duration_seconds > 0.0:
 		return duration_seconds
 	return float(StageProgressionData.duration_seconds_for(stage_number))
+
+
+func uses_target_band() -> bool:
+	return rule_kind == RuleKind.TARGET_BAND
+
+
+func has_valid_rule_contract() -> bool:
+	if not uses_target_band():
+		return target_coverage > 0.0
+	return color_score_rule != null and color_score_rule.is_valid() \
+			and target_band != null and target_band.is_valid() \
+			and ball_deal_profile != null and ball_deal_profile.is_valid() \
+			and default_deal_seed > 0
 
 
 func paint_world_bounds() -> Rect2:

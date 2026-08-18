@@ -5,7 +5,7 @@ extends SceneTree
 ## runtime then consumes only the serialized result.
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
-const BUNDLE_FORMAT_VERSION := 5
+const BUNDLE_FORMAT_VERSION := 6
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
 const MATERIALIZER := preload("res://src/stage_generation/stage_catalog_materializer.gd")
 const BUNDLE_STORE := preload("res://src/stage_generation/stage_catalog_bundle_store.gd")
@@ -149,17 +149,25 @@ func _build_catalog() -> Dictionary:
 		push_error("The offline builder needs the complete reviewed thirty-stage source catalog.")
 		return {}
 	var source_stages: Array[StageData] = existing.ordered_stages()
+	var reuse_verified_layouts := "--reuse-layouts" in OS.get_cmdline_user_args()
 	var manifest_parts: Array[String] = []
 	var layouts: Array[BakedStageLayoutData] = []
 	for source_index in range(StageProgressionData.STAGE_COUNT):
 		var stage := MATERIALIZER.materialize_stage(source_stages[source_index], source_index + 1)
 		if stage == null:
 			return {}
-		var built := await _generate_and_bake(stage)
-		if built.is_empty():
+		var baked: BakedStageLayoutData
+		if reuse_verified_layouts:
+			baked = load(existing.layout_paths[source_index]) as BakedStageLayoutData
+		else:
+			var built := await _generate_and_bake(stage)
+			if built.is_empty():
+				return {}
+			stage = built.stage as StageData
+			baked = built.baked as BakedStageLayoutData
+		if baked == null:
+			push_error("Stage catalog build could not load baked layout %d." % (source_index + 1))
 			return {}
-		stage = built.stage as StageData
-		var baked := built.baked as BakedStageLayoutData
 		var hydrated := StageLayoutBakeCodec.hydrate(baked, stage)
 		if hydrated == null:
 			return {}

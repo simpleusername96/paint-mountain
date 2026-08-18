@@ -51,6 +51,8 @@ func is_valid(require_bundle: bool = true) -> bool:
 			return false
 		if stage.stage_id != stage_id or stage.stage_version != catalog_version:
 			return false
+		if not stage.has_valid_rule_contract():
+			return false
 		var expected_layout_path := "%s/layouts/%s_layout.res" % [
 			generated_bundle_root(manifest_sha256), String(stage_id)
 		]

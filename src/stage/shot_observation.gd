@@ -1,11 +1,13 @@
 class_name ShotObservation
 extends RefCounted
 
-const SCHEMA_VERSION := 6
+const SCHEMA_VERSION := 7
 
 var schema_version: int = SCHEMA_VERSION
 var shot_number: int = 0
 var shot_id: int = 0
+var ball_kind: int = -1
+var paint_channel: int = -1
 var commanded_yaw: float = 0.0
 var commanded_elevation: float = 0.0
 var commanded_power: float = 0.0
@@ -23,6 +25,10 @@ var settlement_reason_counts: Dictionary = {}
 var coverage_before: float = 0.0
 var coverage_after: float = 0.0
 var coverage_gain: float = 0.0
+var score_before: Dictionary = {}
+var score_after: Dictionary = {}
+var paint_score_delta: float = 0.0
+var ball_effects: Array[Dictionary] = []
 var coverage_metric_version: int = TargetSurfaceCoverage.METRIC_VERSION
 var paint_command_count: int = 0
 var paint_command_rejections: Array[Dictionary] = []
@@ -53,6 +59,28 @@ func configure(
 	commanded_elevation = elevation
 	commanded_power = power
 	coverage_before = before_coverage
+
+
+func configure_target_context(token: BallToken, before_score: Dictionary) -> void:
+	if is_sealed or token == null or not token.is_valid():
+		return
+	ball_kind = token.kind
+	paint_channel = token.channel
+	score_before = before_score.duplicate(true)
+
+
+func record_ball_effect(
+		effect_id: StringName,
+		projectile_spawn_ordinal: int,
+		physics_tick: int
+) -> void:
+	if is_sealed or String(effect_id).is_empty():
+		return
+	ball_effects.append({
+		"effect_id": String(effect_id),
+		"spawn_ordinal": projectile_spawn_ordinal,
+		"physics_tick": physics_tick,
+	})
 
 
 func record_contact(
@@ -172,13 +200,18 @@ func record_paint_drain(last_drained_tick: int, paint_mask_checksum: int) -> voi
 func seal(
 		final_coverage: float,
 		last_drained_tick: int,
-		paint_mask_checksum: int
+		paint_mask_checksum: int,
+		final_score: Dictionary = {}
 ) -> void:
 	if is_sealed:
 		return
 	record_paint_drain(last_drained_tick, paint_mask_checksum)
 	coverage_after = maxf(final_coverage, 0.0)
 	coverage_gain = maxf(coverage_after - coverage_before, 0.0)
+	if not final_score.is_empty():
+		score_after = final_score.duplicate(true)
+		paint_score_delta = float(score_after.get("paint_score", 0.0)) \
+				- float(score_before.get("paint_score", 0.0))
 	is_sealed = true
 
 
@@ -187,6 +220,10 @@ func to_dictionary() -> Dictionary:
 		"schema_version": schema_version,
 		"shot_number": shot_number,
 		"shot_id": shot_id,
+		"ball_kind": ball_kind,
+		"ball_kind_id": String(BallKind.stable_id(ball_kind)),
+		"paint_channel": paint_channel,
+		"paint_channel_id": String(PaintChannel.stable_id(paint_channel)),
 		"commanded_aim": {
 			"yaw": commanded_yaw,
 			"elevation": commanded_elevation,
@@ -206,6 +243,10 @@ func to_dictionary() -> Dictionary:
 		"coverage_before": coverage_before,
 		"coverage_after": coverage_after,
 		"coverage_gain": coverage_gain,
+		"score_before": score_before.duplicate(true),
+		"score_after": score_after.duplicate(true),
+		"paint_score_delta": paint_score_delta,
+		"ball_effects": ball_effects.duplicate(true),
 		"coverage_metric_version": coverage_metric_version,
 		"paint_command_count": paint_command_count,
 		"paint_command_rejections": paint_command_rejections.duplicate(true),

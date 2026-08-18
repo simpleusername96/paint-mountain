@@ -12,6 +12,8 @@ signal projectile_stopped(projectile: PaintProjectile, reason: StringName)
 signal projectile_motion_state_changed(projectile: PaintProjectile, previous_state: int, current_state: int)
 signal projectile_woke(projectile: PaintProjectile, reason: StringName)
 signal projectile_terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
+signal intrinsic_effect_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal ball_effect_triggered(projectile: PaintProjectile, effect_id: StringName, position: Vector3)
 signal all_projectiles_settled
 signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
 signal shot_family_finished(shot_id: int)
@@ -62,7 +64,8 @@ func spawn_projectile(
 		velocity: Vector3,
 		split_generation: int = 0,
 		requested_shot_id: int = 0,
-		never_contacted_deadline: float = -1.0
+		never_contacted_deadline: float = -1.0,
+		ball_token: BallToken = null
 ) -> PaintProjectile:
 	_prune_invalid()
 	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
@@ -96,7 +99,8 @@ func spawn_projectile(
 		_paint_surface_tuning,
 		assigned_ordinal,
 		assigned_shot_id,
-		never_contacted_deadline if split_generation == 0 else -1.0
+		never_contacted_deadline if split_generation == 0 else -1.0,
+		ball_token
 	)
 	projectile.contact_reported.connect(_on_contact_reported)
 	projectile.radial_paint_mark_intent_requested.connect(_on_radial_paint_mark_intent)
@@ -107,6 +111,8 @@ func spawn_projectile(
 	projectile.motion_state_changed.connect(_on_projectile_motion_state_changed)
 	projectile.woke.connect(_on_projectile_woke)
 	projectile.terrain_recovered.connect(_on_projectile_terrain_recovered)
+	projectile.intrinsic_effect_requested.connect(_on_intrinsic_effect_requested)
+	projectile.apex_split_requested.connect(_on_apex_split_requested)
 	projectile.stopped.connect(_on_projectile_stopped)
 	projectile.position = to_local(origin)
 	projectile.linear_velocity = velocity
@@ -368,6 +374,36 @@ func _on_projectile_terrain_recovered(
 		correction_distance: float
 ) -> void:
 	projectile_terrain_recovered.emit(projectile, physics_tick, correction_distance)
+
+
+func _on_intrinsic_effect_requested(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+	intrinsic_effect_requested.emit(projectile, contact)
+	ball_effect_triggered.emit(projectile, &"impact_burst", contact.world_position)
+
+
+func _on_apex_split_requested(
+		parent: PaintProjectile,
+		child_velocities: Array[Vector3]
+) -> void:
+	if parent == null or not is_instance_valid(parent) \
+			or parent.split_generation != 0 or child_velocities.size() != 3 \
+			or not can_replace_resident_with_children(parent, child_velocities.size()):
+		return
+	var child_token := BallToken.new(BallKind.Value.STANDARD, parent.paint_channel)
+	ball_effect_triggered.emit(parent, &"apex_split", parent.global_position)
+	parent.deactivate(ProjectileSettlementReason.CONSUMED)
+	for velocity in child_velocities:
+		var child := spawn_projectile(
+			parent.projectile_data,
+			parent.global_position,
+			velocity,
+			1,
+			parent.shot_id,
+			-1.0,
+			child_token
+		)
+		if child == null:
+			push_error("Pre-admitted Apex Split failed to spawn a child.")
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:

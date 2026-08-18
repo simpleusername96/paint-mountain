@@ -12,6 +12,7 @@ func _capture() -> void:
 	var requested_state := "briefing"
 	var requested_locale := "ko"
 	var background_capture := false
+	var requested_size := Vector2i.ZERO
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/gameplay_capture.png")
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
@@ -24,6 +25,12 @@ func _capture() -> void:
 			requested_locale = argument.trim_prefix("--locale=")
 		elif argument == "--background":
 			background_capture = true
+		elif argument.begins_with("--size="):
+			var parts := argument.trim_prefix("--size=").split("x")
+			if parts.size() == 2:
+				requested_size = Vector2i(int(parts[0]), int(parts[1]))
+	if requested_size.x > 0 and requested_size.y > 0:
+		DisplayServer.window_set_size(requested_size)
 	if background_capture:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
@@ -59,8 +66,37 @@ func _capture() -> void:
 			controller.toggle_pause()
 		"clear":
 			controller.force_finish_debug()
+			await process_frame
+			# The capture is a presentation fixture: retain the authored band and
+			# overwrite only the result values after the real terminal transition.
+			var result := controller.result_snapshot()
+			var center := controller.stage_data.target_band.center()
+			result.merge({
+				"cleared": true,
+				"paint_score": center,
+				"stars": 3,
+				"red_percent": center * 0.5,
+				"green_percent": center * 0.5,
+				"total_percent": center,
+			}, true)
+			(gameplay.get_node("HUD") as HUDController).show_target_band_result_snapshot(result)
+		"failed":
+			controller.force_finish_debug()
+		"shot_follow":
+			controller.begin_aiming()
+			await physics_frame
+			if not controller.request_fire():
+				push_error("Could not admit the root required for Shot Follow capture.")
+				quit(1)
+				return
+		"late_queue":
+			controller.begin_aiming()
+			var deal: Array[BallToken] = controller._deal
+			controller._queue_cursor = maxi(deal.size() - 1, 0)
+			controller._emit_deal_changed()
 	for _frame in range(40):
 		await process_frame
+	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	var error := image.save_png(output_path)
 	if error != OK:

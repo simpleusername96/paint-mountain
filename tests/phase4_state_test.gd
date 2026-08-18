@@ -13,8 +13,8 @@ func _run_checks() -> void:
 	Engine.time_scale = 2.0
 	var game_state := root.get_node("/root/GameState") as GameState
 	game_state.persistence_enabled = false
-	game_state.select_stage(&"first_descent")
-	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
+	game_state.select_stage(&"stage_07")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_07")
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame

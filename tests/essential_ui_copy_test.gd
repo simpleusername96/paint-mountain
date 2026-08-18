@@ -83,6 +83,8 @@ func _run_checks() -> void:
 	_assert_present(hud_root, [
 		"BriefingActions/Back",
 		"BriefingActions/Start",
+		"BriefingRule/Margin/Content/Title",
+		"BriefingRule/Margin/Content/Text",
 		"ResultPanel/Margin/Content/Target",
 		"ResultPanel/Margin/Content/Retry",
 		"ResultPanel/Margin/Content/Next",

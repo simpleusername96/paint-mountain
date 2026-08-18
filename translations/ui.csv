@@ -1,4 +1,23 @@
 keys,en,ko
+ball.standard,Standard,표준
+ball.impact_burst,Impact Burst,충돌 폭발
+ball.apex_split,Apex Split,최고점 분열
+paint.red,Red,빨강
+paint.green,Green,초록
+stage.prototype,PROTOTYPE,프로토타입
+stage.target_band,TARGET BAND,목표 구간
+stage.allowed_balls,BALLS,공 종류
+stage.score_roles,SCORE,점수
+hud.briefing_rule,RULE,규칙
+stage.prototype_briefing.default,Finish inside the target band. Use Red and Green to control the final score.,최종 점수를 목표 구간 안에 맞추세요. 빨강과 초록으로 점수를 조절하세요.
+stage.prototype_briefing.1,Paint with Standard balls. Both Red and Green add to the final score.,표준 공으로 칠하세요. 빨강과 초록 모두 최종 점수에 더해집니다.
+stage.prototype_briefing.2,Impact Burst paints a wider patch on its first valid landing.,충돌 폭발 공은 첫 유효 착지에서 더 넓은 영역을 칠합니다.
+stage.prototype_briefing.3,Apex Split becomes three Standard balls at the top of its arc.,최고점 분열 공은 궤도의 정상에서 표준 공 세 개로 나뉩니다.
+stage.prototype_briefing.4,Green adds and Red subtracts. Overwrite paint to correct the score.,초록은 더하고 빨강은 뺍니다. 페인트를 덮어써 점수를 조절하세요.
+stage.prototype_briefing.5,Red adds and Green subtracts. Overwrite paint to correct the score.,빨강은 더하고 초록은 뺍니다. 페인트를 덮어써 점수를 조절하세요.
+stage.prototype_briefing.6,Red adds to the score. Green paint is neutral.,빨강은 점수에 더해집니다. 초록 페인트는 점수에 영향을 주지 않습니다.
+hud.paint_score,PAINT SCORE,페인트 점수
+hud.target_band,TARGET,목표 구간
 app.title,PAINT MOUNTAIN,페인트 마운틴
 ui.play,PLAY,플레이
 ui.stage_select,STAGE SELECT,스테이지 선택
@@ -24,6 +43,8 @@ ui.resume,RESUME,계속
 ui.next,NEXT,다음
 ui.previous,PREVIOUS,이전
 ui.retry,RETRY,재도전
+ui.same_deal,SAME DEAL,같은 배치
+ui.new_deal,NEW DEAL,새 배치
 ui.loading_stage,LOADING STAGE...,스테이지 불러오는 중…
 ui.stage_load_failed,STAGE LOAD FAILED,스테이지 불러오기 실패
 ui.retry_stage_load,RETRY LOAD,다시 불러오기
@@ -81,6 +102,12 @@ result.grade,GRADE,등급
 result.shots_used,SHOTS USED,사용한 탄
 result.previous_best,PREVIOUS BEST,이전 최고
 result.elapsed,ELAPSED,경과 시간
+result.clear,CLEAR,성공
+result.failed,FAILED,실패
+result.score,SCORE,점수
+result.band,TARGET BAND,목표 구간
+hud.now,NOW,현재
+hud.next,NEXT,다음
 stage.first_descent.name,FIRST DESCENT,첫 번째 하강
 stage.first_descent.objective,Aim high on the broad slope and let the ball paint as it rolls.,넓은 경사면의 높은 지점을 노리고 공이 구르며 칠하게 하세요.
 stage.burst_basin.name,BURST BASIN,폭발 분지

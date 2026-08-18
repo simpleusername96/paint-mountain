@@ -111,7 +111,10 @@ func _run_checks() -> void:
 		if parsed.shot_observations.size() == 1:
 			var sealed: Dictionary = parsed.shot_observations[0]
 			var source_observation := controller.last_sealed_shot_observation()
-			_assert_true(int(sealed.schema_version) == 6, "debug export must contain schema-6 observations")
+			_assert_true(
+				int(sealed.schema_version) == ShotObservation.SCHEMA_VERSION,
+				"debug export must contain the current shot-observation schema"
+			)
 			_assert_true(
 				source_observation != null \
 						and int(sealed.final_paint_mask_checksum) \

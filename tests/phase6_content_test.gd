@@ -39,7 +39,9 @@ func _run_checks() -> void:
 	var loaded: Dictionary = save_system.load_data(TEST_SAVE_PATH)
 	_assert_true(String(loaded.selected_stage_id) == "stage_30", "selected stage must survive reload")
 	var first_best: Dictionary = Dictionary(loaded.best_results).get("stage_01", {})
-	_assert_true(is_equal_approx(float(first_best.get("coverage", 0.0)), 24.5), "best coverage must survive reload")
+	var archived_first: Dictionary = Dictionary(loaded.legacy_best_results).get("stage_01", {})
+	_assert_true(first_best.is_empty(), "unversioned scalar coverage must not become an active target-band best")
+	_assert_true(is_equal_approx(float(archived_first.get("coverage", 0.0)), 24.5), "unversioned scalar coverage must survive in the legacy archive")
 	_assert_true(not loaded.has("unlocked_stages"), "all-open progression must not persist a lock list")
 
 	var invalid := FileAccess.open(TEST_SAVE_PATH, FileAccess.WRITE)
