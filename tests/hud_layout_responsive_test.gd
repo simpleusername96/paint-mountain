@@ -159,6 +159,28 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 				and score_scale.size.y >= score_scale.get_combined_minimum_size().y,
 		"score scale must honor its component minimum geometry at %s" % viewport_size
 	)
+
+	var result := hud_root.get_node("ResultPanel") as ResultPanel
+	result.configure_has_next(true)
+	result.configure_target(10.0)
+	result.show_coverage_result(24.0, 2, 18.0, 61.0, 3)
+	hud.show_state(StageController.State.RESULT)
+	await process_frame
+	_assert_inside(result, safe_rect, "ResultPanel at %s (%s)" % [viewport_size, locale])
+	_assert_true(
+		result.get_global_rect().encloses(
+			(result.get_node("Margin/Content/Summary") as Control).get_global_rect()
+		),
+		"result summary must remain inside its world overlay at %s (%s)" % [viewport_size, locale]
+	)
+	for action_name in ["Retry", "Next", "Stages"]:
+		var action := result.get_node("Margin/Content/Actions/%s" % action_name) as ActionControl
+		_assert_true(
+			result.get_global_rect().encloses(action.get_global_rect()),
+			"result %s must stay inside the safe overlay at %s (%s)" % [
+				action_name, viewport_size, locale,
+			]
+		)
 	hud.queue_free()
 	await process_frame
 

@@ -14,6 +14,7 @@ const COMPACT_HEIGHT := 620.0
 @onready var _score_scale := get_node("ScoreScale") as ScoreScale
 @onready var _queue := get_node("BallQueue") as BallQueue
 @onready var _legend := get_node("ContextLegend") as ContextLegend
+@onready var _result := get_node("ResultPanel") as ResultPanel
 
 var _compact_active := false
 var _score_summary := false
@@ -71,6 +72,12 @@ func _apply_standard_layout() -> void:
 		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(440.0, 118.0))
 	else:
 		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(116.0, 286.0))
+	_result.set_compact(false)
+	_set_rect(
+		_result,
+		Vector2(size.x - SAFE_MARGIN - 496.0, maxf(88.0, (size.y - 560.0) * 0.5)),
+		Vector2(496.0, 560.0)
+	)
 
 
 func _apply_compact_layout() -> void:
@@ -88,6 +95,12 @@ func _apply_compact_layout() -> void:
 		_set_rect(_score_scale, Vector2(COMPACT_SAFE_MARGIN, 82.0), Vector2(360.0, 104.0))
 	else:
 		_set_rect(_score_scale, Vector2(COMPACT_SAFE_MARGIN, 76.0), Vector2(116.0, 272.0))
+	_result.set_compact(true)
+	_set_rect(
+		_result,
+		Vector2(COMPACT_SAFE_MARGIN, 72.0),
+		Vector2(size.x - COMPACT_SAFE_MARGIN * 2.0, size.y - 84.0)
+	)
 
 
 func _set_rect(control: Control, position: Vector2, control_size: Vector2) -> void:

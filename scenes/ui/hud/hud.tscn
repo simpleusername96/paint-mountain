@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="1"]
 [ext_resource type="Script" path="res://src/ui/hud/hud_root_layout.gd" id="1_layout"]
@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/run_status_card.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/context_legend.tscn" id="13_legend"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/ball_queue.tscn" id="15_queue"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="16_action"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
@@ -100,7 +101,7 @@ offset_right = -90.0
 offset_bottom = 76.0
 grow_horizontal = 0
 
-[node name="ReturnToCannon" type="Button" parent="HUDRoot"]
+[node name="ReturnToCannon" parent="HUDRoot" instance=ExtResource("16_action")]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
@@ -114,9 +115,10 @@ offset_right = 120.0
 offset_bottom = -120.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_type_variation = &"HudModeButton"
+custom_minimum_size = Vector2(240, 52)
 tooltip_text = "hud.return_to_cannon_hint"
 text = "hud.return_to_cannon"
+show_icon = false
 
 [node name="BriefingActions" type="Control" parent="HUDRoot"]
 unique_name_in_owner = true
@@ -130,54 +132,34 @@ offset_right = 380.0
 offset_bottom = -90.0
 grow_vertical = 0
 
-[node name="BriefingRule" type="PanelContainer" parent="HUDRoot"]
+[node name="BriefingObjective" type="Label" parent="HUDRoot"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
 offset_top = 270.0
 offset_right = 380.0
-offset_bottom = 374.0
-theme_type_variation = &"HudRailPanel"
-
-[node name="Margin" type="MarginContainer" parent="HUDRoot/BriefingRule"]
-layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 10
-
-[node name="Content" type="VBoxContainer" parent="HUDRoot/BriefingRule/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="Title" type="Label" parent="HUDRoot/BriefingRule/Margin/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"HudCaption"
-text = "RULE"
-
-[node name="Text" type="Label" parent="HUDRoot/BriefingRule/Margin/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_type_variation = &"HudBody"
+offset_bottom = 346.0
+theme_type_variation = &"WorldBody"
 text = "Finish inside the target band."
 autowrap_mode = 2
 
-[node name="Back" type="Button" parent="HUDRoot/BriefingActions"]
+[node name="Back" parent="HUDRoot/BriefingActions" instance=ExtResource("16_action")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_right = 108.0
 offset_bottom = 52.0
+custom_minimum_size = Vector2(108, 52)
+theme_type_variation = &"WorldQuietButton"
 text = "ui.back"
+show_icon = false
 
-[node name="Start" type="Button" parent="HUDRoot/BriefingActions"]
+[node name="Start" parent="HUDRoot/BriefingActions" instance=ExtResource("16_action")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 120.0
 offset_right = 356.0
 offset_bottom = 52.0
-theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(236, 52)
 text = "ui.start_aiming"
 
 [node name="ResultPanel" parent="HUDRoot" instance=ExtResource("8")]
@@ -190,8 +172,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -364.0
 offset_top = -608.0
-offset_right = -24.0
-offset_bottom = -68.0
+offset_right = 132.0
+offset_bottom = -48.0
 grow_horizontal = 0
 grow_vertical = 0
 

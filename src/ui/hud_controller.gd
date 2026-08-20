@@ -24,10 +24,10 @@ signal angle_step_requested(direction: float)
 @onready var _actions: ActionButtons = %ActionButtons
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
-@onready var _return_to_cannon: Button = %ReturnToCannon
+@onready var _return_to_cannon: ActionControl = %ReturnToCannon
 @onready var _result: ResultPanel = %ResultPanel
 @onready var _briefing: Control = %BriefingActions
-@onready var _briefing_rule: PanelContainer = %BriefingRule
+@onready var _briefing_objective: Label = %BriefingObjective
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
@@ -53,6 +53,7 @@ func update_clock(snapshot: Dictionary) -> void:
 
 func _ready() -> void:
 	_return_to_cannon.hide()
+	_return_to_cannon.configure("hud.return_to_cannon")
 	_connect_components()
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
 	_refresh_briefing_locale()
@@ -65,6 +66,7 @@ func configure(stage_data: StageData) -> void:
 	_top.configure(stage_data)
 	if stage_data.uses_target_band():
 		_score_scale.configure_target_band(stage_data.target_band, stage_data.color_score_rule)
+		_result.configure_target_band_model(stage_data.target_band, stage_data.color_score_rule)
 		var empty_tokens: Array[BallToken] = []
 		_queue.configure(empty_tokens)
 	else:
@@ -273,7 +275,7 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_run_status.update_shots(_shots_remaining)
 		_aim.update_aim(_last_aim.x, _last_aim.y, _last_aim.z)
 		_interaction.refresh_locale()
-		_return_to_cannon.text = tr("hud.return_to_cannon")
+		_return_to_cannon.configure("hud.return_to_cannon")
 		_return_to_cannon.tooltip_text = tr("hud.return_to_cannon_hint")
 		_result.refresh_locale()
 		_context_legend.refresh_locale()
@@ -287,15 +289,14 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 
 
 func _refresh_briefing_locale() -> void:
-	%Back.text = tr("ui.back")
-	%Start.text = tr("ui.start_aiming")
-	%Title.text = tr("hud.briefing_rule")
+	%Back.configure("ui.back")
+	%Start.configure("ui.start_aiming")
 	if _stage_data == null or not _stage_data.uses_target_band():
-		%Text.text = ""
+		_briefing_objective.text = ""
 		return
 	var key := "stage.prototype_briefing.%d" % _stage_data.stage_number
 	var translated := tr(key)
-	%Text.text = translated if translated != key else tr("stage.prototype_briefing.default")
+	_briefing_objective.text = translated if translated != key else tr("stage.prototype_briefing.default")
 
 
 func _refresh_context_legend() -> void:
@@ -343,11 +344,11 @@ func _apply_finish_availability() -> void:
 
 func _apply_target_rule_visibility() -> void:
 	var target_rule := _stage_data != null and _stage_data.uses_target_band()
-	_briefing_rule.visible = target_rule and _current_state == StageController.State.BRIEFING
+	_briefing_objective.visible = target_rule and _current_state == StageController.State.BRIEFING
 	_score_scale.visible = _current_state in [
 		StageController.State.BRIEFING,
 		StageController.State.AIMING,
-	] and _current_camera_mode != CameraDirector.Mode.FOLLOW
+	]
 	_layout.set_score_summary(_current_state == StageController.State.BRIEFING)
 	_queue.visible = target_rule and _current_state in [
 		StageController.State.BRIEFING,

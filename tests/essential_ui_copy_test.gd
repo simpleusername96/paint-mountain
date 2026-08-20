@@ -77,19 +77,20 @@ func _run_checks() -> void:
 	var hud_root := hud.get_node("HUDRoot")
 	_assert_absent(hud_root, [
 		"BriefingPanel",
+		"BriefingRule",
 		"ContextLegend/Divider",
 		"ResultPanel/Margin/Content/CoverageLabel",
 		"ResultPanel/Margin/Content/CoverageExplanation",
+		"ResultPanel/Margin/Content/Target",
 	])
 	_assert_present(hud_root, [
 		"BriefingActions/Back",
 		"BriefingActions/Start",
-		"BriefingRule/Margin/Content/Title",
-		"BriefingRule/Margin/Content/Text",
-		"ResultPanel/Margin/Content/Target",
-		"ResultPanel/Margin/Content/Retry",
-		"ResultPanel/Margin/Content/Next",
-		"ResultPanel/Margin/Content/Stages",
+		"BriefingObjective",
+		"ResultPanel/Margin/Content/Summary",
+		"ResultPanel/Margin/Content/Actions/Retry",
+		"ResultPanel/Margin/Content/Actions/Next",
+		"ResultPanel/Margin/Content/Actions/Stages",
 	])
 	_assert_true(
 		hud_root.find_children("*", "ShortcutHint", true, false).is_empty(),

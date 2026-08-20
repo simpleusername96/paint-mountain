@@ -261,7 +261,7 @@ Preconditions:
 Source owners: `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd`,
 `scenes/ui/components/`, `src/ui/components/`, `translations/ui.csv`
 
-- [ ] **3.1 Build the Cannon Focus safe-area composition.**
+- [x] **3.1 Build the Cannon Focus safe-area composition.**
   - Change: replace the fixed mixed HUD offsets with a container-owned shell:
     Stage/clock/shots/Gear at safe top edges, vertical `ScoreScale` at left,
     horizontal `BallQueue` at upper-right, angle stepper left of Fire, Fire at
@@ -271,19 +271,19 @@ Source owners: `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd`,
   - Accept: 1920x1080, 1280x720, 900x500, and 640x360 models retain score
     endpoints, angle, power, Fire, queue truth, status, and a clear central
     cannon/trajectory/mountain view.
-- [ ] **3.2 Apply the shell to Briefing and Aim.**
+- [x] **3.2 Apply the shell to Briefing and Aim.**
   - Change: Briefing keeps the real world with direct objective/ball order and
     Back/Start; Aim uses the Cannon Focus layout and shared tooltip behavior.
   - Accept: Briefing uses horizontal `ScoreScale`; Aim uses vertical; target-
     band values, Red/Green roles, coverage target, shot capacity, fire readiness,
     focus, shortcuts, and locale refresh remain authoritative.
-- [ ] **3.3 Apply state reductions to Map and Shot Follow.**
+- [x] **3.3 Apply state reductions to Map and Shot Follow.**
   - Change: Map removes aim/Fire-only controls and preserves inspection inputs;
     Shot Follow removes Fire and exposes the legal Return to Cannon action plus
     projectile-family observation. Both keep only relevant scale/status data.
   - Accept: no unavailable action is duplicated; input/focus state agrees with
     `CameraDirector` and `StageController` observations.
-- [ ] **3.4 Replace the result card with shared `ResultSummary`.**
+- [x] **3.4 Replace the result card with shared `ResultSummary`.**
   - Change: keep the painted mountain as the hero; show direct verdict, value,
     horizontal `ScoreScale`, compact breakdown, and prioritized Next/Retry/
     Same Deal/New Deal/Stages actions without a sheet. Preserve timeout/manual,
@@ -291,7 +291,7 @@ Source owners: `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd`,
   - Accept: every reachable result variant preserves correct action visibility,
     one primary action, focus entry, authoritative values, and no world-blocking
     container.
-- [ ] **3.5 Prove all 30 stages through the shared presentation.**
+- [x] **3.5 Prove all 30 stages through the shared presentation.**
   - Change: add `tests/cross_stage_ui_theme_test.gd` to present every catalog
     stage through Briefing/Aim/Result models.
   - Accept: Stages 1-6 expose only valid target-band/queue fields; Stages 7-30
@@ -440,15 +440,15 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 3.
-- Next task: 3.1, finish the Cannon Focus gameplay safe-area composition.
-- Last completed gate: Phase 2; `screen_responsive_layout_test`,
-  `stage_select_rule_truth_test`, `localization_ui_test`, and
-  `essential_ui_copy_test` passed on Godot 4.7.1 on 2026-08-20. Phase 7 flow
-  and stage-selection readiness also passed. Stage Select now keeps the real
-  preview world active, presents the selected prepared terrain through the
-  shared eight-node `StageRail`, publishes only the latest matching artifact,
-  and preserves the no-commit-before-Start invariant.
+- Current phase: Phase 4.
+- Next task: 4.1, run the complete rendered layout/state matrix and correct
+  only evidence-backed pixel defects.
+- Last completed gate: Phase 3; the seven named gameplay-shell checks passed on
+  Godot 4.7.1 on 2026-08-20. The shared Cannon Focus HUD now covers Briefing,
+  Aim, Map, Shot Follow, and Result. `cross_stage_ui_theme_test` proves all 30
+  catalog stages use the fixed 0-100 scale and rule-appropriate shared fields;
+  the responsive check covers eight viewport models in Korean and English;
+  result checks prove one primary action and timeout/manual variants.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

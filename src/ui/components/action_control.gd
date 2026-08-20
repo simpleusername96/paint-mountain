@@ -1,7 +1,15 @@
 class_name ActionControl
 extends Button
 
+@export var show_icon := true
+
 var _label_key := "ui.fire"
+
+
+func _ready() -> void:
+	if not show_icon:
+		icon = null
+	refresh_locale()
 
 
 func configure(label_key: String) -> void:

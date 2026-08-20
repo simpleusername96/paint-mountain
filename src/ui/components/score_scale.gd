@@ -27,6 +27,7 @@ var _target_maximum := 100.0
 var _threshold_mode := true
 var _show_percent := true
 var _compact := false
+var _world_mode := false
 
 
 func _ready() -> void:
@@ -44,6 +45,14 @@ func set_compact(compact: bool) -> void:
 	_compact = compact
 	_apply_minimum_size()
 	_layout()
+
+
+func set_world_mode(enabled: bool) -> void:
+	_world_mode = enabled
+	_current_value.theme_type_variation = &"ResultWorldValue" if enabled else &"HudValue"
+	for index in TICKS.size():
+		_tick_label(index).theme_type_variation = &"WorldCaption" if enabled else &"HudCaption"
+	queue_redraw()
 
 
 func configure_coverage(target: float) -> void:
@@ -125,7 +134,7 @@ func _apply_minimum_size() -> void:
 	if preset == Preset.VERTICAL_LIVE:
 		custom_minimum_size = Vector2(116.0, 272.0 if _compact else 286.0)
 	else:
-		custom_minimum_size = Vector2(360.0, 104.0) if _compact else Vector2(440.0, 118.0)
+		custom_minimum_size = Vector2(360.0, 78.0) if _compact else Vector2(440.0, 118.0)
 
 
 func _layout_vertical() -> void:
@@ -160,7 +169,7 @@ func _layout_horizontal() -> void:
 
 func _draw() -> void:
 	var track := _track_rect()
-	draw_rect(track, get_theme_color(&"track", &"ScoreScale"))
+	draw_rect(track, _scale_color(&"track"))
 	var target := _target_rect()
 	draw_rect(target, get_theme_color(&"target", &"ScoreScale"))
 	var edge_color := get_theme_color(&"target_edge", &"ScoreScale")
@@ -182,7 +191,7 @@ func _draw() -> void:
 					Vector2(target.position.x, target.end.y + 4.0), edge_color, 2.0)
 			draw_line(Vector2(target.end.x, target.position.y - 4.0),
 					Vector2(target.end.x, target.end.y + 4.0), edge_color, 2.0)
-	var tick_color := get_theme_color(&"tick", &"ScoreScale")
+	var tick_color := _scale_color(&"tick")
 	for tick in TICKS:
 		var point := _point_for_value(tick)
 		if preset == Preset.VERTICAL_LIVE:
@@ -192,7 +201,7 @@ func _draw() -> void:
 			draw_line(Vector2(point.x, track.position.y - 3.0),
 					Vector2(point.x, track.end.y + 3.0), tick_color, 1.0)
 	var marker := _point_for_value(_value)
-	var marker_color := get_theme_color(&"marker", &"ScoreScale")
+	var marker_color := _scale_color(&"marker")
 	if preset == Preset.VERTICAL_LIVE:
 		draw_line(Vector2(track.position.x - 8.0, marker.y),
 				Vector2(track.end.x + 8.0, marker.y), marker_color, 3.0)
@@ -204,7 +213,7 @@ func _draw() -> void:
 func _track_rect() -> Rect2:
 	if preset == Preset.VERTICAL_LIVE:
 		return Rect2(24.0, 62.0, 16.0, maxf(96.0, size.y - 98.0))
-	return Rect2(16.0, 42.0, maxf(160.0, size.x - 32.0), 14.0)
+	return Rect2(16.0, 34.0 if _compact else 42.0, maxf(160.0, size.x - 32.0), 14.0)
 
 
 func _target_rect() -> Rect2:
@@ -228,6 +237,12 @@ func _point_for_value(value: float) -> Vector2:
 
 func _tick_label(index: int) -> Label:
 	return get_node("Tick%d" % int(TICKS[index])) as Label
+
+
+func _scale_color(role: StringName) -> Color:
+	var resolved := StringName("world_%s" % role) if _world_mode \
+			and role in [&"track", &"marker", &"tick"] else role
+	return get_theme_color(resolved, &"ScoreScale")
 
 
 func _sign(weight: int) -> String:

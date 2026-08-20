@@ -35,20 +35,50 @@ func _run() -> void:
 	hud.show_state(StageController.State.RESULT)
 	var result_panel := hud_root.get_node("ResultPanel") as ResultPanel
 	_assert_true(result_panel.visible, "the completed run must expose the result panel")
-	_assert_true(result_panel.get_node_or_null("Margin/Content/Replay") == null,
+	_assert_true(result_panel.get_node_or_null("Margin/Content/Actions/Replay") == null,
 		"the result panel must not retain a replay action")
-	for action_path in ["Margin/Content/Retry", "Margin/Content/Next", "Margin/Content/Stages"]:
+	for action_path in [
+		"Margin/Content/Actions/Retry",
+		"Margin/Content/Actions/Next",
+		"Margin/Content/Actions/Stages",
+	]:
 		_assert_true(result_panel.get_node(action_path) is Button,
 			"the result panel must retain %s" % action_path)
+	result_panel.configure_has_next(true)
 	result_panel.configure_target(5.0)
 	result_panel.show_coverage_result(4.6, 1, 0.0, 60.0, 1, &"manual")
-	_assert_true(not result_panel.get_node("Margin/Content/TitleRow/TimeoutClock").visible,
+	var summary := result_panel.get_node("Margin/Content/Summary") as ResultSummary
+	_assert_true(not summary.get_node("VerdictRow/TimeoutClock").visible,
 		"manual results must not show the timeout clock")
-	_assert_true((result_panel.get_node("Margin/Content/Target") as Label).text == "%s 5%%" % tr("stage.target"),
-		"result target must use the configured authoritative percentage")
+	_assert_true(summary.score_scale.target_range().is_equal_approx(Vector2(5.0, 100.0)),
+		"result scale must use the configured authoritative target percentage")
 	result_panel.show_coverage_result(4.6, 1, 0.0, 60.0, 1, &"timeout")
-	_assert_true(result_panel.get_node("Margin/Content/TitleRow/TimeoutClock").visible,
+	_assert_true(summary.get_node("VerdictRow/TimeoutClock").visible,
 		"timeout results must show the real clock asset")
+	_assert_primary_action(result_panel, "Next")
+	result_panel.focus_retry()
+	_assert_true((result_panel.get_node("Margin/Content/Actions/Next") as Button).has_focus(),
+		"coverage clear must focus the primary Next action")
+	result_panel.configure_has_next(false)
+	_assert_primary_action(result_panel, "Retry")
+	_assert_true(not result_panel.get_node("Margin/Content/Actions/Next").visible,
+		"the terminal catalog result must omit unavailable Next")
+	var band := TargetBandData.new()
+	band.target_min = 7.0
+	band.target_max = 11.0
+	result_panel.configure_target_band_model(
+		band,
+		ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.BOTH_ADD)
+	)
+	result_panel.show_target_band_result(
+		false, 4.0, band, 0, PaintCoverageSnapshot.new(2.0, 2.0, 4.0), 60.0, 1
+	)
+	_assert_primary_action(result_panel, "RetrySameDeal")
+	result_panel.configure_has_next(true)
+	result_panel.show_target_band_result(
+		true, 9.0, band, 3, PaintCoverageSnapshot.new(4.0, 5.0, 9.0), 60.0, 1
+	)
+	_assert_primary_action(result_panel, "Next")
 
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	_assert_true(settings.icon != null, "Settings must keep the approved icon asset")
@@ -70,3 +100,13 @@ func _assert_true(condition: bool, message: String) -> void:
 		return
 	push_error(message)
 	_failed = true
+
+
+func _assert_primary_action(result_panel: ResultPanel, expected_name: String) -> void:
+	var primary_names: Array[String] = []
+	for action_name in ["Retry", "Next", "RetrySameDeal", "NewDeal", "Stages"]:
+		var action := result_panel.get_node("Margin/Content/Actions/%s" % action_name) as Button
+		if action.visible and action.theme_type_variation == &"ActionControl":
+			primary_names.append(action_name)
+	_assert_true(primary_names == [expected_name],
+		"result must expose one primary %s action, got %s" % [expected_name, primary_names])

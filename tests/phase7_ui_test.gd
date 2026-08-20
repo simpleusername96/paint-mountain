@@ -130,10 +130,11 @@ func _run_checks() -> void:
 	controller.force_finish_debug()
 	await process_frame
 	_assert_true(hud_root.get_node("ResultPanel").visible, "terminal coverage snapshot must show the result interface")
-	_assert_true(hud_root.get_node("ResultPanel").size.x <= 1280.0 * 0.35, "result panel must use no more than 35 percent of the viewport width")
-	var result_content := hud_root.get_node("ResultPanel/Margin/Content")
-	_assert_true(result_content.get_node("Retry") is Button, "result must expose retry as a real button")
-	_assert_true(result_content.get_node("Target") is Label, "result must retain the authoritative target fact")
+	var result_panel := hud_root.get_node("ResultPanel") as ResultPanel
+	_assert_true(result_panel.size.x <= 1280.0 * 0.40, "result overlay must keep at least 60 percent of the mountain visible")
+	_assert_true(result_panel.get_node("WorldScrim") is ContrastScrim, "result must use the shared world scrim")
+	_assert_true(result_panel.get_node("Margin/Content/Summary") is ResultSummary, "result must use the shared result summary")
+	_assert_true(result_panel.get_node("Margin/Content/Actions/Retry") is ActionControl, "result must expose retry through the shared action component")
 
 	app._on_gameplay_navigation(&"stage_select")
 	await process_frame

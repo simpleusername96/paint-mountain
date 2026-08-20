@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/components/result_summary.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/score_scale.tscn" id="2_scale"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/result_timeout_clock.png" id="3_clock"]
 
 [node name="ResultSummary" type="VBoxContainer"]
 custom_minimum_size = Vector2(440, 230)
@@ -9,15 +10,29 @@ theme_type_variation = &"ResultSummary"
 theme_override_constants/separation = 8
 script = ExtResource("1_script")
 
-[node name="Verdict" type="Label" parent="."]
+[node name="VerdictRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TimeoutClock" type="TextureRect" parent="VerdictRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("3_clock")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Verdict" type="Label" parent="VerdictRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ResultTitle"
+size_flags_horizontal = 3
+theme_type_variation = &"ResultWorldTitle"
 
 [node name="Value" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ResultCoverage"
+theme_type_variation = &"ResultWorldValue"
 
 [node name="ScoreScale" parent="." instance=ExtResource("2_scale")]
 unique_name_in_owner = true
@@ -28,5 +43,5 @@ preset = 1
 [node name="Facts" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ResultFact"
+theme_type_variation = &"ResultWorldFact"
 autowrap_mode = 2

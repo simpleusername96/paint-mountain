@@ -50,13 +50,12 @@ func _run() -> void:
 	await process_frame
 	hud.configure(StageCatalog.get_stage(&"stage_01"))
 	hud.show_state(StageController.State.BRIEFING)
-	var briefing_rule := hud.get_node("HUDRoot/BriefingRule") as PanelContainer
-	var briefing_text := hud.get_node("HUDRoot/BriefingRule/Margin/Content/Text") as Label
-	_assert(briefing_rule.visible and not briefing_text.text.is_empty(),
+	var briefing_objective := hud.get_node("HUDRoot/BriefingObjective") as Label
+	_assert(briefing_objective.visible and not briefing_objective.text.is_empty(),
 		"prototype briefing must introduce its active rule")
 	hud.configure(StageCatalog.get_stage(&"stage_09"))
 	hud.show_state(StageController.State.BRIEFING)
-	_assert(not briefing_rule.visible,
+	_assert(not briefing_objective.visible,
 		"legacy briefing must not show target-band prototype copy")
 
 	TranslationServer.set_locale(previous_locale)
