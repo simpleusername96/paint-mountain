@@ -4,7 +4,7 @@ const FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 const STAGES: Array[StringName] = [
 	&"stage_01", &"stage_02", &"stage_03",
 	&"stage_04", &"stage_05", &"stage_06",
-	&"stage_07", &"stage_18", &"stage_30",
+	&"stage_07", &"stage_12", &"stage_18", &"stage_24", &"stage_30",
 ]
 
 var _failed := false
@@ -32,9 +32,9 @@ func _run() -> void:
 		_assert(controller.visible_queue_snapshot().size() == mini(3, initial_deal.size()),
 			"runtime must publish only the current-plus-two horizon: %s" % stage_id)
 		if controller.stage_data.stage_number >= 7:
-			_assert(_deal_contains_kind(initial_deal, BallKind.Value.IMPACT_BURST) \
-					and _deal_contains_kind(initial_deal, BallKind.Value.APEX_SPLIT),
-				"later runtime deal must contain both special kinds: %s" % stage_id)
+			for required_kind in controller.stage_data.ball_deal_profile.required_kinds:
+				_assert(_deal_contains_kind(initial_deal, required_kind),
+					"runtime deal must contain its stage-specific required kind: %s" % stage_id)
 		_assert(controller.begin_aiming(), "stage must enter aiming: %s" % stage_id)
 		_assert(controller.current_state == StageController.State.AIMING,
 			"stage must remain in aiming: %s" % stage_id)
@@ -46,7 +46,7 @@ func _run() -> void:
 			"shot must inherit the admitted token kind: %s" % stage_id)
 		_assert(shot != null and int(initial_deal[0].get("channel", -1)) == shot.paint_channel,
 			"shot must inherit the admitted token channel: %s" % stage_id)
-		if controller.stage_data.stage_number in [7, 18, 30]:
+		if controller.stage_data.stage_number in [7, 12, 18, 24, 30]:
 			var paint := gameplay.get_node("PaintSystem") as PaintSystem
 			Engine.time_scale = 3.0
 			var paint_budget := Engine.physics_ticks_per_second * 15
@@ -64,7 +64,7 @@ func _run() -> void:
 		gameplay.queue_free()
 		await process_frame
 	if not _failed:
-		print("Target-band runtime smoke passed: stages 01-07/18/30 publish bounded varied deals, fire, paint, and finish.")
+		print("Target-band runtime smoke passed: stages 01-07 and late chapter boundaries publish bounded deals, fire, paint, and finish.")
 	quit(1 if _failed else 0)
 
 

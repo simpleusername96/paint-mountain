@@ -3,7 +3,7 @@ extends Resource
 
 ## Owns the generation-wide version and constants consumed by production.
 
-const CONTRACT_VERSION := 11
+const CONTRACT_VERSION := 12
 const REQUIRED_CELL_COUNT := Vector2i(84, 48)
 const REQUIRED_LOCAL_BOUNDS := Rect2(Vector2(-105.0, -60.0), Vector2(210.0, 120.0))
 const REQUIRED_MAXIMUM_TOP_TRIANGLE_COUNT := 8064

@@ -1,0 +1,216 @@
+[gd_resource type="Resource" script_class="StageChallengeProgressionData" load_steps=27 format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_challenge_progression_data.gd" id="1_progression"]
+[ext_resource type="Script" path="res://src/stage_generation/stage_challenge_data.gd" id="2_challenge"]
+
+[sub_resource type="Resource" id="Stage07"]
+script = ExtResource("2_challenge")
+stage_number = 7
+chapter_number = 2
+role_id = &"broad_paint_consolidation"
+target_range = Vector2(8, 12)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage08"]
+script = ExtResource("2_challenge")
+stage_number = 8
+chapter_number = 2
+role_id = &"branch_paint_consolidation"
+target_range = Vector2(9, 13)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage09"]
+script = ExtResource("2_challenge")
+stage_number = 9
+chapter_number = 2
+role_id = &"green_polarity_practice"
+score_pattern = 1
+target_range = Vector2(7, 11)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage10"]
+script = ExtResource("2_challenge")
+stage_number = 10
+chapter_number = 2
+role_id = &"red_polarity_practice"
+score_pattern = 2
+target_range = Vector2(5, 9)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage11"]
+script = ExtResource("2_challenge")
+stage_number = 11
+chapter_number = 2
+role_id = &"green_combination"
+score_pattern = 1
+target_range = Vector2(7, 11)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage12"]
+script = ExtResource("2_challenge")
+stage_number = 12
+chapter_number = 2
+role_id = &"red_chapter_mastery"
+score_pattern = 2
+target_range = Vector2(9, 13)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage13"]
+script = ExtResource("2_challenge")
+stage_number = 13
+chapter_number = 3
+role_id = &"green_route_control"
+score_pattern = 1
+target_range = Vector2(6, 10)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage14"]
+script = ExtResource("2_challenge")
+stage_number = 14
+chapter_number = 3
+role_id = &"red_route_control"
+score_pattern = 2
+target_range = Vector2(6, 10)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage15"]
+script = ExtResource("2_challenge")
+stage_number = 15
+chapter_number = 3
+role_id = &"two_color_recovery"
+target_range = Vector2(9, 13)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage16"]
+script = ExtResource("2_challenge")
+stage_number = 16
+chapter_number = 3
+role_id = &"green_seven_shot_control"
+score_pattern = 1
+target_range = Vector2(7, 11)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage17"]
+script = ExtResource("2_challenge")
+stage_number = 17
+chapter_number = 3
+role_id = &"red_precision_control"
+score_pattern = 2
+target_range = Vector2(3, 7)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage18"]
+script = ExtResource("2_challenge")
+stage_number = 18
+chapter_number = 3
+role_id = &"three_route_chapter_mastery"
+target_range = Vector2(1, 5)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage19"]
+script = ExtResource("2_challenge")
+stage_number = 19
+chapter_number = 4
+role_id = &"broad_five_mechanism_plan"
+target_range = Vector2(1, 5)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage20"]
+script = ExtResource("2_challenge")
+stage_number = 20
+chapter_number = 4
+role_id = &"green_branch_selection"
+score_pattern = 1
+target_range = Vector2(0.5, 4.5)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage21"]
+script = ExtResource("2_challenge")
+stage_number = 21
+chapter_number = 4
+role_id = &"red_rebound_selection"
+score_pattern = 2
+target_range = Vector2(1, 5)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage22"]
+script = ExtResource("2_challenge")
+stage_number = 22
+chapter_number = 4
+role_id = &"green_mixed_mechanism_plan"
+score_pattern = 1
+target_range = Vector2(1, 5)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage23"]
+script = ExtResource("2_challenge")
+stage_number = 23
+chapter_number = 4
+role_id = &"red_mixed_mechanism_plan"
+score_pattern = 2
+target_range = Vector2(3, 7)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage24"]
+script = ExtResource("2_challenge")
+stage_number = 24
+chapter_number = 4
+role_id = &"five_mechanism_mastery"
+target_range = Vector2(1, 5)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage25"]
+script = ExtResource("2_challenge")
+stage_number = 25
+chapter_number = 5
+role_id = &"green_mastery_opening"
+score_pattern = 1
+target_range = Vector2(3, 7)
+required_kinds = Array[int]([1])
+
+[sub_resource type="Resource" id="Stage26"]
+script = ExtResource("2_challenge")
+stage_number = 26
+chapter_number = 5
+role_id = &"red_mastery_opening"
+score_pattern = 2
+target_range = Vector2(0.5, 4.5)
+required_kinds = Array[int]([2])
+
+[sub_resource type="Resource" id="Stage27"]
+script = ExtResource("2_challenge")
+stage_number = 27
+chapter_number = 5
+role_id = &"two_color_recovery_mastery"
+target_range = Vector2(4, 8)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage28"]
+script = ExtResource("2_challenge")
+stage_number = 28
+chapter_number = 5
+role_id = &"green_full_system_mastery"
+score_pattern = 1
+target_range = Vector2(2, 6)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage29"]
+script = ExtResource("2_challenge")
+stage_number = 29
+chapter_number = 5
+role_id = &"red_full_system_mastery"
+score_pattern = 2
+target_range = Vector2(2, 6)
+required_kinds = Array[int]([1, 2])
+
+[sub_resource type="Resource" id="Stage30"]
+script = ExtResource("2_challenge")
+stage_number = 30
+chapter_number = 5
+role_id = &"final_three_ball_mastery"
+target_range = Vector2(4, 8)
+required_kinds = Array[int]([1, 2])
+
+[resource]
+script = ExtResource("1_progression")
+challenges = Array[Resource]([SubResource("Stage07"), SubResource("Stage08"), SubResource("Stage09"), SubResource("Stage10"), SubResource("Stage11"), SubResource("Stage12"), SubResource("Stage13"), SubResource("Stage14"), SubResource("Stage15"), SubResource("Stage16"), SubResource("Stage17"), SubResource("Stage18"), SubResource("Stage19"), SubResource("Stage20"), SubResource("Stage21"), SubResource("Stage22"), SubResource("Stage23"), SubResource("Stage24"), SubResource("Stage25"), SubResource("Stage26"), SubResource("Stage27"), SubResource("Stage28"), SubResource("Stage29"), SubResource("Stage30")])

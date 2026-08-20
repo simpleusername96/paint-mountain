@@ -49,6 +49,7 @@ related:
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../.agents/evidence/2026-08-20-m9-local-release/README.md
   - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
+  - ../.agents/execplans/2026-08-20-stage-ui-production-refinement.md
   - ../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md
   - ../.agents/evidence/2026-08-20-hud-capture-regression/README.md
   - reports/ui-refinement-2026-08-20/index.html
@@ -101,7 +102,7 @@ capture is pre-resident-activity-removal history.
   paint, queue detail, Pause/Settings, locale, fullscreen, results, and live
   640x360 resize. All eight requests returned HTTP 200; Chrome recorded zero
   warning or error messages and no multi-second post-flight paint update.
-- [ ] Repeat that journey on the final v11 Web artifact. Export and static
+- [ ] Repeat that journey on the final v12 Web artifact. Export and static
   validation pass, but the available in-app browser bridge is not trusted and
   could not open a controlled session in this task.
 - [x] The complete ordered suite, `scripts/verify.ps1`, fresh Godot 4.7.1
@@ -149,12 +150,18 @@ Local evidence: `../.agents/evidence/2026-08-20-m9-local-release/README.md`.
 ## All-stage three-ball target-band status
 
 - [x] Each Stage 01–06 default deal has a bounded physical clear witness.
-- [x] Sixteen deals per stage (480 total) pass structural constraints and every
-  Stage 07–30 deal contains Standard, Impact Burst, Apex Split, both colors,
-  and a two-Standard correction reserve.
+- [x] Sixteen deals per stage (480 total) pass structural constraints. Every
+  Stage 07–30 deal contains Standard, both colors, its stage-specific required
+  Burst and/or Split kind, and a two-Standard correction reserve; all three
+  existing kinds remain allowed.
 - [ ] Catalog-wide physical guarantees and human-study feasibility are deferred.
-- [x] Stages 07–30 use Red/Green target bands and varied three-ball deals while
-  preserving their reviewed v10 terrain and mechanism identities in catalog v11.
+- [x] Stages 07–30 use explicit five-chapter Red/Green target bands with no
+  direct neutral color and varied stage-specific special-kind requirements,
+  while catalog v12 preserves reviewed v11 terrain and mechanism identity.
+- [x] The v11 pre-change baseline contains 48 authoritative physical Results for
+  every Stage 07-30 default and first New Deal seed. It records 17 clears and
+  keeps structural validity, automated witness outcomes, and human balance as
+  separate claims.
 - [x] Focused checks, the complete ordered suite, and `scripts/verify.ps1` pass
   after the feature set is frozen.
 - [x] The single compact Stage 06 workload launches six representative roots

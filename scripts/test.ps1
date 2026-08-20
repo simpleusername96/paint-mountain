@@ -25,7 +25,7 @@ $ordinaryTests = @(
 	'fixed_mountain_catalog_test.gd',
     'stage_generation_test.gd',
     'stage30_progression_test.gd',
-	'generation_v11_materialization_test.gd',
+	'generation_v12_materialization_test.gd',
 	'ball_deal_generation_test.gd',
 	'all_stage_target_band_rule_test.gd',
     'baked_stage_layout_test.gd',

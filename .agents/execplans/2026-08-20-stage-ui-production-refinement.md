@@ -128,7 +128,7 @@ Exact actions requiring owner or user approval:
 | Current stage quality | The stage audit is 63/100: late rules use an unrelated five-stage cycle, bands change every six stages without score-distribution evidence, ten stages have a direct zero color, and all late deals require both special kinds. | `docs/reports/stage-design-analysis-2026-08-20/index.html`, materializer, all-stage tests | Preserve Stage 01-06; align Stage 07-30 with four six-stage chapters and remove all late neutral rules. | 1.1-1.4, 4.1-4.2 |
 | Chapter structure | Mechanism counts already change at 7/13/19/25 and route/shot/time steps occur inside those ranges. | `StageProgressionData` | Use five chapters total: 01-06 introduction, 07-12 ball-role consolidation, 13-18 polarity control, 19-24 route/mechanism combination, 25-30 mastery. | 1.2, 1.4 |
 | Late rule and ball table | The current late table is implicit formula code. | `StageCatalogMaterializer._materialize_target_band_rule()` | Move late challenge intent to one typed owner with an explicit 24-row table. Chapter roles use the table below; all kinds remain allowed and the required special column varies by stage. | 1.2 |
-| Band calibration | Current structural tests validate 480 deals but no physical per-stage final-score distribution. The existing playable witness can execute a deterministic full deal and report signed R/G/score. | `all_stage_target_band_rule_test.gd`, `prototype_playable_witness_test.gd` | Record v11 default/New Deal baseline first. Start v12 from the authored bands below, then allow one measured calibration pass: keep width 4-6 and move endpoints by at most 2 points. Replan rather than silently widening beyond that bound. | 1.1, 4.1 |
+| Band calibration | Current structural tests validate 480 deals but no physical per-stage final-score distribution. The new v11 default/New Deal baseline completed 48 authoritative Results and cleared 17; Stage 18-30 sampled scores were 0.6-9.0, contradicting the first unmeasured late-band draft. | `all_stage_target_band_rule_test.gd`, `prototype_playable_witness_test.gd`, `../evidence/2026-08-20-stage-ui-production-refinement/v11-score-baseline.json` | Use the evidence-adjusted initial bands below, then allow one v12 measured calibration pass: keep width 4 and move endpoints by at most 2 points. Replan rather than silently widening beyond that bound. | 1.1, 4.1 |
 | Human balance | No human sessions measure misunderstanding, retries, or perceived difficulty. | stage audit limitation | Automated evidence may prove structure, runtime scoring, and bounded clear witnesses only. Record human playtest as a separate follow-up; never label it complete balance. | 4.2, 6.1 |
 | Existing Web latency work | The superseded plan already proves bounded paint-command age, deterministic paint bytes, exports, and static Web validation. Only the live browser journey remains open because the prior native bridge was unavailable. | superseded ExecPlan Phases 6, 8, 9, 10 and related evidence | Preserve the optimization, rerun regression checks once after final inputs, and carry the live Web task unchanged. Do not publish. | 5.3, 5.5 |
 
@@ -138,30 +138,30 @@ Split, and `B+S` means both must occur in the finite root deal.
 
 | Stage | Chapter role | Score pattern | Initial band | Required special |
 | --- | --- | --- | --- | --- |
-| 07 | broad-paint consolidation | R+ G+ | 9-13 | B |
-| 08 | branch-paint consolidation | R+ G+ | 9.5-13.5 | S |
+| 07 | broad-paint consolidation | R+ G+ | 8-12 | B |
+| 08 | branch-paint consolidation | R+ G+ | 9-13 | S |
 | 09 | Green polarity practice | G+ R- | 7-11 | B |
-| 10 | Red polarity practice | R+ G- | 7.5-11.5 | S |
-| 11 | Green combination | G+ R- | 8-12 | B+S |
-| 12 | Red chapter mastery | R+ G- | 8.5-12.5 | B+S |
-| 13 | Green route control | G+ R- | 8-12 | B |
-| 14 | Red route control | R+ G- | 8.5-12.5 | S |
-| 15 | two-color recovery | R+ G+ | 10-14 | B+S |
-| 16 | Green seven-shot control | G+ R- | 9-13 | S |
-| 17 | Red precision control | R+ G- | 9.5-13.5 | B |
-| 18 | three-route chapter mastery | R+ G+ | 11-15 | B+S |
-| 19 | broad five-mechanism plan | R+ G+ | 11-15 | B |
-| 20 | Green branch selection | G+ R- | 9-13 | S |
-| 21 | Red rebound selection | R+ G- | 9.5-13.5 | B |
-| 22 | Green mixed mechanism plan | G+ R- | 10-14 | B+S |
-| 23 | Red mixed mechanism plan | R+ G- | 10.5-14.5 | B+S |
-| 24 | five-mechanism mastery | R+ G+ | 12-16 | B+S |
-| 25 | Green mastery opening | G+ R- | 10-14 | B |
-| 26 | Red mastery opening | R+ G- | 10.5-14.5 | S |
-| 27 | two-color recovery mastery | R+ G+ | 12-16 | B+S |
-| 28 | Green full-system mastery | G+ R- | 11-15 | B+S |
-| 29 | Red full-system mastery | R+ G- | 11.5-15.5 | B+S |
-| 30 | final three-ball mastery | R+ G+ | 13-17 | B+S |
+| 10 | Red polarity practice | R+ G- | 5-9 | S |
+| 11 | Green combination | G+ R- | 7-11 | B+S |
+| 12 | Red chapter mastery | R+ G- | 9-13 | B+S |
+| 13 | Green route control | G+ R- | 6-10 | B |
+| 14 | Red route control | R+ G- | 6-10 | S |
+| 15 | two-color recovery | R+ G+ | 9-13 | B+S |
+| 16 | Green seven-shot control | G+ R- | 7-11 | S |
+| 17 | Red precision control | R+ G- | 3-7 | B |
+| 18 | three-route chapter mastery | R+ G+ | 1-5 | B+S |
+| 19 | broad five-mechanism plan | R+ G+ | 1-5 | B |
+| 20 | Green branch selection | G+ R- | 0.5-4.5 | S |
+| 21 | Red rebound selection | R+ G- | 1-5 | B |
+| 22 | Green mixed mechanism plan | G+ R- | 1-5 | B+S |
+| 23 | Red mixed mechanism plan | R+ G- | 3-7 | B+S |
+| 24 | five-mechanism mastery | R+ G+ | 1-5 | B+S |
+| 25 | Green mastery opening | G+ R- | 3-7 | B |
+| 26 | Red mastery opening | R+ G- | 0.5-4.5 | S |
+| 27 | two-color recovery mastery | R+ G+ | 4-8 | B+S |
+| 28 | Green full-system mastery | G+ R- | 2-6 | B+S |
+| 29 | Red full-system mastery | R+ G- | 2-6 | B+S |
+| 30 | final three-ball mastery | R+ G+ | 4-8 | B+S |
 
 Readiness statement:
 
@@ -194,14 +194,14 @@ Source owners: `src/stage_generation/stage_catalog_materializer.gd`,
 `src/ball/ball_deal_profile.gd`, `src/ball/ball_deal_generator.gd`,
 `scripts/build_stage_catalog.gd`
 
-- [ ] **1.1 Record the current physical score baseline.**
+- [x] **1.1 Record the current physical score baseline.**
   - Change: extend the existing playable-witness runner only enough to accept a
     requested deal seed, then run Stage 07-30 with the v11 default and first New
     Deal seed. Save compact machine-readable R/G/score, per-shot score, clear,
     and duration evidence under the task evidence directory.
   - Accept: 48 deterministic physical runs finish and the evidence distinguishes
     sampled results from structural validity and human balance.
-- [ ] **1.2 Add the explicit five-chapter challenge owner.**
+- [x] **1.2 Add the explicit five-chapter challenge owner.**
   - Change: add one typed stage-challenge progression owner for the locked
     24-row table; make the materializer consume it; preserve the six exact
     introductory rows; require no zero-weight color after Stage 06; apply the
@@ -209,14 +209,14 @@ Source owners: `src/stage_generation/stage_catalog_materializer.gd`,
   - Accept: every Stage 07-30 row matches this contract, both colors have a
     non-zero direct weight, each deal contains its authored required special(s),
     and the final two correction Standards remain opposite colors.
-- [ ] **1.3 Build and atomically promote immutable catalog v12.**
+- [x] **1.3 Build and atomically promote immutable catalog v12.**
   - Change: increment the generation contract, dry-build from verified v11,
     verify the staged content-addressed v12 bundle, compare v11/v12 non-rule
     payloads, and only then publish the catalog pointer.
   - Accept: all 30 v12 stages validate; terrain/layout/routes/mechanisms/
     decorations/entry witnesses remain equivalent; the v11 bundle is unchanged;
     interrupted or invalid staging cannot replace the pointer.
-- [ ] **1.4 Record chapter and terminology truth.**
+- [x] **1.4 Record chapter and terminology truth.**
   - Change: update source brief supersession, design spec, technical ownership,
     implemented-status record, and tests so “Paint Score,” “contribution,”
     “required kind,” five chapters, and the Stage 01-06 preservation boundary
@@ -459,7 +459,7 @@ Validation rules:
 | Trigger | Required response | Boundary or escalation point |
 | --- | --- | --- |
 | A verified material fact contradicts this contract | Stop the affected branch, update the contract, and obtain approval when the correction changes product, architecture, dependency, safety, or evidence scope | Do not improvise a new stage loop or UI system |
-| A v12 sample needs a band move greater than 2 points or width greater than 6 | keep the authored value, record the miss, and replan the stage/aim/deal rather than making the target trivial | calibration cannot hide an unproven runtime path |
+| A v12 sample needs a band move greater than 2 points or width other than 4 | keep the authored value, record the miss, and replan the stage/aim/deal rather than making the target trivial | calibration cannot hide an unproven runtime path |
 | A chapter mastery stage has no clear witness after the one calibration | preserve structural validity and stop the clear claim; diagnose aim/deal/stage interaction separately | do not claim balance or widen without evidence |
 | Compact type cannot be made readable without hiding an essential value/action | retain the essential value/action and reflow shared composition; escalate only if the supported 640x360 contract itself must change | do not silently drop score endpoints, queue, Fire, or navigation |
 | A shared component change breaks another state | correct the shared preset and rerun the affected phase gate | do not add a screen-local clone |
@@ -474,11 +474,15 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 1 baseline and authored stage challenge contract.
-- Next task: Task 1.1, record the v11 physical default/New Deal score baseline.
-- Last completed gate: Discovery Closure Gate. The current v11 catalog and
-  Windows release evidence were inspected; the prior plan is superseded and its
-  sole unfinished built-Web journey is retained as Task 5.5.
+- Current phase: Phase 2 shared live-HUD correction.
+- Next task: Task 2.1, remove the compact Briefing collision.
+- Last completed gate: Phase 1 passes. Task 1.1 recorded 48/48 v11 physical
+  Results and 17 clears, which corrected the initial unmeasured band draft.
+  The explicit typed 24-row challenge resource now drives Stage 07-30 with no
+  direct neutral color and stage-specific special requirements. Immutable
+  catalog v12 manifest `5e54530e...68fcf70` is active; the 92-file v11 bundle
+  remains unchanged. All 30 v11/v12 world/layout comparisons, 480 deals, and
+  Stage 01-07 plus Stage 12/18/24/30 runtime smoke pass.
 - Update rule: after each phase checkpoint, record concise evidence, check its
   tasks, and advance this pointer in the same edit.
 

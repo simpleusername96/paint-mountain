@@ -1,0 +1,25 @@
+Paint Mountain catalog v11 -> v12 migration evidence
+Date: 2026-08-20
+
+Source bundle:
+  v11-29c58dabab787164b600e4562ce0ec848212a655cecd8da763da14168130694e
+  files: 92
+  manifest.json SHA-256: 78B6024FF061371070AE3197EBBB4A523E201D50D6260A49D876FC8CB26A5DB5
+
+Promoted bundle:
+  v12-5e54530eeb708bc2928ce87bdad0f8a765a0b181cfb0cf1c7b7679eee68fcf70
+  files: 92
+  manifest.json SHA-256: 59147ACFF47465ECEC8E1082760E633C3168ECA2A5F5A9BBE852C31F10A9C09C
+
+Checks:
+  PASS dry build with verified v11 layout reuse
+  PASS immutable v12 write and active catalog pointer verification
+  PASS v11/v12 semantic migration comparison for all 30 world/layout payloads
+  PASS exact Stage 01-06 rule/deal preservation
+  PASS explicit Stage 07-30 chapter table with no direct neutral color
+  PASS 30 profiles and 480 deterministic structural deals
+  PASS Stage 01-07 and Stage 12/18/24/30 runtime deal/fire/paint/result smoke
+
+Limits:
+  Structural deals do not prove physical clearability.
+  Runtime smoke does not prove human difficulty, comprehension, or fun.

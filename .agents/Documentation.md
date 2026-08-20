@@ -113,13 +113,16 @@ related:
 
 All 30 stages implement the bounded Red/Green three-ball rules with
 latest-valid-writer ownership, monotonic strength, physical channel
-measurement, signed scoring, and an inclusive target band. Catalog v11 keeps
-the reviewed v10 terrain, target mask, routes, mechanisms, decorations, and
-camera witnesses unchanged while adding rule/deal data to Stages 07–30. All
-later-stage deals require Standard, Impact Burst, and Apex Split, preserve a
-two-Standard correction reserve, and stay within the 21-resident cap. The 30
-profiles and 480 deterministic deals pass structural checks; catalog-wide
-physical clears and human balance remain unclaimed.
+measurement, signed scoring, and an inclusive target band. Catalog v12 keeps
+the reviewed v11 terrain, target mask, routes, mechanisms, decorations, and
+camera witnesses unchanged while replacing the Stage 07-30 challenge loop.
+Those stages now have explicit six-stage chapter rows, no zero Red/Green weight,
+and stage-specific Burst/Split requirements. All three kinds remain allowed,
+every late finite deal has real special-ball variety, the two-Standard
+correction reserve remains, and the 21-resident cap is unchanged. The 30
+profiles and 480 deterministic deals pass structural checks. The v11 baseline
+adds 48 physical default/New Deal Results with 17 clears; catalog-wide human
+balance remains unclaimed.
 
 ## Stage Selection Readiness Correction (2026-08-11)
 
@@ -697,7 +700,7 @@ The signed-score correction and its production pixels are recorded in
   Three signed-score Windows-release captures additionally verify Stage 08
   `-3.0` Aim/Result truth at 1280x720 and compact Aim at 640x360.
   An earlier built-Web journey proved the shared UI and authoritative paint;
-  the final v11 Web artifact passes export/static checks, but its browser rerun
+  the pre-refinement v11 Web artifact passes export/static checks, but its browser rerun
   remains pending because the available browser bridge is not trusted.
 - The complete suite, repository verification, Windows/Web exports, and final
   Web static verification pass. The current Web artifact is 18,485,674 gzip

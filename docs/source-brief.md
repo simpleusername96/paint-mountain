@@ -2544,6 +2544,51 @@ Effective requirements:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-20): Direct Two-Color Late-Stage Progression
+
+After asking whether a color could be absent from direct score calculation, the
+user requested a stage-design report, a separate full-screen UI audit, and then
+directed that their findings be turned into an ExecPlan and implemented. This
+supersedes only the Stage 07-30 neutral-color cycle, uniform special-kind
+requirement, unmeasured band formula, and the affected compact UI behavior.
+
+User directives (verbatim):
+
+> 아 지금 혹시 어떤 색은 아예 점수 계산에 들어가지 않는 경우도 있어?
+
+> 음... 일단 git push를 하고, 현재의 스테이지 설계가 적절한지 report로 적절히 분석해봐.
+> 그리고 UI snapshot을 찍고 ui refinement report도 별개로 작성하고.
+
+> Ui snapshot은 중요한 화면 전체를 찍어야해.
+
+> Create execplan doc using these, and use the doc to fix the issues.
+
+Effective requirements:
+
+- Preserve the accepted Stage 01-06 values. From Stage 07 through Stage 30,
+  both Red and Green must have a non-zero direct Paint Score weight. The late
+  catalog uses only `R+G+`, `G+R-`, and `R+G-`; neutral remains only where the
+  preserved introductory contract already requires it.
+- Organize the thirty stages as five six-stage chapters. Late chapter rows are
+  explicit data with a named learning role instead of an unrelated five-rule
+  cycle. Existing terrain and mechanism progression remains authoritative.
+- Keep all three existing ball kinds available after Stage 06, but make the
+  finite deal's required special kind(s) stage-specific. Every late deal still
+  contains real special-ball variety and the final opposite-color Standard
+  correction reserve.
+- Measure deterministic physical default/New Deal outcomes before and after
+  changing late bands. Structural deal validity, automated physical witnesses,
+  and human balance are distinct evidence and must not be presented as
+  interchangeable.
+- Correct the audited compact UI defects through the existing shared Theme,
+  component, and layout owners. Final UI evidence uses uncropped full-viewport
+  captures of all important screens at standard and compact sizes.
+- Consolidate implementation under
+  `.agents/execplans/2026-08-20-stage-ui-production-refinement.md`. Public itch
+  publication remains separately authorized.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

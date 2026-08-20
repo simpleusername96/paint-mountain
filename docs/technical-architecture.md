@@ -20,6 +20,7 @@ related:
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../.agents/execplans/2026-08-20-stage-ui-production-refinement.md
 ---
 
 # Technical Architecture
@@ -34,9 +35,12 @@ presentation, game rules, diagnostics, and future AI control remain separable.
 `PaintSystem` owns one strength/latest-owner representation and immutable
 Red/Green/Total physical-area snapshots. `StageController` alone owns deal,
 target-band, retry, and terminal rules for all 30 stages. Catalog v11 preserves
-the v10 terrain/mechanism payloads while materializing all-stage rule data; 480
-deterministic deal cases prove structural contracts, not physical feasibility
-or human balance.
+the v10 terrain/mechanism payloads while materializing all-stage rule data;
+catalog v12 preserves the v11 world/layout payload and replaces only the late
+challenge rows. The typed `StageChallengeProgressionData` resource owns the
+explicit Stage 07-30 pattern, band, chapter role, and required-kind table. The
+480 deterministic deal cases prove structural contracts; physical samples and
+human balance remain separate evidence.
 
 ## Scope
 
@@ -52,7 +56,7 @@ This architecture covers the single-process desktop game. It does not define a b
 | `SaveSystem` | Versioned serialization, load/default/migration, metric-version separation, mouse-sensitivity persistence, and atomic local writes | UI or stage decisions |
 | `StageController` | Authoritative Board Phase, shots, first-launch timer, Finish/timeout result, Fire-readiness snapshot, and restart orchestration | Paint pixels, prediction calculation, projectile forces, camera transforms, or HUD layout |
 | `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, and content references | Mutable runtime or accepted baked layout state |
-| `StageProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable thirty-stage formulas, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, or mutable progression state |
+| `StageProgressionData`, `StageChallengeProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable geometry formulas, explicit late-stage challenge rows, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, mutable progression state, or human-balance claims |
 | `StageCatalogBuilder` | Offline exact-seed generation, complete validation, cannon-standoff derivation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, candidate selection, hand-authored repair, or partial catalog activation |
 | `SeededStageGenerator` | Pure authoring-time one-profile/one-canonical-seed route-graph and layout reconstruction plus identity verification | Candidate search, runtime fallback, physics-world solving, stage transitions, paint state, or hand-authored production repair |
 | `ProjectileRangeConstraint` | Pure legal yaw, fixed-step damped horizon, and lower/upper height-envelope admission for every target sample and the Summit Region | Physics queries, terrain occlusion, first-hit certification, target deletion, or runtime aim assistance |

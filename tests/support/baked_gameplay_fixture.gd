@@ -5,10 +5,13 @@ const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 
 ## Instantiates gameplay from the same baked layout boundary used by AppRoot.
 ## Tests must not reintroduce runtime generation as a fixture shortcut.
-static func instantiate(stage_id: StringName) -> Node3D:
+static func instantiate(stage_id: StringName, deal_seed: int = -1) -> Node3D:
 	var stage := StageCatalog.get_stage(stage_id)
 	if stage == null:
 		return null
+	if deal_seed > 0:
+		stage = stage.duplicate(true) as StageData
+		stage.default_deal_seed = deal_seed
 	var layout_path := StageCatalog.get_layout_path(stage.stage_id)
 	if layout_path.is_empty():
 		return null

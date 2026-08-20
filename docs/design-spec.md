@@ -21,6 +21,7 @@ related:
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
+  - ../.agents/execplans/2026-08-20-stage-ui-production-refinement.md
 ---
 
 # Paint Mountain Design Specification
@@ -30,10 +31,12 @@ related:
 All 30 stages use Standard, Impact Burst, and Apex Split Red/Green balls.
 Latest threshold-valid paint owns a texel while strength remains monotonic,
 and the signed Paint Score must finish inside an inclusive band. Stages 07–30
-retain their existing terrain and mechanisms while adding varied deterministic
-deals, signed rule patterns, and progressively higher target bands. The v11
-catalog validates 16 deals per stage (480 total); this structural coverage is
-not a physical-clear or human-balance claim.
+retain their existing terrain and mechanisms while using explicit six-stage
+chapter rows, only non-zero Red/Green score weights, stage-specific special-ball
+requirements, and physically sampled target bands. Catalog v12 validates 16
+deals per stage (480 total) and preserves the v11 world/layout payload. This
+structural coverage and the deterministic physical samples are not a
+human-balance claim.
 
 ## Purpose
 
@@ -157,12 +160,13 @@ exactly three mechanism types.
   waits until every current body has reached that surface or terminated;
   resident terrain balls may therefore
   remain physically active without permanently exhausting Fire capacity.
-- Coverage remains visible in its authoritative nonmodal gauge. There is no
+- Paint Score remains visible in its authoritative nonmodal fixed 0-100 scale.
+  Physical Red/Green/Total coverage remains available as the score input. There is no
   temporary per-shot summary or mechanism briefing/activation message card.
-  Reaching target coverage or spending all shots neither clears nor fails the
-  run. After the first shot, Finish may end the run; otherwise the stage duration
-  ends it. Final unique target coverage is the sole score and star thresholds
-  remain grades.
+  Entering the inclusive target band makes Finish eligible only when projectile
+  and paint work are quiet. Queue exhaustion evaluates when quiet; timeout uses
+  the already accepted paint state. Final signed Paint Score decides clear and
+  stars measure distance from the authored band center.
 - Restart removes projectiles, paint, particles, temporary mechanism state, timers, and camera transitions.
 - The current catalog shares one canonical terrain-family seed. Stage and
   profile identity still make the thirty stages distinct, and each stage has
@@ -303,9 +307,10 @@ exactly three mechanism types.
   data shapes terrain and supports readability without defining a player
   solution. Open-bound admission, analytic range admission, bounded witnesses, and
   representative gameplay regressions remain required.
-- Clear targets are `4.0..8.5%` through Stages 01-10, then use shot-tier
-  plateaus: `8.5%` for 11-15, `9.0%` for 16-20, `9.5%` for 21-25, and `10.0%`
-  for 26-30. Two- and three-star grades remain `+2.5/+5.0` points above clear.
+- Stage 01-06 keep their accepted authored target bands. Stage 07-30 use the
+  explicit rows in `stage_challenge_progression.tres`; their bands follow
+  sampled physical outcomes and chapter roles rather than a monotonic scalar
+  coverage plateau. Stars use distance from each target-band center.
 
 ### Results and persistence
 
@@ -313,12 +318,12 @@ exactly three mechanism types.
   seconds for Stages 01-10, 11-20, or 21-30. The active simulation runs at a
   fixed two-times pace, but the real-time clock does not scale with it. Finish
   ends an active run after that first shot; timer expiry also ends it. Results
-  use final unique target coverage as the sole score, with existing star
-  thresholds as grades.
-- Results show stage, final coverage, time outcome, shots used/remaining,
+  use authoritative signed Paint Score and the inclusive target band; total
+  coverage remains a physical input, not a substitute result score.
+- Results show stage, final signed Paint Score, Red/Green contributions and
+  target band, time outcome, shots used/remaining,
   previous best, new best, rank/stars, final mountain, retry, next, and stage
-  select. They do not present target coverage or spent shots as an automatic
-  clear/failure result.
+  select. They do not replace the signed result with total coverage.
 - Save version, coverage-metric-separated best coverage/stars, unlocks, and
   settings including mouse sensitivity locally.
 - The player-facing replay and its recording, playback, input-lock, speed, UI,

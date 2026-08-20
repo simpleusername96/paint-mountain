@@ -7,6 +7,9 @@ const SPLITTER_DATA: MechanismData = preload("res://resources/mechanisms/splitte
 const UPHILL_REBOUND_DATA: MechanismData = preload(
 	"res://resources/mechanisms/uphill_rebound_node.tres"
 )
+const LATE_CHALLENGES: Resource = preload(
+	"res://resources/stage_generation/stage_challenge_progression.tres"
+)
 
 static func materialize_stage(source: StageData, stage_number: int) -> StageData:
 	if source == null:
@@ -29,7 +32,8 @@ static func materialize_stage(source: StageData, stage_number: int) -> StageData
 	# depth expands in both directions instead of growing toward the cannon.
 	stage.terrain_center = Vector3(0.0, -2.0, -130.0)
 	stage.mechanism_loadout = _materialize_mechanisms(source.mechanism_loadout, stage_number)
-	_materialize_target_band_rule(stage, stage_number)
+	if not _materialize_target_band_rule(stage, stage_number):
+		return null
 	if stage.mechanism_loadout.size() != StageProgressionData.mechanism_count_for(stage_number):
 		return null
 	stage.generation_profile = _materialize_profile(
@@ -47,7 +51,7 @@ static func materialize_stage(source: StageData, stage_number: int) -> StageData
 	return stage
 
 
-static func _materialize_target_band_rule(stage: StageData, stage_number: int) -> void:
+static func _materialize_target_band_rule(stage: StageData, stage_number: int) -> bool:
 	stage.rule_kind = StageData.RuleKind.TARGET_BAND
 	var rule_patterns: Array[int] = [
 		ColorScoreRuleData.Pattern.BOTH_ADD,
@@ -85,23 +89,18 @@ static func _materialize_target_band_rule(stage: StageData, stage_number: int) -
 		target_range = target_ranges[index]
 		stage_allowed_kinds = allowed_kinds[index]
 	else:
-		var later_patterns: Array[int] = [
-			ColorScoreRuleData.Pattern.BOTH_ADD,
-			ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT,
-			ColorScoreRuleData.Pattern.RED_ADD_GREEN_SUBTRACT,
-			ColorScoreRuleData.Pattern.GREEN_ADD_RED_NEUTRAL,
-			ColorScoreRuleData.Pattern.RED_ADD_GREEN_NEUTRAL,
-		]
+		var challenge: Resource = LATE_CHALLENGES.challenge_for_stage(stage_number)
+		if challenge == null:
+			return false
 		stage.maximum_shots = StageProgressionData.shots_for(stage_number)
-		pattern = later_patterns[(stage_number - 7) % later_patterns.size()]
-		var target_minimum := 7.0 + float(floori(float(stage_number - 7) / 6.0))
-		target_range = Vector2(target_minimum, target_minimum + 4.0)
+		pattern = challenge.score_pattern
+		target_range = challenge.target_range
 		stage_allowed_kinds = [
 			BallKind.Value.STANDARD,
 			BallKind.Value.IMPACT_BURST,
 			BallKind.Value.APEX_SPLIT,
 		]
-		required_kinds = [BallKind.Value.IMPACT_BURST, BallKind.Value.APEX_SPLIT]
+		required_kinds.assign(challenge.required_kinds)
 	stage.color_score_rule = ColorScoreRuleData.from_pattern(pattern)
 	stage.target_band = TargetBandData.new()
 	stage.target_band.target_min = target_range.x
@@ -110,6 +109,7 @@ static func _materialize_target_band_rule(stage: StageData, stage_number: int) -
 	stage.ball_deal_profile.allowed_kinds.assign(stage_allowed_kinds)
 	stage.ball_deal_profile.required_kinds.assign(required_kinds)
 	stage.default_deal_seed = 1000 + stage_number
+	return stage.has_valid_rule_contract()
 
 
 static func _materialize_profile(

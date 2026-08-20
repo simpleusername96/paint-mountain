@@ -12,10 +12,13 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var stage_id := &"stage_01"
+	var deal_seed := -1
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--stage="):
 			stage_id = StringName(argument.trim_prefix("--stage="))
-	var gameplay := FIXTURE.instantiate(stage_id)
+		elif argument.begins_with("--deal-seed="):
+			deal_seed = int(argument.trim_prefix("--deal-seed="))
+	var gameplay := FIXTURE.instantiate(stage_id, deal_seed)
 	_assert(gameplay != null, "stage fixture must instantiate")
 	if gameplay == null:
 		_finish()
