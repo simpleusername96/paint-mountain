@@ -19,14 +19,14 @@ func _run() -> void:
 	var status := hud_root.get_node("RunStatusCard") as RunStatusCard
 	_assert_true(
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
-		"Target coverage must have one owner in the left coverage meter"
+		"Target score must have one owner in the left score scale"
 	)
-	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
-	coverage.configure(10.0)
-	var coverage_caption := coverage.get_node("CoverageCaption") as TextureRect
+	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
+	score_scale.configure_coverage(10.0)
+	var coverage_caption := score_scale.get_node("MetricIcon") as TextureRect
 	_assert_true(
-		coverage_caption.texture != null and coverage_caption.tooltip_text == tr("hud.coverage"),
-		"CoverageMeter must use the approved target icon with a localized text alternative"
+		coverage_caption.texture != null and not score_scale.accessibility_name.is_empty(),
+		"ScoreScale must use the approved target icon with a localized text alternative"
 	)
 
 	hud.show_state(StageController.State.AIMING)

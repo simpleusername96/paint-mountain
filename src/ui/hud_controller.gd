@@ -17,10 +17,10 @@ signal power_step_requested(direction: float)
 signal angle_step_requested(direction: float)
 
 @onready var _top: TopStatusBar = %TopStatusBar
+@onready var _layout: HudRootLayout = $HUDRoot
 @onready var _aim: AimControls = %AimControls
-@onready var _coverage: CoverageMeter = %CoverageMeter
-@onready var _target_band: TargetBandMeter = %TargetBandMeter
-@onready var _queue: QueueRail = %QueueRail
+@onready var _score_scale: ScoreScale = %ScoreScale
+@onready var _queue: BallQueue = %BallQueue
 @onready var _actions: ActionButtons = %ActionButtons
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
@@ -63,11 +63,12 @@ func configure(stage_data: StageData) -> void:
 	_stage_data = stage_data
 	_refresh_briefing_locale()
 	_top.configure(stage_data)
-	_coverage.configure(stage_data.target_coverage)
 	if stage_data.uses_target_band():
-		_target_band.configure(stage_data.target_band, stage_data.color_score_rule)
+		_score_scale.configure_target_band(stage_data.target_band, stage_data.color_score_rule)
 		var empty_tokens: Array[BallToken] = []
 		_queue.configure(empty_tokens)
+	else:
+		_score_scale.configure_coverage(stage_data.target_coverage)
 	_last_score_snapshot.clear()
 	_finish_ready = false
 	_run_started = false
@@ -90,7 +91,7 @@ func update_shots(remaining: int, _maximum: int) -> void:
 
 func update_coverage(value: float) -> void:
 	_last_coverage = value
-	_coverage.update_coverage(value)
+	_score_scale.update_coverage(value)
 
 
 func update_target_score(snapshot: Dictionary) -> void:
@@ -103,7 +104,12 @@ func update_target_score(snapshot: Dictionary) -> void:
 		float(snapshot.get("total_percent", 0.0)),
 		int(snapshot.get("paint_mask_checksum", 0))
 	)
-	_target_band.update_score(coverage, float(snapshot.get("paint_score", 0.0)))
+	_score_scale.update_target_band(
+		coverage,
+		float(snapshot.get("paint_score", 0.0)),
+		_stage_data.color_score_rule.red_weight,
+		_stage_data.color_score_rule.green_weight
+	)
 
 
 func update_queue(tokens: Array[BallToken]) -> void:
@@ -136,7 +142,6 @@ func show_state(state: StageController.State) -> void:
 	_apply_interaction_presentation(false)
 	_run_status.visible = aiming_surface
 	_apply_finish_availability()
-	_coverage.visible = state not in [StageController.State.LOADING, StageController.State.BRIEFING]
 	_result.visible = state == StageController.State.RESULT
 	_pause.visible = state == StageController.State.PAUSED and not _pause_overlay_suspended
 	_apply_target_rule_visibility()
@@ -272,11 +277,12 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_return_to_cannon.tooltip_text = tr("hud.return_to_cannon_hint")
 		_result.refresh_locale()
 		_context_legend.refresh_locale()
-		_coverage.configure(_stage_data.target_coverage)
-		_coverage.update_coverage(_last_coverage)
 		if _stage_data.uses_target_band():
-			_target_band.configure(_stage_data.target_band, _stage_data.color_score_rule)
+			_score_scale.configure_target_band(_stage_data.target_band, _stage_data.color_score_rule)
 			update_target_score(_last_score_snapshot)
+		else:
+			_score_scale.configure_coverage(_stage_data.target_coverage)
+			_score_scale.update_coverage(_last_coverage)
 	show_state(_current_state)
 
 
@@ -338,12 +344,11 @@ func _apply_finish_availability() -> void:
 func _apply_target_rule_visibility() -> void:
 	var target_rule := _stage_data != null and _stage_data.uses_target_band()
 	_briefing_rule.visible = target_rule and _current_state == StageController.State.BRIEFING
-	_coverage.visible = not target_rule \
-			and _current_state not in [StageController.State.LOADING, StageController.State.BRIEFING]
-	_target_band.visible = target_rule and _current_state in [
+	_score_scale.visible = _current_state in [
 		StageController.State.BRIEFING,
 		StageController.State.AIMING,
 	] and _current_camera_mode != CameraDirector.Mode.FOLLOW
+	_layout.set_score_summary(_current_state == StageController.State.BRIEFING)
 	_queue.visible = target_rule and _current_state in [
 		StageController.State.BRIEFING,
 		StageController.State.AIMING,

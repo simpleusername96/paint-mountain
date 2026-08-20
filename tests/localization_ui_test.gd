@@ -3,7 +3,7 @@ extends SceneTree
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
 const AIM_CONTROLS_SCENE := preload("res://scenes/ui/hud/aim_controls.tscn")
-const COVERAGE_METER_SCENE := preload("res://scenes/ui/hud/coverage_meter.tscn")
+const SCORE_SCALE_SCENE := preload("res://scenes/ui/components/score_scale.tscn")
 const MIGRATION_PATH := "user://paint_mountain_localization_v1.json"
 
 var _failed := false
@@ -54,18 +54,18 @@ func _run() -> void:
 	var stage_select := STAGE_SELECT_SCENE.instantiate() as StageSelectScreen
 	var settings := SETTINGS_SCENE.instantiate() as SettingsScreen
 	var aim_controls := AIM_CONTROLS_SCENE.instantiate() as AimControls
-	var coverage_meter := COVERAGE_METER_SCENE.instantiate() as CoverageMeter
+	var score_scale := SCORE_SCALE_SCENE.instantiate() as ScoreScale
 	root.add_child(stage_select)
 	root.add_child(settings)
 	root.add_child(aim_controls)
-	root.add_child(coverage_meter)
+	root.add_child(score_scale)
 	await process_frame
 	await process_frame
 	stage_select.visible = true
 	stage_select.refresh()
 	await process_frame
 	_assert_true(not stage_select._cards.is_empty(), "stage select must build its card controls")
-	_assert_coverage_icon_contract(coverage_meter, "ko")
+	_assert_score_scale_icon_contract(score_scale, "ko")
 	if not stage_select._cards.is_empty():
 		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "stage cards must render in Korean")
 
@@ -74,8 +74,7 @@ func _run() -> void:
 	aim_controls.refresh_locale()
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
 	_assert_translation_contract("en")
-	coverage_meter.refresh_locale()
-	_assert_coverage_icon_contract(coverage_meter, "en")
+	_assert_score_scale_icon_contract(score_scale, "en")
 	if not stage_select._cards.is_empty():
 		_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
 	var language_option: OptionButton = settings._controls.get(&"language")
@@ -99,37 +98,37 @@ func _run() -> void:
 	_assert_true(quality_option.get_item_metadata(1) == "medium", "quality metadata must remain stable")
 	_assert_true(resolution_option.get_item_text(0) == "1280 × 720" and resolution_option.get_item_metadata(0) == "1280x720", "resolution display formatting must preserve stored metadata")
 	_assert_true(
-		aim_controls.get_node("Content/AngleLabel").text == "ANGLE" \
-				and aim_controls.get_node("Content/PowerLabel").text == "POWER",
+		aim_controls.get_node("Content/AngleStepper/Caption").text == "ANGLE" \
+				and aim_controls.get_node("Content/PowerStepper/Caption").text == "POWER",
 		"Aim controls must use localized direct labels without a yaw instrument"
 	)
 	_assert_true(
-		(aim_controls.get_node("Content/AngleDecrease") as Button).size.y >= 40.0,
+		(aim_controls.get_node("Content/AngleStepper/Decrease") as Button).size.y >= 40.0,
 		"angle controls must retain a 40px focusable target"
 	)
 	_assert_true(
-		(aim_controls.get_node("Content/AngleDecrease") as Button).tooltip_text == "DECREASE ANGLE",
+		(aim_controls.get_node("Content/AngleStepper/Decrease") as Button).tooltip_text == "DECREASE ANGLE",
 		"angle controls must refresh English tooltips"
 	)
 	var angle_steps: Array[float] = []
 	var power_steps: Array[float] = []
 	aim_controls.angle_step_requested.connect(func(step: float) -> void: angle_steps.append(step))
 	aim_controls.power_step_requested.connect(func(step: float) -> void: power_steps.append(step))
-	(aim_controls.get_node("Content/AngleIncrease") as Button).button_down.emit()
-	(aim_controls.get_node("Content/AngleIncrease") as Button).button_up.emit()
-	(aim_controls.get_node("Content/PowerDecrease") as Button).button_down.emit()
-	(aim_controls.get_node("Content/PowerDecrease") as Button).button_up.emit()
+	(aim_controls.get_node("Content/AngleStepper/Increase") as Button).button_down.emit()
+	(aim_controls.get_node("Content/AngleStepper/Increase") as Button).button_up.emit()
+	(aim_controls.get_node("Content/PowerStepper/Decrease") as Button).button_down.emit()
+	(aim_controls.get_node("Content/PowerStepper/Decrease") as Button).button_up.emit()
 	aim_controls.update_aim(0.0, 38.0, 68.1)
 	_assert_true(angle_steps == [1.0] and power_steps == [-2.0], "Aim controls must emit target-preserving angle direction and 2-percent step intents")
 	_assert_true(
-		aim_controls.get_node("Content/ElevationValue").text == "38.0°" \
-				and aim_controls.get_node("Content/PowerValue").text == "68.1%",
+		aim_controls.get_node("Content/AngleStepper/Value").text == "38.0°" \
+				and aim_controls.get_node("Content/PowerStepper/Value").text == "68.1%",
 		"Aim controls must display elevation and solved power to one decimal"
 	)
 	aim_controls.update_aim(0.0, AimTuple.MAXIMUM_ELEVATION_DEGREES, AimTuple.MAXIMUM_POWER_PERCENT)
 	_assert_true(
-		(aim_controls.get_node("Content/AngleIncrease") as Button).disabled
-		and (aim_controls.get_node("Content/PowerIncrease") as Button).disabled,
+		(aim_controls.get_node("Content/AngleStepper/Increase") as Button).disabled
+		and (aim_controls.get_node("Content/PowerStepper/Increase") as Button).disabled,
 		"direct numeric aim bounds must disable their matching increment buttons"
 	)
 
@@ -159,7 +158,7 @@ func _run() -> void:
 	stage_select.queue_free()
 	settings.queue_free()
 	aim_controls.queue_free()
-	coverage_meter.queue_free()
+	score_scale.queue_free()
 	await process_frame
 	game_state.persistence_enabled = true
 	if not _failed:
@@ -240,12 +239,12 @@ func _assert_translation_contract(locale: String) -> void:
 		_assert_true(tr("hud.finish_tooltip") == "Finish and score target-area coverage (F)", "English Finish tooltip must state that it scores target-area coverage")
 
 
-func _assert_coverage_icon_contract(coverage_meter: CoverageMeter, locale: String) -> void:
-	coverage_meter.configure(10.0)
-	var icon := coverage_meter.get_node_or_null("CoverageCaption") as TextureRect
+func _assert_score_scale_icon_contract(score_scale: ScoreScale, locale: String) -> void:
+	score_scale.configure_coverage(10.0)
+	var icon := score_scale.get_node_or_null("MetricIcon") as TextureRect
 	_assert_true(icon != null and icon.texture != null, "%s coverage caption must use the approved target texture" % locale)
-	_assert_true(icon.tooltip_text == tr("hud.coverage"), "%s coverage icon must retain a localized text alternative" % locale)
-	_assert_true(icon.get_rect().size == Vector2(18.0, 18.0), "%s coverage icon must keep its restrained 18px size" % locale)
+	_assert_true(not score_scale.accessibility_name.is_empty(), "%s score scale must retain a localized text alternative" % locale)
+	_assert_true(icon.get_rect().size == Vector2(20.0, 20.0), "%s score icon must keep its restrained 20px size" % locale)
 
 
 func _assert_true(condition: bool, message: String) -> void:

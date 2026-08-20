@@ -1,116 +1,33 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/aim_controls.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/minus.png" id="2"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/plus.png" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/value_stepper.tscn" id="2_stepper"]
 
 [node name="AimControls" type="Control"]
-custom_minimum_size = Vector2(480, 56)
-offset_right = 480.0
+custom_minimum_size = Vector2(704, 56)
+offset_right = 704.0
 offset_bottom = 56.0
 script = ExtResource("1")
-
-[node name="Backdrop" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"HudStagePanel"
 
 [node name="Content" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 2.0
-offset_right = -8.0
-offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
-[node name="AngleLabel" type="Label" parent="Content"]
-custom_minimum_size = Vector2(54, 48)
-layout_mode = 2
-theme_type_variation = &"HudBody"
-text = "hud.angle"
-vertical_alignment = 1
-
-[node name="AngleDecrease" type="Button" parent="Content"]
+[node name="AngleStepper" parent="Content" instance=ExtResource("2_stepper")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(42, 48)
 layout_mode = 2
-icon = ExtResource("2")
-expand_icon = true
-focus_mode = 2
-tooltip_text = "hud.angle_decrease"
-theme_type_variation = &"HudIconButton"
 
-[node name="ElevationValue" type="Label" parent="Content"]
+[node name="FireGap" type="Control" parent="Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(62, 48)
-layout_mode = 2
-size_flags_horizontal = 0
-theme_type_variation = &"HudControlValue"
-text = "38.0°"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="AngleIncrease" type="Button" parent="Content"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(42, 48)
-layout_mode = 2
-icon = ExtResource("3")
-expand_icon = true
-focus_mode = 2
-tooltip_text = "hud.angle_increase"
-theme_type_variation = &"HudIconButton"
-
-[node name="GroupGap" type="Control" parent="Content"]
-custom_minimum_size = Vector2(18, 0)
+custom_minimum_size = Vector2(252, 0)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="PowerLabel" type="Label" parent="Content"]
-custom_minimum_size = Vector2(54, 48)
-layout_mode = 2
-theme_type_variation = &"HudBody"
-text = "hud.power"
-vertical_alignment = 1
-
-[node name="PowerDecrease" type="Button" parent="Content"]
+[node name="PowerStepper" parent="Content" instance=ExtResource("2_stepper")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(42, 48)
 layout_mode = 2
-icon = ExtResource("2")
-expand_icon = true
-focus_mode = 2
-tooltip_text = "hud.power_decrease"
-theme_type_variation = &"HudIconButton"
-
-[node name="PowerValue" type="Label" parent="Content"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 48)
-layout_mode = 2
-theme_type_variation = &"HudControlValue"
-text = "68.0%"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PowerIncrease" type="Button" parent="Content"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(42, 48)
-layout_mode = 2
-icon = ExtResource("3")
-expand_icon = true
-focus_mode = 2
-tooltip_text = "hud.power_increase"
-theme_type_variation = &"HudIconButton"

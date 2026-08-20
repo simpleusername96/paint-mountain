@@ -1,0 +1,81 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/score_scale.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/target.png" id="2_target"]
+
+[node name="ScoreScale" type="Control"]
+custom_minimum_size = Vector2(116, 286)
+mouse_filter = 2
+theme_type_variation = &"ScoreScale"
+script = ExtResource("1_script")
+
+[node name="MetricIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+texture = ExtResource("2_target")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CurrentValue" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudValue"
+text = "0.0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tick100" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+text = "100"
+
+[node name="Tick75" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+text = "75"
+
+[node name="Tick50" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+text = "50"
+
+[node name="Tick25" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+text = "25"
+
+[node name="Tick0" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+text = "0"
+
+[node name="Contributions" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Red" type="Label" parent="Contributions"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+
+[node name="Green" type="Label" parent="Contributions"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudCaption"

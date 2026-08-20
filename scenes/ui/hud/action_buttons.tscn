@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud/action_buttons.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/paint_splash.svg" id="3_fire"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="2_action"]
 
 [node name="ActionButtons" type="Control"]
 custom_minimum_size = Vector2(292, 86)
@@ -31,15 +31,10 @@ text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="FireButton" type="Button" parent="."]
+[node name="FireButton" parent="." instance=ExtResource("2_action")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 45.0
 offset_top = 24.0
 offset_right = 247.0
 offset_bottom = 86.0
-theme_type_variation = &"PrimaryButton"
-text = "ui.fire"
-icon = ExtResource("3_fire")
-expand_icon = true
-icon_max_width = 24

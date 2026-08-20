@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/result_summary.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/score_scale.tscn" id="2_scale"]
+
+[node name="ResultSummary" type="VBoxContainer"]
+custom_minimum_size = Vector2(440, 230)
+theme_type_variation = &"ResultSummary"
+theme_override_constants/separation = 8
+script = ExtResource("1_script")
+
+[node name="Verdict" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ResultTitle"
+
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ResultCoverage"
+
+[node name="ScoreScale" parent="." instance=ExtResource("2_scale")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 118)
+layout_mode = 2
+preset = 1
+
+[node name="Facts" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ResultFact"
+autowrap_mode = 2

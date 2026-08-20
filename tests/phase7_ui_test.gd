@@ -300,21 +300,17 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	# offsets and the delivery contract use the fixed logical 1280x720 rectangle.
 	var hud_rect := Rect2(rendered_hud_rect.position, logical_size)
 	var hud_center := hud_rect.get_center()
-	var coverage := hud_root.get_node("CoverageMeter") as CoverageMeter
-	var target_band := hud_root.get_node("TargetBandMeter") as TargetBandMeter
-	var queue := hud_root.get_node("QueueRail") as QueueRail
+	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
+	var queue := hud_root.get_node("BallQueue") as BallQueue
 	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left rule meter must remain the sole score target owner")
-	if target_band.is_visible_in_tree():
-		_assert_true(not coverage.is_visible_in_tree(), "prototype aiming must replace the legacy coverage rail")
-		_assert_true(target_band.get_global_rect().get_center().x < hud_center.x, "the target-band meter must remain on the left during prototype aiming")
-		_assert_true(queue.is_visible_in_tree() and queue.get_global_rect().get_center().x > hud_center.x, "the prototype queue must remain on the right during aiming")
-	else:
-		var coverage_value := coverage.get_node_or_null("CoverageValue") as Label
-		var target_value := coverage.get_node_or_null("TargetValue") as Label
-		var progress := coverage.get_node_or_null("Progress") as ProgressBar
-		_assert_true(coverage_value != null and target_value != null, "the legacy coverage meter must own both current and target values")
-		_assert_true(progress != null and progress.fill_mode == ProgressBar.FILL_BOTTOM_TO_TOP, "the legacy coverage rail must fill from bottom to top")
-		_assert_true(coverage.is_visible_in_tree() and coverage.get_global_rect().get_center().x < hud_center.x, "the legacy coverage meter must remain on the left during aiming")
+	_assert_true(score_scale.is_visible_in_tree(), "Aiming must expose the shared fixed-domain score scale")
+	_assert_true(score_scale.get_global_rect().get_center().x < hud_center.x, "the score scale must remain on the left during aiming")
+	_assert_true(
+		score_scale.target_rect_for_test().size.y > 0.0,
+		"the score scale must retain an authoritative target interval or threshold"
+	)
+	if queue.is_visible_in_tree():
+		_assert_true(queue.get_global_rect().get_center().x > hud_center.x, "the target-band queue must remain on the right during aiming")
 
 	var actions := hud_root.get_node("ActionButtons") as ActionButtons
 	var fire := actions.get_node_or_null("FireButton") as Button
@@ -352,5 +348,5 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	)
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
 	_assert_true(not settings_rect.intersects(status_rect), "settings must not overlap the status instruments")
-	for control in [coverage, fire, status, settings]:
+	for control in [score_scale, fire, status, settings]:
 		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

@@ -4,70 +4,33 @@ extends Control
 signal power_step_requested(direction: float)
 signal angle_step_requested(direction: float)
 
-const HOLD_DELAY := 0.30
-const HOLD_REPEAT := 0.08
-
-@onready var elevation_value: Label = %ElevationValue
-@onready var power_value: Label = %PowerValue
-var _hold_direction := 0.0
-var _hold_angle := false
-var _hold_elapsed := 0.0
-var _next_repeat := HOLD_DELAY
+@onready var angle_stepper: ValueStepper = %AngleStepper
+@onready var power_stepper: ValueStepper = %PowerStepper
+@onready var elevation_value: Label = angle_stepper.value_label
+@onready var power_value: Label = power_stepper.value_label
 
 
 func _ready() -> void:
-	%AngleDecrease.button_down.connect(_begin_hold.bind(-1.0, true))
-	%AngleIncrease.button_down.connect(_begin_hold.bind(1.0, true))
-	%PowerDecrease.button_down.connect(_begin_hold.bind(-2.0, false))
-	%PowerIncrease.button_down.connect(_begin_hold.bind(2.0, false))
-	%AngleDecrease.button_up.connect(_end_hold)
-	%AngleIncrease.button_up.connect(_end_hold)
-	%PowerDecrease.button_up.connect(_end_hold)
-	%PowerIncrease.button_up.connect(_end_hold)
+	angle_stepper.configure("hud.angle", "hud.angle_decrease", "hud.angle_increase", "°", -1.0, 1.0)
+	power_stepper.configure("hud.power", "hud.power_decrease", "hud.power_increase", "%", -2.0, 2.0)
+	angle_stepper.step_requested.connect(func(direction: float) -> void: angle_step_requested.emit(direction))
+	power_stepper.step_requested.connect(func(direction: float) -> void: power_step_requested.emit(direction))
 	refresh_locale()
 
 
 func refresh_locale() -> void:
-	$Content/AngleLabel.text = tr("hud.angle")
-	$Content/PowerLabel.text = tr("hud.power")
-	%AngleDecrease.tooltip_text = tr("hud.angle_decrease")
-	%AngleIncrease.tooltip_text = tr("hud.angle_increase")
-	%PowerDecrease.tooltip_text = tr("hud.power_decrease")
-	%PowerIncrease.tooltip_text = tr("hud.power_increase")
-
-
-func _process(delta: float) -> void:
-	if is_zero_approx(_hold_direction):
-		return
-	_hold_elapsed += delta
-	while _hold_elapsed >= _next_repeat:
-		_emit_step(_hold_direction, _hold_angle)
-		_next_repeat += HOLD_REPEAT
+	angle_stepper.refresh_locale()
+	power_stepper.refresh_locale()
 
 
 func update_aim(_yaw: float, elevation: float, power: float) -> void:
-	elevation_value.text = "%.1f°" % elevation
-	power_value.text = "%.1f%%" % power
-	%AngleDecrease.disabled = elevation <= AimTuple.MINIMUM_ELEVATION_DEGREES
-	%AngleIncrease.disabled = elevation >= AimTuple.MAXIMUM_ELEVATION_DEGREES
-	%PowerDecrease.disabled = power <= AimTuple.MINIMUM_POWER_PERCENT
-	%PowerIncrease.disabled = power >= AimTuple.MAXIMUM_POWER_PERCENT
+	angle_stepper.set_value(elevation, AimTuple.MINIMUM_ELEVATION_DEGREES, AimTuple.MAXIMUM_ELEVATION_DEGREES)
+	power_stepper.set_value(power, AimTuple.MINIMUM_POWER_PERCENT, AimTuple.MAXIMUM_POWER_PERCENT)
 
 
-func _begin_hold(direction: float, angle: bool) -> void:
-	_emit_step(direction, angle)
-	_hold_direction = direction
-	_hold_angle = angle
-	_hold_elapsed = 0.0
-	_next_repeat = HOLD_DELAY
-
-
-func _end_hold() -> void:
-	_hold_direction = 0.0
-
-
-func _emit_step(direction: float, angle: bool) -> void:
-	if angle:
-		angle_step_requested.emit(direction)
-	else:
-		power_step_requested.emit(direction)
+func set_compact(compact: bool) -> void:
+	angle_stepper.set_compact(compact)
+	power_stepper.set_compact(compact)
+	%FireGap.visible = not compact
+	%FireGap.custom_minimum_size.x = 0.0 if compact else 252.0
+	custom_minimum_size.x = 340.0 if compact else 704.0

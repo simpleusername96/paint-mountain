@@ -1,7 +1,7 @@
 extends SceneTree
 
-const BAND_SCENE := preload("res://scenes/ui/hud/target_band_meter.tscn")
-const QUEUE_SCENE := preload("res://scenes/ui/hud/queue_rail.tscn")
+const BAND_SCENE := preload("res://scenes/ui/components/score_scale.tscn")
+const QUEUE_SCENE := preload("res://scenes/ui/components/ball_queue.tscn")
 
 var _failed := false
 
@@ -11,19 +11,21 @@ func _initialize() -> void:
 func _run() -> void:
 	var meter = BAND_SCENE.instantiate()
 	root.add_child(meter)
+	var rail = QUEUE_SCENE.instantiate()
+	root.add_child(rail)
+	await process_frame
 	var band := TargetBandData.new()
 	band.target_min = 7.0
 	band.target_max = 11.0
-	meter.configure(band, ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT))
-	meter.update_score(PaintCoverageSnapshot.new(3.0, 4.0, 7.0, 9), 1.0)
-	_assert("R −" in meter.get_node("%Red").text and "G +" in meter.get_node("%Green").text, "meter must disclose signed channel roles")
-	var rail = QUEUE_SCENE.instantiate()
-	root.add_child(rail)
+	meter.configure_target_band(band, ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT))
+	meter.update_target_band(PaintCoverageSnapshot.new(3.0, 4.0, 7.0, 9), 1.0, -1, 1)
+	_assert("R −" in meter.get_node("Contributions/Red").text and "G +" in meter.get_node("Contributions/Green").text, "meter must disclose signed channel roles")
 	var tokens: Array[BallToken] = [BallToken.new(BallKind.Value.IMPACT_BURST, PaintChannel.Value.RED)]
 	rail.configure(tokens)
-	_assert(rail.get_node("NowToken").visible, "current token must show")
-	_assert(not rail.get_node("NextOne").visible and not rail.get_node("NextTwo").visible, "empty tail slots must be omitted")
-	_assert(rail.get_node("NowToken/TokenLabel").text.contains("R"), "token must contain a non-color channel letter")
+	var views: Array[BallQueueTokenView] = rail.token_views()
+	_assert(views[0].visible, "current token must show")
+	_assert(not views[1].visible and not views[2].visible, "empty tail slots must be omitted")
+	_assert(views[0].text.contains("R"), "token must contain a non-color channel letter")
 	meter.free()
 	rail.free()
 	if not _failed:

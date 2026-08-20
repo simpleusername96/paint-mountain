@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/value_stepper.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/minus.png" id="2_minus"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/plus.png" id="3_plus"]
+
+[node name="ValueStepper" type="HBoxContainer"]
+custom_minimum_size = Vector2(214, 52)
+theme_type_variation = &"ValueStepper"
+theme_override_constants/separation = 4
+script = ExtResource("1_script")
+
+[node name="Caption" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+theme_type_variation = &"HudCaption"
+vertical_alignment = 1
+
+[node name="Decrease" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 48)
+layout_mode = 2
+focus_mode = 2
+icon = ExtResource("2_minus")
+expand_icon = true
+theme_type_variation = &"ValueStepperButton"
+
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 48)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ValueStepperValue"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Increase" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 48)
+layout_mode = 2
+focus_mode = 2
+icon = ExtResource("3_plus")
+expand_icon = true
+theme_type_variation = &"ValueStepperButton"

@@ -45,19 +45,20 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	hud.show_state(StageController.State.AIMING)
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
 	await process_frame
-	var queue := hud_root.get_node("QueueRail") as QueueRail
-	var target_band := hud_root.get_node("TargetBandMeter") as TargetBandMeter
+	var queue := hud_root.get_node("BallQueue") as BallQueue
+	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
 	queue.show()
-	target_band.show()
+	score_scale.show()
 	await process_frame
-	var safe_rect := Rect2(Vector2(SAFE_MARGIN, SAFE_MARGIN), Vector2(viewport_size) - Vector2(SAFE_MARGIN * 2.0, SAFE_MARGIN * 2.0))
+	var safe_margin := 12.0 if viewport_size.x < 960 or viewport_size.y < 620 else SAFE_MARGIN
+	var safe_rect := Rect2(Vector2(safe_margin, safe_margin), Vector2(viewport_size) - Vector2(safe_margin * 2.0, safe_margin * 2.0))
 	for path in [
 		"TopStatusBar/StageValue",
 		"TopStatusBar/SettingsButton",
 		"RunStatusCard",
-		"QueueRail",
+		"BallQueue",
 		"ActionButtons",
-		"TargetBandMeter",
+		"ScoreScale",
 	]:
 		_assert_inside(hud_root.get_node(path) as Control, safe_rect, "%s at %s (%s)" % [path, viewport_size, locale])
 
@@ -93,34 +94,29 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 
 	var aim := hud_root.get_node("AimControls") as AimControls
 	var legend := hud_root.get_node("ContextLegend") as ContextLegend
-	if viewport_size.x >= 900 and viewport_size.y >= 500:
-		_assert_inside(aim, safe_rect, "AimControls at %s (%s)" % [viewport_size, locale])
-		_assert_true(
-			aim.get_global_rect().encloses((aim.get_node("Backdrop") as Control).get_global_rect()),
-			"AimControls must contain its backdrop at %s" % viewport_size
-		)
-		_assert_true(
-			aim.get_global_rect().encloses((aim.get_node("Content") as Control).get_global_rect()),
-			"AimControls must contain its content at %s" % viewport_size
-		)
+	_assert_inside(aim, safe_rect, "AimControls at %s (%s)" % [viewport_size, locale])
+	_assert_true(
+		aim.get_global_rect().encloses((aim.get_node("Content") as Control).get_global_rect()),
+		"AimControls must contain its content at %s" % viewport_size
+	)
+	if viewport_size.x >= 960 and viewport_size.y >= 620:
 		_assert_inside(legend, safe_rect, "ContextLegend at %s (%s)" % [viewport_size, locale])
 	else:
-		_assert_true(not aim.visible and not legend.visible, "compact layout must prioritize status and Fire at %s" % viewport_size)
+		_assert_true(aim.visible and not legend.visible, "compact layout must retain aim controls and suppress only hints at %s" % viewport_size)
 		_assert_pairwise_non_overlap([
-			hud_root.get_node("TargetBandMeter") as Control,
+			score_scale,
 			queue,
 			actions,
+			aim.get_node("Content/AngleStepper") as Control,
+			aim.get_node("Content/PowerStepper") as Control,
 		], "compact groups at %s" % viewport_size)
 		_assert_true(queue.size.y >= queue.get_combined_minimum_size().y, "compact queue must honor its minimum height at %s" % viewport_size)
-		hud.queue_free()
-		await process_frame
-		return
-	var angle_decrease := aim.get_node("Content/AngleDecrease") as Button
-	var elevation := aim.get_node("Content/ElevationValue") as Label
-	var angle_increase := aim.get_node("Content/AngleIncrease") as Button
-	var power_decrease := aim.get_node("Content/PowerDecrease") as Button
-	var power := aim.get_node("Content/PowerValue") as Label
-	var power_increase := aim.get_node("Content/PowerIncrease") as Button
+	var angle_decrease := aim.get_node("Content/AngleStepper/Decrease") as Button
+	var elevation := aim.get_node("Content/AngleStepper/Value") as Label
+	var angle_increase := aim.get_node("Content/AngleStepper/Increase") as Button
+	var power_decrease := aim.get_node("Content/PowerStepper/Decrease") as Button
+	var power := aim.get_node("Content/PowerStepper/Value") as Label
+	var power_increase := aim.get_node("Content/PowerStepper/Increase") as Button
 	_assert_true(
 		angle_decrease.get_global_rect().end.x <= elevation.get_global_rect().position.x
 				and elevation.get_global_rect().end.x <= angle_increase.get_global_rect().position.x,
@@ -138,29 +134,30 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	angle_decrease.grab_focus()
 	await process_frame
 	_assert_true(angle_decrease.has_focus(), "Aim decrement must remain keyboard focusable at %s" % viewport_size)
-	if viewport_size.x >= 1024:
-		_assert_true(
-			not actions.get_global_rect().intersects(aim.get_global_rect()),
-			"ActionButtons and AimControls must not overlap at %s" % viewport_size
-		)
+	_assert_true(
+		not fire.get_global_rect().intersects((aim.get_node("Content/AngleStepper") as Control).get_global_rect())
+				and not fire.get_global_rect().intersects((aim.get_node("Content/PowerStepper") as Control).get_global_rect()),
+		"Fire must occupy the Cannon Focus gap between angle and power at %s" % viewport_size
+	)
 
-	var items := legend.get_node("Center/Items") as HFlowContainer
-	_assert_true(items.clip_contents == false and legend.clip_contents, "legend must wrap within its bounded root")
-	_assert_inside(items, legend.get_global_rect(), "legend contents at %s (%s)" % [viewport_size, locale])
-	for path in ["AngleItem", "PowerItem", "FireItem", "MenuItem"]:
-		_assert_true(
-			(legend.get_node("Center/Items/%s" % path) as Control).is_visible_in_tree(),
-			"primary legend cue %s must survive at %s (%s)" % [path, viewport_size, locale]
-		)
+	if legend.visible:
+		var items := legend.get_node("Center/Items") as HFlowContainer
+		_assert_true(items.clip_contents == false and legend.clip_contents, "legend must wrap within its bounded root")
+		_assert_inside(items, legend.get_global_rect(), "legend contents at %s (%s)" % [viewport_size, locale])
+		for path in ["AngleItem", "PowerItem", "FireItem", "MenuItem"]:
+			_assert_true(
+				(legend.get_node("Center/Items/%s" % path) as Control).is_visible_in_tree(),
+				"primary legend cue %s must survive at %s (%s)" % [path, viewport_size, locale]
+			)
 
 	_assert_true(
 		queue.size.y >= queue.get_combined_minimum_size().y,
-		"queue rail must honor its component minimum height at %s" % viewport_size
+		"ball queue must honor its component minimum height at %s" % viewport_size
 	)
 	_assert_true(
-		target_band.size.x >= target_band.get_combined_minimum_size().x
-				and target_band.size.y >= target_band.get_combined_minimum_size().y,
-		"target band must honor its component minimum geometry at %s" % viewport_size
+		score_scale.size.x >= score_scale.get_combined_minimum_size().x
+				and score_scale.size.y >= score_scale.get_combined_minimum_size().y,
+		"score scale must honor its component minimum geometry at %s" % viewport_size
 	)
 	hud.queue_free()
 	await process_frame

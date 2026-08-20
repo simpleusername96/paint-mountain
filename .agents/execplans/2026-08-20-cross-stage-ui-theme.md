@@ -157,14 +157,14 @@ Source owners: `docs/source-brief.md`, `.agents/design/UIUX_GUIDELINES.md`,
     as history and carry its completed evidence/remote approval boundary here.
   - Accept: no active plan or design source still calls A the default; the old
     plan is lifecycle-valid and points here; no completed task was reopened.
-- [ ] **1.2 Extend the canonical Theme and ownership contract.**
+- [x] **1.2 Extend the canonical Theme and ownership contract.**
   - Change: add only the semantic variations required for direct overlay,
     vertical/horizontal scale, queue token/description, value stepper, primary/
     secondary/quiet action, stage node states, result summary, contrast scrim,
     interruption surface, disabled, hover, pressed, and focus.
   - Accept: a focused Theme/ownership test proves all shared scenes inherit the
     canonical Theme and no new screen-local palette/font/StyleBox owner exists.
-- [ ] **1.3 Implement shared `ScoreScale`.**
+- [x] **1.3 Implement shared `ScoreScale`.**
   - Change: add `scenes/ui/components/score_scale.tscn` and
     `src/ui/components/score_scale.gd`; support vertical-live and horizontal-
     summary presets, fixed 0-100 mapping, five labels, current marker, target
@@ -172,7 +172,7 @@ Source owners: `docs/source-brief.md`, `.agents/design/UIUX_GUIDELINES.md`,
     retire `CoverageMeter` and `TargetBandMeter` only after callers pass.
   - Accept: `tests/score_scale_contract_test.gd` proves both presets, endpoints,
     target/marker bounds, 0/100 clamping, and both stage-family models.
-- [ ] **1.4 Implement shared `BallQueue`.**
+- [x] **1.4 Implement shared `BallQueue`.**
   - Change: add shared queue and focusable token scenes/scripts. One queue owner
     controls horizontal/vertical arrangement, token order/state, hover/focus/
     press description visibility, accessible text, pin/dismiss behavior, and
@@ -180,7 +180,7 @@ Source owners: `docs/source-brief.md`, `.agents/design/UIUX_GUIDELINES.md`,
   - Accept: `tests/ball_queue_tooltip_test.gd` proves three-token ordering,
     native focus, pointer/focus/press equivalence, Escape/dismiss, accessible
     description, and no essential hover-only state.
-- [ ] **1.5 Implement the remaining shared primitives.**
+- [x] **1.5 Implement the remaining shared primitives.**
   - Change: enhance/rehome `MetricReadout` and `ContextHints`; add reusable
     `ValueStepper`, `ActionControl`, `StageRail`, `ResultSummary`, and
     `ContrastScrim`. `AimControls`, app screens, and Result must compose these
@@ -440,11 +440,13 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 1.
-- Next task: 1.2, extend the canonical Theme and ownership contract.
-- Last completed gate: Discovery Closure Gate; Godot 4.7.1, project wrappers,
-  relevant source owners, existing tests, report evidence, and prior M7-M9
-  evidence were verified on 2026-08-20.
+- Current phase: Phase 2.
+- Next task: 2.1, refine Main Menu with shared action hierarchy.
+- Last completed gate: Phase 1; `phase7_ui_test`, `score_scale_contract_test`,
+  `ball_queue_tooltip_test`, and `shared_ui_component_ownership_test` passed on
+  Godot 4.7.1 on 2026-08-20. The shared HUD now uses the fixed-domain
+  `ScoreScale`, focusable horizontal `BallQueue`, `ValueStepper`, and
+  `ActionControl`; the cropped score and legacy queue owners were retired.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

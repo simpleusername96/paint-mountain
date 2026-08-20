@@ -2,6 +2,9 @@ keys,en,ko
 ball.standard,Standard,표준
 ball.impact_burst,Impact Burst,충돌 폭발
 ball.apex_split,Apex Split,최고점 분열
+ball.standard.description,Paints continuously while touching the terrain.,지형에 닿아 움직이는 동안 계속 칠합니다.
+ball.impact_burst.description,Paints a wide burst on its first valid landing.,첫 유효 착지에서 넓게 터지며 칠합니다.
+ball.apex_split.description,Splits into three painting balls at the top of its arc.,궤도 정상에서 칠하는 공 세 개로 나뉩니다.
 paint.red,Red,빨강
 paint.green,Green,초록
 stage.prototype,PROTOTYPE,프로토타입

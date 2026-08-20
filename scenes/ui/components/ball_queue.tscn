@@ -1,0 +1,58 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/ball_queue.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/ball_queue_token.tscn" id="2_token"]
+
+[node name="BallQueue" type="Control"]
+visible = false
+custom_minimum_size = Vector2(260, 104)
+mouse_filter = 1
+theme_type_variation = &"BallQueue"
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 104.0
+grow_horizontal = 2
+theme_override_constants/separation = 6
+
+[node name="TokenBox" type="BoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="NowToken" parent="Content/TokenBox" instance=ExtResource("2_token")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NextOne" parent="Content/TokenBox" instance=ExtResource("2_token")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NextTwo" parent="Content/TokenBox" instance=ExtResource("2_token")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Description" type="PanelContainer" parent="Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"BallQueueDescription"
+
+[node name="Margin" type="MarginContainer" parent="Content/Description"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="Text" type="Label" parent="Content/Description/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudCaption"
+autowrap_mode = 2
