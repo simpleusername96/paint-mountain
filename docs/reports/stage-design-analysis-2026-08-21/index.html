@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain Stage v13 설계 분석 — 2026-08-21</title>
+  <style>
+    :root { --ink:#172538; --muted:#667085; --blue:#2584ff; --green:#168a55; --amber:#a54c00; --line:#d9e0e8; --paper:#fffdfc; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Pretendard,"Noto Sans KR","Segoe UI",sans-serif; line-height:1.55; }
+    header, main, footer { width:min(1180px,calc(100% - 40px)); margin:auto; }
+    header { padding:70px 0 34px; border-bottom:4px solid var(--ink); }
+    h1 { margin:8px 0 14px; font-size:clamp(42px,7vw,82px); line-height:.98; letter-spacing:-.06em; }
+    h2 { margin:68px 0 18px; font-size:clamp(28px,4vw,46px); letter-spacing:-.04em; }
+    h3 { margin:0 0 8px; font-size:21px; }
+    p { margin:0 0 12px; }
+    .eyebrow { color:var(--blue); font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+    .lede { max-width:900px; color:var(--muted); font-size:20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px 18px; padding:16px 0; border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(255,253,252,.94); backdrop-filter:blur(12px); z-index:3; }
+    nav a { color:var(--ink); text-decoration:none; font-weight:750; }
+    .verdict { display:grid; grid-template-columns:270px 1fr; gap:34px; padding:34px 0; border-bottom:1px solid var(--line); }
+    .grade { color:var(--blue); font-size:64px; font-weight:900; line-height:.9; letter-spacing:-.06em; }
+    .grade small { display:block; margin-top:15px; color:var(--muted); font-size:15px; letter-spacing:0; }
+    .facts { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .facts div { padding:18px 15px; border-right:1px solid var(--line); }
+    .facts div:last-child { border:0; }
+    .facts b { display:block; font-size:28px; }
+    .facts span { color:var(--muted); font-size:14px; }
+    .finding { display:grid; grid-template-columns:190px 1fr; gap:24px; padding:22px 0; border-top:1px solid var(--line); }
+    .finding strong { color:var(--blue); }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-top:1px solid var(--line); padding:11px 9px; vertical-align:top; text-align:left; }
+    th { color:var(--muted); font-size:13px; }
+    code { color:#075dcc; background:#edf5ff; padding:.1em .35em; border-radius:4px; }
+    .pass { color:var(--green); font-weight:850; }
+    .limit { color:var(--amber); font-weight:850; }
+    figure { margin:24px 0 48px; }
+    figure img { width:100%; display:block; border:1px solid var(--line); }
+    figcaption { padding-top:9px; color:var(--muted); font-size:14px; }
+    .pair { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    footer { margin-top:72px; padding:28px 0 56px; border-top:4px solid var(--ink); color:var(--muted); }
+    @media(max-width:760px){ header,main,footer{width:min(100% - 24px,1180px)} .verdict,.finding,.pair{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(2){border-right:0} table{font-size:13px} }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">Paint Mountain · immutable catalog v13</p>
+    <h1>코드로 증명할 것과<br>플레이로 볼 것을 분리했다.</h1>
+    <p class="lede">Stage 01–06은 그대로 두고, Stage 07–30은 Red/Green과 여러 공을 실제 clear 조건에 넣었다. 모든 stage를 모델이 수동 플레이하는 대신, 변하지 않는 데이터는 offline certificate로 거부하고 물리·Web 경계만 대표 런타임으로 확인한다.</p>
+  </header>
+  <main>
+    <nav><a href="#verdict">결론</a><a href="#method">검증 구조</a><a href="#progression">진행 설계</a><a href="#matrix">24 stages</a><a href="#images">실제 화면</a><a href="#limits">남은 한계</a></nav>
+
+    <article id="verdict" class="verdict">
+      <div class="grade">조건부 적절<small>구조·규칙·도달 가능성 PASS / 인간 밸런스 미확정</small></div>
+      <div>
+        <h2 style="margin-top:0">현재 설계는 “릴리스 가능한 규칙 구조”다</h2>
+        <p>이전 5패턴 반복과 색상 0점 규칙을 제거했다. Stage 07 이후 두 색이 모두 점수 계산에 들어가며, 두 색의 실제 target paint와 stage별 필수 Burst/Split 기여가 clear 조건이다. 지형, rule, target mask, deal 중 하나라도 바뀌면 v13 certificate seal이 깨진다.</p>
+        <p>다만 certificate는 가능한 score 조합과 deal cover를 증명하지, 재미있는 조준 해법·실패율·학습 곡선을 증명하지 않는다. 그래서 “달성 불가능한 데이터”는 자동 차단하지만 “재미있다”는 결론은 내리지 않는다.</p>
+      </div>
+    </article>
+    <div class="facts">
+      <div><b>30/30</b><span>sealed feasibility sidecars</span></div>
+      <div><b>480</b><span>deterministic deals</span></div>
+      <div><b>0</b><span>gameplay scenes in static gate</span></div>
+      <div><b>5</b><span>progression chapters</span></div>
+    </div>
+
+    <h2 id="method">런타임을 줄인 검증 구조</h2>
+    <table>
+      <thead><tr><th>질문</th><th>현재 증거</th><th>런타임 필요</th></tr></thead>
+      <tbody>
+        <tr><td>target mask가 유효하고 하나로 연결됐나?</td><td>전체 mask checksum + connected-component 검사</td><td class="pass">아니오</td></tr>
+        <tr><td>target이 대포의 versioned range contract 안인가?</td><td>mask 생성 자체를 fail-close하고 17개 표본 + 전체 pixel identity를 seal</td><td class="pass">아니오</td></tr>
+        <tr><td>R/G 점수식으로 target band 안 값이 존재하나?</td><td>실제 target surface area에서 보수적 최소 texel 비율을 계산한 score-domain witness</td><td class="pass">아니오</td></tr>
+        <tr><td>16개 deal마다 양 색과 필수 공을 제한 탄 수 안에 고를 수 있나?</td><td>부분집합 cover 검사 + deal checksum</td><td class="pass">아니오</td></tr>
+        <tr><td>Standard/Burst/Split이 실제 충돌·분열·paint를 내나?</td><td>공통 mechanic runtime regression</td><td class="limit">예, 종류당 1회 경계</td></tr>
+        <tr><td>Web에서 paint가 공보다 수 초 늦나?</td><td>built-Web Stage 03/07/18/30 real fire + queue latency telemetry</td><td class="limit">예, Web 대표 경계</td></tr>
+        <tr><td>재미·해법 수·체감 난이도가 적절한가?</td><td>자동화가 답할 수 없음</td><td class="limit">사람 플레이테스트</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="progression">진행 설계 판단</h2>
+    <div class="finding"><strong>Stage 01–06</strong><div><h3>학습 구간 보존</h3><p>기존 target band, 탄 수, deal 계약을 그대로 보존했다. v12→v13 migration test가 world/layout/score/deal identity를 비교한다.</p></div></div>
+    <div class="finding"><strong>Stage 07–12</strong><div><h3>색과 특수 공을 clear 조건으로 진입</h3><p>양수 조합으로 넓게 칠하기를 먼저 익히고, Green 우선·Red 우선 감점 규칙으로 넘어간다. Burst/Split 요구를 stage마다 달리한다.</p></div></div>
+    <div class="finding"><strong>Stage 13–18</strong><div><h3>route control</h3><p>세 route와 7-shot 구간에서 같은 공을 어디에 쓸지 압축한다. Chapter end는 두 특수 공의 target 기여를 모두 요구한다.</p></div></div>
+    <div class="finding"><strong>Stage 19–24</strong><div><h3>mechanism selection</h3><p>5개 mechanism을 무조건 전부 밟는 것이 아니라, 점수 부호와 target band에 맞는 route를 선택하게 한다.</p></div></div>
+    <div class="finding"><strong>Stage 25–30</strong><div><h3>full-system mastery</h3><p>양 색 회복과 단색 우선 규칙을 번갈아 쓰고, 마지막 네 stage는 Burst와 Split의 실제 target paint를 모두 요구한다.</p></div></div>
+
+    <h2 id="matrix">Stage 07–30 계약</h2>
+    <table>
+      <thead><tr><th>Stage</th><th>Chapter role</th><th>Score</th><th>Band</th><th>필수 공</th></tr></thead>
+      <tbody>
+        <tr><td>07</td><td>broad paint consolidation</td><td>R+G</td><td>8–12</td><td>Burst</td></tr>
+        <tr><td>08</td><td>branch paint consolidation</td><td>R+G</td><td>9–13</td><td>Split</td></tr>
+        <tr><td>09</td><td>green polarity practice</td><td>G−R</td><td>7–11</td><td>Burst</td></tr>
+        <tr><td>10</td><td>red polarity practice</td><td>R−G</td><td>5–9</td><td>Split</td></tr>
+        <tr><td>11</td><td>green combination</td><td>G−R</td><td>7–11</td><td>Burst + Split</td></tr>
+        <tr><td>12</td><td>red chapter mastery</td><td>R−G</td><td>9–13</td><td>Burst + Split</td></tr>
+        <tr><td>13</td><td>green route control</td><td>G−R</td><td>6–10</td><td>Burst</td></tr>
+        <tr><td>14</td><td>red route control</td><td>R−G</td><td>6–10</td><td>Split</td></tr>
+        <tr><td>15</td><td>two-color recovery</td><td>R+G</td><td>9–13</td><td>Burst + Split</td></tr>
+        <tr><td>16</td><td>green seven-shot control</td><td>G−R</td><td>7–11</td><td>Split</td></tr>
+        <tr><td>17</td><td>red precision control</td><td>R−G</td><td>3–7</td><td>Burst</td></tr>
+        <tr><td>18</td><td>three-route chapter mastery</td><td>R+G</td><td>1–5</td><td>Burst + Split</td></tr>
+        <tr><td>19</td><td>broad five-mechanism plan</td><td>R+G</td><td>1–5</td><td>Burst</td></tr>
+        <tr><td>20</td><td>green branch selection</td><td>G−R</td><td>0.5–4.5</td><td>Split</td></tr>
+        <tr><td>21</td><td>red rebound selection</td><td>R−G</td><td>1–5</td><td>Burst</td></tr>
+        <tr><td>22</td><td>green mixed mechanism plan</td><td>G−R</td><td>1–5</td><td>Burst + Split</td></tr>
+        <tr><td>23</td><td>red mixed mechanism plan</td><td>R−G</td><td>3–7</td><td>Burst + Split</td></tr>
+        <tr><td>24</td><td>five-mechanism mastery</td><td>R+G</td><td>1–5</td><td>Burst + Split</td></tr>
+        <tr><td>25</td><td>green mastery opening</td><td>G−R</td><td>3–7</td><td>Burst</td></tr>
+        <tr><td>26</td><td>red mastery opening</td><td>R−G</td><td>0.5–4.5</td><td>Split</td></tr>
+        <tr><td>27</td><td>two-color recovery mastery</td><td>R+G</td><td>4–8</td><td>Burst + Split</td></tr>
+        <tr><td>28</td><td>green full-system mastery</td><td>G−R</td><td>2–6</td><td>Burst + Split</td></tr>
+        <tr><td>29</td><td>red full-system mastery</td><td>R−G</td><td>2–6</td><td>Burst + Split</td></tr>
+        <tr><td>30</td><td>final three-ball mastery</td><td>R+G</td><td>4–8</td><td>Burst + Split</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="images">실제 production 화면</h2>
+    <div class="pair">
+      <figure><img src="assets/23-stage-select-stage07-ko-1280x720.png" alt="Stage 07 selection"><figcaption>Stage 07 · R/G + Burst 요구</figcaption></figure>
+      <figure><img src="assets/25-stage-select-stage18-ko-1280x720.png" alt="Stage 18 selection"><figcaption>Stage 18 · R/G + Burst + Split 요구</figcaption></figure>
+    </div>
+    <figure><img src="assets/27-result-stage30-ko-1280x720.png" alt="Stage 30 result"><figcaption>Stage 30 Result · signed Paint Score와 두 색 기여를 직접 표시</figcaption></figure>
+    <figure><img src="assets/28-negative-score-stage09-ko-1280x720.png" alt="Negative signed score"><figcaption>감점 규칙은 음수를 실제 값으로 유지하며, bar geometry만 0 endpoint에 제한한다.</figcaption></figure>
+
+    <h2 id="limits">판정과 다음 측정</h2>
+    <table>
+      <tbody>
+        <tr><td class="pass">승인 가능</td><td>데이터 완전성, target 연결성, analytic range, score-domain 존재, 16-deal cover, 양 색·필수 공 clear 계약, tamper detection</td></tr>
+        <tr><td class="pass">대표 런타임 통과</td><td>Standard contact, Impact Burst, Apex Split, finish readiness, built-Web Stage 03/07/18/30 fire·paint</td></tr>
+        <tr><td class="limit">아직 미확정</td><td>각 stage의 인간 해법 수, 초견 clear율, 재시도 횟수, chapter별 체감 난이도, 공 종류가 실제 선택을 얼마나 바꾸는지</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:18px"><strong>권장 다음 단계:</strong> 자동 플레이를 30개 stage gate로 되돌리지 않는다. 대신 인간 playtest에서 Stage 07/12/18/24/30을 chapter checkpoint로 잡고, clear율·재시도·사용한 공·최종 R/G/score를 수집한다. 정적 certificate는 계속 빌드 차단 게이트로 유지한다.</p>
+  </main>
+  <footer>Paint Mountain v13 stage design analysis · local evidence only · no public itch publication</footer>
+</body>
+</html>

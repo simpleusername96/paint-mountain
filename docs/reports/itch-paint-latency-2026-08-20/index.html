@@ -189,8 +189,9 @@
           <tr><td>M8 Web 측정</td><td>Burst는 33개 틱/529ms에 걸쳐 처리됐다. 최악 슬라이스 13.6ms, Web 전체 텍스처 업데이트 1.5–2.3ms였다.</td><td>긴 방사형 명령이 뒤 명령을 막음</td></tr>
           <tr><td>공개 itch artifact</td><td><code>alpha.10+292e7eb</code>, PCK SHA-256 <code>1B31…3DF</code>, 단일 스레드 Web이다.</td><td>낡은 배포본 가설 제외</td></tr>
           <tr><td>고정 수정 전 재현</td><td>108개 중 생산 중 33개 완료, 접촉 종료 시 75개 잔류, 최장 대기 33틱.</td><td>처리율 병목 직접 확인</td></tr>
-          <tr><td><code>paint_queue_latency_test.gd</code></td><td>28개 모두 생산 중 완료, 접촉 종료 시 0개, 최장 대기 1틱, 최악 드레인 14.719ms.</td><td>합성 3생산자 기준 통과</td></tr>
+          <tr><td><code>paint_queue_latency_test.gd</code></td><td>28개 중 26개가 생산 중 완료, 접촉 종료 시 2개, 1틱 뒤 drain 완료, 최장 대기 3틱, 최악 드레인 15.574ms.</td><td>합성 3생산자 기준 통과</td></tr>
           <tr><td><code>three_ball_compact_performance_test.gd</code></td><td>실제 Stage 06 여섯 공/두 Apex에서 57개 완료, 최장 대기 4틱, 최악 드레인 14.818ms.</td><td>실제 프로젝트 부하 기준 통과</td></tr>
+          <tr><td>최종 built-Web 여정</td><td>Stage 03/07/18/30을 Chrome WebGL2에서 실제 발사했다. 0.8–1.2초 뒤 캡처에 공·terrain paint·score 갱신이 함께 보였고 console error/warning 0, 초기 요청 8개 모두 200이었다.</td><td>수 초 지연 tail 미발견</td></tr>
         </tbody>
       </table>
 
@@ -248,10 +249,10 @@
           <tr><td>프레임 작업</td><td>PaintSystem 한 슬라이스 16.7ms 미만, p95 별도 기록</td></tr>
           <tr><td>결정성</td><td>완료 드레인과 증분 드레인의 마스크 바이트·체크섬·커버리지 동일</td></tr>
           <tr><td>권위</td><td>PaintSystem CPU 마스크 하나가 시각과 점수 모두를 계속 소유</td></tr>
-          <tr><td>검증 환경</td><td>전체 회귀·Windows/Web release export·Web 정적 검증 통과 · 최종 Web 실브라우저/공개 itch는 후속 게이트</td></tr>
+          <tr><td>검증 환경</td><td>전체 회귀·Windows/Web release export·Web 정적 검증·최종 local built-Web 실브라우저 통과 · 공개 itch만 별도 게이트</td></tr>
         </tbody>
       </table>
-      <div class="callout"><strong>현재 경계:</strong> 원인 재현, 결정성, 실제 Stage 06 부하, 전체 30단계 v11 전환, fresh Windows/Web export와 Web 정적 검증은 통과했다. 현재 브라우저 제어의 native bridge가 신뢰되지 않아 최종 Web 실브라우저 발사 확인은 남아 있다. 공개 itch 업로드는 별도 승인 전에는 하지 않는다.</div>
+      <div class="callout"><strong>현재 경계:</strong> 원인 재현, 결정성, 실제 Stage 06 부하, 전체 30단계 v13 전환, fresh Windows/Web export, Web 정적 검증, local built-Web Stage 03/07/18/30 실제 발사는 통과했다. 현재 Web gzip은 17,483,722 bytes이고 PCK SHA-256은 <code>EDB70F…10B4</code>다. 공개 itch에는 이 로컬 artifact를 업로드하지 않았으므로 공개 버전의 수정 효과는 아직 주장하지 않는다.</div>
     </section>
 
     <section id="reject">

@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -68,6 +68,52 @@ shortcut and HUD presentation clauses do not override the Cannon Focus gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed v13 static-feasibility and final UI gate (2026-08-21)
+
+- [x] `resources/stages/catalog.tres` selects immutable bundle-format-7 catalog
+  `v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35`.
+  Stage 01-06 rule/deal/world identity and all 30 v12/v13 world/layout payloads
+  pass migration comparison.
+- [x] `stage_clear_feasibility_test.gd` reproduces 30 sealed sidecars and 480
+  deterministic deals without instantiating a gameplay scene. Rule, deal-size,
+  target-mask, target-area metadata, capability, and certificate-seal tampering
+  each fail closed.
+- [x] Stage 07-30 have no zero color weight. Clear requires positive target
+  paint from Red and Green and target-changing paint from every stage-authored
+  required Burst/Split kind; stage data, runtime result, HUD reason, agent API,
+  locale copy, and focused tests agree.
+- [x] Runtime evidence is bounded to shared behavior: Standard contact paint,
+  Impact Burst, Apex Split, finish readiness, representative target-band entry,
+  and current built-Web Stage 03/07/18/30 real Fire. Web captures show paint and
+  score after traversal; preserved console output has no error/warning and all
+  eight initial requests return 200.
+- [x] The shared Cannon Focus system passes responsive HUD/screen, score-scale,
+  queue hover/focus/press, result, Settings, Pause, and stage-rule truth tests.
+  `BallGlyphPainter` supplies platform-independent ball shapes to Ball Queue and
+  `StageRuleSummary`; the final Web render contains no missing-glyph boxes.
+- [x] The final evidence folder contains 28 uncropped production PNGs: the
+  complete 1280x720 primary journey, the same critical states at 640x360, late
+  Stage 07/12/18/24/30 representatives, and a real negative Stage 09 signed
+  result. Original-size inspection finds no overlap, clipping, duplicate queue
+  message, white queue panel, cut score endpoint, central Shot Follow action, or
+  missing required-kind glyph.
+- [x] Fresh Windows and Web release exports pass the static Web verifier. Final
+  Web gzip is 17,483,722 bytes inside the 18,996,696-byte allowance; Web PCK
+  SHA-256 is `EDB70F4792B875EA8DCC3FCD50F61FE1353C21FAF074B30D6004F3FFB54010B4`.
+  Windows SHA-256 is
+  `7B82A1F2375A171520380050CFA5FB7E3D1623EA7BCBF8DCC294D99F856F3D38`.
+- [ ] This gate does not claim human difficulty, comprehension, solution
+  variety, fun, screen-reader feel, or deployed itch behavior. Public itch was
+  not changed.
+
+Evidence:
+
+- `.agents/evidence/2026-08-21-stage-ui-final/README.md`
+- `.agents/evidence/2026-08-20-stage-ui-production-refinement/README.md`
+- `reports/ui-refinement-2026-08-21/index.html`
+- `reports/stage-design-analysis-2026-08-21/index.html`
+- `reports/itch-paint-latency-2026-08-20/index.html`
 
 ## Completed Cannon Focus cross-stage UI gate (2026-08-20)
 

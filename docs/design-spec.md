@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -26,7 +26,7 @@ related:
 
 # Paint Mountain Design Specification
 
-## All-stage Red/Green target-band progression (2026-08-20)
+## All-stage Red/Green target-band progression (2026-08-21)
 
 All 30 stages use Standard, Impact Burst, and Apex Split Red/Green balls.
 Latest threshold-valid paint owns a texel while strength remains monotonic,
@@ -34,9 +34,11 @@ and the signed Paint Score must finish inside an inclusive band. Stages 07–30
 retain their existing terrain and mechanisms while using explicit six-stage
 chapter rows, only non-zero Red/Green score weights, stage-specific special-ball
 requirements, and physically sampled target bands. Catalog v12 validates 16
-deals per stage (480 total) and preserves the v11 world/layout payload. This
-structural coverage and the deterministic physical samples are not a
-human-balance claim.
+deals per stage (480 total) and preserves the v11 world/layout payload. Catalog
+v13 adds one sealed static clear-feasibility sidecar per stage. Stage 07-30
+clear also requires non-zero target paint from both colors and target-changing
+paint from every stage-authored required special kind. Static feasibility and
+bounded mechanic runs are not a human-balance claim.
 
 ## Purpose
 
@@ -302,15 +304,20 @@ exactly three mechanism types.
   the nearest playable front stays at least 70 m away at every supported board
   size. The next promoted catalog records that placement contract; a camera-only
   scale adjustment is not an acceptable substitute.
-- Stages do not require a prescribed successful route, solver clear, exhaustive
-  target-wide first-hit proof, or all-stage manual playthrough. Generated route
-  data shapes terrain and supports readability without defining a player
-  solution. Open-bound admission, analytic range admission, bounded witnesses, and
-  representative gameplay regressions remain required.
+- Stages do not require a prescribed successful route, solver clear, or
+  all-stage manual playthrough. Generated route data shapes terrain and supports
+  readability without defining a player solution. Bundle admission requires a
+  content-addressed static certificate over target-mask connectivity, the
+  versioned analytic range contract, signed-score domain, 16 deterministic
+  deals, ball paint capabilities, and every immutable input checksum. Shared
+  Standard/Burst/Split and representative Web regressions remain the runtime
+  boundary.
 - Stage 01-06 keep their accepted authored target bands. Stage 07-30 use the
   explicit rows in `stage_challenge_progression.tres`; their bands follow
   sampled physical outcomes and chapter roles rather than a monotonic scalar
-  coverage plateau. Stars use distance from each target-band center.
+  coverage plateau. They require both Red and Green target paint plus
+  target-changing paint from every row's required special kind before Clear.
+  Stars use distance from each target-band center.
 
 ### Results and persistence
 
@@ -439,12 +446,13 @@ source brief remain requirement authorities, while `.agents/Documentation.md`
 remains the implemented-truth boundary.
 
 The active catalog pointer is `resources/stages/catalog.tres`. It selects the
-format-5 persisted thirty-stage bundle at
-`resources/generated_stage_catalogs/v10-701b3b63feeee0dc1ce064cc91953fbdab91d90db1f004ef247dc4b8b22d1b4e`.
-Each accepted layout carries default and summit witnesses. Runtime loads this
-bundle through `StageLayoutRepository`; it asynchronously serves the selected
-layout, may prefetch nearby work, retains three entries, and never substitutes
-runtime generation or aim solving.
+bundle-format-7 persisted thirty-stage catalog at
+`resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35`.
+Each accepted layout carries default and summit witnesses plus one sealed
+static clear-feasibility sidecar. Runtime loads layouts through
+`StageLayoutRepository`; it asynchronously serves the selected layout, may
+prefetch nearby work, retains three entries, and never substitutes runtime
+generation, aim solving, or a second coverage representation.
 
 Glyph placement uses a generic deterministic search of visible Playable Terrain Surface
 surface and spacing, not authored stage coordinates. The fast-entry,

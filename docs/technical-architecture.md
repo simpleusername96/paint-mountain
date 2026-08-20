@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, diagnostics, and verification
 source: source-brief.md
@@ -34,13 +34,13 @@ presentation, game rules, diagnostics, and future AI control remain separable.
 
 `PaintSystem` owns one strength/latest-owner representation and immutable
 Red/Green/Total physical-area snapshots. `StageController` alone owns deal,
-target-band, retry, and terminal rules for all 30 stages. Catalog v11 preserves
-the v10 terrain/mechanism payloads while materializing all-stage rule data;
-catalog v12 preserves the v11 world/layout payload and replaces only the late
-challenge rows. The typed `StageChallengeProgressionData` resource owns the
-explicit Stage 07-30 pattern, band, chapter role, and required-kind table. The
-480 deterministic deal cases prove structural contracts; physical samples and
-human balance remain separate evidence.
+target-band, required paint participation, retry, and terminal rules for all 30
+stages. Catalog v13 preserves the reviewed v11/v12 world/layout payload while
+adding the final late challenge rows and mandatory static clear-feasibility
+sidecars. `StageChallengeProgressionData` owns the explicit Stage 07-30 pattern,
+band, chapter role, and required-kind table. `StageClearFeasibilityAnalyzer`
+proves immutable data feasibility offline; physical mechanics and human balance
+remain separate evidence.
 
 ## Scope
 
@@ -58,6 +58,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `StageData` | Typed stage configuration, translation keys, one canonical terrain seed, stage duration, and content references | Mutable runtime or accepted baked layout state |
 | `StageProgressionData`, `StageChallengeProgressionData`, `StageCatalogData`, `StageCatalog` | Immutable geometry formulas, explicit late-stage challenge rows, canonical terrain-family identity, committed membership/order/lookup, and legacy ID migration aliases | Runtime terrain synthesis, candidate search, mutable progression state, or human-balance claims |
 | `StageCatalogBuilder` | Offline exact-seed generation, complete validation, cannon-standoff derivation, bounded witness/preview/resource emission, and atomic catalog promotion | Runtime search, candidate selection, hand-authored repair, or partial catalog activation |
+| `StageClearFeasibilityAnalyzer`, `StageClearFeasibilityCertificate` | Pure offline target connectivity/range, signed-score-domain, deterministic-deal cover, ball-capability, immutable-input checksum, and sealed sidecar proof | Scene-tree or physics-space execution, a prescribed solution, runtime score/paint ownership, or human-balance claims |
+| `StageCatalogBundleStore` | Content-addressed bundle-format-7 persistence, sidecar reproduction, manifest verification, and atomic active-pointer promotion | Authoring rules, runtime fallback, mutable stage state, or partial acceptance |
 | `SeededStageGenerator` | Pure authoring-time one-profile/one-canonical-seed route-graph and layout reconstruction plus identity verification | Candidate search, runtime fallback, physics-world solving, stage transitions, paint state, or hand-authored production repair |
 | `ProjectileRangeConstraint` | Pure legal yaw, fixed-step damped horizon, and lower/upper height-envelope admission for every target sample and the Summit Region | Physics queries, terrain occlusion, first-hit certification, target deletion, or runtime aim assistance |
 | `DirectReachabilityValidator`, `DefaultAimSolver` | Offline bounded real first-hit validation for generated default and summit aims, plus optional diagnostic certificate work | Runtime-frame search, player aim hints, target deletion, or manual repair coordinates |
@@ -166,6 +168,11 @@ This architecture covers the single-process desktop game. It does not define a b
   admission and release do not require exhaustive target-texel witness mappings.
   Generated default and summit aims remain the bounded runtime-entry witnesses
   and are never exposed as player or agent aim assistance.
+- `StageClearFeasibilityCertificate` is different: one sealed sidecar is
+  mandatory for every active catalog stage. Bundle admission reproduces it from
+  immutable stage/layout/target/deal/capability inputs and fails closed on any
+  mismatch. It proves data feasibility without entering a gameplay scene and
+  does not become runtime paint, score, or clear authority.
 - `StageMvpPermit` is legacy development evidence only and is absent from the
   active version-10 runtime admission path.
 - `AttemptObservation` carries current-run aim/Fire/Finish and physical lifecycle
@@ -388,6 +395,12 @@ Human / GameplayAgentApi actions
   analytic yaw/horizon/height envelope or when its bounded generated default or
   summit aim fails the required real first-hit check. It does not enumerate a
   first-hit witness for every target texel.
+- Catalog acceptance additionally runs `stage_clear_feasibility_test.gd`: all
+  30 sealed sidecars reproduce, 480 deterministic deals admit the required
+  color/kind cover within their shot limits, and rule, deal-size, target-mask,
+  coverage metadata, capability, or seal tampering fails without instantiating
+  a gameplay scene. Runtime regressions are limited to the shared
+  Standard/Burst/Split/finish and representative built-Web boundaries.
 - Structural render/collider/query/target/paint triangle parity is exact before
   engine conversion; deterministic engine ray positions may differ by at most
   0.01 m.

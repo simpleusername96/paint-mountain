@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -61,6 +61,45 @@ related:
 ---
 
 # Project Record
+
+## Current v13 Static-First Stage and UI Production Refinement (2026-08-21)
+
+The execution contract is
+[`execplans/2026-08-20-stage-ui-production-refinement.md`](execplans/2026-08-20-stage-ui-production-refinement.md).
+Current analysis and final pixels are in
+[`../docs/reports/stage-design-analysis-2026-08-21/index.html`](../docs/reports/stage-design-analysis-2026-08-21/index.html),
+[`../docs/reports/ui-refinement-2026-08-21/index.html`](../docs/reports/ui-refinement-2026-08-21/index.html),
+and
+[`evidence/2026-08-21-stage-ui-final/README.md`](evidence/2026-08-21-stage-ui-final/README.md).
+
+- `resources/stages/catalog.tres` selects immutable bundle-format-7 v13
+  `3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35`.
+  Stage 01-06 remain exact; all 30 compared v12/v13 world/layout payloads pass.
+- `StageClearFeasibilityAnalyzer` is a pure offline owner. Thirty sealed
+  sidecars reproduce target topology/range, signed-score domain, 480 deals,
+  required color/kind cover, ball capability, and immutable checksums without
+  one gameplay scene per stage. Tampered rule, deal size, target mask, target
+  area, capability, or seal fails bundle acceptance.
+- `StageController` remains runtime clear authority. Stage 07-30 require
+  positive Red and Green target paint and target-changing paint from every
+  stage-authored Burst/Split kind. A deal containing the token is not enough.
+- Runtime evidence is bounded to the shared Standard/Burst/Split/finish paths
+  and representative built-Web Stage 03/07/18/30 real Fire. The current local
+  Web journey shows paint and score without a seconds-late tail, no console
+  error/warning, and eight successful initial requests. Public itch was not
+  changed.
+- The final Cannon Focus capture set contains 28 uncropped production
+  viewports across the complete 1280x720 and 640x360 critical journeys plus
+  Stage 07/12/18/24/30 and negative-score representatives. Stage Select rule
+  facts now use shared `StageRuleSummary` and `BallGlyphPainter` vector glyphs;
+  Ball Queue uses the same glyph owner and one hover/focus/press description.
+- Final Windows SHA-256 is
+  `7B82A1F2375A171520380050CFA5FB7E3D1623EA7BCBF8DCC294D99F856F3D38`.
+  Final Web PCK SHA-256 is
+  `EDB70F4792B875EA8DCC3FCD50F61FE1353C21FAF074B30D6004F3FFB54010B4`;
+  encoded Web size is 17,483,722 bytes inside the 18,996,696-byte allowance.
+- Static feasibility and representative runtime do not establish human
+  difficulty, comprehension, solution variety, screen-reader feel, or fun.
 
 ## Three-Ball Prototype Stabilization (2026-08-20)
 
@@ -699,11 +738,10 @@ The signed-score correction and its production pixels are recorded in
   Map, and 640x360 Aim conclusions and verify the player-reported corrections.
   Three signed-score Windows-release captures additionally verify Stage 08
   `-3.0` Aim/Result truth at 1280x720 and compact Aim at 640x360.
-  An earlier built-Web journey proved the shared UI and authoritative paint;
-  the pre-refinement v11 Web artifact passes export/static checks, but its browser rerun
-  remains pending because the available browser bridge is not trusted.
+  The final v13 built-Web journey proves the shared UI and authoritative paint
+  through Stage 03/07/18/30 real Fire with no relevant console/network error.
 - The complete suite, repository verification, Windows/Web exports, and final
-  Web static verification pass. The current Web artifact is 18,485,674 gzip
+  Web static verification pass. The current Web artifact is 17,483,722 gzip
   bytes within its 18,996,696-byte allowance. Public itch publication was not
   performed and remains a separate explicitly authorized action.
 

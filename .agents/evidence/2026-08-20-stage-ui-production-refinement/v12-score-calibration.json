@@ -1,0 +1,864 @@
+{
+  "generated_at": "2026-08-21T00:25:08.6458174+09:00",
+  "stage_range": [
+    7,
+    30
+  ],
+  "seed_count": 2,
+  "sample_count": 48,
+  "samples": [
+    {
+      "cleared": true,
+      "deal_seed": 1007,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 9.20000860961426,
+      "red_percent": 9.20000860961426,
+      "settled_score_after_each_shot": [
+        9.20000860961426
+      ],
+      "stage_id": "stage_07",
+      "stars": 2,
+      "target_max": 12.0,
+      "target_min": 8.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1008,
+      "finish_reason": "timeout",
+      "green_percent": 5.71825209490598,
+      "paint_score": 10.4311247215679,
+      "red_percent": 4.7128726266619,
+      "settled_score_after_each_shot": [
+        4.13046414748112,
+        6.02509924089417,
+        10.1703533765335,
+        10.338884420758,
+        10.4311247215679
+      ],
+      "stage_id": "stage_07",
+      "stars": 3,
+      "target_max": 12.0,
+      "target_min": 8.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1008,
+      "finish_reason": "manual",
+      "green_percent": 7.96612072225766,
+      "paint_score": 10.5862753630169,
+      "red_percent": 2.62015464075928,
+      "settled_score_after_each_shot": [
+        2.83790125977303,
+        5.86819511046963,
+        7.67128298626524,
+        10.5862753630169
+      ],
+      "stage_id": "stage_08",
+      "stars": 3,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1009,
+      "finish_reason": "manual",
+      "green_percent": 8.56559116546323,
+      "paint_score": 9.89385060460589,
+      "red_percent": 1.32825943914266,
+      "settled_score_after_each_shot": [
+        2.83790125977303,
+        5.10923491456482,
+        7.04306474821392,
+        9.89385060460589
+      ],
+      "stage_id": "stage_08",
+      "stars": 1,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": false,
+      "deal_seed": 1009,
+      "finish_reason": "queue_exhausted",
+      "green_percent": 4.51561647754488,
+      "paint_score": 4.51561647754488,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        3.21827711026094,
+        3.21827711026094,
+        3.21827711026094,
+        4.51561647754488,
+        4.51561647754488
+      ],
+      "stage_id": "stage_09",
+      "stars": 0,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1010,
+      "finish_reason": "manual",
+      "green_percent": 7.46342372668352,
+      "paint_score": 7.46342372668352,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        4.498982858885,
+        4.498982858885,
+        7.46342372668352
+      ],
+      "stage_id": "stage_09",
+      "stars": 1,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1010,
+      "finish_reason": "timeout",
+      "green_percent": 0.0,
+      "paint_score": 8.72563901896276,
+      "red_percent": 8.72563901896276,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        1.29262477871951,
+        5.79194082973853,
+        5.79194082973853,
+        8.72563901896276
+      ],
+      "stage_id": "stage_10",
+      "stars": 1,
+      "target_max": 9.0,
+      "target_min": 5.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1011,
+      "finish_reason": "timeout",
+      "green_percent": 0.0,
+      "paint_score": 5.79194082973853,
+      "red_percent": 5.79194082973853,
+      "settled_score_after_each_shot": [
+        0.0,
+        1.29262477871951,
+        5.79194082973853,
+        5.79194082973853,
+        5.79194082973853
+      ],
+      "stage_id": "stage_10",
+      "stars": 1,
+      "target_max": 9.0,
+      "target_min": 5.0
+    },
+    {
+      "cleared": false,
+      "deal_seed": 1011,
+      "finish_reason": "timeout",
+      "green_percent": 5.88791088829564,
+      "paint_score": 5.88791088829564,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        2.75831375216023,
+        2.75831375216023,
+        2.75831375216023,
+        2.75831375216023,
+        5.88791088829564
+      ],
+      "stage_id": "stage_11",
+      "stars": 0,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1012,
+      "finish_reason": "timeout",
+      "green_percent": 9.93122544144868,
+      "paint_score": 9.93122544144868,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        4.44088570161951,
+        6.76253236186982,
+        6.76253236186982,
+        6.76253236186982,
+        9.93122544144868,
+        9.93122544144868
+      ],
+      "stage_id": "stage_11",
+      "stars": 2,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1012,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 9.66369165332834,
+      "red_percent": 9.66369165332834,
+      "settled_score_after_each_shot": [
+        3.12810325095401,
+        5.64253462105697,
+        5.64253462105697,
+        8.81126338217499,
+        9.66369165332834
+      ],
+      "stage_id": "stage_12",
+      "stars": 1,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1013,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 10.3217271115467,
+      "red_percent": 10.3217271115467,
+      "settled_score_after_each_shot": [
+        0.0,
+        4.60297824537081,
+        4.60297824537081,
+        8.83891230099538,
+        8.83891230099538,
+        10.3217271115467
+      ],
+      "stage_id": "stage_12",
+      "stars": 2,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1013,
+      "finish_reason": "manual",
+      "green_percent": 6.15080167006353,
+      "paint_score": 6.15080167006353,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        4.16792070027886,
+        6.15080167006353
+      ],
+      "stage_id": "stage_13",
+      "stars": 1,
+      "target_max": 10.0,
+      "target_min": 6.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1014,
+      "finish_reason": "manual",
+      "green_percent": 6.19499425299842,
+      "paint_score": 6.19499425299842,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        2.04442710517666,
+        6.19499425299842
+      ],
+      "stage_id": "stage_13",
+      "stars": 1,
+      "target_max": 10.0,
+      "target_min": 6.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1014,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 6.875245971694,
+      "red_percent": 6.875245971694,
+      "settled_score_after_each_shot": [
+        2.64064941760571,
+        2.64064941760571,
+        6.875245971694
+      ],
+      "stage_id": "stage_14",
+      "stars": 1,
+      "target_max": 10.0,
+      "target_min": 6.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1015,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 7.24530984057367,
+      "red_percent": 7.24530984057367,
+      "settled_score_after_each_shot": [
+        0.0,
+        2.58658898939389,
+        2.58658898939389,
+        5.53796125208025,
+        5.53796125208025,
+        7.24530984057367
+      ],
+      "stage_id": "stage_14",
+      "stars": 2,
+      "target_max": 10.0,
+      "target_min": 6.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1015,
+      "finish_reason": "timeout",
+      "green_percent": 8.34685932742829,
+      "paint_score": 10.8541559877563,
+      "red_percent": 2.50729666032806,
+      "settled_score_after_each_shot": [
+        1.28612927509848,
+        3.95069316793258,
+        6.63078402369347,
+        7.49844558085307,
+        8.19604407675275,
+        10.8541559877563
+      ],
+      "stage_id": "stage_15",
+      "stars": 3,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1016,
+      "finish_reason": "timeout",
+      "green_percent": 6.30274003492041,
+      "paint_score": 9.81899297978924,
+      "red_percent": 3.51625294486883,
+      "settled_score_after_each_shot": [
+        1.28612927509848,
+        3.95069316793261,
+        4.65396020829122,
+        5.88932633229976,
+        7.2323197712355,
+        9.81899297978924
+      ],
+      "stage_id": "stage_15",
+      "stars": 1,
+      "target_max": 13.0,
+      "target_min": 9.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1016,
+      "finish_reason": "manual",
+      "green_percent": 8.34272393246812,
+      "paint_score": 8.34272393246812,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        4.28553226102127,
+        4.28553226102127,
+        8.34272393246812
+      ],
+      "stage_id": "stage_16",
+      "stars": 2,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1017,
+      "finish_reason": "manual",
+      "green_percent": 9.35591264823849,
+      "paint_score": 9.35591264823849,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        4.28553226102127,
+        9.35591264823849
+      ],
+      "stage_id": "stage_16",
+      "stars": 3,
+      "target_max": 11.0,
+      "target_min": 7.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1017,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 4.82002131078929,
+      "red_percent": 4.82002131078929,
+      "settled_score_after_each_shot": [
+        2.56642663312835,
+        4.82002131078929
+      ],
+      "stage_id": "stage_17",
+      "stars": 3,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1018,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 4.07012827374766,
+      "red_percent": 4.07012827374766,
+      "settled_score_after_each_shot": [
+        0.0,
+        4.07012827374766
+      ],
+      "stage_id": "stage_17",
+      "stars": 2,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1018,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 1.80646003367304,
+      "red_percent": 1.80646003367304,
+      "settled_score_after_each_shot": [
+        1.80646003367304
+      ],
+      "stage_id": "stage_18",
+      "stars": 1,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1019,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 1.80646003367304,
+      "red_percent": 1.80646003367304,
+      "settled_score_after_each_shot": [
+        1.80646003367304
+      ],
+      "stage_id": "stage_18",
+      "stars": 1,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1019,
+      "finish_reason": "manual",
+      "green_percent": 0.483777567770309,
+      "paint_score": 3.60908213660244,
+      "red_percent": 3.12530456883213,
+      "settled_score_after_each_shot": [
+        0.676291899665881,
+        0.676291899665881,
+        3.60908213660244
+      ],
+      "stage_id": "stage_19",
+      "stars": 2,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1020,
+      "finish_reason": "manual",
+      "green_percent": 3.60908213660242,
+      "paint_score": 3.60908213660242,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.676291899665881,
+        0.676291899665881,
+        3.60908213660242
+      ],
+      "stage_id": "stage_19",
+      "stars": 2,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1020,
+      "finish_reason": "manual",
+      "green_percent": 0.605710107285629,
+      "paint_score": 0.605710107285629,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.605710107285629
+      ],
+      "stage_id": "stage_20",
+      "stars": 1,
+      "target_max": 4.5,
+      "target_min": 0.5
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1021,
+      "finish_reason": "manual",
+      "green_percent": 0.605710107285629,
+      "paint_score": 0.605710107285629,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        0.605710107285629
+      ],
+      "stage_id": "stage_20",
+      "stars": 1,
+      "target_max": 4.5,
+      "target_min": 0.5
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1021,
+      "finish_reason": "timeout",
+      "green_percent": 0.0,
+      "paint_score": 1.17946816239212,
+      "red_percent": 1.17946816239212,
+      "settled_score_after_each_shot": [
+        0.727310744431471,
+        0.727310744431471,
+        0.727310744431471,
+        0.727310744431471,
+        1.17946816239212,
+        1.17946816239212,
+        1.17946816239212
+      ],
+      "stage_id": "stage_21",
+      "stars": 1,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1022,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 3.1400082028431,
+      "red_percent": 3.1400082028431,
+      "settled_score_after_each_shot": [
+        3.1400082028431
+      ],
+      "stage_id": "stage_21",
+      "stars": 3,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1022,
+      "finish_reason": "manual",
+      "green_percent": 3.10910094407233,
+      "paint_score": 3.10910094407233,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        3.10910094407233
+      ],
+      "stage_id": "stage_22",
+      "stars": 3,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1023,
+      "finish_reason": "manual",
+      "green_percent": 3.10910094407233,
+      "paint_score": 3.10910094407233,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        3.10910094407233
+      ],
+      "stage_id": "stage_22",
+      "stars": 3,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1023,
+      "finish_reason": "queue_exhausted",
+      "green_percent": 0.0,
+      "paint_score": 4.62448422415324,
+      "red_percent": 4.62448422415324,
+      "settled_score_after_each_shot": [
+        0.0,
+        2.62517498135038,
+        2.62517498135038,
+        2.99568282752851,
+        2.99568282752851,
+        2.99568282752851,
+        4.62448422415324
+      ],
+      "stage_id": "stage_23",
+      "stars": 3,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1024,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 5.86661476353942,
+      "red_percent": 5.86661476353942,
+      "settled_score_after_each_shot": [
+        2.99699912483024,
+        2.99699912483024,
+        2.99699912483024,
+        5.86661476353942
+      ],
+      "stage_id": "stage_23",
+      "stars": 2,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1024,
+      "finish_reason": "manual",
+      "green_percent": 0.259545711135504,
+      "paint_score": 3.20104798159666,
+      "red_percent": 2.94150227046115,
+      "settled_score_after_each_shot": [
+        0.438279278005589,
+        0.438279278005589,
+        3.20104798159666
+      ],
+      "stage_id": "stage_24",
+      "stars": 3,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1025,
+      "finish_reason": "manual",
+      "green_percent": 2.94150227046115,
+      "paint_score": 3.20104798159666,
+      "red_percent": 0.259545711135504,
+      "settled_score_after_each_shot": [
+        0.438279278005589,
+        0.438279278005589,
+        3.20104798159666
+      ],
+      "stage_id": "stage_24",
+      "stars": 3,
+      "target_max": 5.0,
+      "target_min": 1.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1025,
+      "finish_reason": "manual",
+      "green_percent": 3.45301602346147,
+      "paint_score": 3.45301602346147,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.491946142828738,
+        0.491946142828738,
+        0.491946142828738,
+        3.45301602346147
+      ],
+      "stage_id": "stage_25",
+      "stars": 1,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1026,
+      "finish_reason": "manual",
+      "green_percent": 3.21873511698338,
+      "paint_score": 3.21873511698338,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        3.21873511698338
+      ],
+      "stage_id": "stage_25",
+      "stars": 1,
+      "target_max": 7.0,
+      "target_min": 3.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1026,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 0.528505654772432,
+      "red_percent": 0.528505654772432,
+      "settled_score_after_each_shot": [
+        0.528505654772432
+      ],
+      "stage_id": "stage_26",
+      "stars": 1,
+      "target_max": 4.5,
+      "target_min": 0.5
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1027,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 1.49421226840603,
+      "red_percent": 1.49421226840603,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        1.49421226840603
+      ],
+      "stage_id": "stage_26",
+      "stars": 1,
+      "target_max": 4.5,
+      "target_min": 0.5
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1027,
+      "finish_reason": "manual",
+      "green_percent": 2.64753742573479,
+      "paint_score": 5.41752897953285,
+      "red_percent": 2.76999155379807,
+      "settled_score_after_each_shot": [
+        2.84822608875515,
+        2.84822608875515,
+        5.41752897953285
+      ],
+      "stage_id": "stage_27",
+      "stars": 2,
+      "target_max": 8.0,
+      "target_min": 4.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1028,
+      "finish_reason": "manual",
+      "green_percent": 1.90054304061318,
+      "paint_score": 5.16005442571268,
+      "red_percent": 3.2595113850995,
+      "settled_score_after_each_shot": [
+        0.592209618026726,
+        0.592209618026726,
+        3.34680713896921,
+        3.34680713896921,
+        5.16005442571268
+      ],
+      "stage_id": "stage_27",
+      "stars": 2,
+      "target_max": 8.0,
+      "target_min": 4.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1028,
+      "finish_reason": "manual",
+      "green_percent": 2.92821033244081,
+      "paint_score": 2.92821033244081,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        2.92821033244081
+      ],
+      "stage_id": "stage_28",
+      "stars": 1,
+      "target_max": 6.0,
+      "target_min": 2.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1029,
+      "finish_reason": "manual",
+      "green_percent": 2.92821033244081,
+      "paint_score": 2.92821033244081,
+      "red_percent": 0.0,
+      "settled_score_after_each_shot": [
+        0.0,
+        0.0,
+        2.92821033244081
+      ],
+      "stage_id": "stage_28",
+      "stars": 1,
+      "target_max": 6.0,
+      "target_min": 2.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1029,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 3.1318831054784,
+      "red_percent": 3.1318831054784,
+      "settled_score_after_each_shot": [
+        0.701930601891555,
+        0.701930601891555,
+        0.701930601891555,
+        0.701930601891555,
+        0.701930601891555,
+        3.1318831054784
+      ],
+      "stage_id": "stage_29",
+      "stars": 2,
+      "target_max": 6.0,
+      "target_min": 2.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1030,
+      "finish_reason": "manual",
+      "green_percent": 0.0,
+      "paint_score": 2.85084547977725,
+      "red_percent": 2.85084547977725,
+      "settled_score_after_each_shot": [
+        2.85084547977725
+      ],
+      "stage_id": "stage_29",
+      "stars": 1,
+      "target_max": 6.0,
+      "target_min": 2.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1030,
+      "finish_reason": "manual",
+      "green_percent": 2.76507851548164,
+      "paint_score": 5.44799371724072,
+      "red_percent": 2.68291520175907,
+      "settled_score_after_each_shot": [
+        0.861500757662366,
+        0.861500757662366,
+        3.68698249383001,
+        3.68698249383001,
+        5.44799371724072
+      ],
+      "stage_id": "stage_30",
+      "stars": 2,
+      "target_max": 8.0,
+      "target_min": 4.0
+    },
+    {
+      "cleared": true,
+      "deal_seed": 1031,
+      "finish_reason": "manual",
+      "green_percent": 3.30649004010771,
+      "paint_score": 5.89734787760203,
+      "red_percent": 2.59085783749432,
+      "settled_score_after_each_shot": [
+        0.861500757662366,
+        0.861500757662366,
+        3.41476671861547,
+        3.41476671861547,
+        3.88487503277322,
+        3.88487503277322,
+        5.89734787760203
+      ],
+      "stage_id": "stage_30",
+      "stars": 3,
+      "target_max": 8.0,
+      "target_min": 4.0
+    }
+  ]
+}

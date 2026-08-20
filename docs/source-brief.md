@@ -2589,6 +2589,49 @@ Effective requirements:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-21): Static-First Clear Feasibility
+
+After asking whether every stage had to be played manually, the user required
+the project to make rational catalog-wide validation possible through code and
+to minimize runtime verification. This supersedes only the earlier expectation
+that physical default/New Deal samples are the primary all-stage feasibility
+gate.
+
+User directives (verbatim):
+
+> 지금 혹시 스테이지 하나씩 니가 직접 플레이하면서 달성가능한지 테스트해보는거야?
+
+> 이건 그냥 code inspection으로는 불가능한거야?
+
+> 코드 검사로 모두 합리적으로 테스트할 수 있는 방법을 찾아야 되는데.
+
+> 최대한 런타임 검증이 필요하지 않도록 구조를 바꿔봐.
+> execplan을 수정해야되면 하고. 그리고 use execplan and continue with the remaining tasks.
+
+Effective requirements:
+
+- Catalog admission must reject invalid target topology, unreachable authored
+  target data, impossible signed-score bands, insufficient deals, and stale or
+  tampered proof through deterministic offline code without instantiating one
+  gameplay scene per stage.
+- Every active stage has a content-addressed feasibility sidecar derived from
+  immutable stage, layout, target-mask, score-rule, deal, and ball-capability
+  inputs. A changed input invalidates the sidecar and blocks bundle acceptance.
+- Stage 07-30 clear requires non-zero target paint from both Red and Green and
+  target-changing paint from every stage-authored required special ball kind.
+  Availability in a deal or a non-zero score weight alone is insufficient.
+- Runtime validation is retained only where execution is the claim: shared
+  Standard/Burst/Split physics and paint behavior, stage finish integration,
+  current production render, and representative built-Web paint latency.
+- Static feasibility does not prove a prescribed rigid-body solution, human
+  comprehension, perceived difficulty, strategy count, or fun. Those remain
+  bounded human/runtime evidence and must be named as limitations.
+- Continue and close
+  `.agents/execplans/2026-08-20-stage-ui-production-refinement.md` using this
+  static-first boundary. Public itch publication remains separately authorized.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

@@ -269,6 +269,11 @@ operable.
   placement, accessible names/descriptions, and pointer-safe dismissal. Callers
   supply authoritative ordered ball data only and do not recreate tooltip copy
   or token styling.
+- Semantic icons must not depend on platform emoji or miscellaneous Unicode
+  font coverage. `BallGlyphPainter` owns the vector Standard/Burst/Split shapes
+  reused by Ball Queue and `StageRuleSummary`; the latter owns the compact
+  target-band, R/G, shot-count, and required-kind row used by Stage Select.
+  Callers supply data and never substitute literal symbol characters.
 - Disabled, hover, pressed, focused, selected, paused, clear, and failed states
   remain visually stable. Do not communicate a state by color alone.
 - All visible presentational structures use shared component scenes. A scene
@@ -374,7 +379,8 @@ A UI change conforms when:
   copy while the shared marker stays bounded and signals endpoint overflow by
   shape;
 - Stage Select shows the selected stage's real prepared terrain behind the
-  shared `StageRail` and updates it without committing `GameState` before Start;
+  shared `StageRail`, presents its rule through the shared vector
+  `StageRuleSummary`, and updates it without committing `GameState` before Start;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
   pause action;
