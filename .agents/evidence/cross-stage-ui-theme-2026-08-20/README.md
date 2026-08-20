@@ -19,8 +19,8 @@ to close ExecPlan tasks 4.1-4.3. The captures come from the release-exported
 
 - Runtime: Godot 4.7.1 stable, Compatibility renderer, Windows desktop release.
 - Executable: `builds/windows/PaintMountain.exe`
-- Size: `120,981,080` bytes
-- SHA-256: `1E0BFF6D76021C43E0500E2F94137D135DD149A87DC4E706C948463E467AC061`
+- Size: `120,981,448` bytes
+- SHA-256: `039159CEB68F168BD1D266FEF0C51F07058450B6266DE6A990E32C8951EB66EF`
 - Capture process: a real non-focusable Windows game window was placed outside
   the desktop, rendered at the named viewport, read back after frame draw, and
   exited after each image. No `PaintMountain` process remained afterward.
@@ -99,6 +99,52 @@ The following Godot 4.7.1 checks passed after the rendered corrections:
 - `cross_stage_ui_theme_test.gd`
 
 The source capture path also proved that `shot_follow_midflight` retains a real
-airborne projectile through readback. The built-Web journey and its artifact
-hash are recorded here after ExecPlan task 4.4 completes. No public itch upload,
-channel change, or visibility change is part of this evidence.
+airborne projectile through readback.
+
+## Built-Web journey
+
+- Export: Godot 4.7.1 single-thread Web/Compatibility release.
+- Static verifier: 8 exact-case references; 50,812,044 raw bytes and 17,945,291
+  gzip bytes against the 18,996,696-byte allowance.
+- Local protected server: `http://127.0.0.1:13034/`, the fastrun registry's
+  `codex` Web lane. The port was free before the run and free after the exact
+  task-owned Python server PID was stopped.
+- Browser: one isolated Chrome DevTools session, WebGL 2.0 Compatibility.
+- `index.html`: 5,446 bytes, SHA-256
+  `7A5C3FFF7865AE6AAE49DFCDAE1E927191A275C67E340AE71A789B272AF98EE6`.
+- `index.pck`: 10,961,480 bytes, SHA-256
+  `553AF54E5F939DFEBD1414F27DAD2019672E36807A73A3CFC58BB8B638D0750E`.
+- `index.wasm`: 39,513,091 bytes, SHA-256
+  `35116F68540AC41ACF7D71EA457ADDED91B5E960A9CCA3E2ACC72918EAF01277`.
+
+The journey covered Main Menu, Stage Select with Stage 03/07 terrain swaps,
+Briefing, Aim, Pause, Settings, English language switching, browser fullscreen
+entry and exit, Stage 03 queue description, real firing/paint and timeout
+failure Result, Stage 07 real firing/paint and manual Result, and a 640x360
+live resize. The Canvas resized from 1280x720 to 640x360 without stale terrain,
+clipping, or input interception. All 8 release requests returned HTTP 200.
+Chrome recorded four Godot initialization/informational logs and zero error or
+warning messages. The task did not run a second browser stack.
+
+The Chrome journey used the immediately preceding release artifact. The only
+later Web-visible source correction moved two unchanged presentation colors
+and an outline size into the existing Theme owner; it changed no interaction,
+layout, timing, or pixel value. The final artifact hashes above come from the
+post-correction export and static verification. The 20 Windows captures were
+regenerated from the corresponding final Windows export.
+
+The fired Stage 03 and Stage 07 paths showed authoritative paint when the shot
+returned to Aim and in Result; no multi-second post-flight visual update was
+observed. The existing M8 owner measurements and deterministic paint/projectile
+tests remain the exact latency regression evidence and are rerun at the final
+gate. No public itch upload, channel change, or visibility change is part of
+this evidence.
+
+## Final production gate
+
+The complete ordered `scripts/test.ps1` suite and `scripts/verify.ps1` passed
+on the frozen source. Fresh Windows and Web release exports then completed, and
+`scripts/verify-web-release.ps1` passed with the final values above. One
+`projectile_settling_test` invalid-geometry warning is an expected diagnostic
+from its recovery fixture; the test passed and no production warning was
+suppressed. No `PaintMountain` process or task-owned local server remained.

@@ -13,7 +13,7 @@ func _run() -> void:
 	var theme: Theme = load("res://resources/ui/paint_mountain_theme.tres")
 	for variation in [
 		&"ScoreScale", &"BallQueue", &"ValueStepper", &"StageRail", &"ResultSummary",
-		&"WorldGradientScrim",
+		&"WorldGradientScrim", &"ContextLegend",
 	]:
 		_assert(theme.is_type_variation(variation, &"Control")
 				or theme.is_type_variation(variation, &"HBoxContainer")
@@ -21,6 +21,11 @@ func _run() -> void:
 				"%s must inherit the canonical Theme" % variation)
 	for variation in [&"BallQueueToken", &"ActionControl", &"StageRailButton"]:
 		_assert(theme.is_type_variation(variation, &"Button"), "%s must be a shared button role" % variation)
+	_assert(theme.has_color(&"world_outline", &"ScoreScale")
+			and theme.has_constant(&"world_outline_size", &"ScoreScale"),
+		"ScoreScale world contrast must remain Theme-owned")
+	_assert(theme.has_color(&"icon_color", &"ContextLegend"),
+		"ContextLegend icon tint must remain Theme-owned")
 	for variation in [&"ContrastScrim", &"InterruptionSurface", &"DirectOverlay"]:
 		_assert(theme.is_type_variation(variation, &"PanelContainer"), "%s must be a shared surface role" % variation)
 

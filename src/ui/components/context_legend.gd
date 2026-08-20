@@ -29,6 +29,7 @@ enum Mode {
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	%PowerItem.get_node("Input").modulate = get_theme_color(&"icon_color", &"ContextLegend")
 	resized.connect(_apply_width_priority)
 	_refresh()
 
