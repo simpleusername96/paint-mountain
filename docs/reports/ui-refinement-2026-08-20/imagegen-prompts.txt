@@ -1,36 +1,45 @@
-Paint Mountain UI refinement — ImageGen prompt set, revision 02
+Paint Mountain UI refinement — ImageGen prompt set, revision 03
 Date: 2026-08-20
-Mode: edit the matching latest running-game screenshot; preserve the world render and replace only the UI.
+Mode: built-in ImageGen edit/compositing; preserve the matching running-game world and replace only the UI.
 
 Shared direction
-- Compact Overlay: extremely clear, calm, icon-first, and world-first.
+- Compact Overlay: clear, calm, icon-first, world-first, and shared-component-only.
 - No panels, cards, boxes, sheets, glass, top bars, full-width bottom strips, paragraphs, or decorative section containers.
-- One soft shared edge contrast gradient is allowed where direct text/icons need contrast.
-- Use one shared visual system: 20/24 px flat vector-like icons, consistent stroke/type/spacing, direct metrics, circular shape-coded ball tokens, value steppers, and actions.
-- Show only one filled blue primary action. Red and green are paint semantics and must be paired with different shapes.
-- Every score visualization shows the complete fixed 0–100 axis, both endpoints, and labels 0, 25, 50, 75, 100. Target band/threshold and current marker stay inside that domain.
+- One soft edge contrast scrim is allowed where direct text/icons need contrast.
+- Use the same 20/24 px vector-like icon grid, metric, ScoreScale, BallQueue, ValueStepper, ActionControl, and state grammar.
+- One filled blue primary action. Red and green are paint semantics paired with different token shapes.
+- The complete score domain is always 0–100. Live Aim/Map/Shot Follow use the vertical preset with labels 100, 75, 50, 25, 0; Briefing/Result keep the horizontal preset.
 - Preserve mountain, cannon, camera, lighting, terrain, paint, sky, and game identity. Add no world objects or fake mechanics.
-- Generated copy, values, icon drawings, and world pixels are composition references only.
 
-01 — Aiming
-- Direct StageIdentity at upper-left; three compact MetricReadouts at upper-right.
-- Complete horizontal ScoreScale near a safe upper edge; compact BallQueue at the right edge.
-- Two identical lower-center ValueSteppers for angle/power and one blue Fire ActionControl.
-- At most three tiny ContextHints. Keep the mountain center unobstructed.
+01A — Aiming / Edge Balance
+- Actual Aim screenshot is the edit target; revision-02 Aim image is style reference only.
+- Vertical ScoreScale at far left; StageIdentity upper-left; metrics upper-right.
+- Three shape-coded balls stacked at far right with empty space for hover/focus tooltips.
+- Angle, power, and Fire form one compact lower-center sequence.
 
-02 — Stage select
-- Full-bleed existing mountain preview is the selected-stage detail.
-- Eight shared StageRail nodes in one safe-edge row, with selected/completed/locked shapes and page chevrons.
-- Direct stage number, target icon/value, ball tokens, one blue Start action, and one quiet Back action.
-- No list/detail split and no stage cards.
+01B — Aiming / Right Instruments
+- Preserve the same world and shared component styling.
+- Keep the left edge mostly clear.
+- Put the vertical ScoreScale at far right and the vertical BallQueue immediately beside it.
+- Keep angle, power, and Fire in one compact lower sequence.
+
+01C — Aiming / Cannon Focus
+- Vertical ScoreScale at far left.
+- Put the BallQueue in one horizontal row below upper-right metrics.
+- Split the lower controls around the cannon: angle on the left, Fire under the cannon, power on the right.
+
+02 — Stage Select / Actual terrain preview
+- Current Stage Select supplies data truth; revision-02 Stage Select supplies the StageRail layout; current Stage 01 Aim supplies actual terrain geometry/render.
+- Preserve the full-bleed StageRail layout but replace the generic alpine illustration with the actual selected StageRuntimeArtifact terrain.
+- Show StageIdentity, direct target facts, eight stage nodes, Start, and Back only.
 
 03 — Briefing
-- Direct StageIdentity, target icon/value, complete ScoreScale, and shared BallQueue.
+- Direct StageIdentity, target icon/value, horizontal complete ScoreScale, and shared BallQueue.
 - At most two ContextHints and direct Back/Start actions.
-- No objective/rule text panel; the complete mountain remains the briefing.
 
 04 — Result
 - The painted mountain is the result hero.
-- Direct large score/verdict, complete ScoreScale, two compact R/G contribution metrics, and at most three actions.
-- One blue Next action; Retry and Stage Select are quiet shared actions.
-- No result card, strategy copy, or score explanation.
+- Direct large score/verdict, horizontal complete ScoreScale, compact R/G metrics, and at most three actions.
+
+Note
+Generated copy, values, icon drawings, and world pixels are composition references, not runtime evidence. The HTML report adds real keyboard-accessible variant selection and BallQueue hover/focus/press explanations over the static mockups.

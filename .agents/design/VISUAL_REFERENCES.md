@@ -173,34 +173,43 @@ concepts, or asset previews from silently becoming product requirements.
   or screen composition conflicts. Running-build captures remain required
   implementation and acceptance evidence.
 
-### Current Compact Overlay correction
+### Current Aiming Selection correction
 
-- Report: [2026-08-20 Compact Overlay refinement](../../docs/reports/ui-refinement-2026-08-20/index.html)
-- Assets: the report's `assets/shared-component-system.svg` and four
-  `assets/tobe-*.png` composition targets, each paired with its latest
-  running-game `assets/current-*.png` source.
+- Report: [2026-08-20 Aiming Selection refinement](../../docs/reports/ui-refinement-2026-08-20/index.html)
+- Assets: the report's `assets/shared-component-system.svg`, three selectable
+  Aim composition targets, and the Stage Select, Briefing, and Result targets.
+  Each screen remains grounded in its latest running-game `assets/current-*.png`
+  source.
 - SHA-256: component system
-  `CFAB855F2A8F5B758A5B1B45476D7E884A3FDD58B142F782BEBCCA8B7D946467`;
-  Aim `534FB0536585E099AA4C21E81CD924EE48ACA8D48B4D522884B85E3DE9F10F3D`;
-  Stage Select `26AF18D6C316AE82359FF054A6A7E180CEFA8069D409499E33E81E95E4795687`;
+  `DFDE123DEAF19BF0F2B878FE6876DF443C5D7632C0A14A1B27FA964892B8C96F`;
+  Aim A `2DE88D2409C34A82DB1B6DF1CD5FDD478A9C2C5E1B477DED0522710C5800EB9F`;
+  Aim B `685F2579D4804E72A84FFAE02E1C7171C775E77BC2F537488350F3FC1FEB614B`;
+  Aim C `61C20211BD41C5BEFCF6C016AF5590808AB505D6D97E07536CE69C31384D7E27`;
+  Stage Select `B7814DFF3DEAD39DF3BA4D8C377A09ECB293289F7626FCF496EE80AD73991C94`;
   Briefing `8E640C5CE023E63E86DF705B1E2DA1A0D09482F2D76BCE44868FAC1F5BE49F2F`;
   Result `DA0A089B0167533C5A70211439D06E514BE29C43F5FDD4CDEEE071F3C495A6A4`.
 - Provenance: the user rejected the first 2026-08-20 report as still too
   panel-heavy and explicitly required a compact icon-first interface, complete
   0–100 score scale, external reference inspection, and shared-component-only
-  production composition. The replacement TO-BE images are ImageGen edits of
+  production composition. The user then requested three selectable Aim layouts,
+  descriptions on BallQueue interaction, a vertical live score scale, and real
+  terrain in Stage Select. The replacement TO-BE images are ImageGen edits of
   the matching current captures; the component system diagram is deterministic
   SVG design evidence.
 - Use literally for: no decorative panel/card/sheet in gameplay, Briefing,
-  Stage Select, or Result; a complete visible 0–100 axis with 0/25/50/75/100
-  labels; a single filled primary action; and shared-component-only styling.
+  Stage Select, or Result; a complete visible vertical 0–100 Aim axis with
+  0/25/50/75/100 labels; the same BallQueue description on hover, keyboard
+  focus, and press; the selected `StageRuntimeArtifact` terrain behind
+  StageRail; a single filled primary action; and shared-component-only styling.
 - Use directionally for: exact edge placement, generated Korean copy, stage
   facts, icon drawing, mountain pixels, and responsive geometry. Production
   code and authoritative game state remain the source of truth.
 - Status: current user-directed correction. It supersedes earlier UI references
   wherever they prescribe a cropped target-range scale, a full-width guide, a
   stage card grid, an information panel, a result sheet, or another decorative
-  containment surface. It is not running-game proof.
+  containment surface. Aim A is the implementation default; Aim B and C remain
+  explicit alternatives until the user selects one. HTML hover/focus/press
+  behavior is interaction-design evidence, not running-game proof.
 
 ### External comparative references
 
@@ -273,7 +282,7 @@ not the layout or art.
   response, continuous paint, hidden overlap, or responsive UI.
 - Generated images may contain impossible geometry, inconsistent object scale,
   fake labels, or interactions Godot does not implement.
-- The primary target predates the shared horizontal 0–100 `ScoreScale`, compact
+- The primary target predates the shared complete 0–100 `ScoreScale`, compact
   component-only overlay, centered Fire, and gear-owned Restart layout.
 - This register does not itself authorize visual testing or establish that the
   current build matches any source.

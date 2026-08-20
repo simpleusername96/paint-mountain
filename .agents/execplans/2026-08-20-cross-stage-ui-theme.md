@@ -52,6 +52,10 @@ still requires its own current-turn authorization.
 - One shared responsive composition for every application and gameplay state.
 - One shared `ScoreScale` whose complete 0–100 domain, five labels, target
   segment/threshold, and current marker never clip or change range.
+- One shared `BallQueue` whose token descriptions are equivalent on hover,
+  keyboard focus, press/touch, and the accessibility path.
+- Stage Select reuses the newest selected prepared terrain preview behind the
+  shared `StageRail`; it does not add a renderer or commit selection early.
 - Every visible presentational structure resolves to a shared component;
   screens own structural Containers and arrangement only.
 - No stage-specific UI copies or stage-owned colors/layouts.
@@ -113,6 +117,19 @@ still requires its own current-turn authorization.
   sheet, dock surface, full-width guide, or section container.
 - One filled blue primary action is visible per state. Selection uses outline,
   check/icon, and a quiet tint so it does not compete with the current action.
+- `ScoreScale` is one component with two locked presets. Aim, Map, and Shot
+  Follow use a vertical axis with `100` at the top and `0` at the bottom;
+  Briefing and Result use the horizontal preset. Both show 0/25/50/75/100,
+  current value, and target range/threshold inside the fixed domain.
+- `BallQueue` tokens reveal the same authoritative kind/order/paint-role/short-
+  behavior description on pointer hover, keyboard focus, and press/touch. The
+  tooltip is shared, has no gameplay authority, and mirrors its text through an
+  accessible name or description.
+- Aim composition A, **Edge Balance**, is the execution default: score scale at
+  the left, queue at the right, and lower-center steppers/Fire. The report also
+  retains B (**Right Instruments**) and C (**Cannon Focus**) for an explicit
+  user override; such an override narrows Phase 3 geometry only and requires a
+  plan checkpoint update before that composition is implemented.
 - Routine corner radius is 10–14 px for interactive controls only. Pause,
   Settings, and blocking error states may use one shared interruption surface;
   it is not reused as normal gameplay chrome.
@@ -155,7 +172,7 @@ still requires its own current-turn authorization.
 - Logical safe margin is 24 px at accepted sizes and may compress to 12 px at
   the 640×360 stress size. Essential controls remain inside the viewport.
 - `ScoreScale` retains the full 0–100 domain and visible 0/25/50/75/100 labels
-  at every accepted size. At stress size it may reduce its physical width, but
+  at every accepted size. At stress size it may reduce its physical length, but
   may not crop an endpoint, hide a label, or zoom to the target range.
 - Routine controls are at least 40 px high and target 44 px where composition
   permits. Focus outline is at least 2 px and remains visible for keyboard and
@@ -184,6 +201,7 @@ still requires its own current-turn authorization.
 | Every visible presentation primitive and its narrow behavior | `scenes/ui/components/`, `src/ui/components/` | Whole-screen state orchestration, game rules, scene-local visual styling |
 | Gameplay composition and state visibility | `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd` | Shot admission, scoring, paint authority |
 | Main Menu, Stage Select, Settings, Pause composition | `scenes/ui/screens/`, `src/ui/screens/` | Gameplay state decisions |
+| Selected-stage terrain preview activation and artifact publication | `src/app/app_root.gd`, `StageRuntimeArtifact`, `StageRuntimePreparer` | Stage selection commitment, a second renderer, generic preview terrain |
 | Localized user-facing copy | `translations/ui.csv` and existing copy owners | Layout-only labels encoded in scripts |
 | Stage values and family selection | `StageData`, `StageCatalog`, `StageLayoutRepository` | Theme or stage-specific scene copies |
 | Production capture states | `src/delivery/delivery_capture_runner.gd` | A second screenshot harness |
@@ -205,8 +223,9 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
 `scenes/ui/components/`, `src/ui/components/`, `tests/phase7_ui_test.gd`
 
 - [x] **1.1 Record Compact Overlay in the design authority.** Add the revised
-  report, component-system SVG, external comparative references, and four
-  target images to the visual register with explicit user-directed qualities
+  report, component-system SVG, external comparative references, three Aim
+  alternatives, and the other target images to the visual register with
+  explicit user-directed qualities
   and non-authoritative generated details. Update UI guidance for direct
   overlays, the fixed 0–100 scale, shared-component-only composition,
   icon-first copy reduction, stage-family truth, and accessibility.
@@ -215,7 +234,7 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
 - [ ] **1.2 Extend the canonical Theme.** Add only shared semantic variations
   needed by the named components: primary/secondary/quiet/danger actions,
   selected/completed/locked stage nodes, score scale, compact metric/value,
-  short hint, contrast scrim, interruption surface, and focus.
+  ball tooltip, short hint, contrast scrim, interruption surface, and focus.
   - Accept: palette/font remain canonical; a static Theme contract finds no
     duplicate scene-local palette for the new roles; disabled, focus, selected,
     and completed remain distinguishable without color alone.
@@ -223,8 +242,10 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
   components first and converge competing owners:
   - enhance `hud_metric` as `MetricReadout`;
   - merge `target_band_meter` and `coverage_meter` behind one shared
-    `ScoreScale` API with a fixed 0–100 visual domain;
-  - move/refine `queue_rail` and `queue_token_view` as shared `BallQueue`;
+    `ScoreScale` API with a fixed 0–100 visual domain and vertical-live/
+    horizontal-summary presets;
+  - move/refine `queue_rail` and `queue_token_view` as shared `BallQueue`, with
+    one shared hover/focus/press tooltip and accessible description path;
   - make `aim_controls` compose shared `ValueStepper` controls;
   - make `action_buttons` compose shared `ActionControl` controls;
   - replace `stage_card_button` with shared `StageRail` nodes;
@@ -244,6 +265,7 @@ Phase gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase7_ui_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shared_ui_component_ownership_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/score_scale_contract_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_queue_tooltip_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/localization_ui_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shortcut_prompt_test.gd
 ```
@@ -254,20 +276,30 @@ Goal: make every non-gameplay screen use the same hierarchy before changing the
 high-frequency HUD.
 
 Source owners: `scenes/ui/screens/*.tscn`, `src/ui/screens/*.gd`,
-`scenes/ui/components/stage_rail*.tscn`, `translations/ui.csv`
+`scenes/ui/components/stage_rail*.tscn`, `src/app/app_root.gd`,
+`src/app/stage_runtime_artifact.gd`, `src/app/stage_runtime_preparer.gd`,
+`translations/ui.csv`
 
 - [ ] **2.1 Refine Main Menu.** Keep the preview world dominant, reduce
   decorative containment, and expose one clear Play/Continue action plus quiet
   Settings/Exit navigation. Preserve ready, loading, load-failure, and focus
   restoration states.
 - [ ] **2.2 Recompose Stage Select as world plus StageRail.** Remove the card
-  list/detail split. Let the selected stage's existing world preview carry the
-  identity and place eight shared numbered nodes, page chevrons, compact direct
-  facts, and the single Start action at safe edges. Preserve 1–30 paging,
-  lock/completion/best score/mechanism truth, keyboard focus, all-open
-  development behavior, loading, and retry.
+  list/detail split. Reuse `AppRoot._preview_world` and the selected stage's
+  ready `StageRuntimeArtifact` render mesh/material/dressing as the
+  noninteractive background; do not create a second preview renderer. Change
+  `_show_stage_select()` to activate the preview world, extend
+  `_set_menu_preview_if_visible()` to accept visible Stage Select, and make
+  `_on_stage_selection_changed()` publish the newest ready selected artifact
+  while retaining its existing asynchronous preparation request. Place eight
+  shared numbered nodes, page chevrons, compact direct facts, and the single
+  Start action at safe edges. Preserve 1–30 paging, lock/completion/best score/
+  mechanism truth, keyboard focus, all-open development behavior, loading,
+  retry, and the rule that selection does not commit `GameState` before Start.
   - Accept: selected, completed, available, and locked states use the shared
-    state grammar; Start is the sole filled blue action.
+    state grammar; Start is the sole filled blue action; switching nodes updates
+    the actual prepared terrain without a generic mountain, stale artifact,
+    blank frame, gameplay input, or second world owner.
 - [ ] **2.3 Refine Pause and Settings.** Use one shared compact interruption
   surface only where input blocking needs containment, plus aligned fields and
   shared actions. Preserve paused
@@ -302,11 +334,16 @@ Source owners: `scenes/ui/hud/*.tscn`, `src/ui/hud/*.gd`,
   do not add a top bar, objective panel, right rail, bottom dock, or full-width
   legend.
   - Accept: central mountain, cannon, trajectory, target, impact area, and
-    projectile family remain readable at every matrix size.
+    projectile family remain readable at every matrix size. The default Aim
+    geometry is report variant A unless a later explicit user choice updates
+    this checkpoint before implementation.
 - [ ] **3.2 Apply the shell to Briefing and Aim.** Briefing keeps the real world
   visible with objective and ball order at the edges. Aim exposes elevation,
   power, Fire, current goal, ammunition, and queue without a rule panel or
   full-width tutorial surface.
+  - Accept: Aim uses the vertical `ScoreScale`; Briefing uses the horizontal
+    preset; prototype queue tokens show the same short description on hover,
+    focus, and press/touch with no tooltip clipping or keyboard trap.
 - [ ] **3.3 Apply state reductions to Map and Shot Follow.** Map removes aiming
   controls and shows only map-relevant guidance. Shot Follow removes Fire and
   shows the legal return action plus projectile/family observation. Neither
@@ -331,6 +368,7 @@ Phase gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/hud_layout_responsive_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/hud_target_band_truth_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/target_band_layout_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_queue_tooltip_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_hud_truth_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_aiming_composition_test.gd
 ```
@@ -449,6 +487,15 @@ Rules:
 - [ ] Every score/coverage visualization shows the complete 0–100 axis with
   visible 0/25/50/75/100 labels, an in-bounds current marker, and an in-bounds
   target segment/threshold at every accepted and stress size.
+- [ ] Aim, Map, and Shot Follow use the vertical `ScoreScale`; Briefing and
+  Result use its horizontal preset. Both orientations expose the same values
+  and never clip or reverse their documented endpoints.
+- [ ] Every prototype `BallQueue` token reveals the same kind, order, paint
+  role, and short behavior description on pointer hover, keyboard focus, and
+  press/touch; accessible names/descriptions carry equivalent information.
+- [ ] Stage Select shows the actual selected stage's newest prepared terrain
+  behind `StageRail`, updates it on selection without committing `GameState`,
+  and never displays a generic or stale landscape.
 - [ ] Every visible presentational structure is a shared component or Theme
   role; gameplay, Briefing, Stage Select, and Result contain no decorative
   panel/card/sheet and no scene-local StyleBox, palette, font, or icon copy.
@@ -477,6 +524,8 @@ Rules:
 | Stages 1–6 and 7–30 require different data fields | Use conditional regions inside the shared component/API | Forking the whole HUD or adding stage-number conditionals to Theme |
 | A supported size clips | Recompose with Containers, priority collapse, wrapping, or bounded scrolling | Shrinking essential text below its role or moving controls off-screen |
 | A `ScoreScale` endpoint, tick, marker, or target segment clips | Correct the shared component's clamping, label reserve, or minimum geometry and rerun every caller | Zooming the scale to the current target range or fixing one screen locally |
+| A tooltip clips, obscures another token, or cannot be reached by keyboard/touch | Reposition the shared tooltip against the safe edge and fix the shared token interaction/focus contract | Adding screen-local tooltip geometry or making hover the only explanation path |
+| Stage Select shows no terrain or the wrong selected stage | Keep the current valid preview visible until the newest selected `StageRuntimeArtifact` is ready, then swap atomically | Creating a second preview renderer, committing selection early, or showing generic fallback art |
 | A Theme variation harms another screen | Narrow the semantic variation and migrate intended users explicitly | Creating a second Theme/palette owner |
 | A screen needs a visual role not exposed by a shared component | Add or refine the smallest responsibility-shaped shared component, then migrate every current user | Adding scene-local StyleBox, icon, palette, font, card, or panel styling |
 | `HUDController` begins accumulating layout-only branches | Move presentation behavior into a responsibility-shaped component | Moving StageController decisions into UI code |
@@ -497,6 +546,11 @@ Rules:
   current-to-TO-BE comparisons, added a deterministic shared-component system
   diagram, and locked the complete 0–100 score-scale contract in the report,
   design authority, and this plan.
+- [x] 2026-08-20 aiming-selection correction: added three selectable Aim
+  compositions, made Edge Balance the execution default, switched live score
+  presentation to the vertical 0–100 preset, specified shared BallQueue hover/
+  focus/press descriptions, and grounded Stage Select in the existing prepared
+  terrain preview owner instead of generic landscape art.
 - [ ] Current phase: Phase 1.
 - [ ] Next task: 1.2, extend the canonical Theme roles before changing screen
   compositions.

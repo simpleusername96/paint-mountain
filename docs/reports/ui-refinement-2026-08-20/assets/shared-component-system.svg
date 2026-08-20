@@ -37,17 +37,23 @@
 
   <!-- ScoreScale -->
   <text x="64" y="158" class="label">SCORE SCALE</text>
-  <text x="64" y="189" class="small">축은 항상 0–100 · 목표 구간만 색으로 표시</text>
-  <line x1="70" y1="252" x2="488" y2="252" stroke="#8ca0b8" stroke-width="4" stroke-linecap="round"/>
-  <line x1="99" y1="252" x2="116" y2="252" stroke="#2584ff" stroke-width="10" stroke-linecap="round"/>
+  <text x="64" y="189" class="small">LIVE는 수직 0–100 · 목표 구간만 색으로 표시</text>
+  <line x1="108" y1="212" x2="108" y2="326" stroke="#8ca0b8" stroke-width="4" stroke-linecap="round"/>
+  <line x1="108" y1="313" x2="108" y2="318" stroke="#2584ff" stroke-width="10" stroke-linecap="round"/>
   <g class="axis">
-    <line x1="70" y1="240" x2="70" y2="264" class="line"/><text x="70" y="288" text-anchor="middle">0</text>
-    <line x1="175" y1="243" x2="175" y2="261" class="quiet"/><text x="175" y="288" text-anchor="middle">25</text>
-    <line x1="279" y1="243" x2="279" y2="261" class="quiet"/><text x="279" y="288" text-anchor="middle">50</text>
-    <line x1="384" y1="243" x2="384" y2="261" class="quiet"/><text x="384" y="288" text-anchor="middle">75</text>
-    <line x1="488" y1="240" x2="488" y2="264" class="line"/><text x="488" y="288" text-anchor="middle">100</text>
+    <line x1="96" y1="212" x2="120" y2="212" class="line"/><text x="132" y="217">100</text>
+    <line x1="99" y1="240" x2="117" y2="240" class="quiet"/><text x="132" y="245">75</text>
+    <line x1="99" y1="269" x2="117" y2="269" class="quiet"/><text x="132" y="274">50</text>
+    <line x1="99" y1="297" x2="117" y2="297" class="quiet"/><text x="132" y="302">25</text>
+    <line x1="96" y1="326" x2="120" y2="326" class="line"/><text x="132" y="331">0</text>
   </g>
-  <circle cx="109" cy="252" r="9" fill="#fffdfc" stroke="#2584ff" stroke-width="4"/>
+  <circle cx="108" cy="326" r="8" fill="#fffdfc" stroke="#2584ff" stroke-width="4"/>
+  <text x="244" y="221" class="label">BRIEF / RESULT</text>
+  <line x1="244" y1="259" x2="474" y2="259" stroke="#8ca0b8" stroke-width="4" stroke-linecap="round"/>
+  <line x1="261" y1="259" x2="270" y2="259" stroke="#2584ff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="244" y1="249" x2="244" y2="269" class="line"/><text x="244" y="294" text-anchor="middle" class="axis">0</text>
+  <line x1="474" y1="249" x2="474" y2="269" class="line"/><text x="474" y="294" text-anchor="middle" class="axis">100</text>
+  <text x="244" y="323" class="small" fill="#52647a">같은 컴포넌트 · orientation preset만 변경</text>
 
   <!-- Metric + BallQueue -->
   <text x="582" y="158" class="label">METRIC · BALL QUEUE</text>
@@ -59,6 +65,10 @@
     <circle cx="370" cy="18" r="7" fill="#fff"/><rect x="413" y="11" width="14" height="14" rx="2" fill="#fff" transform="rotate(45 420 18)"/><path d="M470 9l9 7-3 11h-12l-3-11z" fill="#fff"/>
   </g>
   <text x="584" y="299" class="small" fill="#52647a">20/24 px 아이콘 · 색 + 형태로 상태 중복 표현</text>
+  <path d="M925 250l18-12v12" fill="#172538"/>
+  <rect x="760" y="250" width="183" height="56" rx="9" fill="#172538"/>
+  <text x="776" y="274" class="small" fill="#fff">충돌 폭발 · 빨강</text>
+  <text x="776" y="295" font-size="13" font-weight="600" fill="#fff">HOVER · FOCUS · PRESS</text>
 
   <!-- Action -->
   <text x="1094" y="158" class="label">ACTION</text>

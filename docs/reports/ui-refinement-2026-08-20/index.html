@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Paint Mountain UI Refinement · Compact Overlay</title>
+  <title>Paint Mountain UI Refinement · Aiming Selection</title>
   <style>
     :root {
       --ink: #172538;
@@ -35,12 +35,20 @@
     .chapter-lead { margin: 0 0 24px; max-width: 920px; color: var(--muted); font-size: 18px; font-weight: 600; }
     .system { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .score-contract { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 28px; align-items: center; margin-top: 26px; }
-    .score-contract b { font-size: clamp(56px, 8vw, 112px); letter-spacing: -.08em; color: var(--blue); }
-    .scale { position: relative; padding: 30px 0 38px; }
-    .scale-line { height: 4px; background: #93a5ba; border-radius: 4px; position: relative; }
-    .scale-line::before { content: ""; position: absolute; left: 7%; width: 4%; top: -3px; height: 10px; background: var(--blue); border-radius: 6px; }
-    .ticks { display: flex; justify-content: space-between; margin-top: 12px; font-weight: 800; }
-    .ticks span:first-child, .ticks span:last-child { color: var(--blue); }
+    .score-contract > b { color: var(--blue); font-size: clamp(34px, 5vw, 64px); line-height: 1; letter-spacing: -.055em; }
+    .vertical-scale-demo { display: grid; grid-template-columns: 50px 90px minmax(0, 1fr); gap: 18px; align-items: center; min-height: 310px; }
+    .vertical-scale-demo > strong { color: var(--muted); font-size: 14px; letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); }
+    .vscale { position: relative; width: 90px; height: 270px; }
+    .vscale-line { position: absolute; top: 12px; bottom: 12px; left: 22px; width: 4px; border-radius: 4px; background: #93a5ba; }
+    .vscale-line::before { content: ""; position: absolute; bottom: 7%; left: -3px; width: 10px; height: 4%; border-radius: 6px; background: var(--blue); }
+    .vtick { position: absolute; left: 0; width: 90px; color: var(--ink); font-size: 14px; font-weight: 850; }
+    .vtick::before { content: ""; display: inline-block; width: 18px; margin-right: 8px; border-top: 2px solid currentColor; vertical-align: middle; }
+    .vtick:nth-of-type(1) { top: 0; color: var(--blue); }
+    .vtick:nth-of-type(2) { top: 25%; }
+    .vtick:nth-of-type(3) { top: 50%; }
+    .vtick:nth-of-type(4) { top: 75%; }
+    .vtick:nth-of-type(5) { bottom: 0; color: var(--blue); }
+    .score-mode-note { margin: 0; max-width: 520px; color: var(--muted); font-size: 16px; font-weight: 650; }
     .references { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
     .reference { padding: 24px 22px 20px 0; border-right: 1px solid var(--line); }
     .reference + .reference { padding-left: 22px; }
@@ -62,6 +70,44 @@
     .delta { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 10px; color: var(--muted); font-size: 14px; font-weight: 650; }
     .delta span { display: inline-flex; align-items: center; gap: 7px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+    .variant-header { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 12px; }
+    .variant-header p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .variant-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+    .variant-tab { min-height: 64px; padding: 12px 12px 10px; color: var(--muted); background: transparent; border: 0; border-bottom: 3px solid var(--line); text-align: left; cursor: pointer; font: inherit; }
+    .variant-tab strong, .variant-tab span { display: block; }
+    .variant-tab strong { color: var(--ink); font-size: 17px; }
+    .variant-tab span { margin-top: 3px; font-size: 13px; font-weight: 700; }
+    .variant-tab[aria-selected="true"] { color: var(--blue); border-bottom-color: var(--blue); }
+    .variant-tab[aria-selected="true"] strong { color: var(--blue); }
+    .variant-tab:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+    .selection-state { min-height: 24px; margin: 14px 0; color: var(--blue); font-size: 14px; font-weight: 850; }
+    .variant-panel[hidden] { display: none; }
+    .mockup-wrap { position: relative; overflow: visible; background: #dfe9f5; }
+    .mockup-wrap > img { width: 100%; }
+    .ball-hotspots { position: absolute; z-index: 2; display: flex; gap: clamp(6px, .8vw, 13px); }
+    .queue-a { top: 14%; right: 2.4%; flex-direction: column; }
+    .queue-b { top: 20%; right: 7.5%; flex-direction: column; }
+    .queue-c { top: 13%; right: 3.6%; flex-direction: row; }
+    .ball-token { position: relative; display: grid; place-items: center; width: clamp(34px, 3.3vw, 48px); height: clamp(34px, 3.3vw, 48px); padding: 0; border: 2px solid rgba(255,255,255,.9); border-radius: 50%; background: rgba(255,255,255,.86); box-shadow: 0 2px 10px rgba(23,37,56,.16); cursor: help; }
+    .ball-token::before { content: ""; width: 56%; height: 56%; background: var(--ball-color); clip-path: var(--ball-shape); }
+    .ball-token.red { --ball-color: #ef5a54; }
+    .ball-token.green { --ball-color: #3ca66b; }
+    .ball-token.circle { --ball-shape: circle(50%); }
+    .ball-token.diamond { --ball-shape: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .ball-token.pentagon { --ball-shape: polygon(50% 0, 98% 36%, 80% 100%, 20% 100%, 2% 36%); }
+    .ball-token:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+    .ball-tooltip { position: absolute; top: 50%; right: calc(100% + 12px); width: max-content; max-width: 230px; padding: 10px 12px; color: white; background: rgba(23,37,56,.96); border-radius: 9px; opacity: 0; visibility: hidden; transform: translateY(-50%) translateX(4px); transition: opacity 120ms ease, transform 120ms ease; pointer-events: none; text-align: left; }
+    .ball-tooltip b, .ball-tooltip span { display: block; color: white; }
+    .ball-tooltip b { font-size: 14px; }
+    .ball-tooltip span { margin-top: 3px; font-size: 12px; font-weight: 600; }
+    .queue-c .ball-tooltip { top: calc(100% + 10px); right: 0; transform: translateY(4px); }
+    .ball-token:hover .ball-tooltip, .ball-token:focus-visible .ball-tooltip, .ball-token:focus .ball-tooltip { opacity: 1; visibility: visible; transform: translate(0, -50%); }
+    .queue-c .ball-token:hover .ball-tooltip, .queue-c .ball-token:focus-visible .ball-tooltip, .queue-c .ball-token:focus .ball-tooltip { transform: translateY(0); }
+    .variant-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; padding: 12px 2px 6px; color: var(--muted); font-size: 14px; font-weight: 750; }
+    .variant-caption strong { color: var(--blue); }
+    .baseline-details { margin-top: 18px; border-top: 1px solid var(--line); }
+    .baseline-details summary { min-height: 44px; padding: 12px 0; color: var(--muted); cursor: pointer; font-weight: 750; }
+    .baseline-details img { margin-bottom: 12px; }
     .inventory { width: 100%; border-collapse: collapse; }
     .inventory th, .inventory td { padding: 15px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     .inventory th { color: var(--muted); font-size: 13px; letter-spacing: .06em; }
@@ -77,21 +123,28 @@
       .references, .shots { grid-template-columns: 1fr; }
       .reference, .reference + .reference { padding: 20px 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .pair-head, footer { align-items: flex-start; flex-direction: column; }
+      .variant-tabs { grid-template-columns: 1fr; }
+      .variant-tab { min-height: 54px; }
+      .ball-token { width: 34px; height: 34px; }
+      .ball-tooltip { max-width: 190px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ball-tooltip { transition: none; }
     }
   </style>
 </head>
 <body>
   <main>
     <header>
-      <div><div class="stamp">PAINT MOUNTAIN · UI 02</div><h1>Compact<br>Overlay</h1></div>
+      <div><div class="stamp">PAINT MOUNTAIN · UI 03</div><h1>Aiming<br>Selection</h1></div>
       <p>패널을 걷어 내고, 세계 위에 필요한 조작과 상태만 남기는 전 화면 공유 시스템.</p>
     </header>
 
-    <div class="verdict"><strong>수정 결론</strong><p>이전 시안의 카드·레일 중심 구성을 폐기한다. 화면은 공유 컴포넌트를 직접 배치하며, 점수 축은 모든 상태에서 0–100 전체를 고정 표시한다.</p></div>
+    <div class="verdict"><strong>수정 결론</strong><p>조준 HUD는 수직 0–100 점수축으로 통일하고 세 가지 배치 중 하나를 선택한다. 공 목록은 hover·키보드 focus·터치 선택에서 같은 설명을 보여 준다.</p></div>
 
     <div class="ruleline" aria-label="핵심 규칙">
       <span><svg viewBox="0 0 24 24"><path d="M3 12h18M3 7h18M3 17h18"/></svg>패널 없음</span>
-      <span><svg viewBox="0 0 24 24"><path d="M4 20V4m0 16h16M8 16l3-4 3 2 5-7"/></svg>0–100 고정</span>
+      <span><svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>조준 수직 0–100</span>
       <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>아이콘 우선</span>
       <span><svg viewBox="0 0 24 24"><path d="M4 8h6v6H4zM14 8h6v6h-6zM9 17h6v4H9zM7 14v3h10v-3"/></svg>공유 컴포넌트만</span>
       <span><svg viewBox="0 0 24 24"><path d="M3 18l6-9 4 5 3-4 5 8z"/></svg>월드 우선</span>
@@ -102,7 +155,14 @@
       <div class="chapter-body">
         <p class="chapter-lead">장식용 컨테이너를 없애고, 같은 아이콘 그리드·간격·상태 규칙을 모든 화면에 재사용한다.</p>
         <div class="system"><img src="assets/shared-component-system.svg" alt="공유 UI 컴포넌트 시스템 사양"></div>
-        <div class="score-contract"><b>0–100</b><div class="scale" aria-label="0에서 100까지 고정 점수 축"><div class="scale-line"></div><div class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div></div></div>
+        <div class="score-contract">
+          <b>LIVE<br>0–100</b>
+          <div class="vertical-scale-demo" aria-label="조준 화면용 0에서 100까지 수직 점수 축">
+            <strong>VERTICAL</strong>
+            <div class="vscale"><div class="vscale-line"></div><span class="vtick">100</span><span class="vtick">75</span><span class="vtick">50</span><span class="vtick">25</span><span class="vtick">0</span></div>
+            <p class="score-mode-note">조준·지도·비행 추적은 수직 계기를 사용한다. 브리핑·결과는 같은 ScoreScale의 가로 preset을 유지한다.</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -123,15 +183,58 @@
       <h2>03 · Screens</h2>
       <div class="chapter-body">
         <p class="chapter-lead">TO-BE는 최신 실행 캡처를 기반으로 한 구성 목표다. 월드와 카메라는 구현 기준을 유지하고 UI만 교체한다.</p>
-        <div class="pair">
-          <div class="pair-head"><h3>조준</h3><p>점수 · 공 · 각도 · 파워 · 발사</p></div>
-          <div class="shots"><figure class="before"><img src="assets/current-aiming.png" alt="현재 조준 UI"><figcaption><span>현재</span><span>분절된 카드와 하단 띠</span></figcaption></figure><figure class="after"><img src="assets/tobe-aiming.png" alt="개선 조준 UI"><figcaption><span>TO-BE</span><span>직접 오버레이</span></figcaption></figure></div>
-          <div class="delta"><span><i class="dot"></i>0–100 전체 축</span><span><i class="dot"></i>원형 공 토큰</span><span><i class="dot"></i>공유 스테퍼</span><span><i class="dot"></i>주요 행동 1개</span></div>
+        <div class="pair" id="aiming-variants">
+          <div class="variant-header"><div class="pair-head"><h3>조준 · 3안</h3><p>수직 점수축 · 설명 가능한 공 목록 · 같은 공유 컴포넌트</p></div><p>탭을 누르면 선택이 이 브라우저에 저장됩니다.</p></div>
+          <div class="variant-tabs" role="tablist" aria-label="조준 화면 배치 선택">
+            <button class="variant-tab" id="tab-aim-a" type="button" role="tab" aria-selected="true" aria-controls="panel-aim-a" data-variant="a" data-label="A · 좌우 균형"><strong>A · 좌우 균형</strong><span>점수 왼쪽 · 공 오른쪽</span></button>
+            <button class="variant-tab" id="tab-aim-b" type="button" role="tab" aria-selected="false" aria-controls="panel-aim-b" data-variant="b" data-label="B · 오른쪽 계기"><strong>B · 오른쪽 계기</strong><span>점수와 공을 한쪽에</span></button>
+            <button class="variant-tab" id="tab-aim-c" type="button" role="tab" aria-selected="false" aria-controls="panel-aim-c" data-variant="c" data-label="C · 대포 중심"><strong>C · 대포 중심</strong><span>조작을 대포 주변에 분할</span></button>
+          </div>
+          <p class="selection-state" id="aim-selection-state" aria-live="polite">현재 선택: A · 좌우 균형</p>
+
+          <div class="variant-panel" id="panel-aim-a" role="tabpanel" aria-labelledby="tab-aim-a">
+            <div class="mockup-wrap">
+              <img src="assets/tobe-aiming.png" alt="조준안 A, 왼쪽 수직 점수축과 오른쪽 세로 공 목록">
+              <div class="ball-hotspots queue-a" aria-label="다음 공 목록, 공에 마우스를 올리거나 키보드로 초점을 이동하면 설명이 표시됩니다">
+                <button class="ball-token red circle" type="button" aria-label="첫 번째 공, 표준 빨강" aria-describedby="tip-a-1"><span class="ball-tooltip" id="tip-a-1" role="tooltip"><b>표준 · 빨강</b><span>착지 후 그대로 굴러갑니다.</span></span></button>
+                <button class="ball-token red diamond" type="button" aria-label="두 번째 공, 충돌 폭발 빨강" aria-describedby="tip-a-2"><span class="ball-tooltip" id="tip-a-2" role="tooltip"><b>충돌 폭발 · 빨강</b><span>첫 충돌에서 작은 공으로 분열합니다.</span></span></button>
+                <button class="ball-token green pentagon" type="button" aria-label="세 번째 공, 최고점 분열 초록" aria-describedby="tip-a-3"><span class="ball-tooltip" id="tip-a-3" role="tooltip"><b>최고점 분열 · 초록</b><span>비행 최고점에서 작은 공으로 분열합니다.</span></span></button>
+              </div>
+            </div>
+            <div class="variant-caption"><strong>A · 균형이 가장 안정적</strong><span>월드 중앙을 비우고 양쪽 계기의 역할을 분리</span></div>
+          </div>
+
+          <div class="variant-panel" id="panel-aim-b" role="tabpanel" aria-labelledby="tab-aim-b" hidden>
+            <div class="mockup-wrap">
+              <img src="assets/tobe-aiming-right.png" alt="조준안 B, 오른쪽 수직 점수축과 인접한 세로 공 목록">
+              <div class="ball-hotspots queue-b" aria-label="다음 공 목록, 공에 마우스를 올리거나 키보드로 초점을 이동하면 설명이 표시됩니다">
+                <button class="ball-token red circle" type="button" aria-label="첫 번째 공, 표준 빨강" aria-describedby="tip-b-1"><span class="ball-tooltip" id="tip-b-1" role="tooltip"><b>표준 · 빨강</b><span>착지 후 그대로 굴러갑니다.</span></span></button>
+                <button class="ball-token red diamond" type="button" aria-label="두 번째 공, 충돌 폭발 빨강" aria-describedby="tip-b-2"><span class="ball-tooltip" id="tip-b-2" role="tooltip"><b>충돌 폭발 · 빨강</b><span>첫 충돌에서 작은 공으로 분열합니다.</span></span></button>
+                <button class="ball-token green pentagon" type="button" aria-label="세 번째 공, 최고점 분열 초록" aria-describedby="tip-b-3"><span class="ball-tooltip" id="tip-b-3" role="tooltip"><b>최고점 분열 · 초록</b><span>비행 최고점에서 작은 공으로 분열합니다.</span></span></button>
+              </div>
+            </div>
+            <div class="variant-caption"><strong>B · 왼쪽 시야가 가장 넓음</strong><span>정보를 오른쪽에 모아 착지 관찰 영역 확보</span></div>
+          </div>
+
+          <div class="variant-panel" id="panel-aim-c" role="tabpanel" aria-labelledby="tab-aim-c" hidden>
+            <div class="mockup-wrap">
+              <img src="assets/tobe-aiming-split.png" alt="조준안 C, 왼쪽 수직 점수축과 대포 주변에 나뉜 조작">
+              <div class="ball-hotspots queue-c" aria-label="다음 공 목록, 공에 마우스를 올리거나 키보드로 초점을 이동하면 설명이 표시됩니다">
+                <button class="ball-token red circle" type="button" aria-label="첫 번째 공, 표준 빨강" aria-describedby="tip-c-1"><span class="ball-tooltip" id="tip-c-1" role="tooltip"><b>표준 · 빨강</b><span>착지 후 그대로 굴러갑니다.</span></span></button>
+                <button class="ball-token red diamond" type="button" aria-label="두 번째 공, 충돌 폭발 빨강" aria-describedby="tip-c-2"><span class="ball-tooltip" id="tip-c-2" role="tooltip"><b>충돌 폭발 · 빨강</b><span>첫 충돌에서 작은 공으로 분열합니다.</span></span></button>
+                <button class="ball-token green pentagon" type="button" aria-label="세 번째 공, 최고점 분열 초록" aria-describedby="tip-c-3"><span class="ball-tooltip" id="tip-c-3" role="tooltip"><b>최고점 분열 · 초록</b><span>비행 최고점에서 작은 공으로 분열합니다.</span></span></button>
+              </div>
+            </div>
+            <div class="variant-caption"><strong>C · 발사 흐름이 가장 직접적</strong><span>각도 → 발사 → 파워를 대포 주변에서 읽음</span></div>
+          </div>
+
+          <details class="baseline-details"><summary>현재 조준 화면 보기</summary><img src="assets/current-aiming.png" alt="현재 조준 UI"></details>
+          <div class="delta"><span><i class="dot"></i>조준 수직 0–100</span><span><i class="dot"></i>공 hover/focus 설명</span><span><i class="dot"></i>선택 저장</span><span><i class="dot"></i>공유 컴포넌트 동일</span></div>
         </div>
-        <div class="pair">
+        <div class="pair" id="stage-select-target">
           <div class="pair-head"><h3>스테이지 선택</h3><p>산 · 8개 노드 · 시작</p></div>
           <div class="shots"><figure class="before"><img src="assets/current-stage-select.png" alt="현재 스테이지 선택 UI"><figcaption><span>현재</span><span>목록 + 상세 패널</span></figcaption></figure><figure class="after"><img src="assets/tobe-stage-select.png" alt="개선 스테이지 선택 UI"><figcaption><span>TO-BE</span><span>월드 + 스테이지 레일</span></figcaption></figure></div>
-          <div class="delta"><span><i class="dot"></i>카드 없음</span><span><i class="dot"></i>선택은 월드 미리보기</span><span><i class="dot"></i>잠금은 아이콘+형태</span></div>
+          <div class="delta"><span><i class="dot"></i>카드 없음</span><span><i class="dot"></i>선택 StageRuntimeArtifact 지형</span><span><i class="dot"></i>잠금은 아이콘+형태</span></div>
         </div>
         <div class="pair">
           <div class="pair-head"><h3>브리핑</h3><p>번호 · 목표 · 공 순서 · 시작</p></div>
@@ -153,9 +256,9 @@
         <table class="inventory">
           <thead><tr><th>공유 컴포넌트</th><th>역할</th><th>통합 대상</th></tr></thead>
           <tbody>
-            <tr><td>ScoreScale</td><td><span class="yes">0–100 고정</span> · 목표 구간 · 현재값</td><td>target_band_meter + coverage_meter</td></tr>
+            <tr><td>ScoreScale</td><td><span class="yes">0–100 고정</span> · 조준 수직 / 브리핑·결과 가로 preset</td><td>target_band_meter + coverage_meter</td></tr>
             <tr><td>MetricReadout</td><td>아이콘 + 값 + 짧은 단위</td><td>hud_metric</td></tr>
-            <tr><td>BallQueue</td><td>색 + 형태 공 토큰</td><td>queue_rail + queue_token_view</td></tr>
+            <tr><td>BallQueue</td><td>색 + 형태 토큰 · hover/focus/press 설명</td><td>queue_rail + queue_token_view</td></tr>
             <tr><td>ValueStepper</td><td>아이콘 · 감소 · 값 · 증가</td><td>aim_controls</td></tr>
             <tr><td>ActionControl</td><td>주요/보조/조용한 행동</td><td>action_buttons</td></tr>
             <tr><td>StageRail</td><td>선택 · 완료 · 잠금 노드</td><td>stage_card_button 대체</td></tr>
@@ -175,7 +278,55 @@
       </div>
     </div>
 
-    <footer><span>UI refinement · 2026-08-20 · revision 02 · <a href="imagegen-prompts.txt">prompt log</a></span><span>Generated TO-BE images are composition targets, not runtime evidence.</span></footer>
+    <footer><span>UI refinement · 2026-08-20 · revision 03 · <a href="imagegen-prompts.txt">prompt log</a></span><span>Generated TO-BE images are composition targets, not runtime evidence.</span></footer>
   </main>
+  <script>
+    (() => {
+      const tabs = [...document.querySelectorAll('.variant-tab')];
+      const panels = [...document.querySelectorAll('.variant-panel')];
+      const state = document.getElementById('aim-selection-state');
+      const storageKey = 'paint-mountain-aiming-variant';
+      const query = new URLSearchParams(window.location.search);
+
+      const selectVariant = (tab, moveFocus = false) => {
+        tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+        panels.forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+        state.textContent = `현재 선택: ${tab.dataset.label}`;
+        try { localStorage.setItem(storageKey, tab.dataset.variant); } catch (_) {}
+        if (moveFocus) tab.focus();
+      };
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectVariant(tab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          let target = index;
+          if (event.key === 'ArrowLeft') target = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'ArrowRight') target = (index + 1) % tabs.length;
+          if (event.key === 'Home') target = 0;
+          if (event.key === 'End') target = tabs.length - 1;
+          selectVariant(tabs[target], true);
+        });
+      });
+
+      const requested = tabs.find((tab) => tab.dataset.variant === query.get('aim'));
+      if (requested) {
+        selectVariant(requested);
+      } else {
+        try {
+          const saved = tabs.find((tab) => tab.dataset.variant === localStorage.getItem(storageKey));
+          if (saved) selectVariant(saved);
+        } catch (_) {}
+      }
+
+      const ballIndex = Number.parseInt(query.get('ball') || '', 10) - 1;
+      if (ballIndex >= 0) {
+        const activePanel = panels.find((panel) => !panel.hidden);
+        const ball = activePanel?.querySelectorAll('.ball-token')[ballIndex];
+        ball?.focus({ preventScroll: true });
+      }
+    })();
+  </script>
 </body>
 </html>

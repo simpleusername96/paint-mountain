@@ -115,6 +115,14 @@ pixels are composition targets, not runtime or copy authority.
   required coverage is a segment or marker inside that fixed domain; it never
   changes the domain. Both endpoints, tick labels, current marker, and target
   segment must remain inside the component bounds at every supported size.
+- `ScoreScale` owns two orientation presets, not two components. Aim View, Map
+  View, and Shot Follow use the vertical preset (`100` at the top, `0` at the
+  bottom); Briefing and Result use the horizontal preset. Both presets expose
+  the same fixed domain, labels, target data, clamping, and accessibility value.
+- Each `BallQueue` token exposes its kind, paint role, order, and short behavior
+  description on pointer hover, keyboard focus, and press/touch selection. The
+  same description is available through the control's accessible name or
+  description; tooltip text is not the only source of essential state.
 - The shared visual inventory is `MetricReadout`, `ScoreScale`, `BallQueue`,
   `ValueStepper`, `ActionControl`, `StageIdentity`, `StageRail`,
   `ContextHints`, `ResultSummary`, and `ContrastScrim`. Reuse or enhance the
@@ -140,8 +148,8 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Stage identity | Upper-left | Shared mountain icon plus compact stage number/name, without a card surface |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident-ball activity stays internal; Gear remains the menu action |
-| Score display | Safe upper/side edge | The shared horizontal `ScoreScale` always shows 0–100. Legacy stages add required coverage; prototype stages add the target band, current marker, Paint Score, and signed R/G values |
-| Ball queue | Right edge | Prototype stages show current plus next two compact shape-coded tokens in one row; legacy stages omit it |
+| Score display | Safe side edge | The shared vertical `ScoreScale` always shows 100–0 in Aim/Map/Shot Follow. Legacy stages add required coverage; prototype stages add the target band, current marker, Paint Score, and signed R/G values |
+| Ball queue | Safe edge | Prototype stages show current plus next two compact shape-coded tokens. Hover, keyboard focus, and press/touch reveal the shared short description; legacy stages omit it |
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
@@ -206,6 +214,10 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   simulation or leak input into aiming.
 - Clear and failure screens expose only actions supported by the current game
   state and make Retry unambiguous.
+- Stage Select keeps its current eight-stage paging truth but replaces the card
+  grid/detail split with the shared `StageRail` over the actual selected
+  `StageRuntimeArtifact` terrain preview. Selection changes update that terrain;
+  the preview remains noninteractive and never invents generic landscape art.
 
 ### Component contracts
 
@@ -232,6 +244,11 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - `ScoreScale` owns the complete 0–100 axis and clamping geometry. Callers may
   supply current value, target range or threshold, and R/G contributions, but
   cannot supply a different visual minimum/maximum or hide the endpoints.
+  Callers select only the shared vertical-live or horizontal-summary preset.
+- `BallQueue` owns token hit targets, hover/focus/pressed state, tooltip
+  placement, accessible names/descriptions, and pointer-safe dismissal. Callers
+  supply authoritative ordered ball data only and do not recreate tooltip copy
+  or token styling.
 - Disabled, hover, pressed, focused, selected, paused, clear, and failed states
   remain visually stable. Do not communicate a state by color alone.
 - All visible presentational structures use shared component scenes. A scene
@@ -327,6 +344,10 @@ A UI change conforms when:
 - the shared 0–100 `ScoreScale`, conditional prototype queue, lower-edge
   controls, edge status, top-right gear, bottom-center Fire, and at most three
   quiet context hints preserve the specified hierarchy;
+- every live `ScoreScale` is vertical with `100` and `0` visible, and every
+  prototype ball token exposes the same description on hover, focus, and press;
+- Stage Select shows the selected stage's real prepared terrain behind the
+  shared `StageRail` and updates it without committing `GameState` before Start;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
   pause action;
