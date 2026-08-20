@@ -29,10 +29,10 @@ func _run_checks() -> void:
 
 	var stage_select := app.get_node("StageSelect") as StageSelectScreen
 	var requested_stage := StageCatalog.get_stage(&"stage_02")
-	stage_select._cards[1].pressed.emit()
+	stage_select._stage_nodes[1].pressed.emit()
 	_assert_true(
 		stage_select.selected_stage_id() == requested_stage.stage_id,
-		"the real Stage Select card must own the new local selection"
+		"the real Stage Select node must own the new local selection"
 	)
 	_assert_true(
 		game_state.selected_stage_id == &"stage_01",
@@ -58,11 +58,18 @@ func _run_checks() -> void:
 		game_state.selected_stage_id == &"stage_01",
 		"background readiness must still leave GameState unchanged before Start"
 	)
+	var preview_artifact := app._runtime_preparer.ready_artifact(requested_stage)
+	_assert_true(
+		preview_artifact != null
+				and app._active_preview_stage_id == requested_stage.stage_id
+				and app._preview_mountain.mesh == preview_artifact.geometry.render_mesh,
+		"the latest ready local selection must publish its real terrain preview atomically"
+	)
 
 	if not stage_select._start_button.disabled:
 		stage_select._start_button.pressed.emit()
 	var gameplay := await _wait_for_active_stage(app, requested_stage.stage_id)
-	_assert_true(gameplay != null, "Start must enter the stage chosen on the card")
+	_assert_true(gameplay != null, "Start must enter the stage chosen on the rail")
 	_assert_true(
 		game_state.selected_stage_id == requested_stage.stage_id,
 		"entering the prepared stage must commit the selected stage"

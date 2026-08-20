@@ -316,7 +316,7 @@ func _capture_stage_transition() -> void:
 		"from_stage_id": "stage_01",
 		"to_stage_id": String(_capture_stage),
 	})
-	stage_select._cards[slot].pressed.emit()
+	stage_select._stage_nodes[slot].pressed.emit()
 	var deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
 	while Time.get_ticks_msec() < deadline:
 		if _app._prepared_gameplay_matches(target_stage) \

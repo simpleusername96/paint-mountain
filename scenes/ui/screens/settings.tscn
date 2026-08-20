@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/settings_screen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/volume_master.png" id="2_master"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/camera_shake.png" id="6_camera"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/reduced_motion.png" id="7_motion"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/trajectory.png" id="8_trajectory"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/contrast_scrim.tscn" id="9_scrim"]
 
 [node name="Settings" type="CanvasLayer"]
 layer = 50
@@ -22,14 +23,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dim" type="ColorRect" parent="SettingsRoot"]
+[node name="Dim" parent="SettingsRoot" instance=ExtResource("9_scrim")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.035, 0.055, 0.08, 0.72)
+theme_type_variation = &"WorldScrim"
 
 [node name="Panel" type="PanelContainer" parent="SettingsRoot"]
 layout_mode = 1
@@ -42,6 +43,7 @@ offset_right = -28.0
 offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_type_variation = &"InterruptionSurface"
 
 [node name="Margin" type="MarginContainer" parent="SettingsRoot/Panel"]
 layout_mode = 2

@@ -30,25 +30,26 @@ func _run_checks() -> void:
 	await process_frame
 
 	_assert_absent(main_menu, [
-		"Root/BrandPanel/Margin/Content/Eyebrow",
-		"Root/BrandPanel/Margin/Content/Subtitle",
+		"Root/BrandBlock/Margin/Content/Eyebrow",
+		"Root/BrandBlock/Margin/Content/Subtitle",
 	])
 	_assert_present(main_menu, [
-		"Root/BrandPanel/Margin/Content/Title",
-		"Root/BrandPanel/Margin/Content/Play",
-		"Root/BrandPanel/Margin/Content/StageSelect",
-		"Root/BrandPanel/Margin/Content/Settings",
-		"Root/BrandPanel/Margin/Content/Quit",
+		"Root/BrandBlock/Margin/Content/Title",
+		"Root/BrandBlock/Margin/Content/Play",
+		"Root/BrandBlock/Margin/Content/StageSelect",
+		"Root/BrandBlock/Margin/Content/Settings",
+		"Root/BrandBlock/Margin/Content/Quit",
 	])
 
-	_assert_absent(stage_select, ["Root/Divider", "Root/PreviewPanel/Margin/Content/PreviewObjective"])
+	_assert_absent(stage_select, ["Root/Divider", "Root/CardsPanel", "Root/PreviewPanel"])
 	_assert_present(stage_select, [
 		"Root/Heading",
-		"Root/CardsPanel/Scroll/Margin/Content/Cards",
-		"Root/PreviewPanel/Margin/Content/PreviewTitle",
-		"Root/PreviewPanel/Margin/Content/PreviewStats",
-		"Root/PreviewPanel/Margin/Content/PreviewBest",
-		"Root/PreviewPanel/Margin/Content/Start",
+		"Root/SelectedInfo/Identity/StageNumber",
+		"Root/SelectedInfo/Identity/StageName",
+		"Root/SelectedInfo/PreviewStats",
+		"Root/SelectedInfo/PreviewBest",
+		"Root/StageRail",
+		"Root/Start",
 	])
 
 	_assert_absent(settings, [

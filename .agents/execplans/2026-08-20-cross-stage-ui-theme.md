@@ -211,13 +211,13 @@ Source owners: `scenes/ui/screens/`, `src/ui/screens/`, `src/app/app_root.gd`,
 `src/app/stage_runtime_artifact.gd`, `src/app/stage_runtime_preparer.gd`,
 `translations/ui.csv`
 
-- [ ] **2.1 Refine Main Menu.**
+- [x] **2.1 Refine Main Menu.**
   - Change: keep the prepared preview world dominant; use one shared primary
     Play/Continue action and quiet Stages/Settings/Exit actions without a card
     stack or duplicate explanatory text.
   - Accept: ready, preparing, load-failed, empty-save, locale-switch, and focus-
     restoration states preserve every current action and one primary action.
-- [ ] **2.2 Recompose Stage Select as real terrain plus `StageRail`.**
+- [x] **2.2 Recompose Stage Select as real terrain plus `StageRail`.**
   - Change: remove the card/detail split. Activate `_preview_world` in
     `_show_stage_select()`, let `_set_menu_preview_if_visible()` serve visible
     Stage Select, and publish only the newest selected ready artifact from
@@ -228,13 +228,13 @@ Source owners: `scenes/ui/screens/`, `src/ui/screens/`, `src/app/app_root.gd`,
     stale, or blank landscape; paging, selected/completed/locked states,
     preparation failure/retry, focus, all-open development behavior, and the
     no-commit-before-Start invariant pass.
-- [ ] **2.3 Refine Pause and Settings.**
+- [x] **2.3 Refine Pause and Settings.**
   - Change: use one shared interruption surface only because input is blocked;
     align shared rows/actions, remove decorative nesting, and preserve caller
     return, passive synchronization, defaults, persistence, and focus restore.
   - Accept: Gear/Escape parity, pause input barrier, Settings round-trip,
     Korean/English fit, disabled states, and keyboard order pass.
-- [ ] **2.4 Close application-screen responsive states.**
+- [x] **2.4 Close application-screen responsive states.**
   - Change: use Containers and bounded scrolling at the current breakpoints;
     suppress only redundant Priority 3 copy.
   - Accept: 1280x720, 1920x1080, and 640x360 stress models show every Priority
@@ -440,13 +440,15 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 2.
-- Next task: 2.1, refine Main Menu with shared action hierarchy.
-- Last completed gate: Phase 1; `phase7_ui_test`, `score_scale_contract_test`,
-  `ball_queue_tooltip_test`, and `shared_ui_component_ownership_test` passed on
-  Godot 4.7.1 on 2026-08-20. The shared HUD now uses the fixed-domain
-  `ScoreScale`, focusable horizontal `BallQueue`, `ValueStepper`, and
-  `ActionControl`; the cropped score and legacy queue owners were retired.
+- Current phase: Phase 3.
+- Next task: 3.1, finish the Cannon Focus gameplay safe-area composition.
+- Last completed gate: Phase 2; `screen_responsive_layout_test`,
+  `stage_select_rule_truth_test`, `localization_ui_test`, and
+  `essential_ui_copy_test` passed on Godot 4.7.1 on 2026-08-20. Phase 7 flow
+  and stage-selection readiness also passed. Stage Select now keeps the real
+  preview world active, presents the selected prepared terrain through the
+  shared eight-node `StageRail`, publishes only the latest matching artifact,
+  and preserves the no-commit-before-Start invariant.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

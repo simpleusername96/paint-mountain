@@ -31,7 +31,7 @@ func _run_checks() -> void:
 	await _assert_main_preview_safe(app, main_menu, &"stage_02")
 	app._set_catalog_load_failed()
 	await process_frame
-	var retry_load := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
+	var retry_load := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as Button
 	_assert_true(
 		not retry_load.disabled and retry_load.text == "다시 불러오기",
 		"a missing catalog must expose an enabled retry action instead of endless loading"
@@ -47,17 +47,21 @@ func _run_checks() -> void:
 		not stage_retry.disabled and stage_retry.text == "다시 불러오기",
 		"a missing catalog on Stage Select must expose an enabled localized retry action"
 	)
-	for card in stage_select._cards:
-		_assert_true(not card.disabled, "unlocked stage cards must be keyboard-selectable")
-	_assert_true(stage_select._page_label.text == "1-8 / 30", "stage select must show the inclusive first-page range")
+	for stage_node in stage_select._stage_nodes:
+		_assert_true(not stage_node.disabled, "all-open stage nodes must be keyboard-selectable")
+	_assert_true(stage_select._page_label.text == "01–08 / 30", "stage select must show the inclusive first-page range")
 	stage_select.set_page_for_capture(1)
-	_assert_true(stage_select._page_label.text == "9-16 / 30", "stage select must show the inclusive second-page range")
+	_assert_true(stage_select._page_label.text == "09–16 / 30", "stage select must show the inclusive second-page range")
 	stage_select.set_page_for_capture(3)
-	_assert_true(stage_select._page_label.text == "25-30 / 30", "stage select must show the inclusive final-page range")
-	_assert_true(stage_select._next_page.disabled and not stage_select._previous_page.disabled, "page edge controls must disable only the unavailable direction")
+	_assert_true(stage_select._page_label.text == "25–30 / 30", "stage select must show the inclusive final-page range")
+	_assert_true(
+		(stage_select._stage_rail.get_node("Next") as Button).disabled
+				and not (stage_select._stage_rail.get_node("Previous") as Button).disabled,
+		"page edge controls must disable only the unavailable direction"
+	)
 	stage_select.set_page_for_capture(0)
-	stage_select._cards[1].pressed.emit()
-	_assert_true(stage_select.selected_stage_id() == &"stage_02" and stage_select._cards[1].button_pressed, "stage selection must expose a visible selected state")
+	stage_select._stage_nodes[1].pressed.emit()
+	_assert_true(stage_select.selected_stage_id() == &"stage_02" and stage_select._stage_nodes[1].button_pressed, "stage selection must expose a visible selected state")
 
 	app._show_settings(&"stage_select")
 	await process_frame
@@ -105,7 +109,7 @@ func _run_checks() -> void:
 	_assert_true(controller.toggle_pause(), "pause must be reachable from gameplay")
 	var pause_overlay := hud_root.get_node("PauseOverlay") as Control
 	_assert_true(pause_overlay.visible, "pause overlay must expose its own screen")
-	_assert_true(pause_overlay.get_node_or_null("Center/Panel/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
+	_assert_true(pause_overlay.get_node_or_null("Center/Surface/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
 	app._on_gameplay_navigation(&"settings")
 	await process_frame
 	_assert_true(settings.visible, "paused gameplay must be able to open full settings")
@@ -119,7 +123,7 @@ func _run_checks() -> void:
 	await process_frame
 	_assert_true(pause_overlay.visible, "closing Settings must restore the Pause presentation")
 	_assert_true(controller.current_state == StageController.State.PAUSED and paused, "closing Settings must not resume the stage or tree")
-	_assert_true(pause_overlay.get_node("Center/Panel/Margin/Column/Settings").has_focus(), "Settings close must restore focus to Pause Settings")
+	_assert_true(pause_overlay.get_node("Center/Surface/Margin/Column/Settings").has_focus(), "Settings close must restore focus to Pause Settings")
 	var shots_before_blocked_fire := controller.shots_remaining
 	_assert_true(not controller.request_fire() and controller.shots_remaining == shots_before_blocked_fire, "the paused child-modal flow must keep gameplay input blocked")
 	controller.toggle_pause()
@@ -192,7 +196,7 @@ func _assert_main_preview_safe(
 	)
 	var preview_boundary := 1280.0 * AppRoot.PREVIEW_SAFE_RECT.position.x
 	for action_name in ["Play", "StageSelect", "Settings", "Quit"]:
-		var action := main_menu.get_node("Root/BrandPanel/Margin/Content/%s" % action_name) as Button
+		var action := main_menu.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as Button
 		_assert_true(
 			action.get_global_rect().end.x <= preview_boundary,
 			"Main Menu action column must not overlap the preview safe region"
@@ -200,9 +204,9 @@ func _assert_main_preview_safe(
 
 
 func _assert_main_menu_focus_startup(main_menu: MainMenuScreen) -> void:
-	var play := main_menu.get_node("Root/BrandPanel/Margin/Content/Play") as Button
-	var stage_select := main_menu.get_node("Root/BrandPanel/Margin/Content/StageSelect") as Button
-	var settings := main_menu.get_node("Root/BrandPanel/Margin/Content/Settings") as Button
+	var play := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as Button
+	var stage_select := main_menu.get_node("Root/BrandBlock/Margin/Content/StageSelect") as Button
+	var settings := main_menu.get_node("Root/BrandBlock/Margin/Content/Settings") as Button
 	_assert_true(
 		not play.has_focus() and not stage_select.has_focus() and not settings.has_focus(),
 		"passive Main Menu launch must not show a keyboard focus ring"
@@ -255,7 +259,7 @@ func _assert_theme_contract() -> void:
 	_assert_true(focus.border_width_left == 2 and focus.border_color.is_equal_approx(Color("70aaff")), "keyboard focus must use the 2px focus token")
 	_assert_true(debug_panel != null and debug_panel.corner_radius_top_left == 10, "debug panel style must remain theme-owned")
 	_assert_true(not theme.is_type_variation(&"HudKeycapPanel", &"PanelContainer"), "obsolete outlined shortcut keycaps must be absent")
-	_assert_true(theme.is_type_variation(&"StageCardButton", &"Button"), "stage selection must use a semantic card role")
+	_assert_true(theme.is_type_variation(&"StageRailButton", &"Button"), "stage selection must use the shared rail-node role")
 	_assert_true(theme.is_type_variation(&"SettingsSwitchRow", &"CheckButton"), "settings switches must use the shared unboxed row role")
 	_assert_true(
 		theme.get_icon(&"checked", &"SettingsSwitchRow") != null \
@@ -270,7 +274,7 @@ func _assert_theme_contract() -> void:
 	)
 	for variation in [
 		&"HudCaption", &"HudBody", &"HudSection", &"HudValue", &"HudMetric", &"HudLegend", &"ScreenTitle",
-		&"StageCardNumber", &"StageCardName", &"StageCardFacts", &"StagePreviewFacts", &"StagePreviewBest",
+		&"WorldStageNumber", &"WorldTitle", &"WorldBody", &"WorldCaption",
 		&"SettingsLabel", &"SettingsValue", &"ResultTitle", &"ResultCoverage", &"ResultTarget",
 		&"ResultGrade", &"ResultFact", &"ResultMetadata",
 	]:

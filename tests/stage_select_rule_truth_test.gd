@@ -22,26 +22,27 @@ func _run() -> void:
 	root.add_child(stage_select)
 	await process_frame
 
-	var preview_stats := stage_select.get_node("Root/PreviewPanel/Margin/Content/PreviewStats") as Label
-	var first_card := stage_select.get_node(
-		"Root/CardsPanel/Scroll/Margin/Content/Cards/StageCardButton"
-	) as StageCardButton
-	_assert(first_card.get_node("Margin/Content/Header/RuleBadge").visible,
-		"prototype cards must carry a visible rule badge")
-	_assert(tr("stage.target_band") in preview_stats.text,
-		"prototype preview must name the target-band rule")
-	_assert(tr("stage.allowed_balls") in preview_stats.text,
-		"prototype preview must list allowed kinds")
-	_assert("Impact Burst" not in preview_stats.text,
-		"stage 1 must not expose a kind that its profile does not allow")
+	var preview_stats := stage_select.get_node("Root/SelectedInfo/PreviewStats") as Label
+	var first_node := stage_select._stage_nodes[0]
+	_assert(first_node.button_pressed,
+		"the selected prototype stage must have one visible active rail node")
+	_assert("◎" in preview_stats.text and "7–11" in preview_stats.text,
+		"prototype preview must show its target-band range")
+	_assert(tr("ball.standard") in preview_stats.text,
+		"prototype preview must list allowed kinds: %s" % preview_stats.text)
+	_assert(
+		(tr("ball.impact_burst") in preview_stats.text) \
+				== (BallKind.Value.IMPACT_BURST in StageCatalog.get_stage(&"stage_01").ball_deal_profile.allowed_kinds),
+		"prototype preview must match the current allowed-kind profile: %s" % preview_stats.text
+	)
 
 	stage_select.set_page_for_capture(1)
 	await process_frame
-	_assert(not first_card.get_node("Margin/Content/Header/RuleBadge").visible,
-		"legacy cards must not carry the prototype badge")
-	_assert(tr("stage.target") in preview_stats.text and tr("stage.mechanisms") in preview_stats.text,
-		"legacy preview must retain scalar target and glyph mechanism facts")
-	_assert(tr("stage.target_band") not in preview_stats.text,
+	_assert(stage_select._stage_nodes[0].button_pressed,
+		"the selected coverage stage must have one visible active rail node")
+	_assert("%" in preview_stats.text and "◆" in preview_stats.text,
+		"coverage preview must retain scalar target and glyph mechanism facts")
+	_assert("7–11" not in preview_stats.text,
 		"legacy preview must not claim target-band scoring")
 
 	var hud := HUD_SCENE.instantiate() as HUDController

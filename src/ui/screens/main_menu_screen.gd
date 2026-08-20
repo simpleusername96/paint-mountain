@@ -23,7 +23,33 @@ func _ready() -> void:
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null:
 		game_state.settings_changed.connect(_on_settings_changed)
+	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_play_preparation_state()
+	_apply_responsive_layout.call_deferred()
+
+
+func _apply_responsive_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var window_size := viewport_size if get_viewport() is SubViewport \
+			else Vector2(DisplayServer.window_get_size())
+	var compact := window_size.x < 900.0 or window_size.y < 520.0
+	var block := %BrandBlock as Control
+	var content := %Content as VBoxContainer
+	var title := %Title as Label
+	var spacer := %ActionSpacer as Control
+	block.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	if compact:
+		block.position = Vector2(24.0, 12.0)
+		block.size = Vector2(minf(380.0, viewport_size.x - 48.0), viewport_size.y - 24.0)
+		content.add_theme_constant_override(&"separation", 8)
+		title.theme_type_variation = &"MenuTitleCompact"
+		spacer.custom_minimum_size.y = 8.0
+	else:
+		block.position = Vector2(56.0, maxf(24.0, (viewport_size.y - 528.0) * 0.5))
+		block.size = Vector2(414.0, minf(528.0, viewport_size.y - block.position.y - 24.0))
+		content.add_theme_constant_override(&"separation", 16)
+		title.theme_type_variation = &"MenuTitle"
+		spacer.custom_minimum_size.y = 48.0
 
 
 func set_play_preparation_state(ready: bool, failed: bool = false) -> void:
@@ -66,16 +92,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _apply_play_preparation_state(play_became_ready: bool = false) -> void:
-	%Play.disabled = not _play_ready and not _play_failed
+	var play := %Play as ActionControl
 	if _play_failed:
-		%Play.text = tr("ui.retry_stage_load")
-		%Play.tooltip_text = tr("ui.stage_load_failed")
+		play.configure("ui.retry_stage_load")
 	elif not _play_ready:
-		%Play.text = tr("ui.loading_stage")
-		%Play.tooltip_text = ""
+		play.configure("ui.loading_stage")
 	else:
-		%Play.text = tr("ui.play")
-		%Play.tooltip_text = ""
+		play.configure("ui.play")
+	play.set_readiness(_play_ready or _play_failed,
+			tr("ui.stage_load_failed") if _play_failed else "")
 	if play_became_ready and _loading_fallback_owns_focus and %StageSelect.has_focus():
 		# Only replace the loading fallback. Any later player focus movement wins.
 		_loading_fallback_owns_focus = false

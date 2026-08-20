@@ -10,6 +10,7 @@ const STAGE_LAYOUT_REPOSITORY_SCRIPT := preload("res://src/app/stage_layout_repo
 const STAGE_RUNTIME_PREPARER_SCRIPT := preload("res://src/app/stage_runtime_preparer.gd")
 const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
 const PREVIEW_SAFE_RECT := Rect2(0.30, 0.08, 0.68, 0.86)
+const STAGE_SELECT_PREVIEW_SAFE_RECT := Rect2(0.05, 0.06, 0.90, 0.68)
 const PREVIEW_FRAME_MARGIN := 1.02
 
 var _preview_world: Node3D
@@ -93,11 +94,13 @@ func _show_stage_select() -> void:
 	_pending_start_stage_id = &""
 	if _gameplay_presented:
 		_remove_gameplay()
-	_set_preview_world_active(false)
+	_set_preview_world_active(true)
 	_main_menu.visible = false
 	_stage_select.visible = true
 	_stage_select.refresh()
-	_request_user_stage(StageCatalog.get_stage(_stage_select.selected_stage_id()))
+	var selected_stage := StageCatalog.get_stage(_stage_select.selected_stage_id())
+	_set_menu_preview_if_visible(selected_stage)
+	_request_user_stage(selected_stage)
 	_stage_select.focus_primary.call_deferred()
 
 
@@ -148,6 +151,7 @@ func _on_stage_selection_changed(stage: StageData) -> void:
 		return
 	if not _pending_start_stage_id.is_empty() and _pending_start_stage_id != stage.stage_id:
 		_pending_start_stage_id = &""
+	_set_menu_preview_if_visible(stage)
 	_request_user_stage(stage)
 
 
@@ -303,15 +307,12 @@ func _on_artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact) ->
 	if stage == null or artifact == null or not artifact.matches_stage(stage):
 		_on_artifact_failed(stage_id)
 		return
-	var game_state := get_node_or_null("/root/GameState")
 	RuntimeDeliveryTelemetry.emit_marker(&"artifact_ready", {
 		"stage_id": String(stage_id),
 		"layout_checksum": artifact.layout_checksum,
 		"artifact_cache_entries": _runtime_preparer.cached_artifact_count(),
 	})
-	if game_state != null and game_state.selected_stage_id == stage_id \
-			and _preview_world.visible:
-		_set_menu_preview_if_visible.call_deferred(stage)
+	_set_menu_preview_if_visible.call_deferred(stage)
 	if _requested_user_stage_id == stage_id:
 		_prepare_hidden_gameplay(stage, artifact)
 
@@ -348,7 +349,14 @@ func _request_menu_preview() -> void:
 
 
 func _set_menu_preview_if_visible(stage: StageData) -> void:
-	if _preview_world.visible and _main_menu.visible:
+	if stage == null or not _preview_world.visible:
+		return
+	var game_state := get_node_or_null("/root/GameState") as GameState
+	var main_matches := _main_menu.visible and game_state != null \
+			and game_state.selected_stage_id == stage.stage_id
+	var stage_select_matches := _stage_select.visible \
+			and _stage_select.selected_stage_id() == stage.stage_id
+	if main_matches or stage_select_matches:
 		_set_preview_stage(stage)
 
 
@@ -456,6 +464,7 @@ func _set_preview_stage(stage: StageData) -> void:
 		return
 	if _active_preview_stage_id == stage.stage_id \
 			and _preview_mountain.mesh == artifact.geometry.render_mesh:
+		_fit_preview_camera(artifact.presentation_local_points)
 		return
 	_clear_preview_presentation()
 	_preview_mountain.position = stage.terrain_center
@@ -503,6 +512,8 @@ func _fit_preview_camera(local_points: PackedVector3Array) -> void:
 	var aspect_ratio := viewport_size.x / viewport_size.y if viewport_size.y > 0.0 else 16.0 / 9.0
 	var authored_position := Vector3(94.0, 58.0, 20.0)
 	var authored_focus := Vector3(0.0, 24.0, -112.0)
+	var safe_rect := STAGE_SELECT_PREVIEW_SAFE_RECT if _stage_select != null \
+			and _stage_select.visible else PREVIEW_SAFE_RECT
 	var framed := TerrainCameraFramer.framed_pose_in_normalized_rect(
 		points,
 		world_bounds.get_center(),
@@ -510,7 +521,7 @@ func _fit_preview_camera(local_points: PackedVector3Array) -> void:
 		authored_focus,
 		_preview_camera.fov,
 		aspect_ratio,
-		PREVIEW_SAFE_RECT,
+		safe_rect,
 		PREVIEW_FRAME_MARGIN
 	)
 	if framed.is_empty():

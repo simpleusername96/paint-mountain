@@ -64,10 +64,10 @@ func _run() -> void:
 	stage_select.visible = true
 	stage_select.refresh()
 	await process_frame
-	_assert_true(not stage_select._cards.is_empty(), "stage select must build its card controls")
+	_assert_true(not stage_select._stage_nodes.is_empty(), "stage select must build its shared rail nodes")
 	_assert_score_scale_icon_contract(score_scale, "ko")
-	if not stage_select._cards.is_empty():
-		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "stage cards must render in Korean")
+	if not stage_select._stage_nodes.is_empty():
+		_assert_true(stage_select._stage_name.text == "첫 번째 하강", "selected terrain identity must render in Korean")
 
 	game_state.update_setting(&"language", "en", false)
 	await process_frame
@@ -75,8 +75,8 @@ func _run() -> void:
 	_assert_true(tr("ui.play") == "PLAY", "English translations must be available")
 	_assert_translation_contract("en")
 	_assert_score_scale_icon_contract(score_scale, "en")
-	if not stage_select._cards.is_empty():
-		_assert_true("FIRST DESCENT" in stage_select._cards[0].text, "dynamic stage cards must update immediately after a locale switch")
+	if not stage_select._stage_nodes.is_empty():
+		_assert_true(stage_select._stage_name.text == "FIRST DESCENT", "dynamic terrain identity must update immediately after a locale switch")
 	var language_option: OptionButton = settings._controls.get(&"language")
 	_assert_true(language_option.get_item_text(0) == "KOREAN" and language_option.get_item_text(1) == "ENGLISH", "language option labels must update immediately")
 	var quality_option: OptionButton = settings._controls.get(&"quality")
@@ -135,8 +135,8 @@ func _run() -> void:
 	game_state.update_setting(&"language", "ko", false)
 	await process_frame
 	aim_controls.refresh_locale()
-	if not stage_select._cards.is_empty():
-		_assert_true("첫 번째 하강" in stage_select._cards[0].text, "switching back to Korean must refresh dynamic UI")
+	if not stage_select._stage_nodes.is_empty():
+		_assert_true(stage_select._stage_name.text == "첫 번째 하강", "switching back to Korean must refresh the selected terrain identity")
 	_assert_true(quality_option.get_item_text(1) == "보통", "Korean quality display must refresh immediately")
 	game_state.update_setting(&"resolution", "1600x900", false)
 	game_state.update_setting(&"fullscreen", true, false)

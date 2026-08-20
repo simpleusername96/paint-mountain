@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/main_menu_screen.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="2_action"]
 
 [node name="MainMenu" type="CanvasLayer"]
 layer = 20
@@ -24,14 +25,15 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
-[node name="BrandPanel" type="Control" parent="Root"]
+[node name="BrandBlock" type="Control" parent="Root"]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 56.0
 offset_top = 176.0
 offset_right = 470.0
 offset_bottom = 620.0
 
-[node name="Margin" type="MarginContainer" parent="Root/BrandPanel"]
+[node name="Margin" type="MarginContainer" parent="Root/BrandBlock"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -43,29 +45,31 @@ theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 
-[node name="Content" type="VBoxContainer" parent="Root/BrandPanel/Margin"]
+[node name="Content" type="VBoxContainer" parent="Root/BrandBlock/Margin"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Root/BrandPanel/Margin/Content"]
+[node name="Title" type="Label" parent="Root/BrandBlock/Margin/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"MenuTitle"
 text = "app.title"
 autowrap_mode = 2
 
-[node name="ActionSpacer" type="Control" parent="Root/BrandPanel/Margin/Content"]
+[node name="ActionSpacer" type="Control" parent="Root/BrandBlock/Margin/Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 
-[node name="Play" type="Button" parent="Root/BrandPanel/Margin/Content"]
+[node name="Play" parent="Root/BrandBlock/Margin/Content" instance=ExtResource("2_action")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 56)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_type_variation = &"PrimaryButton"
 text = "ui.play"
 
-[node name="StageSelect" type="Button" parent="Root/BrandPanel/Margin/Content"]
+[node name="StageSelect" type="Button" parent="Root/BrandBlock/Margin/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
@@ -73,7 +77,7 @@ size_flags_horizontal = 0
 theme_type_variation = &"QuietButton"
 text = "ui.stage_select"
 
-[node name="Settings" type="Button" parent="Root/BrandPanel/Margin/Content"]
+[node name="Settings" type="Button" parent="Root/BrandBlock/Margin/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
@@ -81,7 +85,7 @@ size_flags_horizontal = 0
 theme_type_variation = &"QuietButton"
 text = "ui.settings"
 
-[node name="Quit" type="Button" parent="Root/BrandPanel/Margin/Content"]
+[node name="Quit" type="Button" parent="Root/BrandBlock/Margin/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
