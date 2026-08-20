@@ -1,34 +1,36 @@
-Paint Mountain UI refinement — built-in ImageGen prompt set
+Paint Mountain UI refinement — ImageGen prompt set, revision 02
 Date: 2026-08-20
-Mode: edit the supplied latest running-game screenshot; preserve the world render and redesign only the UI.
+Mode: edit the matching latest running-game screenshot; preserve the world render and replace only the UI.
 
 Shared direction
-- Create a faithful 16:9 desktop game UI concept for the existing Paint Mountain screenshot.
-- Preserve the mountain, cannon, camera, lighting, paint marks, and game identity.
-- Refine the approved Quiet Context system into a “Quiet Alpine Instrument”: warm white surfaces, mountain navy #172538, action blue #2584FF, restrained gray rails, Pretendard-like Korean type.
-- Keep the world primary. Use thin edge rails and one compact action area; avoid a dashboard/card mosaic.
-- Use Korean-first labels, one blue primary action, high contrast, 24 px safe margins, and modern compact spacing.
-- Do not add characters, new scenery, branded logos, mobile chrome, or decorative game mechanics.
+- Compact Overlay: extremely clear, calm, icon-first, and world-first.
+- No panels, cards, boxes, sheets, glass, top bars, full-width bottom strips, paragraphs, or decorative section containers.
+- One soft shared edge contrast gradient is allowed where direct text/icons need contrast.
+- Use one shared visual system: 20/24 px flat vector-like icons, consistent stroke/type/spacing, direct metrics, circular shape-coded ball tokens, value steppers, and actions.
+- Show only one filled blue primary action. Red and green are paint semantics and must be paired with different shapes.
+- Every score visualization shows the complete fixed 0–100 axis, both endpoints, and labels 0, 25, 50, 75, 100. Target band/threshold and current marker stay inside that domain.
+- Preserve mountain, cannon, camera, lighting, terrain, paint, sky, and game identity. Add no world objects or fake mechanics.
+- Generated copy, values, icon drawings, and world pixels are composition references only.
 
 01 — Aiming
-- Replace scattered panels with a slim top status bar, a left vertical score/target-band instrument, a right next-ball queue rail, and a compact dark bottom dock for angle, power, and Fire.
-- Reduce the full-width tutorial strip to one restrained hint line.
-- Keep the central mountain and expected landing area unobstructed.
+- Direct StageIdentity at upper-left; three compact MetricReadouts at upper-right.
+- Complete horizontal ScoreScale near a safe upper edge; compact BallQueue at the right edge.
+- Two identical lower-center ValueSteppers for angle/power and one blue Fire ActionControl.
+- At most three tiny ContextHints. Keep the mountain center unobstructed.
 
 02 — Stage select
-- Replace the card mosaic with a calm two-column surface: searchable/scannable stage rows on the left and selected-stage details on the right.
-- Show clear selected, completed, locked, and available states without using color alone.
-- Use a single blue Start action and restrained Back action.
+- Full-bleed existing mountain preview is the selected-stage detail.
+- Eight shared StageRail nodes in one safe-edge row, with selected/completed/locked shapes and page chevrons.
+- Direct stage number, target icon/value, ball tokens, one blue Start action, and one quiet Back action.
+- No list/detail split and no stage cards.
 
 03 — Briefing
-- Keep the visible mountain and cannon as the main context.
-- Replace oversized center cards with a narrow dark target/score instrument on the left and a compact R/R/G next-ball sequence on the right.
-- Put Back and Start low on the left and keep only one short help line at the bottom.
+- Direct StageIdentity, target icon/value, complete ScoreScale, and shared BallQueue.
+- At most two ContextHints and direct Back/Start actions.
+- No objective/rule text panel; the complete mountain remains the briefing.
 
 04 — Result
-- Keep the painted mountain visible.
-- Replace the tall result card with a narrower right-side result sheet showing the outcome, total score, target-band vs actual-position visualization, and compact explanation.
-- Make Next Stage the only blue primary action; Retry and Stage Select are secondary.
-
-Note
-These generated images are composition targets, not runtime evidence. Small generated labels, values, and icons are non-authoritative; implementation must use current project data, localization, and assets.
+- The painted mountain is the result hero.
+- Direct large score/verdict, complete ScoreScale, two compact R/G contribution metrics, and at most three actions.
+- One blue Next action; Retry and Stage Select are quiet shared actions.
+- No result card, strategy copy, or score explanation.

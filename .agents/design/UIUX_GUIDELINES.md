@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-20
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -24,6 +24,7 @@ related:
   - ../execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../docs/reports/screen-audit-2026-08-10/index.html
+  - ../../docs/reports/ui-refinement-2026-08-20/index.html
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -65,15 +66,14 @@ keycap treatment of the 2026-08-08 casual shared refresh while preserving its
 real navigation, tactile primary actions, and Korean-first interaction
 contracts.
 
-- Put status and labels directly at the screen edges when containment is not
-  required. Use spacing, alignment, typography, and surface fill to group
-  content before adding any boundary.
+- Put status and labels directly at the screen edges. Use spacing, alignment,
+  typography, and a shared contrast scrim before adding any boundary.
 - Reserve a filled blue surface for the current primary action. Routine and
   secondary actions use quiet neutral or text-led treatment; disabled state
   remains explicit.
-- Use one sentence-like context legend along the safe lower edge of interactive
-  gameplay states. Each input cue stays inline with its short action label; do
-  not scatter detached dark keycap tiles around controls.
+- Show at most three current-context hints along the safe lower edge. Each hint
+  is one shared icon plus a short action label; do not use a full-width legend,
+  detached keycap tile, or explanatory sentence.
 - Menus and interrupted states may use one containment surface when it clarifies
   focus or input blocking. Do not nest bordered cards inside that surface.
 - Aim View exposes angle and power only. The target-derived horizontal yaw is
@@ -89,6 +89,41 @@ contracts.
   refine copy density, boundary use, and composition without replacing the
   Quiet Context color, typography, action, or focus system.
 
+### Compact shared component correction
+
+The user's 2026-08-20 correction and
+`../../docs/reports/ui-refinement-2026-08-20/index.html` refine Quiet Context
+into a compact direct-overlay system. They supersede the report's earlier
+card, rail-surface, sheet, and cropped target-range concepts. Generated TO-BE
+pixels are composition targets, not runtime or copy authority.
+
+- Every visible UI element is either a shared component or a structural Godot
+  `Container`. Screens supply data, order, anchors, and visibility only. They do
+  not copy fonts, colors, icons, borders, radii, StyleBoxes, or interaction
+  states.
+- Live gameplay, Briefing, Stage Select, and Result use direct overlays rather
+  than decorative `PanelContainer`, card, sheet, or section surfaces. A shared
+  `ContrastScrim` may improve edge contrast without drawing a boundary. Pause,
+  Settings, and blocking failure states may use one shared interruption surface
+  only when containment communicates input blocking.
+- Prefer shared 20 px or 24 px vector icons to words. Keep visible text to a
+  value, a short unit, a stage identity, a terminal reason, or a one- or
+  two-word action. Rare, destructive, ambiguous, and accessibility-critical
+  actions retain a concise label.
+- `ScoreScale` always renders the complete numeric domain from `0` through
+  `100`, including visible `0`, `25`, `50`, `75`, and `100` labels. Target or
+  required coverage is a segment or marker inside that fixed domain; it never
+  changes the domain. Both endpoints, tick labels, current marker, and target
+  segment must remain inside the component bounds at every supported size.
+- The shared visual inventory is `MetricReadout`, `ScoreScale`, `BallQueue`,
+  `ValueStepper`, `ActionControl`, `StageIdentity`, `StageRail`,
+  `ContextHints`, `ResultSummary`, and `ContrastScrim`. Reuse or enhance the
+  existing owner before adding another component with the same responsibility.
+- Filled blue belongs to the single primary action and current/selected state.
+  Red and green belong to paint semantics. Every paint, completion, lock,
+  disabled, selected, and focus state also has a shape, icon, stroke, or label
+  cue so color is never the sole signal.
+
 ### Aiming HUD hierarchy
 
 The approved Quiet Context system replaces
@@ -102,11 +137,11 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 
 | Element | Placement | Contract |
 | --- | --- | --- |
-| Stage card | Upper-left | Primary stage identity |
+| Stage identity | Upper-left | Shared mountain icon plus compact stage number/name, without a card surface |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident-ball activity stays internal; Gear remains the menu action |
-| Score display | Left edge | Legacy stages show the vertical coverage gauge; prototype stages show the fixed target band, current marker, Paint Score, and signed R/G values |
-| Ball queue | Right edge | Prototype stages show current plus next two tokens with shape and R/G letter; legacy stages omit it |
+| Score display | Safe upper/side edge | The shared horizontal `ScoreScale` always shows 0–100. Legacy stages add required coverage; prototype stages add the target band, current marker, Paint Score, and signed R/G values |
+| Ball queue | Right edge | Prototype stages show current plus next two compact shape-coded tokens in one row; legacy stages omit it |
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
@@ -194,22 +229,24 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Icons supplement meaning. Rare, destructive, or menu actions retain visible
   Korean labels; icon-only controls require an accessible name and clear focus
   treatment.
+- `ScoreScale` owns the complete 0–100 axis and clamping geometry. Callers may
+  supply current value, target range or threshold, and R/G contributions, but
+  cannot supply a different visual minimum/maximum or hide the endpoints.
 - Disabled, hover, pressed, focused, selected, paused, clear, and failed states
   remain visually stable. Do not communicate a state by color alone.
-- Repeated presentational structures use shared component scenes. A scene that
-  composes a component may set its supplied text, value, visibility, and layout;
-  it must not copy the component's font, color, radius, border, or interaction
-  state styling.
+- All visible presentational structures use shared component scenes. A scene
+  that composes a component may set supplied text, value, visibility, order,
+  and layout; it must not copy the component's font, color, icon, radius,
+  border, StyleBox, or interaction state styling.
 - `HUDController` owns whole-HUD state presentation and signal coordination.
   Child component scripts own only their displayed structure and narrow intent;
   no component reads a gameplay singleton to reconstruct authoritative state.
 - Components must have one internally consistent minimum size. A parent may not
   assign a smaller rectangle than a child's minimum content geometry. Use at
-  least 12 px internal padding for compact controls, 16 px for cards, and 24 px
-  for primary menu surfaces unless direct rendered evidence requires more.
-- Prefer one visible containment surface per functional group. Avoid nested
-  outlines, card-in-card framing, and labels whose proximity makes ownership
-  ambiguous.
+  least 12 px internal padding for compact controls and 24 px for the rare
+  shared interruption surface unless direct rendered evidence requires more.
+- Prefer direct overlays and whitespace. Do not add a visible containment
+  surface to group metrics, queues, steppers, stage nodes, or result values.
 
 ### Layout and tokens
 
@@ -219,31 +256,28 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 - Current UI roles are warm surface `#FFFDFC`, navy text/dark surface `#172538`,
   primary blue `#2584FF`, muted progress rail `#C9CDD2`, and danger `#D94C4C`.
   The approved Kenney UI Pack 2.0 subset may supply nine-slice edge and depth
-  treatment for shared button and stage-card roles; the Theme remains the owner.
-- Panels use restrained 14-18 px radii according to prominence; primary actions
-  may use the imported tactile depth edge. Do not mix decorative surface styles
-  within one screen.
-  Do not add nested bordered/background containers beyond two visible levels
-  without a clear containment reason.
+  treatment for shared button and selected stage-node roles; the Theme remains
+  the owner.
+- The shared interruption surface uses one restrained 14-18 px radius. Primary
+  actions may use the imported tactile depth edge. Gameplay and navigation
+  components do not create decorative surface levels or nested backgrounds.
 - Pretendard Variable weight and size roles are Theme-owned semantic type
   variations: `HudCaption` is 14 px/500, `HudBody` 16 px/500, `HudSection`
   18 px/600, `HudValue` 22 px/600, `HudMetric` 28 px/600,
   `PrimaryButton` 20 px/600, and `ScreenTitle` 32 px/700 at the logical
   baseline. Default body copy remains at least 16 px. Scale hierarchy
   intentionally rather than shrinking text to fit.
-- Theme variations own reusable font, weight, size, color, panel, button,
+- Theme variations own reusable font, weight, size, color, interruption surface, button,
   separator, icon-state, and focus decisions. Scene-level overrides are for
   layout-only margins, gaps, anchors, and exceptional geometry; do not repeat
   palette or type roles in each HUD scene.
 - Interactive controls are at least 40 px high; primary, mobile-equivalent, or
   high-importance targets prefer 44-48 px or larger.
-- Input-token styling is Theme-owned and quiet. The shared lower-edge context
-  legend uses inline text and the existing mouse-wheel asset; it groups S/W with
-  angle, the wheel with power, Space with Fire, Tab with Aim/Map or Shot Follow
-  return, F with Finish, and Esc with menu/Continue without owning input. Fire,
-  Finish, and Aim/Map controls show semantic action labels only and do not
-  repeat those key names. Terrain-target yaw shows no A/D token. Do not use
-  detached or outlined keycap tiles in the normal gameplay legend.
+- Context-hint styling is Theme-owned and quiet. The shared component shows no
+  more than three icon/short-label pairs for the current state and may use the
+  existing mouse-wheel asset. Fire, Finish, and Aim/Map controls show semantic
+  action labels only and do not repeat key names. Terrain-target yaw shows no
+  A/D token. Do not use a full-width legend or detached/outlined keycap tiles.
 - Aim steppers keep decrement, current value, and increment in one row and
   disable the matching direct-control button at its numeric boundary.
 - Keyboard focus uses the shared visible 2 px accent treatment.
@@ -265,15 +299,15 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
   dedicated UI guide. Preserve useful stage-objective and mechanism-description
   translation content for those owners, accessibility, and diagnostics; do not
   render it as normal-screen filler.
-- Briefing shows compact stage number/name and inspection mode, the complete
-  terrain, Back/Start actions, and the lower-edge context guide. Prototype
-  stages may add one compact first-introduction rule panel and the queue rail;
-  legacy stages retain unlabelled surface glyphs and no objective paragraph or
-  floating mechanism name.
-- Legacy results show the terminal title, coverage, target, grade, best, time,
-  shots, and supported actions. Prototype results instead show Clear/Failed,
-  Paint Score, target band, R/G breakdown, grade, time, shots, and Same Deal/New
-  Deal; no result screen explains the calculation in body copy.
+- Briefing shows compact stage identity, the complete terrain, Back/Start
+  actions, `ScoreScale`, and at most two context hints. Prototype stages add the
+  shared `BallQueue`; legacy stages retain unlabelled surface glyphs. Neither
+  family adds an objective paragraph, rule panel, or floating mechanism name.
+- Legacy results directly overlay the terminal title, coverage, target, grade,
+  best, time, shots, and supported actions. Prototype results instead directly
+  show Clear/Failed, Paint Score, the shared 0–100 `ScoreScale`, R/G breakdown,
+  grade, time, shots, and Same Deal/New Deal. The painted mountain remains the
+  result hero; no result card or body explanation is used.
 - Check every visible Korean label for clipping, overlap, awkward forced wrap,
   and insufficient button width. Do not solve text fit by making essential text
   unreadably small.
@@ -290,21 +324,24 @@ A UI change conforms when:
 - Shot Follow keeps the new root paintball and first terrain impact readable,
   while the visible return action and Tab restore Aim View without implying
   in-flight steering;
-- the conditional left coverage/target-band component, prototype queue,
-  lower-edge controls, edge status, top-right gear, bottom-center Fire, and one
-  quiet bottom context legend preserve the specified hierarchy;
+- the shared 0–100 `ScoreScale`, conditional prototype queue, lower-edge
+  controls, edge status, top-right gear, bottom-center Fire, and at most three
+  quiet context hints preserve the specified hierarchy;
 - aiming contains no Restart or duplicate Fire action;
 - gameplay contains no ambiguous camera presets, time-scaling strip, or duplicate
   pause action;
 - Korean and English labels fit without clipping at supported desktop sizes;
 - all reachable controls expose stable enabled, disabled, hover, pressed, and
   keyboard-focus states;
-- no panel overlaps another, escapes its container, hides fixed content, or
-  blocks the world-space impact point; and
+- no decorative panel/card/sheet is present in gameplay, Briefing, Stage
+  Select, or Result, and the shared contrast scrim never blocks input; and
 - no reachable screen contains detached shortcut tiles, decorative full-width
   hairlines, repeated unselected-card outlines, avoidable nested card framing,
   duplicated shortcut labels, or a visible yaw readout; and
-- every visible action is connected to real functionality.
+- every visible action is connected to real functionality; and
+- every visible UI element resolves a shared component/Theme role, every score
+  scale keeps `0` and `100` fully visible, and no screen-local StyleBox, icon,
+  font, or palette copy competes with the shared system.
 
 Every substantial UI or visual-composition change requires direct inspection of
 the actual running-game render before handoff. Headless contracts and scene

@@ -2,7 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-20
 topic: Paint Mountain visual references and anti-references
 scope: provenance, authority, and permitted interpretation of project visual evidence
 source: ../../docs/handoffs/gameplay-visual-reset-2026-08-03/source-map.md
@@ -11,7 +11,9 @@ related:
   - ART_DIRECTION.md
   - UIUX_GUIDELINES.md
   - ../execplans/2026-08-10-essential-ui-fidelity.md
+  - ../execplans/2026-08-20-cross-stage-ui-theme.md
   - ../../docs/reports/screen-audit-2026-08-10/index.html
+  - ../../docs/reports/ui-refinement-2026-08-20/index.html
 ---
 
 # Paint Mountain Visual References
@@ -171,6 +173,53 @@ concepts, or asset previews from silently becoming product requirements.
   or screen composition conflicts. Running-build captures remain required
   implementation and acceptance evidence.
 
+### Current Compact Overlay correction
+
+- Report: [2026-08-20 Compact Overlay refinement](../../docs/reports/ui-refinement-2026-08-20/index.html)
+- Assets: the report's `assets/shared-component-system.svg` and four
+  `assets/tobe-*.png` composition targets, each paired with its latest
+  running-game `assets/current-*.png` source.
+- SHA-256: component system
+  `CFAB855F2A8F5B758A5B1B45476D7E884A3FDD58B142F782BEBCCA8B7D946467`;
+  Aim `534FB0536585E099AA4C21E81CD924EE48ACA8D48B4D522884B85E3DE9F10F3D`;
+  Stage Select `26AF18D6C316AE82359FF054A6A7E180CEFA8069D409499E33E81E95E4795687`;
+  Briefing `8E640C5CE023E63E86DF705B1E2DA1A0D09482F2D76BCE44868FAC1F5BE49F2F`;
+  Result `DA0A089B0167533C5A70211439D06E514BE29C43F5FDD4CDEEE071F3C495A6A4`.
+- Provenance: the user rejected the first 2026-08-20 report as still too
+  panel-heavy and explicitly required a compact icon-first interface, complete
+  0–100 score scale, external reference inspection, and shared-component-only
+  production composition. The replacement TO-BE images are ImageGen edits of
+  the matching current captures; the component system diagram is deterministic
+  SVG design evidence.
+- Use literally for: no decorative panel/card/sheet in gameplay, Briefing,
+  Stage Select, or Result; a complete visible 0–100 axis with 0/25/50/75/100
+  labels; a single filled primary action; and shared-component-only styling.
+- Use directionally for: exact edge placement, generated Korean copy, stage
+  facts, icon drawing, mountain pixels, and responsive geometry. Production
+  code and authoritative game state remain the source of truth.
+- Status: current user-directed correction. It supersedes earlier UI references
+  wherever they prescribe a cropped target-range scale, a full-width guide, a
+  stage card grid, an information panel, a result sheet, or another decorative
+  containment surface. It is not running-game proof.
+
+### External comparative references
+
+These sources informed the 2026-08-20 correction. Borrow the named quality,
+not the layout or art.
+
+- [Lonely Mountains: Downhill](https://lonelymountains.com/): world-dominant
+  play with a very small direct HUD.
+- [art of rally](https://artofrally.com/): thin progress and value instruments
+  placed without dashboard surfaces.
+- [Nintendo Switch Sports Golf](https://www.nintendo.com/jp/ichikara/as8sa/index.html):
+  a complete, ticked power scale whose range remains readable beside the world.
+- [Monument Valley level selection](https://interfaceingame.com/screenshots/monument-valley-level-selection-menu/):
+  visual level navigation that does not depend on an information-card grid.
+- Applicability: Paint Mountain adopts low visual occupancy, explicit scale
+  endpoints, icon/value grouping, and stage-as-world navigation. It retains its
+  own Korean copy, input model, colors, typography, stage truth, and low-poly
+  world.
+
 ### Historical remediation report
 
 - Report: [historical remediation report](../../docs/remediation-report.html)
@@ -199,9 +248,9 @@ concepts, or asset previews from silently becoming product requirements.
 - Blue paint and trajectory provide the strongest saturated gameplay contrast;
   environment and UI stay restrained.
 - The HUD is visually secondary and edge-aligned. Its current canonical
-  behavior and component rules come from `UIUX_GUIDELINES.md`; the approved
-  Quiet Context image supplies the visual hierarchy while running code and
-  active specs preserve real behavior.
+  behavior and component rules come from `UIUX_GUIDELINES.md`; the Compact
+  Overlay correction supplies the current no-panel, icon-first, 0–100 scale
+  hierarchy while running code and active specs preserve real behavior.
 - Existing screenshots and scenes can be useful implementation evidence while
   still being wrong as design direction.
 
@@ -224,7 +273,7 @@ concepts, or asset previews from silently becoming product requirements.
   response, continuous paint, hidden overlap, or responsive UI.
 - Generated images may contain impossible geometry, inconsistent object scale,
   fake labels, or interactions Godot does not implement.
-- The primary target predates the accepted vertical coverage, centered Fire,
-  and gear-owned Restart layout.
+- The primary target predates the shared horizontal 0–100 `ScoreScale`, compact
+  component-only overlay, centered Fire, and gear-owned Restart layout.
 - This register does not itself authorize visual testing or establish that the
   current build matches any source.

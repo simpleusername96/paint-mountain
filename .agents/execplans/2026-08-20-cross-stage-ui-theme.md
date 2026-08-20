@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-20
 last_reviewed: 2026-08-20
-scope: refine the approved Quiet Context interface into one clear modern Quiet Alpine Instrument theme across every reachable screen and all 30 stages without changing gameplay rules
+scope: refine the approved Quiet Context interface into one clear modern Compact Overlay shared-component system across every reachable screen and all 30 stages without changing gameplay rules
 related:
   - ../PLANS.md
   - 2026-08-18-three-ball-target-band-prototype.md
@@ -20,15 +20,17 @@ related:
   - ../design/VISUAL_REFERENCES.md
 ---
 
-# Cross-Stage Quiet Alpine UI Refinement — Execution Contract
+# Cross-Stage Compact Overlay UI Refinement — Execution Contract
 
 ## Purpose
 
 Refine the existing Paint Mountain interface into the clear, modern, world-first
 system shown in `docs/reports/ui-refinement-2026-08-20/index.html`. The mountain,
 cannon, trajectory, paint, and real stage data remain primary. Persistent
-information moves into thin edge instruments, current actions move into one
-compact action lane, and explanatory copy becomes secondary.
+information moves into compact direct edge components, current actions move into one
+compact shared action group, and explanatory copy is removed from normal play.
+Screens compose shared components directly over the world; decorative panels,
+cards, sheets, and section surfaces do not define the layout.
 
 This contract applies the same theme and component grammar to Main Menu, Stage
 Select, Briefing, Aim, Map, Shot Follow, Pause, Settings, Result, loading,
@@ -46,8 +48,12 @@ still requires its own current-turn authorization.
 ## Outcome and deliverables
 
 - One project Theme owner with semantic type variations for hierarchy, state,
-  focus, and compact instrumentation.
+  focus, icons, and compact direct overlays.
 - One shared responsive composition for every application and gameplay state.
+- One shared `ScoreScale` whose complete 0–100 domain, five labels, target
+  segment/threshold, and current marker never clip or change range.
+- Every visible presentational structure resolves to a shared component;
+  screens own structural Containers and arrangement only.
 - No stage-specific UI copies or stage-owned colors/layouts.
 - Truthful target-band presentation for Stages 1–6 and coverage presentation
   for Stages 7–30.
@@ -63,8 +69,9 @@ still requires its own current-turn authorization.
 | Evidence | Verified fact | Applicability and effect on this plan |
 | --- | --- | --- |
 | Latest 2026-08-20 running-game captures | Current UI fits the common target sizes, but unrelated card shapes, detached status blocks, a full-width help strip, oversized Briefing cards, and a weak Result hierarchy compete with the world | Preserve the responsive foundation; recompose hierarchy and visual rhythm rather than replacing navigation or game rules |
-| `docs/reports/ui-refinement-2026-08-20/index.html` | Four current-to-TO-BE comparisons define a coherent edge-instrument direction for Stage Select, Briefing, Aim, and Result | Treat composition, restraint, and hierarchy as the target; generated microcopy, numbers, icons, and world pixels are non-authoritative |
+| `docs/reports/ui-refinement-2026-08-20/index.html` revision 02 | Four current-to-TO-BE comparisons and a deterministic shared-component diagram define the no-panel, icon-first, complete 0–100 direction | Treat component grammar, complete scale, restraint, and hierarchy as the target; generated microcopy, numbers, icons, and world pixels are non-authoritative |
 | `.agents/design/UIUX_GUIDELINES.md` | Quiet Context already locks warm white `#FFFDFC`, navy `#172538`, action blue `#2584FF`, gray `#C9CDD2`, danger `#D94C4C`, Pretendard, 24 px safe margin, Korean-first copy, and one blue primary action | Keep these values. Add semantic variations and layout rules; do not introduce a second palette or font system |
+| [Lonely Mountains](https://lonelymountains.com/), [art of rally](https://artofrally.com/), [Nintendo Switch Sports Golf](https://www.nintendo.com/jp/ichikara/as8sa/index.html), and [Monument Valley level selection](https://interfaceingame.com/screenshots/monument-valley-level-selection-menu/) | Comparable released games demonstrate world-dominant HUD occupancy, direct thin instruments, an explicit complete scale, and visual stage navigation | Borrow the low-occupancy and information-expression principles only; retain Paint Mountain interaction, assets, data, copy, palette, and component ownership |
 | `.agents/execplans/2026-08-09-quiet-context-ui-system.md` | Theme, shared HUD components, `ContextLegend`, app screens, and the production capture runner already exist | Refine existing owners. Do not build a parallel UI layer or a second capture path |
 | Active three-ball prototype plan and `.agents/Documentation.md` | Stages 1–6 use target-band/queue truth and recent responsive containers; the previous scope explicitly excluded an all-30-stage migration | Preserve the M7 container fixes and extend the visual contract to the entire catalog in this plan |
 | `src/stage/stage_catalog.gd`, `src/app/stage_layout_repository.gd`, current generated catalog | All 30 stages are data-driven and share the gameplay scene/HUD owners | Test all 30 data variants through shared presentation; do not edit generated stage resources merely to apply a theme |
@@ -82,6 +89,10 @@ still requires its own current-turn authorization.
 - **Create separate prototype and legacy HUD scenes:** rejected because Stages
   1–6 and 7–30 need one maintainable visual system; conditional data regions
   already express the rule difference.
+- **Keep one panel or rail surface around each information group:** rejected
+  because the user's correction requires direct overlays and because repeated
+  surfaces consume the mountain without adding interaction meaning. A shared
+  contrast scrim supplies readability without a boundary.
 - **Redesign stage/world art together with UI:** rejected because the request is
   interface refinement and the current world is the approved visual anchor.
 - **Adopt a new UI package, font, or asset pack:** rejected because existing
@@ -92,17 +103,19 @@ still requires its own current-turn authorization.
 
 ### Visual language
 
-- The direction name is **Quiet Alpine Instrument**, a refinement of Quiet
+- The direction name is **Compact Overlay**, a refinement of Quiet
   Context rather than a replacement brand.
 - Preserve the approved palette and Pretendard. New color literals may not be
   added to individual screens; reusable states belong to Theme variations.
-- The live world is the primary layer. Persistent HUD uses thin edge rails,
-  direct type, hairlines, and one compact action dock. Avoid a dashboard/card
-  mosaic and avoid any persistent central panel over terrain.
+- The live world is the primary layer. Persistent HUD uses direct icons, values,
+  one complete thin scale, whitespace, and at most one shared contrast scrim.
+  Gameplay, Briefing, Stage Select, and Result use no decorative panel, card,
+  sheet, dock surface, full-width guide, or section container.
 - One filled blue primary action is visible per state. Selection uses outline,
   check/icon, and a quiet tint so it does not compete with the current action.
-- Routine corner radius is 10–14 px. Large floating cards are reserved for
-  paused/settings/terminal containment and still use only one nesting level.
+- Routine corner radius is 10–14 px for interactive controls only. Pause,
+  Settings, and blocking error states may use one shared interruption surface;
+  it is not reused as normal gameplay chrome.
 - Motion, where existing behavior permits it, is 120–180 ms and must not delay
   input readiness, state truth, or focus.
 
@@ -114,6 +127,9 @@ still requires its own current-turn authorization.
 - Priority 3: shortcuts, explanation, mechanism prose, and duplicated context.
 - At constrained sizes, suppress or wrap Priority 3 first, then shorten
   Priority 2 labels while keeping values; never hide Priority 1.
+- Prefer icons and values. Visible text is limited to stage identity, a short
+  unit, a terminal reason, or a one- or two-word action unless ambiguity,
+  destructive consequence, localization, or accessibility requires more.
 - The central route, cannon, trajectory, impact area, and active projectile
   family must remain unobstructed in Aim, Map, and Shot Follow.
 
@@ -138,6 +154,9 @@ still requires its own current-turn authorization.
   and English. Stress matrix: 640×360, 1024×576, and 1024×768.
 - Logical safe margin is 24 px at accepted sizes and may compress to 12 px at
   the 640×360 stress size. Essential controls remain inside the viewport.
+- `ScoreScale` retains the full 0–100 domain and visible 0/25/50/75/100 labels
+  at every accepted size. At stress size it may reduce its physical width, but
+  may not crop an endpoint, hide a label, or zoom to the target range.
 - Routine controls are at least 40 px high and target 44 px where composition
   permits. Focus outline is at least 2 px and remains visible for keyboard and
   controller navigation.
@@ -162,7 +181,7 @@ still requires its own current-turn authorization.
 | Responsibility | Canonical owner | Must not absorb |
 | --- | --- | --- |
 | Shared visual roles, palette, type, focus, surfaces, spacing tokens | `resources/ui/paint_mountain_theme.tres` | Stage data, state rules, per-screen geometry |
-| Reusable legend and repeated presentation primitives | `scenes/ui/components/`, `src/ui/components/` | Whole-screen state orchestration |
+| Every visible presentation primitive and its narrow behavior | `scenes/ui/components/`, `src/ui/components/` | Whole-screen state orchestration, game rules, scene-local visual styling |
 | Gameplay composition and state visibility | `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd` | Shot admission, scoring, paint authority |
 | Main Menu, Stage Select, Settings, Pause composition | `scenes/ui/screens/`, `src/ui/screens/` | Gameplay state decisions |
 | Localized user-facing copy | `translations/ui.csv` and existing copy owners | Layout-only labels encoded in scripts |
@@ -185,32 +204,46 @@ Source owners: `.agents/design/UIUX_GUIDELINES.md`,
 `.agents/design/VISUAL_REFERENCES.md`, `resources/ui/paint_mountain_theme.tres`,
 `scenes/ui/components/`, `src/ui/components/`, `tests/phase7_ui_test.gd`
 
-- [ ] **1.1 Record Quiet Alpine Instrument in the design authority.** Add the
-  report and four target images to the visual register with explicit approved
-  qualities and non-authoritative generated details. Update UI guidance for
-  edge instruments, one compact action lane, responsive priority collapse,
-  stage-family truth, and the accessibility contract.
+- [x] **1.1 Record Compact Overlay in the design authority.** Add the revised
+  report, component-system SVG, external comparative references, and four
+  target images to the visual register with explicit user-directed qualities
+  and non-authoritative generated details. Update UI guidance for direct
+  overlays, the fixed 0–100 scale, shared-component-only composition,
+  icon-first copy reduction, stage-family truth, and accessibility.
   - Accept: future implementers can select Theme roles and layouts without
     treating generated numbers, labels, icons, or world pixels as requirements.
 - [ ] **1.2 Extend the canonical Theme.** Add only shared semantic variations
-  needed by at least two surfaces: instrument surface, dark action dock,
-  primary/secondary/quiet/danger actions, selected/completed/locked stage row,
-  target/coverage rail, compact value, section title, muted help, and focus.
+  needed by the named components: primary/secondary/quiet/danger actions,
+  selected/completed/locked stage nodes, score scale, compact metric/value,
+  short hint, contrast scrim, interruption surface, and focus.
   - Accept: palette/font remain canonical; a static Theme contract finds no
     duplicate scene-local palette for the new roles; disabled, focus, selected,
     and completed remain distinguishable without color alone.
 - [ ] **1.3 Build or refine responsibility-shaped primitives.** Reuse current
-  components first. Extract only repeated target/coverage rail, ball queue,
-  value stepper, action dock, or result-band pieces that otherwise require
-  duplicate scene structures.
+  components first and converge competing owners:
+  - enhance `hud_metric` as `MetricReadout`;
+  - merge `target_band_meter` and `coverage_meter` behind one shared
+    `ScoreScale` API with a fixed 0–100 visual domain;
+  - move/refine `queue_rail` and `queue_token_view` as shared `BallQueue`;
+  - make `aim_controls` compose shared `ValueStepper` controls;
+  - make `action_buttons` compose shared `ActionControl` controls;
+  - replace `stage_card_button` with shared `StageRail` nodes;
+  - refine `context_legend` into shared `ContextHints` with at most three
+    icon/action pairs;
+  - replace `result_panel` with direct shared `ResultSummary`; and
+  - provide shared `StageIdentity` and non-interactive `ContrastScrim`.
   - Accept: each primitive has one clear presentation responsibility, receives
     values through narrow typed setters/signals, ignores pointer input when
-    decorative, and does not query global gameplay state.
+    decorative, and does not query global gameplay state. A static ownership
+    check finds no screen-local StyleBox, palette, font, icon, or duplicate
+    component structure for these roles.
 
 Phase gate:
 
 ```powershell
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase7_ui_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shared_ui_component_ownership_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/score_scale_contract_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/localization_ui_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shortcut_prompt_test.gd
 ```
@@ -221,20 +254,23 @@ Goal: make every non-gameplay screen use the same hierarchy before changing the
 high-frequency HUD.
 
 Source owners: `scenes/ui/screens/*.tscn`, `src/ui/screens/*.gd`,
-`scenes/ui/components/stage_card_button.tscn`, `translations/ui.csv`
+`scenes/ui/components/stage_rail*.tscn`, `translations/ui.csv`
 
 - [ ] **2.1 Refine Main Menu.** Keep the preview world dominant, reduce
   decorative containment, and expose one clear Play/Continue action plus quiet
   Settings/Exit navigation. Preserve ready, loading, load-failure, and focus
   restoration states.
-- [ ] **2.2 Recompose Stage Select as list plus detail.** Replace the remaining
-  mosaic feel with a scannable repeated stage region and one selected-stage
-  detail region. Preserve 1–30 paging, lock/completion/best score/mechanism
-  truth, keyboard focus, all-open development behavior, loading, and retry.
+- [ ] **2.2 Recompose Stage Select as world plus StageRail.** Remove the card
+  list/detail split. Let the selected stage's existing world preview carry the
+  identity and place eight shared numbered nodes, page chevrons, compact direct
+  facts, and the single Start action at safe edges. Preserve 1–30 paging,
+  lock/completion/best score/mechanism truth, keyboard focus, all-open
+  development behavior, loading, and retry.
   - Accept: selected, completed, available, and locked states use the shared
     state grammar; Start is the sole filled blue action.
-- [ ] **2.3 Refine Pause and Settings.** Use one compact interruption surface,
-  aligned field rows, hairline separation, and one action lane. Preserve paused
+- [ ] **2.3 Refine Pause and Settings.** Use one shared compact interruption
+  surface only where input blocking needs containment, plus aligned fields and
+  shared actions. Preserve paused
   input blocking, caller return, explicit display mutation, passive setting
   synchronization, defaults, persistence, and focus restoration.
 - [ ] **2.4 Close responsive and localized screen states.** Use Containers and
@@ -259,29 +295,34 @@ Source owners: `scenes/ui/hud/*.tscn`, `src/ui/hud/*.gd`,
 `src/ui/hud_controller.gd`, `scenes/ui/components/context_legend.tscn`,
 `translations/ui.csv`
 
-- [ ] **3.1 Build the shared gameplay shell.** Use one safe-area composition:
-  a slim top status line, left objective instrument, conditional right queue/
-  run rail, compact bottom action/aim dock, and one restrained context legend.
+- [ ] **3.1 Build the shared gameplay shell.** Use one safe-area composition of
+  direct `StageIdentity`, `MetricReadout`, complete `ScoreScale`, conditional
+  `BallQueue`, lower `ValueStepper`/`ActionControl`, and at most three
+  `ContextHints`. Use `ContrastScrim` only where measured contrast requires it;
+  do not add a top bar, objective panel, right rail, bottom dock, or full-width
+  legend.
   - Accept: central mountain, cannon, trajectory, target, impact area, and
     projectile family remain readable at every matrix size.
 - [ ] **3.2 Apply the shell to Briefing and Aim.** Briefing keeps the real world
   visible with objective and ball order at the edges. Aim exposes elevation,
-  power, Fire, current goal, ammunition, and queue without a full-width
-  tutorial panel.
+  power, Fire, current goal, ammunition, and queue without a rule panel or
+  full-width tutorial surface.
 - [ ] **3.3 Apply state reductions to Map and Shot Follow.** Map removes aiming
   controls and shows only map-relevant guidance. Shot Follow removes Fire and
   shows the legal return action plus projectile/family observation. Neither
   state duplicates unavailable actions.
 - [ ] **3.4 Refine feedback and Result.** Keep transient shot/mechanism feedback
-  near its owner and short-lived. Result uses one narrow sheet with verdict,
-  reason, target-band or coverage visualization, and prioritized Next/Retry/
-  Stages actions while preserving the painted mountain.
+  near its owner and short-lived. Result places direct verdict/value,
+  `ScoreScale`, compact breakdown, and prioritized Next/Retry/Stages shared
+  actions over an optional edge scrim. It uses no result card or sheet and keeps
+  the painted mountain as the result hero.
 - [ ] **3.5 Prove both stage families through the same components.** Add a
   focused `tests/cross_stage_ui_theme_test.gd` that iterates the current catalog
   and presents all 30 stages through Briefing/Aim/Result models. Assert that
   Stages 1–6 expose only valid target-band/queue fields, Stages 7–30 expose only
   valid coverage/mechanism fields, every stage resolves the canonical Theme,
-  and no stage resource supplies layout or color overrides.
+  every score/coverage presentation retains the fixed 0–100 visual domain, and
+  no stage resource supplies layout or color overrides.
 
 Phase gate:
 
@@ -405,6 +446,12 @@ Rules:
   coherent Theme and hierarchy.
 - [ ] All 30 current stages resolve the canonical Theme and correct conditional
   target-band or coverage presentation without stage-specific UI copies.
+- [ ] Every score/coverage visualization shows the complete 0–100 axis with
+  visible 0/25/50/75/100 labels, an in-bounds current marker, and an in-bounds
+  target segment/threshold at every accepted and stress size.
+- [ ] Every visible presentational structure is a shared component or Theme
+  role; gameplay, Briefing, Stage Select, and Result contain no decorative
+  panel/card/sheet and no scene-local StyleBox, palette, font, or icon copy.
 - [ ] The mountain, cannon, trajectory, target/impact area, active projectile,
   and painted result remain the dominant gameplay layer at accepted sizes.
 - [ ] Each state exposes at most one filled blue primary action and preserves
@@ -429,7 +476,9 @@ Rules:
 | A generated-image detail conflicts with current gameplay or copy | Preserve real behavior/data and apply only its hierarchy/spacing principle | Removing a real action or inventing a value to match the image |
 | Stages 1–6 and 7–30 require different data fields | Use conditional regions inside the shared component/API | Forking the whole HUD or adding stage-number conditionals to Theme |
 | A supported size clips | Recompose with Containers, priority collapse, wrapping, or bounded scrolling | Shrinking essential text below its role or moving controls off-screen |
+| A `ScoreScale` endpoint, tick, marker, or target segment clips | Correct the shared component's clamping, label reserve, or minimum geometry and rerun every caller | Zooming the scale to the current target range or fixing one screen locally |
 | A Theme variation harms another screen | Narrow the semantic variation and migrate intended users explicitly | Creating a second Theme/palette owner |
+| A screen needs a visual role not exposed by a shared component | Add or refine the smallest responsibility-shaped shared component, then migrate every current user | Adding scene-local StyleBox, icon, palette, font, card, or panel styling |
 | `HUDController` begins accumulating layout-only branches | Move presentation behavior into a responsibility-shaped component | Moving StageController decisions into UI code |
 | A test encodes the superseded presentation | Update only its visual assertion while retaining behavior/state guards | Deleting or weakening a test to make the gate pass |
 | A production capture is blank, wrong-state, clipped, or stale | Reject it, fix the prerequisite/implementation, and recapture that state | Claiming scene inspection or a generated still as runtime proof |
@@ -443,11 +492,14 @@ Rules:
   authority, completed Quiet Context plan, active target-band plan, shared UI
   owners, representative tests, latest running-game captures, and relevant
   Godot 4.7 primary documentation.
-- [x] 2026-08-20 direction package: created the Korean UI refinement report and
-  four current-to-TO-BE comparisons based on the latest running-game pixels.
+- [x] 2026-08-20 corrected direction package: inspected four external game UI
+  references, replaced the panel-heavy concepts with four Compact Overlay
+  current-to-TO-BE comparisons, added a deterministic shared-component system
+  diagram, and locked the complete 0–100 score-scale contract in the report,
+  design authority, and this plan.
 - [ ] Current phase: Phase 1.
-- [ ] Next task: 1.1, record the refinement in the approved design authority
-  before changing production Theme or scene files.
+- [ ] Next task: 1.2, extend the canonical Theme roles before changing screen
+  compositions.
 
 Checkpoint rule: after each numbered phase gate passes, update this section in
 the same commit with the completed task boxes, concise validation evidence, and
@@ -473,7 +525,7 @@ Stop and ask the user when:
 
 - Completion requires a new dependency/font/asset pack, gameplay or save
   change, destructive action, public itch action, or a visible direction that
-  materially departs from Quiet Alpine Instrument.
+  materially departs from Compact Overlay.
 
 Do not stop or replan for:
 
