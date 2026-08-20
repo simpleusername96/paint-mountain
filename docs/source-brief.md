@@ -2458,10 +2458,51 @@ Effective requirements for the first implementation pass:
   only after feature completion, then complete production-style Windows/Web
   validation, push task-owned commits, and verify the resulting itch.io build.
 
-The active implementation contract is
-`.agents/execplans/2026-08-18-three-ball-target-band-prototype.md`. Its scope
-corrections resolve contradictions in the downloaded proposal without changing
-the selected three-ball, two-channel, overwrite, target-band, and retry design.
+The prototype contract was later consolidated into the UI refinement contract
+named below. Its completed gameplay and Web-performance evidence remains valid;
+its unapproved public publication step does not authorize a remote action.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Selection (2026-08-20): Cannon Focus Shared UI
+
+After reviewing three actual Aim composition targets in
+`docs/reports/ui-refinement-2026-08-20/index.html`, the user selected the C
+layout and requested one final ExecPlan that merges the existing UI work and is
+then executed.
+
+User directives (verbatim):
+
+> C 대포중심이 좋은 거 같아.
+> Now, use this html report to create a execplan for UIUX refinement process.
+> Merge already existing execplan tasks to this doc.
+> Then, use the final execplan to fix the issues.
+
+> Ok, now continue with the tasks. Create execplan doc and use it to fix all the issues.
+
+Effective requirements:
+
+- Cannon Focus is the canonical Aim composition. Use a vertical 0-100 score
+  scale at the left, a horizontal current-plus-next-two ball queue at the
+  upper-right, and angle, Fire, and power controls split around the lower cannon
+  region. Preserve the mountain, cannon, trajectory, target, and impact area as
+  the visual focus.
+- Every repeated UI primitive is a shared component or canonical Theme role.
+  Do not add screen-local panels, cards, palettes, fonts, icons, or tooltip
+  behavior.
+- Each queue token exposes its position, kind, paint role, and short behavior on
+  pointer hover, keyboard focus, and press/touch, with equivalent accessible
+  text.
+- Stage Select keeps the approved StageRail layout and shows the actual newest
+  prepared terrain for the selected stage. It does not use generic landscape
+  art, create a second renderer, or commit stage selection before Start.
+- Apply the same shared theme and component behavior to every reachable screen
+  and all 30 stages while preserving the target-band rule for Stages 1-6 and
+  established coverage/mechanism truth for Stages 7-30.
+- Consolidate execution under
+  `.agents/execplans/2026-08-20-cross-stage-ui-theme.md`. Completed prototype
+  stabilization evidence remains a prerequisite; public itch publication still
+  requires explicit authorization after the new local artifact is proven.
 
 All earlier requirements not contradicted here remain in force.
 

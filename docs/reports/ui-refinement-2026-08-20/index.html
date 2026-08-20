@@ -186,13 +186,13 @@
         <div class="pair" id="aiming-variants">
           <div class="variant-header"><div class="pair-head"><h3>조준 · 3안</h3><p>수직 점수축 · 설명 가능한 공 목록 · 같은 공유 컴포넌트</p></div><p>탭을 누르면 선택이 이 브라우저에 저장됩니다.</p></div>
           <div class="variant-tabs" role="tablist" aria-label="조준 화면 배치 선택">
-            <button class="variant-tab" id="tab-aim-a" type="button" role="tab" aria-selected="true" aria-controls="panel-aim-a" data-variant="a" data-label="A · 좌우 균형"><strong>A · 좌우 균형</strong><span>점수 왼쪽 · 공 오른쪽</span></button>
+            <button class="variant-tab" id="tab-aim-a" type="button" role="tab" aria-selected="false" aria-controls="panel-aim-a" data-variant="a" data-label="A · 좌우 균형"><strong>A · 좌우 균형</strong><span>점수 왼쪽 · 공 오른쪽</span></button>
             <button class="variant-tab" id="tab-aim-b" type="button" role="tab" aria-selected="false" aria-controls="panel-aim-b" data-variant="b" data-label="B · 오른쪽 계기"><strong>B · 오른쪽 계기</strong><span>점수와 공을 한쪽에</span></button>
-            <button class="variant-tab" id="tab-aim-c" type="button" role="tab" aria-selected="false" aria-controls="panel-aim-c" data-variant="c" data-label="C · 대포 중심"><strong>C · 대포 중심</strong><span>조작을 대포 주변에 분할</span></button>
+            <button class="variant-tab" id="tab-aim-c" type="button" role="tab" aria-selected="true" aria-controls="panel-aim-c" data-variant="c" data-label="C · 대포 중심"><strong>C · 대포 중심 · 선택</strong><span>조작을 대포 주변에 분할</span></button>
           </div>
-          <p class="selection-state" id="aim-selection-state" aria-live="polite">현재 선택: A · 좌우 균형</p>
+          <p class="selection-state" id="aim-selection-state" aria-live="polite">현재 선택: C · 대포 중심</p>
 
-          <div class="variant-panel" id="panel-aim-a" role="tabpanel" aria-labelledby="tab-aim-a">
+          <div class="variant-panel" id="panel-aim-a" role="tabpanel" aria-labelledby="tab-aim-a" hidden>
             <div class="mockup-wrap">
               <img src="assets/tobe-aiming.png" alt="조준안 A, 왼쪽 수직 점수축과 오른쪽 세로 공 목록">
               <div class="ball-hotspots queue-a" aria-label="다음 공 목록, 공에 마우스를 올리거나 키보드로 초점을 이동하면 설명이 표시됩니다">
@@ -201,7 +201,7 @@
                 <button class="ball-token green pentagon" type="button" aria-label="세 번째 공, 최고점 분열 초록" aria-describedby="tip-a-3"><span class="ball-tooltip" id="tip-a-3" role="tooltip"><b>최고점 분열 · 초록</b><span>비행 최고점에서 작은 공으로 분열합니다.</span></span></button>
               </div>
             </div>
-            <div class="variant-caption"><strong>A · 균형이 가장 안정적</strong><span>월드 중앙을 비우고 양쪽 계기의 역할을 분리</span></div>
+            <div class="variant-caption"><strong>A · 좌우 분리 대안</strong><span>월드 중앙을 비우고 양쪽 계기의 역할을 분리</span></div>
           </div>
 
           <div class="variant-panel" id="panel-aim-b" role="tabpanel" aria-labelledby="tab-aim-b" hidden>
@@ -216,7 +216,7 @@
             <div class="variant-caption"><strong>B · 왼쪽 시야가 가장 넓음</strong><span>정보를 오른쪽에 모아 착지 관찰 영역 확보</span></div>
           </div>
 
-          <div class="variant-panel" id="panel-aim-c" role="tabpanel" aria-labelledby="tab-aim-c" hidden>
+          <div class="variant-panel" id="panel-aim-c" role="tabpanel" aria-labelledby="tab-aim-c">
             <div class="mockup-wrap">
               <img src="assets/tobe-aiming-split.png" alt="조준안 C, 왼쪽 수직 점수축과 대포 주변에 나뉜 조작">
               <div class="ball-hotspots queue-c" aria-label="다음 공 목록, 공에 마우스를 올리거나 키보드로 초점을 이동하면 설명이 표시됩니다">
@@ -225,7 +225,7 @@
                 <button class="ball-token green pentagon" type="button" aria-label="세 번째 공, 최고점 분열 초록" aria-describedby="tip-c-3"><span class="ball-tooltip" id="tip-c-3" role="tooltip"><b>최고점 분열 · 초록</b><span>비행 최고점에서 작은 공으로 분열합니다.</span></span></button>
               </div>
             </div>
-            <div class="variant-caption"><strong>C · 발사 흐름이 가장 직접적</strong><span>각도 → 발사 → 파워를 대포 주변에서 읽음</span></div>
+            <div class="variant-caption"><strong>C · 선택된 구현 기준</strong><span>각도 → 발사 → 파워를 대포 주변에서 읽음</span></div>
           </div>
 
           <details class="baseline-details"><summary>현재 조준 화면 보기</summary><img src="assets/current-aiming.png" alt="현재 조준 UI"></details>
@@ -278,14 +278,14 @@
       </div>
     </div>
 
-    <footer><span>UI refinement · 2026-08-20 · revision 03 · <a href="imagegen-prompts.txt">prompt log</a></span><span>Generated TO-BE images are composition targets, not runtime evidence.</span></footer>
+    <footer><span>UI refinement · 2026-08-20 · revision 04 · Cannon Focus selected · <a href="imagegen-prompts.txt">prompt log</a></span><span>Generated TO-BE images are composition targets, not runtime evidence.</span></footer>
   </main>
   <script>
     (() => {
       const tabs = [...document.querySelectorAll('.variant-tab')];
       const panels = [...document.querySelectorAll('.variant-panel')];
       const state = document.getElementById('aim-selection-state');
-      const storageKey = 'paint-mountain-aiming-variant';
+      const storageKey = 'paint-mountain-aiming-variant-v2';
       const query = new URLSearchParams(window.location.search);
 
       const selectVariant = (tab, moveFocus = false) => {

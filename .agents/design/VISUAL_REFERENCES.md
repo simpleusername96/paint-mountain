@@ -207,9 +207,11 @@ concepts, or asset previews from silently becoming product requirements.
 - Status: current user-directed correction. It supersedes earlier UI references
   wherever they prescribe a cropped target-range scale, a full-width guide, a
   stage card grid, an information panel, a result sheet, or another decorative
-  containment surface. Aim A is the implementation default; Aim B and C remain
-  explicit alternatives until the user selects one. HTML hover/focus/press
-  behavior is interaction-design evidence, not running-game proof.
+  containment surface. The user selected Aim C, **Cannon Focus**, on 2026-08-20:
+  vertical score scale at the left, horizontal queue at the upper-right, and
+  angle, Fire, and power split around the lower cannon region. Aim A and B are
+  retained only as rejected alternatives. HTML hover/focus/press behavior is
+  interaction-design evidence, not running-game proof.
 
 ### External comparative references
 

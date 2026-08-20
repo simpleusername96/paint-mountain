@@ -1,9 +1,10 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-18
 last_reviewed: 2026-08-20
 scope: stabilize and publish the delivered six-stage three-ball target-band prototype: first input, special-ball lifecycle, responsive UI, foreground Web performance, and exact itch artifact verification
+superseded_by: 2026-08-20-cross-stage-ui-theme.md
 supersedes: 2026-08-13-queued-ball-paint-ownership.md
 related:
   - ../PLANS.md

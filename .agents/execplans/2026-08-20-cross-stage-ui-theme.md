@@ -3,11 +3,11 @@ type: plan
 status: active
 created: 2026-08-20
 last_reviewed: 2026-08-20
-scope: refine the approved Quiet Context interface into one clear modern Compact Overlay shared-component system across every reachable screen and all 30 stages without changing gameplay rules
+scope: implement the user-selected Cannon Focus compact shared UI system across every reachable Paint Mountain screen and all 30 stages without changing gameplay rules
+supersedes:
+  - 2026-08-18-three-ball-target-band-prototype.md
 related:
   - ../PLANS.md
-  - 2026-08-18-three-ball-target-band-prototype.md
-  - 2026-08-09-quiet-context-ui-system.md
   - ../../docs/reports/ui-refinement-2026-08-20/index.html
   - ../../docs/source-brief.md
   - ../../docs/design-spec.md
@@ -18,298 +18,229 @@ related:
   - ../design/ART_DIRECTION.md
   - ../design/UIUX_GUIDELINES.md
   - ../design/VISUAL_REFERENCES.md
+  - ../evidence/2026-08-20-m7-responsive-ui/README.md
+  - ../evidence/2026-08-20-m8-web-latency/README.md
+  - ../evidence/2026-08-20-m9-local-release/README.md
 ---
 
-# Cross-Stage Compact Overlay UI Refinement — Execution Contract
+# Cannon Focus Cross-Stage UI Refinement - Execution Contract
+
+Paint Mountain will use the report's selected C, **Cannon Focus**, composition
+as one shared Godot UI system. The running mountain, cannon, trajectory, paint,
+and authoritative stage values remain primary. Screens use reusable Theme roles
+and component scenes instead of screen-local cards, panels, palette copies, or
+stage-specific layouts. Work proceeds from shared primitives to application
+screens, then gameplay states, rendered correction, and one final production
+gate.
 
 ## Purpose
 
-Refine the existing Paint Mountain interface into the clear, modern, world-first
-system shown in `docs/reports/ui-refinement-2026-08-20/index.html`. The mountain,
-cannon, trajectory, paint, and real stage data remain primary. Persistent
-information moves into compact direct edge components, current actions move into one
-compact shared action group, and explanatory copy is removed from normal play.
-Screens compose shared components directly over the world; decorative panels,
-cards, sheets, and section surfaces do not define the layout.
+- Objective: replace the current mixed card/panel HUD with the clear, compact,
+  icon-first Cannon Focus system shown in
+  `docs/reports/ui-refinement-2026-08-20/index.html`.
+- Deliverable: one responsive shared UI across Main Menu, Stage Select,
+  Briefing, Aim, Map, Shot Follow, Pause, Settings, Result, loading, failure,
+  disabled, focus, and transient states for all 30 stages.
+- Completion state: every task and named gate passes; current Windows and Web
+  production renders are inspected; durable implementation truth is recorded;
+  the plan is `done` and the task-owned worktree is clean.
 
-This contract applies the same theme and component grammar to Main Menu, Stage
-Select, Briefing, Aim, Map, Shot Follow, Pause, Settings, Result, loading,
-failure, disabled, and transient-feedback states. It covers all 30 stages:
-Stages 1–6 keep their Red/Green target-band and three-ball truth, while Stages
-7–30 keep their established coverage/mechanism truth inside the same shared
-visual system.
+## Scope and Boundaries
 
-The separate active prototype plan has only its exact-public-artifact boundary
-remaining. The user explicitly requested this separately scoped concurrent
-plan. Local UI implementation may proceed, but it must not overwrite, republish,
-or relabel the artifact being proved by that plan. Any future itch publication
-still requires its own current-turn authorization.
+In scope:
 
-## Outcome and deliverables
+- The canonical Theme, shared UI component scenes/scripts, HUD and application
+  screen composition, Korean/English copy fit, focus/accessibility behavior,
+  responsive behavior, capture coverage, tests, exports, and local Web journey.
+- Stages 1-6 retain target-band, Red/Green contribution, and three-ball queue
+  truth. Stages 7-30 retain coverage and mechanism truth. Both use the same
+  presentation owners.
+- The completed responsive and Web-performance corrections from the superseded
+  prototype plan remain prerequisites and regression guards.
 
-- One project Theme owner with semantic type variations for hierarchy, state,
-  focus, icons, and compact direct overlays.
-- One shared responsive composition for every application and gameplay state.
-- One shared `ScoreScale` whose complete 0–100 domain, five labels, target
-  segment/threshold, and current marker never clip or change range.
-- One shared `BallQueue` whose token descriptions are equivalent on hover,
-  keyboard focus, press/touch, and the accessibility path.
-- Stage Select reuses the newest selected prepared terrain preview behind the
-  shared `StageRail`; it does not add a renderer or commit selection early.
-- Every visible presentational structure resolves to a shared component;
-  screens own structural Containers and arrangement only.
-- No stage-specific UI copies or stage-owned colors/layouts.
-- Truthful target-band presentation for Stages 1–6 and coverage presentation
-  for Stages 7–30.
-- Automated theme, state, localization, focus, bounds, and all-stage coverage
-  contracts.
-- Production Windows and Web builds plus personally inspected running-game
-  captures for the named representative states and stages.
-- Updated design authority, implementation record, and test checklist after the
-  runtime implementation is proven.
+Out of scope:
 
-## Verified evidence and working model
+- Gameplay rules, stage values, physics, paint authority, camera rules, save
+  schema, new stages, new dependencies, fonts, plugins, asset packs, or a second
+  UI/render/capture framework.
+- Public itch upload, channel mutation, visibility change, or deployed-artifact
+  claim without a new explicit user authorization after the final local Web
+  artifact is proven.
 
-| Evidence | Verified fact | Applicability and effect on this plan |
-| --- | --- | --- |
-| Latest 2026-08-20 running-game captures | Current UI fits the common target sizes, but unrelated card shapes, detached status blocks, a full-width help strip, oversized Briefing cards, and a weak Result hierarchy compete with the world | Preserve the responsive foundation; recompose hierarchy and visual rhythm rather than replacing navigation or game rules |
-| `docs/reports/ui-refinement-2026-08-20/index.html` revision 02 | Four current-to-TO-BE comparisons and a deterministic shared-component diagram define the no-panel, icon-first, complete 0–100 direction | Treat component grammar, complete scale, restraint, and hierarchy as the target; generated microcopy, numbers, icons, and world pixels are non-authoritative |
-| `.agents/design/UIUX_GUIDELINES.md` | Quiet Context already locks warm white `#FFFDFC`, navy `#172538`, action blue `#2584FF`, gray `#C9CDD2`, danger `#D94C4C`, Pretendard, 24 px safe margin, Korean-first copy, and one blue primary action | Keep these values. Add semantic variations and layout rules; do not introduce a second palette or font system |
-| [Lonely Mountains](https://lonelymountains.com/), [art of rally](https://artofrally.com/), [Nintendo Switch Sports Golf](https://www.nintendo.com/jp/ichikara/as8sa/index.html), and [Monument Valley level selection](https://interfaceingame.com/screenshots/monument-valley-level-selection-menu/) | Comparable released games demonstrate world-dominant HUD occupancy, direct thin instruments, an explicit complete scale, and visual stage navigation | Borrow the low-occupancy and information-expression principles only; retain Paint Mountain interaction, assets, data, copy, palette, and component ownership |
-| `.agents/execplans/2026-08-09-quiet-context-ui-system.md` | Theme, shared HUD components, `ContextLegend`, app screens, and the production capture runner already exist | Refine existing owners. Do not build a parallel UI layer or a second capture path |
-| Active three-ball prototype plan and `.agents/Documentation.md` | Stages 1–6 use target-band/queue truth and recent responsive containers; the previous scope explicitly excluded an all-30-stage migration | Preserve the M7 container fixes and extend the visual contract to the entire catalog in this plan |
-| `src/stage/stage_catalog.gd`, `src/app/stage_layout_repository.gd`, current generated catalog | All 30 stages are data-driven and share the gameplay scene/HUD owners | Test all 30 data variants through shared presentation; do not edit generated stage resources merely to apply a theme |
-| Godot 4.7 [Using Containers](https://docs.godotengine.org/en/4.7/tutorials/ui/gui_containers.html) | Containers own child layout and reflow across size changes | Use container-owned geometry and size flags; do not restore fixed per-resolution offsets |
-| Godot 4.7 [GUI skinning](https://docs.godotengine.org/en/4.7/tutorials/ui/gui_skinning.html) and [theme type variations](https://docs.godotengine.org/en/4.7/tutorials/ui/gui_theme_type_variations.html) | A cascading Theme and shared type variations are the maintainable way to apply repeated roles | Keep `paint_mountain_theme.tres` canonical and remove obsolete scene-local style duplication only after equivalent shared roles exist |
-| Godot 4.7 [Control](https://docs.godotengine.org/en/4.7/classes/class_control.html) and [multiple resolutions](https://docs.godotengine.org/en/4.7/tutorials/rendering/multiple_resolutions.html) | Control supports explicit focus/accessibility relationships; responsive UI needs a base design size plus adaptive layout | Preserve keyboard focus, add truthful accessibility names/relationships where absent, and validate the current resolution matrix rather than pixel-scaling one still |
+Constraints and invariants:
 
-### Competing directions considered
+- `StageController` remains the sole stage-state and result owner;
+  `PaintSystem` remains the sole paint/coverage owner; UI displays supplied
+  truth and emits typed intent only.
+- `resources/ui/paint_mountain_theme.tres` remains the only palette, font, and
+  semantic style owner. Screens may arrange shared components but may not copy
+  their StyleBoxes, colors, fonts, icons, or behavior.
+- Pretendard, the Compatibility renderer, the 1280x720 logical baseline, fixed
+  60 Hz physics, existing local icons, and existing Godot 4.7.1 runtime remain.
+- Aim uses Cannon Focus: vertical `ScoreScale` at the left, horizontal
+  `BallQueue` at the upper-right, and `angle -> Fire -> power` around the lower
+  cannon region. The compact layout may reduce copy and physical lengths but
+  may not hide angle, power, Fire, queue truth, or score endpoints.
+- `ScoreScale` has a fixed 0-100 domain with visible 0/25/50/75/100 labels.
+  Aim, Map, and Shot Follow use the vertical preset; Briefing and Result use the
+  horizontal preset.
+- Ball descriptions contain queue position, kind, paint role, and short
+  behavior. Hover, keyboard focus, and press/touch reveal equivalent content;
+  the accessible description is not tooltip-only.
+- Stage Select reuses `AppRoot._preview_world` and the newest ready selected
+  `StageRuntimeArtifact`; selection never commits `GameState` before Start and
+  never creates a second renderer or generic landscape.
+- One filled blue primary action is visible per state. Persistent gameplay,
+  Briefing, Stage Select, and Result use no decorative panel/card/sheet/dock.
+- User-facing text remains Korean-first and concise. Essential or risky actions
+  retain visible labels; routine status favors icons plus values.
 
-- **Keep the current responsive UI and only change colors:** rejected because
-  the primary defects are hierarchy, panel area, and disconnected composition.
-- **Copy the TO-BE stills pixel-for-pixel:** rejected because generated text,
-  values, icons, and world details are not runtime truth, and fixed coordinates
-  would regress smaller sizes and localization.
-- **Create separate prototype and legacy HUD scenes:** rejected because Stages
-  1–6 and 7–30 need one maintainable visual system; conditional data regions
-  already express the rule difference.
-- **Keep one panel or rail surface around each information group:** rejected
-  because the user's correction requires direct overlays and because repeated
-  surfaces consume the mountain without adding interaction meaning. A shared
-  contrast scrim supplies readability without a boundary.
-- **Redesign stage/world art together with UI:** rejected because the request is
-  interface refinement and the current world is the approved visual anchor.
-- **Adopt a new UI package, font, or asset pack:** rejected because existing
-  Godot Controls, Pretendard, Kenney subset, and project icons are sufficient
-  and new production dependencies require explicit approval.
+Destructive or irreversible actions:
 
-## Locked decisions
+- Obsolete UI scenes/scripts may be deleted only after every current caller is
+  migrated, focused tests pass, and `rg` proves no remaining reference. Git
+  history remains the recovery path.
 
-### Visual language
+Exact actions requiring owner or user approval:
 
-- The direction name is **Compact Overlay**, a refinement of Quiet
-  Context rather than a replacement brand.
-- Preserve the approved palette and Pretendard. New color literals may not be
-  added to individual screens; reusable states belong to Theme variations.
-- The live world is the primary layer. Persistent HUD uses direct icons, values,
-  one complete thin scale, whitespace, and at most one shared contrast scrim.
-  Gameplay, Briefing, Stage Select, and Result use no decorative panel, card,
-  sheet, dock surface, full-width guide, or section container.
-- One filled blue primary action is visible per state. Selection uses outline,
-  check/icon, and a quiet tint so it does not compete with the current action.
-- `ScoreScale` is one component with two locked presets. Aim, Map, and Shot
-  Follow use a vertical axis with `100` at the top and `0` at the bottom;
-  Briefing and Result use the horizontal preset. Both show 0/25/50/75/100,
-  current value, and target range/threshold inside the fixed domain.
-- `BallQueue` tokens reveal the same authoritative kind/order/paint-role/short-
-  behavior description on pointer hover, keyboard focus, and press/touch. The
-  tooltip is shared, has no gameplay authority, and mirrors its text through an
-  accessible name or description.
-- Aim composition A, **Edge Balance**, is the execution default: score scale at
-  the left, queue at the right, and lower-center steppers/Fire. The report also
-  retains B (**Right Instruments**) and C (**Cannon Focus**) for an explicit
-  user override; such an override narrows Phase 3 geometry only and requires a
-  plan checkpoint update before that composition is implemented.
-- Routine corner radius is 10–14 px for interactive controls only. Pause,
-  Settings, and blocking error states may use one shared interruption surface;
-  it is not reused as normal gameplay chrome.
-- Motion, where existing behavior permits it, is 120–180 ms and must not delay
-  input readiness, state truth, or focus.
+- Adding/upgrading a dependency, font, plugin, or asset pack; changing gameplay
+  or saved data; destructive work outside obsolete migrated UI files; public
+  itch publication or channel/visibility mutation.
 
-### Information hierarchy
+## Discovery Closure
 
-- Priority 1: current objective/terminal verdict and the next legal action.
-- Priority 2: score or coverage, target band, current/next ball, ammunition,
-  elevation, and power.
-- Priority 3: shortcuts, explanation, mechanism prose, and duplicated context.
-- At constrained sizes, suppress or wrap Priority 3 first, then shorten
-  Priority 2 labels while keeping values; never hide Priority 1.
-- Prefer icons and values. Visible text is limited to stage identity, a short
-  unit, a terminal reason, or a one- or two-word action unless ambiguity,
-  destructive consequence, localization, or accessibility requires more.
-- The central route, cannon, trajectory, impact area, and active projectile
-  family must remain unobstructed in Aim, Map, and Shot Follow.
+| Requirement or concern | Verified current owner and behavior | Evidence | Locked decision | Task IDs |
+| --- | --- | --- | --- | --- |
+| Canonical composition | The report has three actual Aim images; the user selected C | report revision 04 and current conversation | Cannon Focus is canonical; A/B remain historical alternatives | 1.1, 3.1 |
+| Shared style ownership | Theme exists, while HUD scenes still use panel-specific variations and local overrides | `resources/ui/paint_mountain_theme.tres`, `scenes/ui/` | Extend the Theme; never add a second palette/style owner | 1.2 |
+| Full score domain | `CoverageMeter` is vertical 0-100, but `TargetBandMeter` crops to a target-relative range | `src/ui/hud/coverage_meter.gd`, `src/ui/hud/target_band_meter.gd` | Replace both presentation paths with one shared fixed-domain `ScoreScale` | 1.3, 3.2 |
+| Ball explanation | `QueueTokenView` is a non-focusable `PanelContainer` and exposes kind/channel only through default hover tooltip | `queue_token_view.tscn/.gd` | Use shared focusable token controls and one shared description bubble/state owner | 1.4, 3.2 |
+| Cannon Focus controls | `AimControls` is one 480 px panel and compact mode hides all angle/power controls | `aim_controls.tscn`, `hud_root_layout.gd` | Compose two shared `ValueStepper`s around the shared Fire action; compact mode reflows rather than hides them | 1.5, 3.1 |
+| Stage Select terrain | Stage Select is a card/detail split and `_show_stage_select()` disables the preview world | `stage_select.tscn/.gd`, `app_root.gd` | Preserve paging/focus/loading truth, replace cards with `StageRail`, and publish prepared terrain atomically | 2.2 |
+| App and terminal screens | Main Menu, Briefing, Pause, Settings, and Result preserve real actions but use mixed containment | current scenes and running captures | Recompose with the same components/Theme; preserve every state and action | 2.1, 2.3, 3.2-3.4 |
+| Cross-stage truth | All 30 stages are data-driven; 1-6 use target-band/queue, 7-30 use coverage/mechanism fields | `StageCatalog`, `StageData`, `StageLayoutRepository` | Conditional data regions inside shared components; no stage-specific UI copies | 3.5 |
+| Existing responsive work | M7 container/contrast work and accepted-size evidence pass, but its stress fallback hides essential aim controls | superseded prototype plan and M7 evidence | Preserve its safe-area/focus fixes; replace only the conflicting fallback | 3.1, 4.1 |
+| Existing Web performance work | M8 removed measured paint/projectile stalls and M9.1-9.3 proved local artifacts | M8/M9 evidence | Do not reopen completed optimization; run one final built-Web regression journey after UI changes | 4.4, 5.2 |
+| Validation path | Shared Godot 4.7.1 and project scripts/presets exist; CLI supports all named flags | installed binary `4.7.1.stable`, `scripts/*.ps1`, `export_presets.cfg` | Use focused headless checks, background captures, then one broad/export gate | all phases |
 
-### Stage and state truth
+Readiness statement:
 
-- `StageController` remains the only owner of stage state, shot progression,
-  readiness, clear, and failure decisions. HUD scripts present observations and
-  emit existing intents only.
-- Stages 1–6 show target-band, Red/Green split, three-ball order, and special-
-  ball states only when the authoritative stage data supports them.
-- Stages 7–30 show their established coverage, ammunition, mechanism, and
-  result fields. They do not receive invented Red/Green targets.
-- `PaintSystem` remains the only paint/coverage authority. No UI animation or
-  placeholder value may predict coverage ahead of authoritative publication.
-- Stage resources and generated catalogs supply values only. They do not own
-  theme colors, spacing, or scene variants.
-
-### Responsive, input, and accessibility contract
-
-- Base design size remains 1280×720 with the current canvas-items/expand setup.
-- Accepted matrix: 1280×720, 1280×800, 1366×768, 1600×900, 1920×1080 in Korean
-  and English. Stress matrix: 640×360, 1024×576, and 1024×768.
-- Logical safe margin is 24 px at accepted sizes and may compress to 12 px at
-  the 640×360 stress size. Essential controls remain inside the viewport.
-- `ScoreScale` retains the full 0–100 domain and visible 0/25/50/75/100 labels
-  at every accepted size. At stress size it may reduce its physical length, but
-  may not crop an endpoint, hide a label, or zoom to the target range.
-- Routine controls are at least 40 px high and target 44 px where composition
-  permits. Focus outline is at least 2 px and remains visible for keyboard and
-  controller navigation.
-- Normal text targets 4.5:1 contrast, large text and non-text UI 3:1. State is
-  never communicated by color alone. Icon-only controls require an accessible
-  name and tooltip.
-- Existing mouse, keyboard, controller, shortcut, focus-restoration, pause, and
-  first-Fire behavior remains unchanged.
-
-### Dependencies and authority
-
-- No production dependency, plugin, network service, new font, new asset pack,
-  gameplay rule, save schema, stage catalog rewrite, or paint-system change is
-  authorized by this plan.
-- Existing Pretendard, approved icons, Kenney subset, Control nodes, Theme, and
-  capture runner are the only production building blocks.
-- Publishing to itch.io, changing visibility, or modifying fastrun-manager
-  registration remains outside this plan and requires explicit authorization.
-
-## Architecture ownership
-
-| Responsibility | Canonical owner | Must not absorb |
-| --- | --- | --- |
-| Shared visual roles, palette, type, focus, surfaces, spacing tokens | `resources/ui/paint_mountain_theme.tres` | Stage data, state rules, per-screen geometry |
-| Every visible presentation primitive and its narrow behavior | `scenes/ui/components/`, `src/ui/components/` | Whole-screen state orchestration, game rules, scene-local visual styling |
-| Gameplay composition and state visibility | `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd` | Shot admission, scoring, paint authority |
-| Main Menu, Stage Select, Settings, Pause composition | `scenes/ui/screens/`, `src/ui/screens/` | Gameplay state decisions |
-| Selected-stage terrain preview activation and artifact publication | `src/app/app_root.gd`, `StageRuntimeArtifact`, `StageRuntimePreparer` | Stage selection commitment, a second renderer, generic preview terrain |
-| Localized user-facing copy | `translations/ui.csv` and existing copy owners | Layout-only labels encoded in scripts |
-| Stage values and family selection | `StageData`, `StageCatalog`, `StageLayoutRepository` | Theme or stage-specific scene copies |
-| Production capture states | `src/delivery/delivery_capture_runner.gd` | A second screenshot harness |
-| Runtime evidence | `.agents/evidence/cross-stage-ui-theme-2026-08-20/` | Design authority or generated concept assets |
-
-Before expanding any large owner, the implementing agent must identify its
-existing responsibility and prefer a smaller component or Theme variation over
-adding another whole-screen conditional to `HUDController`.
+- Every material product, architecture, dependency, data, UX, ownership,
+  safety, and validation decision is closed.
+- Required runtime, scripts, presets, source assets, and capture owners are
+  available. No bootstrap or external dependency is required.
+- Existing external comparisons and Godot 4.7 primary documentation already
+  resolve the decisions they can affect; no new visual or dependency research
+  remains.
+- Remaining choices are implementation-local Container geometry, Theme
+  variation names, and small copy fit adjustments inside the locked behavior.
 
 ## Tasks
 
-### Phase 1 — Register the refinement and establish shared primitives
+### Phase 1: Canonical decision and shared component foundation
 
-Goal: make the direction durable and implement reusable visual roles before
-screen-by-screen composition changes.
+Goal: make every later screen a composition of stable reusable owners.
 
-Source owners: `.agents/design/UIUX_GUIDELINES.md`,
+Preconditions:
+
+- Worktree and current branch are inspected; unrelated user changes are left
+  untouched.
+- Report images remain composition evidence, not runtime truth.
+
+Source owners: `docs/source-brief.md`, `.agents/design/UIUX_GUIDELINES.md`,
 `.agents/design/VISUAL_REFERENCES.md`, `resources/ui/paint_mountain_theme.tres`,
-`scenes/ui/components/`, `src/ui/components/`, `tests/phase7_ui_test.gd`
+`scenes/ui/components/`, `src/ui/components/`, `translations/ui.csv`
 
-- [x] **1.1 Record Compact Overlay in the design authority.** Add the revised
-  report, component-system SVG, external comparative references, three Aim
-  alternatives, and the other target images to the visual register with
-  explicit user-directed qualities
-  and non-authoritative generated details. Update UI guidance for direct
-  overlays, the fixed 0–100 scale, shared-component-only composition,
-  icon-first copy reduction, stage-family truth, and accessibility.
-  - Accept: future implementers can select Theme roles and layouts without
-    treating generated numbers, labels, icons, or world pixels as requirements.
-- [ ] **1.2 Extend the canonical Theme.** Add only shared semantic variations
-  needed by the named components: primary/secondary/quiet/danger actions,
-  selected/completed/locked stage nodes, score scale, compact metric/value,
-  ball tooltip, short hint, contrast scrim, interruption surface, and focus.
-  - Accept: palette/font remain canonical; a static Theme contract finds no
-    duplicate scene-local palette for the new roles; disabled, focus, selected,
-    and completed remain distinguishable without color alone.
-- [ ] **1.3 Build or refine responsibility-shaped primitives.** Reuse current
-  components first and converge competing owners:
-  - enhance `hud_metric` as `MetricReadout`;
-  - merge `target_band_meter` and `coverage_meter` behind one shared
-    `ScoreScale` API with a fixed 0–100 visual domain and vertical-live/
-    horizontal-summary presets;
-  - move/refine `queue_rail` and `queue_token_view` as shared `BallQueue`, with
-    one shared hover/focus/press tooltip and accessible description path;
-  - make `aim_controls` compose shared `ValueStepper` controls;
-  - make `action_buttons` compose shared `ActionControl` controls;
-  - replace `stage_card_button` with shared `StageRail` nodes;
-  - refine `context_legend` into shared `ContextHints` with at most three
-    icon/action pairs;
-  - replace `result_panel` with direct shared `ResultSummary`; and
-  - provide shared `StageIdentity` and non-interactive `ContrastScrim`.
-  - Accept: each primitive has one clear presentation responsibility, receives
-    values through narrow typed setters/signals, ignores pointer input when
-    decorative, and does not query global gameplay state. A static ownership
-    check finds no screen-local StyleBox, palette, font, icon, or duplicate
-    component structure for these roles.
+- [x] **1.1 Lock Cannon Focus and consolidate plan authority.**
+  - Change: record C as canonical in the report/design authority and make this
+    the sole active UI/release contract; retain the superseded prototype plan
+    as history and carry its completed evidence/remote approval boundary here.
+  - Accept: no active plan or design source still calls A the default; the old
+    plan is lifecycle-valid and points here; no completed task was reopened.
+- [ ] **1.2 Extend the canonical Theme and ownership contract.**
+  - Change: add only the semantic variations required for direct overlay,
+    vertical/horizontal scale, queue token/description, value stepper, primary/
+    secondary/quiet action, stage node states, result summary, contrast scrim,
+    interruption surface, disabled, hover, pressed, and focus.
+  - Accept: a focused Theme/ownership test proves all shared scenes inherit the
+    canonical Theme and no new screen-local palette/font/StyleBox owner exists.
+- [ ] **1.3 Implement shared `ScoreScale`.**
+  - Change: add `scenes/ui/components/score_scale.tscn` and
+    `src/ui/components/score_scale.gd`; support vertical-live and horizontal-
+    summary presets, fixed 0-100 mapping, five labels, current marker, target
+    range/threshold, and optional Red/Green contribution values. Migrate and
+    retire `CoverageMeter` and `TargetBandMeter` only after callers pass.
+  - Accept: `tests/score_scale_contract_test.gd` proves both presets, endpoints,
+    target/marker bounds, 0/100 clamping, and both stage-family models.
+- [ ] **1.4 Implement shared `BallQueue`.**
+  - Change: add shared queue and focusable token scenes/scripts. One queue owner
+    controls horizontal/vertical arrangement, token order/state, hover/focus/
+    press description visibility, accessible text, pin/dismiss behavior, and
+    safe-edge placement. Reuse existing ball/channel truth and shape drawing.
+  - Accept: `tests/ball_queue_tooltip_test.gd` proves three-token ordering,
+    native focus, pointer/focus/press equivalence, Escape/dismiss, accessible
+    description, and no essential hover-only state.
+- [ ] **1.5 Implement the remaining shared primitives.**
+  - Change: enhance/rehome `MetricReadout` and `ContextHints`; add reusable
+    `ValueStepper`, `ActionControl`, `StageRail`, `ResultSummary`, and
+    `ContrastScrim`. `AimControls`, app screens, and Result must compose these
+    owners rather than reproduce their internals.
+  - Accept: `tests/shared_ui_component_ownership_test.gd` finds one production
+    owner for each primitive, verifies routine target sizes/focus names, and
+    finds no duplicate legacy caller after migration.
 
-Phase gate:
+Phase 1 gate, from repository root:
 
 ```powershell
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase7_ui_test.gd
-& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shared_ui_component_ownership_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/score_scale_contract_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_queue_tooltip_test.gd
-& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/localization_ui_test.gd
-& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shortcut_prompt_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shared_ui_component_ownership_test.gd
 ```
 
-### Phase 2 — Recompose application, selection, and interruption screens
+### Phase 2: Application and interruption screens
 
-Goal: make every non-gameplay screen use the same hierarchy before changing the
-high-frequency HUD.
+Goal: use the shared hierarchy outside gameplay and prove the real selected
+terrain before changing the high-frequency HUD.
 
-Source owners: `scenes/ui/screens/*.tscn`, `src/ui/screens/*.gd`,
-`scenes/ui/components/stage_rail*.tscn`, `src/app/app_root.gd`,
+Preconditions:
+
+- Phase 1 tasks and gate pass.
+
+Source owners: `scenes/ui/screens/`, `src/ui/screens/`, `src/app/app_root.gd`,
 `src/app/stage_runtime_artifact.gd`, `src/app/stage_runtime_preparer.gd`,
 `translations/ui.csv`
 
-- [ ] **2.1 Refine Main Menu.** Keep the preview world dominant, reduce
-  decorative containment, and expose one clear Play/Continue action plus quiet
-  Settings/Exit navigation. Preserve ready, loading, load-failure, and focus
-  restoration states.
-- [ ] **2.2 Recompose Stage Select as world plus StageRail.** Remove the card
-  list/detail split. Reuse `AppRoot._preview_world` and the selected stage's
-  ready `StageRuntimeArtifact` render mesh/material/dressing as the
-  noninteractive background; do not create a second preview renderer. Change
-  `_show_stage_select()` to activate the preview world, extend
-  `_set_menu_preview_if_visible()` to accept visible Stage Select, and make
-  `_on_stage_selection_changed()` publish the newest ready selected artifact
-  while retaining its existing asynchronous preparation request. Place eight
-  shared numbered nodes, page chevrons, compact direct facts, and the single
-  Start action at safe edges. Preserve 1–30 paging, lock/completion/best score/
-  mechanism truth, keyboard focus, all-open development behavior, loading,
-  retry, and the rule that selection does not commit `GameState` before Start.
-  - Accept: selected, completed, available, and locked states use the shared
-    state grammar; Start is the sole filled blue action; switching nodes updates
-    the actual prepared terrain without a generic mountain, stale artifact,
-    blank frame, gameplay input, or second world owner.
-- [ ] **2.3 Refine Pause and Settings.** Use one shared compact interruption
-  surface only where input blocking needs containment, plus aligned fields and
-  shared actions. Preserve paused
-  input blocking, caller return, explicit display mutation, passive setting
-  synchronization, defaults, persistence, and focus restoration.
-- [ ] **2.4 Close responsive and localized screen states.** Use Containers and
-  ScrollContainer fallback where necessary; do not resize essential type below
-  its Theme role to make fixed geometry fit.
+- [ ] **2.1 Refine Main Menu.**
+  - Change: keep the prepared preview world dominant; use one shared primary
+    Play/Continue action and quiet Stages/Settings/Exit actions without a card
+    stack or duplicate explanatory text.
+  - Accept: ready, preparing, load-failed, empty-save, locale-switch, and focus-
+    restoration states preserve every current action and one primary action.
+- [ ] **2.2 Recompose Stage Select as real terrain plus `StageRail`.**
+  - Change: remove the card/detail split. Activate `_preview_world` in
+    `_show_stage_select()`, let `_set_menu_preview_if_visible()` serve visible
+    Stage Select, and publish only the newest selected ready artifact from
+    `_on_stage_selection_changed()`/artifact callbacks. Keep the previous valid
+    terrain until the newest artifact is ready. Compose eight numbered shared
+    nodes, page chevrons, compact facts, Back, and one Start action.
+  - Accept: node changes update the actual selected terrain without a generic,
+    stale, or blank landscape; paging, selected/completed/locked states,
+    preparation failure/retry, focus, all-open development behavior, and the
+    no-commit-before-Start invariant pass.
+- [ ] **2.3 Refine Pause and Settings.**
+  - Change: use one shared interruption surface only because input is blocked;
+    align shared rows/actions, remove decorative nesting, and preserve caller
+    return, passive synchronization, defaults, persistence, and focus restore.
+  - Accept: Gear/Escape parity, pause input barrier, Settings round-trip,
+    Korean/English fit, disabled states, and keyboard order pass.
+- [ ] **2.4 Close application-screen responsive states.**
+  - Change: use Containers and bounded scrolling at the current breakpoints;
+    suppress only redundant Priority 3 copy.
+  - Accept: 1280x720, 1920x1080, and 640x360 stress models show every Priority
+    1 action/state without clip, overlap, or off-screen focus.
 
-Phase gate:
+Phase 2 gate:
 
 ```powershell
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/screen_responsive_layout_test.gd
@@ -318,50 +249,56 @@ Phase gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/essential_ui_copy_test.gd
 ```
 
-### Phase 3 — Recompose the shared gameplay shell and all states
+### Phase 3: Cannon Focus gameplay shell and all states
 
-Goal: make the live mountain primary while preserving every state, action, and
-stage-family value.
+Goal: keep the mountain/cannon cause-and-effect chain primary in every gameplay
+state while retaining every authoritative value and action.
 
-Source owners: `scenes/ui/hud/*.tscn`, `src/ui/hud/*.gd`,
-`src/ui/hud_controller.gd`, `scenes/ui/components/context_legend.tscn`,
-`translations/ui.csv`
+Preconditions:
 
-- [ ] **3.1 Build the shared gameplay shell.** Use one safe-area composition of
-  direct `StageIdentity`, `MetricReadout`, complete `ScoreScale`, conditional
-  `BallQueue`, lower `ValueStepper`/`ActionControl`, and at most three
-  `ContextHints`. Use `ContrastScrim` only where measured contrast requires it;
-  do not add a top bar, objective panel, right rail, bottom dock, or full-width
-  legend.
-  - Accept: central mountain, cannon, trajectory, target, impact area, and
-    projectile family remain readable at every matrix size. The default Aim
-    geometry is report variant A unless a later explicit user choice updates
-    this checkpoint before implementation.
-- [ ] **3.2 Apply the shell to Briefing and Aim.** Briefing keeps the real world
-  visible with objective and ball order at the edges. Aim exposes elevation,
-  power, Fire, current goal, ammunition, and queue without a rule panel or
-  full-width tutorial surface.
-  - Accept: Aim uses the vertical `ScoreScale`; Briefing uses the horizontal
-    preset; prototype queue tokens show the same short description on hover,
-    focus, and press/touch with no tooltip clipping or keyboard trap.
-- [ ] **3.3 Apply state reductions to Map and Shot Follow.** Map removes aiming
-  controls and shows only map-relevant guidance. Shot Follow removes Fire and
-  shows the legal return action plus projectile/family observation. Neither
-  state duplicates unavailable actions.
-- [ ] **3.4 Refine feedback and Result.** Keep transient shot/mechanism feedback
-  near its owner and short-lived. Result places direct verdict/value,
-  `ScoreScale`, compact breakdown, and prioritized Next/Retry/Stages shared
-  actions over an optional edge scrim. It uses no result card or sheet and keeps
-  the painted mountain as the result hero.
-- [ ] **3.5 Prove both stage families through the same components.** Add a
-  focused `tests/cross_stage_ui_theme_test.gd` that iterates the current catalog
-  and presents all 30 stages through Briefing/Aim/Result models. Assert that
-  Stages 1–6 expose only valid target-band/queue fields, Stages 7–30 expose only
-  valid coverage/mechanism fields, every stage resolves the canonical Theme,
-  every score/coverage presentation retains the fixed 0–100 visual domain, and
-  no stage resource supplies layout or color overrides.
+- Phase 2 tasks and gate pass.
 
-Phase gate:
+Source owners: `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd`,
+`scenes/ui/components/`, `src/ui/components/`, `translations/ui.csv`
+
+- [ ] **3.1 Build the Cannon Focus safe-area composition.**
+  - Change: replace the fixed mixed HUD offsets with a container-owned shell:
+    Stage/clock/shots/Gear at safe top edges, vertical `ScoreScale` at left,
+    horizontal `BallQueue` at upper-right, angle stepper left of Fire, Fire at
+    bottom-center, power stepper right of Fire, and at most three compact
+    context hints. Remove routine backdrops, rails, and docks. Replace the
+    stress fallback that hides angle/power with a compact icon/value reflow.
+  - Accept: 1920x1080, 1280x720, 900x500, and 640x360 models retain score
+    endpoints, angle, power, Fire, queue truth, status, and a clear central
+    cannon/trajectory/mountain view.
+- [ ] **3.2 Apply the shell to Briefing and Aim.**
+  - Change: Briefing keeps the real world with direct objective/ball order and
+    Back/Start; Aim uses the Cannon Focus layout and shared tooltip behavior.
+  - Accept: Briefing uses horizontal `ScoreScale`; Aim uses vertical; target-
+    band values, Red/Green roles, coverage target, shot capacity, fire readiness,
+    focus, shortcuts, and locale refresh remain authoritative.
+- [ ] **3.3 Apply state reductions to Map and Shot Follow.**
+  - Change: Map removes aim/Fire-only controls and preserves inspection inputs;
+    Shot Follow removes Fire and exposes the legal Return to Cannon action plus
+    projectile-family observation. Both keep only relevant scale/status data.
+  - Accept: no unavailable action is duplicated; input/focus state agrees with
+    `CameraDirector` and `StageController` observations.
+- [ ] **3.4 Replace the result card with shared `ResultSummary`.**
+  - Change: keep the painted mountain as the hero; show direct verdict, value,
+    horizontal `ScoreScale`, compact breakdown, and prioritized Next/Retry/
+    Same Deal/New Deal/Stages actions without a sheet. Preserve timeout/manual,
+    target-band/coverage, previous-best, and has-next variants.
+  - Accept: every reachable result variant preserves correct action visibility,
+    one primary action, focus entry, authoritative values, and no world-blocking
+    container.
+- [ ] **3.5 Prove all 30 stages through the shared presentation.**
+  - Change: add `tests/cross_stage_ui_theme_test.gd` to present every catalog
+    stage through Briefing/Aim/Result models.
+  - Accept: Stages 1-6 expose only valid target-band/queue fields; Stages 7-30
+    expose only valid coverage/mechanism fields; every stage uses the canonical
+    Theme/components and fixed 0-100 scale; no stage resource owns layout/color.
+
+Phase 3 gate:
 
 ```powershell
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/cross_stage_ui_theme_test.gd
@@ -373,70 +310,67 @@ Phase gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_aiming_composition_test.gd
 ```
 
-### Phase 4 — Cross-stage, locale, focus, and rendered correction pass
+### Phase 4: Responsive, locale, accessibility, and rendered correction
 
-Goal: use current runtime pixels to correct composition before broad delivery
-work.
+Goal: correct actual production pixels and interaction states before the broad
+repository/export gate.
+
+Preconditions:
+
+- Phases 1-3 and their gates pass.
 
 Source owners: task-owned UI scenes/scripts/tests,
 `src/delivery/delivery_capture_runner.gd`,
 `.agents/evidence/cross-stage-ui-theme-2026-08-20/`
 
-- [ ] **4.1 Run the complete layout/state matrix.** Exercise every app state
-  and the all-30-stage model test at accepted and stress sizes in Korean and
-  English. Check bounds, overlap, clipping, minimum controls, focus order,
-  focus visibility, disabled/selected/completed states, long copy, tooltips,
-  and live accessibility names.
-- [ ] **4.2 Capture the representative Windows production matrix.** Export the
-  Windows release, then create task-owned background captures for:
-  - Main Menu, Stage Select, Pause, and Settings;
-  - Stage 01 Briefing/Aim/Result for the baseline target-band family;
-  - Stage 03 Aim/Shot Follow/Result for Apex Split and three-child queue/load;
-  - Stage 07 Aim/Result for the first legacy coverage family;
-  - Stage 30 Aim/Map/Result for late-game coverage/mechanism density;
-  - Korean 1280×720 for every named state, Korean 640×360 stress captures for
-    Stage Select/Stage 03 Aim/Settings, and English 1920×1080 for Main Menu,
-    Stage Select, Stage 03 Aim, Settings, and both Result variants.
-- [ ] **4.3 Personally inspect and correct the running pixels.** Compare the
-  four matching states with the TO-BE report in one visual input per state.
-  Record P0/P1/P2 findings, fix them in a coherent batch, and recapture only
-  invalidated states. Generated TO-BE images never count as runtime proof.
-- [ ] **4.4 Run the Web production UI journey.** Export Web, run static release
-  validation, load `$npjt-port-guard`, resolve the fastrun manager's current
-  `codex` lane, and serve the built artifact through that registered lane. In
-  one browser-control stack, exercise launch, resize, fullscreen, Main Menu,
-  Stage Select, Stage 03 Aim/Pause/Settings/Result, Stage 07 Aim/Result, focus,
-  and Korean/English switching. Stop only task-owned server/browser helpers.
-  - Accept: no clip/overlap, stale focus, input interception, console error, or
-    missing resource occurs. Record the exact lane/URL and artifact hash in the
-    evidence README; never hardcode the current port into durable source.
+- [ ] **4.1 Run the complete layout/state matrix.**
+  - Change: exercise every app/gameplay state, both locales, accepted sizes,
+    640x360 stress, disabled/selected/loading/failure/focus states, queue
+    descriptions, and both stage families.
+  - Accept: no essential control is below 24x24; routine controls target 40+
+    px; focus is visible and ordered; text, values, scale labels, tooltips, and
+    actions do not clip, overlap, escape, or rely on color alone.
+- [ ] **4.2 Capture the representative Windows production matrix.**
+  - Change: export Windows and run the existing background capture owner for
+    Main Menu, Stage Select, Pause, Settings; Stage 01 Briefing/Aim/Result;
+    Stage 03 Aim/Shot Follow/Result; Stage 07 Aim/Result; Stage 30 Aim/Map/
+    Result. Capture Korean 1280x720, named 640x360 stress states, and English
+    1920x1080 comparison states.
+  - Accept: every file is nonblank, correct-state, current-build, and records
+    stage/locale/viewport/renderer metadata.
+- [ ] **4.3 Inspect and correct the running pixels.**
+  - Change: compare the matching report target once per state, record P0/P1/P2
+    findings, fix a coherent batch, and recapture only invalidated states.
+  - Accept: no UI blocker remains; mountain/cannon/trajectory/paint dominate;
+    Cannon Focus hierarchy, actual Stage Select terrain, scale endpoints, queue
+    descriptions, spacing, typography, and action priority read correctly.
+- [ ] **4.4 Run the built-Web production UI journey.**
+  - Change: export Web, validate the release, load `$npjt-port-guard`, use the
+    fastrun manager `codex` lane, and exercise launch, resize, fullscreen, Main
+    Menu, Stage Select, Stage 03 Aim/Pause/Settings/Result, Stage 07 Aim/Result,
+    focus, queue descriptions, and language switching in one Chrome DevTools
+    stack. Stop task-owned helpers.
+  - Accept: no missing resource, console error, stale focus/terrain, input
+    interception, layout failure, or regression of the recorded M8 paint/
+    projectile responsiveness boundary. Record lane, URL, artifact hash, and
+    observations without hardcoding a port in source.
 
-Representative capture command shape:
+### Phase 5: Quality, broad gates, durable truth, and handoff
 
-```powershell
-Start-Process builds/windows/PaintMountain.exe -WindowStyle Hidden -ArgumentList @(
-  '--',
-  '--capture-background',
-  '--capture-screen=<state>',
-  '--capture-stage=<stage>',
-  '--capture-size=<size>',
-  '--capture-language=<locale>',
-  '--capture-output=<absolute-evidence-path>'
-) -PassThru -Wait
-```
+Goal: prove the cross-module UI change is maintainable and production-ready.
 
-### Phase 5 — Quality audit, broad gates, records, and handoff
+Preconditions:
 
-Goal: prove the multi-file UI change did not create competing owners or regress
-the production path.
+- Phase 4 passes and rendered correction is stable.
 
-- [ ] **5.1 Run `$codebase-quality-auditor`.** Audit task-owned changes for
-  duplicated palette/layout overrides, catch-all HUD growth, competing state
-  owners, unreachable failure/loading states, test weakening, and missing
-  all-stage validation. Apply only small safe task-scoped corrections.
-- [ ] **5.2 Run the broad repository gate once.** Announce scope and expected
-  cost before starting. Run after implementation, focused tests, captures, and
-  audit are stable:
+- [ ] **5.1 Run `$codebase-quality-auditor`.**
+  - Change: audit task-owned changes for competing Theme/component owners,
+    catch-all HUD growth, duplicated layout logic, stale callers, reachable
+    loading/failure/focus gaps, test weakening, and missing all-stage coverage;
+    apply only small safe corrections.
+  - Accept: no material finding remains in the task-owned surface.
+- [ ] **5.2 Run the broad production gate once.**
+  - Change: after announcing cost/scope, run:
 
 ```powershell
 pwsh -NoProfile -File scripts/test.ps1 -GodotPath $env:GODOT_BIN
@@ -446,143 +380,93 @@ pwsh -NoProfile -File scripts/verify.ps1 -GodotPath $env:GODOT_BIN
 pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/web
 ```
 
-- [ ] **5.3 Record implemented truth.** Update `.agents/Documentation.md` and
-  `docs/test-checklist.md` with only proven runtime behavior, link the evidence
-  README, record exact Godot version/renderer/locale/viewport/artifact hashes,
-  and mark this plan `done` only when every acceptance check passes.
-- [ ] **5.4 Commit coherent task-owned batches.** Keep foundation, app screens,
-  gameplay/all-stage migration, and final evidence/records separable when their
-  ownership supports it. Each commit body states what changed. Do not stage or
-  rewrite unrelated user work.
+  - Accept: suite, verification, both exports, and Web static verifier pass on
+    the final inputs.
+- [ ] **5.3 Record implemented truth and close the plan.**
+  - Change: update `.agents/Documentation.md`, `docs/test-checklist.md`, design
+    authority, and the evidence README with only proven behavior, exact Godot/
+    renderer/locale/viewport/build hashes, checks, and remaining warnings.
+  - Accept: docs agree with runtime and this plan; every task/gate is checked;
+    frontmatter becomes `done`.
+- [ ] **5.4 Finish coherent commits and a clean worktree.**
+  - Change: keep plan/design, shared foundation, app screens, gameplay/all-stage,
+    and final evidence/records in responsibility-shaped commits with bodies;
+    stage no unrelated user work.
+  - Accept: `git status --short` is clean and log/diff scope matches this plan.
 
-## Validation and rework controls
+## Validation and Rework Controls
 
-| Cadence | Check | Run when | Rerun only after |
+| Cadence | Exact check | Run when | Do not rerun until |
 | --- | --- | --- | --- |
-| Inner loop | One named Godot test with `--quit-after 7200` | A task changes its scene/script/Theme/translation contract | A relevant input or assertion changes |
-| Phase gate | Exact commands listed under that phase | All tasks in that phase pass local checks | A phase-owned input changes |
-| Render correction | Named production capture subset | A visible batch is coherent | A visible owner or capture prerequisite changes |
-| Web journey | Built Web artifact on the protected codex lane | Windows render correction and Web export pass | Web-visible source/export input changes |
-| Broad gate | `scripts/test.ps1`, `scripts/verify.ps1`, both exports, Web verifier | Implementation and quality audit are substantially complete | A production, test, project, or export input changes |
+| Inner loop | one named Godot test with `--quit-after 7200` | a task changes its scene/script/Theme/translation contract | that input or assertion changes |
+| Phase gate | exact commands listed under that phase | all phase tasks pass their acceptance checks | a phase-owned input changes |
+| Render correction | named production capture subset | a visible batch is coherent | a visible owner/capture prerequisite changes |
+| Web journey | built Web artifact on protected `codex` lane | Windows pixels and Web export are current | a Web-visible source/export input changes |
+| Final gate | `scripts/test.ps1`, `scripts/verify.ps1`, both exports, Web verifier | implementation, pixels, and audit are stable | a production/test/project/export input changes |
 
-Rules:
+Validation rules:
 
-- Keep implementation and validation separate. Use focused checks while
-  building and run the broad gate once near completion.
-- A passing check remains current until a relevant input changes.
-- Rerun a failed check only after an implementation change or new hypothesis
-  can produce different evidence.
-- Save large logs and screenshots under the task evidence directory and link
-  them from its README; do not paste them into this plan.
-- Headless contracts support visual judgment but never replace current
-  running-game captures.
+- On start/resume, read this contract and inspect the worktree only enough to
+  confirm the next unchecked task's inputs.
+- Treat checked tasks and recorded passing evidence as current until a relevant
+  input changes or the final gate becomes due.
+- Run the narrowest check that proves the current task. Do not use headless
+  success as visual proof.
+- Rerun a failed check only after a relevant implementation change or a new
+  hypothesis can change the result.
+- Update task checkboxes and the single progress pointer together after each
+  checkpoint. Do not mirror task state in another progress document.
+- Save large logs/captures under the task evidence directory and link them.
 
-## Acceptance checks
+## Predetermined Contingencies and Change Control
 
-- [ ] Main Menu, Stage Select, Briefing, Aim, Map, Shot Follow, Pause, Settings,
-  Result, loading, failure, disabled, and transient-feedback states use one
-  coherent Theme and hierarchy.
-- [ ] All 30 current stages resolve the canonical Theme and correct conditional
-  target-band or coverage presentation without stage-specific UI copies.
-- [ ] Every score/coverage visualization shows the complete 0–100 axis with
-  visible 0/25/50/75/100 labels, an in-bounds current marker, and an in-bounds
-  target segment/threshold at every accepted and stress size.
-- [ ] Aim, Map, and Shot Follow use the vertical `ScoreScale`; Briefing and
-  Result use its horizontal preset. Both orientations expose the same values
-  and never clip or reverse their documented endpoints.
-- [ ] Every prototype `BallQueue` token reveals the same kind, order, paint
-  role, and short behavior description on pointer hover, keyboard focus, and
-  press/touch; accessible names/descriptions carry equivalent information.
-- [ ] Stage Select shows the actual selected stage's newest prepared terrain
-  behind `StageRail`, updates it on selection without committing `GameState`,
-  and never displays a generic or stale landscape.
-- [ ] Every visible presentational structure is a shared component or Theme
-  role; gameplay, Briefing, Stage Select, and Result contain no decorative
-  panel/card/sheet and no scene-local StyleBox, palette, font, or icon copy.
-- [ ] The mountain, cannon, trajectory, target/impact area, active projectile,
-  and painted result remain the dominant gameplay layer at accepted sizes.
-- [ ] Each state exposes at most one filled blue primary action and preserves
-  every real action, focus path, shortcut, tooltip, loading/error path, and
-  state transition.
-- [ ] Korean and English pass the accepted size matrix with no clipping,
-  overlap, screen escape, or ambiguous label ownership. Stress sizes retain all
-  Priority 1 information and legal actions.
-- [ ] Focus, disabled, selected, completed, target-band, Red/Green, and danger
-  states are distinguishable without color alone and meet the locked contrast/
-  target-size contract.
-- [ ] Focused tests, all-stage contract, codebase quality audit, broad suite,
-  verification, Windows/Web exports, Web static validation, Windows rendered
-  matrix, and built-Web journey pass.
-- [ ] `.agents/Documentation.md`, design authority, test checklist, evidence,
-  and this plan agree with implemented truth.
-
-## Regression guards and predetermined contingencies
-
-| Trigger | Required response | Forbidden response |
+| Trigger | Required response | Boundary or escalation point |
 | --- | --- | --- |
-| A generated-image detail conflicts with current gameplay or copy | Preserve real behavior/data and apply only its hierarchy/spacing principle | Removing a real action or inventing a value to match the image |
-| Stages 1–6 and 7–30 require different data fields | Use conditional regions inside the shared component/API | Forking the whole HUD or adding stage-number conditionals to Theme |
-| A supported size clips | Recompose with Containers, priority collapse, wrapping, or bounded scrolling | Shrinking essential text below its role or moving controls off-screen |
-| A `ScoreScale` endpoint, tick, marker, or target segment clips | Correct the shared component's clamping, label reserve, or minimum geometry and rerun every caller | Zooming the scale to the current target range or fixing one screen locally |
-| A tooltip clips, obscures another token, or cannot be reached by keyboard/touch | Reposition the shared tooltip against the safe edge and fix the shared token interaction/focus contract | Adding screen-local tooltip geometry or making hover the only explanation path |
-| Stage Select shows no terrain or the wrong selected stage | Keep the current valid preview visible until the newest selected `StageRuntimeArtifact` is ready, then swap atomically | Creating a second preview renderer, committing selection early, or showing generic fallback art |
-| A Theme variation harms another screen | Narrow the semantic variation and migrate intended users explicitly | Creating a second Theme/palette owner |
-| A screen needs a visual role not exposed by a shared component | Add or refine the smallest responsibility-shaped shared component, then migrate every current user | Adding scene-local StyleBox, icon, palette, font, card, or panel styling |
-| `HUDController` begins accumulating layout-only branches | Move presentation behavior into a responsibility-shaped component | Moving StageController decisions into UI code |
-| A test encodes the superseded presentation | Update only its visual assertion while retaining behavior/state guards | Deleting or weakening a test to make the gate pass |
-| A production capture is blank, wrong-state, clipped, or stale | Reject it, fix the prerequisite/implementation, and recapture that state | Claiming scene inspection or a generated still as runtime proof |
-| The Web artifact exposes an input/focus issue | Fix the smallest UI/input-owner defect and rerun the affected journey | Changing paint/gameplay, enabling Web threads, or adding a shell overlay without evidence |
-| Existing active prototype publication work overlaps the same artifact | Stop the publication branch, preserve both plans' evidence, and coordinate a new artifact boundary | Overwriting or republishing the artifact under proof |
-| A dependency, font, asset pack, gameplay rule, save schema, or public-state change appears necessary | Stop and request explicit authorization with the minimal evidence | Expanding this plan's authority |
+| Material fact contradicts this contract | stop the affected branch and update the contract | executor may not choose a new UX, architecture, dependency, gameplay, or validation contract |
+| Generated-image detail conflicts with runtime truth | preserve real behavior/data and apply only hierarchy/spacing | never invent/remove an action/value to match a still |
+| Shared scale clips | fix shared label reserve/clamping/minimum geometry and rerun callers | never zoom to the target range or patch one screen |
+| Queue description clips or is hover-only | fix shared safe-edge placement and focus/press path | never add screen-local tooltip geometry |
+| Stage Select terrain is stale/blank/wrong | retain the previous valid artifact until the newest selected one is ready, then swap atomically | never create generic art, a second renderer, or early GameState commit |
+| A stress size cannot fit Priority 3 copy | shorten/wrap/suppress duplicated hints | never hide score endpoints, angle, power, Fire, queue truth, or legal actions |
+| Theme variation harms another screen | narrow the semantic variation and migrate intended users | never create another Theme/palette owner |
+| `HUDController` grows layout-only branches | move presentation behavior into a component/layout owner | never move StageController/PaintSystem rules into UI |
+| Existing visual test encodes a superseded panel/card | update only the visual assertion and preserve behavior/state guards | never delete/weaken a test to pass |
+| Public itch proof is requested | stop, present final local artifact/hash/evidence, and obtain explicit authorization | no workflow dispatch, upload, channel/visibility mutation, or public claim without approval |
 
-## Progress and next step
+Implementation-local mechanics may be handled inside the locked contract when
+they cannot change scope, visible behavior, ownership, architecture, safety, or
+acceptance.
 
-- [x] 2026-08-20 discovery: inspected current implementation record, design
-  authority, completed Quiet Context plan, active target-band plan, shared UI
-  owners, representative tests, latest running-game captures, and relevant
-  Godot 4.7 primary documentation.
-- [x] 2026-08-20 corrected direction package: inspected four external game UI
-  references, replaced the panel-heavy concepts with four Compact Overlay
-  current-to-TO-BE comparisons, added a deterministic shared-component system
-  diagram, and locked the complete 0–100 score-scale contract in the report,
-  design authority, and this plan.
-- [x] 2026-08-20 aiming-selection correction: added three selectable Aim
-  compositions, made Edge Balance the execution default, switched live score
-  presentation to the vertical 0–100 preset, specified shared BallQueue hover/
-  focus/press descriptions, and grounded Stage Select in the existing prepared
-  terrain preview owner instead of generic landscape art.
-- [ ] Current phase: Phase 1.
-- [ ] Next task: 1.2, extend the canonical Theme roles before changing screen
-  compositions.
+## Progress and Next Steps
 
-Checkpoint rule: after each numbered phase gate passes, update this section in
-the same commit with the completed task boxes, concise validation evidence, and
-the next task. Do not create a separate progress plan.
+- Canonical progress: task checkboxes in this contract.
+- Current phase: Phase 1.
+- Next task: 1.2, extend the canonical Theme and ownership contract.
+- Last completed gate: Discovery Closure Gate; Godot 4.7.1, project wrappers,
+  relevant source owners, existing tests, report evidence, and prior M7-M9
+  evidence were verified on 2026-08-20.
+- Update rule: after a checkpoint passes, record concise evidence, check the
+  task, and advance this pointer in the same edit.
 
-## Completion and stop conditions
+## Completion and Stop Conditions
 
-Complete only when:
+Complete when:
 
-- Every task and acceptance check passes.
-- Every named state and both stage families have current production rendered
-  evidence, and all 30 stages pass the shared presentation contract.
-- Windows/Web production checks and the built-Web journey pass.
-- Durable design and implementation truth is recorded in its canonical owner.
-- Frontmatter status changes to `done` and no implementation task remains.
+- Every task acceptance check and every named phase/final gate passes.
+- Current production renders prove the named states, both stage families,
+  locales, and responsive sizes.
+- Durable design/implementation/test truth agrees with the final runtime.
+- No placeholder, unresolved material decision, or task-owned dirty file
+  remains, and frontmatter is `done`.
 
 Replan when:
 
-- A verified material fact invalidates the locked visual hierarchy, stage-
-  family split, component ownership, dependency boundary, or validation path.
+- A verified material discovery invalidates Cannon Focus hierarchy, shared
+  component ownership, stage-family split, Stage Select artifact path,
+  dependency boundary, or validation path.
 
-Stop and ask the user when:
+Do not replan or stop for:
 
-- Completion requires a new dependency/font/asset pack, gameplay or save
-  change, destructive action, public itch action, or a visible direction that
-  materially departs from Compact Overlay.
-
-Do not stop or replan for:
-
-- Implementation-local Container choices, semantic variation names, or small
-  copy wrapping adjustments that remain inside this contract.
+- Container details, semantic variation names, or concise copy adjustments
+  that remain inside the locked contract.
 - A passing check whose relevant inputs have not changed.

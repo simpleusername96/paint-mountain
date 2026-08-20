@@ -153,6 +153,12 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
+The canonical Aim composition is **Cannon Focus**. `ScoreScale` stays at the
+safe left edge, `BallQueue` is horizontal at the upper-right, and the lower
+interaction sequence reads angle -> Fire -> power around the cannon. At compact
+sizes, the sequence may tighten and drop redundant text, but angle, power, Fire,
+queue truth, and both score endpoints remain visible and operable.
+
 - Use the active ExecPlan's baseline rectangles as implementation evidence, not
   permanent design tokens. Recompose a component when its minimum size,
   internal padding, or world obstruction contradicts the hierarchy.
