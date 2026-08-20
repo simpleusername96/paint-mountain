@@ -28,12 +28,12 @@ func _run() -> void:
 		"the selected prototype stage must have one visible active rail node")
 	_assert("◎" in preview_stats.text and "7–11" in preview_stats.text,
 		"prototype preview must show its target-band range")
-	_assert(tr("ball.standard") in preview_stats.text,
-		"prototype preview must list allowed kinds: %s" % preview_stats.text)
+	_assert(tr("ball.standard") in preview_stats.accessibility_name,
+		"prototype preview must expose allowed kinds through its detail: %s" % preview_stats.accessibility_name)
 	_assert(
-		(tr("ball.impact_burst") in preview_stats.text) \
+		(tr("ball.impact_burst") in preview_stats.accessibility_name) \
 				== (BallKind.Value.IMPACT_BURST in StageCatalog.get_stage(&"stage_01").ball_deal_profile.allowed_kinds),
-		"prototype preview must match the current allowed-kind profile: %s" % preview_stats.text
+		"prototype preview must match the current allowed-kind profile: %s" % preview_stats.accessibility_name
 	)
 
 	stage_select.set_page_for_capture(1)
@@ -50,13 +50,13 @@ func _run() -> void:
 	await process_frame
 	hud.configure(StageCatalog.get_stage(&"stage_01"))
 	hud.show_state(StageController.State.BRIEFING)
-	var briefing_objective := hud.get_node("HUDRoot/BriefingObjective") as Label
-	_assert(briefing_objective.visible and not briefing_objective.text.is_empty(),
-		"prototype briefing must introduce its active rule")
+	var score_scale := hud.get_node("HUDRoot/ScoreScale") as ScoreScale
+	_assert(score_scale.visible and score_scale.target_range().is_equal_approx(Vector2(7.0, 11.0)),
+		"prototype briefing must introduce its active rule through the shared scale")
 	hud.configure(StageCatalog.get_stage(&"stage_09"))
 	hud.show_state(StageController.State.BRIEFING)
-	_assert(not briefing_objective.visible,
-		"legacy briefing must not show target-band prototype copy")
+	_assert(score_scale.visible and score_scale.target_range().x > 0.0,
+		"legacy briefing must present its coverage target through the same scale")
 
 	TranslationServer.set_locale(previous_locale)
 	game_state.persistence_enabled = true

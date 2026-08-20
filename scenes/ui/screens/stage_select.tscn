@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/ui/screens/stage_select_screen.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/stage_rail.tscn" id="2_rail"]
-[ext_resource type="PackedScene" path="res://scenes/ui/components/contrast_scrim.tscn" id="3_scrim"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/world_gradient_scrim.tscn" id="3_scrim"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="4_action"]
 
 [node name="StageSelect" type="CanvasLayer"]
@@ -20,7 +20,7 @@ grow_vertical = 2
 [node name="BottomScrim" parent="Root" instance=ExtResource("3_scrim")]
 unique_name_in_owner = true
 layout_mode = 0
-theme_type_variation = &"WorldScrim"
+direction = 1
 
 [node name="Back" type="Button" parent="Root"]
 unique_name_in_owner = true

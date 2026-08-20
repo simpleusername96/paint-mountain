@@ -78,6 +78,7 @@ func _run_checks() -> void:
 	_assert_absent(hud_root, [
 		"BriefingPanel",
 		"BriefingRule",
+		"BriefingObjective",
 		"ContextLegend/Divider",
 		"ResultPanel/Margin/Content/CoverageLabel",
 		"ResultPanel/Margin/Content/CoverageExplanation",
@@ -86,7 +87,6 @@ func _run_checks() -> void:
 	_assert_present(hud_root, [
 		"BriefingActions/Back",
 		"BriefingActions/Start",
-		"BriefingObjective",
 		"ResultPanel/Margin/Content/Summary",
 		"ResultPanel/Margin/Content/Actions/Retry",
 		"ResultPanel/Margin/Content/Actions/Next",

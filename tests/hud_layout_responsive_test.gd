@@ -99,9 +99,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		aim.get_global_rect().encloses((aim.get_node("Content") as Control).get_global_rect()),
 		"AimControls must contain its content at %s" % viewport_size
 	)
-	if viewport_size.x >= 960 and viewport_size.y >= 620:
-		_assert_inside(legend, safe_rect, "ContextLegend at %s (%s)" % [viewport_size, locale])
-	else:
+	if viewport_size.x < 960 or viewport_size.y < 620:
 		_assert_true(aim.visible and not legend.visible, "compact layout must retain aim controls and suppress only hints at %s" % viewport_size)
 		_assert_pairwise_non_overlap([
 			score_scale,
@@ -140,15 +138,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"Fire must occupy the Cannon Focus gap between angle and power at %s" % viewport_size
 	)
 
-	if legend.visible:
-		var items := legend.get_node("Center/Items") as HFlowContainer
-		_assert_true(items.clip_contents == false and legend.clip_contents, "legend must wrap within its bounded root")
-		_assert_inside(items, legend.get_global_rect(), "legend contents at %s (%s)" % [viewport_size, locale])
-		for path in ["AngleItem", "PowerItem", "FireItem", "MenuItem"]:
-			_assert_true(
-				(legend.get_node("Center/Items/%s" % path) as Control).is_visible_in_tree(),
-				"primary legend cue %s must survive at %s (%s)" % [path, viewport_size, locale]
-			)
+	_assert_true(not legend.visible, "Aim must not repeat visible controls in a text legend at %s" % viewport_size)
 
 	_assert_true(
 		queue.size.y >= queue.get_combined_minimum_size().y,

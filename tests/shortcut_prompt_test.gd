@@ -29,25 +29,20 @@ func _run_checks() -> void:
 	await process_frame
 	var legend := root_control.get_node("ContextLegend") as ContextLegend
 	_assert_true(
-		legend.visible and legend.context_mode == ContextLegend.Mode.AIM,
-		"Aim View must expose one shared Aim context legend"
+		not legend.visible,
+		"Aim View must not repeat its visible controls in a text legend"
 	)
-	_assert_legend_contains(legend, ["S/W", "Space", "F", "Tab", "Esc", "각도", "파워", "발사", "완료"])
 	_assert_true(
 		"Space" not in (root_control.get_node("ActionButtons/FireButton") as Button).text,
-		"Fire control must leave Space to the context legend"
+		"Fire control must keep its visible copy compact"
 	)
 	_assert_true(
 		"F" not in (root_control.get_node("RunStatusCard/Finish") as Button).text,
-		"Finish control must leave F to the context legend"
+		"Finish control must keep its visible copy compact"
 	)
 	_assert_true(
 		"Tab" not in (root_control.get_node("CameraInteractionControl") as Button).text,
-		"camera mode control must leave Tab to the context legend"
-	)
-	_assert_true(
-		(legend.get_node("Center/Items/PowerItem/Input") as TextureRect).texture != null,
-		"Aim context must use the real mouse-wheel glyph"
+		"camera mode control must keep its visible copy compact"
 	)
 	_assert_true(
 		root_control.get_node_or_null("AimControls/Content/YawHint") == null,
@@ -79,7 +74,8 @@ func _run_checks() -> void:
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
 		root_control.get_node("CameraInteractionControl").visible \
-				and not root_control.get_node("ActionButtons").visible,
+				and not root_control.get_node("ActionButtons").visible \
+				and legend.visible,
 		"Map View must keep its Tab control and hide aim-only actions"
 	)
 	_assert_true(
@@ -93,21 +89,18 @@ func _run_checks() -> void:
 	_assert_true(
 		root_control.get_node("ReturnToCannon").visible \
 				and not root_control.get_node("ActionButtons").visible \
-				and legend.context_mode == ContextLegend.Mode.FOLLOW,
-		"Shot Follow must show Return with Tab without aim prompts"
+				and not legend.visible,
+		"Shot Follow must show the direct Return action without repeated prompts"
 	)
-	_assert_legend_contains(legend, ["Tab", "대포로 돌아가기", "Esc"])
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
 	_assert_true(
 		controller.toggle_pause(), "Escape prompt fixture must enter pause"
 	)
 	await process_frame
-	var pause_legend := root_control.get_node("PauseOverlay/ContextLegend") as ContextLegend
 	_assert_true(
-		pause_legend.visible and pause_legend.context_mode == ContextLegend.Mode.PAUSE,
-		"Pause must use the same context legend primitive"
+		root_control.get_node_or_null("PauseOverlay/ContextLegend") == null,
+		"Pause must not repeat its direct Continue action in a text legend"
 	)
-	_assert_legend_contains(pause_legend, ["Esc", "계속"])
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.physical_keycode = KEY_ESCAPE
@@ -156,7 +149,7 @@ func _run_checks() -> void:
 	TranslationServer.set_locale("ko")
 	game_state.persistence_enabled = true
 	if not _failed:
-		print("Shortcut prompts passed: one responsive context legend, F shortcut, pause resume, and no R restart.")
+		print("Shortcut prompts passed: contextual map help, compact direct actions, pause resume, and no R restart.")
 	quit(1 if _failed else 0)
 
 

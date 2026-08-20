@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/world_gradient_scrim.gd" id="1_script"]
+
+[node name="WorldGradientScrim" type="Control"]
+mouse_filter = 2
+theme_type_variation = &"WorldGradientScrim"
+script = ExtResource("1_script")

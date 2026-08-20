@@ -323,14 +323,14 @@ Source owners: task-owned UI scenes/scripts/tests,
 `src/delivery/delivery_capture_runner.gd`,
 `.agents/evidence/cross-stage-ui-theme-2026-08-20/`
 
-- [ ] **4.1 Run the complete layout/state matrix.**
+- [x] **4.1 Run the complete layout/state matrix.**
   - Change: exercise every app/gameplay state, both locales, accepted sizes,
     640x360 stress, disabled/selected/loading/failure/focus states, queue
     descriptions, and both stage families.
   - Accept: no essential control is below 24x24; routine controls target 40+
     px; focus is visible and ordered; text, values, scale labels, tooltips, and
     actions do not clip, overlap, escape, or rely on color alone.
-- [ ] **4.2 Capture the representative Windows production matrix.**
+- [x] **4.2 Capture the representative Windows production matrix.**
   - Change: export Windows and run the existing background capture owner for
     Main Menu, Stage Select, Pause, Settings; Stage 01 Briefing/Aim/Result;
     Stage 03 Aim/Shot Follow/Result; Stage 07 Aim/Result; Stage 30 Aim/Map/
@@ -338,7 +338,7 @@ Source owners: task-owned UI scenes/scripts/tests,
     1920x1080 comparison states.
   - Accept: every file is nonblank, correct-state, current-build, and records
     stage/locale/viewport/renderer metadata.
-- [ ] **4.3 Inspect and correct the running pixels.**
+- [x] **4.3 Inspect and correct the running pixels.**
   - Change: compare the matching report target once per state, record P0/P1/P2
     findings, fix a coherent batch, and recapture only invalidated states.
   - Accept: no UI blocker remains; mountain/cannon/trajectory/paint dominate;
@@ -441,14 +441,14 @@ acceptance.
 
 - Canonical progress: task checkboxes in this contract.
 - Current phase: Phase 4.
-- Next task: 4.1, run the complete rendered layout/state matrix and correct
-  only evidence-backed pixel defects.
-- Last completed gate: Phase 3; the seven named gameplay-shell checks passed on
-  Godot 4.7.1 on 2026-08-20. The shared Cannon Focus HUD now covers Briefing,
-  Aim, Map, Shot Follow, and Result. `cross_stage_ui_theme_test` proves all 30
-  catalog stages use the fixed 0-100 scale and rule-appropriate shared fields;
-  the responsive check covers eight viewport models in Korean and English;
-  result checks prove one primary action and timeout/manual variants.
+- Next task: 4.4, export and exercise the built Web artifact on the protected
+  `codex` lane without touching the public itch release.
+- Last completed gate: Phase 4 Windows render correction; the 20-image release
+  matrix in `../evidence/cross-stage-ui-theme-2026-08-20/` covers app screens,
+  both stage families, real Shot Follow, queue detail, success/failure Results,
+  Korean/English, 1280x720, 1920x1080, and 640x360. All files are current-build
+  and nonblank. Hard sheet edges, repeated copy, Map hint density, and English
+  result wrapping were corrected; no P0/P1 visual issue remains.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

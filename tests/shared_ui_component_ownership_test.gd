@@ -13,6 +13,7 @@ func _run() -> void:
 	var theme: Theme = load("res://resources/ui/paint_mountain_theme.tres")
 	for variation in [
 		&"ScoreScale", &"BallQueue", &"ValueStepper", &"StageRail", &"ResultSummary",
+		&"WorldGradientScrim",
 	]:
 		_assert(theme.is_type_variation(variation, &"Control")
 				or theme.is_type_variation(variation, &"HBoxContainer")
@@ -48,6 +49,7 @@ func _run() -> void:
 		"res://scenes/ui/components/stage_rail.tscn",
 		"res://scenes/ui/components/result_summary.tscn",
 		"res://scenes/ui/components/contrast_scrim.tscn",
+		"res://scenes/ui/components/world_gradient_scrim.tscn",
 	]:
 		var instance := (load(scene_path) as PackedScene).instantiate()
 		root.add_child(instance)

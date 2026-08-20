@@ -243,7 +243,9 @@ func _update_preview() -> void:
 			tr("stage.best"), float(best.get("coverage", 0.0)),
 			_stars_text(int(best.get("stars", 0))),
 		]
-	_preview_stats.text = compact_stats if _compact else full_stats
+	# Keep the world-facing line scannable; full rule detail remains available
+	# through the shared tooltip/accessibility path without clipping the terrain.
+	_preview_stats.text = compact_stats
 	_preview_stats.tooltip_text = full_stats
 	_preview_stats.accessibility_name = full_stats
 	_apply_start_preparation_state()

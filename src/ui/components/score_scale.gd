@@ -52,6 +52,13 @@ func set_world_mode(enabled: bool) -> void:
 	_current_value.theme_type_variation = &"ResultWorldValue" if enabled else &"HudValue"
 	for index in TICKS.size():
 		_tick_label(index).theme_type_variation = &"WorldCaption" if enabled else &"HudCaption"
+	for contribution in [_red, _green]:
+		if enabled:
+			contribution.add_theme_color_override(&"font_outline_color", Color("09111be6"))
+			contribution.add_theme_constant_override(&"outline_size", 3)
+		else:
+			contribution.remove_theme_color_override(&"font_outline_color")
+			contribution.remove_theme_constant_override(&"outline_size")
 	queue_redraw()
 
 

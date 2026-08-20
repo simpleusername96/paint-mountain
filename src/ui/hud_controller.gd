@@ -27,7 +27,6 @@ signal angle_step_requested(direction: float)
 @onready var _return_to_cannon: ActionControl = %ReturnToCannon
 @onready var _result: ResultPanel = %ResultPanel
 @onready var _briefing: Control = %BriefingActions
-@onready var _briefing_objective: Label = %BriefingObjective
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
@@ -134,7 +133,7 @@ func show_state(state: StageController.State) -> void:
 	# The interaction toggle is the only mode label during the Board Phase.
 	# Keeping the serial-state "Aiming" chip beside "Map Inspection" is
 	# truthful internally but contradictory to players.
-	_top.mode_value.get_parent().visible = state != StageController.State.AIMING
+	_top.mode_value.get_parent().visible = state == StageController.State.BRIEFING
 	_briefing.visible = state == StageController.State.BRIEFING
 	var aiming_surface := state in [
 		StageController.State.AIMING,
@@ -291,12 +290,6 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 func _refresh_briefing_locale() -> void:
 	%Back.configure("ui.back")
 	%Start.configure("ui.start_aiming")
-	if _stage_data == null or not _stage_data.uses_target_band():
-		_briefing_objective.text = ""
-		return
-	var key := "stage.prototype_briefing.%d" % _stage_data.stage_number
-	var translated := tr(key)
-	_briefing_objective.text = translated if translated != key else tr("stage.prototype_briefing.default")
 
 
 func _refresh_context_legend() -> void:
@@ -309,7 +302,7 @@ func _refresh_context_legend() -> void:
 	if _current_state != StageController.State.AIMING:
 		_context_legend.visible = false
 		return
-	_context_legend.visible = true
+	_context_legend.visible = _current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION
 	if _current_camera_mode == CameraDirector.Mode.FOLLOW:
 		_context_legend.set_context(ContextLegend.Mode.FOLLOW)
 	elif _current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION:
@@ -344,7 +337,6 @@ func _apply_finish_availability() -> void:
 
 func _apply_target_rule_visibility() -> void:
 	var target_rule := _stage_data != null and _stage_data.uses_target_band()
-	_briefing_objective.visible = target_rule and _current_state == StageController.State.BRIEFING
 	_score_scale.visible = _current_state in [
 		StageController.State.BRIEFING,
 		StageController.State.AIMING,

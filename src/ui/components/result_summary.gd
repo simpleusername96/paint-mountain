@@ -17,8 +17,9 @@ func set_verdict(verdict: String, value: String) -> void:
 	accessibility_name = "%s · %s" % [verdict, value]
 
 
-func set_facts(text: String) -> void:
+func set_facts(text: String, accessible_text: String = "") -> void:
 	%Facts.text = text
+	%Facts.accessibility_name = accessible_text if not accessible_text.is_empty() else text
 
 
 func set_timeout_visible(visible: bool) -> void:

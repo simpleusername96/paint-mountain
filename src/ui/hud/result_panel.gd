@@ -127,20 +127,19 @@ func _refresh_copy() -> void:
 			_summary.configure_target_band(
 				_target_band, _score_rule, _target_coverage_snapshot, _target_score
 			)
-		_summary.set_facts("%s · R %.1f%%  G %.1f%% · %s" % [
-			_stars_text(),
-			_target_coverage_snapshot.red_percent,
-			_target_coverage_snapshot.green_percent,
-			_metadata_text(),
-		])
+		_summary.set_facts(
+			"%s · %s" % [_stars_text(), _metadata_text()],
+			_accessible_facts(false)
+		)
 		return
 	var verdict := tr("result.time_expired") if _finish_reason == &"timeout" \
 			else tr("result.completed")
 	_summary.set_verdict(verdict, "%.1f%%" % _final_coverage)
 	_summary.configure_coverage(_target_coverage, _final_coverage)
-	_summary.set_facts("%s · %s %.1f%% · %s" % [
-		_stars_text(), tr("result.previous_best"), _previous_best, _metadata_text(),
-	])
+	_summary.set_facts(
+		"%s · ↑ %.1f%% · %s" % [_stars_text(), _previous_best, _metadata_text()],
+		_accessible_facts(true)
+	)
 
 
 func _refresh_actions() -> void:
@@ -167,19 +166,27 @@ func _set_primary(action: ActionControl, primary: bool) -> void:
 
 
 func _stars_text() -> String:
-	return "%s %s" % [
-		tr("result.grade"),
-		"★".repeat(_star_count) + "☆".repeat(maxi(0, 3 - _star_count)),
-	]
+	return "★".repeat(_star_count) + "☆".repeat(maxi(0, 3 - _star_count))
 
 
 func _metadata_text() -> String:
 	var facts: Array[String] = []
 	if _elapsed_seconds >= 0.0:
-		facts.append(_format_duration(_elapsed_seconds))
+		facts.append("◷ %s" % _format_duration(_elapsed_seconds))
 	if _shots_used >= 0:
-		facts.append("%d %s" % [_shots_used, tr("result.shots_used")])
+		facts.append("◉ %d" % _shots_used)
 	return " · ".join(facts)
+
+
+func _accessible_facts(include_previous_best: bool) -> String:
+	var facts: Array[String] = ["%s %s" % [tr("result.grade"), _stars_text()]]
+	if include_previous_best:
+		facts.append("%s %.1f%%" % [tr("result.previous_best"), _previous_best])
+	if _elapsed_seconds >= 0.0:
+		facts.append("%s %s" % [tr("result.elapsed"), _format_duration(_elapsed_seconds)])
+	if _shots_used >= 0:
+		facts.append("%s %d" % [tr("result.shots_used"), _shots_used])
+	return "; ".join(facts)
 
 
 func _format_duration(seconds: float) -> String:

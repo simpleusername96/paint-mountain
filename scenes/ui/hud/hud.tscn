@@ -132,17 +132,6 @@ offset_right = 380.0
 offset_bottom = -90.0
 grow_vertical = 0
 
-[node name="BriefingObjective" type="Label" parent="HUDRoot"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 24.0
-offset_top = 270.0
-offset_right = 380.0
-offset_bottom = 346.0
-theme_type_variation = &"WorldBody"
-text = "Finish inside the target band."
-autowrap_mode = 2
-
 [node name="Back" parent="HUDRoot/BriefingActions" instance=ExtResource("16_action")]
 unique_name_in_owner = true
 layout_mode = 0

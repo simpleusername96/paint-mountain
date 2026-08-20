@@ -90,6 +90,8 @@ func _run_capture() -> void:
 			await _capture_target_late_queue(_capture_stage)
 		"target_special_queue":
 			await _capture_target_special_queue(_capture_stage)
+		"target_queue_description":
+			await _capture_target_queue_description(_capture_stage)
 		"impact_burst_midflight":
 			await _capture_special_ball_midflight(&"stage_02", BallKind.Value.IMPACT_BURST)
 		"apex_split_midflight":
@@ -350,6 +352,9 @@ func _capture_shot_follow_midflight(stage_id: StringName) -> void:
 	var controller := gameplay.get_node("StageController") as StageController
 	var cannon := gameplay.get_node("Cannon") as CannonController
 	var director := gameplay.get_node("CameraDirector") as CameraDirector
+	# Keep a real root airborne through the production readback interval even
+	# when the default low route contacts this stage in under 45 fixed ticks.
+	cannon.set_aim(cannon.yaw_degrees, 68.0, 50.0, true)
 	await _wait_for_cannon_prediction(cannon)
 	if not controller.request_fire():
 		_fail_capture("mid-flight capture could not fire the default root")
@@ -458,6 +463,25 @@ func _capture_target_special_queue(stage_id: StringName) -> void:
 		controller.shots_remaining, controller.stage_data.maximum_shots
 	)
 	await get_tree().process_frame
+
+
+func _capture_target_queue_description(stage_id: StringName) -> void:
+	await _capture_target_special_queue(stage_id)
+	if _failed:
+		return
+	var gameplay := _app.get_node_or_null("ActiveGameplay")
+	if gameplay == null:
+		_fail_capture("queue-description capture lost active Gameplay")
+		return
+	var queue := gameplay.get_node("HUD/HUDRoot/BallQueue") as BallQueue
+	var tokens := queue.token_views()
+	if tokens.is_empty() or not tokens[0].visible:
+		_fail_capture("queue-description capture has no visible current token")
+		return
+	tokens[0].request_description_for_test()
+	await get_tree().process_frame
+	if not queue.description_visible():
+		_fail_capture("queue-description capture did not expose shared detail")
 
 
 func _capture_special_ball_midflight(stage_id: StringName, kind: int) -> void:

@@ -132,7 +132,7 @@ func _run_checks() -> void:
 	_assert_true(hud_root.get_node("ResultPanel").visible, "terminal coverage snapshot must show the result interface")
 	var result_panel := hud_root.get_node("ResultPanel") as ResultPanel
 	_assert_true(result_panel.size.x <= 1280.0 * 0.40, "result overlay must keep at least 60 percent of the mountain visible")
-	_assert_true(result_panel.get_node("WorldScrim") is ContrastScrim, "result must use the shared world scrim")
+	_assert_true(result_panel.get_node("WorldScrim") is WorldGradientScrim, "result must use the shared world gradient")
 	_assert_true(result_panel.get_node("Margin/Content/Summary") is ResultSummary, "result must use the shared result summary")
 	_assert_true(result_panel.get_node("Margin/Content/Actions/Retry") is ActionControl, "result must expose retry through the shared action component")
 

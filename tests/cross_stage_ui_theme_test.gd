@@ -70,7 +70,7 @@ func _run() -> void:
 			result.show_coverage_result(0.0, 0, 0.0, 30.0, 1)
 		hud.show_state(StageController.State.RESULT)
 		await process_frame
-		_assert(result.visible and result.get_node("WorldScrim") is ContrastScrim,
+		_assert(result.visible and result.get_node("WorldScrim") is WorldGradientScrim,
 			"%s result must use the direct shared world overlay" % stage.stage_id)
 		var summary_scale := result.get_node("Margin/Content/Summary/ScoreScale") as ScoreScale
 		_assert(_range_is_valid(summary_scale.target_range()),

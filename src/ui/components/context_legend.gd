@@ -83,9 +83,9 @@ func _set_context_visibility() -> void:
 	%OrbitItem.visible = context_mode in [Mode.MAP, Mode.BRIEFING]
 	%PowerItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.BRIEFING]
 	%FireItem.visible = context_mode == Mode.AIM
-	%ModeItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.FOLLOW]
+	%ModeItem.visible = context_mode in [Mode.AIM, Mode.FOLLOW]
 	%FinishItem.visible = context_mode == Mode.AIM
-	%MenuItem.visible = context_mode != Mode.BRIEFING
+	%MenuItem.visible = context_mode not in [Mode.BRIEFING, Mode.MAP]
 
 
 func _visible_items_width() -> float:
