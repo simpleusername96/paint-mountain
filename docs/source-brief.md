@@ -2506,6 +2506,44 @@ Effective requirements:
 
 All earlier requirements not contradicted here remain in force.
 
+## Later User Supersession (2026-08-20): All-Stage Red/Green Target-Band Progression
+
+After reviewing the post-prototype stage split, the user required the
+Red/Green target-band loop and varied ball deals to continue after Stage 06.
+This supersedes only the clauses above that preserve legacy scalar coverage as
+the active rule for Stages 07-30 or defer the all-stage rule migration.
+
+User directive (verbatim):
+
+> 7단계 이후부터도 빨간색과 초록색을 이용해서, 다양한 공들을 이용해서 목표 구간에 도달하는 식으로 해야지...
+> 이게 계획문서에 없으면 계획문서를 일단 수정해.
+
+Effective requirements:
+
+- Every stage from 01 through 30 uses exclusive latest-writer Red/Green paint
+  ownership, a signed color score, and an inclusive target band. Stage 06 is no
+  longer the boundary between target-band and scalar-coverage rules.
+- Preserve the accepted Stage 01-06 rule values. Stages 07-30 use deterministic
+  data-driven rule patterns, bands, and deals so the same shared runtime and UI
+  owners apply across the catalog.
+- Stages 07-30 use the implemented Standard, Impact Burst, and Apex Split
+  roster. Their generated root deals must contain real kind variety, not merely
+  list special kinds as allowed possibilities; the final two opposite-color
+  Standard balls remain the correction reserve.
+- Existing terrain remains authoritative. This revision does not by itself
+  authorize deletion or replacement of the current terrain or mechanism
+  content, and it does not add a fourth ball kind, reroll, hold, swap, purchase,
+  or in-flight control.
+- Structural deal validation proves deterministic composition and capacity,
+  not physical or human clearability. Do not claim every stage is balanced or
+  human-validated until representative running-game witnesses and later tuning
+  evidence support that claim.
+- Consolidate this migration and its validation under
+  `.agents/execplans/2026-08-20-cross-stage-ui-theme.md` before the final local
+  production gate. Public itch publication remains separately authorized.
+
+All earlier requirements not contradicted here remain in force.
+
 ## Acceptance Criteria
 
 - The complete directive from the user's pasted message is present above without abridgment or paraphrase.

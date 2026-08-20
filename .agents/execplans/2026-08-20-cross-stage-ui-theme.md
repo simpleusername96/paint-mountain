@@ -1,14 +1,15 @@
 ---
 type: plan
-status: done
+status: active
 created: 2026-08-20
 last_reviewed: 2026-08-20
-scope: implement the user-selected Cannon Focus compact shared UI system across every reachable Paint Mountain screen and all 30 stages without changing gameplay rules
+scope: implement the user-selected Cannon Focus compact shared UI system, close the reported Web paint-queue latency, and migrate all 30 stages to the Red/Green three-ball target-band loop
 supersedes:
   - 2026-08-18-three-ball-target-band-prototype.md
 related:
   - ../PLANS.md
   - ../../docs/reports/ui-refinement-2026-08-20/index.html
+  - ../../docs/reports/itch-paint-latency-2026-08-20/index.html
   - ../../docs/source-brief.md
   - ../../docs/design-spec.md
   - ../../docs/technical-architecture.md
@@ -20,6 +21,7 @@ related:
   - ../design/VISUAL_REFERENCES.md
   - ../evidence/2026-08-20-m7-responsive-ui/README.md
   - ../evidence/2026-08-20-m8-web-latency/README.md
+  - ../evidence/2026-08-20-paint-queue-latency-correction/README.md
   - ../evidence/2026-08-20-m9-local-release/README.md
   - ../evidence/cross-stage-ui-theme-2026-08-20/README.md
 ---
@@ -30,9 +32,10 @@ Paint Mountain will use the report's selected C, **Cannon Focus**, composition
 as one shared Godot UI system. The running mountain, cannon, trajectory, paint,
 and authoritative stage values remain primary. Screens use reusable Theme roles
 and component scenes instead of screen-local cards, panels, palette copies, or
-stage-specific layouts. Work proceeds from shared primitives to application
-screens, then gameplay states, rendered correction, and one final production
-gate.
+stage-specific layouts. The same Red/Green target-band and limited three-ball
+queue now continues through Stage 30; Stage 06 is not a gameplay-rule boundary.
+Work proceeds from shared primitives to application screens, gameplay states,
+paint latency, the all-stage rule migration, and one final production gate.
 
 ## Purpose
 
@@ -41,7 +44,9 @@ gate.
   `docs/reports/ui-refinement-2026-08-20/index.html`.
 - Deliverable: one responsive shared UI across Main Menu, Stage Select,
   Briefing, Aim, Map, Shot Follow, Pause, Settings, Result, loading, failure,
-  disabled, focus, and transient states for all 30 stages.
+  disabled, focus, and transient states, plus deterministic Red/Green
+  target-band rules and varied Standard/Impact Burst/Apex Split deals for all
+  30 stages.
 - Completion state: every task and named gate passes; current Windows and Web
   production renders are inspected; durable implementation truth is recorded;
   the plan is `done` and the task-owned worktree is clean.
@@ -53,17 +58,24 @@ In scope:
 - The canonical Theme, shared UI component scenes/scripts, HUD and application
   screen composition, Korean/English copy fit, focus/accessibility behavior,
   responsive behavior, capture coverage, tests, exports, and local Web journey.
-- Stages 1-6 retain target-band, Red/Green contribution, and three-ball queue
-  truth. Stages 7-30 retain coverage and mechanism truth. Both use the same
-  presentation owners.
+- Stages 1-6 retain their accepted target-band values. Stages 7-30 migrate from
+  scalar coverage to deterministic Red/Green target bands and varied deals
+  using the existing Standard, Impact Burst, and Apex Split roster. Existing
+  terrain and mechanism content remains authoritative.
+- Stage-rule materialization, deterministic deal constraints, the immutable
+  catalog pointer/bundle, save-result compatibility, agent observations, shared
+  UI truth, focused tests, and representative running-game calibration for the
+  all-stage migration.
 - The completed responsive and Web-performance corrections from the superseded
   prototype plan remain prerequisites and regression guards.
 
 Out of scope:
 
-- Gameplay rules, stage values, physics, paint authority, camera rules, save
-  schema, new stages, new dependencies, fonts, plugins, asset packs, or a second
-  UI/render/capture framework.
+- New ball kinds, new stages, terrain replacement, mechanism deletion, reroll,
+  hold/swap/purchase actions, in-flight steering, physics changes beyond the
+  scoped paint-latency correction, paint-authority changes, camera-rule changes,
+  new dependencies, fonts, plugins, asset packs, or a second UI/render/capture
+  framework.
 - Public itch upload, channel mutation, visibility change, or deployed-artifact
   claim without a new explicit user authorization after the final local Web
   artifact is proven.
@@ -104,9 +116,9 @@ Destructive or irreversible actions:
 
 Exact actions requiring owner or user approval:
 
-- Adding/upgrading a dependency, font, plugin, or asset pack; changing gameplay
-  or saved data; destructive work outside obsolete migrated UI files; public
-  itch publication or channel/visibility mutation.
+- Adding/upgrading a dependency, font, plugin, or asset pack; adding another
+  ball kind or action; destructive work outside obsolete migrated UI files;
+  public itch publication or channel/visibility mutation.
 
 ## Discovery Closure
 
@@ -119,7 +131,9 @@ Exact actions requiring owner or user approval:
 | Cannon Focus controls | `AimControls` is one 480 px panel and compact mode hides all angle/power controls | `aim_controls.tscn`, `hud_root_layout.gd` | Compose two shared `ValueStepper`s around the shared Fire action; compact mode reflows rather than hides them | 1.5, 3.1 |
 | Stage Select terrain | Stage Select is a card/detail split and `_show_stage_select()` disables the preview world | `stage_select.tscn/.gd`, `app_root.gd` | Preserve paging/focus/loading truth, replace cards with `StageRail`, and publish prepared terrain atomically | 2.2 |
 | App and terminal screens | Main Menu, Briefing, Pause, Settings, and Result preserve real actions but use mixed containment | current scenes and running captures | Recompose with the same components/Theme; preserve every state and action | 2.1, 2.3, 3.2-3.4 |
-| Cross-stage truth | All 30 stages are data-driven; 1-6 use target-band/queue, 7-30 use coverage/mechanism fields | `StageCatalog`, `StageData`, `StageLayoutRepository` | Conditional data regions inside shared components; no stage-specific UI copies | 3.5 |
+| Cross-stage truth | All 30 stages are data-driven, but the active v10 catalog limits target-band/queue data to 1-6 | `StageCatalog`, `StageData`, `StageCatalogMaterializer`, `StageLayoutRepository` | Preserve 1-6 values; materialize target-band/queue data for 7-30 and remove the active UI/runtime stage-family split | 3.5, 7.1-7.5 |
+| Deal variety | `allowed_kinds` permits a special kind but does not require it to appear in a generated deal | `BallDealProfile`, `BallDealGenerator` | From Stage 07, every valid deal contains Standard plus at least one Impact Burst and one Apex Split; final opposite-color Standards remain the correction reserve | 7.2 |
+| Catalog migration | The current immutable generated bundle is contract v10 and must not be edited in place | `StageGenerationContract`, `StageCatalogBundleStore`, `build_stage_catalog.gd` | Build and atomically promote a v11 bundle from the reviewed v10 source; retain the old bundle as migration evidence | 7.3 |
 | Existing responsive work | M7 container/contrast work and accepted-size evidence pass, but its stress fallback hides essential aim controls | superseded prototype plan and M7 evidence | Preserve its safe-area/focus fixes; replace only the conflicting fallback | 3.1, 4.1 |
 | Existing Web performance work | M8 removed measured paint/projectile stalls and M9.1-9.3 proved local artifacts | M8/M9 evidence | Do not reopen completed optimization; run one final built-Web regression journey after UI changes | 4.4, 5.2 |
 | Validation path | Shared Godot 4.7.1 and project scripts/presets exist; CLI supports all named flags | installed binary `4.7.1.stable`, `scripts/*.ps1`, `export_presets.cfg` | Use focused headless checks, background captures, then one broad/export gate | all phases |
@@ -294,10 +308,11 @@ Source owners: `scenes/ui/hud/`, `src/ui/hud/`, `src/ui/hud_controller.gd`,
     container.
 - [x] **3.5 Prove all 30 stages through the shared presentation.**
   - Change: add `tests/cross_stage_ui_theme_test.gd` to present every catalog
-    stage through Briefing/Aim/Result models.
-  - Accept: Stages 1-6 expose only valid target-band/queue fields; Stages 7-30
-    expose only valid coverage/mechanism fields; every stage uses the canonical
-    Theme/components and fixed 0-100 scale; no stage resource owns layout/color.
+    stage through Briefing/Aim/Result models. The then-current catalog used
+    shared target-band/queue and legacy coverage/mechanism data regions.
+  - Accept: every stage uses the canonical Theme/components and fixed 0-100
+    scale without a stage-owned layout/color. Phase 7 updates the now-
+    superseded active rule assertions without replacing the shared shell.
 
 Phase 3 gate:
 
@@ -395,6 +410,171 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
     stage no unrelated user work.
   - Accept: `git status --short` is clean and log/diff scope matches this plan.
 
+### Phase 6: Continuous-paint queue latency correction
+
+Goal: close the implementation gap found by comparing the final source with
+the itch latency report. M8 bounded the formerly blocking Burst radial raster,
+but `SurfacePaintSweep` still drains eagerly one command per physics tick. That
+policy can let a three-child Apex family produce work faster than PaintSystem
+consumes it and show authoritative paint seconds after contact.
+
+Preconditions:
+
+- The Cannon Focus implementation and Phase 5 gate remain valid.
+- `PaintSystem` remains the only mutable paint/coverage authority and canonical
+  command order remains unchanged.
+
+- [x] **6.1 Add queue-age and throughput evidence.**
+  - Change: expose bounded read-only diagnostics for pending/active command
+    count, oldest pending age in physics ticks, and queued/completed totals;
+    add a fixed Standard/Apex-like continuous-sweep regression that records
+    production and completion rather than checking only an eventual flush.
+  - Accept: the old one-command-per-tick policy fails the regression for a
+    three-command-per-tick workload, and production diagnostics add no normal
+    console output or second paint representation.
+- [x] **6.2 Put radial and sweep work behind one incremental budget.**
+  - Change: implement deterministic scan/connect/write sweep cursor phases,
+    including the existing disconnected-endpoint fallback. Let radial and sweep
+    cursors share one bounded work/time budget and continue into later small
+    commands while budget remains; acknowledge only complete commands.
+  - Accept: no raster slice exceeds the named frame budget in the representative
+    workload, small commands can complete more than one per tick, and a large
+    command cannot block the process in one eager call.
+- [x] **6.3 Prove latency, determinism, order, and authority.**
+  - Change: compare completion-barrier and incremental bytes, checksum, target
+    count, written/new counts, signal order, disconnected fallback, and
+    Red/Green latest-writer behavior. Run the continuous three-producer
+    workload and record maximum queue age and post-contact drain behavior.
+  - Accept: incremental output is byte/checksum equivalent, every command is
+    acknowledged once in canonical order, the representative maximum pending
+    age is at most 12 physics ticks, and the queue falls after production stops.
+  - Contingency: coalesce only adjacent same-shot/surface/channel sweeps if this
+    gate still fails; never cross contact, collider, channel, or command-order
+    boundaries.
+- [x] **6.4 Record focused latency correction before catalog migration.**
+  - Change: run the affected paint/projectile/stage checks and record the old
+    failure plus corrected synthetic and real Stage 06 measurements in the itch
+    report and a new evidence README. Defer the broad suite, exports, and built-
+    Web journey until the all-stage rule inputs are final in Phase 8.
+  - Accept: deterministic paint equivalence, queue-age/drain-time guards, and
+    the actual six-root/two-Apex workload pass; the report distinguishes the old
+    one-command-per-tick cause from the implemented correction without claiming
+    a public itch artifact.
+
+### Phase 7: All-stage Red/Green target-band progression
+
+Goal: remove Stage 06 as the active gameplay-rule boundary. Preserve the six
+accepted introductory stages, then continue the same latest-writer Red/Green
+score puzzle with actual Standard/Impact Burst/Apex Split variety through Stage
+30. Existing terrain and mechanisms stay intact.
+
+Locked progression contract:
+
+| Stages | Shots | Allowed/required root kinds | Score pattern and target band |
+| --- | ---: | --- | --- |
+| 01-06 | existing 4/5/5/6/6/6 | existing teaching profiles | preserve exact current rules and bands |
+| 07-15 | 6 | allow all three; require Burst and Apex, Standard remains required | five-pattern cycle below; minimum `7 + floor((n-7)/6)`, maximum `minimum + 4` |
+| 16-25 | 7 | same | same formula/cycle |
+| 26-30 | 8 | same | same formula/cycle |
+
+For Stage 07 onward, the deterministic five-stage cycle is `Both Add`,
+`Green Add / Red Subtract`, `Red Add / Green Subtract`, `Green Add / Red
+Neutral`, then `Red Add / Green Neutral`, restarting at Stage 12. Every deal
+keeps the last two opposite-color Standard balls as a visible correction
+reserve. This table is tuning authority for this pass, not a claim of complete
+human balance.
+
+Preconditions:
+
+- Phase 6 paint output remains byte/order/ownership equivalent.
+- The committed v10 catalog/bundle is the immutable migration source; no file
+  inside that bundle is edited in place.
+
+- [ ] **7.1 Materialize one target-band contract for every stage.**
+  - Change: replace the six-stage-only materializer branch with named,
+    deterministic progression helpers for score pattern, target band, shots,
+    allowed/required kinds, and default deal seed. Preserve the exact Stage
+    01-06 serialized values.
+  - Accept: all 30 materialized stages use `TARGET_BAND`, pass
+    `has_valid_rule_contract()`, and match the locked table without stage-local
+    scripts or copied rule resources.
+- [ ] **7.2 Make variety a deal invariant, not a possibility.**
+  - Change: extend `BallDealProfile` with required kinds and update candidate,
+    fallback, validation, diagnostics, and hashing. Stage 07-30 deals require at
+    least one Impact Burst and one Apex Split while retaining Standard and both
+    paint colors; rejected Fire and split children still consume no token.
+  - Accept: at least 16 deterministic seeds for every stage (480 cases) have
+    the exact length, permitted/required kinds, both colors, correction reserve,
+    and resident-capacity safety; same stage/seed reproduces exact tokens.
+- [ ] **7.3 Build and atomically promote catalog v11.**
+  - Change: increment the serialized generation/catalog contract, build a full
+    reviewed thirty-stage bundle from the v10 source, validate every generated
+    layout and rule contract, and update only the canonical catalog pointer
+    after the new bundle is complete.
+  - Accept: the v10 bundle remains byte-unchanged; v11 contains 30 matching
+    stage/layout identities and passes manifest, layout, reachability,
+    mechanism, resource, and deterministic rebuild checks.
+- [ ] **7.4 Remove the active legacy-rule presentation split safely.**
+  - Change: make Stage Select, Briefing, Aim, Result, HUD, observation, agent,
+    retry, timeout, and queue paths present target-band truth for every canonical
+    stage. Existing scalar-coverage best records load but are not fabricated
+    into Paint Score; they display as no target-band best until replaced.
+  - Accept: Stage 07/18/30 expose score band, Red/Green weights, current plus
+    next-two queue, actual ball-kind help, Finish/timeout rules, and target-band
+    result fields through the same shared owners as Stage 03.
+- [ ] **7.5 Calibrate representative running stages without overclaiming.**
+  - Change: run real Stage 07, 18, and 30 root-fire/paint/result scenarios and
+    capture Aim plus Result for each. Check that deals contain both special
+    kinds, target bands are readable on the fixed 0-100 scale, paint is live,
+    mechanisms still work, and no result path falls back to scalar coverage.
+  - Accept: all named journeys run to an authoritative result without error;
+    structural checks cover all 30 stages. Record observed playability and any
+    remaining balance uncertainty separately from rule correctness.
+
+Phase 7 gate:
+
+```powershell
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/all_stage_target_band_rule_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_deal_generation_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/cross_stage_ui_theme_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/stage_select_rule_truth_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/prototype_stage_runtime_smoke_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/baked_stage_layout_test.gd
+```
+
+### Phase 8: Final audit, production artifacts, and durable closure
+
+Goal: validate the combined UI, paint-latency, and all-stage-rule result once on
+final inputs and close the local execution contract without publishing.
+
+- [ ] **8.1 Audit the final responsibility boundaries.**
+  - Change: use the codebase quality audit on shared UI, paint scheduling,
+    stage/deal materialization, catalog, save compatibility, and tests; apply
+    only small safe task-owned corrections.
+  - Accept: no second paint owner, rule owner, palette, stage-specific UI clone,
+    catch-all expansion, silent result conversion, or reachable failure path
+    remains.
+- [ ] **8.2 Run the one broad production gate.**
+  - Change: run `scripts/test.ps1`, `scripts/verify.ps1`, fresh Windows and Web
+    release exports, and `verify-web-release.ps1` after all source inputs freeze.
+  - Accept: all commands pass, artifact hashes are current, and the public itch
+    build remains untouched.
+- [ ] **8.3 Inspect current Windows and built-Web gameplay.**
+  - Change: capture the final named Windows states and use one browser-control
+    stack for built-Web Stage 03/07/18/30 real-fire journeys. Inspect paint while
+    balls traverse terrain, target-band/queue truth, Result, console, and
+    network health; stop the task-owned server afterward.
+  - Accept: no seconds-late paint tail, clipped score scale, legacy scalar
+    result, missing special kind, relevant console/network error, or stale
+    artifact appears.
+- [ ] **8.4 Update durable truth, commit coherently, and close.**
+  - Change: update the Korean itch report, `.agents/Documentation.md`, design and
+    architecture specs, test checklist, evidence, and this plan with measured
+    results and explicit balance/publication limits. Commit only task-owned
+    changes with explanatory bodies.
+  - Accept: documents agree with runtime; every task is checked; frontmatter is
+    `done`; `git status --short` is clean.
+
 ## Validation and Rework Controls
 
 | Cadence | Exact check | Run when | Do not rerun until |
@@ -432,6 +612,9 @@ Validation rules:
 | Theme variation harms another screen | narrow the semantic variation and migrate intended users | never create another Theme/palette owner |
 | `HUDController` grows layout-only branches | move presentation behavior into a component/layout owner | never move StageController/PaintSystem rules into UI |
 | Existing visual test encodes a superseded panel/card | update only the visual assertion and preserve behavior/state guards | never delete/weaken a test to pass |
+| A Stage 07-30 deal lacks actual kind variety | reject/regenerate it through the shared profile invariant and deterministic fallback | never patch one seed or stage resource by hand |
+| A migrated target band is structurally valid but a representative journey exposes poor balance | record the exact stage/deal/result and adjust the shared progression tier in a reviewed batch | never claim all-stage human clearability from seed structure or silently special-case one stage |
+| v11 catalog generation fails | leave the v10 pointer/bundle active, fix the shared materializer/validator, and rebuild from scratch | never partially promote or edit generated bundle files in place |
 | Public itch proof is requested | stop, present final local artifact/hash/evidence, and obtain explicit authorization | no workflow dispatch, upload, channel/visibility mutation, or public claim without approval |
 
 Implementation-local mechanics may be handled inside the locked contract when
@@ -441,12 +624,16 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Complete.
-- Next task: none. Public itch publication remains outside this plan and needs
-  separate explicit authorization.
-- Last completed gate: coherent task-owned commits preserve the design,
-  component, screen, gameplay, quality, and evidence boundaries. The final
-  worktree check is clean.
+- Current phase: Phase 7.
+- Next task: 7.1, materialize the locked all-stage target-band progression;
+  then enforce actual deal variety and atomically promote catalog v11.
+- Last completed gate: the old three-command-per-tick reproduction reached a
+  33-tick pending age. The corrected fixed workload reaches at most 1 tick and
+  completes up to three commands per drain. The real Stage 06 six-root/two-Apex
+  workload processes 57 commands with at most 4 ticks pending, four commands
+  per drain, and a 14.818 ms maximum drain. Deterministic bytes/checksum,
+  command order, ownership, disconnected fallback, projectile contact, Burst,
+  Apex, and score-rule checks pass.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 
@@ -458,14 +645,21 @@ Complete when:
 - Current production renders prove the named states, both stage families,
   locales, and responsive sizes.
 - Durable design/implementation/test truth agrees with the final runtime.
+- Continuous Standard and Apex-family paint stays within the Phase 6 queue-age
+  contract without changing final paint bytes, coverage, or ownership.
+- All 30 canonical stages use the shared target-band/queue rule; Stages 07-30
+  contain actual Standard/Impact Burst/Apex Split deal variety and preserve
+  existing terrain/mechanism behavior.
+- The v11 catalog is atomically promoted from the immutable v10 source, and old
+  scalar-coverage best records are not presented as target-band scores.
 - No placeholder, unresolved material decision, or task-owned dirty file
   remains, and frontmatter is `done`.
 
 Replan when:
 
 - A verified material discovery invalidates Cannon Focus hierarchy, shared
-  component ownership, stage-family split, Stage Select artifact path,
-  dependency boundary, or validation path.
+  component ownership, the all-stage target-band progression, Stage Select
+  artifact path, catalog migration, dependency boundary, or validation path.
 
 Do not replan or stop for:
 
