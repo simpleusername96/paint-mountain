@@ -29,6 +29,7 @@ enum Mode {
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resized.connect(_apply_width_priority)
 	_refresh()
 
 
@@ -43,14 +44,6 @@ func refresh_locale() -> void:
 func _refresh() -> void:
 	if not is_node_ready():
 		return
-	%AngleItem.visible = context_mode == Mode.AIM
-	%OrbitItem.visible = context_mode in [Mode.MAP, Mode.BRIEFING]
-	%PowerItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.BRIEFING]
-	%FireItem.visible = context_mode == Mode.AIM
-	%ModeItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.FOLLOW]
-	%FinishItem.visible = context_mode == Mode.AIM
-	%MenuItem.visible = context_mode != Mode.BRIEFING
-
 	%AngleItem.get_node("Action").text = tr("hud.angle")
 	%OrbitItem.get_node("Input").text = tr("input.drag")
 	%OrbitItem.get_node("Action").text = tr("hud.orbit")
@@ -69,7 +62,41 @@ func _refresh() -> void:
 	%MenuItem.get_node("Action").text = tr(
 		"ui.resume" if context_mode == Mode.PAUSE else "ui.menu"
 	)
+	_apply_width_priority()
+
+
+func _apply_width_priority() -> void:
+	if not is_node_ready() or size.x <= 0.0:
+		return
+	_set_context_visibility()
+	# The legend remains a single bounded sentence: when a narrow viewport cannot
+	# hold every optional cue, remove the least immediate board actions first.
+	for item in [%FinishItem, %ModeItem]:
+		if _visible_items_width() <= size.x:
+			break
+		item.visible = false
 	_update_separators()
+
+
+func _set_context_visibility() -> void:
+	%AngleItem.visible = context_mode == Mode.AIM
+	%OrbitItem.visible = context_mode in [Mode.MAP, Mode.BRIEFING]
+	%PowerItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.BRIEFING]
+	%FireItem.visible = context_mode == Mode.AIM
+	%ModeItem.visible = context_mode in [Mode.AIM, Mode.MAP, Mode.FOLLOW]
+	%FinishItem.visible = context_mode == Mode.AIM
+	%MenuItem.visible = context_mode != Mode.BRIEFING
+
+
+func _visible_items_width() -> float:
+	var width := 0.0
+	var visible_count := 0
+	for item in _items:
+		if not item.visible:
+			continue
+		width += item.get_combined_minimum_size().x
+		visible_count += 1
+	return width + maxf(0.0, float(visible_count - 1) * 12.0)
 
 
 func _update_separators() -> void:

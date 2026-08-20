@@ -7,6 +7,9 @@ var _controls: Dictionary = {}
 var _volume_values: Dictionary = {}
 var _syncing := false
 var _display_mutation_count := 0
+@onready var _columns_layout: Control = %Layout
+@onready var _audio_column: VBoxContainer = %Audio
+@onready var _display_column: VBoxContainer = %Display
 
 
 func _ready() -> void:
@@ -32,14 +35,57 @@ func _ready() -> void:
 	%Defaults.pressed.connect(_restore_defaults)
 	%Close.pressed.connect(_close)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
+	get_viewport().size_changed.connect(_queue_responsive_layout)
 	_apply_display_settings_from_state()
 	visible = false
+	_queue_responsive_layout()
 
 
 func open() -> void:
 	_sync_from_state()
 	visible = true
+	_queue_responsive_layout()
 	%Close.grab_focus.call_deferred()
+
+
+func _queue_responsive_layout() -> void:
+	_apply_responsive_layout.call_deferred()
+
+
+## The scroll view owns overflow. The same controls remain in tree order, then
+## are positioned as two columns only when their minimum readable width fits.
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(_columns_layout):
+		return
+	var available_width := maxf(_columns_layout.get_parent_control().size.x, 1.0)
+	var responsive_width := _responsive_window_width(available_width)
+	var wide_layout := responsive_width >= 1040.0
+	var gutter := 52.0 if wide_layout else 0.0
+	var column_width := (available_width - gutter) * 0.5 if wide_layout else available_width
+	_audio_column.position = Vector2.ZERO
+	_audio_column.size = Vector2(column_width, _audio_column.get_combined_minimum_size().y)
+	if wide_layout:
+		_display_column.position = Vector2(column_width + gutter, 0.0)
+		_display_column.size = Vector2(column_width, _display_column.get_combined_minimum_size().y)
+		_columns_layout.custom_minimum_size = Vector2(
+			available_width,
+			maxf(_audio_column.size.y, _display_column.size.y)
+		)
+	else:
+		_display_column.position = Vector2(0.0, _audio_column.size.y + 24.0)
+		_display_column.size = Vector2(column_width, _display_column.get_combined_minimum_size().y)
+		_columns_layout.custom_minimum_size = Vector2(
+			available_width,
+			_display_column.position.y + _display_column.size.y
+		)
+	_columns_layout.size = _columns_layout.custom_minimum_size
+
+
+func _responsive_window_width(fallback_width: float) -> float:
+	if get_viewport() is SubViewport:
+		return fallback_width
+	var window_width := float(DisplayServer.window_get_size().x)
+	return window_width if window_width > 0.0 else fallback_width
 
 
 func _setup_options() -> void:

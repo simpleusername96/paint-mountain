@@ -70,6 +70,8 @@ $ordinaryTests = @(
     'phase8_aiming_composition_test.gd',
     'trajectory_preview_efficiency_test.gd',
     'shot_follow_camera_test.gd',
+	'hud_layout_responsive_test.gd',
+	'screen_responsive_layout_test.gd',
     'phase7_ui_test.gd',
     'phase7_user_qa_contract_test.gd',
     'phase8_hud_truth_test.gd',

@@ -4,19 +4,29 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/paint_splash.svg" id="3_fire"]
 
 [node name="ActionButtons" type="Control"]
-custom_minimum_size = Vector2(202, 62)
-offset_right = 202.0
-offset_bottom = 62.0
+custom_minimum_size = Vector2(292, 86)
+offset_right = 292.0
+offset_bottom = 86.0
 script = ExtResource("1")
+
+[node name="ReadinessBackdrop" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 8.0
+offset_right = 284.0
+offset_bottom = 22.0
+mouse_filter = 2
+theme_type_variation = &"HudStagePanel"
 
 [node name="ReadinessLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 8.0
-offset_top = -26.0
-offset_right = 202.0
-offset_bottom = -2.0
-theme_type_variation = &"HudCaption"
+offset_top = 0.0
+offset_right = 284.0
+offset_bottom = 22.0
+theme_type_variation = &"HudBody"
 text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -24,8 +34,10 @@ vertical_alignment = 1
 [node name="FireButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 202.0
-offset_bottom = 62.0
+offset_left = 45.0
+offset_top = 24.0
+offset_right = 247.0
+offset_bottom = 86.0
 theme_type_variation = &"PrimaryButton"
 text = "ui.fire"
 icon = ExtResource("3_fire")

@@ -24,7 +24,7 @@ func _run() -> void:
 
 	var preview_stats := stage_select.get_node("Root/PreviewPanel/Margin/Content/PreviewStats") as Label
 	var first_card := stage_select.get_node(
-		"Root/CardsPanel/Margin/Content/Cards/StageCardButton"
+		"Root/CardsPanel/Scroll/Margin/Content/Cards/StageCardButton"
 	) as StageCardButton
 	_assert(first_card.get_node("Margin/Content/Header/RuleBadge").visible,
 		"prototype cards must carry a visible rule badge")

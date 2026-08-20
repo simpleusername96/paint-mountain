@@ -36,6 +36,12 @@ func _capture() -> void:
 	var game_state := root.get_node("/root/GameState")
 	var capture_data: Dictionary = root.get_node("/root/SaveSystem").default_data()
 	capture_data.settings.language = requested_locale
+	if requested_size.x > 0 and requested_size.y > 0:
+		# SettingsScreen reapplies persisted display state on construction. Keep the
+		# requested capture viewport authoritative instead of silently restoring the
+		# default desktop resolution before the frame is read back.
+		capture_data.settings.fullscreen = false
+		capture_data.settings.resolution = "%dx%d" % [requested_size.x, requested_size.y]
 	game_state.initialize_from_data(capture_data)
 	var app := APP_SCENE.instantiate()
 	root.add_child(app)

@@ -19,7 +19,9 @@ func set_fire_readiness(snapshot: Dictionary) -> void:
 	var reason := String(snapshot.get("reason", tr("ui.fire")))
 	%FireButton.tooltip_text = reason if not enabled else tr("ui.fire")
 	%ReadinessLabel.text = reason if not enabled else ""
-	%ReadinessLabel.visible = not enabled and not reason.is_empty()
+	var show_readiness := not enabled and not reason.is_empty()
+	%ReadinessLabel.visible = show_readiness
+	%ReadinessBackdrop.visible = show_readiness
 
 
 func focus_fire() -> void:

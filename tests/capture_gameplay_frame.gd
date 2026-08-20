@@ -54,6 +54,14 @@ func _capture() -> void:
 	match requested_state:
 		"aiming":
 			controller.begin_aiming()
+		"aiming_disabled":
+			controller.begin_aiming()
+			await process_frame
+			# Presentation fixture for the real localized Fire-readiness component.
+			(gameplay.get_node("HUD") as HUDController).set_fire_readiness({
+				"fireable": false,
+				"reason": tr("fire.not_editable"),
+			})
 		"map_inspection":
 			controller.begin_aiming()
 			await process_frame

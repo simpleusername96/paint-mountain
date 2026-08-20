@@ -85,7 +85,7 @@ func _run() -> void:
 	var display_mutations_before_passive_sync := settings.display_mutation_count()
 	settings._sync_from_state()
 	_assert_true(
-		settings.get_node("SettingsRoot/Panel/Margin/Content/Columns/Audio/MasterGroup/Header/MasterValue").text \
+		settings.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout/Audio/MasterGroup/Header/MasterValue").text \
 				== "%d%%" % roundi((settings._controls[&"master_volume"] as HSlider).value),
 		"settings must publish the authoritative master volume beside its slider"
 	)

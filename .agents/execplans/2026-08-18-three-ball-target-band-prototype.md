@@ -125,20 +125,20 @@ flows before UI restructuring.
 
 ### M7 — Container-owned responsive UI
 
-- [ ] **7.1 Add one safe-area gameplay composition.** Put top-left status/rule,
+- [x] **7.1 Add one safe-area gameplay composition.** Put top-left status/rule,
   top-right run/queue, bottom-center actions, bottom-right AimControls, and the
   lower legend into anchored Containers with a 24 px logical safe margin.
   Remove only fixed root offsets whose ownership moves to those groups.
-- [ ] **7.2 Repair component interiors.** Convert AimControls to consistent
+- [x] **7.2 Repair component interiors.** Convert AimControls to consistent
   label/value/button rows; keep readiness copy inside ActionButtons; give
   ContextLegend bounded wrapping/priority behavior; make target/queue/result
   cards honor real minimum geometry. Test English/Korean longest copy, focus,
   disabled states, queue variants, signed roles, and Result variants.
-- [ ] **7.3 Make Stage Select and Settings responsive.** Replace fixed screen
+- [x] **7.3 Make Stage Select and Settings responsive.** Replace fixed screen
   rectangles with safe-margin content regions. Preserve eight-card balance;
   keep Settings two-column when it fits and provide a bounded single-column/
   scroll fallback otherwise. Preserve actions and focus order.
-- [ ] **7.4 Correct only evidenced contrast failures.** Raise Aim caption and
+- [x] **7.4 Correct only evidenced contrast failures.** Raise Aim caption and
   ContextLegend readability using existing Theme roles or quiet-panel language.
 
 Validation sizes are 1280x720, 1280x800, 1366x768, 1600x900, and 1920x1080 in
@@ -225,7 +225,7 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
   that family through a relevant child contact, and never changes simulation.
 - [ ] Impact Burst and Apex Split have distinct once-only cues that agree with
   accepted paint/lifecycle/observation state.
-- [ ] Gameplay HUD, Stage Select, Settings, Pause, and Result pass the viewport/
+- [x] Gameplay HUD, Stage Select, Settings, Pause, and Result pass the viewport/
   locale matrix with bounded content, truthful focus, and readable contrast.
 - [ ] Foreground local Web and post-deploy traces meet the budgets above, or the
   exact indivisible exception is documented before any contract change.
@@ -263,7 +263,10 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
   `scripts/verify.ps1`, and three personally inspected Windows/Compatibility
   captures pass; evidence is under
   `../evidence/2026-08-20-m6-input-special-lifecycle/README.md`.
-- [ ] M7 — responsive UI and contrast.
+- [x] M7 — responsive UI and contrast. Locale/viewport contracts, focused UI
+  regressions, `scripts/verify.ps1`, and twelve personally inspected
+  Windows/Compatibility captures pass; evidence is under
+  `../evidence/2026-08-20-m7-responsive-ui/README.md`.
 - [ ] M8 — foreground Web attribution and measured correction.
 - [ ] M9 — final local gate, publish approval, and deployed itch proof.
 
@@ -274,6 +277,6 @@ horizon/kinds/channels/stage access, deleting legacy catalog owners, weakening a
 performance/fidelity contract, force-pushing, publishing, or changing itch
 visibility. Failed tests or difficult debugging are not stop conditions.
 
-Execute M6 first. Mark this plan `done` only after all non-conditional checks are
+Execute M8 next. Mark this plan `done` only after all non-conditional checks are
 supported by current evidence and the explicitly authorized deployed artifact
 passes the remote journey.

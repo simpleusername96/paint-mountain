@@ -10,6 +10,7 @@ func _initialize() -> void:
 
 
 func _run_checks() -> void:
+	root.size = Vector2i(1280, 720)
 	var game_state := root.get_node("/root/GameState")
 	game_state.persistence_enabled = false
 	var unlocked: Dictionary = root.get_node("/root/SaveSystem").default_data()

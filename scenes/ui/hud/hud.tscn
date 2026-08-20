@@ -1,6 +1,7 @@
 [gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud_controller.gd" id="1"]
+[ext_resource type="Script" path="res://src/ui/hud/hud_root_layout.gd" id="1_layout"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/top_status_bar.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/aim_controls.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/coverage_meter.tscn" id="4"]
@@ -26,6 +27,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("1_layout")
 
 [node name="TopStatusBar" parent="HUDRoot" instance=ExtResource("2")]
 unique_name_in_owner = true
@@ -33,11 +35,18 @@ layout_mode = 1
 
 [node name="AimControls" parent="HUDRoot" instance=ExtResource("3")]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 770.0
-offset_top = 568.0
-offset_right = 1258.0
-offset_bottom = 644.0
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -504.0
+offset_top = -226.0
+offset_right = -24.0
+offset_bottom = -170.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="CoverageMeter" parent="HUDRoot" instance=ExtResource("4")]
 unique_name_in_owner = true
@@ -63,16 +72,23 @@ anchor_right = 1.0
 offset_left = -76.0
 offset_top = 92.0
 offset_right = -24.0
-offset_bottom = 212.0
+offset_bottom = 232.0
 grow_horizontal = 0
 
 [node name="ActionButtons" parent="HUDRoot" instance=ExtResource("5")]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 566.0
-offset_top = 574.0
-offset_right = 768.0
-offset_bottom = 636.0
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -146.0
+offset_top = -170.0
+offset_right = 146.0
+offset_bottom = -84.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="CameraInteractionControl" parent="HUDRoot" instance=ExtResource("6")]
 unique_name_in_owner = true
@@ -88,29 +104,40 @@ layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -374.0
-offset_top = 14.0
+offset_top = 24.0
 offset_right = -90.0
-offset_bottom = 66.0
+offset_bottom = 76.0
 grow_horizontal = 0
 
 [node name="ReturnToCannon" type="Button" parent="HUDRoot"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 520.0
-offset_top = 548.0
-offset_right = 760.0
-offset_bottom = 600.0
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -172.0
+offset_right = 120.0
+offset_bottom = -120.0
+grow_horizontal = 2
+grow_vertical = 0
 theme_type_variation = &"HudModeButton"
 tooltip_text = "hud.return_to_cannon_hint"
 text = "hud.return_to_cannon"
 
 [node name="BriefingActions" type="Control" parent="HUDRoot"]
 unique_name_in_owner = true
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = 574.0
+offset_top = -146.0
 offset_right = 380.0
-offset_bottom = 630.0
+offset_bottom = -90.0
+grow_vertical = 0
 
 [node name="BriefingRule" type="PanelContainer" parent="HUDRoot"]
 unique_name_in_owner = true
@@ -165,13 +192,17 @@ text = "ui.start_aiming"
 [node name="ResultPanel" parent="HUDRoot" instance=ExtResource("8")]
 unique_name_in_owner = true
 layout_mode = 1
+anchors_preset = 3
 anchor_left = 1.0
+anchor_top = 1.0
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = -364.0
-offset_top = 112.0
+offset_top = -608.0
 offset_right = -24.0
-offset_bottom = 652.0
+offset_bottom = -68.0
 grow_horizontal = 0
+grow_vertical = 0
 
 [node name="PauseOverlay" parent="HUDRoot" instance=ExtResource("11")]
 unique_name_in_owner = true
@@ -184,8 +215,8 @@ anchors_preset = 12
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = -54.0
+offset_top = -68.0
 offset_right = -24.0
-offset_bottom = -8.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
