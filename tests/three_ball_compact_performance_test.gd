@@ -147,6 +147,7 @@ func _run() -> void:
 	var scenario_elapsed_ms := float(Time.get_ticks_usec() - scenario_started_usec) / 1000.0
 	var upload_batches := paint.texture_upload_batch_count() - upload_count_before
 	var painted_snapshot := paint.coverage_snapshot()
+	var paint_queue_latency := paint.queue_latency_snapshot()
 	var partial_upload_supported := paint.paint_texture().has_method(&"set_data_partial")
 	var frame_interval_average_ms := _average(_frame_intervals_ms)
 	var frame_interval_p95_ms := _percentile(_frame_intervals_ms, 0.95)
@@ -170,6 +171,10 @@ func _run() -> void:
 		"dirty paint must publish through a bounded batched-upload cadence")
 	_assert(frame_interval_average_ms <= FRAME_INTERVAL_AVERAGE_BUDGET_MS,
 		"sustained physics-frame delivery must remain healthy during the compact workload")
+	_assert(int(paint_queue_latency.maximum_oldest_pending_age_ticks) <= 12,
+		"the oldest authoritative paint command must stay within 12 physics ticks")
+	_assert(int(paint_queue_latency.maximum_drain_usec) < 16700,
+		"one interactive PaintSystem drain must stay below one 60 Hz frame")
 
 	var restart_observed := {"elapsed_ms": -1.0}
 	controller.restart_completed.connect(func(elapsed_ms: float) -> void:
@@ -238,6 +243,7 @@ func _run() -> void:
 			"upload_path": "region" if partial_upload_supported else "full_image_fallback",
 			"pending_intents_after_flush": manager.pending_intent_count(),
 			"pending_commands_after_flush": paint.pending_work_count(),
+			"queue_latency": paint_queue_latency,
 		},
 		"lifecycle": {
 			"resident_peak": int(observed.peak_residents),

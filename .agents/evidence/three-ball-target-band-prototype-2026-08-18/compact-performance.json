@@ -1,8 +1,7 @@
 {
 	"acceptance": {
 		"failures": [],
-		"passed": true,
-		"interpretation": "The measured run passes sustained 60 Hz physics throughput. Headless callback p95 is retained as diagnostic host-scheduling jitter, not treated as rendered-frame evidence."
+		"passed": true
 	},
 	"engine": {
 		"build": "official",
@@ -16,18 +15,18 @@
 		"timestamp": 0
 	},
 	"lifecycle": {
-		"memory_static_after_restart": 68651950,
-		"memory_static_before": 66938822,
-		"memory_static_delta": 1713128,
+		"memory_static_after_restart": 69075394,
+		"memory_static_before": 67644310,
+		"memory_static_delta": 1431084,
 		"object_allowance": 64,
-		"object_delta": -1,
-		"objects_after_restart": 2745,
-		"objects_before": 2746,
+		"object_delta": -8,
+		"objects_after_restart": 2723,
+		"objects_before": 2731,
 		"resident_limit": 21,
-		"resident_peak": 8,
-		"restart_call_ms": 4.446,
-		"restart_signal_ms": 2.485,
-		"visual_restart_ms": 38.632
+		"resident_peak": 10,
+		"restart_call_ms": 3.173,
+		"restart_signal_ms": 1.878,
+		"visual_restart_ms": 49.907
 	},
 	"limitations": [
 		"One deterministic native headless workload measures physics-frame delivery, not rendered GPU presentation.",
@@ -37,22 +36,33 @@
 	],
 	"paint": {
 		"command_drains": 31,
-		"commands": 126,
-		"coverage_percent": 8.97260030955529,
+		"commands": 57,
+		"coverage_percent": 8.97260030955519,
 		"partial_upload_api_available": false,
 		"pending_commands_after_flush": 0,
 		"pending_intents_after_flush": 0,
-		"texture_upload_batches": 11,
+		"queue_latency": {
+			"completed_total": 57,
+			"maximum_completed_per_drain": 4,
+			"maximum_drain_usec": 14818,
+			"maximum_oldest_pending_age_ticks": 4,
+			"maximum_pending_count": 4,
+			"oldest_pending_age_ticks": 0,
+			"oldest_pending_physics_tick": -1,
+			"pending_count": 0,
+			"queued_total": 57
+		},
+		"texture_upload_batches": 13,
 		"upload_path": "full_image_fallback",
-		"written_pixels": 10709
+		"written_pixels": 9473
 	},
 	"physics_frame_intervals_ms": {
-		"average": 16.480230125523,
+		"average": 16.4550878661088,
 		"average_budget": 20.0,
-		"engine_monitor_aggregate_average": 68.5710794979081,
+		"engine_monitor_aggregate_average": 58.5398326359835,
 		"engine_monitor_note": "TIME_PHYSICS_PROCESS is a periodically refreshed aggregate and is not used as a per-tick gate.",
-		"maximum": 61.274,
-		"p95": 30.551,
+		"maximum": 23.501,
+		"p95": 20.902,
 		"p95_is_release_gate": false,
 		"p95_reference": 33.3333333333333,
 		"sample_count": 239
@@ -61,7 +71,7 @@
 	"renderer": "gl_compatibility",
 	"scenario": {
 		"apex_splits": 2,
-		"elapsed_ms": 3943.417,
+		"elapsed_ms": 3936.757,
 		"generation_one_children": 6,
 		"impact_bursts": 2,
 		"physics_ticks": 239,

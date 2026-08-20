@@ -19,6 +19,8 @@ func _run_checks() -> void:
 	flat.clear()
 	_assert_budgeted_burst_cursor_matches_completion_drain(flat)
 	flat.clear()
+	_assert_budgeted_sweep_cursor_matches_completion_drain(flat)
+	flat.clear()
 	_assert_width_and_centerline(flat, 4.0, 8.0, "flat parent")
 	flat.clear()
 	_assert_width_and_centerline(flat, 3.12, 6.24, "flat child")
@@ -131,6 +133,55 @@ func _assert_budgeted_burst_cursor_matches_completion_drain(baseline: PaintSyste
 			and int(final_result.written_pixel_count) == int(baseline_result.written_pixel_count)
 			and int(final_result.newly_painted_pixel_count) == int(baseline_result.newly_painted_pixel_count),
 		"budgeted radius-14 Burst must match the completion drain byte-for-byte"
+	)
+	sliced.free()
+
+
+func _assert_budgeted_sweep_cursor_matches_completion_drain(baseline: PaintSystem) -> void:
+	var layout := baseline.generated_layout_read_only()
+	var command := _sweep(
+		layout, 21, 0, 0, Vector2(0.0, -10.0), Vector2(0.0, 10.0), 4.0
+	)
+	_assert_true(baseline.queue_surface_paint_sweep(command), "long baseline sweep must queue")
+	var baseline_result := baseline.drain_pending_commands()
+	var baseline_bytes := baseline.paint_bytes_read_only()
+	var baseline_owners := baseline.paint_owner_bytes_read_only()
+	var baseline_checksum := baseline.paint_mask_checksum()
+	var baseline_count := baseline.painted_target_pixels()
+
+	var sliced := _configured_system(FIXTURE_FACTORY.Kind.FLAT)
+	var sliced_layout := sliced.generated_layout_read_only()
+	var sliced_command := _sweep(
+		sliced_layout, 21, 0, 0, Vector2(0.0, -10.0), Vector2(0.0, 10.0), 4.0
+	)
+	var applied_count := [0]
+	sliced.paint_command_applied.connect(func(_command, _written: int, _newly: int) -> void:
+		applied_count[0] += 1
+	)
+	_assert_true(sliced.queue_surface_paint_sweep(sliced_command), "long sliced sweep must queue")
+	var slices := 0
+	var final_result := {}
+	while sliced.pending_work_count() > 0 and slices < 2048:
+		final_result = sliced.drain_pending_commands(false)
+		slices += 1
+		if sliced.pending_work_count() > 0:
+			_assert_true(
+				applied_count[0] == 0 and int(final_result.command_count) == 0,
+				"a sliced sweep must not acknowledge partial raster work"
+			)
+	_assert_true(slices > 1, "a long sweep must span bounded raster slices")
+	_assert_true(slices < 2048 and sliced.pending_work_count() == 0,
+		"a budgeted sweep must complete without lost work")
+	_assert_true(applied_count[0] == 1 and int(final_result.command_count) == 1,
+		"a sweep acknowledges exactly once after its final slice")
+	_assert_true(
+		sliced.paint_bytes_read_only() == baseline_bytes
+			and sliced.paint_owner_bytes_read_only() == baseline_owners
+			and sliced.paint_mask_checksum() == baseline_checksum
+			and sliced.painted_target_pixels() == baseline_count
+			and int(final_result.written_pixel_count) == int(baseline_result.written_pixel_count)
+			and int(final_result.newly_painted_pixel_count) == int(baseline_result.newly_painted_pixel_count),
+		"budgeted sweep output must match the completion drain byte-for-byte"
 	)
 	sliced.free()
 

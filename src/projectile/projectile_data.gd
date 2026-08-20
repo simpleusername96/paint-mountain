@@ -21,7 +21,9 @@ extends Resource
 @export_category("Paint Surface")
 @export_range(0.05, 8.0, 0.05) var paint_footprint_radius: float = 4.0
 @export_range(0.1, 20.0, 0.1) var impact_paint_radius: float = 6.0
-@export_range(0.001, 1.0, 0.001) var minimum_paint_travel_distance: float = 0.05
+# Contact samples accumulate into one continuous sweep until this distance;
+# the footprint is much wider, so this reduces command pressure without gaps.
+@export_range(0.001, 1.0, 0.001) var minimum_paint_travel_distance: float = 1.0
 
 
 func launch_speed(power_percent: float) -> float:

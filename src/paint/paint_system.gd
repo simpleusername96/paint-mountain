@@ -1,6 +1,8 @@
 class_name PaintSystem
 extends Node
 
+const PAINT_RASTER_CURSOR := preload("res://src/paint/paint_raster_cursor.gd")
+
 signal coverage_changed(coverage_percent: float)
 signal paint_command_applied(command, written_pixel_count: int, newly_painted_pixel_count: int)
 signal paint_command_rejected(command)
@@ -13,10 +15,12 @@ signal paint_commands_drained(
 const MASK_SIZE := 512
 const OWNER_UNPAINTED_BYTE := 255
 const PAINT_DRAIN_PRIORITY := 1000
-# Keep contact-path work below a foreground frame budget. A command retains its
-# canonical place in the queue until every candidate, connectivity step, and
-# write has completed; this limit never changes the final paint mask.
-const PAINT_RASTER_WORK_BUDGET_PER_PHYSICS_TICK := 512
+# Radial and sweep cursors share one scheduler. Work items retain deterministic
+# output; the time guard adapts throughput to the current Web/native CPU while
+# the small chunk prevents one timer check from hiding a long eager operation.
+const PAINT_RASTER_WORK_BUDGET_PER_PHYSICS_TICK := 8192
+const PAINT_RASTER_WORK_CHUNK := 64
+const PAINT_RASTER_TIME_BUDGET_USEC := 14500
 # The mask remains authoritative in CPU memory; the material only needs a
 # bounded presentation cadence. Ten uploads per second keeps the blue trail
 # visibly continuous while avoiding a texture update on every sixth rendered
@@ -39,12 +43,6 @@ const CHECKSUM_TOKEN_MULTIPLIER := 0x45d9f3b
 const DEFAULT_PAINT_SURFACE_TUNING := preload(
 	"res://resources/paint/default_paint_surface_tuning.tres"
 )
-const NEIGHBOR_OFFSETS: Array[Vector2i] = [
-	Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
-	Vector2i(-1, 0), Vector2i(1, 0),
-	Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),
-]
-
 var _generated_layout: GeneratedStageLayout
 var _world_bounds: Rect2
 var _terrain_origin_y: float = 0.0
@@ -78,9 +76,6 @@ var _candidate_generation := PackedInt32Array()
 var _visited_generation := PackedInt32Array()
 var _candidate_generation_id: int = 0
 var _visited_generation_id: int = 0
-var _component_queue := PackedInt32Array()
-var _component_pixels := PackedInt32Array()
-
 var _paint_image: Image
 var _target_image: Image
 var _recent_image: Image
@@ -92,9 +87,15 @@ var _nontarget_texture: ImageTexture
 var _terrain_material: ShaderMaterial
 
 var _pending_commands: Array = []
-var _active_radial_cursor: RadialRasterCursor
+var _active_raster_cursor: RefCounted
 var _queued_command_keys: Dictionary = {}
 var _last_drained_physics_tick: int = -1
+var _queued_command_count: int = 0
+var _completed_command_count: int = 0
+var _maximum_pending_count: int = 0
+var _maximum_oldest_pending_age_ticks: int = 0
+var _maximum_drain_usec: int = 0
+var _maximum_completed_per_drain: int = 0
 var _paint_mask_checksum: int = 0
 var _paint_checksum_xor_component: int = CHECKSUM_XOR_SEED
 var _paint_checksum_sum_component: int = CHECKSUM_SUM_SEED
@@ -118,99 +119,6 @@ var _dirty_telemetry_shot_ids: Dictionary = {}
 var _telemetry_paint_traces: Dictionary = {}
 var _telemetry_texture_traces: Dictionary = {}
 var _active_paint_telemetry_batch: Dictionary = {}
-
-
-## Incrementally rasterizes one radial command. The three phases deliberately
-## mirror the eager radial path so a sliced command produces byte-for-byte the
-## same authoritative mask and coverage result before it is acknowledged.
-class RadialRasterCursor:
-	var command: RadialPaintMark
-	var pixel_bounds: Rect2i
-	var candidate_generation: int
-	var scan_offset: int = 0
-	var visit_generation: int = 0
-	var component_queue := PackedInt32Array()
-	var component_pixels := PackedInt32Array()
-	var component_cursor: int = 0
-	var write_cursor: int = 0
-	var written_pixel_count: int = 0
-	var newly_painted_pixel_count: int = 0
-	var phase: int = 0
-	const SCAN := 0
-	const CONNECT := 1
-	const WRITE := 2
-	const COMPLETE := 3
-
-	func _init(value: RadialPaintMark, bounds: Rect2i, generation: int) -> void:
-		command = value
-		pixel_bounds = bounds
-		candidate_generation = generation
-
-	func advance(owner: PaintSystem, work_budget: int) -> bool:
-		var remaining := maxi(work_budget, 1)
-		while remaining > 0 and phase != COMPLETE:
-			match phase:
-				SCAN:
-					if scan_offset >= pixel_bounds.size.x * pixel_bounds.size.y:
-						var seed := owner._snap_candidate(command.center, candidate_generation)
-						if seed < 0:
-							phase = COMPLETE
-							continue
-						visit_generation = owner._next_visited_generation()
-						component_queue.append(seed)
-						owner._visited_generation[seed] = visit_generation
-						phase = CONNECT
-						continue
-					var pixel_x := pixel_bounds.position.x + scan_offset % pixel_bounds.size.x
-					var pixel_y := pixel_bounds.position.y + scan_offset / pixel_bounds.size.x
-					scan_offset += 1
-					remaining -= 1
-					var index := pixel_y * MASK_SIZE + pixel_x
-					if not owner._ensure_surface_sample(index):
-						continue
-					if owner._surface_positions[index].distance_squared_to(command.center) > command.radius * command.radius:
-						continue
-					if owner._surface_normals[index].dot(command.normal) < NORMAL_FACING_THRESHOLD:
-						continue
-					owner._candidate_generation[index] = candidate_generation
-				CONNECT:
-					if component_cursor >= component_queue.size():
-						phase = WRITE
-						continue
-					var current := component_queue[component_cursor]
-					component_cursor += 1
-					component_pixels.append(current)
-					remaining -= 1
-					var point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-					for offset in NEIGHBOR_OFFSETS:
-						var neighbor := point + offset
-						if neighbor.x < 0 or neighbor.x >= MASK_SIZE \
-								or neighbor.y < 0 or neighbor.y >= MASK_SIZE:
-							continue
-						var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
-						if owner._candidate_generation[neighbor_index] != candidate_generation \
-								or owner._visited_generation[neighbor_index] == visit_generation:
-							continue
-						owner._visited_generation[neighbor_index] = visit_generation
-						component_queue.append(neighbor_index)
-				WRITE:
-					if write_cursor >= component_pixels.size():
-						phase = COMPLETE
-						continue
-					var write_index := component_pixels[write_cursor]
-					write_cursor += 1
-					remaining -= 1
-					var distance := owner._surface_positions[write_index].distance_to(command.center)
-					var write_result := owner._write_paint_value(
-						write_index,
-						owner._alpha_for_distance(distance, command.radius),
-						command.channel
-					)
-					if write_result != WRITE_RESULT_NONE:
-						written_pixel_count += 1
-					if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
-						newly_painted_pixel_count += 1
-		return phase == COMPLETE
 
 
 func _init() -> void:
@@ -242,10 +150,16 @@ func configure(
 	_terrain_material = terrain_material
 	_surface_tuning = paint_surface_tuning
 	_pending_commands.clear()
-	_active_radial_cursor = null
+	_active_raster_cursor = null
 	_active_paint_telemetry_batch.clear()
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
+	_queued_command_count = 0
+	_completed_command_count = 0
+	_maximum_pending_count = 0
+	_maximum_oldest_pending_age_ticks = 0
+	_maximum_drain_usec = 0
+	_maximum_completed_per_drain = 0
 	_create_masks_and_surface_cache(prepared_bootstrap)
 	_reset_paint_mask_checksum()
 	if _terrain_material != null:
@@ -285,8 +199,8 @@ func authoritative_top_surface_identity() -> Dictionary:
 
 
 func _physics_process(_delta: float) -> void:
-	# The interactive path advances at a fixed work budget. Explicit drains used
-	# by results, restart, and tests remain completion barriers.
+	# Interactive work uses the shared work/time budget. Explicit drains used by
+	# results, restart, and tests remain completion barriers.
 	drain_pending_commands(false)
 
 
@@ -316,8 +230,8 @@ func _queue_typed_command(command) -> bool:
 	# Once a command has begun its deterministic cursor, later contact reports
 	# from that tick are already stale just as they were after the former eager
 	# drain. Do not let them overtake an in-flight canonical command.
-	if _active_radial_cursor != null \
-			and command_tick <= int(_active_radial_cursor.command.physics_tick):
+	if _active_raster_cursor != null \
+			and command_tick <= int(_active_raster_cursor.command.physics_tick):
 		paint_command_rejected.emit(command)
 		return false
 	var key := _command_key(command)
@@ -326,11 +240,14 @@ func _queue_typed_command(command) -> bool:
 		return false
 	_queued_command_keys[key] = true
 	_pending_commands.append(command)
+	_queued_command_count += 1
+	_maximum_pending_count = maxi(_maximum_pending_count, pending_work_count())
+	_record_pending_age(Engine.get_physics_frames())
 	return true
 
 
 func drain_pending_commands(complete: bool = true) -> Dictionary:
-	if _pending_commands.is_empty() and _active_radial_cursor == null:
+	if _pending_commands.is_empty() and _active_raster_cursor == null:
 		return {
 			"last_drained_physics_tick": _last_drained_physics_tick,
 			"command_count": 0,
@@ -339,6 +256,7 @@ func drain_pending_commands(complete: bool = true) -> Dictionary:
 			"paint_mask_checksum": _paint_mask_checksum,
 		}
 	_clear_recent_region()
+	var drain_started_usec := Time.get_ticks_usec()
 	if _pending_commands.size() > 1:
 		_pending_commands.sort_custom(_typed_command_less)
 	_start_paint_telemetry_batch_if_needed()
@@ -347,65 +265,47 @@ func drain_pending_commands(complete: bool = true) -> Dictionary:
 	var completed_command_count := 0
 	var drained_tick := _last_drained_physics_tick
 	var work_budget := 0x7fffffff if complete else PAINT_RASTER_WORK_BUDGET_PER_PHYSICS_TICK
-	while work_budget > 0 and (_active_radial_cursor != null or not _pending_commands.is_empty()):
-		if _active_radial_cursor != null:
-			var active_command := _active_radial_cursor.command
-			var measure_slice := not _active_paint_telemetry_batch.is_empty()
-			var slice_started_at := Time.get_ticks_usec() if measure_slice else 0
-			var active_complete := _active_radial_cursor.advance(self, work_budget)
-			if measure_slice:
-				_record_paint_telemetry_slice(
-					active_command,
-					Time.get_ticks_usec() - slice_started_at
-				)
-			# A physics tick never begins a second command after advancing a cursor.
-			# This makes the stated budget a hard upper bound even when its final
-			# phase transition itself requires no additional sample.
-			if not complete:
-				work_budget = 0
-			if not active_complete:
-				break
-			var active_counts := Vector2i(
-				_active_radial_cursor.written_pixel_count,
-				_active_radial_cursor.newly_painted_pixel_count
+	var deadline_usec := 0x7fffffffffffffff if complete \
+			else Time.get_ticks_usec() + PAINT_RASTER_TIME_BUDGET_USEC
+	while work_budget > 0 and (_active_raster_cursor != null or not _pending_commands.is_empty()):
+		if _active_raster_cursor == null:
+			_active_raster_cursor = PAINT_RASTER_CURSOR.new(self, _pending_commands.pop_front())
+		var active_command = _active_raster_cursor.command
+		var slice_work := work_budget if complete else mini(PAINT_RASTER_WORK_CHUNK, work_budget)
+		var measure_slice := not _active_paint_telemetry_batch.is_empty()
+		var slice_started_at := Time.get_ticks_usec() if measure_slice else 0
+		var consumed_work: int = _active_raster_cursor.advance(self, slice_work)
+		work_budget -= consumed_work
+		if measure_slice:
+			_record_paint_telemetry_slice(
+				active_command,
+				Time.get_ticks_usec() - slice_started_at
 			)
-			_active_radial_cursor = null
+		if _active_raster_cursor.is_complete():
+			var active_counts := Vector2i(
+				_active_raster_cursor.written_pixel_count,
+				_active_raster_cursor.newly_painted_pixel_count
+			)
+			_active_raster_cursor = null
 			_complete_paint_command(active_command, active_counts)
 			_record_paint_telemetry_command_finished(active_command, active_counts)
 			written += active_counts.x
 			newly_painted += active_counts.y
 			completed_command_count += 1
 			drained_tick = maxi(drained_tick, int(active_command.physics_tick))
-			continue
-		var command = _pending_commands.pop_front()
-		if command is RadialPaintMark:
-			_active_radial_cursor = _begin_radial_cursor(command as RadialPaintMark)
-			if _active_radial_cursor == null:
-				_record_paint_telemetry_slice(command, 0)
-				_complete_paint_command(command, Vector2i.ZERO)
-				_record_paint_telemetry_command_finished(command, Vector2i.ZERO)
-				completed_command_count += 1
-				drained_tick = maxi(drained_tick, int(command.physics_tick))
-			continue
-		var counts := Vector2i.ZERO
-		if command is SurfacePaintSweep:
-			var measure_sweep := not _active_paint_telemetry_batch.is_empty()
-			var sweep_started_at := Time.get_ticks_usec() if measure_sweep else 0
-			counts = _rasterize_sweep_command(command as SurfacePaintSweep)
-			if measure_sweep:
-				_record_paint_telemetry_slice(
-					command,
-					Time.get_ticks_usec() - sweep_started_at
-				)
-		_complete_paint_command(command, counts)
-		_record_paint_telemetry_command_finished(command, counts)
-		written += counts.x
-		newly_painted += counts.y
-		completed_command_count += 1
-		drained_tick = maxi(drained_tick, int(command.physics_tick))
-		if not complete:
+		elif consumed_work <= 0:
+			break
+		if not complete and Time.get_ticks_usec() >= deadline_usec:
 			break
 	_last_drained_physics_tick = drained_tick
+	_record_pending_age(Engine.get_physics_frames())
+	if not complete:
+		_maximum_drain_usec = maxi(
+			_maximum_drain_usec, Time.get_ticks_usec() - drain_started_usec
+		)
+		_maximum_completed_per_drain = maxi(
+			_maximum_completed_per_drain, completed_command_count
+		)
 	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
 	var checksum := _paint_mask_checksum
 	if completed_command_count > 0:
@@ -419,27 +319,12 @@ func drain_pending_commands(complete: bool = true) -> Dictionary:
 	}
 
 
-func _rasterize_radial_command(command: RadialPaintMark) -> Vector2i:
-	return _rasterize_radial(command.center, command.normal, command.radius, command.channel)
-
-
-func _begin_radial_cursor(command: RadialPaintMark) -> RadialRasterCursor:
-	var pixel_bounds := _candidate_pixel_bounds(
-		Vector2(command.center.x - command.radius, command.center.z - command.radius),
-		Vector2(command.center.x + command.radius, command.center.z + command.radius)
-	)
-	if not pixel_bounds.has_area():
-		return null
-	var cursor := RadialRasterCursor.new(command, pixel_bounds, _next_candidate_generation())
-	return cursor
-
-
 func _start_paint_telemetry_batch_if_needed() -> void:
 	if not RuntimeDeliveryTelemetry.enabled() or not _active_paint_telemetry_batch.is_empty():
 		return
 	var commands: Array = _pending_commands.duplicate()
-	if _active_radial_cursor != null:
-		commands.push_front(_active_radial_cursor.command)
+	if _active_raster_cursor != null:
+		commands.push_front(_active_raster_cursor.command)
 	var command_keys: Dictionary = {}
 	var shot_id_set: Dictionary = {}
 	var trace_id_set: Dictionary = {}
@@ -526,6 +411,7 @@ func _record_paint_telemetry_command_finished(command, counts: Vector2i) -> void
 
 func _complete_paint_command(command, counts: Vector2i) -> void:
 	_queued_command_keys.erase(_command_key(command))
+	_completed_command_count += 1
 	if counts.x > 0:
 		# Observers only receive a command after its complete incremental checksum;
 		# sliced writes never expose a false command boundary.
@@ -533,110 +419,6 @@ func _complete_paint_command(command, counts: Vector2i) -> void:
 	paint_command_applied.emit(command, counts.x, counts.y)
 	if RuntimeDeliveryTelemetry.enabled():
 		_dirty_telemetry_shot_ids[int(command.shot_id)] = true
-
-
-func _rasterize_sweep_command(command: SurfacePaintSweep) -> Vector2i:
-	var generation := _build_sweep_candidates(
-		command.from_point,
-		command.to_point,
-		command.from_normal,
-		command.to_normal,
-		command.footprint_radius
-	)
-	if generation <= 0:
-		return Vector2i.ZERO
-	var from_seed := _snap_candidate(command.from_point, generation)
-	var to_seed := _snap_candidate(command.to_point, generation)
-	if from_seed >= 0 and to_seed >= 0:
-		_collect_candidate_component(from_seed, generation)
-		if _was_visited(to_seed):
-			return _write_sweep_component(
-				_component_pixels,
-				command.from_point,
-				command.to_point,
-				command.footprint_radius, command.channel
-			)
-	# A disconnected chord is never persisted; independently valid endpoint
-	# discs preserve the two physically measured contacts.
-	var result := Vector2i.ZERO
-	if from_seed >= 0:
-		var from_counts := _rasterize_radial(
-			command.from_point, command.from_normal, command.footprint_radius, command.channel
-		)
-		result += from_counts
-	if to_seed >= 0:
-		var to_counts := _rasterize_radial(
-			command.to_point, command.to_normal, command.footprint_radius, command.channel
-		)
-		result += to_counts
-	return result
-
-
-func _rasterize_radial(center: Vector3, normal: Vector3, radius: float, channel: int) -> Vector2i:
-	var generation := _build_radial_candidates(center, normal, radius)
-	if generation <= 0:
-		return Vector2i.ZERO
-	var seed := _snap_candidate(center, generation)
-	if seed < 0:
-		return Vector2i.ZERO
-	_collect_candidate_component(seed, generation)
-	return _write_radial_component(_component_pixels, center, radius, channel)
-
-
-func _build_radial_candidates(center: Vector3, normal: Vector3, radius: float) -> int:
-	var pixel_bounds := _candidate_pixel_bounds(
-		Vector2(center.x - radius, center.z - radius),
-		Vector2(center.x + radius, center.z + radius)
-	)
-	if not pixel_bounds.has_area():
-		return -1
-	var generation := _next_candidate_generation()
-	var radius_squared := radius * radius
-	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
-		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
-			var index := pixel_y * MASK_SIZE + pixel_x
-			if not _ensure_surface_sample(index):
-				continue
-			if _surface_positions[index].distance_squared_to(center) > radius_squared:
-				continue
-			if _surface_normals[index].dot(normal) < NORMAL_FACING_THRESHOLD:
-				continue
-			_candidate_generation[index] = generation
-	return generation
-
-
-func _build_sweep_candidates(
-		from_point: Vector3,
-		to_point: Vector3,
-		from_normal: Vector3,
-		to_normal: Vector3,
-		radius: float
-) -> int:
-	var pixel_bounds := _candidate_pixel_bounds(
-		Vector2(minf(from_point.x, to_point.x) - radius, minf(from_point.z, to_point.z) - radius),
-		Vector2(maxf(from_point.x, to_point.x) + radius, maxf(from_point.z, to_point.z) + radius)
-	)
-	if not pixel_bounds.has_area():
-		return -1
-	var generation := _next_candidate_generation()
-	var delta := to_point - from_point
-	var length_squared := delta.length_squared()
-	var radius_squared := radius * radius
-	for pixel_y in range(pixel_bounds.position.y, pixel_bounds.end.y):
-		for pixel_x in range(pixel_bounds.position.x, pixel_bounds.end.x):
-			var index := pixel_y * MASK_SIZE + pixel_x
-			if not _ensure_surface_sample(index):
-				continue
-			var surface_point := _surface_positions[index]
-			var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
-			var closest := from_point + delta * t
-			if surface_point.distance_squared_to(closest) > radius_squared:
-				continue
-			var expected_normal := from_normal.lerp(to_normal, t).normalized()
-			if _surface_normals[index].dot(expected_normal) < NORMAL_FACING_THRESHOLD:
-				continue
-			_candidate_generation[index] = generation
-	return generation
 
 
 func _snap_candidate(world_point: Vector3, generation: int) -> int:
@@ -667,76 +449,6 @@ func _snap_candidate(world_point: Vector3, generation: int) -> int:
 				best_y = candidate.y
 				best_x = candidate.x
 	return best_index
-
-
-func _collect_candidate_component(seed: int, candidate_generation: int) -> void:
-	_component_queue.clear()
-	_component_pixels.clear()
-	var visit_generation := _next_visited_generation()
-	_component_queue.append(seed)
-	_visited_generation[seed] = visit_generation
-	var cursor := 0
-	while cursor < _component_queue.size():
-		var current := _component_queue[cursor]
-		cursor += 1
-		_component_pixels.append(current)
-		var point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
-		for offset in NEIGHBOR_OFFSETS:
-			var neighbor := point + offset
-			if neighbor.x < 0 or neighbor.x >= MASK_SIZE \
-					or neighbor.y < 0 or neighbor.y >= MASK_SIZE:
-				continue
-			var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
-			if _candidate_generation[neighbor_index] != candidate_generation \
-					or _visited_generation[neighbor_index] == visit_generation:
-				continue
-			_visited_generation[neighbor_index] = visit_generation
-			_component_queue.append(neighbor_index)
-
-
-func _was_visited(index: int) -> bool:
-	return index >= 0 and _visited_generation[index] == _visited_generation_id
-
-
-func _write_radial_component(
-	component: PackedInt32Array,
-	center: Vector3,
-	radius: float,
-	channel: int
-) -> Vector2i:
-	var written := 0
-	var newly_painted := 0
-	for index in component:
-		var distance := _surface_positions[index].distance_to(center)
-		var write_result := _write_paint_value(index, _alpha_for_distance(distance, radius), channel)
-		if write_result != WRITE_RESULT_NONE:
-			written += 1
-		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
-			newly_painted += 1
-	return Vector2i(written, newly_painted)
-
-
-func _write_sweep_component(
-		component: PackedInt32Array,
-	from_point: Vector3,
-	to_point: Vector3,
-	radius: float,
-	channel: int
-) -> Vector2i:
-	var written := 0
-	var newly_painted := 0
-	var delta := to_point - from_point
-	var length_squared := delta.length_squared()
-	for index in component:
-		var surface_point := _surface_positions[index]
-		var t := clampf((surface_point - from_point).dot(delta) / maxf(length_squared, 0.000001), 0.0, 1.0)
-		var distance := surface_point.distance_to(from_point + delta * t)
-		var write_result := _write_paint_value(index, _alpha_for_distance(distance, radius), channel)
-		if write_result != WRITE_RESULT_NONE:
-			written += 1
-		if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
-			newly_painted += 1
-	return Vector2i(written, newly_painted)
 
 
 func _alpha_for_distance(distance: float, radius: float) -> int:
@@ -789,9 +501,9 @@ func _write_paint_value(index: int, value: int, channel: int) -> int:
 	elif _target_bytes[index] >= _surface_tuning.painted_threshold_byte and existing_owner != next_owner:
 		var owner_area := TargetSurfaceCoverage.texel_surface_area(_surface_normals[index], _projected_texel_area)
 		if existing_owner == PaintChannel.Value.RED:
-			_red_target_surface_area -= owner_area
+			_red_target_surface_area = maxf(_red_target_surface_area - owner_area, 0.0)
 		elif existing_owner == PaintChannel.Value.GREEN:
-			_green_target_surface_area -= owner_area
+			_green_target_surface_area = maxf(_green_target_surface_area - owner_area, 0.0)
 		if next_owner == PaintChannel.Value.RED:
 			_red_target_surface_area += owner_area
 		elif next_owner == PaintChannel.Value.GREEN:
@@ -884,13 +596,19 @@ func clear() -> void:
 	if _paint_image == null:
 		return
 	_pending_commands.clear()
-	_active_radial_cursor = null
+	_active_raster_cursor = null
 	_active_paint_telemetry_batch.clear()
 	_queued_command_keys.clear()
 	_dirty_telemetry_shot_ids.clear()
 	_telemetry_paint_traces.clear()
 	_telemetry_texture_traces.clear()
 	_last_drained_physics_tick = -1
+	_queued_command_count = 0
+	_completed_command_count = 0
+	_maximum_pending_count = 0
+	_maximum_oldest_pending_age_ticks = 0
+	_maximum_drain_usec = 0
+	_maximum_completed_per_drain = 0
 	_paint_mask_bytes.fill(0)
 	if _recent_diagnostics_enabled:
 		_recent_bytes.fill(0)
@@ -919,11 +637,16 @@ func coverage_percent() -> float:
 
 func coverage_snapshot() -> PaintCoverageSnapshot:
 	# PaintCoverageSnapshot is a global immutable value object supplied by M1.
-	return PaintCoverageSnapshot.new(
+	var snapshot := PaintCoverageSnapshot.new(
 		100.0 * _red_target_surface_area / _total_target_surface_area if _total_target_surface_area > 0.0 else 0.0,
 		100.0 * _green_target_surface_area / _total_target_surface_area if _total_target_surface_area > 0.0 else 0.0,
 		coverage_percent(), _paint_mask_checksum
 	)
+	assert(snapshot.is_valid(),
+		"Paint coverage owner areas diverged: red=%.9f green=%.9f total=%.9f" % [
+			snapshot.red_percent, snapshot.green_percent, snapshot.total_percent,
+		])
+	return snapshot
 
 
 func paint_mask_checksum() -> int:
@@ -1009,7 +732,45 @@ func nontarget_diagnostic_build_count() -> int:
 
 
 func pending_work_count() -> int:
-	return _pending_commands.size() + (1 if _active_radial_cursor != null else 0)
+	return _pending_commands.size() + (1 if _active_raster_cursor != null else 0)
+
+
+func queue_latency_snapshot(current_physics_tick: int = -1) -> Dictionary:
+	var observed_tick := current_physics_tick
+	if observed_tick < 0:
+		observed_tick = Engine.get_physics_frames()
+	var oldest_tick := _oldest_pending_physics_tick()
+	return {
+		"pending_count": pending_work_count(),
+		"oldest_pending_physics_tick": oldest_tick,
+		"oldest_pending_age_ticks": maxi(observed_tick - oldest_tick, 0) \
+				if oldest_tick >= 0 else 0,
+		"queued_total": _queued_command_count,
+		"completed_total": _completed_command_count,
+		"maximum_pending_count": _maximum_pending_count,
+		"maximum_oldest_pending_age_ticks": _maximum_oldest_pending_age_ticks,
+		"maximum_drain_usec": _maximum_drain_usec,
+		"maximum_completed_per_drain": _maximum_completed_per_drain,
+	}
+
+
+func _oldest_pending_physics_tick() -> int:
+	var oldest_tick := 0x7fffffff
+	if _active_raster_cursor != null:
+		oldest_tick = mini(oldest_tick, int(_active_raster_cursor.command.physics_tick))
+	for command in _pending_commands:
+		oldest_tick = mini(oldest_tick, int(command.physics_tick))
+	return -1 if oldest_tick == 0x7fffffff else oldest_tick
+
+
+func _record_pending_age(current_physics_tick: int) -> void:
+	var oldest_tick := _oldest_pending_physics_tick()
+	if oldest_tick < 0:
+		return
+	_maximum_oldest_pending_age_ticks = maxi(
+		_maximum_oldest_pending_age_ticks,
+		maxi(current_physics_tick - oldest_tick, 0)
+	)
 
 
 func last_drained_physics_tick() -> int:

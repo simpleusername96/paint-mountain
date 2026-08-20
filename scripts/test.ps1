@@ -52,6 +52,7 @@ $ordinaryTests = @(
 	'projectile_family_capacity_test.gd',
     'phase3_paint_test.gd',
     'paint_queue_determinism_test.gd',
+    'paint_queue_latency_test.gd',
     'phase3_projectile_paint_test.gd',
 	'phase4_state_test.gd',
 	'ball_queue_progression_test.gd',
