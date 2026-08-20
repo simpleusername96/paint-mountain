@@ -22,6 +22,11 @@ func _run() -> void:
 	var first := manager.spawn_projectile(PROJECTILE_DATA, Vector3.ZERO, Vector3.FORWARD)
 	var second := manager.spawn_projectile(PROJECTILE_DATA, Vector3.ZERO, Vector3.FORWARD)
 	_assert(first != null and second != null, "two root families must be admitted")
+	_assert(
+		first != null and second != null \
+				and first.spawn_ordinal == 0 and second.spawn_ordinal == 1,
+		"successful root admission must allocate consecutive spawn ordinals"
+	)
 	_assert(manager.active_root_count() == 2, "two moving roots must occupy both initial-flight slots")
 	_assert(not manager.root_capacity_available(2), "a third root must wait while both families are in initial flight")
 	_assert(
@@ -50,6 +55,10 @@ func _run() -> void:
 
 	var third := manager.spawn_projectile(PROJECTILE_DATA, Vector3.ZERO, Vector3.FORWARD)
 	_assert(third != null and manager.active_root_count() == 2, "a released slot must admit another root")
+	_assert(
+		third != null and third.spawn_ordinal == 2,
+		"a rejected root request must not consume a spawn ordinal"
+	)
 
 	var split_shot_id := second.shot_id
 	second.deactivate(ProjectileSettlementReason.CONSUMED)
@@ -65,6 +74,10 @@ func _run() -> void:
 		_assert(child != null, "all three split children must retain their root family identity")
 		if child != null:
 			children.append(child)
+			_assert(
+				child.spawn_ordinal == 3 + child_index,
+				"split children must continue the family-wide spawn ordinal sequence"
+			)
 		_assert(
 			not finished_shot_ids.has(split_shot_id),
 			"family completion must not occur between parent consumption and child admission"

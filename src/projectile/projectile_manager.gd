@@ -91,7 +91,6 @@ func spawn_projectile(
 	# when a new root is fired while the previous family's paint commands are
 	# still queued: command identity must never collide across families.
 	var assigned_ordinal := _next_spawn_ordinal
-	_next_spawn_ordinal += 1
 	var assigned_shot_id := requested_shot_id
 	if split_generation == 0:
 		assigned_shot_id = _next_shot_id
