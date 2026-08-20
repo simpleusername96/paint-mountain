@@ -61,6 +61,7 @@ $ordinaryTests = @(
 	'phase6_content_test.gd',
 	'terrain_aim_solver_test.gd',
 	'aim_interaction_test.gd',
+	'first_fire_focus_test.gd',
 	'stage10_prediction_readiness_test.gd',
     'shot_observation_test.gd',
 	'attempt_observation_test.gd',

@@ -7,6 +7,8 @@ const CUE_DEFINITIONS := {
 	&"fire": [Vector2(150.0, 72.0), 0.24, -6.0],
 	&"impact": [Vector2(110.0, 58.0), 0.2, -8.0],
 	&"mechanism": [Vector2(420.0, 820.0), 0.28, -7.0],
+	&"impact_burst": [Vector2(170.0, 46.0), 0.32, -6.5],
+	&"apex_split": [Vector2(360.0, 940.0), 0.24, -7.0],
 	&"clear": [Vector2(440.0, 880.0), 0.5, -6.0],
 	&"fail": [Vector2(240.0, 120.0), 0.42, -9.0],
 }

@@ -94,6 +94,12 @@ func _run_capture() -> void:
 			await _capture_special_ball_midflight(&"stage_02", BallKind.Value.IMPACT_BURST)
 		"apex_split_midflight":
 			await _capture_special_ball_midflight(&"stage_03", BallKind.Value.APEX_SPLIT)
+		"impact_burst_effect":
+			await _capture_special_ball_effect(&"stage_02", BallKind.Value.IMPACT_BURST)
+		"apex_split_effect":
+			await _capture_special_ball_effect(&"stage_03", BallKind.Value.APEX_SPLIT)
+		"apex_split_family":
+			await _capture_special_ball_effect(&"stage_03", BallKind.Value.APEX_SPLIT)
 		"terrain_target_selected":
 			await _capture_terrain_target_selected(_capture_stage)
 		"terrain_target_dragged":
@@ -162,6 +168,9 @@ func _run_capture() -> void:
 	if _screen not in [
 		"impact_burst_midflight",
 		"apex_split_midflight",
+		"impact_burst_effect",
+		"apex_split_effect",
+		"apex_split_family",
 		"projectile_and_continuous_paint",
 		"summit_hit",
 		"next_aim_pending",
@@ -178,6 +187,9 @@ func _run_capture() -> void:
 	if _screen == "terrain_target_rejected":
 		settle_frames = 2
 	elif _screen in [
+		"impact_burst_effect",
+		"apex_split_effect",
+		"apex_split_family",
 		"next_aim_pending",
 		"next_aim_ready",
 		"scale_contact",
@@ -186,7 +198,9 @@ func _run_capture() -> void:
 		"shot_follow_impact_hold",
 		"shot_follow_returned",
 	]:
-		settle_frames = 0
+		settle_frames = 4 if _screen in [
+			"impact_burst_effect", "apex_split_effect", "apex_split_family",
+		] else 0
 	elif _screen == "two_family":
 		settle_frames = 1
 	if _capture_settle_frames >= 0:
@@ -462,6 +476,10 @@ func _capture_special_ball_midflight(stage_id: StringName, kind: int) -> void:
 		controller.shots_remaining, controller.stage_data.maximum_shots
 	)
 	var cannon := gameplay.get_node("Cannon") as CannonController
+	if kind == BallKind.Value.APEX_SPLIT:
+		# Keep this runtime witness airborne through its apex instead of letting
+		# Stage 03's default route intercept the root on ascent.
+		cannon.set_aim(80.0, 68.0, 50.0, true)
 	await _wait_for_cannon_prediction(cannon)
 	if not controller.request_fire():
 		_fail_capture("special-ball capture could not fire its selected token")
@@ -477,6 +495,58 @@ func _capture_special_ball_midflight(stage_id: StringName, kind: int) -> void:
 	if not matching:
 		_fail_capture("special-ball capture lost the selected root before its render frame")
 		return
+	Engine.time_scale = 0.08
+
+
+func _capture_special_ball_effect(stage_id: StringName, kind: int) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var special_index := _first_deal_kind_index(controller, kind, false)
+	if special_index < 0:
+		_fail_capture("special effect capture deal does not contain kind %s" % BallKind.stable_id(kind))
+		return
+	controller._queue_cursor = special_index
+	controller.shots_remaining = controller._deal.size() - special_index
+	controller._emit_deal_changed()
+	controller.shots_changed.emit(
+		controller.shots_remaining, controller.stage_data.maximum_shots
+	)
+	var manager := gameplay.get_node("ProjectileManager") as ProjectileManager
+	var observed := {"effect": false}
+	manager.ball_effect_triggered.connect(
+		func(_projectile: PaintProjectile, effect_id: StringName, _position: Vector3) -> void:
+			if effect_id == BallKind.stable_id(kind):
+				observed.effect = true
+	)
+	var cannon := gameplay.get_node("Cannon") as CannonController
+	if kind == BallKind.Value.APEX_SPLIT:
+		# This witness must cross apex before any terrain contact so the capture
+		# proves the three-child follow presentation, not only the root silhouette.
+		cannon.set_aim(80.0, 68.0, 50.0, true)
+	await _wait_for_cannon_prediction(cannon)
+	if not controller.request_fire():
+		_fail_capture("special effect capture could not fire its selected token")
+		return
+	for _tick in range(720):
+		await get_tree().physics_frame
+		if bool(observed.effect):
+			break
+	if not bool(observed.effect):
+		_fail_capture("special effect capture did not observe %s" % BallKind.stable_id(kind))
+		return
+	if kind == BallKind.Value.APEX_SPLIT:
+		# Let the admitted children separate enough to prove family framing while
+		# the 0.68 s split glints are still alive.
+		var separation_ticks := 54 if _screen == "apex_split_family" else 12
+		for _tick in range(separation_ticks):
+			await get_tree().physics_frame
+		var director := gameplay.get_node("CameraDirector") as CameraDirector
+		if director.current_mode != CameraDirector.Mode.FOLLOW \
+				or director._follow_family_projectiles.size() != 3:
+			_fail_capture("Apex effect capture did not retain the three-child follow family")
+			return
 	Engine.time_scale = 0.08
 
 

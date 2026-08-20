@@ -16,6 +16,7 @@ signal intrinsic_effect_requested(projectile: PaintProjectile, contact: Projecti
 signal ball_effect_triggered(projectile: PaintProjectile, effect_id: StringName, position: Vector3)
 signal all_projectiles_settled
 signal shot_family_started(shot_id: int, root_projectile: PaintProjectile)
+signal shot_family_replaced(shot_id: int, children: Array[PaintProjectile])
 signal shot_family_finished(shot_id: int)
 signal initial_root_launch_finished(shot_id: int)
 signal activity_changed(active_shot_ids: PackedInt64Array, active_projectiles: int)
@@ -32,6 +33,9 @@ var _paint_surface_tuning: PaintSurfaceTuning = DEFAULT_PAINT_SURFACE_TUNING
 var _active: Array[PaintProjectile] = []
 var _settlement_check_queued := false
 var _pending_intents: Array[Dictionary] = []
+var _pending_intent_keys: Dictionary = {}
+var _pending_intrinsic_effects: Dictionary = {}
+var _burst_intent_key_by_projectile: Dictionary = {}
 var _next_spawn_ordinal: int = 0
 var _next_shot_id: int = 1
 var _next_sequence_by_ordinal: Dictionary = {}
@@ -42,6 +46,8 @@ var _next_sequence_by_ordinal: Dictionary = {}
 var _active_initial_launch_shot_ids: Dictionary = {}
 var _unsettled_shot_family_ids: Dictionary = {}
 var _shot_ids_pending_post_stop_refresh: Dictionary = {}
+var _radial_paint_admitter := Callable()
+var _surface_paint_admitter := Callable()
 
 
 func _init() -> void:
@@ -58,6 +64,17 @@ func configure_terrain(
 	_paint_surface_tuning = paint_surface_tuning
 
 
+## Installs the authoritative paint queue boundary without giving the manager
+## PaintSystem state. Tests may omit it and observe the existing ready signals;
+## Gameplay supplies both callables so intrinsic success follows real admission.
+func configure_paint_admission(
+		radial_admitter: Callable,
+		surface_admitter: Callable
+) -> void:
+	_radial_paint_admitter = radial_admitter
+	_surface_paint_admitter = surface_admitter
+
+
 func spawn_projectile(
 		projectile_data: ProjectileData,
 		origin: Vector3,
@@ -68,16 +85,7 @@ func spawn_projectile(
 		ball_token: BallToken = null
 ) -> PaintProjectile:
 	_prune_invalid()
-	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
-		return null
-	if split_generation == 0 \
-			and _active_initial_launch_shot_ids.size() >= MAXIMUM_ACTIVE_ROOT_LAUNCHES:
-		return null
-	if split_generation == 0 and requested_shot_id > 0:
-		# Initial root identity is manager-owned. Accepting a caller-provided root
-		# ID could merge two launches into one capacity slot.
-		return null
-	if split_generation > 0 and requested_shot_id <= 0:
+	if not _can_admit_projectile_request(split_generation, requested_shot_id):
 		return null
 	# Spawn ordinals stay monotonic for the complete attempt. This is important
 	# when a new root is fired while the previous family's paint commands are
@@ -87,7 +95,50 @@ func spawn_projectile(
 	var assigned_shot_id := requested_shot_id
 	if split_generation == 0:
 		assigned_shot_id = _next_shot_id
+	var projectile := _build_detached_projectile(
+		projectile_data,
+		origin,
+		velocity,
+		split_generation,
+		assigned_ordinal,
+		assigned_shot_id,
+		never_contacted_deadline if split_generation == 0 else -1.0,
+		ball_token
+	)
+	if projectile == null:
+		return null
+	_next_spawn_ordinal += 1
+	if split_generation == 0:
 		_next_shot_id += 1
+	_admit_projectile(projectile, split_generation == 0)
+	return projectile
+
+
+func _can_admit_projectile_request(split_generation: int, requested_shot_id: int) -> bool:
+	if _active.size() >= MAXIMUM_ACTIVE_PROJECTILES or _terrain_surface == null:
+		return false
+	if split_generation == 0:
+		# Initial root identity is manager-owned. Accepting a caller-provided root
+		# ID could merge two launches into one capacity slot.
+		return requested_shot_id <= 0 \
+				and _active_initial_launch_shot_ids.size() < MAXIMUM_ACTIVE_ROOT_LAUNCHES
+	return requested_shot_id > 0
+
+
+func _build_detached_projectile(
+		projectile_data: ProjectileData,
+		origin: Vector3,
+		velocity: Vector3,
+		split_generation: int,
+		assigned_ordinal: int,
+		assigned_shot_id: int,
+		never_contacted_deadline: float,
+		ball_token: BallToken
+) -> PaintProjectile:
+	if _terrain_surface == null or projectile_data == null \
+			or not origin.is_finite() or not velocity.is_finite() \
+			or assigned_ordinal < 0 or assigned_shot_id <= 0:
+		return null
 	var projectile := PaintProjectile.new()
 	projectile.name = "PaintProjectile%02d" % (assigned_ordinal + 1)
 	projectile.configure(
@@ -99,7 +150,7 @@ func spawn_projectile(
 		_paint_surface_tuning,
 		assigned_ordinal,
 		assigned_shot_id,
-		never_contacted_deadline if split_generation == 0 else -1.0,
+		never_contacted_deadline,
 		ball_token
 	)
 	projectile.contact_reported.connect(_on_contact_reported)
@@ -116,15 +167,18 @@ func spawn_projectile(
 	projectile.stopped.connect(_on_projectile_stopped)
 	projectile.position = to_local(origin)
 	projectile.linear_velocity = velocity
+	return projectile
+
+
+func _admit_projectile(projectile: PaintProjectile, is_root: bool) -> void:
 	add_child(projectile)
 	_active.append(projectile)
 	projectile_spawned.emit(projectile)
-	if split_generation == 0:
-		_active_initial_launch_shot_ids[assigned_shot_id] = true
-		_unsettled_shot_family_ids[assigned_shot_id] = true
-		shot_family_started.emit(assigned_shot_id, projectile)
+	if is_root:
+		_active_initial_launch_shot_ids[projectile.shot_id] = true
+		_unsettled_shot_family_ids[projectile.shot_id] = true
+		shot_family_started.emit(projectile.shot_id, projectile)
 	_emit_activity_changed()
-	return projectile
 
 
 func active_count() -> int:
@@ -227,15 +281,20 @@ static func stage_resident_capacity_is_valid(
 
 
 func submit_radial_paint_intent(intent: RadialPaintMark) -> bool:
-	if intent == null or not intent.is_intent_valid():
-		return false
-	_pending_intents.append({"intent": intent})
-	return true
+	return _submit_paint_intent(intent)
 
 
 func submit_surface_paint_intent(intent: SurfacePaintSweep) -> bool:
+	return _submit_paint_intent(intent)
+
+
+func _submit_paint_intent(intent) -> bool:
 	if intent == null or not intent.is_intent_valid():
 		return false
+	var key := _intent_admission_key(intent)
+	if _pending_intent_keys.has(key):
+		return false
+	_pending_intent_keys[key] = true
 	_pending_intents.append({"intent": intent})
 	return true
 
@@ -243,6 +302,9 @@ func submit_surface_paint_intent(intent: SurfacePaintSweep) -> bool:
 func cleanup() -> void:
 	_settlement_check_queued = false
 	_pending_intents.clear()
+	_pending_intent_keys.clear()
+	_pending_intrinsic_effects.clear()
+	_burst_intent_key_by_projectile.clear()
 	_begin_shot_ordering()
 	_next_shot_id = 1
 	_active_initial_launch_shot_ids.clear()
@@ -270,10 +332,14 @@ func _on_contact_reported(projectile: PaintProjectile, contact: ProjectileContac
 
 
 func _on_radial_paint_mark_intent(
-		_projectile: PaintProjectile,
+		projectile: PaintProjectile,
 		intent: RadialPaintMark
 ) -> void:
-	submit_radial_paint_intent(intent)
+	var admitted := submit_radial_paint_intent(intent)
+	if intent != null and intent.kind == RadialPaintMark.Kind.BURST \
+			and projectile != null and is_instance_valid(projectile):
+		_burst_intent_key_by_projectile[projectile.get_instance_id()] = \
+				_intent_admission_key(intent) if admitted else ""
 
 
 func _on_surface_paint_sweep_intent(
@@ -302,20 +368,44 @@ func _emit_canonicalized_intents(entries: Array[Dictionary]) -> int:
 	if entries.is_empty():
 		return 0
 	entries.sort_custom(_intent_entry_less)
+	var emitted_count := 0
 	for entry in entries:
 		var intent: Variant = entry.intent
+		var admission_key := _intent_admission_key(intent)
+		_pending_intent_keys.erase(admission_key)
 		var ordinal := int(intent.spawn_ordinal)
 		var sequence := int(_next_sequence_by_ordinal.get(ordinal, 0))
 		_next_sequence_by_ordinal[ordinal] = sequence + 1
 		if intent is RadialPaintMark:
 			var radial := (intent as RadialPaintMark).with_sequence(sequence)
 			assert(radial.is_valid(), "Canonicalized radial command must be valid.")
-			radial_paint_mark_ready.emit(radial)
+			var accepted := true
+			if _radial_paint_admitter.is_valid():
+				accepted = bool(_radial_paint_admitter.call(radial))
+			if accepted:
+				radial_paint_mark_ready.emit(radial)
+				emitted_count += 1
+			_resolve_intrinsic_effect(admission_key, radial, accepted)
 		elif intent is SurfacePaintSweep:
 			var sweep := (intent as SurfacePaintSweep).with_sequence(sequence)
 			assert(sweep.is_valid(), "Canonicalized sweep command must be valid.")
-			surface_paint_sweep_ready.emit(sweep)
-	return entries.size()
+			var accepted := true
+			if _surface_paint_admitter.is_valid():
+				accepted = bool(_surface_paint_admitter.call(sweep))
+			if accepted:
+				surface_paint_sweep_ready.emit(sweep)
+				emitted_count += 1
+	return emitted_count
+
+
+func _intent_admission_key(intent) -> String:
+	if intent == null:
+		return ""
+	return "%s:%d:%d" % [
+		JSON.stringify(intent.queue_sort_key()),
+		int(intent.shot_id),
+		int(intent.channel),
+	]
 
 
 func _intent_entry_less(a: Dictionary, b: Dictionary) -> bool:
@@ -376,9 +466,46 @@ func _on_projectile_terrain_recovered(
 	projectile_terrain_recovered.emit(projectile, physics_tick, correction_distance)
 
 
-func _on_intrinsic_effect_requested(projectile: PaintProjectile, contact: ProjectileContact) -> void:
+func _on_intrinsic_effect_requested(
+		projectile: PaintProjectile,
+		contact: ProjectileContact,
+		_base_paint_committed: bool
+) -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	var instance_id := projectile.get_instance_id()
+	var admission_key := String(_burst_intent_key_by_projectile.get(instance_id, ""))
+	_burst_intent_key_by_projectile.erase(instance_id)
+	if admission_key.is_empty() or _pending_intrinsic_effects.has(admission_key):
+		projectile.resolve_intrinsic_effect_admission(false)
+		return
+	_pending_intrinsic_effects[admission_key] = {
+		"projectile": projectile,
+		"contact": contact,
+	}
+
+
+func _resolve_intrinsic_effect(
+		admission_key: String,
+		command: RadialPaintMark,
+		accepted: bool
+) -> void:
+	if not _pending_intrinsic_effects.has(admission_key):
+		return
+	var entry: Dictionary = _pending_intrinsic_effects[admission_key]
+	_pending_intrinsic_effects.erase(admission_key)
+	var projectile := entry.get("projectile") as PaintProjectile
+	var contact := entry.get("contact") as ProjectileContact
+	if projectile == null or not is_instance_valid(projectile) or contact == null:
+		return
+	if not accepted or command.kind != RadialPaintMark.Kind.BURST \
+			or command.shot_id != projectile.shot_id \
+			or command.channel != projectile.paint_channel:
+		projectile.resolve_intrinsic_effect_admission(false)
+		return
 	intrinsic_effect_requested.emit(projectile, contact)
 	ball_effect_triggered.emit(projectile, &"impact_burst", contact.world_position)
+	projectile.resolve_intrinsic_effect_admission(true)
 
 
 func _on_apex_split_requested(
@@ -386,24 +513,45 @@ func _on_apex_split_requested(
 		child_velocities: Array[Vector3]
 ) -> void:
 	if parent == null or not is_instance_valid(parent) \
-			or parent.split_generation != 0 or child_velocities.size() != 3 \
+			or _terrain_surface == null or parent.split_generation != 0 \
+			or child_velocities.size() != 3 \
 			or not can_replace_resident_with_children(parent, child_velocities.size()):
 		return
-	var child_token := BallToken.new(BallKind.Value.STANDARD, parent.paint_channel)
-	ball_effect_triggered.emit(parent, &"apex_split", parent.global_position)
-	parent.deactivate(ProjectileSettlementReason.CONSUMED)
 	for velocity in child_velocities:
-		var child := spawn_projectile(
-			parent.projectile_data,
-			parent.global_position,
+		if not velocity.is_finite() or velocity.is_zero_approx():
+			return
+	# Snapshot every replacement input before mutating the live root. Detached
+	# construction makes the family all-or-none: any failure leaves the Apex
+	# resident alive on its already-resolved Standard fallback path.
+	var parent_data := parent.projectile_data
+	var parent_position := parent.global_position
+	var parent_shot_id := parent.shot_id
+	var parent_channel := parent.paint_channel
+	var child_token := BallToken.new(BallKind.Value.STANDARD, parent_channel)
+	var detached_children: Array[PaintProjectile] = []
+	var first_ordinal := _next_spawn_ordinal
+	for velocity in child_velocities:
+		var child := _build_detached_projectile(
+			parent_data,
+			parent_position,
 			velocity,
 			1,
-			parent.shot_id,
+			first_ordinal + detached_children.size(),
+			parent_shot_id,
 			-1.0,
 			child_token
 		)
 		if child == null:
-			push_error("Pre-admitted Apex Split failed to spawn a child.")
+			for detached in detached_children:
+				detached.free()
+			return
+		detached_children.append(child)
+	_next_spawn_ordinal += detached_children.size()
+	parent.deactivate(ProjectileSettlementReason.CONSUMED)
+	for child in detached_children:
+		_admit_projectile(child, false)
+	shot_family_replaced.emit(parent_shot_id, detached_children.duplicate())
+	ball_effect_triggered.emit(parent, &"apex_split", parent_position)
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:

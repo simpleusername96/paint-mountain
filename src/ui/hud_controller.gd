@@ -145,7 +145,7 @@ func show_state(state: StageController.State) -> void:
 		%Start.grab_focus()
 	elif state == StageController.State.AIMING:
 		if _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
-			_actions.focus_fire()
+			_actions.focus_fire.call_deferred()
 		else:
 			_interaction.grab_focus()
 	elif state == StageController.State.RESULT:

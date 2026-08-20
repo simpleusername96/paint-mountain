@@ -265,6 +265,10 @@ func _build_stage_world() -> bool:
 		TrajectoryHitIdentity.TERRAIN_TOP_SHAPE_ID,
 		0
 	)
+	_projectile_manager.configure_paint_admission(
+		_paint_system.queue_radial_paint_mark,
+		_paint_system.queue_surface_paint_sweep
+	)
 	_terrain_mesh.material_override = paint_material
 	_terrain_paint_material = paint_material
 	var prepared_decorations: Array[DecorationPlacement] = []
@@ -344,8 +348,6 @@ func _connect_systems() -> void:
 	_stage_controller.deal_changed.connect(_on_deal_changed)
 	_stage_controller.score_changed.connect(_hud.update_target_score)
 	_stage_controller.finish_readiness_changed.connect(_hud.set_finish_readiness)
-	_projectile_manager.radial_paint_mark_ready.connect(_paint_system.queue_radial_paint_mark)
-	_projectile_manager.surface_paint_sweep_ready.connect(_paint_system.queue_surface_paint_sweep)
 	_projectile_manager.transient_splash_requested.connect(_on_transient_splash_requested)
 	_projectile_manager.ball_effect_triggered.connect(_on_ball_effect_triggered)
 	_projectile_manager.valid_top_traversed.connect(_on_valid_top_traversed)
@@ -497,7 +499,6 @@ func _on_stage_finished(result: Dictionary) -> void:
 
 func _on_state_changed(current_state: int, previous_state: int) -> void:
 	var state := current_state as StageController.State
-	_hud.show_state(state)
 	match state:
 		StageController.State.BRIEFING:
 			GAMEPLAY_PACE.apply_normal()
@@ -519,6 +520,10 @@ func _on_state_changed(current_state: int, previous_state: int) -> void:
 		StageController.State.FINISHING, StageController.State.RESULT:
 			GAMEPLAY_PACE.apply_normal()
 			_camera_director.set_mode(CameraDirector.Mode.RESULT)
+	# Camera mode and interaction signals must settle before the HUD chooses its
+	# focus target. Otherwise its Aiming entry can retain the briefing map button
+	# for one input turn and reject an untouched first Space press.
+	_hud.show_state(state)
 	_update_prediction_consumers()
 
 
@@ -658,9 +663,17 @@ func _on_ball_effect_triggered(
 		"channel": projectile.paint_channel if is_instance_valid(projectile) else -1,
 		"position": position,
 	})
-	_presentation_effects.mechanism_burst(position)
-	_audio_cue(&"mechanism")
-	_camera_director.add_impact_shake(0.24)
+	match effect_id:
+		&"impact_burst":
+			_presentation_effects.impact_burst(position)
+			_audio_cue(&"impact_burst")
+			_camera_director.add_impact_shake(0.30)
+		&"apex_split":
+			_presentation_effects.apex_split(position)
+			_audio_cue(&"apex_split")
+			_camera_director.add_impact_shake(0.12)
+		_:
+			push_warning("Unknown intrinsic ball effect: %s" % String(effect_id))
 
 
 func _set_mechanism_labels_visible(visible: bool) -> void:

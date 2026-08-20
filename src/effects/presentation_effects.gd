@@ -49,7 +49,31 @@ func splash(world_position: Vector3, scale: float = 1.0) -> void:
 
 func mechanism_burst(world_position: Vector3) -> void:
 	splash(world_position + Vector3.UP, 1.7)
+	_glint_particles[_next_glint].lifetime = 0.68
 	_next_glint = _emit_textured(_glint_particles, _next_glint, world_position + Vector3.UP * 3.0, 3)
+
+
+func impact_burst(world_position: Vector3) -> void:
+	# A dense ground pulse reads as radial paint rather than a mechanism glyph.
+	splash(world_position + Vector3.UP * 0.35, 2.15)
+	_next_impact = _emit_textured(
+		_impact_particles,
+		_next_impact,
+		world_position + Vector3.UP * 0.16,
+		3
+	)
+
+
+func apex_split(world_position: Vector3) -> void:
+	# Three separated glints mirror the child fan without implying mid-air paint.
+	for offset in [Vector3(-1.8, 0.4, 0.0), Vector3(0.0, 1.8, 0.0), Vector3(1.8, 0.4, 0.0)]:
+		_glint_particles[_next_glint].lifetime = 1.1
+		_next_glint = _emit_textured(
+			_glint_particles,
+			_next_glint,
+			world_position + offset,
+			2
+		)
 
 
 func muzzle_flash(world_position: Vector3) -> void:
@@ -57,6 +81,7 @@ func muzzle_flash(world_position: Vector3) -> void:
 
 
 func clear_glint(world_position: Vector3) -> void:
+	_glint_particles[_next_glint].lifetime = 0.68
 	_next_glint = _emit_textured(_glint_particles, _next_glint, world_position, 8)
 
 

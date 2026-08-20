@@ -58,20 +58,34 @@ func _run() -> void:
 		"Shot Follow must focus the selected root, not a family average"
 	)
 
-	var child := manager.spawn_projectile(
-		PROJECTILE_DATA,
-		Vector3(12.0, 22.0, 20.0),
-		Vector3.ZERO,
-		1,
-		first_root.shot_id
-	)
-	_assert(child != null, "the fixture must create a same-family child")
-	child.freeze = true
-	child.position += Vector3(30.0, 0.0, 0.0)
+	var children: Array[PaintProjectile] = []
+	for child_position in [
+		Vector3(-16.0, 22.0, 20.0),
+		Vector3(0.0, 26.0, 18.0),
+		Vector3(18.0, 21.0, 20.0),
+	]:
+		var child := manager.spawn_projectile(
+			PROJECTILE_DATA,
+			child_position,
+			Vector3.ZERO,
+			1,
+			first_root.shot_id
+		)
+		_assert(child != null, "the fixture must create every same-family child")
+		if child != null:
+			child.freeze = true
+			children.append(child)
+	manager.shot_family_replaced.emit(first_root.shot_id, children)
 	director._physics_process(1.0 / 60.0)
 	_assert(
-		director._follow_projectile == first_root,
-		"Splitter children must not replace the root follow target"
+		director._follow_projectile == null \
+				and director._follow_family_projectiles.size() == 3,
+		"an admitted Apex family must replace the consumed root presentation"
+	)
+	var expected_family_focus := Vector3(1.0, 23.5, 19.0)
+	_assert(
+		director._computed_follow_focus.distance_to(expected_family_focus) < 0.1,
+		"Shot Follow must frame only the three manager-published family children"
 	)
 
 	var impact_point := Vector3(0.0, 0.0, 0.0)
@@ -86,6 +100,11 @@ func _run() -> void:
 		terrain.get_node("TerrainTopBody")
 	)
 	manager.projectile_contact_reported.emit(first_root, contact)
+	_assert(
+		director._follow_impact_hold_ticks == 0,
+		"a stale consumed root or unrelated projectile must not start family hold"
+	)
+	manager.projectile_contact_reported.emit(children[0], contact)
 	_assert(
 		director._follow_impact_hold_ticks == CameraDirector.FOLLOW_IMPACT_HOLD_TICKS,
 		"first playable-surface impact must start the exact 0.4-second wall-clock hold"
@@ -120,7 +139,7 @@ func _run() -> void:
 	host.queue_free()
 	await process_frame
 	if not _failed:
-		print("Shot Follow camera passed: exact root, child stability, 24-tick impact hold, and camera-only return.")
+		print("Shot Follow camera passed: exact root, bounded Apex family, child impact hold, and camera-only return.")
 	quit(1 if _failed else 0)
 
 

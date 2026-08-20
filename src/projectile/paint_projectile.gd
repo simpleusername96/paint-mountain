@@ -19,7 +19,11 @@ signal motion_state_changed(
 signal woke(projectile: PaintProjectile, reason: StringName)
 signal terrain_recovered(projectile: PaintProjectile, physics_tick: int, correction_distance: float)
 signal stopped(projectile: PaintProjectile, reason: StringName)
-signal intrinsic_effect_requested(projectile: PaintProjectile, contact: ProjectileContact)
+signal intrinsic_effect_requested(
+	projectile: PaintProjectile,
+	contact: ProjectileContact,
+	base_paint_committed: bool
+)
 signal apex_split_requested(projectile: PaintProjectile, child_velocities: Array[Vector3])
 
 const IMPACT_SPEED_THRESHOLD := 8.0
@@ -83,6 +87,12 @@ var _velocity_history: Array[Vector3] = []
 var _queued_desired_velocity := Vector3.INF
 var _queued_desired_velocity_tick: int = -1
 var _behavior: RefCounted
+var _launch_horizontal_velocity := Vector3.ZERO
+var _intrinsic_resolution_pending := false
+var _intrinsic_contact: ProjectileContact
+var _intrinsic_base_paint_committed := false
+var _intrinsic_resume_velocity := Vector3.ZERO
+var _intrinsic_resume_angular_velocity := Vector3.ZERO
 
 
 func paint_radius_multiplier() -> float:
@@ -131,6 +141,7 @@ func configure(
 	)
 	_cached_incoming_velocity = launch_velocity
 	_velocity_history.assign([launch_velocity])
+	_launch_horizontal_velocity = Vector3(launch_velocity.x, 0.0, launch_velocity.z)
 	split_generation = generation
 	var token := assigned_ball_token if assigned_ball_token != null else BallToken.new()
 	assert(token.is_valid(), "PaintProjectile requires a valid ball token.")
@@ -183,6 +194,8 @@ func _physics_process(delta: float) -> void:
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if _deactivated:
+		return
+	if _intrinsic_resolution_pending:
 		return
 	var current_keys: Dictionary = {}
 	var contacts_by_key: Dictionary = {}
@@ -303,7 +316,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	elif split_generation == 0:
 		var child_velocities: Array[Vector3] = _behavior.on_airborne_velocity(
 			_cached_incoming_velocity,
-			state.linear_velocity
+			state.linear_velocity,
+			_launch_horizontal_velocity
 		)
 		if not child_velocities.is_empty():
 			apex_split_requested.emit(self, child_velocities)
@@ -335,6 +349,8 @@ func queue_desired_velocity(desired_velocity: Vector3, contact_tick: int) -> voi
 func deactivate(reason: StringName) -> void:
 	if _deactivated:
 		return
+	_intrinsic_resolution_pending = false
+	_intrinsic_contact = null
 	_deactivated = true
 	_terminal_reason = reason
 	linear_velocity = Vector3.ZERO
@@ -342,6 +358,45 @@ func deactivate(reason: StringName) -> void:
 	freeze = true
 	stopped.emit(self, reason)
 	queue_free()
+
+
+## Holds an intrinsic Burst at its first valid contact until ProjectileManager
+## receives the canonically ordered PaintSystem admission result. The body does
+## not roll or emit a trail while that decision is pending.
+func _begin_intrinsic_resolution(
+		contact: ProjectileContact,
+		base_paint_committed: bool
+) -> void:
+	_intrinsic_resolution_pending = true
+	_intrinsic_contact = contact
+	_intrinsic_base_paint_committed = base_paint_committed
+	_intrinsic_resume_velocity = linear_velocity
+	_intrinsic_resume_angular_velocity = angular_velocity
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	freeze = true
+
+
+## Completes the manager-owned admission handshake exactly once. Rejection
+## turns this already-triggered Burst into the documented Standard fallback;
+## acceptance publishes traversal and consumes it before any rolling trail.
+func resolve_intrinsic_effect_admission(accepted: bool) -> bool:
+	if not _intrinsic_resolution_pending or _intrinsic_contact == null or _deactivated:
+		return false
+	var contact := _intrinsic_contact
+	var base_paint_committed := _intrinsic_base_paint_committed
+	_intrinsic_resolution_pending = false
+	_intrinsic_contact = null
+	if accepted:
+		valid_top_traversed.emit(self, contact, base_paint_committed)
+		deactivate(ProjectileSettlementReason.CONSUMED)
+		return true
+	freeze = false
+	linear_velocity = _intrinsic_resume_velocity
+	angular_velocity = _intrinsic_resume_angular_velocity
+	_seed_paint_interval(contact)
+	valid_top_traversed.emit(self, contact, base_paint_committed)
+	return true
 
 
 func _update_paintable_contact_interval(
@@ -398,12 +453,13 @@ func _update_paintable_contact_interval(
 		_needs_recontact_impact = false
 		var behavior_result: Dictionary = _behavior.on_valid_terrain_contact()
 		if bool(behavior_result.get("emit_burst", false)):
-			_emit_burst_intent(current, _current_paintable_event_index)
-			intrinsic_effect_requested.emit(self, current)
-		if bool(behavior_result.get("consume", false)):
-			valid_top_traversed.emit(self, current, impact_committed)
-			deactivate(ProjectileSettlementReason.CONSUMED)
-			return
+			if _emit_burst_intent(current, _current_paintable_event_index):
+				_begin_intrinsic_resolution(current, impact_committed)
+				intrinsic_effect_requested.emit(self, current, impact_committed)
+				# ProjectileManager resolves the authoritative paint admission on
+				# the canonical command boundary. Both accepted consumption and
+				# rejected Standard fallback complete through that one handshake.
+				return
 		_seed_paint_interval(current)
 		valid_top_traversed.emit(self, current, impact_committed)
 		return

@@ -34,6 +34,7 @@ const OCCLUSION_END_TOLERANCE := 0.25
 const SAFETY_SOLVE_INTERVAL := 1.0 / 15.0
 const DESIRED_POSE_EPSILON_SQUARED := 0.0025
 const FOLLOW_DIRECTION := Vector3(18.0, 10.0, 24.0)
+const FOLLOW_FAMILY_FRAME_MARGIN := 1.28
 const INSPECTION_ORBIT_DEGREES_PER_PIXEL := Vector2(0.18, 0.14)
 const INSPECTION_MIN_PITCH_DEGREES := 12.0
 const INSPECTION_MAX_PITCH_DEGREES := 78.0
@@ -80,6 +81,8 @@ var _presentation_points_checksum := 0
 var _presentation_pose_build_count := 0
 var _safety_solve_count := 0
 var _follow_projectile: PaintProjectile
+var _follow_family_shot_id := 0
+var _follow_family_projectiles: Array[PaintProjectile] = []
 var _follow_impact_hold_ticks := 0
 var _follow_impact_focus := Vector3.ZERO
 
@@ -99,6 +102,10 @@ func configure(
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if not _projectile_manager.shot_family_started.is_connected(_on_shot_family_started):
 		_projectile_manager.shot_family_started.connect(_on_shot_family_started)
+	if not _projectile_manager.shot_family_replaced.is_connected(_on_shot_family_replaced):
+		_projectile_manager.shot_family_replaced.connect(_on_shot_family_replaced)
+	if not _projectile_manager.shot_family_finished.is_connected(_on_shot_family_finished):
+		_projectile_manager.shot_family_finished.connect(_on_shot_family_finished)
 	if not _projectile_manager.projectile_contact_reported.is_connected(_on_projectile_contact_reported):
 		_projectile_manager.projectile_contact_reported.connect(_on_projectile_contact_reported)
 	set_mode(Mode.BRIEFING, true)
@@ -275,6 +282,8 @@ func return_to_aim_view(immediate: bool = false) -> bool:
 	if current_mode != Mode.FOLLOW:
 		return false
 	_follow_projectile = null
+	_follow_family_shot_id = 0
+	_follow_family_projectiles.clear()
 	_follow_impact_hold_ticks = 0
 	set_mode(Mode.AIMING, immediate)
 	return true
@@ -634,13 +643,57 @@ func _update_follow_state() -> void:
 		if _follow_impact_hold_ticks == 0:
 			return_to_aim_view()
 		return
-	if _follow_projectile == null or not is_instance_valid(_follow_projectile):
+	if not _has_follow_target():
 		return_to_aim_view()
 		return
 	_update_follow_target()
 
 
 func _compute_follow_pose(use_interpolated_transform: bool, _update_latch: bool) -> bool:
+	_prune_follow_family()
+	if not _follow_family_projectiles.is_empty():
+		var first := _follow_family_projectiles[0]
+		var first_position := first.get_global_transform_interpolated().origin \
+				if use_interpolated_transform else first.global_position
+		var family_positions: Array[Vector3] = [first_position]
+		var bounds := AABB(first_position, Vector3.ZERO)
+		for index in range(1, _follow_family_projectiles.size()):
+			var projectile := _follow_family_projectiles[index]
+			var position := projectile.get_global_transform_interpolated().origin \
+					if use_interpolated_transform else projectile.global_position
+			family_positions.append(position)
+			bounds = bounds.expand(position)
+		var focus := bounds.get_center()
+		var half_extent := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z)) * 0.5
+		var half_fov := deg_to_rad(maxf(_camera.fov, 1.0) * 0.5)
+		var frame_distance := half_extent / maxf(tan(half_fov), 0.01) \
+				* FOLLOW_FAMILY_FRAME_MARGIN
+		var distance := maxf(FOLLOW_DIRECTION.length(), frame_distance)
+		distance = minf(distance, _stage_data.follow_camera_max_distance)
+		# View the fan across its widest horizontal span. A fixed follow azimuth can
+		# put the three children behind one another and make a correct split read as
+		# one ball even though the distance already contains the complete family.
+		var widest_span := Vector3.ZERO
+		for first_index in range(family_positions.size()):
+			for second_index in range(first_index + 1, family_positions.size()):
+				var span := family_positions[second_index] - family_positions[first_index]
+				span.y = 0.0
+				if span.length_squared() > widest_span.length_squared():
+					widest_span = span
+		var view_direction := FOLLOW_DIRECTION.normalized()
+		if not widest_span.is_zero_approx():
+			var horizontal_view := Vector3(-widest_span.z, 0.0, widest_span.x).normalized()
+			var authored_horizontal := Vector3(FOLLOW_DIRECTION.x, 0.0, FOLLOW_DIRECTION.z).normalized()
+			if horizontal_view.dot(authored_horizontal) < 0.0:
+				horizontal_view = -horizontal_view
+			var authored_up := FOLLOW_DIRECTION.normalized().y
+			view_direction = (
+				horizontal_view * sqrt(maxf(0.0, 1.0 - authored_up * authored_up))
+				+ Vector3.UP * authored_up
+			).normalized()
+		_computed_follow_position = focus + view_direction * distance
+		_computed_follow_focus = focus
+		return true
 	if _follow_projectile == null or not is_instance_valid(_follow_projectile):
 		return false
 	var focus := _follow_projectile.get_global_transform_interpolated().origin \
@@ -654,15 +707,40 @@ func _on_shot_family_started(_shot_id: int, root_projectile: PaintProjectile) ->
 	if root_projectile == null or not is_instance_valid(root_projectile):
 		return
 	_follow_projectile = root_projectile
+	_follow_family_shot_id = root_projectile.shot_id
+	_follow_family_projectiles.clear()
 	_follow_impact_hold_ticks = 0
 	set_mode(Mode.FOLLOW)
+
+
+func _on_shot_family_replaced(
+		shot_id: int,
+		children: Array[PaintProjectile]
+) -> void:
+	if current_mode != Mode.FOLLOW or shot_id <= 0 \
+			or shot_id != _follow_family_shot_id or children.size() != 3:
+		return
+	var admitted: Array[PaintProjectile] = []
+	for child in children:
+		if child == null or not is_instance_valid(child) or child.shot_id != shot_id:
+			return
+		admitted.append(child)
+	_follow_projectile = null
+	_follow_family_projectiles = admitted
+	_update_follow_target()
+
+
+func _on_shot_family_finished(shot_id: int) -> void:
+	if current_mode == Mode.FOLLOW and shot_id == _follow_family_shot_id \
+			and _follow_impact_hold_ticks == 0:
+		return_to_aim_view()
 
 
 func _on_projectile_contact_reported(
 		projectile: PaintProjectile,
 		contact: ProjectileContact
 ) -> void:
-	if current_mode != Mode.FOLLOW or projectile != _follow_projectile \
+	if current_mode != Mode.FOLLOW or not _is_follow_projectile(projectile) \
 			or _follow_impact_hold_ticks > 0:
 		return
 	if not _terrain_surface.is_top_collider(contact.collider) \
@@ -674,6 +752,29 @@ func _on_projectile_contact_reported(
 		_computed_follow_position = _follow_impact_focus + FOLLOW_DIRECTION
 	_computed_follow_focus = _follow_impact_focus
 	_set_desired_pose(_computed_follow_position, _computed_follow_focus)
+
+
+func _has_follow_target() -> bool:
+	_prune_follow_family()
+	return (_follow_projectile != null and is_instance_valid(_follow_projectile)) \
+			or not _follow_family_projectiles.is_empty()
+
+
+func _is_follow_projectile(projectile: PaintProjectile) -> bool:
+	if projectile == null or not is_instance_valid(projectile):
+		return false
+	if projectile == _follow_projectile:
+		return true
+	return projectile.shot_id == _follow_family_shot_id \
+			and _follow_family_projectiles.has(projectile)
+
+
+func _prune_follow_family() -> void:
+	for index in range(_follow_family_projectiles.size() - 1, -1, -1):
+		var projectile := _follow_family_projectiles[index]
+		if projectile == null or not is_instance_valid(projectile) \
+				or projectile.shot_id != _follow_family_shot_id:
+			_follow_family_projectiles.remove_at(index)
 
 
 func _update_rendered_camera(delta: float) -> void:

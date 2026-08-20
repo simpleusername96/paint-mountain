@@ -93,27 +93,27 @@ unfinished historical browser checks are carried forward under M9.
 
 ### M6 — Deterministic first input and special-ball lifecycle
 
-- [ ] **6.1 Close the Aiming focus race.** Derive Fire focus from the settled
+- [x] **6.1 Close the Aiming focus race.** Derive Fire focus from the settled
   `(stage=AIMING, camera=AIMING, interaction=AIM_LOCKED)` presentation tuple.
   Defer exactly one transfer on initial Aiming entry and explicit return to Aim
   View. Test the real Gameplay/HUD path: one untouched Space produces one
   admitted root, one token/shot decrement, and Shot Follow; pointer Fire does
   not double-activate; deliberately focused secondary buttons retain native
   Space behavior.
-- [ ] **6.2 Add split-family observation.** After successful replacement,
+- [x] **6.2 Add split-family observation.** After successful replacement,
   `ProjectileManager` publishes a typed event with shot ID and three admitted
   child identities. `CameraDirector` switches from the consumed root to a
   smooth bounded family composition, starts the existing hold on the first
   relevant valid child contact, and still honors early Return/Tab. Test root,
   family, contact, return, completion, and unrelated-family isolation.
-- [ ] **6.3 Make Apex replacement atomic.** Snapshot immutable parent identity,
+- [x] **6.3 Make Apex replacement atomic.** Snapshot immutable parent identity,
   transform, velocity, and legal launch-forward basis; pre-admit/construct all
   children; then replace the parent as one manager-owned operation. On any
   failure admit none and keep the parent on an explicit Standard fallback.
   Test capacity edge, missing terrain, forced construction failure, signal
   order, exactly three children, no token cost/recursion, and zero-horizontal
   fan fallback.
-- [ ] **6.4 Align intrinsic acceptance and presentation.** Return an explicit
+- [x] **6.4 Align intrinsic acceptance and presentation.** Return an explicit
   manager admission result for Burst radial intent while preserving command
   order. Publish observation, distinct Burst/Split presentation, and Burst
   consumption exactly once only for the valid accepted sequence. Test accepted,
@@ -259,7 +259,10 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
 - [x] 2026-08-20 lifecycle repair: removed completed M1-M5 work and duplicate
   delivery history from this active plan; canonical docs and the existing
   prototype evidence remain their owners.
-- [ ] M6 — first input and special-ball lifecycle.
+- [x] M6 — first input and special-ball lifecycle. Focused and adjacent tests,
+  `scripts/verify.ps1`, and three personally inspected Windows/Compatibility
+  captures pass; evidence is under
+  `../evidence/2026-08-20-m6-input-special-lifecycle/README.md`.
 - [ ] M7 — responsive UI and contrast.
 - [ ] M8 — foreground Web attribution and measured correction.
 - [ ] M9 — final local gate, publish approval, and deployed itch proof.
