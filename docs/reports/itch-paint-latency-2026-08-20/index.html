@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain itch.io 페인트 지연 분석 — 2026-08-20</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172538;
+      --muted: #5d6875;
+      --paper: #f4f6f8;
+      --surface: #fffdfc;
+      --line: #d8dee5;
+      --blue: #2584ff;
+      --blue-soft: #eaf3ff;
+      --green: #267258;
+      --green-soft: #e9f5ef;
+      --amber: #a95d13;
+      --amber-soft: #fff5e7;
+      --red: #b93838;
+      --red-soft: #fff0f0;
+      --shadow: 0 16px 44px rgba(23, 37, 56, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+      line-height: 1.68;
+      word-break: keep-all;
+    }
+    a { color: #1267cf; text-underline-offset: 3px; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf1f4; font-family: "Cascadia Code", Consolas, monospace; font-size: .9em; word-break: break-all; }
+    .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    header {
+      padding: 70px 0 52px;
+      color: white;
+      background:
+        radial-gradient(circle at 86% 24%, rgba(37,132,255,.27), transparent 31%),
+        linear-gradient(135deg, #111b29, #172538 62%, #273f5b);
+    }
+    .eyebrow { margin: 0 0 12px; color: #8dbfff; font-size: 13px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { max-width: 900px; margin: 0; font-size: clamp(35px, 5vw, 60px); line-height: 1.08; letter-spacing: -.045em; }
+    .lede { max-width: 830px; margin: 22px 0 0; color: #d4deea; font-size: 19px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 27px; }
+    .chip { padding: 7px 11px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; color: #edf4fb; font-size: 13px; }
+    nav { position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--line); background: rgba(255,253,252,.94); backdrop-filter: blur(14px); }
+    nav .shell { display: flex; gap: 22px; overflow-x: auto; padding-block: 13px; white-space: nowrap; }
+    nav a { color: var(--muted); font-size: 14px; font-weight: 800; text-decoration: none; }
+    main { padding: 54px 0 88px; }
+    section { margin-top: 76px; scroll-margin-top: 72px; }
+    section:first-child { margin-top: 0; }
+    h2 { margin: 0 0 14px; font-size: clamp(27px, 3.4vw, 40px); line-height: 1.2; letter-spacing: -.035em; }
+    h3 { margin: 0 0 9px; font-size: 19px; letter-spacing: -.02em; }
+    p { margin: 0 0 14px; }
+    .section-intro { max-width: 820px; color: var(--muted); font-size: 17px; }
+    .verdict { display: grid; grid-template-columns: 1fr 290px; gap: 24px; padding: 30px; border: 1px solid #f0c3c3; border-radius: 22px; background: linear-gradient(145deg, white, var(--red-soft)); box-shadow: var(--shadow); }
+    .verdict p { max-width: 740px; }
+    .root { display: grid; place-content: center; padding: 22px; border-left: 1px solid #efc8c8; text-align: center; }
+    .root b { color: var(--red); font-size: 27px; line-height: 1.16; }
+    .root span { margin-top: 9px; color: var(--muted); font-size: 12px; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
+    .fact { padding: 21px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+    .fact b { display: block; margin-bottom: 5px; font-size: 20px; }
+    .fact span { color: var(--muted); font-size: 13px; }
+    .tag { display: inline-block; margin-bottom: 9px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 900; }
+    .tag.confirmed { color: var(--green); background: var(--green-soft); }
+    .tag.inference { color: var(--amber); background: var(--amber-soft); }
+    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 22px; margin-top: 28px; }
+    .node { position: relative; min-height: 132px; padding: 19px; border: 1px solid var(--line); border-radius: 15px; background: white; }
+    .node:not(:last-child)::after { content: "→"; position: absolute; top: 48px; right: -19px; color: #7f8b99; font-size: 20px; }
+    .node b { display: block; margin-bottom: 7px; }
+    .node span { color: var(--muted); font-size: 12px; }
+    .node.hot { border-color: #edabab; background: var(--red-soft); }
+    .node.hot b { color: var(--red); }
+    .equation { margin-top: 26px; padding: 25px 28px; border-radius: 17px; color: white; background: var(--ink); }
+    .equation .math { margin-bottom: 8px; color: #8fc1ff; font-family: "Cascadia Code", Consolas, monospace; font-size: clamp(18px, 2.6vw, 29px); font-weight: 800; }
+    .equation p { margin: 0; color: #cfdae6; }
+    table { width: 100%; margin-top: 26px; border-collapse: collapse; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; font-size: 14px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #edf1f4; font-size: 12px; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 800; }
+    .callout { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--blue); border-radius: 0 14px 14px 0; background: var(--blue-soft); }
+    .callout.warning { border-color: #cf7a24; background: var(--amber-soft); }
+    .plan { display: grid; gap: 15px; margin-top: 28px; counter-reset: phase; }
+    .phase { position: relative; padding: 24px 24px 24px 78px; border: 1px solid var(--line); border-radius: 17px; background: white; box-shadow: 0 8px 24px rgba(23,37,56,.04); }
+    .phase::before { counter-increment: phase; content: counter(phase); position: absolute; top: 22px; left: 23px; display: grid; place-content: center; width: 36px; height: 36px; border-radius: 10px; color: white; background: var(--ink); font-weight: 900; }
+    .phase p { color: var(--muted); font-size: 14px; }
+    .phase ul { margin: 9px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; }
+    .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 26px; }
+    .decision { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+    .decision.no { border-color: #e7c6c6; }
+    .decision.no h3 { color: var(--red); }
+    .decision p, .decision li { color: var(--muted); font-size: 14px; }
+    .sources { padding: 0; list-style: none; }
+    .sources li { padding: 13px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .sources li:last-child { border-bottom: 0; }
+    footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--muted); background: white; font-size: 13px; }
+    @media (max-width: 900px) {
+      .verdict { grid-template-columns: 1fr; }
+      .root { border-top: 1px solid #efc8c8; border-left: 0; }
+      .facts, .pipeline { grid-template-columns: 1fr; }
+      .node:not(:last-child)::after { content: "↓"; top: auto; right: auto; bottom: -23px; left: 50%; }
+      .decision-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 24px, 1120px); }
+      header { padding-top: 52px; }
+      th, td { padding: 11px 9px; }
+      .phase { padding-left: 66px; }
+      .phase::before { left: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <p class="eyebrow">Paint Mountain · itch.io latency investigation</p>
+      <h1>공보다 늦게 내려오는<br>페인트의 원인</h1>
+      <p class="lede">공개 itch.io 빌드의 동일성, Godot Web 제약, 실제 코드의 생산·처리 속도, 기존 측정 자료를 대조해 “왜 수 초 늦는가”와 안전한 수정 순서를 정리한다.</p>
+      <div class="meta">
+        <span class="chip">작성일 2026-08-20</span>
+        <span class="chip">공개 빌드 alpha.10+292e7eb</span>
+        <span class="chip">Godot 4.7.1 · WebGL2</span>
+        <span class="chip">단일 스레드 Web</span>
+      </div>
+    </div>
+  </header>
+
+  <nav aria-label="보고서 목차"><div class="shell">
+    <a href="#verdict">결론</a>
+    <a href="#flow">처리 흐름</a>
+    <a href="#evidence">증거</a>
+    <a href="#solution">수정안</a>
+    <a href="#reject">제외안</a>
+    <a href="#sources">출처</a>
+  </div></nav>
+
+  <main class="shell">
+    <section id="verdict">
+      <div class="verdict">
+        <div>
+          <p class="eyebrow" style="color:#b93838">Root-cause verdict</p>
+          <h2>프레임 작업량은 제한했지만, 큐의 대기 시간은 제한하지 않았다.</h2>
+          <p><code>PaintSystem</code>은 인터랙티브 실행에서 방사형 페인트 커서를 한 번 진행하거나 스윕 명령 하나를 처리하면 그 물리 틱을 끝낸다. 반면 굴러가는 공과 Apex 자식 공들은 같은 틱에 여러 스윕을 만들 수 있다. 생산량이 소비량을 넘으면 페인트 명령이 시간순으로 쌓이고, 화면에는 공이 지나간 뒤 수 초 후에 흔적이 나타난다.</p>
+          <p><strong>주 원인은 itch.io 전송·캐시가 아니라 현재 게임 코드의 처리율 불균형이다.</strong> Web의 낮은 CPU 성능은 문제를 더 쉽게 드러내지만, 원인을 만들지는 않는다.</p>
+        </div>
+        <div class="root"><b>생산 &gt; 소비</b><span>bounded work<br>unbounded age</span></div>
+      </div>
+
+      <div class="facts">
+        <article class="fact"><span class="tag confirmed">확인됨</span><b>최신 공개 빌드</b><span>itch.io의 PCK가 커밋 292e7eb 빌드 정보와 일치한다.</span></article>
+        <article class="fact"><span class="tag confirmed">확인됨</span><b>최대 1명령/틱</b><span>현재 인터랙티브 드레인은 스윕 1개 뒤 무조건 중단한다.</span></article>
+        <article class="fact"><span class="tag inference">계산 모델</span><b>약 2초 꼬리</b><span>공 3개가 1초간 틱마다 스윕을 만들 때의 단순 상한 추정이다.</span></article>
+      </div>
+    </section>
+
+    <section id="flow">
+      <h2>현재 처리 흐름과 병목</h2>
+      <p class="section-intro">투사체가 만드는 명령의 순서는 올바르다. 병목은 명령을 실제 512×512 마스크에 반영하는 단일 소비 단계다.</p>
+      <div class="pipeline" aria-label="페인트 처리 흐름">
+        <div class="node"><b>접촉 이동</b><span>공이 표면에서 0.05m 이상 이동할 때 스윕 의도를 만든다.</span></div>
+        <div class="node"><b>정규화</b><span>ProjectileManager가 물리 틱·투사체·로컬 순서로 고정한다.</span></div>
+        <div class="node"><b>명령 큐</b><span>RadialPaintMark와 SurfacePaintSweep가 같은 정렬 큐에 들어간다.</span></div>
+        <div class="node hot"><b>PaintSystem</b><span>커서 1회 또는 스윕 1개를 처리한 뒤 그 틱을 종료한다.</span></div>
+        <div class="node"><b>텍스처 게시</b><span>더러운 CPU 마스크를 최대 초당 10회 화면 텍스처로 올린다.</span></div>
+      </div>
+
+      <div class="equation">
+        <div class="math">3 balls × 60 sweeps/s − 60 processed/s = 120 queued</div>
+        <p>단순 상한 모델에서 1초간 생긴 120개 잔여 명령은 생산이 멈춘 뒤에도 약 2초가 더 걸린다. 실제 값은 이동 거리·접촉 상태·방사형 명령 수에 따라 달라지지만, 사용자가 본 “수 초 지연”의 크기와 일치한다.</p>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <h2>코드·빌드·측정 근거</h2>
+      <table>
+        <thead><tr><th>근거</th><th>확인 내용</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td><code>paint_projectile.gd</code></td><td>접촉점이 0.05m 이상 이동할 때 연속 스윕을 만든다.</td><td>여러 공이면 틱당 여러 생산 가능</td></tr>
+          <tr><td><code>projectile_manager.gd</code></td><td>최대 활성 투사체는 21개이며, 완료된 물리 틱 뒤 의도를 정규 순서로 발행한다.</td><td>순서 소유자는 명확함</td></tr>
+          <tr><td><code>paint_system.gd:349–407</code></td><td>방사형 커서 진행 뒤 예산을 0으로 만들고, 스윕 1개 뒤 <code>break</code>한다.</td><td>소비율 상한이 사실상 60명령/초</td></tr>
+          <tr><td>M8 Web 측정</td><td>Burst는 33개 틱/529ms에 걸쳐 처리됐다. 최악 슬라이스 13.6ms, Web 전체 텍스처 업데이트 1.5–2.3ms였다.</td><td>긴 방사형 명령이 뒤 명령을 막음</td></tr>
+          <tr><td>공개 itch artifact</td><td><code>alpha.10+292e7eb</code>, PCK SHA-256 <code>1B31…3DF</code>, 단일 스레드 Web이다.</td><td>낡은 배포본 가설 제외</td></tr>
+          <tr><td><code>three_ball_compact_performance_test.gd</code></td><td>마지막에 강제 완료한 뒤 큐가 비었는지만 확인한다. 가장 오래 기다린 명령의 나이는 측정하지 않는다.</td><td>현 테스트가 화면 지연을 놓침</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning"><strong>텍스처 게시 10Hz는 주 원인이 아니다.</strong> 새 마스크가 준비된 뒤 화면 게시까지 추가되는 이론상 지연은 약 100ms이고, 측정된 Web 전체 업로드도 한 프레임보다 짧았다. 큐가 이미 수 초 밀리면 게시 주기를 올려도 늦은 데이터를 더 자주 보여줄 뿐이다.</div>
+
+      <div class="callout"><strong>Web이 더 느리게 느껴지는 이유:</strong> Godot Web은 WebAssembly와 브라우저 그래픽 계층 위에서 동작하며 네이티브보다 CPU 여유가 작다. 현재 단일 스레드 설정은 itch.io 호환성에는 맞지만, GDScript 큐 병목을 자동으로 해결하지 않는다.</div>
+    </section>
+
+    <section id="solution">
+      <h2>권장 수정 순서</h2>
+      <p class="section-intro">정확한 페인트 결과와 결정적 순서를 유지하면서 “프레임 비용”과 “표시 지연”을 함께 제한해야 한다.</p>
+      <div class="plan">
+        <article class="phase">
+          <h3>P0 · 먼저 큐 나이를 계측한다</h3>
+          <p>명령 수만 세지 말고 플레이어가 실제로 기다린 시간을 측정한다.</p>
+          <ul>
+            <li>입장·시작·완료 물리 틱, 명령 종류, 대기 중 개수, 틱당 생산/완료 수를 기록한다.</li>
+            <li><code>oldest_pending_age_ticks</code>와 접촉점→첫 가시 텍스처 경계를 추가한다.</li>
+            <li>Stage 03 Apex와 3자식 연속 구름을 재현하는 고정 시나리오를 만든다.</li>
+          </ul>
+        </article>
+        <article class="phase">
+          <h3>P1 · 스윕도 커서로 만들고 하나의 작업 예산을 쓴다</h3>
+          <p><code>SurfacePaintSweep</code>에 scan/connect/write 단계의 증분 커서를 도입한다.</p>
+          <ul>
+            <li>방사형과 스윕이 같은 “작업 단위” 예산을 소비하게 한다.</li>
+            <li>작은 명령은 예산이 남는 동안 같은 틱에 여러 개 완료한다.</li>
+            <li>“스윕 하나 뒤 중단”과 “커서 한 번 뒤 무조건 예산 0” 규칙을 제거한다.</li>
+            <li>정규 순서와 단일 권위 마스크는 그대로 유지한다.</li>
+          </ul>
+        </article>
+        <article class="phase">
+          <h3>P2 · 같은 공의 인접 스윕을 안전하게 합친다</h3>
+          <p>연속된 같은 투사체·같은 충돌체·같은 채널의 짧은 구간을 순서 있는 폴리라인 명령으로 묶어 큐 유입량을 낮춘다.</p>
+          <ul>
+            <li>접촉이 끊겼거나 충돌체·색 채널이 바뀐 경계를 넘지 않는다.</li>
+            <li>각 구간의 표면 연결성 검증과 최신 작성 순서를 보존한다.</li>
+          </ul>
+        </article>
+        <article class="phase">
+          <h3>P3 · 긴 방사형 명령의 작업량을 줄인다</h3>
+          <p>Burst의 후보 생성·연결 성분 탐색·쓰기 단계를 프로파일링해 중복 표면 탐색과 임시 배열 비용을 줄인다. 겹칠 수 있는 뒤 명령을 앞질러 커밋하지 않는다.</p>
+        </article>
+        <article class="phase">
+          <h3>P4 · 마지막에 텍스처 게시를 조정한다</h3>
+          <p>큐 지연이 해결된 뒤에만 10Hz 주기와 전체 512×512 업데이트 비용을 다시 측정한다. <code>ImageTexture.update()</code> 재사용은 유지하고 두 번째 페인트 표현은 만들지 않는다.</p>
+        </article>
+      </div>
+
+      <table>
+        <thead><tr><th>완료 조건</th><th>목표</th></tr></thead>
+        <tbody>
+          <tr><td>연속 흔적 지연</td><td>Standard와 3자식 Apex 모두 접촉 이동 후 150–200ms 이내</td></tr>
+          <tr><td>최장 큐 나이</td><td>정상 연속 접촉 중 12 물리 틱 이하, 접촉 종료 뒤 즉시 감소</td></tr>
+          <tr><td>프레임 작업</td><td>PaintSystem 한 슬라이스 16.7ms 미만, p95 별도 기록</td></tr>
+          <tr><td>결정성</td><td>완료 드레인과 증분 드레인의 마스크 바이트·체크섬·커버리지 동일</td></tr>
+          <tr><td>권위</td><td>PaintSystem CPU 마스크 하나가 시각과 점수 모두를 계속 소유</td></tr>
+          <tr><td>검증 환경</td><td>Windows export + 로컬 production Web + 공개 itch artifact</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="reject">
+      <h2>주 해결책으로 쓰지 말아야 할 것</h2>
+      <div class="decision-grid">
+        <article class="decision no"><h3>Web 스레드/PWA 전환</h3><p>Cross-Origin Isolation이 필요하고 itch.io 호환 범위를 좁힌다. 무엇보다 한 틱에 하나만 소비하는 GDScript 정책은 그대로다.</p></article>
+        <article class="decision no"><h3>마스크 256으로 축소</h3><p>보이는 페인트와 커버리지 판정 정밀도를 함께 낮춘다. 현재 512 계약을 깨지 않고 먼저 스케줄러를 고쳐야 한다.</p></article>
+        <article class="decision no"><h3>GPU 전용 두 번째 페인트</h3><p>시각과 점수가 서로 다른 표현을 보게 된다. PaintSystem 단일 권위 원칙을 위반한다.</p></article>
+        <article class="decision no"><h3>예산만 무작정 확대</h3><p>큐는 줄 수 있지만 과거의 164ms Burst 멈춤을 되살릴 수 있다. 작업 단위·큐 나이·프레임 시간을 함께 제어해야 한다.</p></article>
+        <article class="decision no"><h3>명령 우선순위 재정렬</h3><p>새 스윕을 오래된 방사형 명령보다 먼저 쓰면 겹치는 픽셀의 최신 작성 순서가 달라질 수 있다.</p></article>
+        <article class="decision no"><h3>텍스처를 매 프레임 게시</h3><p>준비되지 않은 명령을 빠르게 만들지 못한다. 전체 업로드 횟수만 늘고 근본 지연은 남는다.</p></article>
+      </div>
+    </section>
+
+    <section id="sources">
+      <h2>외부·프로젝트 근거</h2>
+      <ul class="sources">
+        <li><a href="https://itchioprofile1351321.itch.io/paint-mountain">공개 Paint Mountain itch.io 페이지</a> — 2026-08-20 갱신 및 HTML5 공개 상태 확인</li>
+        <li><a href="https://github.com/simpleusername96/paint-mountain/actions/runs/32345429607">GitHub Actions 공개 워크플로 실행</a> — itch 게시 작업 성공, 별도 GitHub Pages 배포 작업 실패 확인</li>
+        <li><a href="https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_web.html">Godot 4.7 Web 내보내기 문서</a> — WebAssembly, 단일 스레드 기본, 스레드 빌드의 Cross-Origin Isolation 요구 확인</li>
+        <li><a href="https://docs.godotengine.org/en/4.7/classes/class_imagetexture.html">Godot 4.7 ImageTexture 문서</a> — 빈번한 변경에는 기존 텍스처의 <code>update()</code> 재사용 권장</li>
+        <li><a href="https://docs.godotengine.org/en/4.7/tutorials/performance/cpu_optimization.html">Godot 4.7 CPU 최적화 문서</a> — 추측보다 프로파일링으로 병목을 확인하는 기준</li>
+        <li><code>.agents/evidence/2026-08-20-m8-web-latency/README.md</code> — 기존 Web 측정, 결정성, 텍스처 업로드, 브라우저 스케줄링 한계</li>
+        <li><code>src/paint/paint_system.gd</code>, <code>src/projectile/paint_projectile.gd</code>, <code>src/projectile/projectile_manager.gd</code> — 현재 생산·정규화·소비 코드</li>
+      </ul>
+      <div class="callout"><strong>확정과 추정을 구분했다.</strong> 최신 artifact 동일성과 한 틱당 최대 한 명령 소비는 직접 확인한 사실이다. “3개 공 기준 약 2초”는 현재 상한을 설명하기 위한 계산 모델이며, P0 계측으로 실제 분포를 확정해야 한다.</div>
+    </section>
+  </main>
+
+  <footer><div class="shell">Paint Mountain itch.io paint-latency investigation · commit 292e7eb · 2026-08-20</div></footer>
+</body>
+</html>

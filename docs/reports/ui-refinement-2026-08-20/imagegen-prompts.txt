@@ -1,0 +1,34 @@
+Paint Mountain UI refinement — built-in ImageGen prompt set
+Date: 2026-08-20
+Mode: edit the supplied latest running-game screenshot; preserve the world render and redesign only the UI.
+
+Shared direction
+- Create a faithful 16:9 desktop game UI concept for the existing Paint Mountain screenshot.
+- Preserve the mountain, cannon, camera, lighting, paint marks, and game identity.
+- Refine the approved Quiet Context system into a “Quiet Alpine Instrument”: warm white surfaces, mountain navy #172538, action blue #2584FF, restrained gray rails, Pretendard-like Korean type.
+- Keep the world primary. Use thin edge rails and one compact action area; avoid a dashboard/card mosaic.
+- Use Korean-first labels, one blue primary action, high contrast, 24 px safe margins, and modern compact spacing.
+- Do not add characters, new scenery, branded logos, mobile chrome, or decorative game mechanics.
+
+01 — Aiming
+- Replace scattered panels with a slim top status bar, a left vertical score/target-band instrument, a right next-ball queue rail, and a compact dark bottom dock for angle, power, and Fire.
+- Reduce the full-width tutorial strip to one restrained hint line.
+- Keep the central mountain and expected landing area unobstructed.
+
+02 — Stage select
+- Replace the card mosaic with a calm two-column surface: searchable/scannable stage rows on the left and selected-stage details on the right.
+- Show clear selected, completed, locked, and available states without using color alone.
+- Use a single blue Start action and restrained Back action.
+
+03 — Briefing
+- Keep the visible mountain and cannon as the main context.
+- Replace oversized center cards with a narrow dark target/score instrument on the left and a compact R/R/G next-ball sequence on the right.
+- Put Back and Start low on the left and keep only one short help line at the bottom.
+
+04 — Result
+- Keep the painted mountain visible.
+- Replace the tall result card with a narrower right-side result sheet showing the outcome, total score, target-band vs actual-position visualization, and compact explanation.
+- Make Next Stage the only blue primary action; Retry and Stage Select are secondary.
+
+Note
+These generated images are composition targets, not runtime evidence. Small generated labels, values, and icons are non-authoritative; implementation must use current project data, localization, and assets.
