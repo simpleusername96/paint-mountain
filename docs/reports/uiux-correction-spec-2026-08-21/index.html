@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain UIUX Correction Specification — 2026-08-21</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f8fb;
+      --surface: #ffffff;
+      --navy: #172538;
+      --muted: #657085;
+      --blue: #2584ff;
+      --blue-soft: #eaf3ff;
+      --red: #d33f38;
+      --green: #168653;
+      --amber: #a46500;
+      --line: #d9deea;
+      --line-strong: #b7c0d2;
+      --ink-inverse: #f7faff;
+      --radius: 16px;
+      --shadow: 0 12px 36px rgba(23, 37, 56, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--navy);
+      font-family: Pretendard, "Noto Sans KR", "Segoe UI", sans-serif;
+      line-height: 1.62;
+      word-break: keep-all;
+    }
+    a { color: #1268ce; text-underline-offset: 3px; }
+    code {
+      padding: .12em .4em;
+      border: 1px solid #d7deeb;
+      border-radius: 6px;
+      background: #f2f5fa;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: .9em;
+    }
+    img { display: block; width: 100%; height: auto; }
+
+    .page { width: min(1500px, calc(100% - 40px)); margin: 0 auto; }
+    .hero {
+      padding: 72px 0 40px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff 0%, var(--paper) 100%);
+    }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, h4 { line-height: 1.18; letter-spacing: -.025em; }
+    h1 { margin: 0; max-width: 1050px; font-size: clamp(38px, 6vw, 78px); }
+    h2 { margin: 0 0 20px; font-size: clamp(28px, 4vw, 48px); }
+    h3 { margin: 0 0 12px; font-size: clamp(21px, 2.3vw, 29px); }
+    h4 { margin: 0 0 8px; font-size: 18px; }
+    p { margin: 0 0 14px; }
+    .hero-lead { max-width: 980px; margin: 24px 0 0; font-size: clamp(18px, 2vw, 24px); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; color: var(--muted); font-size: 14px; }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: minmax(220px, .75fr) minmax(0, 2fr);
+      gap: 36px;
+      padding: 36px 0 0;
+      align-items: start;
+    }
+    .verdict-mark {
+      color: var(--red);
+      font-size: clamp(44px, 7vw, 90px);
+      font-weight: 900;
+      line-height: .86;
+      letter-spacing: -.07em;
+    }
+    .verdict-mark span { display: block; margin-top: 14px; color: var(--muted); font-size: 13px; letter-spacing: .03em; }
+    .verdict-copy { max-width: 920px; font-size: 18px; }
+
+    .toc-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 248, 251, .94);
+      backdrop-filter: blur(14px);
+    }
+    .toc { display: flex; gap: 22px; padding: 12px 0; overflow-x: auto; white-space: nowrap; }
+    .toc a { color: var(--navy); font-size: 14px; font-weight: 700; text-decoration: none; }
+
+    main section { padding: 64px 0; border-bottom: 1px solid var(--line); }
+    .section-lead { max-width: 920px; color: var(--muted); font-size: 18px; }
+    .callout {
+      margin: 24px 0;
+      padding: 22px 24px;
+      border-left: 4px solid var(--blue);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .callout.danger { border-left-color: var(--red); }
+    .callout strong { display: block; margin-bottom: 6px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .rule-index { color: var(--blue); font-size: 13px; font-weight: 900; letter-spacing: .09em; }
+    .rule-lock { border-color: #b9d5ff; background: var(--blue-soft); }
+
+    table { width: 100%; border-collapse: collapse; margin: 22px 0 0; background: var(--surface); }
+    th, td { padding: 14px 15px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #eef2f8; font-size: 13px; letter-spacing: .02em; }
+    td { font-size: 15px; }
+    .table-scroll { overflow-x: auto; }
+    .bad { color: var(--red); font-weight: 800; }
+    .good { color: var(--green); font-weight: 800; }
+    .priority { color: var(--amber); font-weight: 800; }
+
+    .evidence-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 26px;
+    }
+    .evidence-strip article { padding: 18px; border-top: 4px solid var(--line-strong); background: var(--surface); }
+    .evidence-strip b { display: block; margin-bottom: 7px; }
+    .evidence-strip span { color: var(--muted); font-size: 14px; }
+
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin: 24px 0;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+    .token-grid div { min-height: 112px; padding: 18px; background: var(--surface); }
+    .token-grid b { display: block; color: var(--blue); font-size: 25px; }
+    .token-grid span { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+
+    .screen {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .screen-head {
+      display: grid;
+      grid-template-columns: 100px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+    .screen-number { color: var(--blue); font-size: 62px; font-weight: 900; line-height: 1; letter-spacing: -.06em; }
+    .screen-summary { max-width: 920px; color: var(--muted); font-size: 17px; }
+
+    .shot-pair { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+    figure { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: #eef2f7; }
+    figure img { aspect-ratio: 16 / 9; object-fit: contain; background: #e8ebf1; }
+    figcaption { display: flex; justify-content: space-between; gap: 12px; padding: 11px 13px; border-top: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 13px; }
+    figcaption strong { color: var(--navy); }
+
+    .screen-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+    .screen-grid .card { padding: 18px; }
+    ul, ol { margin: 8px 0 0; padding-left: 1.25em; }
+    li + li { margin-top: 6px; }
+
+    .owner-list { display: grid; gap: 7px; margin-top: 10px; }
+    .owner-list a { overflow-wrap: anywhere; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }
+
+    .edge-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+    .source-list { columns: 2; column-gap: 36px; }
+    .source-list li { break-inside: avoid; margin-bottom: 10px; }
+    footer { padding: 42px 0 70px; color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .verdict, .grid-3, .screen-grid, .evidence-strip { grid-template-columns: 1fr; }
+      .grid-2, .edge-gallery { grid-template-columns: 1fr; }
+      .shot-pair { grid-template-columns: 1fr; }
+      .token-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .source-list { columns: 1; }
+    }
+    @media (max-width: 620px) {
+      .page { width: min(100% - 24px, 1500px); }
+      .hero { padding-top: 44px; }
+      main section, .screen { padding: 48px 0; }
+      .screen-head { grid-template-columns: 60px 1fr; gap: 12px; }
+      .screen-number { font-size: 44px; }
+      .token-grid { grid-template-columns: 1fr; }
+      th, td { padding: 11px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="page">
+      <p class="eyebrow">Paint Mountain · UIUX correction specification · 2026-08-21</p>
+      <h1>직전 refinement가 놓친 문제와 화면별 수정 계약</h1>
+      <p class="hero-lead">이 문서는 최신 실행 화면 28장을 그대로 사용해 현재 상태를 기록하고, 버튼 면·점수 정보·특수 공 설명·내부/외부 정렬을 구현 가능한 수치와 코드 소유자까지 고정한다. 새 UI 이미지를 꾸며 내는 보고서가 아니라, 다음 구현이 다시 엇나가지 않게 하는 교정 사양이다.</p>
+      <div class="hero-meta">
+        <span>기준 보고서: 2026-08-20 refinement</span>
+        <span>비교 보고서: 2026-08-21 PASS</span>
+        <span>실행 증거: Windows production export</span>
+        <span>기준 화면: 1280×720 + 640×360</span>
+      </div>
+      <div class="verdict">
+        <div class="verdict-mark">REBUILD<span>UI SYSTEM, NOT PATCHES</span></div>
+        <div class="verdict-copy">
+          <p><strong>결론:</strong> 현재 UI는 기능 누락이 아니라 시각 언어와 배치 계약의 실패다. 이전 보고서는 “패널 없음”, “아이콘 우선”, “공유 컴포넌트”를 선언했지만 버튼 면, 텍스트 CTA, 점수 이해 순서, 정보 표면, 좌표와 간격을 닫지 않았다.</p>
+          <p>다음 수정은 라이브 수직 점수축을 폐기하고, 행동은 아이콘 버튼으로 통일하며, 흰 면은 읽어야 하는 정보에만 쓴다. 특히 특수 공 설명은 큐에 붙은 흰 정보 카드로 바꾼다. 모든 화면은 8px 간격 단위와 하나의 정렬 소유자만 사용한다.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="toc-wrap">
+    <nav class="toc page" aria-label="보고서 목차">
+      <a href="#evidence">증거 기준</a>
+      <a href="#failure">이전 보고서 실패</a>
+      <a href="#locks">확정 수정 원칙</a>
+      <a href="#system">공유 시스템</a>
+      <a href="#screens">화면별 사양</a>
+      <a href="#edge">추가 AS-IS</a>
+      <a href="#implementation">구현 순서</a>
+      <a href="#acceptance">수용 기준</a>
+    </nav>
+  </div>
+
+  <main>
+    <section id="evidence">
+      <div class="page">
+        <h2>1. 증거와 범위</h2>
+        <p class="section-lead">새 캡처를 불필요하게 만들지 않았다. 최신 production 실행 파일과 기존 최종 캡처의 SHA-256이 일치하므로, 그 28장을 현재 AS-IS로 다시 원본 크기 검수했다.</p>
+        <div class="evidence-strip">
+          <article><b>원래 refinement</b><span><a href="../ui-refinement-2026-08-20/index.html">ui-refinement-2026-08-20</a><br>선택된 Cannon Focus 방향과 TO-BE 이미지</span></article>
+          <article><b>직전 PASS 보고서</b><span><a href="../ui-refinement-2026-08-21/index.html">ui-refinement-2026-08-21</a><br>28장 캡처를 근거로 완료를 선언한 문서</span></article>
+          <article><b>현재 비판적 감사</b><span><a href="../uiux-scenario-audit-2026-08-21/README.md">uiux-scenario-audit-2026-08-21</a><br>같은 캡처를 사용한 전면 UX 문제 목록</span></article>
+        </div>
+        <div class="callout">
+          <strong>실행 기준</strong>
+          <p><code>builds/windows/PaintMountain.exe</code> SHA-256: <code>7B82A1F2375A171520380050CFA5FB7E3D1623EA7BCBF8DCC294D99F856F3D38</code>. 캡처 세트의 기록과 동일하다. 이 문서의 이미지는 보정·크롭·합성하지 않은 전체 viewport다.</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>확인 범위</th><th>확인함</th><th>이 보고서가 증명하지 않는 것</th></tr></thead>
+            <tbody>
+              <tr><td>화면</td><td>Main Menu부터 Clear/Failure까지 11개 주요 상태, 동일한 640×360 상태, 후반 스테이지와 음수 점수 6개</td><td>스크린 리더 실제 낭독, 게임패드 전체 순회, 색 대비의 측정값</td></tr>
+              <tr><td>구현</td><td>현재 Theme, HUD layout, ScoreScale, BallQueue, ActionControl, 각 screen owner</td><td>아직 구현되지 않은 TO-BE의 런타임 품질</td></tr>
+              <tr><td>외부 기준</td><td>W3C target/focus/hover, Xbox UI context/focus/contrast, Godot Control/Container 지침</td><td>WCAG 또는 XAG 전체 준수 선언</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="failure">
+      <div class="page">
+        <h2>2. 이전 refinement 보고서가 실패한 지점</h2>
+        <p class="section-lead">문제는 구현자가 방향을 어긴 것만이 아니다. 보고서가 “좋은 말”을 선언한 뒤, 구현자가 판단해야 할 핵심 수치를 비워 두었다. 그 빈칸이 현재 화면의 흰 버튼, 텍스트 CTA, 뜬 설명, 어긋난 좌표로 채워졌다.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>원래 선언</th><th>보고서 안의 모순/누락</th><th>현재 결과</th><th>이번에 닫는 계약</th></tr></thead>
+            <tbody>
+              <tr><td><strong>“패널 없음”</strong></td><td>버튼 normal/hover/pressed의 면 색을 정하지 않았다. 흰 원형/사각 버튼이 TO-BE와 공유 SVG에 남았다.</td><td class="bad">설정, 증감, 모드, 완료가 모두 흰 상자처럼 보인다.</td><td class="good">행동 normal은 투명. 흰 면은 정보 카드·설정 폼·확인 모달만 사용.</td></tr>
+              <tr><td><strong>“아이콘 우선”</strong></td><td>아이콘 “우선”인지 아이콘 “전용”인지 불명확했다. 공유 SVG도 “다음/다시” 텍스트를 유지했다.</td><td class="bad">플레이, 시작, 발사, 다음, 닫기가 큰 텍스트 버튼으로 구현됐다.</td><td class="good">동작 버튼의 visible text는 항상 빈 값. 접근성 이름과 tooltip은 유지.</td></tr>
+              <tr><td><strong>“0–100 고정 수직축”</strong></td><td>완전한 범위를 보여 주는 것을 이해 가능성과 동일시했다. 목표 9–13 같은 좁은 구간을 읽는 순서를 정의하지 않았다.</td><td class="bad">왼쪽 막대가 화면을 차지하지만 현재값, 목표, R/G의 관계는 설명하지 못한다.</td><td class="good">라이브 수직축 폐기. 현재값 → 목표 → R/G 순서의 ScoreStatus로 교체. 전체 축은 브리핑/결과에서만 가로로 사용.</td></tr>
+              <tr><td><strong>“공 설명 한 곳”</strong></td><td>보고서 데모는 어두운 tooltip 박스를 썼지만, shared component surface와 padding을 잠그지 않았다.</td><td class="bad">특수 공 설명이 하늘 위 투명 텍스트로 떠서 정보인지 배경인지 불명확하다.</td><td class="good">큐 아래에 흰 BallDetailCard. 296px 폭, 16px padding, queue 우측선과 동일 정렬.</td></tr>
+              <tr><td><strong>“공유 컴포넌트”</strong></td><td>컴포넌트 내부 padding과 화면 외부 gap의 소유자를 나누지 않았다.</td><td class="bad">44/48/52/56/58/62px 크기가 혼재하고, 중심선과 edge가 화면마다 다르다.</td><td class="good">컴포넌트는 내부 치수만, HudRootLayout/screen owner는 좌표만 소유. 8px grid와 두 hit-target 크기만 사용.</td></tr>
+              <tr><td><strong>“compact density”</strong></td><td>축소 비율만 있고 정보 우선순위와 재배치 계약이 없다.</td><td class="bad">640×360에서 거대한 CTA와 수직축이 월드를 압박하고 설정은 스크롤 상태를 설명하지 않는다.</td><td class="good">compact는 별도 좌표 sheet. 행동은 40/48px, 점수는 180×64, 정보 카드는 280px 이내.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout danger">
+          <strong>“PASS” 판정이 틀린 이유</strong>
+          <p>2026-08-21 보고서는 clipping, 중복 tooltip, 누락 glyph 같은 기계적 결함을 제거한 사실을 사람의 이해와 시각 완성도로 확장했다. 캡처가 “깨지지 않음”은 증명했지만 “읽힘, 정렬됨, 좋아 보임”은 증명하지 않았다. 이번 보고서는 그 둘을 분리한다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="locks">
+      <div class="page">
+        <h2>3. 사용자 피드백을 반영한 확정 원칙</h2>
+        <div class="grid-3">
+          <article class="card rule-lock"><span class="rule-index">LOCK 01</span><h3>행동은 아이콘만</h3><p>Play, Start, Fire, Finish, Back, Resume, Retry, Next, Close 등 동사는 버튼 안에 쓰지 않는다. 버튼은 실제 아이콘을 사용하고 localized accessibility name과 tooltip을 제공한다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 02</span><h3>흰 버튼 면 제거</h3><p>routine action의 normal state는 투명이다. hover/pressed/focus에만 비흰색 피드백을 준다. 한 화면의 주요 행동 하나만 파란 원형 면을 가진다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 03</span><h3>흰 면은 정보에 사용</h3><p>특수 공 설명, 설정 폼, 파괴적 행동 확인처럼 “읽고 판단해야 하는 내용”만 흰 정보 면을 쓴다. 정보 면은 hover/pressed 효과가 없어 버튼으로 오인되지 않는다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 04</span><h3>수직 점수축 폐기</h3><p>Aim, Map, Shot Follow에는 0–100 막대를 표시하지 않는다. 현재 점수, 목표 구간, R/G 기여를 텍스트 우선으로 보여 준다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 05</span><h3>내부/외부 정렬 분리</h3><p>컴포넌트는 icon centering과 padding만 소유한다. 화면 layout owner만 좌표, safe margin, group gap을 소유한다. screen script에서 자식의 임의 offset을 추가하지 않는다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 06</span><h3>값은 텍스트 예외</h3><p>stage number, angle/power 값, timer, score 같은 데이터는 텍스트로 남는다. 버튼의 동작명만 제거한다. 정보 텍스트와 클릭 면을 한 덩어리로 만들지 않는다.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="system">
+      <div class="page">
+        <h2>4. 공유 UI 시스템 교정 사양</h2>
+        <p class="section-lead">화면별 미세 조정 전에 이 계약을 먼저 구현해야 한다. 각 화면이 같은 실패를 다른 이름으로 반복하지 않게 하는 공통 기반이다.</p>
+
+        <h3>4.1 치수와 간격</h3>
+        <div class="token-grid">
+          <div><b>8px</b><span>base spacing. 내부 gap과 screen gap 모두 8의 배수.</span></div>
+          <div><b>24 / 12</b><span>standard / compact viewport safe margin.</span></div>
+          <div><b>44 / 40</b><span>routine action hit target. 보이는 icon은 24 / 22.</span></div>
+          <div><b>56 / 48</b><span>primary action hit target. 파란 원형 면과 28 / 26 icon.</span></div>
+          <div><b>8 / 16 / 24</b><span>item / group / section 외부 간격.</span></div>
+          <div><b>16px</b><span>정보 카드 내부 padding. 카드 radius 14px.</span></div>
+          <div><b>2px</b><span>keyboard focus ring. 2px 밖 offset, 최소 3:1 대비 목표.</span></div>
+          <div><b>14px</b><span>compact 본문 최소 크기. 핵심 값은 20px 이상.</span></div>
+        </div>
+
+        <h3>4.2 버튼 상태 계약</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>종류</th><th>Normal</th><th>Hover</th><th>Pressed</th><th>Focus</th><th>Disabled</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Routine icon</strong></td><td>투명, navy icon</td><td>navy 10% 원형/rounded-square 면</td><td>navy 18% 면</td><td>blue 2px ring</td><td>면 없음, icon 38%</td></tr>
+              <tr><td><strong>Primary icon</strong></td><td>blue 원형 면, 흰 icon</td><td>blue + 8% 밝기</td><td>blue − 12% 밝기</td><td>밝은 외곽 ring + 기존 면</td><td>blue 28%, icon 55%</td></tr>
+              <tr><td><strong>Selected mode</strong></td><td>blue 14% 면 + blue icon</td><td>blue 20% 면</td><td>blue 24% 면</td><td>blue 2px ring</td><td>해당 없음</td></tr>
+              <tr><td><strong>Destructive</strong></td><td>투명, red icon</td><td>red 10% 면</td><td>red 18% 면</td><td>red/blue 이중 채널 금지, blue focus ring 유지</td><td>red 32%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>아이콘 전용의 접근성 보완</strong>
+          <p>모든 action은 실제 아이콘 asset, localized <code>accessibility_name</code>, 같은 문구의 tooltip을 가진다. tooltip은 hover와 keyboard focus에서 나타나고, Escape로 닫히며, focus가 이동하기 전까지 유지한다. 아이콘 의미를 색 하나에만 의존하지 않는다.</p>
+        </div>
+
+        <h3>4.3 흰 정보 면 사용 규칙</h3>
+        <div class="grid-3">
+          <article class="card"><h4>허용: BallDetailCard</h4><p>특수 공의 순서, 종류, 색 역할, 행동을 읽는 카드. warm white 96%, navy text, 14px radius, 16px padding, queue에 직접 부착.</p></article>
+          <article class="card"><h4>허용: Settings/Confirmation</h4><p>여러 값을 읽고 바꾸는 설정 sheet와 파괴적 행동 확인 modal. 한 화면에 한 containment level만 둔다.</p></article>
+          <article class="card"><h4>금지: routine action</h4><p>설정 gear, +/- stepper, Finish, camera mode, Back, Return, secondary result action의 normal state에 흰 면을 쓰지 않는다.</p></article>
+        </div>
+
+        <h3>4.4 ScoreStatus와 ScoreScale 역할 분리</h3>
+        <div class="grid-2">
+          <article class="card">
+            <h4>새 <code>ScoreStatus</code> — 라이브 HUD</h4>
+            <ul>
+              <li>표시 순서: <strong>현재 0.0</strong> → <strong>목표 9–13</strong> → <strong>R +0.0 / G +0.0</strong>.</li>
+              <li>0/25/50/75/100 tick과 수직 track을 표시하지 않는다.</li>
+              <li>standard 260×76, compact 180×64. 좌측 safe edge에 직접 배치.</li>
+              <li>음수와 100 초과 값을 clamp하지 않고 부호를 그대로 표시한다.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h4>기존 <code>ScoreScale</code> — 브리핑/결과</h4>
+            <ul>
+              <li>가로 summary preset만 유지한다. 라이브 vertical preset은 제거한다.</li>
+              <li>현재값과 목표 구간 label을 track 위에 직접 표시한다.</li>
+              <li>좁은 target band는 최소 2px 표시 + 별도 label/leader로 의미를 보존한다.</li>
+              <li>standard 440×112, compact viewport에서는 560×88 이내의 full-width summary.</li>
+            </ul>
+          </article>
+        </div>
+
+        <h3>4.5 BallQueue 정보 구조</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>요소</th><th>Standard</th><th>Compact</th><th>정렬 계약</th></tr></thead>
+            <tbody>
+              <tr><td>현재 공 token</td><td>44×44</td><td>40×40</td><td>queue 우측선 기준, 다음 공과 8px gap</td></tr>
+              <tr><td>다음 공 token</td><td>40×40</td><td>40×40</td><td>모든 icon center 동일 y</td></tr>
+              <tr><td>BallDetailCard</td><td>296px 폭, 최소 88px 높이</td><td>최대 280px 폭, 내용에 따른 높이</td><td>선택 token 아래 12px, queue 우측선과 card 우측선 일치</td></tr>
+              <tr><td>Card copy</td><td>title 16px/600, body 14px/500</td><td>title 16px, body 14px</td><td>좌측 정렬, line-height 1.45, outline text 금지</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>4.6 정렬 소유권</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>소유자</th><th>소유하는 것</th><th>소유하지 않는 것</th></tr></thead>
+            <tbody>
+              <tr><td><code>paint_mountain_theme.tres</code></td><td>color, type, StyleBox, focus, icon state</td><td>화면 좌표와 screen-specific width</td></tr>
+              <tr><td><code>ActionControl</code>, <code>ScoreStatus</code>, <code>BallQueue</code></td><td>내부 padding, icon center, min size, content layout</td><td>viewport anchor와 screen gap</td></tr>
+              <tr><td><code>HudRootLayout</code></td><td>HUD safe margin, rect, group gap, standard/compact reflow</td><td>컴포넌트 내부 자식 offset</td></tr>
+              <tr><td>각 screen owner</td><td>그 화면만의 anchor group과 information hierarchy</td><td>shared button/tooltip/score 스타일 복제</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div id="screens" class="page">
+      <section class="screen" id="screen-main-menu">
+        <div class="screen-head"><div class="screen-number">01</div><div><h2>Main Menu</h2><p class="screen-summary">현재는 240px 폭의 파란 Play 텍스트 버튼 하나가 나머지 텍스트 링크와 다른 체계를 만들고, 흰 월드와 흰 배경이 같은 층으로 섞인다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/01-main-menu-ko-1280x720.png" alt="현재 Main Menu 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>텍스트 CTA + 약한 월드 대비</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/12-main-menu-ko-640x360.png" alt="현재 Main Menu 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>축소된 텍스트 action</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>Play 56px 파란 원형 icon, Stage/Settings/Quit 44px 투명 icon으로 교체.</li><li>버튼 visible text 제거. tooltip은 icon 우측에 표시.</li><li>standard는 x=56 세로 rail, compact는 x=12/y=54 가로 rail.</li><li>브랜드 제목과 action rail의 좌측선을 동일하게 맞춘다.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>1280: title x56, action rail x56, item gap 12.</li><li>640: title x12/y10, action center y76, item gap 8.</li><li>월드 hero는 action 영역을 침범하지 않고 x≥340에서 시작.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/screens/main_menu.tscn">scenes/ui/screens/main_menu.tscn</a><a href="../../../src/ui/screens/main_menu_screen.gd">src/ui/screens/main_menu_screen.gd</a><a href="../../../src/ui/components/action_control.gd">src/ui/components/action_control.gd</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-stage-select">
+        <div class="screen-head"><div class="screen-number">02</div><div><h2>Stage Select</h2><p class="screen-summary">현재는 큰 “스테이지 시작” 사각 버튼이 산과 선택 rail보다 강하다. 규칙 줄은 의미가 압축되어 있고 heading, selected info, rail, CTA의 외부 기준선이 서로 다르다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/02-stage-select-stage08-ko-1280x720.png" alt="현재 Stage Select 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>거대한 Start CTA</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/13-stage-select-stage30-ko-640x360.png" alt="현재 Stage Select 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>CTA가 산보다 큼</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>Start를 56/48px 파란 play icon으로 교체하고 우측 safe edge에 둔다.</li><li>Back은 44/40px 투명 arrow icon.</li><li>규칙 줄을 “목표 · R/G 규칙 · 공 수 · 필수 특수 공” 네 묶음으로 16px gap 분리.</li><li>숫자 stage node는 데이터 selector 예외로 번호를 유지한다.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>standard bottom scrim 204px, compact 148px.</li><li>selected info와 rail 시작점 x=48 standard, x=12 compact.</li><li>Start 우측=1256/628, rail bottom=696/348.</li><li>heading은 Back 오른쪽 12px에서 시작, baseline center 일치.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/screens/stage_select.tscn">scenes/ui/screens/stage_select.tscn</a><a href="../../../src/ui/screens/stage_select_screen.gd">src/ui/screens/stage_select_screen.gd</a><a href="../../../src/ui/components/stage_rail.gd">src/ui/components/stage_rail.gd</a><a href="../../../src/ui/components/stage_rule_summary.gd">src/ui/components/stage_rule_summary.gd</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-briefing">
+        <div class="screen-head"><div class="screen-number">03</div><div><h2>Briefing</h2><p class="screen-summary">가로 점수 정보, 공 큐, 설정, 뒤로, 조준 시작이 각각 다른 크기와 면 정책을 사용한다. 흰 설정 버튼과 큰 파란 텍스트 CTA가 정보보다 먼저 보인다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/03-briefing-stage08-ko-1280x720.png" alt="현재 Briefing 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>행동 면과 정보 위계 충돌</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/14-briefing-stage08-ko-640x360.png" alt="현재 Briefing 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>수직축과 CTA가 월드 압박</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>브리핑은 가로 ScoreScale만 사용. compact에서도 vertical로 바꾸지 않는다.</li><li>Start 56/48px primary icon, Back 44/40px routine icon.</li><li>Settings normal의 흰 면 제거.</li><li>공 큐는 top-right 정렬을 유지하되 detail을 열기 전에는 정보 카드 없음.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreScale x24/y124/w440 standard.</li><li>compact x12/y58/w360 또는 viewport−24.</li><li>Back x24, Start x80, bottom center y668 standard.</li><li>Queue right=1256/628, top=84/56.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/hud/hud.tscn">scenes/ui/hud/hud.tscn</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../src/ui/components/score_scale.gd">src/ui/components/score_scale.gd</a><a href="../../../src/ui/hud_controller.gd">src/ui/hud_controller.gd</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-aim">
+        <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim</h2><p class="screen-summary">가장 큰 실패 화면이다. 왼쪽 수직축은 많은 공간을 쓰면서 목표와 현재 상태를 설명하지 못하고, 하단의 +/- 흰 상자와 Fire 텍스트 slab가 월드보다 먼저 보인다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/04-aiming-stage08-ko-1280x720.png" alt="현재 Aim 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>해석 어려운 수직 score + 흰 steppers</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/15-aiming-stage08-ko-640x360.png" alt="현재 Aim 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좌우 HUD가 산을 누름</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>수직 ScoreScale 삭제, ScoreStatus로 교체.</li><li>+/- 버튼 normal 투명, 44/40px target. 값은 버튼 바깥 중앙 label.</li><li>Fire는 56/48px 파란 원형 paint-splash icon, visible text 없음.</li><li>Finish와 Settings도 투명 icon. disabled는 흐린 icon만 표시.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus x24/y84/w260/h76; compact x12/y56/w180/h64.</li><li>top-right action center y46/32, item gap 12/8.</li><li>bottom group 총 폭 440/376, viewport center 정렬.</li><li>primary center y668/324; routine control center도 같은 y.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../src/ui/hud/aim_controls.gd">src/ui/hud/aim_controls.gd</a><a href="../../../src/ui/hud/action_buttons.gd">src/ui/hud/action_buttons.gd</a><a href="../../../src/ui/components/value_stepper.gd">src/ui/components/value_stepper.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-queue">
+        <div class="screen-head"><div class="screen-number">05</div><div><h2>Special Ball Detail</h2><p class="screen-summary">현재 특수 공 설명은 하늘에 outline text로 떠 있다. 읽어야 하는 정보에 containment가 없고, 오히려 정보가 아닌 설정/증감 버튼에 흰 면을 쓴다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/05-queue-detail-stage08-ko-1280x720.png" alt="현재 Special Ball Detail 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>투명 배경에 뜬 설명</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/16-queue-detail-stage08-ko-640x360.png" alt="현재 Special Ball Detail 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>월드와 텍스트가 경쟁</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li><code>BallQueueDescription: Label</code>을 <code>BallDetailCard</code>로 교체.</li><li>warm-white 96% 면, navy text, no outline, 16px padding.</li><li>1행: 현재/다음 · 종류 · R/G. 2행: 행동 설명.</li><li>hover/focus/press가 같은 카드 사용. press는 고정, Escape는 닫기.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>standard card x960/y148/w296/min-h88.</li><li>compact card right=628/top=104/max-w280.</li><li>token bottom에서 12px, queue와 우측선 정확히 일치.</li><li>카드는 trigger와 trajectory를 덮지 않도록 왼쪽으로만 확장.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/components/ball_queue.tscn">scenes/ui/components/ball_queue.tscn</a><a href="../../../src/ui/components/ball_queue.gd">src/ui/components/ball_queue.gd</a><a href="../../../src/ui/components/ball_queue_token.gd">src/ui/components/ball_queue_token.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-map">
+        <div class="screen-head"><div class="screen-number">06</div><div><h2>Map</h2><p class="screen-summary">Map에서도 해석 어려운 수직 score가 계속 남고, 선택된 camera mode가 흰 버튼 면으로 보인다. 월드를 넓게 보는 상태인데 HUD가 같은 면적을 고정 점유한다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/06-map-stage08-ko-1280x720.png" alt="현재 Map 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>고정 수직축 + 흰 mode surface</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/17-map-stage08-ko-640x360.png" alt="현재 Map 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좁은 화면의 지속 점유</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>Aim과 같은 ScoreStatus만 유지.</li><li>선택된 map mode는 blue 14% 면 + blue icon, white normal 금지.</li><li>aim steppers와 Fire는 완전히 숨기고 빈 footprint를 남기지 않는다.</li><li>하단 도움말은 non-interactive info이므로 icon + 짧은 text 허용.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 Aim과 동일 rect.</li><li>mode icon과 run status는 top-right row center 공유.</li><li>context hint center x=640/320, bottom=696/348.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/camera_interaction_control.gd">src/ui/hud/camera_interaction_control.gd</a><a href="../../../scenes/ui/hud/camera_interaction_control.tscn">scenes/ui/hud/camera_interaction_control.tscn</a><a href="../../../src/ui/hud_controller.gd">src/ui/hud_controller.gd</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-follow">
+        <div class="screen-head"><div class="screen-number">07</div><div><h2>Shot Follow</h2><p class="screen-summary">비행 중에도 왼쪽 수직축이 그대로 남아 시선이 공과 점수 사이에서 분산된다. 우하단 Return은 파란 사각형으로 별도 시스템처럼 보인다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/07-shot-follow-stage08-ko-1280x720.png" alt="현재 Shot Follow 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>비행 중 지속되는 score bar</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/18-shot-follow-stage08-ko-640x360.png" alt="현재 Shot Follow 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Return 사각 버튼</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>ScoreStatus는 current 값 갱신 시 160ms 강조만 하고 월드를 가리지 않는다.</li><li>BallQueue와 aim controls는 숨김.</li><li>Return은 44/40px 투명 arrow-back-to-cannon icon.</li><li>파란 면은 Fire/Resume/Next 같은 즉시 primary에만 남긴다.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 Aim과 동일 rect.</li><li>Return right/bottom safe edge, 44×44/40×40.</li><li>Top status와 settings는 같은 row를 유지.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud_controller.gd">src/ui/hud_controller.gd</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../scenes/ui/hud/hud.tscn">scenes/ui/hud/hud.tscn</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-pause">
+        <div class="screen-head"><div class="screen-number">08</div><div><h2>Pause</h2><p class="screen-summary">현재는 흰 panel 안에 파란 full-width button과 plain text actions가 섞여 있다. 버튼인지 텍스트인지 상태가 달라 보이고, 모든 행동이 같은 세로 폭을 강제로 차지한다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/08-pause-stage01-ko-1280x720.png" alt="현재 Pause 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>흰 menu card + text actions</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/19-pause-stage01-ko-640x360.png" alt="현재 Pause 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>세로 action list</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>흰 pause panel 제거. 46% navy scrim 위에 title과 icon action rail만 둔다.</li><li>Resume 56/48px primary play icon.</li><li>Restart, Settings, Stages, Main Menu는 44/40px routine icons.</li><li>파괴적/이탈 action은 tooltip과 confirmation 필요 여부를 별도 적용.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>standard title center y244, action center y326.</li><li>compact title center y98, action center y190.</li><li>routine gap 16/8, 전체 rail viewport center.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/screens/pause_overlay.tscn">scenes/ui/screens/pause_overlay.tscn</a><a href="../../../src/ui/screens/pause_overlay.gd">src/ui/screens/pause_overlay.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-settings">
+        <div class="screen-head"><div class="screen-number">09</div><div><h2>Settings</h2><p class="screen-summary">설정은 흰 면을 써도 되는 화면이다. 문제는 정보 surface가 아니라 하단의 큰 Close 텍스트 버튼, 열 간 기준선 불일치, compact에서 action이 scroll 내용처럼 움직이는 점이다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/09-settings-stage01-ko-1280x720.png" alt="현재 Settings 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>허용 가능한 form surface, 잘못된 Close CTA</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/20-settings-stage01-ko-640x360.png" alt="현재 Settings 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Close가 scroll footer로 보임</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>흰 form sheet는 유지하되 screen당 하나만 사용.</li><li>Close는 top-right 44/40px 투명 X icon, Defaults는 undo icon.</li><li>slider/value/switch는 8px baseline grid로 정렬.</li><li>compact Close는 viewport에 고정하고 설정 content만 scroll.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>standard sheet inset 28, inner padding 28, column gap 48.</li><li>column heading, row label, control start x를 각 열에서 동일하게 유지.</li><li>compact sheet inset 12, inner 16, 단일 column, row gap 16.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/screens/settings.tscn">scenes/ui/screens/settings.tscn</a><a href="../../../src/ui/screens/settings_screen.gd">src/ui/screens/settings_screen.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-clear">
+        <div class="screen-head"><div class="screen-number">10</div><div><h2>Clear Result</h2><p class="screen-summary">현재 hard vertical split과 파란 Next 텍스트 slab가 결과의 감정과 산을 분리한다. 점수, 목표, R/G, 메타, actions가 서로 다른 좌측선을 사용한다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/10-clear-stage08-ko-1280x720.png" alt="현재 Clear Result 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>hard split + mixed action styles</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/21-clear-stage08-ko-640x360.png" alt="현재 Clear Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>action text가 월드 위에 분산</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>hard split을 오른쪽 navy gradient scrim으로 바꿔 산과 결과를 연결.</li><li>Next 56/48px primary arrow icon. Same/New/Stages는 routine icons.</li><li>결과 copy와 ScoreScale은 x 기준선 하나만 사용.</li><li>점수와 목표 문장을 먼저, 메타와 action을 그 아래 배치.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>standard content x784, right=1256, top=112.</li><li>ScoreScale x784/y272/w432.</li><li>action rail x808/y408, item gap 16.</li><li>compact content inset 24, summary width viewport−48, action bottom 24.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../scenes/ui/hud/result_panel.tscn">scenes/ui/hud/result_panel.tscn</a><a href="../../../src/ui/hud/result_panel.gd">src/ui/hud/result_panel.gd</a><a href="../../../src/ui/components/result_summary.gd">src/ui/components/result_summary.gd</a><a href="../../../src/ui/components/score_scale.gd">src/ui/components/score_scale.gd</a></div></article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-failure">
+        <div class="screen-head"><div class="screen-number">11</div><div><h2>Failure Result</h2><p class="screen-summary">Failure가 Clear와 다른 시스템처럼 보이면 안 된다. 현재는 primary text가 “같은 배치”로 바뀌고 다른 actions가 평문으로 남아, 재시도 선택의 구조가 약하다.</p></div></div>
+        <div class="shot-pair">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/11-failure-stage08-ko-1280x720.png" alt="현재 Failure Result 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>primary만 slab, secondary는 plain text</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/22-failure-stage08-ko-640x360.png" alt="현재 Failure Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>retry 선택 관계가 약함</span></figcaption></figure>
+        </div>
+        <div class="screen-grid">
+          <article class="card"><h4>정확한 수정</h4><ul><li>Clear와 동일한 result shell, 좌표, typography 사용.</li><li>Same Deal을 primary retry icon으로 지정.</li><li>New Deal은 shuffle icon, Stages는 mountain/stage icon.</li><li>실패 이유와 목표 차이를 점수 바로 아래 한 문장으로 표시.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>Clear와 완전히 동일한 content/track/action anchors.</li><li>action 수가 바뀌어도 첫 item이 움직이지 않고 rail 폭만 확장.</li><li>음수 score는 minus sign을 포함해 clamp 없이 표시.</li></ul></article>
+          <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/result_panel.gd">src/ui/hud/result_panel.gd</a><a href="../../../src/ui/components/result_summary.gd">src/ui/components/result_summary.gd</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a></div></article>
+        </div>
+      </section>
+    </div>
+
+    <section id="edge">
+      <div class="page">
+        <h2>5. 후반/경계 AS-IS 증거</h2>
+        <p class="section-lead">화면별 사양이 Stage 08에만 맞아서는 안 된다. 아래 6장은 target band, 공 종류, stage 폭, 음수 점수가 달라도 같은 문제와 같은 교정 규칙이 적용됨을 보여 준다.</p>
+        <div class="edge-gallery">
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/23-stage-select-stage07-ko-1280x720.png" alt="Stage 07 선택 AS-IS"><figcaption><strong>Stage 07</strong><span>좁은 목표 구간</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/24-queue-detail-stage12-ko-1280x720.png" alt="Stage 12 특수 공 AS-IS"><figcaption><strong>Stage 12</strong><span>최고점 분열 설명</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/25-stage-select-stage18-ko-1280x720.png" alt="Stage 18 선택 AS-IS"><figcaption><strong>Stage 18</strong><span>후반 rail과 rule density</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/26-queue-detail-stage24-ko-1280x720.png" alt="Stage 24 특수 공 AS-IS"><figcaption><strong>Stage 24</strong><span>다른 색/공 종류</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/27-result-stage30-ko-1280x720.png" alt="Stage 30 결과 AS-IS"><figcaption><strong>Stage 30</strong><span>후반 결과 구조</span></figcaption></figure>
+          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/28-negative-score-stage09-ko-1280x720.png" alt="Stage 09 음수 점수 결과 AS-IS"><figcaption><strong>Stage 09</strong><span>음수 score 보존</span></figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="implementation">
+      <div class="page">
+        <h2>6. 정확한 구현 순서</h2>
+        <p class="section-lead">화면을 하나씩 꾸미면 shared theme가 다시 분기한다. 아래 순서대로 공통 계약을 먼저 닫고, 그 위에서 화면을 이식해야 한다.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>순서</th><th>변경</th><th>주요 소유자</th><th>정지 조건</th></tr></thead>
+            <tbody>
+              <tr><td><strong>1</strong></td><td><code>ActionControl</code>을 icon-only contract로 전환. Routine/Primary/Selected/Destructive theme variation 추가. 기존 white <code>ButtonNormal</code>을 icon action에서 제거.</td><td>theme, action_control, icon assets</td><td>어떤 화면에도 visible verb text가 든 action button이 없음.</td></tr>
+              <tr><td><strong>2</strong></td><td>새 <code>ScoreStatus</code> 추가. <code>ScoreScale.VERTICAL_LIVE</code> 제거. HUD controller의 score update를 두 component에 명확히 분배.</td><td>score_status, score_scale, hud_controller</td><td>Aim/Map/Follow에 vertical axis가 없고 음수/100+ 값이 정확함.</td></tr>
+              <tr><td><strong>3</strong></td><td><code>BallDetailCard</code> 구현. Queue token/card anchor와 hover/focus/press/Escape policy 정리.</td><td>ball_queue, ball_queue_token, theme</td><td>설명이 white card 한 곳에만 보이고 trigger/card 이동이 끊기지 않음.</td></tr>
+              <tr><td><strong>4</strong></td><td><code>HudRootLayout</code>을 8px grid coordinate sheet로 재작성. Aim, Briefing, Map, Follow를 이식.</td><td>hud_root_layout, aim_controls, run_status</td><td>1280×720/640×360에서 좌우/상하 기준선과 center가 수치대로 일치.</td></tr>
+              <tr><td><strong>5</strong></td><td>Main Menu, Stage Select, Pause, Settings, Result를 icon action과 정보 surface 정책에 이식.</td><td>각 screen owner, result_panel</td><td>screen-local button StyleBox/색 복제가 없음.</td></tr>
+              <tr><td><strong>6</strong></td><td>전체 production build와 동일 28-state capture sweep. 키보드 focus/tooltip/compact overflow를 별도 점검.</td><td>project capture workflow</td><td>아래 acceptance matrix 전체 통과.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>아이콘 asset 요구 목록</h3>
+        <p>현재 저장소에는 settings, target, plus/minus, paint splash 등 일부만 있다. 구현 전 아래 의미를 하나의 실제 24px/28px monochrome asset family로 확보한다. 문자 glyph, emoji, CSS 도형, screen-local handcrafted icon은 사용하지 않는다.</p>
+        <div class="grid-3">
+          <article class="card"><h4>Navigation</h4><p>play, back, stage/mountain, home, close, quit/power</p></article>
+          <article class="card"><h4>Gameplay</h4><p>fire/paint, finish/check, map/target, return-to-cannon, settings</p></article>
+          <article class="card"><h4>Result</h4><p>next, retry, same-deal, shuffle/new-deal, defaults/undo</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="acceptance">
+      <div class="page">
+        <h2>7. 수용 기준</h2>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>영역</th><th>반드시 통과할 조건</th><th>증거</th></tr></thead>
+            <tbody>
+              <tr><td>버튼</td><td>동작 버튼 visible text 0개. 숫자 selector와 값 label만 텍스트 예외. routine normal의 white surface 0개.</td><td>scene/component contract test + 11개 화면 capture</td></tr>
+              <tr><td>점수</td><td>Aim/Map/Follow vertical 0–100 축 0개. current/target/R/G가 한눈에 읽히고 음수/100+를 보존.</td><td>Stage 08, Stage 09 음수, 100+ fixture</td></tr>
+              <tr><td>특수 공</td><td>설명은 큐에 붙은 흰 card 1개. hover/focus/press 동일 copy, Escape dismiss, trigger/card hover continuity.</td><td>Stage 08/12/24 standard + compact</td></tr>
+              <tr><td>정렬</td><td>safe margin 24/12, routine 44/40, primary 56/48. 같은 row의 중심선 오차 1px 이하, 공유 edge 오차 1px 이하.</td><td>numeric layout test + full viewport capture</td></tr>
+              <tr><td>focus</td><td>모든 icon action에 명확한 2px focus ring. focus가 overlay에 가려지지 않고 순서가 시각 순서와 일치.</td><td>keyboard/gamepad traversal recording or screenshot sequence</td></tr>
+              <tr><td>overflow</td><td>1280×720, 640×360에서 clipping/overlap 없음. compact Settings는 action 고정 + content만 scroll.</td><td>production build captures</td></tr>
+              <tr><td>시각 위계</td><td>한 화면에 filled blue primary 최대 1개. white information containment 최대 1개, Ball detail open 시에만 예외적으로 1개 추가.</td><td>visual audit checklist</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>완료 판정 문구</strong>
+          <p>“겹치지 않는다”만으로 PASS 처리하지 않는다. 화면별 AS-IS와 동일 viewport의 TO-BE를 나란히 놓고, 위 수치와 사람이 읽는 순서를 모두 검수해야 한다. 마지막 결과에는 버튼 면, score 이해, 특수 공 card, 내부/외부 정렬을 각각 별도 판정한다.</p>
+        </div>
+
+        <h3>참조한 외부 기준</h3>
+        <ul class="source-list">
+          <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced">W3C · Target Size (Enhanced)</a> — 자주 쓰는 custom target의 44×44 기준을 참고했다.</li>
+          <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus">W3C · Content on Hover or Focus</a> — 특수 공 card의 dismiss/hover/persistence 계약에 반영했다.</li>
+          <li><a href="https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/">W3C · WCAG 2.2 focus additions</a> — 2px perimeter와 focus 가시성의 근거로 사용했다.</li>
+          <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/113">Xbox Accessibility Guideline 113 · UI focus</a> — game UI focus가 분명해야 한다는 기준을 적용했다.</li>
+          <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/114">Xbox Accessibility Guideline 114 · UI context</a> — icon-only action에도 사전 맥락과 consistent labeling이 필요하다는 제한을 반영했다.</li>
+          <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102">Xbox Accessibility Guideline 102 · Contrast</a> — 월드 위 텍스트와 정보 면의 대비 필요성을 반영했다.</li>
+          <li><a href="https://docs.godotengine.org/en/stable/tutorials/ui/custom_gui_controls.html">Godot stable · Custom GUI controls</a> — minimum size와 focus drawing 계약의 구현 근거.</li>
+          <li><a href="https://docs.godotengine.org/en/latest/tutorials/ui/gui_containers.html">Godot · Using Containers</a> — container가 자식 layout을 소유한다는 책임 경계의 참고. 구현 시 프로젝트 고정 Godot 4.7.1 문서와 다시 대조한다.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="page">
+      <p><strong>Paint Mountain UIUX Correction Specification</strong> · 2026-08-21</p>
+      <p>AS-IS images: <code>.agents/evidence/2026-08-21-stage-ui-final</code> · source executable SHA-256 recorded above. This report specifies the next UI correction; it is not runtime proof of the proposed design.</p>
+    </div>
+  </footer>
+</body>
+</html>
