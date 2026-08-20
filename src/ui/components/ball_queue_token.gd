@@ -4,6 +4,8 @@ extends Button
 ## Focusable presentation of one authoritative queue token. The parent queue
 ## owns the shared description bubble and pin/dismiss policy.
 
+const BALL_GLYPH_PAINTER := preload("res://src/ui/components/ball_glyph_painter.gd")
+
 signal description_requested(source: BallQueueTokenView, description: String, pin: bool)
 signal description_released(source: BallQueueTokenView)
 
@@ -109,22 +111,7 @@ func _draw() -> void:
 		(16.0 if _queue_index == 0 else 14.0) * draw_density,
 		size.y * 0.5
 	)
-	match _token.kind:
-		BallKind.Value.IMPACT_BURST:
-			for spoke in range(8):
-				var direction := Vector2.from_angle(float(spoke) * TAU / 8.0)
-				draw_line(center + direction * radius * 0.5,
-						center + direction * radius * 1.35, outline, 2.0)
-			draw_circle(center, radius * 0.72, outline)
-			draw_circle(center, radius * 0.54, color)
-		BallKind.Value.APEX_SPLIT:
-			for angle in [-PI * 0.5, PI / 6.0, PI * 5.0 / 6.0]:
-				var lobe_center := center + Vector2.from_angle(angle) * radius * 0.62
-				draw_circle(lobe_center, radius * 0.55, outline)
-				draw_circle(lobe_center, radius * 0.40, color)
-		_:
-			draw_circle(center, radius, outline)
-			draw_circle(center, radius * 0.76, color)
+	BALL_GLYPH_PAINTER.draw(self, center, radius, _token.kind, color, outline, 2.0)
 	var label := channel_label()
 	var font := get_theme_font(&"font", &"BallQueueToken")
 	var font_size := get_theme_font_size(&"font_size", &"BallQueueToken")

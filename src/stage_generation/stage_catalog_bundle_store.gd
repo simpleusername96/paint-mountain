@@ -3,7 +3,7 @@ extends RefCounted
 ## Owns immutable catalog-bundle persistence, verification, and pointer promotion.
 
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
-const BUNDLE_FORMAT_VERSION := 6
+const BUNDLE_FORMAT_VERSION := 7
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
 
 static func manifest_stage_descriptor(stage: StageData) -> String:
@@ -54,6 +54,8 @@ static func _stage_rule_manifest_descriptor(stage: StageData) -> String:
 		str(stage.ball_deal_profile.profile_version),
 		str(stage.ball_deal_profile.allowed_kinds),
 		str(stage.ball_deal_profile.required_kinds),
+		str(stage.require_both_paint_channels_for_clear),
+		str(stage.required_ball_kinds_for_clear),
 		str(stage.default_deal_seed),
 		str(stage.red_paint_color),
 		str(stage.green_paint_color),
@@ -84,8 +86,13 @@ static func sha256(value: String) -> String:
 	return context.finish().hex_encode()
 
 
-static func write_bundle_manifest(catalog: StageCatalogData, layouts: Array[BakedStageLayoutData]) -> bool:
-	if layouts.size() != catalog.stages.size():
+static func write_bundle_manifest(
+	catalog: StageCatalogData,
+	layouts: Array[BakedStageLayoutData],
+	feasibility_certificates: Array[StageClearFeasibilityCertificate]
+) -> bool:
+	if layouts.size() != catalog.stages.size() \
+			or feasibility_certificates.size() != catalog.stages.size():
 		return false
 	var bundle_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
 	var final_absolute := ProjectSettings.globalize_path(bundle_root)
@@ -107,9 +114,12 @@ static func write_bundle_manifest(catalog: StageCatalogData, layouts: Array[Bake
 	var bundle_catalog := "%s/catalog.tres" % staging_root
 	if ResourceSaver.save(catalog, bundle_catalog) != OK:
 		return false
-	for subdirectory in ["stages", "profiles", "layouts", "certificates", "previews"]:
+	for subdirectory in [
+		"stages", "profiles", "layouts", "certificates", "feasibility", "previews"
+	]:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("%s/%s" % [staging_root, subdirectory]))
 	var certificate_paths: Array[String] = []
+	var feasibility_certificate_paths: Array[String] = []
 	var preview_paths: Array[String] = []
 	var play_bounds_checksums: Array[int] = []
 	var coverage_metric_versions: Array[int] = []
@@ -131,6 +141,17 @@ static func write_bundle_manifest(catalog: StageCatalogData, layouts: Array[Bake
 		var hydrated := StageLayoutBakeCodec.hydrate(reloaded, stage)
 		if hydrated == null:
 			return false
+		var feasibility := feasibility_certificates[index]
+		var feasibility_path := "%s/feasibility/%s_feasibility.tres" % [
+			staging_root, numeric_id,
+		]
+		if feasibility == null or not StageClearFeasibilityAnalyzer.matches(
+			feasibility, stage, reloaded
+		) or ResourceSaver.save(feasibility, feasibility_path) != OK:
+			return false
+		feasibility_certificate_paths.append(
+			"%s/feasibility/%s_feasibility.tres" % [bundle_root, numeric_id]
+		)
 		play_bounds_checksums.append(reloaded.play_bounds_checksum)
 		coverage_metric_versions.append(reloaded.coverage_metric_version)
 		total_target_surface_areas.append(reloaded.total_target_surface_area)
@@ -160,6 +181,7 @@ static func write_bundle_manifest(catalog: StageCatalogData, layouts: Array[Bake
 		"default_witnesses": default_witnesses,
 		"summit_witnesses": summit_witnesses,
 		"certificate_paths": certificate_paths,
+		"feasibility_certificate_paths": feasibility_certificate_paths,
 		"preview_paths": preview_paths,
 		"previews_ready": false,
 	}
@@ -233,6 +255,8 @@ static func verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String
 		return _bundle_validation_failure("catalog failed StageCatalogData.is_valid(false)")
 	if catalog.layout_paths.size() != catalog.stages.size():
 		return _bundle_validation_failure("layout-path count differs from stage count")
+	if catalog.feasibility_certificate_paths.size() != catalog.stages.size():
+		return _bundle_validation_failure("feasibility-path count differs from stage count")
 	var resolved_root := bundle_root if not bundle_root.is_empty() \
 		else CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
 	var manifest_path := "%s/manifest.json" % resolved_root
@@ -266,6 +290,7 @@ static func verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String
 	var target_surface_area_checksums: Array = manifest.get("target_surface_area_checksums", [])
 	var default_witnesses: Array = manifest.get("default_witnesses", [])
 	var summit_witnesses: Array = manifest.get("summit_witnesses", [])
+	var feasibility_paths: Array = manifest.get("feasibility_certificate_paths", [])
 	if payload_hashes.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest payload-hash count differs from stage count")
 	if play_bounds_checksums.size() != catalog.stages.size():
@@ -278,6 +303,8 @@ static func verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String
 		return _bundle_validation_failure("manifest default-witness count differs from stage count")
 	if summit_witnesses.size() != catalog.stages.size():
 		return _bundle_validation_failure("manifest summit-witness count differs from stage count")
+	if not _manifest_array_matches(feasibility_paths, catalog.feasibility_certificate_paths):
+		return _bundle_validation_failure("manifest feasibility paths differ from catalog")
 	if not _manifest_optional_paths_are_valid(manifest, catalog):
 		return _bundle_validation_failure("manifest optional artifact paths are invalid")
 	var bundled_catalog := load("%s/catalog.tres" % resolved_root) as StageCatalogData
@@ -339,6 +366,18 @@ static func verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String
 					JSON.stringify(_witness_manifest_summary(hydrated.generated_summit_witness)),
 				]
 			)
+		var feasibility := load(
+			"%s/feasibility/%s_feasibility.tres" % [resolved_root, stage_id]
+		) as StageClearFeasibilityCertificate
+		if not StageClearFeasibilityAnalyzer.matches(feasibility, stage, baked):
+			return _bundle_validation_failure(
+				"%s static clear feasibility differs from current inputs: %s" % [
+					stage_id,
+					StageClearFeasibilityAnalyzer.mismatch_summary(
+						feasibility, stage, baked
+					),
+				]
+			)
 		manifest_parts.append(manifest_stage_descriptor(stage))
 		manifest_parts.append("layout=%s|%s" % [
 			"layouts/%s_layout.res" % stage.stage_id,
@@ -356,6 +395,7 @@ static func verify_catalog_bundle(catalog: StageCatalogData, bundle_root: String
 		manifest_parts.append("summit_witness=%s" % witness_manifest_descriptor(
 			hydrated.generated_summit_witness
 		))
+		manifest_parts.append("clear_feasibility=%s" % feasibility.descriptor())
 	manifest_parts.append("bundle_format=%d" % BUNDLE_FORMAT_VERSION)
 	manifest_parts.append(
 		"baked_schema=%d" % BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION
@@ -376,7 +416,11 @@ static func _catalog_identity_matches(expected: StageCatalogData, bundled: Stage
 			or bundled.bundle_manifest_path != expected.bundle_manifest_path \
 			or bundled.catalog_version != expected.catalog_version \
 			or not _manifest_array_matches(_catalog_stage_ids(bundled), _catalog_stage_ids(expected)) \
-			or not _manifest_array_matches(bundled.layout_paths, expected.layout_paths):
+			or not _manifest_array_matches(bundled.layout_paths, expected.layout_paths) \
+			or not _manifest_array_matches(
+				bundled.feasibility_certificate_paths,
+				expected.feasibility_certificate_paths
+			):
 		return false
 	for index in range(expected.stages.size()):
 		if manifest_stage_descriptor(bundled.stages[index]) \
@@ -387,8 +431,10 @@ static func _catalog_identity_matches(expected: StageCatalogData, bundled: Stage
 
 static func _manifest_optional_paths_are_valid(manifest: Dictionary, catalog: StageCatalogData) -> bool:
 	var certificate_paths: Array = manifest.get("certificate_paths", [])
+	var feasibility_paths: Array = manifest.get("feasibility_certificate_paths", [])
 	var preview_paths: Array = manifest.get("preview_paths", [])
-	if not certificate_paths is Array or not preview_paths is Array:
+	if not certificate_paths is Array or not feasibility_paths is Array \
+			or not preview_paths is Array:
 		return false
 	var expected_certificates: Array[String] = []
 	var final_root := CATALOG_DATA_SCRIPT.generated_bundle_root(catalog.manifest_sha256)
@@ -397,7 +443,13 @@ static func _manifest_optional_paths_are_valid(manifest: Dictionary, catalog: St
 			expected_certificates.append("%s/certificates/%s_certificate.tres" % [
 				final_root, String(catalog.stage_ids[index]),
 			])
+	var expected_feasibility: Array[String] = []
+	for stage_id in catalog.stage_ids:
+		expected_feasibility.append("%s/feasibility/%s_feasibility.tres" % [
+			final_root, String(stage_id),
+		])
 	return _manifest_array_matches(certificate_paths, expected_certificates) \
+			and _manifest_array_matches(feasibility_paths, expected_feasibility) \
 			and preview_paths.is_empty() and not bool(manifest.get("previews_ready", true))
 
 

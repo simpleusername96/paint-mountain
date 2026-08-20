@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/stage_select_screen.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/stage_rail.tscn" id="2_rail"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/world_gradient_scrim.tscn" id="3_scrim"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="4_action"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/stage_rule_summary.tscn" id="5_summary"]
 
 [node name="StageSelect" type="CanvasLayer"]
 layer = 20
@@ -66,12 +67,9 @@ mouse_filter = 2
 theme_type_variation = &"WorldTitle"
 vertical_alignment = 1
 
-[node name="PreviewStats" type="Label" parent="Root/SelectedInfo"]
+[node name="PreviewStats" parent="Root/SelectedInfo" instance=ExtResource("5_summary")]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"WorldBody"
-text_overrun_behavior = 3
 
 [node name="PreviewBest" type="Label" parent="Root/SelectedInfo"]
 unique_name_in_owner = true

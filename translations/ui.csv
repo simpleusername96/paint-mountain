@@ -68,6 +68,10 @@ hud.time,TIME,남은 시간
 hud.timer_starts_on_first_shot,Timer starts with the first shot,첫 발사와 함께 시간이 흐릅니다
 hud.finish_tooltip,Finish and score target-area coverage (F),목표 영역 칠함으로 완료 (F)
 hud.finish_disabled_tooltip,Available after the first shot,첫 발사 후 사용할 수 있습니다
+hud.finish_wait_quiet,Available after every ball settles,모든 공이 멈춘 뒤 사용할 수 있습니다
+hud.finish_reach_band,Reach the target score band first,먼저 목표 점수 구간에 도달하세요
+hud.finish_use_both_colors,Paint the target with both Red and Green,목표 영역에 빨강과 초록을 모두 칠하세요
+hud.finish_use_required_balls,Use every required special ball,필수 특수 공을 모두 사용하세요
 hud.aim,AIM,조준
 hud.angle,ANGLE,각도
 hud.direction,DIRECTION,방향

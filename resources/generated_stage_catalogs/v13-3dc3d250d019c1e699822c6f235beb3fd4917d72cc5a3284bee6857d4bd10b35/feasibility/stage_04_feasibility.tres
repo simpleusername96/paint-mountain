@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="StageClearFeasibilityCertificate" format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_clear_feasibility_certificate.gd" id="1_doip1"]
+
+[resource]
+script = ExtResource("1_doip1")
+stage_id = &"stage_04"
+stage_number = 4
+layout_payload_sha256 = "ae10ff7e4ef7395288dc93cd50b05bd66f24a9392513ae8d7ad74fa38a4e5fba"
+target_checksum = 3554135145
+target_surface_area_checksum = 2859634235
+target_pixel_count = 55912
+target_component_count = 1
+ballistic_target_count = 55912
+ballistic_sample_count = 17
+ballistic_contract_checksum = "43b97ae53ce188818f94f80c6523e7b078a1e4f0ae49c0936d0ef817bb3fac8e"
+ballistic_minimum_yaw_margin_degrees = 62.42436888013218
+ballistic_minimum_perpendicular_margin = 2.3887334060668945
+ballistic_minimum_range_margin = 95.8187875212725
+ballistic_minimum_height_margin = 91.165016
+score_witness_red_percent = 0.0010770706467634983
+score_witness_green_percent = 8.001077070646764
+score_witness = 8.0
+target_min = 6.0
+target_max = 10.0
+deal_seed_first = 1004
+deal_count = 16
+deal_checksum = "932d9fbe6af416659031047021ff42c2205c85a9a6234194b4b828e137f13ef5"
+maximum_minimum_cover_shots = 2
+rule_checksum = "ebf958c4319b57c917fabe4059e1ed003e8094cc4e6a13282e30ce6ee57ad297"
+capability_checksum = "e5d5017be0579a21c57a5e400cfe17e02084cadc913d186c3046cdb07cfa7cf0"
+certificate_sha256 = "8034e4065c488d895ef7f9d02d0780cc183fc658ca028ec22838ff337d250087"

@@ -38,6 +38,9 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 	_description.add_theme_font_size_override(
 		&"font_size", roundi(16.0 * _density) if compact else 16
 	)
+	_description.add_theme_constant_override(
+		&"outline_size", roundi(4.0 * _density) if compact else 3
+	)
 	for token_view in _tokens:
 		token_view.set_compact(compact, _density)
 	_layout_description.call_deferred()

@@ -12,6 +12,7 @@ const COMPACT_HEIGHT := 620.0
 @onready var _actions := get_node("ActionButtons") as ActionButtons
 @onready var _aim := get_node("AimControls") as AimControls
 @onready var _top := get_node("TopStatusBar") as TopStatusBar
+@onready var _run_status := get_node("RunStatusCard") as RunStatusCard
 @onready var _score_scale := get_node("ScoreScale") as ScoreScale
 @onready var _queue := get_node("BallQueue") as BallQueue
 @onready var _interaction := get_node("CameraInteractionControl") as CameraInteractionControl
@@ -24,6 +25,7 @@ const COMPACT_HEIGHT := 620.0
 
 var _compact_active := false
 var _score_summary := false
+var _result_active := false
 var _restore_legend_visible := false
 var _suppress_visibility_capture := false
 
@@ -37,6 +39,11 @@ func _ready() -> void:
 
 func set_score_summary(summary: bool) -> void:
 	_score_summary = summary
+	_apply_layout()
+
+
+func set_result_active(active: bool) -> void:
+	_result_active = active
 	_apply_layout()
 
 
@@ -80,6 +87,7 @@ func _apply_score_preset() -> void:
 
 
 func _apply_standard_layout() -> void:
+	_top.show()
 	_top.set_compact(false)
 	_actions.set_compact(false)
 	_set_rect(_briefing_actions, Vector2(SAFE_MARGIN, size.y - 146.0), Vector2(356.0, 56.0))
@@ -93,6 +101,11 @@ func _apply_standard_layout() -> void:
 	_queue.set_compact(false)
 	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 420.0, 92.0), Vector2(420.0, 124.0))
 	_set_rect(_interaction, Vector2(size.x - 430.0, SAFE_MARGIN), Vector2(48.0, 48.0))
+	_set_rect(
+		_run_status,
+		Vector2(size.x - 374.0, SAFE_MARGIN),
+		Vector2(284.0, 52.0)
+	)
 	_score_scale.set_compact(false)
 	if _score_summary:
 		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(440.0, 118.0))
@@ -118,6 +131,7 @@ func _apply_compact_layout(density: float) -> void:
 	_legend.hide()
 	_suppress_visibility_capture = false
 	_top.set_compact(true, density)
+	_top.visible = not _result_active
 	_actions.set_compact(true, density)
 	var briefing_safe := COMPACT_SAFE_MARGIN * density
 	var briefing_size := Vector2(356.0, 52.0) * density
@@ -144,7 +158,21 @@ func _apply_compact_layout(density: float) -> void:
 		Vector2(size.x - COMPACT_SAFE_MARGIN - queue_width, 72.0),
 		Vector2(queue_width, queue_height)
 	)
-	_set_rect(_interaction, Vector2(size.x - 430.0, 24.0), Vector2(48.0, 48.0))
+	var compact_safe := COMPACT_SAFE_MARGIN * density
+	var settings_size := 44.0 * density
+	var settings_left := size.x - compact_safe - settings_size
+	var status_size := Vector2(284.0, 52.0)
+	var status_right := settings_left - compact_safe
+	_set_rect(
+		_run_status,
+		Vector2(status_right - status_size.x, compact_safe),
+		status_size
+	)
+	_set_rect(
+		_interaction,
+		Vector2(status_right - status_size.x - compact_safe - 48.0, compact_safe),
+		Vector2(48.0, 48.0)
+	)
 	_score_scale.set_compact(true, density)
 	var score_top := 68.0 * density
 	var score_height := 210.0 * density

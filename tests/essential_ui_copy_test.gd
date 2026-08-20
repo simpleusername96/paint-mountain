@@ -120,6 +120,7 @@ func _assert_semantic_control_copy(locale: String) -> void:
 	await process_frame
 	actions.set_fire_readiness({"fireable": true, "reason": tr("ui.fire")})
 	actions.refresh_locale()
+	status.set_finish_available(false, &"hud.finish_use_both_colors")
 	status.refresh_locale()
 	interaction.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true("Space" not in actions.get_node("FireButton").text, "%s Fire must not repeat Space" % locale)
@@ -127,6 +128,8 @@ func _assert_semantic_control_copy(locale: String) -> void:
 	_assert_true("Tab" not in interaction.text, "%s mode control must not repeat Tab" % locale)
 	_assert_true(not actions.get_node("FireButton").tooltip_text.is_empty(), "%s Fire must retain a tooltip" % locale)
 	_assert_true(not status.get_node("Finish").tooltip_text.is_empty(), "%s Finish must retain a tooltip" % locale)
+	_assert_true(status.get_node("Finish").tooltip_text == tr("hud.finish_use_both_colors"),
+		"%s Finish must retain its specific unavailable reason after locale refresh" % locale)
 	_assert_true(not interaction.tooltip_text.is_empty(), "%s mode control must retain a tooltip" % locale)
 	for node in [actions, status, interaction]:
 		node.queue_free()

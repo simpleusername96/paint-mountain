@@ -21,7 +21,7 @@ var _compact := false
 @onready var _selected_info: VBoxContainer = %SelectedInfo
 @onready var _stage_number: Label = %StageNumber
 @onready var _stage_name: Label = %StageName
-@onready var _preview_stats: Label = %PreviewStats
+@onready var _preview_stats = %PreviewStats
 @onready var _preview_best: Label = %PreviewBest
 @onready var _start_button: ActionControl = %Start
 @onready var _page_label: Label = %PageRange
@@ -50,6 +50,7 @@ func _apply_responsive_layout() -> void:
 	_compact = window_size.x < 900.0 or window_size.y < 480.0
 	var density := _display_density(viewport_size, window_size) if _compact else 1.0
 	_apply_type_density(density)
+	_preview_stats.set_compact(_compact, density)
 	var safe := 12.0 * density if _compact else 24.0
 	var scrim_height := 178.0 * density if _compact else 250.0
 	_set_rect(_scrim, Vector2(0.0, viewport_size.y - scrim_height),
@@ -106,7 +107,6 @@ func _apply_type_density(density: float) -> void:
 	%Back.add_theme_font_size_override(&"font_size", roundi(16.0 * compact_density) if _compact else 17)
 	_heading.add_theme_font_size_override(&"font_size", roundi(18.0 * compact_density) if _compact else 30)
 	_stage_number.add_theme_font_size_override(&"font_size", roundi(36.0 * compact_density) if _compact else 56)
-	_preview_stats.add_theme_font_size_override(&"font_size", roundi(15.0 * compact_density) if _compact else 18)
 	_start_button.add_theme_font_size_override(&"font_size", roundi(17.0 * compact_density) if _compact else 17)
 
 
@@ -225,48 +225,17 @@ func _update_preview() -> void:
 	var best: Dictionary = game_state.best_for(_selected_stage.stage_id) if game_state != null else {}
 	_stage_number.text = "%02d" % _selected_stage.stage_number
 	_stage_name.text = _display_name(_selected_stage)
-	var full_stats := ""
-	var compact_stats := ""
 	if _selected_stage.uses_target_band():
-		full_stats = "◎ %s  ·  R %s / G %s  ·  ● %s  ·  ◉ %d  ·  ◷ %s" % [
-			_band_text(_selected_stage),
-			_weight_text(_selected_stage.color_score_rule.red_weight),
-			_weight_text(_selected_stage.color_score_rule.green_weight),
-			_ball_kind_names(_selected_stage),
-			_selected_stage.maximum_shots,
-			_format_duration(_selected_stage.resolved_duration_seconds()),
-		]
-		compact_stats = "◎ %s · R%s/G%s · ◉ %d" % [
-			_band_text(_selected_stage),
-			_weight_text(_selected_stage.color_score_rule.red_weight),
-			_weight_text(_selected_stage.color_score_rule.green_weight),
-			_selected_stage.maximum_shots,
-		]
 		_preview_best.text = "%s —" % tr("stage.best") if best.is_empty() else "%s %s  %s" % [
 			tr("stage.best"), _format_number(float(best.get("paint_score", 0.0))),
 			_stars_text(int(best.get("stars", 0))),
 		]
 	else:
-		full_stats = "◎ %.1f%%  ·  ◉ %d  ·  ◷ %s  ·  ◆ %s" % [
-			_selected_stage.target_coverage,
-			_selected_stage.maximum_shots,
-			_format_duration(_selected_stage.resolved_duration_seconds()),
-			_mechanism_names(_selected_stage),
-		]
-		compact_stats = "◎ %.1f%% · ◉ %d · ◆ %d" % [
-			_selected_stage.target_coverage,
-			_selected_stage.maximum_shots,
-			_selected_stage.mechanism_loadout.size(),
-		]
 		_preview_best.text = "%s %.1f%%  %s" % [
 			tr("stage.best"), float(best.get("coverage", 0.0)),
 			_stars_text(int(best.get("stars", 0))),
 		]
-	# Keep the world-facing line scannable; full rule detail remains available
-	# through the shared tooltip/accessibility path without clipping the terrain.
-	_preview_stats.text = compact_stats
-	_preview_stats.tooltip_text = full_stats
-	_preview_stats.accessibility_name = full_stats
+	_preview_stats.configure(_selected_stage)
 	_apply_start_preparation_state()
 
 
@@ -292,56 +261,12 @@ func _display_name(stage: StageData) -> String:
 	return translated if translated != String(stage.display_name_key) else "Stage %02d" % stage.stage_number
 
 
-func _mechanism_names(stage: StageData) -> String:
-	if stage.mechanism_loadout.is_empty():
-		return tr("mechanism.none")
-	var names: Array[String] = []
-	for mechanism_data in stage.mechanism_loadout:
-		var key := "mechanism.uphill_rebound"
-		match mechanism_data.canonical_kind():
-			MechanismData.Kind.BURST:
-				key = "mechanism.burst"
-			MechanismData.Kind.SPLITTER:
-				key = "mechanism.splitter"
-		names.append(tr(key))
-	return " + ".join(names)
-
-
-func _band_text(stage: StageData) -> String:
-	if stage.target_band == null:
-		return "—"
-	return "%s–%s" % [
-		_format_number(stage.target_band.target_min),
-		_format_number(stage.target_band.target_max),
-	]
-
-
-func _ball_kind_names(stage: StageData) -> String:
-	if stage.ball_deal_profile == null:
-		return "—"
-	var names: Array[String] = []
-	for kind in stage.ball_deal_profile.allowed_kinds:
-		var stable_id := BallKind.stable_id(kind)
-		if not stable_id.is_empty():
-			names.append(tr("ball.%s" % stable_id))
-	return " / ".join(names)
-
-
-func _weight_text(weight: int) -> String:
-	return "+%d" % weight if weight > 0 else "−%d" % absi(weight) if weight < 0 else "0"
-
-
 func _format_number(value: float) -> String:
 	return "%d" % roundi(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
 
 
 func _stars_text(stars: int) -> String:
 	return "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
-
-
-func _format_duration(seconds: float) -> String:
-	var total_seconds := maxi(roundi(seconds), 0)
-	return "%02d:%02d" % [total_seconds / 60, total_seconds % 60]
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:

@@ -54,10 +54,16 @@ func _run() -> void:
 			break
 		var token := controller.current_ball_token()
 		var weight := _channel_weight(controller.stage_data.color_score_rule, token.channel)
+		var before_score := controller.score_snapshot()
+		var must_paint := Array(before_score.get("missing_color_ids", [])).has(
+			String(PaintChannel.stable_id(token.channel))
+		) or Array(before_score.get("missing_ball_kind_ids", [])).has(
+			String(BallKind.stable_id(token.kind))
+		)
 		var aim := _aim_for_shot(
 			default_aim, witnesses, shot_index, controller.stage_data.maximum_shots,
 			positive_index, positive_total, weight,
-			controller.stage_data.color_score_rule
+			controller.stage_data.color_score_rule, must_paint
 		)
 		if weight > 0:
 			positive_index += 1
@@ -84,8 +90,7 @@ func _run() -> void:
 		var score := controller.score_snapshot()
 		shot_scores.append(float(score.get("paint_score", 0.0)))
 		if controller.current_state == StageController.State.AIMING \
-				and bool(score.get("in_target_band", false)) \
-				and controller.board_is_quiet():
+				and bool(controller.finish_readiness_snapshot().get("ready", false)):
 			_assert(controller.finish_stage(StageController.ActionOrigin.HUMAN),
 				"quiet in-band witness must accept Finish")
 			break
@@ -108,6 +113,11 @@ func _run() -> void:
 			"target_max": float(result.get("target_max", 0.0)),
 			"stars": int(result.get("stars", 0)),
 			"finish_reason": String(result.get("finish_reason", "")),
+			"shots_used": int(result.get("shots_used", 0)),
+			"goal_requirements_met": bool(result.get("goal_requirements_met", true)),
+			"painted_ball_kind_ids": result.get("painted_ball_kind_ids", []),
+			"missing_color_ids": result.get("missing_color_ids", []),
+			"missing_ball_kind_ids": result.get("missing_ball_kind_ids", []),
 			"settled_score_after_each_shot": shot_scores,
 		}))
 	Engine.time_scale = 1.0
@@ -122,9 +132,10 @@ func _aim_for_shot(
 		shot_index: int,
 		shot_count: int,
 		positive_index: int,
-		positive_total: int,
-		weight: int,
-		rule: ColorScoreRuleData
+	positive_total: int,
+	weight: int,
+	rule: ColorScoreRuleData,
+	must_paint: bool
 ) -> AimTuple:
 	if not witnesses.is_empty() and rule.red_weight > 0 and rule.green_weight > 0:
 		var witness_index := roundi(
@@ -132,7 +143,7 @@ func _aim_for_shot(
 			/ float(maxi(shot_count - 1, 1))
 		)
 		return witnesses[witness_index]
-	if weight < 0:
+	if weight < 0 and not must_paint:
 		# Subtractive tokens may be deliberately dropped short of the target;
 		# wasting a bad color is part of the authored planning rule.
 		return AimTuple.canonicalize(

@@ -1,25 +1,27 @@
 extends SceneTree
 
-const V11_ROOT := "res://resources/generated_stage_catalogs/v11-29c58dabab787164b600e4562ce0ec848212a655cecd8da763da14168130694e"
+const V12_ROOT := "res://resources/generated_stage_catalogs/v12-5e54530eeb708bc2928ce87bdad0f8a765a0b181cfb0cf1c7b7679eee68fcf70"
 
 var _failed := false
 
 
 func _initialize() -> void:
-	var previous := load("%s/catalog.tres" % V11_ROOT) as StageCatalogData
+	var previous := load("%s/catalog.tres" % V12_ROOT) as StageCatalogData
 	var current := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(previous != null and current != null, "v11 source and v12 catalog must load")
+	_assert(previous != null and current != null, "v12 source and v13 catalog must load")
 	if previous == null or current == null:
 		quit(1)
 		return
-	_assert(current.catalog_version == 12, "the active catalog must identify v12")
-	_assert(current.is_valid(), "v12 catalog and content-addressed bundle must validate")
+	_assert(current.catalog_version == 13, "the active catalog must identify v13")
+	_assert(current.is_valid(), "v13 catalog and content-addressed bundle must validate")
+	_assert(current.feasibility_certificate_paths.size() == 30,
+		"v13 must attach one static clear-feasibility sidecar per stage")
 	_assert(previous.stages.size() == 30 and current.stages.size() == 30,
 		"both catalog generations must contain thirty stages")
 	for index in range(mini(previous.stages.size(), current.stages.size())):
 		_compare_stage(index, previous, current)
 	if not _failed:
-		print("Generation v12 migration passed: v11 world/layout content is preserved while late challenge rows advance.")
+		print("Generation v13 migration passed: v12 world, layout, score, and deal content is preserved while late clear requirements advance.")
 	quit(1 if _failed else 0)
 
 
@@ -27,7 +29,7 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 	var stage_id := "stage_%02d" % (index + 1)
 	var old_stage := previous.stages[index]
 	var new_stage := current.stages[index]
-	var old_layout := load("%s/layouts/%s_layout.res" % [V11_ROOT, stage_id]) as BakedStageLayoutData
+	var old_layout := load("%s/layouts/%s_layout.res" % [V12_ROOT, stage_id]) as BakedStageLayoutData
 	var new_layout := load(current.layout_paths[index]) as BakedStageLayoutData
 	_assert(old_stage != null and new_stage != null and old_layout != null and new_layout != null,
 		"%s resources must load" % stage_id)
@@ -35,8 +37,8 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 		return
 	# Values equal to the then-default version may be omitted from older text
 	# resources, so the immutable baked payload carries the v11 identity.
-	_assert(old_layout.profile_version == 11 and old_layout.layout_version == 11 \
-			and new_stage.stage_version == 12,
+	_assert(old_layout.profile_version == 12 and old_layout.layout_version == 12 \
+			and new_stage.stage_version == 13,
 		"%s baked/stage contract must advance exactly once" % stage_id)
 	_assert(new_stage.uses_target_band() and new_stage.has_valid_rule_contract(),
 		"%s must keep a valid target-band rule" % stage_id)
@@ -46,21 +48,28 @@ func _compare_stage(index: int, previous: StageCatalogData, current: StageCatalo
 			and old_stage.cannon_transform == new_stage.cannon_transform \
 			and old_stage.mechanism_loadout.size() == new_stage.mechanism_loadout.size(),
 		"%s world identity and mechanisms must be preserved" % stage_id)
+	_assert(_rule_content_matches(old_stage, new_stage),
+		"%s score and deal values must remain exact" % stage_id)
 	if index < 6:
-		_assert(_rule_content_matches(old_stage, new_stage),
-			"%s introductory score/deal values must remain exact" % stage_id)
+		_assert(not new_stage.has_late_clear_requirements(),
+			"%s introductory clear contract must remain unchanged" % stage_id)
 	else:
-		_assert(new_stage.color_score_rule.red_weight != 0 \
-				and new_stage.color_score_rule.green_weight != 0,
-			"%s late colors must both directly affect score" % stage_id)
+		_assert(new_stage.require_both_paint_channels_for_clear \
+				and new_stage.required_ball_kinds_for_clear \
+						== new_stage.ball_deal_profile.required_kinds,
+			"%s late clear must require both colors and its authored special roots" % stage_id)
 	_assert(_layout_content_matches(old_layout, new_layout),
 		"%s migrated layout content must preserve v11 geometry and witnesses" % stage_id)
-	_assert(new_layout.profile_version == 12 and new_layout.layout_version == 12 \
-			and String(new_layout.profile_id).ends_with("_v12") \
+	_assert(new_layout.profile_version == 13 and new_layout.layout_version == 13 \
+			and String(new_layout.profile_id).ends_with("_v13") \
 			and new_layout.payload_sha256 == StageLayoutBakeCodec.payload_sha256(new_layout),
-		"%s v12 payload identity must be reproducible" % stage_id)
+		"%s v13 payload identity must be reproducible" % stage_id)
 	_assert(StageLayoutBakeCodec.hydrate(new_layout, new_stage) != null,
-		"%s v12 layout must hydrate against its challenge stage" % stage_id)
+		"%s v13 layout must hydrate against its challenge stage" % stage_id)
+	var feasibility := load(current.feasibility_certificate_paths[index]) \
+			as StageClearFeasibilityCertificate
+	_assert(StageClearFeasibilityAnalyzer.matches(feasibility, new_stage, new_layout),
+		"%s static clear-feasibility sidecar must reproduce" % stage_id)
 
 
 func _rule_content_matches(old: StageData, current: StageData) -> bool:
@@ -108,4 +117,4 @@ func _assert(condition: bool, message: String) -> void:
 	if condition:
 		return
 	_failed = true
-	push_error("Generation v12 materialization failed: %s" % message)
+	push_error("Generation v13 materialization failed: %s" % message)

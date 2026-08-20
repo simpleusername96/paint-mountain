@@ -36,6 +36,7 @@ var _last_aim := Vector3.ZERO
 var _last_coverage := 0.0
 var _last_score_snapshot: Dictionary = {}
 var _finish_ready := false
+var _finish_reason_key := &"hud.finish_disabled_tooltip"
 var _current_interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
 var _current_camera_mode := CameraDirector.Mode.BRIEFING
 var _run_started := false
@@ -72,6 +73,7 @@ func configure(stage_data: StageData) -> void:
 		_score_scale.configure_coverage(stage_data.target_coverage)
 	_last_score_snapshot.clear()
 	_finish_ready = false
+	_finish_reason_key = &"hud.finish_disabled_tooltip"
 	_run_started = false
 	_clock_finished = false
 	_run_status.reset_for_stage(stage_data.maximum_shots, stage_data.resolved_duration_seconds())
@@ -122,6 +124,7 @@ func update_queue(tokens: Array[BallToken]) -> void:
 
 func set_finish_readiness(snapshot: Dictionary) -> void:
 	_finish_ready = bool(snapshot.get("ready", false))
+	_finish_reason_key = StringName(snapshot.get("reason_key", &"hud.finish_disabled_tooltip"))
 	_apply_finish_availability()
 
 
@@ -131,6 +134,7 @@ func set_fire_readiness(snapshot: Dictionary) -> void:
 
 func show_state(state: StageController.State) -> void:
 	_current_state = state
+	_layout.set_result_active(state == StageController.State.RESULT)
 	_top.update_mode(state)
 	# The interaction toggle is the only mode label during the Board Phase.
 	# Keeping the serial-state "Aiming" chip beside "Map Inspection" is
@@ -330,10 +334,12 @@ func _apply_interaction_presentation(update_focus: bool) -> void:
 
 
 func _apply_finish_availability() -> void:
+	var target_rule := _stage_data != null and _stage_data.uses_target_band()
 	_run_status.set_finish_available(
-		(_finish_ready if _stage_data != null and _stage_data.uses_target_band() else (
+		(_finish_ready if target_rule else (
 			_run_started and not _clock_finished and _current_state == StageController.State.AIMING
-		))
+		)),
+		_finish_reason_key if target_rule else &"hud.finish_disabled_tooltip"
 	)
 
 

@@ -312,6 +312,7 @@ func score_snapshot() -> Dictionary:
 		stage_data.color_score_rule,
 		stage_data.target_band
 	)
+	var goal_requirements := _goal_requirements_snapshot(coverage)
 	result.merge({
 		"score_rule_version": 1,
 		"red_weight": stage_data.color_score_rule.red_weight,
@@ -323,6 +324,7 @@ func score_snapshot() -> Dictionary:
 		"stars": score.stars,
 		"distance_to_center": score.center_error,
 	}, true)
+	result.merge(goal_requirements, true)
 	return result
 
 
@@ -331,16 +333,105 @@ func finish_readiness_snapshot() -> Dictionary:
 	var target_rule := stage_data != null and stage_data.uses_target_band()
 	var quiet := board_is_quiet()
 	var in_band := bool(score.get("in_target_band", false))
+	var goal_requirements_met := bool(score.get("goal_requirements_met", true))
 	var ready := _actions_enabled and current_state == State.AIMING and _run_started \
-			and not _terminal_pending and (not target_rule or (quiet and in_band))
+			and not _terminal_pending \
+			and (not target_rule or (quiet and in_band and goal_requirements_met))
 	return {
 		"ready": ready,
 		"run_started": _run_started,
 		"board_quiet": quiet,
 		"in_target_band": in_band,
+		"goal_requirements_met": goal_requirements_met,
+		"missing_color_ids": score.get("missing_color_ids", []),
+		"missing_ball_kind_ids": score.get("missing_ball_kind_ids", []),
+		"reason_key": _finish_requirement_reason_key(
+			ready, quiet, in_band, goal_requirements_met, score
+		),
 		"terminal_pending": _terminal_pending,
 		"score": score,
 	}
+
+
+func _goal_requirements_snapshot(coverage: PaintCoverageSnapshot) -> Dictionary:
+	var active := stage_data != null and stage_data.has_late_clear_requirements()
+	if not active:
+		return {
+			"goal_requirements_active": false,
+			"goal_requirements_met": true,
+			"required_colors_met": true,
+			"required_ball_kinds_met": true,
+			"missing_color_ids": [],
+			"missing_ball_kind_ids": [],
+			"painted_ball_kind_ids": [],
+		}
+	var missing_colors: Array[String] = []
+	if stage_data.require_both_paint_channels_for_clear:
+		if coverage.red_percent <= 0.0:
+			missing_colors.append("red")
+		if coverage.green_percent <= 0.0:
+			missing_colors.append("green")
+	var painted_kinds: Array[int] = []
+	for observation_variant in _shot_observations.values():
+		var observation := observation_variant as ShotObservation
+		if not _observation_changed_target_paint(observation) \
+				or not BallKind.is_valid(observation.ball_kind) \
+				or painted_kinds.has(observation.ball_kind):
+			continue
+		painted_kinds.append(observation.ball_kind)
+	painted_kinds.sort()
+	var missing_kind_ids: Array[String] = []
+	for kind in stage_data.required_ball_kinds_for_clear:
+		if not painted_kinds.has(kind):
+			missing_kind_ids.append(String(BallKind.stable_id(kind)))
+	var painted_kind_ids: Array[String] = []
+	for kind in painted_kinds:
+		painted_kind_ids.append(String(BallKind.stable_id(kind)))
+	return {
+		"goal_requirements_active": true,
+		"goal_requirements_met": missing_colors.is_empty() and missing_kind_ids.is_empty(),
+		"required_colors_met": missing_colors.is_empty(),
+		"required_ball_kinds_met": missing_kind_ids.is_empty(),
+		"missing_color_ids": missing_colors,
+		"missing_ball_kind_ids": missing_kind_ids,
+		"painted_ball_kind_ids": painted_kind_ids,
+	}
+
+
+func _observation_changed_target_paint(observation: ShotObservation) -> bool:
+	if observation == null or not observation.is_sealed \
+			or observation.paint_command_count <= 0:
+		return false
+	if observation.coverage_gain > 0.0001:
+		return true
+	var before_red := float(observation.score_before.get("red_percent", 0.0))
+	var before_green := float(observation.score_before.get("green_percent", 0.0))
+	var after_red := float(observation.score_after.get("red_percent", before_red))
+	var after_green := float(observation.score_after.get("green_percent", before_green))
+	return absf(after_red - before_red) > 0.0001 \
+			or absf(after_green - before_green) > 0.0001
+
+
+func _finish_requirement_reason_key(
+		ready: bool,
+		quiet: bool,
+		in_band: bool,
+		goal_requirements_met: bool,
+		score: Dictionary
+) -> StringName:
+	if ready:
+		return &"hud.finish_tooltip"
+	if not _run_started:
+		return &"hud.finish_disabled_tooltip"
+	if not quiet:
+		return &"hud.finish_wait_quiet"
+	if not in_band:
+		return &"hud.finish_reach_band"
+	if not goal_requirements_met:
+		return &"hud.finish_use_both_colors" \
+				if not Array(score.get("missing_color_ids", [])).is_empty() \
+				else &"hud.finish_use_required_balls"
+	return &"hud.finish_disabled_tooltip"
 
 
 func board_is_quiet() -> bool:
@@ -777,8 +868,10 @@ func _begin_finish(
 	if stage_data.uses_target_band():
 		var final_score := score_snapshot()
 		_result_snapshot.merge(final_score, true)
-		_result_snapshot["cleared"] = bool(final_score.get("in_target_band", false))
-		_result_snapshot["stars"] = int(final_score.get("stars", 0))
+		var cleared := bool(final_score.get("in_target_band", false)) \
+				and bool(final_score.get("goal_requirements_met", true))
+		_result_snapshot["cleared"] = cleared
+		_result_snapshot["stars"] = int(final_score.get("stars", 0)) if cleared else 0
 		_result_snapshot["deal_seed"] = _deal_seed
 		_result_snapshot["queue_cursor"] = _queue_cursor
 		_result_snapshot["ticks_per_second"] = Engine.physics_ticks_per_second

@@ -50,6 +50,8 @@ func _run() -> void:
 	await process_frame
 	_assert(description.get_theme_font_size(&"font_size") >= 32,
 			"canvas-stretched compact description must preserve physical type size")
+	_assert(description.get_theme_constant(&"outline_size") >= 8,
+			"canvas-stretched compact description must preserve world contrast")
 	_assert(views[0].custom_minimum_size.y >= 104.0,
 			"canvas-stretched current token must preserve its physical target")
 	views[0].release_description_for_test()

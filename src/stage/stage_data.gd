@@ -28,6 +28,8 @@ enum RuleKind {
 @export var default_deal_seed: int = 1
 @export var red_paint_color: Color = PaintChannel.RED_COLOR
 @export var green_paint_color: Color = PaintChannel.GREEN_COLOR
+@export var require_both_paint_channels_for_clear := false
+@export var required_ball_kinds_for_clear: Array[int] = []
 
 @export_category("World")
 @export var generation_profile: StageGenerationProfile
@@ -68,7 +70,23 @@ func has_valid_rule_contract() -> bool:
 	return color_score_rule != null and color_score_rule.is_valid() \
 			and target_band != null and target_band.is_valid() \
 			and ball_deal_profile != null and ball_deal_profile.is_valid() \
-			and default_deal_seed > 0
+			and default_deal_seed > 0 and _clear_requirements_are_valid()
+
+
+func has_late_clear_requirements() -> bool:
+	return uses_target_band() and (
+		require_both_paint_channels_for_clear or not required_ball_kinds_for_clear.is_empty()
+	)
+
+
+func _clear_requirements_are_valid() -> bool:
+	var seen := {}
+	for kind in required_ball_kinds_for_clear:
+		if not BallKind.is_special(kind) or seen.has(kind) \
+				or not ball_deal_profile.required_kinds.has(kind):
+			return false
+		seen[kind] = true
+	return true
 
 
 func paint_world_bounds() -> Rect2:

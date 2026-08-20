@@ -13,8 +13,11 @@ func _run_checks() -> void:
 	Engine.time_scale = 2.0
 	var game_state := root.get_node("/root/GameState") as GameState
 	game_state.persistence_enabled = false
-	game_state.select_stage(&"stage_07")
-	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_07")
+	# This fixture owns the generic state lifecycle. Stage 01 deliberately has
+	# no late participation rule; that independent policy is covered by
+	# late_stage_clear_requirements_test.gd.
+	game_state.select_stage(&"stage_01")
+	var gameplay := BAKED_GAMEPLAY_FIXTURE.instantiate(&"stage_01")
 	root.add_child(gameplay)
 	await physics_frame
 	await physics_frame

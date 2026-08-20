@@ -165,6 +165,11 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 				and is_equal_approx(interaction.get_global_rect().position.y, run_status.get_global_rect().position.y),
 		"view mode must join the top-right status/action row at %s" % viewport_size
 	)
+	var settings_button := hud_root.get_node("TopStatusBar/SettingsButton") as Button
+	_assert_true(
+		run_status.get_global_rect().end.x <= settings_button.get_global_rect().position.x,
+		"run status must not overlap Settings at %s" % viewport_size
+	)
 
 	hud.show_state(StageController.State.BRIEFING)
 	queue.show()
@@ -226,6 +231,10 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	result.show_coverage_result(24.0, 2, 18.0, 61.0, 3)
 	hud.show_state(StageController.State.RESULT)
 	await process_frame
+	_assert_true(
+		(hud_root.get_node("TopStatusBar") as TopStatusBar).visible == not compact,
+		"compact Result must suppress the competing top status row at %s" % viewport_size
+	)
 	_assert_inside(result, safe_rect, "ResultPanel at %s (%s)" % [viewport_size, locale])
 	_assert_true(
 		result.get_global_rect().encloses(

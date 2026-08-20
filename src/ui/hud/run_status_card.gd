@@ -8,6 +8,7 @@ var _maximum_shots := 0
 var _remaining_seconds := 0.0
 var _duration_seconds := 0.0
 var _clock_started := false
+var _unavailable_tooltip_key := &"hud.finish_disabled_tooltip"
 
 
 func _ready() -> void:
@@ -46,9 +47,16 @@ func update_clock(snapshot: Dictionary) -> void:
 	_refresh_clock()
 
 
-func set_finish_available(available: bool) -> void:
+func set_finish_available(
+		available: bool,
+		unavailable_tooltip_key: StringName = &"hud.finish_disabled_tooltip"
+) -> void:
+	if not available:
+		_unavailable_tooltip_key = unavailable_tooltip_key
 	%Finish.disabled = not available
-	%Finish.tooltip_text = tr("hud.finish_tooltip") if available else tr("hud.finish_disabled_tooltip")
+	%Finish.tooltip_text = tr("hud.finish_tooltip") if available \
+			else tr(String(_unavailable_tooltip_key))
+	%Finish.accessibility_name = %Finish.tooltip_text
 
 
 func finish_is_available() -> bool:
@@ -65,7 +73,7 @@ func refresh_locale() -> void:
 	%ShotsValue.tooltip_text = tr("hud.shots")
 	%Finish.text = tr("ui.finish")
 	_refresh_values()
-	set_finish_available(finish_is_available())
+	set_finish_available(finish_is_available(), _unavailable_tooltip_key)
 
 
 func _refresh_values() -> void:

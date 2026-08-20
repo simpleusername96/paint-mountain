@@ -101,6 +101,8 @@ static func _materialize_target_band_rule(stage: StageData, stage_number: int) -
 			BallKind.Value.APEX_SPLIT,
 		]
 		required_kinds.assign(challenge.required_kinds)
+		stage.require_both_paint_channels_for_clear = true
+		stage.required_ball_kinds_for_clear.assign(required_kinds)
 	stage.color_score_rule = ColorScoreRuleData.from_pattern(pattern)
 	stage.target_band = TargetBandData.new()
 	stage.target_band.target_min = target_range.x

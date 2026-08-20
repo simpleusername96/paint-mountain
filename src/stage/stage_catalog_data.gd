@@ -12,6 +12,7 @@ extends Resource
 @export var stage_ids: Array[StringName] = []
 @export var stages: Array[StageData] = []
 @export var layout_paths: Array[String] = []
+@export var feasibility_certificate_paths: Array[String] = []
 @export var legacy_aliases: Dictionary = {
 	"first_descent": "stage_01",
 	"burst_basin": "stage_02",
@@ -38,7 +39,9 @@ func is_valid(require_bundle: bool = true) -> bool:
 		return false
 	if stage_ids.size() != StageProgressionData.STAGE_COUNT \
 			or stage_ids.size() != stages.size() \
-			or layout_paths.size() != stages.size():
+			or layout_paths.size() != stages.size() \
+			or (not feasibility_certificate_paths.is_empty() \
+				and feasibility_certificate_paths.size() != stages.size()):
 		return false
 	var seen := {}
 	for index in range(stage_ids.size()):
@@ -57,9 +60,15 @@ func is_valid(require_bundle: bool = true) -> bool:
 			generated_bundle_root(manifest_sha256), String(stage_id)
 		]
 		if layout_paths[index] != expected_layout_path or not layout_paths[index].begins_with(
-				generated_bundle_root(manifest_sha256) + "/layouts/"
+			generated_bundle_root(manifest_sha256) + "/layouts/"
 		):
 			return false
+		if not feasibility_certificate_paths.is_empty():
+			var expected_feasibility_path := "%s/feasibility/%s_feasibility.tres" % [
+				generated_bundle_root(manifest_sha256), String(stage_id)
+			]
+			if feasibility_certificate_paths[index] != expected_feasibility_path:
+				return false
 		if stage.generation_profile == null or not stage.generation_profile.is_valid():
 			return false
 		if StageGenerationProfile.stage_id_from_profile_id(

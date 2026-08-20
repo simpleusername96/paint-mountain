@@ -1,0 +1,1414 @@
+{
+	"baked_schema": 3,
+	"bundle_format": 7,
+	"bundle_manifest_path": "res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/manifest.json",
+	"catalog_version": 13,
+	"certificate_paths": [],
+	"coverage_metric_versions": [
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2,
+		2
+	],
+	"default_witnesses": [
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 41,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 41,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 41,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 41,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 25,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 42,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 28,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 29,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 29,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 29,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 43,
+				"cell_y": 29,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 31,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 31,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 44,
+				"cell_y": 30,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 33,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 33,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 33,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 33,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 45,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 34,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 46,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 35,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 36,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 36,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 36,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 47,
+				"cell_y": 36,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		}
+	],
+	"feasibility_certificate_paths": [
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_01_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_02_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_03_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_04_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_05_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_06_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_07_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_08_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_09_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_10_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_11_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_12_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_13_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_14_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_15_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_16_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_17_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_18_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_19_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_20_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_21_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_22_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_23_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_24_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_25_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_26_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_27_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_28_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_29_feasibility.tres",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/feasibility/stage_30_feasibility.tres"
+	],
+	"layout_paths": [
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_01_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_02_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_03_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_04_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_05_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_06_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_07_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_08_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_09_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_10_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_11_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_12_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_13_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_14_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_15_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_16_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_17_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_18_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_19_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_20_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_21_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_22_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_23_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_24_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_25_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_26_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_27_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_28_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_29_layout.res",
+		"res://resources/generated_stage_catalogs/v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35/layouts/stage_30_layout.res"
+	],
+	"layout_payload_sha256": [
+		"31c402cce4b2c2d1c686783f3253058a8ea5759e4d7f6a016287618784dd4723",
+		"f1b6f491b804217220b7a20c4534ae23cbccf9977e784818e9a317534c3d6c50",
+		"2fb701e8458938d66dc37fc619c3bbf122579b28653091fab7e50f33c7ed1662",
+		"ae10ff7e4ef7395288dc93cd50b05bd66f24a9392513ae8d7ad74fa38a4e5fba",
+		"9518003302bff0be90d0ff144fc37dbadda7f2638c050d08496b010b27fb4d51",
+		"9be7ccf7d720797b2f2b3e252eb2fa3133843d06ab459a2f31bda00d4343273d",
+		"2dc69875a358d75c5b32ae7641d7fd09af87669d8b0a13aa1a7dd45db3f4f50b",
+		"1b95e4318a912c91a012c304368e8e2efbe09e116cba455e13ea5ea9b5948a83",
+		"13aacb6a3b643a9bfefd1636bb8ea6e36998e69ddb2ac481e53ba17a29dc7939",
+		"5a3b1d25b9f471520dee950e0301e4714823810ceb1d9238b2beb7d3930db39c",
+		"6de6333b9b66627bc2b3e589d90a36e777af66792627cf6f9bf332317b99f3dd",
+		"60852a8a81eaf381c12933a0ac9049a571f2e6a1b1033438f21e3be8420c2c06",
+		"093c6b5f033867ff0ed56d36221792eabdb366f9035434249566139fa89b3102",
+		"19a49e3fc897648c963f85c798771d66fd5d645fe14a7157e6cea64fade28d84",
+		"16606b2eac0b5cbf87ed1808ad0ca1c70143d62a6886a23b9a0dbd57ea488ebb",
+		"e3445d3b493afa06e60ce4f091ca31e82deef884c0100df86d6207dca2fe1d3c",
+		"ddded45fb9300c1338de61ddefdedf0868049566e734186cb51d90b7ef903954",
+		"5d1b54dd718563feef80c1f116d334570ee0f46129bd4f650e0ce932e27c62fe",
+		"17febd6bd15613ae2f56adb18beb2d1156992e7a1e716f96f7da4666193dacdd",
+		"b0ac604db312d0410a2322c32eae533651ed5afae86313c945ca4145edcbe0ec",
+		"38bf8b563c8b3ae2c03314e150032cba283e7049020e2aa273005f6011e29593",
+		"a2cc406aa1d4fdb803fa124aed448802b70d664162e584756a190c40d1da16d1",
+		"3892729c3e49aebd6c696ad4f9d62d40907c4eb7e7e3dcd3a8b9b8acbeb94c62",
+		"10eb4d8274311f216879cfecd88ee9c313469dee563c53d3d6d16b73659ea174",
+		"ae83df1f8d40c916efe8838506fae904e4dcb3a03495405c1c1e029fd427e7eb",
+		"a6bbe90ee32ba8cde0991bf935509ddc08143843f16a9c866dd7244df0546424",
+		"f39ddb43db63a06b662d2a9256187ad95c95492419d527f9b1fc917307294da0",
+		"11363471edebc967b481d5b3663f12d258a652b64af0b7936a79ee27c3fd3080",
+		"8900a2ce744192720fa872a06301229b519392893181830e30d086ab7e19b6cd",
+		"e5079aa3eedfd9c1de5689eb47e8fcc237f1ce6c89b7baf889db97405238838b"
+	],
+	"manifest_sha256": "3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35",
+	"play_bounds_checksums": [
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888,
+		3521679888
+	],
+	"preview_paths": [],
+	"previews_ready": false,
+	"profile_ids": [
+		"stage_01_v13",
+		"stage_02_v13",
+		"stage_03_v13",
+		"stage_04_v13",
+		"stage_05_v13",
+		"stage_06_v13",
+		"stage_07_v13",
+		"stage_08_v13",
+		"stage_09_v13",
+		"stage_10_v13",
+		"stage_11_v13",
+		"stage_12_v13",
+		"stage_13_v13",
+		"stage_14_v13",
+		"stage_15_v13",
+		"stage_16_v13",
+		"stage_17_v13",
+		"stage_18_v13",
+		"stage_19_v13",
+		"stage_20_v13",
+		"stage_21_v13",
+		"stage_22_v13",
+		"stage_23_v13",
+		"stage_24_v13",
+		"stage_25_v13",
+		"stage_26_v13",
+		"stage_27_v13",
+		"stage_28_v13",
+		"stage_29_v13",
+		"stage_30_v13"
+	],
+	"stage_ids": [
+		"stage_01",
+		"stage_02",
+		"stage_03",
+		"stage_04",
+		"stage_05",
+		"stage_06",
+		"stage_07",
+		"stage_08",
+		"stage_09",
+		"stage_10",
+		"stage_11",
+		"stage_12",
+		"stage_13",
+		"stage_14",
+		"stage_15",
+		"stage_16",
+		"stage_17",
+		"stage_18",
+		"stage_19",
+		"stage_20",
+		"stage_21",
+		"stage_22",
+		"stage_23",
+		"stage_24",
+		"stage_25",
+		"stage_26",
+		"stage_27",
+		"stage_28",
+		"stage_29",
+		"stage_30"
+	],
+	"summit_witnesses": [
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 17,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 17,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 16,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 17,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 40,
+				"cell_y": 13,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 40,
+				"cell_y": 13,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 28,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 28,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 28,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 28,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 60,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 60,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 24,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 24,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 63,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 63,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 24,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 24,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 16,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 62,
+				"cell_y": 16,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 23,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 63,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 63,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 67,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 67,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 65,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 65,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 67,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 67,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 64,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 23,
+				"cell_y": 22,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 23,
+				"cell_y": 22,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 65,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 65,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 70,
+				"cell_y": 22,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 70,
+				"cell_y": 22,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 26,
+				"cell_y": 19,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 25,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 25,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 23,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 23,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 72,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 72,
+				"cell_y": 20,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 70,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 70,
+				"cell_y": 18,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 1
+			}
+		},
+		{
+			"physical": {
+				"body_shape": 0,
+				"cell_x": 69,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			},
+			"predicted": {
+				"body_shape": 0,
+				"cell_x": 69,
+				"cell_y": 21,
+				"owner": "terrain/top",
+				"shape": "TerrainTopShape",
+				"triangle": 0
+			}
+		}
+	],
+	"target_surface_area_checksums": [
+		3810871323,
+		2677893475,
+		2101861306,
+		2859634235,
+		1611465061,
+		1941893609,
+		3836670560,
+		3554860189,
+		3295910684,
+		4226923072,
+		382355270,
+		964940592,
+		1712416745,
+		940378843,
+		1751220845,
+		403499137,
+		1085140977,
+		2823023492,
+		3339194793,
+		2465226798,
+		4051163166,
+		2971836687,
+		4110985328,
+		366980171,
+		3966709538,
+		2012581215,
+		1925991867,
+		3758612886,
+		2373631296,
+		1966369367
+	],
+	"terrain_seeds": [
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552,
+		1347223552
+	],
+	"total_target_surface_areas": [
+		9081.31926112776,
+		8977.49381468509,
+		14948.0035616239,
+		9574.01418321427,
+		9557.47673547882,
+		9572.81632362366,
+		10025.1883578104,
+		14224.9712560522,
+		14275.0517584194,
+		14275.1372566464,
+		14299.0216039027,
+		14607.9203085937,
+		15036.99913241,
+		14830.5661991172,
+		15129.7469281306,
+		15350.0442658739,
+		15588.0549649847,
+		19876.0728760905,
+		19845.3589788986,
+		20832.4646606922,
+		20857.357413938,
+		20854.2016231821,
+		20895.7520341688,
+		21215.2629750604,
+		21140.0023734796,
+		21954.5700397564,
+		22109.6396959294,
+		21976.9220105276,
+		22180.1470868593,
+		22433.8538564102
+	]
+}

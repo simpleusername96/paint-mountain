@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="StageClearFeasibilityCertificate" format=3]
+
+[ext_resource type="Script" path="res://src/stage_generation/stage_clear_feasibility_certificate.gd" id="1_56ybq"]
+
+[resource]
+script = ExtResource("1_56ybq")
+stage_id = &"stage_21"
+stage_number = 21
+layout_payload_sha256 = "38bf8b563c8b3ae2c03314e150032cba283e7049020e2aa273005f6011e29593"
+target_checksum = 1481641089
+target_surface_area_checksum = 4051163166
+target_pixel_count = 94934
+target_component_count = 1
+ballistic_target_count = 94934
+ballistic_sample_count = 17
+ballistic_contract_checksum = "2b6d82324158bf8ee98512dc0450d4a3b898590504f5af7f2553064509b99edf"
+ballistic_minimum_yaw_margin_degrees = 35.912068949434314
+ballistic_minimum_perpendicular_margin = 2.3862452697753906
+ballistic_minimum_range_margin = 72.3568734587725
+ballistic_minimum_height_margin = 66.84281
+score_witness_red_percent = 3.000698364598639
+score_witness_green_percent = 0.000698364598639361
+score_witness = 3.0
+target_min = 1.0
+target_max = 5.0
+required_color_ids = Array[StringName]([&"red", &"green"])
+required_ball_kind_ids = Array[StringName]([&"impact_burst"])
+deal_seed_first = 1021
+deal_count = 16
+deal_checksum = "a9f14d353f946b0785af74a1d2571c779a41c6841fb583de967b13f6fafb9415"
+maximum_minimum_cover_shots = 2
+rule_checksum = "113d7084d180b0f5c61fa1e55416903934a2be1bf4c8d29724c00675a787ac02"
+capability_checksum = "e5d5017be0579a21c57a5e400cfe17e02084cadc913d186c3046cdb07cfa7cf0"
+certificate_sha256 = "2ff9f3d15e6ed5b0d905c43c8af58fc2db4696833d2f83a83050037317e7ed24"

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/stage_rule_summary.gd" id="1_script"]
+
+[node name="StageRuleSummary" type="Control"]
+custom_minimum_size = Vector2(520, 28)
+mouse_default_cursor_shape = 1
+theme_type_variation = &"WorldBody"
+script = ExtResource("1_script")

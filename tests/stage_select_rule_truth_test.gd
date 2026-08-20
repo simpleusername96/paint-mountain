@@ -22,12 +22,12 @@ func _run() -> void:
 	root.add_child(stage_select)
 	await process_frame
 
-	var preview_stats := stage_select.get_node("Root/SelectedInfo/PreviewStats") as Label
+	var preview_stats := stage_select.get_node("Root/SelectedInfo/PreviewStats")
 	var first_node := stage_select._stage_nodes[0]
 	_assert(first_node.button_pressed,
 		"the selected prototype stage must have one visible active rail node")
-	_assert("◎" in preview_stats.text and "7–11" in preview_stats.text,
-		"prototype preview must show its target-band range")
+	_assert("7-11" in preview_stats.detail_text(),
+		"prototype preview must expose its target-band range")
 	_assert(tr("ball.standard") in preview_stats.accessibility_name,
 		"prototype preview must expose allowed kinds through its detail: %s" % preview_stats.accessibility_name)
 	_assert(
@@ -40,11 +40,19 @@ func _run() -> void:
 	await process_frame
 	_assert(stage_select._stage_nodes[0].button_pressed,
 		"the selected later target-band stage must have one visible active rail node")
-	_assert("◎" in preview_stats.text and "R" in preview_stats.text and "G" in preview_stats.text,
+	_assert("R" in preview_stats.detail_text() and "G" in preview_stats.detail_text(),
 		"later-stage preview must retain target band and both color weights")
+	for font_symbol in ["◎", "●", "◉", "◷", "◆", "✹", "♣"]:
+		_assert(font_symbol not in preview_stats.detail_text(),
+			"rule summary must not depend on a platform font glyph: %s" % font_symbol)
 	_assert(tr("ball.impact_burst") in preview_stats.accessibility_name \
 			and tr("ball.apex_split") in preview_stats.accessibility_name,
 		"later-stage detail must expose both required special kinds")
+	preview_stats.configure(StageCatalog.get_stage(&"stage_12"))
+	_assert(tr("hud.finish_use_required_balls") in preview_stats.accessibility_name \
+			and tr("ball.impact_burst") in preview_stats.accessibility_name \
+			and tr("ball.apex_split") in preview_stats.accessibility_name,
+		"required glyphs must have equivalent accessible text")
 
 	var hud := HUD_SCENE.instantiate() as HUDController
 	root.add_child(hud)

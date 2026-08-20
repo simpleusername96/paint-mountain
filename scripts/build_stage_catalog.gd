@@ -5,7 +5,7 @@ extends SceneTree
 ## runtime then consumes only the serialized result.
 
 const CATALOG_PATH := "res://resources/stages/catalog.tres"
-const BUNDLE_FORMAT_VERSION := 6
+const BUNDLE_FORMAT_VERSION := 7
 const CATALOG_DATA_SCRIPT := preload("res://src/stage/stage_catalog_data.gd")
 const MATERIALIZER := preload("res://src/stage_generation/stage_catalog_materializer.gd")
 const BUNDLE_STORE := preload("res://src/stage_generation/stage_catalog_bundle_store.gd")
@@ -56,6 +56,7 @@ func _initialize() -> void:
 	var build = await _build_catalog()
 	var catalog: StageCatalogData = build.get("catalog") if build is Dictionary else null
 	var layouts: Array[BakedStageLayoutData] = []
+	var feasibility_certificates: Array[StageClearFeasibilityCertificate] = []
 	if build is Dictionary:
 		var raw_layouts: Variant = build.get("layouts")
 		if raw_layouts is Array:
@@ -66,7 +67,18 @@ func _initialize() -> void:
 					quit(1)
 					return
 				layouts.append(baked)
-	if catalog == null or not catalog.is_valid(false) or layouts.size() != catalog.stages.size():
+		var raw_certificates: Variant = build.get("feasibility_certificates")
+		if raw_certificates is Array:
+			for value in raw_certificates:
+				var certificate := value as StageClearFeasibilityCertificate
+				if certificate == null:
+					push_error("Stage catalog build returned a non-feasibility certificate.")
+					quit(1)
+					return
+				feasibility_certificates.append(certificate)
+	if catalog == null or not catalog.is_valid(false) \
+			or layouts.size() != catalog.stages.size() \
+			or feasibility_certificates.size() != catalog.stages.size():
 		push_error("Stage catalog build failed validation.")
 		quit(1)
 		return
@@ -76,7 +88,7 @@ func _initialize() -> void:
 		])
 		quit()
 		return
-	if not BUNDLE_STORE.write_bundle_manifest(catalog, layouts):
+	if not BUNDLE_STORE.write_bundle_manifest(catalog, layouts, feasibility_certificates):
 		push_error("Could not promote the content-addressed stage bundle.")
 		quit(1)
 		return
@@ -152,6 +164,7 @@ func _build_catalog() -> Dictionary:
 	var reuse_verified_layouts := "--reuse-layouts" in OS.get_cmdline_user_args()
 	var manifest_parts: Array[String] = []
 	var layouts: Array[BakedStageLayoutData] = []
+	var feasibility_certificates: Array[StageClearFeasibilityCertificate] = []
 	for source_index in range(StageProgressionData.STAGE_COUNT):
 		var stage := MATERIALIZER.materialize_stage(source_stages[source_index], source_index + 1)
 		if stage == null:
@@ -171,6 +184,10 @@ func _build_catalog() -> Dictionary:
 		var hydrated := StageLayoutBakeCodec.hydrate(baked, stage)
 		if hydrated == null:
 			return {}
+		var feasibility := StageClearFeasibilityAnalyzer.build(stage, baked)
+		if feasibility == null:
+			push_error("Static clear feasibility failed for %s." % stage.stage_id)
+			return {}
 		result.stage_ids.append(stage.stage_id)
 		result.stages.append(stage.duplicate(true) as StageData)
 		manifest_parts.append(BUNDLE_STORE.manifest_stage_descriptor(stage))
@@ -189,7 +206,9 @@ func _build_catalog() -> Dictionary:
 		manifest_parts.append("summit_witness=%s" % BUNDLE_STORE.witness_manifest_descriptor(
 			hydrated.generated_summit_witness
 		))
+		manifest_parts.append("clear_feasibility=%s" % feasibility.descriptor())
 		layouts.append(baked)
+		feasibility_certificates.append(feasibility)
 	manifest_parts.append("bundle_format=%d" % BUNDLE_FORMAT_VERSION)
 	manifest_parts.append("baked_schema=%d" % BakedStageLayoutData.BAKED_LAYOUT_SCHEMA_VERSION)
 	result.manifest_sha256 = BUNDLE_STORE.sha256("\n".join(manifest_parts))
@@ -200,7 +219,16 @@ func _build_catalog() -> Dictionary:
 		result.layout_paths.append("%s/layouts/%s_layout.res" % [
 			CATALOG_DATA_SCRIPT.generated_bundle_root(result.manifest_sha256), stage_id
 		])
-	return {"catalog": result, "layouts": layouts}
+		result.feasibility_certificate_paths.append(
+			"%s/feasibility/%s_feasibility.tres" % [
+				CATALOG_DATA_SCRIPT.generated_bundle_root(result.manifest_sha256), stage_id
+			]
+		)
+	return {
+		"catalog": result,
+		"layouts": layouts,
+		"feasibility_certificates": feasibility_certificates,
+	}
 
 
 static func _source_catalog_is_usable(catalog: StageCatalogData) -> bool:

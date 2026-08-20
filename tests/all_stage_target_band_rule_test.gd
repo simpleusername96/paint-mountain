@@ -7,7 +7,7 @@ var _failed := false
 
 func _initialize() -> void:
 	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(catalog != null and catalog.is_valid(), "the v12 catalog must be valid")
+	_assert(catalog != null and catalog.is_valid(), "the v13 catalog must be valid")
 	if catalog == null:
 		quit(1)
 		return
@@ -69,6 +69,10 @@ func _initialize() -> void:
 				"%s both paint colors must directly affect score" % stage_id)
 			_assert(stage.ball_deal_profile.required_kinds == later_required[later_index],
 				"%s special-kind requirement must be stage-specific" % stage_id)
+			_assert(stage.require_both_paint_channels_for_clear,
+				"%s clear must require target paint from both colors" % stage_id)
+			_assert(stage.required_ball_kinds_for_clear == later_required[later_index],
+				"%s clear must require its authored special balls on the target" % stage_id)
 		for seed_offset in range(16):
 			var seed := stage.default_deal_seed + seed_offset
 			var deal := BallDealGenerator.generate(

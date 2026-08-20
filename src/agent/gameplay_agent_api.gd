@@ -152,6 +152,8 @@ func get_observation() -> Dictionary:
 			"target_max": _stage_data.target_band.target_max,
 			"red_weight": _stage_data.color_score_rule.red_weight,
 			"green_weight": _stage_data.color_score_rule.green_weight,
+			"require_both_paint_channels_for_clear": _stage_data.require_both_paint_channels_for_clear,
+			"required_ball_kinds_for_clear": _stage_data.required_ball_kinds_for_clear.duplicate(),
 		}
 		observation["visible_queue"] = _stage_controller.visible_queue_snapshot()
 		observation["score"] = _stage_controller.score_snapshot()
@@ -159,6 +161,9 @@ func get_observation() -> Dictionary:
 			"ready": bool(finish_readiness.get("ready", false)),
 			"board_quiet": bool(finish_readiness.get("board_quiet", false)),
 			"in_target_band": bool(finish_readiness.get("in_target_band", false)),
+			"goal_requirements_met": bool(finish_readiness.get("goal_requirements_met", true)),
+			"missing_color_ids": Array(finish_readiness.get("missing_color_ids", [])).duplicate(),
+			"missing_ball_kind_ids": Array(finish_readiness.get("missing_ball_kind_ids", [])).duplicate(),
 		}
 	else:
 		observation["stage_rule"] = {
