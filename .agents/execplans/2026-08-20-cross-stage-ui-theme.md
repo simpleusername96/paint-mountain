@@ -1,9 +1,10 @@
 ---
 type: plan
-status: active
+status: superseded
 created: 2026-08-20
 last_reviewed: 2026-08-20
 scope: implement and correct the user-selected Cannon Focus compact shared UI system, close the reported Web paint-queue latency, and migrate all 30 stages to the Red/Green three-ball target-band loop
+superseded_by: 2026-08-20-stage-ui-production-refinement.md
 supersedes:
   - 2026-08-18-three-ball-target-band-prototype.md
 related:
