@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain · Full UI Refinement Audit</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f6f1;
+      --ink: #172235;
+      --muted: #687286;
+      --line: #cfd4da;
+      --blue: #168fc7;
+      --red: #d8463d;
+      --green: #23875d;
+      --white: #fffefa;
+      --amber: #a25d00;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.56;
+    }
+    a { color: inherit; text-underline-offset: 3px; }
+    header, main, footer { width: min(1240px, calc(100% - 40px)); margin-inline: auto; }
+    header { padding: 62px 0 32px; border-bottom: 2px solid var(--ink); }
+    .kicker { margin: 0 0 10px; color: var(--blue); font-weight: 850; letter-spacing: .08em; }
+    h1 { margin: 0; max-width: 1040px; font-size: clamp(38px, 7vw, 76px); line-height: 1.02; letter-spacing: -.055em; }
+    .lede { max-width: 900px; margin: 22px 0 0; font-size: 20px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 26px; color: var(--muted); font-size: 14px; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    article { padding: 46px 0; border-bottom: 1px solid var(--line); }
+    article:last-child { border-bottom: 0; }
+    h2 { margin: 0 0 20px; font-size: clamp(27px, 4vw, 43px); line-height: 1.13; letter-spacing: -.035em; }
+    h3 { margin: 0 0 7px; font-size: 21px; }
+    p { margin: 0 0 13px; }
+    .verdict { display: grid; grid-template-columns: minmax(180px, .52fr) 1.48fr; gap: 38px; align-items: end; }
+    .score { font-size: clamp(72px, 13vw, 150px); line-height: .8; font-weight: 850; letter-spacing: -.08em; color: var(--blue); }
+    .score small { color: var(--muted); font-size: 20px; letter-spacing: 0; }
+    .verdict-copy { font-size: 22px; }
+    .verdict-copy strong { color: var(--green); }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 34px; }
+    .summary div { padding-top: 14px; border-top: 3px solid var(--ink); }
+    .summary b { display: block; font-size: 28px; line-height: 1.08; }
+    .summary span { color: var(--muted); font-size: 14px; }
+    .priority { display: grid; grid-template-columns: 76px 1fr; gap: 20px; padding: 18px 0; border-top: 1px solid var(--line); }
+    .priority:first-of-type { border-top: 2px solid var(--ink); }
+    .priority > b { color: var(--blue); font-size: 19px; }
+    .screen { margin: 0; padding: 42px 0; border-top: 1px solid var(--line); }
+    .screen:first-of-type { border-top: 2px solid var(--ink); }
+    .screen-head { display: grid; grid-template-columns: 76px 1fr auto; gap: 16px; align-items: baseline; margin-bottom: 14px; }
+    .step { color: var(--blue); font-weight: 850; font-size: 22px; }
+    .health { font-weight: 800; }
+    .healthy { color: var(--green); }
+    .needs { color: var(--amber); }
+    .blocked { color: var(--red); }
+    .screen img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #fff; }
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding-top: 14px; }
+    .notes p { margin: 0; }
+    .notes b { display: block; margin-bottom: 4px; font-size: 13px; letter-spacing: .04em; }
+    .notes .keep b { color: var(--green); }
+    .notes .fix b { color: var(--red); }
+    .stress { margin: 0; padding: 28px 0; border-top: 1px solid var(--line); }
+    .stress img { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+    .stress figcaption { display: grid; grid-template-columns: 190px 1fr; gap: 20px; padding-top: 9px; color: var(--muted); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 13px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 12px; letter-spacing: .04em; }
+    td:first-child { font-weight: 800; }
+    .refs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 30px; }
+    .ref { padding: 17px 0; border-top: 1px solid var(--line); }
+    .ref:nth-child(-n+2) { border-top: 2px solid var(--ink); }
+    .ref b { display: block; margin-bottom: 3px; }
+    .limits { margin: 0; padding-left: 20px; }
+    .limits li { margin: 8px 0; }
+    code { font-family: "Cascadia Code", Consolas, monospace; font-size: .92em; }
+    footer { padding: 28px 0 48px; border-top: 2px solid var(--ink); color: var(--muted); font-size: 13px; }
+    @media (max-width: 760px) {
+      header, main, footer { width: min(100% - 24px, 1240px); }
+      header { padding-top: 38px; }
+      .verdict, .summary, .notes, .refs { grid-template-columns: 1fr; gap: 22px; }
+      .screen-head { grid-template-columns: 50px 1fr; }
+      .health { grid-column: 2; }
+      .stress figcaption { grid-template-columns: 1fr; gap: 2px; }
+      .lede, .verdict-copy { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">PAINT MOUNTAIN · FULL UI SNAPSHOT AUDIT</p>
+    <h1>중요 화면 전체를 다시 찍고,<br>남은 문제만 추렸다.</h1>
+    <p class="lede">현재 Windows release의 핵심 흐름 11개와 640×360 스트레스 상태 5개를 새로 캡처했다. 모든 이미지는 잘라낸 부분 화면이 아니라 실제 게임 viewport 전체다.</p>
+    <div class="meta"><span>2026-08-20</span><span>한국어 · 1280×720 + 640×360</span><span>16/16 원본 크기 검수 완료</span><span>Build SHA-256 A5E414B0…673CB5C</span></div>
+  </header>
+  <main>
+    <nav aria-label="보고서 목차">
+      <a href="#verdict">결론</a><a href="#priority">우선순위</a><a href="#flow">전체 화면</a><a href="#stress">작은 화면</a><a href="#system">공유 컴포넌트</a><a href="#accessibility">접근성</a><a href="#references">레퍼런스</a>
+    </nav>
+
+    <article id="verdict">
+      <div class="verdict">
+        <div class="score">78<small>/100</small></div>
+        <div class="verdict-copy">
+          <p><strong>핵심 방향은 맞다.</strong></p>
+          <p>Cannon Focus 조준, 전체 0–100 ScoreScale, 실제 지형 Stage Select, direct overlay와 shared component 체계가 실행 화면에 들어왔다. 남은 문제는 새 테마 자체보다 compact breakpoint와 몇 개의 정보 크기·위치에 집중되어 있다.</p>
+        </div>
+      </div>
+      <div class="summary">
+        <div><b>11</b><span>핵심 화면·상태를 1280×720 전체 캡처</span></div>
+        <div><b>5</b><span>고밀도 화면을 640×360 전체 캡처</span></div>
+        <div><b>1</b><span>명확한 blocking defect · compact Briefing 겹침</span></div>
+      </div>
+    </article>
+
+    <article id="priority">
+      <h2>먼저 고칠 것</h2>
+      <div class="priority"><b>P0</b><div><h3>640×360 Briefing 좌상단 겹침</h3><p>StageIdentity, mode copy, current value, horizontal ScoreScale이 같은 공간을 사용한다. compact preset에서 설명 문구를 줄이고 ScoreScale을 별도 행으로 내리거나 live vertical preset을 공유해야 한다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>Ball Queue 설명의 크기와 연결감</h3><p>hover/focus/press 설명은 실제로 나타나지만 1280에서도 작고 active token에서 멀다. <code>BallQueue</code> 안에서 active token 바로 아래에 1–2줄, 최소 16px로 고정한다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>Shot Follow 중앙 CTA 축소</h3><p>“대포로 돌아가기”가 관찰 중심을 막는다. 같은 <code>ActionControl</code>의 compact 형태를 하단 safe edge로 이동하고, projectile과 접촉 영역을 비운다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>compact readable-size 기준 추가</h3><p>Stage Select의 규칙, Result의 contribution, Settings의 다음 그룹이 640×360에서 지나치게 작거나 fold 아래로 밀린다. 단순 scale-down이 아니라 compact typography와 정보 우선순위를 shared preset으로 둔다.</p></div></div>
+      <div class="priority"><b>P2</b><div><h3>Pause 밀도와 뒤쪽 Gear 정리</h3><p>단일 interruption surface 사용은 맞지만 내용보다 높고, 동일한 Gear가 dim layer 뒤에 남는다. surface 높이는 내용에 맞추고 modal 동안 배경 Gear를 숨긴다.</p></div></div>
+    </article>
+
+    <article id="flow">
+      <h2>핵심 화면 11개 · 전체 viewport</h2>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">01</span><h3>Main Menu</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/01-main-menu-ko-1280x720.png" alt="Paint Mountain 메인 메뉴 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>월드가 화면의 주인공이고 Play만 filled primary다. 메뉴 계층이 즉시 읽힌다.</p><p class="fix"><b>개선</b>흰 지형과 흰 배경이 합쳐진다. UI를 더 넣지 말고 preview lighting과 terrain value contrast만 조정한다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">02</span><h3>Stage Select</h3><span class="health needs">보완</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/02-stage-select-stage08-ko-1280x720.png" alt="Stage 08 스테이지 선택 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>선택한 실제 지형이 중심에 있고 8개 StageRail과 Start의 역할이 분명하다. 카드 그리드가 없다.</p><p class="fix"><b>개선</b><code>7–11 · R−1/G+1 · ○6</code>은 지나치게 압축됐다. 공유 아이콘·기호는 유지하되 순서와 간격을 정리하고 terrain/background 대비를 높인다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">03</span><h3>Briefing / Map View</h3><span class="health needs">보완</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/03-briefing-stage08-ko-1280x720.png" alt="Stage 08 브리핑 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>설명 패널 없이 지형·목표 구간·공 순서·Start만 남았다. board inspection이 중심이다.</p><p class="fix"><b>개선</b>공 목록이 너무 작고 왼쪽 아래 cannon이 viewport 밖으로 잘린다. 640×360에서는 좌상단 정보가 실제로 겹친다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">04</span><h3>Aiming · Cannon Focus</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/04-aiming-stage08-ko-1280x720.png" alt="Stage 08 Cannon Focus 조준 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>선택한 C안이 구현됐다. 0/25/50/75/100이 모두 보이고 angle → Fire → power가 cannon 주변에서 한 번에 읽힌다.</p><p class="fix"><b>개선</b>상단 queue와 R/G 표시는 world 대비에 비해 작다. <code>BallQueue</code> compact preset의 최소 크기를 올린다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">05</span><h3>Ball Queue detail</h3><span class="health needs">보완</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/05-queue-detail-stage08-ko-1280x720.png" alt="Ball Queue 설명이 열린 Stage 08 조준 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>white panel 없이 현재 공의 종류·색·동작 설명이 나타나고, queue 정렬도 안정적이다.</p><p class="fix"><b>개선</b>설명이 작고 queue와 떨어져 있다. active token의 focus/selected shape를 더 강하게 하고 설명을 바로 아래에 묶는다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">06</span><h3>Map Inspection</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/06-map-inspection-stage08-ko-1280x720.png" alt="Stage 08 지도 점검 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>mountain 전체와 route가 보이고, selected mode와 drag/zoom hint가 직접 overlay로 표시된다.</p><p class="fix"><b>개선</b>mode icon의 의미는 입력 경험에 의존한다. keyboard focus와 accessible name은 screenshot 밖에서 별도로 확인해야 한다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">07</span><h3>Shot Follow</h3><span class="health needs">보완</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/07-shot-follow-stage08-ko-1280x720.png" alt="Stage 08 비행 추적 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>projectile, score, timer, remaining shots가 동시에 유지되고 Aim controls는 사라진다.</p><p class="fix"><b>개선</b>중앙의 큰 Return CTA가 바로 봐야 할 지형과 projectile 아래를 가린다. 하단 edge로 축소 이동한다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">08</span><h3>Pause</h3><span class="health needs">보완</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/08-pause-stage01-ko-1280x720.png" alt="일시정지 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>input blocking을 알리는 단일 surface와 하나의 primary action은 규칙에 맞다.</p><p class="fix"><b>개선</b>surface 높이에 비해 항목이 성기고 background Gear가 남는다. 항목 간격을 줄이고 modal 중 중복 control을 숨긴다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">09</span><h3>Settings</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/09-settings-stage01-ko-1280x720.png" alt="설정 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>1280×720에서 audio/gameplay와 display/language가 명확히 나뉘고 slider, toggle, select가 일관된다.</p><p class="fix"><b>개선</b>640×360에서는 single-column scroll이 되지만 다음 그룹의 문맥이 fold 아래로 사라진다. sticky close와 focus-scroll을 실제 입력으로 확인한다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">10</span><h3>Clear Result</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/10-clear-result-stage08-ko-1280x720.png" alt="Stage 08 성공 결과 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b>결과 카드 없이 final mountain과 score가 함께 남고, Next가 명확한 primary다. 0–100 rail도 완전하다.</p><p class="fix"><b>개선</b>R/G contribution과 stars/time/shots가 주 점수에 비해 너무 작다. shared <code>ResultSummary</code>에서 최소 type scale을 올린다.</p></figcaption>
+      </figure>
+
+      <figure class="screen">
+        <div class="screen-head"><span class="step">11</span><h3>Failure Result · signed underflow</h3><span class="health healthy">양호</span></div>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/11-failure-result-stage08-ko-1280x720.png" alt="Stage 08 음수 점수 실패 결과 전체 화면">
+        <figcaption class="notes"><p class="keep"><b>유지</b><code>−3.0</code> 숫자와 0 아래 방향 shape가 함께 보여 signed score가 잘리지 않는다. Same Deal이 primary다.</p><p class="fix"><b>개선</b>Red/Green 기여도가 너무 작다. 실패 원인을 색만으로 읽지 않도록 부호·문자·shape를 현재보다 크게 유지한다.</p></figcaption>
+      </figure>
+    </article>
+
+    <article id="stress">
+      <h2>640×360 스트레스 상태</h2>
+      <p>프로젝트의 1차 목표는 1280×720 Windows desktop이다. 아래 화면은 responsive 안전성을 보는 보조 증거이며, 모두 전체 viewport다.</p>
+      <figure class="stress"><img src="../../../.agents/evidence/2026-08-20-full-ui-audit/12-stage-select-stage30-ko-640x360.png" alt="640×360 Stage 30 선택 전체 화면"><figcaption><b>12 · Stage Select</b><span>구조는 유지되지만 규칙·best·rail 숫자가 편하게 읽히는 크기 아래로 내려간다.</span></figcaption></figure>
+      <figure class="stress"><img src="../../../.agents/evidence/2026-08-20-full-ui-audit/13-briefing-stage08-ko-640x360.png" alt="640×360 Stage 08 브리핑 전체 화면"><figcaption><b>13 · Briefing</b><span class="blocked">좌상단 stage/mode/value/scale가 실제로 겹친다. compact preset의 P0 결함이다.</span></figcaption></figure>
+      <figure class="stress"><img src="../../../.agents/evidence/2026-08-20-full-ui-audit/14-aiming-stage08-ko-640x360.png" alt="640×360 Stage 08 조준 전체 화면"><figcaption><b>14 · Aiming</b><span>Fire를 아래 행으로 내려 clipping을 피했다. scale tick과 queue는 너무 작다.</span></figcaption></figure>
+      <figure class="stress"><img src="../../../.agents/evidence/2026-08-20-full-ui-audit/15-settings-stage01-ko-640x360.png" alt="640×360 설정 전체 화면"><figcaption><b>15 · Settings</b><span>scroll은 존재하지만 다음 category와 일부 controls가 fold 아래다. focus-follow 검증이 필요하다.</span></figcaption></figure>
+      <figure class="stress"><img src="../../../.agents/evidence/2026-08-20-full-ui-audit/16-failure-result-stage08-ko-640x360.png" alt="640×360 Stage 08 실패 결과 전체 화면"><figcaption><b>16 · Failure Result</b><span>전체 화면은 유지되지만 contribution, tick, secondary action이 지나치게 작다.</span></figcaption></figure>
+    </article>
+
+    <article id="system">
+      <h2>수정은 shared owner에서만</h2>
+      <p>현재 구현은 이미 Theme와 component scene을 중심으로 정리돼 있다. 다음 수정에서 screen-local StyleBox, 색, icon, font를 추가하지 않는다.</p>
+      <table>
+        <thead><tr><th>문제</th><th>shared owner</th><th>적용 규칙</th></tr></thead>
+        <tbody>
+          <tr><td>Briefing compact 겹침</td><td><code>HudRootLayout</code> + <code>ScoreScale</code> preset</td><td>viewport별 위치를 개별 node에 박지 말고 compact composition을 한 곳에서 소유한다.</td></tr>
+          <tr><td>queue와 설명 크기</td><td><code>BallQueue</code> + <code>BallQueueToken</code></td><td>hover/focus/press가 같은 description, active shape, spacing, min type size를 공유한다.</td></tr>
+          <tr><td>Shot Follow 복귀</td><td><code>ActionControl</code> + HUD layout owner</td><td>새 버튼을 만들지 않고 compact action preset과 safe-edge placement를 재사용한다.</td></tr>
+          <tr><td>Stage Select rule 요약</td><td><code>StageRail</code> + shared stage identity/readout</td><td>stage screen이 자체 badge나 card를 만들지 않는다. 같은 icon/value language를 쓴다.</td></tr>
+          <tr><td>Result 보조 정보</td><td><code>ResultSummary</code> + <code>ScoreScale</code></td><td>clear/failure가 같은 hierarchy와 type scale을 쓰고 값·primary action만 바꾼다.</td></tr>
+          <tr><td>Pause 밀도</td><td><code>InterruptionSurface</code> + <code>ActionControl</code></td><td>blocking state에만 한 surface를 쓰고 content-fit 높이와 modal visibility를 공유한다.</td></tr>
+          <tr><td>색·폰트·focus</td><td><code>paint_mountain_theme.tres</code></td><td>Red/Green은 paint semantics, Blue는 primary/selected, focus는 모든 control에 같은 token을 쓴다.</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article id="accessibility">
+      <h2>접근성 판단</h2>
+      <h3>화면에서 확인된 것</h3>
+      <ul class="limits">
+        <li>Red/Green queue는 색과 R/G 문자, 공 종류 shape를 함께 사용한다.</li>
+        <li>signed score underflow는 숫자와 rail endpoint shape를 함께 사용한다.</li>
+        <li>filled Blue는 대부분 한 화면의 primary action 하나에만 사용된다.</li>
+        <li>640×360에서도 주요 action과 0–100 endpoint 자체는 화면 밖으로 잘리지 않는다.</li>
+      </ul>
+      <h3>화면만으로 확인할 수 없는 것</h3>
+      <ul class="limits">
+        <li>keyboard focus 순서와 focus-visible, Ball Queue의 hover/focus/press 동등성, Settings scroll-follow.</li>
+        <li>icon-only Gear와 mode control의 accessible name, live score update의 전달 방식.</li>
+        <li>실제 contrast ratio, pointer target 크기, 200% text scaling, reduced motion.</li>
+      </ul>
+      <p>따라서 이 보고서는 WCAG 준수 판정이 아니다. W3C의 “색만으로 정보를 전달하지 않는다”는 원칙을 game HUD에 방향성 있게 적용했다.</p>
+    </article>
+
+    <article id="references">
+      <h2>비교 레퍼런스와 적용 범위</h2>
+      <div class="refs">
+        <div class="ref"><b><a href="https://lonelymountains.com/">Lonely Mountains: Downhill</a></b><span>world가 주인공인 작은 direct HUD. Paint Mountain의 menu와 live HUD 점유율 판단에만 적용.</span></div>
+        <div class="ref"><b><a href="https://artofrally.com/">art of rally</a></b><span>dashboard surface 없이 배치한 얇은 instrument. ScoreScale과 edge status의 restraint에 적용.</span></div>
+        <div class="ref"><b><a href="https://www.nintendo.com/jp/ichikara/as8sa/index.html">Nintendo Switch Sports Golf</a></b><span>끝점과 tick이 완전한 power scale. 0–100 ScoreScale이 target band 때문에 잘리지 않는 기준에 적용.</span></div>
+        <div class="ref"><b><a href="https://interfaceingame.com/screenshots/monument-valley-level-selection-menu/">Monument Valley · Level Select</a></b><span>정보 카드 그리드보다 level 자체를 탐색 대상으로 보여 주는 방식. 실제 terrain Stage Select에 적용.</span></div>
+      </div>
+      <p>위 레퍼런스의 layout·art를 복제하지 않았다. 낮은 UI 점유, 완전한 scale, icon/value grouping, stage-as-world만 현재 승인된 Quiet Context와 Cannon Focus 방향에 대조했다.</p>
+    </article>
+
+    <article>
+      <h2>증거 한계</h2>
+      <p>이번 16장은 같은 audit run에서 새로 생성하고 원본 크기로 열어 확인했다. 잘못된 창, loading, blank, sub-region crop은 없었다. deterministic result capture는 실제 terminal transition 뒤 표시 값을 고정해 layout을 검증하므로 물리 clear 증거가 아니다. 실제 조작감, hover 지연, 키보드 경로, 화면 읽기 도구, paint latency는 별도 실행 검증이 필요하다.</p>
+    </article>
+  </main>
+  <footer>Paint Mountain · UI Refinement Audit · 16 full-viewport captures · 2026-08-20</footer>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Mountain · 30개 스테이지 설계 분석</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f5f4ef;
+      --ink: #172235;
+      --muted: #657083;
+      --line: #cfd3d8;
+      --blue: #168fc7;
+      --red: #d8463d;
+      --green: #23875d;
+      --white: #fffefa;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.58;
+    }
+    a { color: inherit; text-underline-offset: 3px; }
+    header, main, footer { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    header { padding: 64px 0 34px; border-bottom: 2px solid var(--ink); }
+    .kicker { margin: 0 0 10px; color: var(--blue); font-weight: 800; letter-spacing: .08em; }
+    h1 { margin: 0; max-width: 900px; font-size: clamp(38px, 7vw, 76px); line-height: 1.03; letter-spacing: -.055em; }
+    .lede { max-width: 820px; margin: 22px 0 0; font-size: 20px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 28px; color: var(--muted); font-size: 14px; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    main { padding-bottom: 60px; }
+    article { padding: 46px 0; border-bottom: 1px solid var(--line); }
+    article:last-child { border-bottom: 0; }
+    h2 { margin: 0 0 20px; font-size: clamp(26px, 4vw, 42px); line-height: 1.15; letter-spacing: -.035em; }
+    h3 { margin: 30px 0 10px; font-size: 20px; }
+    p { margin: 0 0 14px; }
+    .verdict { display: grid; grid-template-columns: minmax(180px, .55fr) 1.45fr; gap: 36px; align-items: end; }
+    .score { font-size: clamp(72px, 13vw, 150px); line-height: .8; font-weight: 850; letter-spacing: -.08em; color: var(--blue); }
+    .score small { font-size: 20px; letter-spacing: 0; color: var(--muted); }
+    .verdict-copy { font-size: 22px; }
+    .verdict-copy strong { color: var(--red); }
+    .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 34px; }
+    .fact { padding-top: 14px; border-top: 3px solid var(--ink); }
+    .fact b { display: block; font-size: 28px; line-height: 1.1; }
+    .fact span { color: var(--muted); font-size: 14px; }
+    .assessment { width: 100%; border-collapse: collapse; }
+    .assessment th, .assessment td { padding: 13px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .assessment th { color: var(--muted); font-size: 13px; letter-spacing: .04em; }
+    .assessment td:nth-child(2) { width: 96px; font-weight: 800; }
+    .good { color: var(--green); }
+    .warn { color: #a65c00; }
+    .bad { color: var(--red); }
+    .finding { display: grid; grid-template-columns: 90px 1fr; gap: 22px; padding: 20px 0; border-top: 1px solid var(--line); }
+    .finding:first-of-type { border-top: 0; }
+    .finding .id { font-weight: 850; color: var(--blue); font-size: 22px; }
+    .finding h3 { margin: 0 0 6px; }
+    .finding p:last-child { margin-bottom: 0; }
+    .signal { color: var(--muted); font-size: 14px; }
+    .r { color: var(--red); font-weight: 800; }
+    .g { color: var(--green); font-weight: 800; }
+    figure { margin: 28px 0 0; }
+    figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #fff; }
+    figcaption { display: flex; justify-content: space-between; gap: 18px; padding: 9px 0; color: var(--muted); font-size: 13px; }
+    .matrix-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+    .matrix { width: 100%; min-width: 780px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .matrix th, .matrix td { padding: 8px 9px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    .matrix th:first-child, .matrix td:first-child, .matrix th:nth-child(2), .matrix td:nth-child(2) { text-align: left; }
+    .matrix thead th { position: sticky; top: 0; background: var(--paper); color: var(--muted); font-size: 12px; }
+    .matrix tbody tr:nth-child(6), .matrix tbody tr:nth-child(12), .matrix tbody tr:nth-child(18), .matrix tbody tr:nth-child(24) { border-bottom: 2px solid var(--ink); }
+    .neutral { color: #9b5b00; font-weight: 800; }
+    .priority { display: grid; grid-template-columns: 76px 1fr; gap: 20px; padding: 18px 0; border-top: 1px solid var(--line); }
+    .priority:first-of-type { border-top: 2px solid var(--ink); }
+    .priority b { color: var(--blue); font-size: 18px; }
+    .source-list { margin: 0; padding-left: 20px; }
+    .source-list li { margin: 9px 0; }
+    code { font-family: "Cascadia Code", Consolas, monospace; font-size: .92em; }
+    footer { padding: 28px 0 48px; border-top: 2px solid var(--ink); color: var(--muted); font-size: 13px; }
+    @media (max-width: 760px) {
+      header, main, footer { width: min(100% - 24px, 1180px); }
+      header { padding-top: 38px; }
+      .verdict, .three { grid-template-columns: 1fr; gap: 24px; }
+      .finding { grid-template-columns: 58px 1fr; gap: 12px; }
+      .lede, .verdict-copy { font-size: 17px; }
+      figcaption { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">PAINT MOUNTAIN · STAGE DESIGN AUDIT</p>
+    <h1>30개 스테이지는<br>구현됐지만, 아직 조율되지는 않았다.</h1>
+    <p class="lede">현재 카탈로그·규칙·테스트·실행 증거를 기준으로 구조적 완성도와 실제 퍼즐 설계의 적절성을 분리해 평가했다.</p>
+    <div class="meta"><span>2026-08-20</span><span>Catalog v11 · Stage 01–30</span><span>코드·테스트·실행 화면·외부 연구 대조</span></div>
+  </header>
+  <main>
+    <nav aria-label="보고서 목차">
+      <a href="#verdict">결론</a><a href="#score">평가</a><a href="#findings">핵심 문제</a><a href="#matrix">30개 표</a><a href="#actions">수정 순서</a><a href="#evidence">근거</a>
+    </nav>
+
+    <article id="verdict">
+      <div class="verdict">
+        <div class="score">63<small>/100</small></div>
+        <div class="verdict-copy">
+          <p><strong>출시용 밸런스라고 보기에는 이르다.</strong></p>
+          <p>규칙의 단일 책임, 결정론적 공 배치, 30개 지형의 점진적 확장은 좋다. 그러나 Stage 07–30의 핵심 퍼즐 규칙은 5개 패턴을 반복하고, 목표 구간은 6개 단위로 상승한다. 이 조합이 실제 지형·공 종류·플레이어 숙련과 맞는지는 아직 검증되지 않았다.</p>
+        </div>
+      </div>
+      <div class="three">
+        <div class="fact"><b>30</b><span>모든 스테이지가 같은 signed target-band 런타임 사용</span></div>
+        <div class="fact"><b>480</b><span>결정론적 deal 구조 검증 사례 · clear 증거는 아님</span></div>
+        <div class="fact"><b>10</b><span>한 색이 점수에 직접 들어가지 않는 스테이지</span></div>
+      </div>
+    </article>
+
+    <article id="score">
+      <h2>무엇이 좋고, 무엇이 비어 있는가</h2>
+      <table class="assessment">
+        <thead><tr><th>평가 축</th><th>점수</th><th>판단</th></tr></thead>
+        <tbody>
+          <tr><td>규칙·상태 구조</td><td class="good">90</td><td><code>StageController</code>와 <code>PaintSystem</code>의 책임이 분리됐고 모든 스테이지가 같은 규칙 경계를 쓴다.</td></tr>
+          <tr><td>재현성·데이터화</td><td class="good">88</td><td>30개 profile과 16 seed씩 같은 deal을 재현하며, late-stage deal은 세 공 종류와 양 색상을 보장한다.</td></tr>
+          <tr><td>학습 곡선</td><td class="warn">54</td><td>Stage 01–06은 도입 의도가 보이지만, 이후에는 배운 기술의 조합보다 규칙 순환이 설계를 대신한다.</td></tr>
+          <tr><td>전략적 다양성</td><td class="warn">58</td><td>지형·route·mechanism은 늘지만 모든 late-stage deal이 같은 종류 요건을 가져 스테이지별 전략 정체성이 약하다.</td></tr>
+          <tr><td>밸런스 증거</td><td class="bad">30</td><td>구조 테스트와 Stage 07/18/30의 paint/result smoke만 있다. clear 가능성, 해법 수, 실패율, 체감 난이도는 미검증이다.</td></tr>
+          <tr><td>규칙 전달·접근성</td><td class="warn">65</td><td>R/G와 기호는 보이지만 neutral 역할은 직관적이지 않고, 색상 의미를 작은 문자에 크게 의존한다.</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article id="findings">
+      <h2>핵심 판단</h2>
+      <div class="finding">
+        <div class="id">01</div>
+        <div><h3>Stage 01–06은 ‘도입’으로 읽힌다</h3><p>Standard → Impact Burst → Apex Split을 순서대로 열고, 그 뒤 <span class="g">G+</span>/<span class="r">R−</span>와 <span class="r">R+</span>/<span class="g">G−</span>를 소개한다. 초반 여섯 단계는 기능 소개의 뼈대가 있다.</p><p class="signal">단, Stage 03은 route가 갑자기 3개로 늘고 Stage 04는 다시 1개로 줄면서 색상 규칙까지 바뀐다. 공간 난이도와 규칙 난이도가 매끄럽게 이어진다고 보기는 어렵다.</p></div>
+      </div>
+      <div class="finding">
+        <div class="id">02</div>
+        <div><h3>Stage 07–30은 5단계 규칙을 반복한다</h3><p><code>R+G+</code> → <code>G+R−</code> → <code>R+G−</code> → <code>G+R0</code> → <code>R+G0</code>가 계속 반복된다. 반면 목표 구간은 6단계마다, route는 Stage 08/18에서, 샷은 Stage 16에서, 시간은 Stage 11/21에서 바뀐다.</p><p class="signal">지형 진행의 staggered step 자체는 의도적이지만, 퍼즐 규칙의 5주기와 서로 다른 축들이 학습 단위로 결합됐다는 설계 근거는 없다.</p></div>
+      </div>
+      <div class="finding">
+        <div class="id">03</div>
+        <div><h3>10개 스테이지에서 한 색은 직접 점수 0이다</h3><p>Stage 06과 10/15/20/25/30에서 Red는 0, Stage 11/16/21/26에서 Green은 0이다. 해당 색은 최신 writer로서 다른 색을 덮어쓸 수 있으므로 간접 영향은 있지만 직접 점수에는 들어가지 않는다.</p><p class="signal">이는 “빨강과 초록, 다양한 공을 사용해 목표 구간에 도달”한다는 의도와 긴장한다. 플레이어에게 별도 ‘지우개/덮어쓰기’ 역할로 명확히 가르치지 않으면 무의미한 공으로 보일 가능성이 높다.</p></div>
+      </div>
+      <div class="finding">
+        <div class="id">04</div>
+        <div><h3>공 종류 보장은 곧 전략 다양성이 아니다</h3><p>Stage 07–30의 모든 deal은 Standard, Impact Burst, Apex Split을 포함하고 마지막 두 공을 반대 색 Standard로 고정한다. 구성 안정성은 높지만 지형과 mechanism에 따라 “왜 이 stage에서 이 공이 필요한지”는 달라지지 않는다.</p><p class="signal">공 종류를 허용하는 것, 실제 deal에 넣는 것, 그 공이 해법을 바꾸는 것은 서로 다른 수준의 증거다.</p></div>
+      </div>
+      <div class="finding">
+        <div class="id">05</div>
+        <div><h3>목표 구간은 도달 가능 분포가 아니라 공식으로 정해졌다</h3><p>Stage 07–12는 7–11, 13–18은 8–12, 19–24는 9–13, 25–30은 10–14다. 지형은 커지고 mechanism은 3개에서 6개로 늘지만 밴드 폭은 항상 4다.</p><p class="signal">샷 수 증가와 특수 공 확산이 실제 점수 분포를 넓히는지, 좁히는지, 평균을 올리는지 측정하지 않았으므로 뒤 stage가 더 어렵다고 단정할 수 없다.</p></div>
+      </div>
+      <div class="finding">
+        <div class="id">06</div>
+        <div><h3>테스트는 정확하지만 질문이 다르다</h3><p>480개 deal 검증은 길이, 종류, 색, correction reserve, 재현성을 확인한다. runtime smoke는 01–07/18/30에서 fire·paint·result 경로를 확인한다. 대표 late stage도 첫 공이 paint를 만들고 result를 내는지만 본다.</p><p class="signal">현재 테스트는 “망가지지 않았는가”에는 답하지만 “재미있는가, 풀 수 있는가, 여러 전략이 있는가”에는 답하지 않는다.</p></div>
+      </div>
+      <figure>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/02-stage-select-stage08-ko-1280x720.png" alt="현재 Stage 08 선택 화면 전체">
+        <figcaption><span>실행 화면 · Stage 08 선택</span><span>지형은 실제로 보이지만, 규칙 요약은 압축 기호에 의존한다.</span></figcaption>
+      </figure>
+      <figure>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/04-aiming-stage08-ko-1280x720.png" alt="현재 Stage 08 조준 화면 전체">
+        <figcaption><span>실행 화면 · Stage 08 Aim</span><span>G+ / R−와 7–11 구간, 6-shot deal이 실제 HUD에 연결된다.</span></figcaption>
+      </figure>
+      <figure>
+        <img src="../../../.agents/evidence/2026-08-20-full-ui-audit/11-failure-result-stage08-ko-1280x720.png" alt="현재 Stage 08 음수 점수 실패 결과 화면 전체">
+        <figcaption><span>실행 화면 · signed score 실패</span><span>음수 점수와 underflow는 표시되지만 이것이 stage balance 증거는 아니다.</span></figcaption>
+      </figure>
+    </article>
+
+    <article id="matrix">
+      <h2>현재 30개 진행표</h2>
+      <p>Rule의 <code>0</code>은 해당 색이 직접 Paint Score 계산에서 제외된다는 뜻이다. Stage 07 이후에는 세 종류 공이 모두 허용되고 Burst와 Split이 반드시 포함된다.</p>
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead><tr><th>Stage</th><th>Rule</th><th>Band</th><th>Shots</th><th>Routes</th><th>Mechanisms</th><th>Time</th></tr></thead>
+          <tbody>
+            <tr><td>01</td><td>R+ G+</td><td>7–11</td><td>4</td><td>1</td><td>0</td><td>60s</td></tr>
+            <tr><td>02</td><td>R+ G+</td><td>9–13</td><td>5</td><td>1</td><td>1</td><td>60s</td></tr>
+            <tr><td>03</td><td>R+ G+</td><td>10–14</td><td>5</td><td>3</td><td>2</td><td>60s</td></tr>
+            <tr><td>04</td><td>G+ R−</td><td>6–10</td><td>6</td><td>1</td><td>2</td><td>60s</td></tr>
+            <tr><td>05</td><td>R+ G−</td><td>7–11</td><td>6</td><td>1</td><td>2</td><td>60s</td></tr>
+            <tr><td>06</td><td class="neutral">G+ R0</td><td>8–12</td><td>6</td><td>1</td><td>2</td><td>60s</td></tr>
+            <tr><td>07</td><td>R+ G+</td><td>7–11</td><td>6</td><td>1</td><td>3</td><td>60s</td></tr>
+            <tr><td>08</td><td>G+ R−</td><td>7–11</td><td>6</td><td>2</td><td>3</td><td>60s</td></tr>
+            <tr><td>09</td><td>R+ G−</td><td>7–11</td><td>6</td><td>2</td><td>3</td><td>60s</td></tr>
+            <tr><td>10</td><td class="neutral">G+ R0</td><td>7–11</td><td>6</td><td>2</td><td>3</td><td>60s</td></tr>
+            <tr><td>11</td><td class="neutral">R+ G0</td><td>7–11</td><td>6</td><td>2</td><td>3</td><td>90s</td></tr>
+            <tr><td>12</td><td>R+ G+</td><td>7–11</td><td>6</td><td>2</td><td>3</td><td>90s</td></tr>
+            <tr><td>13</td><td>G+ R−</td><td>8–12</td><td>6</td><td>2</td><td>4</td><td>90s</td></tr>
+            <tr><td>14</td><td>R+ G−</td><td>8–12</td><td>6</td><td>2</td><td>4</td><td>90s</td></tr>
+            <tr><td>15</td><td class="neutral">G+ R0</td><td>8–12</td><td>6</td><td>2</td><td>4</td><td>90s</td></tr>
+            <tr><td>16</td><td class="neutral">R+ G0</td><td>8–12</td><td>7</td><td>2</td><td>4</td><td>90s</td></tr>
+            <tr><td>17</td><td>R+ G+</td><td>8–12</td><td>7</td><td>2</td><td>4</td><td>90s</td></tr>
+            <tr><td>18</td><td>G+ R−</td><td>8–12</td><td>7</td><td>3</td><td>4</td><td>90s</td></tr>
+            <tr><td>19</td><td>R+ G−</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>90s</td></tr>
+            <tr><td>20</td><td class="neutral">G+ R0</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>90s</td></tr>
+            <tr><td>21</td><td class="neutral">R+ G0</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>120s</td></tr>
+            <tr><td>22</td><td>R+ G+</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>120s</td></tr>
+            <tr><td>23</td><td>G+ R−</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>120s</td></tr>
+            <tr><td>24</td><td>R+ G−</td><td>9–13</td><td>7</td><td>3</td><td>5</td><td>120s</td></tr>
+            <tr><td>25</td><td class="neutral">G+ R0</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+            <tr><td>26</td><td class="neutral">R+ G0</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+            <tr><td>27</td><td>R+ G+</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+            <tr><td>28</td><td>G+ R−</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+            <tr><td>29</td><td>R+ G−</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+            <tr><td>30</td><td class="neutral">G+ R0</td><td>10–14</td><td>7</td><td>3</td><td>6</td><td>120s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article id="actions">
+      <h2>수정 순서</h2>
+      <div class="priority"><b>P0</b><div><h3>Stage 07–30의 neutral 패턴을 재결정</h3><p>두 색 모두 직접 점수에 기여해야 한다는 제품 의도를 우선하면 <code>G+R0</code>/<code>R+G0</code>를 제거하고 양수·감점 조합으로 재작성한다. neutral을 유지하려면 별도 ‘덮어쓰기 도구’로 명명하고 UI·튜토리얼·플레이테스트로 그 역할을 증명해야 한다. Stage 01–06 값은 source brief가 보존을 요구하므로 별도 승인 없이 바꾸지 않는다.</p></div></div>
+      <div class="priority"><b>P0</b><div><h3>점수 분포를 먼저 측정</h3><p>각 stage의 고정 deal과 New Deal seed에서 실제 물리 실행으로 최종 R/G/score 분포를 수집한다. band는 단순 stage 번호 공식이 아니라 도달 분포, 의도한 실수 여유, 해법 다양성에 맞춰 다시 정한다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>5개 챕터로 학습 목표를 명시</h3><p>각 묶음에 ‘소개 → 연습 → 조합 → mastery’를 둔다. route 수, mechanism 종류, 색상 극성, 공 종류 중 한 번에 무엇을 새로 배우는지 StageData 옆 설계표에 명시한다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>공 종류 요건을 stage-specific하게 조정</h3><p>모든 late stage에 Burst와 Split을 강제하지 말고 지형·mechanism이 그 공의 공간적 장점을 실제로 요구하거나 보상할 때 넣는다. 마지막 두 Standard correction reserve는 안정성 장치로 유지할 수 있다.</p></div></div>
+      <div class="priority"><b>P1</b><div><h3>clear witness와 사람 증거를 분리해 축적</h3><p>자동 witness는 적어도 하나의 clear 경로와 서로 다른 aim 전략을 확인하고, 플레이테스트는 실패 원인·재시도 수·규칙 오해를 기록한다. 둘 중 하나만으로 ‘밸런스 완료’를 주장하지 않는다.</p></div></div>
+      <div class="priority"><b>P2</b><div><h3>설계 문서의 scalar-coverage 잔재 정리</h3><p><code>docs/design-spec.md</code> 하단에는 여전히 unique coverage가 sole score라는 오래된 문장이 남아 있다. 상단 supersession과 source brief가 우선하지만, 다음 튜닝 전에 충돌 문구를 제거해야 한다.</p></div></div>
+    </article>
+
+    <article id="evidence">
+      <h2>근거와 적용 범위</h2>
+      <h3>로컬 근거</h3>
+      <ul class="source-list">
+        <li><code>docs/source-brief.md</code> — 모든 30개 stage의 signed Red/Green target-band와 세 공 종류, structural test의 한계를 규정한다.</li>
+        <li><code>src/stage_generation/stage_catalog_materializer.gd</code> — Stage 01–06 authored 값과 Stage 07–30의 5-rule/6-band 공식을 소유한다.</li>
+        <li><code>src/stage_generation/stage_progression_data.gd</code> — shot, time, route, mechanism, terrain 크기의 진행을 소유한다.</li>
+        <li><code>tests/all_stage_target_band_rule_test.gd</code>, <code>tests/target_band_stage_runtime_smoke_test.gd</code> — 480 deal 구조와 대표 runtime 경로의 실제 검증 범위를 보여 준다.</li>
+      </ul>
+      <h3>외부 근거</h3>
+      <ul class="source-list">
+        <li><a href="https://www.cs.northwestern.edu/~hunicke/MDA.pdf">MDA: A Formal Approach to Game Design and Game Research</a> — mechanics가 만드는 dynamics는 상호작용 때문에 예측하기 어려우므로 구현 구조만으로 체험을 판단하지 않는 기준으로 사용했다.</li>
+        <li><a href="https://www.jenovachen.com/flowingames/Flow_in_games_final.pdf">Jenova Chen, Flow in Games</a> — challenge와 player skill의 균형을 난이도 곡선 판단에 적용했다. 동적 난이도 조정 자체를 권고한 것은 아니다.</li>
+        <li><a href="https://www.microsoft.com/en-us/research/publication/automatic-game-progression-design-analysis-solution-features/">Microsoft Research, Automatic Game Progression Design</a> — base concept뿐 아니라 배운 기술의 조합을 연습시키는 progression 관점을 chapter 재설계 권고에 적용했다. 이 연구의 자동 생성 방식을 그대로 도입하지 않는다.</li>
+        <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color">W3C WCAG 2.2 · Use of Color</a> — Red/Green 의미가 색만으로 전달되지 않도록 기호·형태·문자 단서를 함께 유지하는 기준으로 방향성 있게 적용했다.</li>
+      </ul>
+      <h3>한계</h3>
+      <p>이 보고서는 코드·테스트·결정론적 실행 화면을 근거로 한 설계 감사다. 사람의 실제 플레이 세션, stage별 clear distribution, 접근성 사용자 테스트는 아직 없다. 따라서 점수는 현재 증거의 완성도를 평가하며, 재미를 측정한 결과가 아니다.</p>
+    </article>
+  </main>
+  <footer>Paint Mountain · Stage Design Analysis · current branch evidence · 2026-08-20</footer>
+</body>
+</html>
