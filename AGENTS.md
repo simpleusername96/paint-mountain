@@ -10,10 +10,10 @@
 ## Operating Model
 - Use Godot 4.x, typed GDScript where practical, the Compatibility renderer, a fixed 60 Hz physics tick, and Windows desktop as the first delivery target.
 - Use the shared Godot 4.7.1 runtime at `D:\tools\Godot\4.7.1-stable`; `GODOT_BIN` points to its console executable. Do not create a project-local Godot copy. `scripts/verify.ps1` resolves the shared runtime by default.
-- Keep the project launchable after each milestone. Run `scripts/verify.ps1` after script, scene, resource, or project-setting changes.
+- Keep the project launchable after each milestone. After a coherent batch of script, scene, resource, or project-setting changes, run the smallest relevant parse, import, or focused test. Run `scripts/verify.ps1` once when the phase is substantially complete and once at final handoff when later phase-owned inputs changed; run it earlier only when focused checks cannot resolve cross-project uncertainty. Do not repeat a passing check until a relevant input changes.
 - Do not add production dependencies, plugins, network services, Docker, or asset packs without the user's explicit approval.
 - Before broad or cross-module implementation, use the relevant active ExecPlan under `.agents/execplans/` and finish with `$codebase-quality-auditor`.
-- UI/UX and visual-composition work must inspect the actual running-game render before handoff. Headless contracts, scene inspection, and numeric layout checks may support diagnosis but never replace before/after runtime captures reviewed by the implementing agent. Prefer the task-owned background capture path so verification does not obstruct the user's desktop.
+- UI/UX and visual-composition work must inspect the actual running-game render before handoff. Headless contracts, scene inspection, and numeric layout checks may support diagnosis but never replace the current rendered evidence. Require a pre-change capture only when a material before/after comparison is part of the claim; otherwise reuse valid existing evidence and create one task-owned background capture batch for the final named states so verification does not obstruct the user's desktop.
 - Final gameplay handoff requires an exported or production-style build check and separate running-game screenshots listed in `docs/test-checklist.md`.
 
 ## Architectural Guardrails
