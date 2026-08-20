@@ -164,11 +164,14 @@
     .screen-number { color: var(--blue); font-size: 62px; font-weight: 900; line-height: 1; letter-spacing: -.06em; }
     .screen-summary { max-width: 920px; color: var(--muted); font-size: 17px; }
 
-    .shot-pair { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+    .shot-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
     figure { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: #eef2f7; }
     figure img { aspect-ratio: 16 / 9; object-fit: contain; background: #e8ebf1; }
     figcaption { display: flex; justify-content: space-between; gap: 12px; padding: 11px 13px; border-top: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 13px; }
     figcaption strong { color: var(--navy); }
+    figure.tobe { border-color: #8dc0ff; box-shadow: 0 0 0 3px rgba(37, 132, 255, .08); }
+    figure.tobe figcaption { background: var(--blue-soft); }
+    figure.compact-as-is { grid-column: 1 / -1; width: min(50%, 640px); }
 
     .screen-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
     .screen-grid .card { padding: 18px; }
@@ -187,6 +190,7 @@
       .verdict, .grid-3, .screen-grid, .evidence-strip { grid-template-columns: 1fr; }
       .grid-2, .edge-gallery { grid-template-columns: 1fr; }
       .shot-pair { grid-template-columns: 1fr; }
+      figure.compact-as-is { grid-column: auto; width: 100%; }
       .token-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .source-list { columns: 1; }
     }
@@ -207,12 +211,13 @@
     <div class="page">
       <p class="eyebrow">Paint Mountain · UIUX correction specification · 2026-08-21</p>
       <h1>직전 refinement가 놓친 문제와 화면별 수정 계약</h1>
-      <p class="hero-lead">이 문서는 최신 실행 화면 28장을 그대로 사용해 현재 상태를 기록하고, 버튼 면·점수 정보·특수 공 설명·내부/외부 정렬을 구현 가능한 수치와 코드 소유자까지 고정한다. 새 UI 이미지를 꾸며 내는 보고서가 아니라, 다음 구현이 다시 엇나가지 않게 하는 교정 사양이다.</p>
+      <p class="hero-lead">이 문서는 최신 실행 화면 28장으로 현재 상태를 기록하고, 11개 주요 화면의 ImageGen TO-BE를 동일 상태 옆에 제시한다. 버튼 면·점수 정보·특수 공 설명·내부/외부 정렬은 이미지 감상이 아니라 구현 가능한 수치와 코드 소유자까지 고정한다.</p>
       <div class="hero-meta">
         <span>기준 보고서: 2026-08-20 refinement</span>
         <span>비교 보고서: 2026-08-21 PASS</span>
         <span>실행 증거: Windows production export</span>
         <span>기준 화면: 1280×720 + 640×360</span>
+        <span>TO-BE: ImageGen concept 11장 · 16:9</span>
       </div>
       <div class="verdict">
         <div class="verdict-mark">REBUILD<span>UI SYSTEM, NOT PATCHES</span></div>
@@ -227,6 +232,7 @@
   <div class="toc-wrap">
     <nav class="toc page" aria-label="보고서 목차">
       <a href="#evidence">증거 기준</a>
+      <a href="#screens">AS-IS ↔ TO-BE</a>
       <a href="#failure">이전 보고서 실패</a>
       <a href="#locks">확정 수정 원칙</a>
       <a href="#system">공유 시스템</a>
@@ -249,7 +255,11 @@
         </div>
         <div class="callout">
           <strong>실행 기준</strong>
-          <p><code>builds/windows/PaintMountain.exe</code> SHA-256: <code>7B82A1F2375A171520380050CFA5FB7E3D1623EA7BCBF8DCC294D99F856F3D38</code>. 캡처 세트의 기록과 동일하다. 이 문서의 이미지는 보정·크롭·합성하지 않은 전체 viewport다.</p>
+          <p><code>builds/windows/PaintMountain.exe</code> SHA-256: <code>7B82A1F2375A171520380050CFA5FB7E3D1623EA7BCBF8DCC294D99F856F3D38</code>. 캡처 세트의 기록과 동일하다. AS-IS 이미지는 보정·크롭·합성하지 않은 전체 viewport다.</p>
+        </div>
+        <div class="callout">
+          <strong>TO-BE 이미지의 지위</strong>
+          <p>각 화면의 파란 테두리 이미지는 최신 AS-IS를 편집 기준으로 생성한 ImageGen 시각 목표다. 런타임 증거가 아니며, 숫자·문구·픽셀 좌표의 최종 권위는 바로 아래의 “정확한 수정”과 “정렬 좌표”다. 공통 프롬프트와 화면별 지시는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>에 보존했다.</p>
         </div>
         <div class="table-scroll">
           <table>
@@ -398,7 +408,8 @@
         <div class="screen-head"><div class="screen-number">01</div><div><h2>Main Menu</h2><p class="screen-summary">현재는 240px 폭의 파란 Play 텍스트 버튼 하나가 나머지 텍스트 링크와 다른 체계를 만들고, 흰 월드와 흰 배경이 같은 층으로 섞인다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/01-main-menu-ko-1280x720.png" alt="현재 Main Menu 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>텍스트 CTA + 약한 월드 대비</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/12-main-menu-ko-640x360.png" alt="현재 Main Menu 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>축소된 텍스트 action</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/01-main-menu-tobe.png" alt="Main Menu TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>아이콘 rail + 월드 우선</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/12-main-menu-ko-640x360.png" alt="현재 Main Menu 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>축소된 텍스트 action</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>Play 56px 파란 원형 icon, Stage/Settings/Quit 44px 투명 icon으로 교체.</li><li>버튼 visible text 제거. tooltip은 icon 우측에 표시.</li><li>standard는 x=56 세로 rail, compact는 x=12/y=54 가로 rail.</li><li>브랜드 제목과 action rail의 좌측선을 동일하게 맞춘다.</li></ul></article>
@@ -411,7 +422,8 @@
         <div class="screen-head"><div class="screen-number">02</div><div><h2>Stage Select</h2><p class="screen-summary">현재는 큰 “스테이지 시작” 사각 버튼이 산과 선택 rail보다 강하다. 규칙 줄은 의미가 압축되어 있고 heading, selected info, rail, CTA의 외부 기준선이 서로 다르다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/02-stage-select-stage08-ko-1280x720.png" alt="현재 Stage Select 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>거대한 Start CTA</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/13-stage-select-stage30-ko-640x360.png" alt="현재 Stage Select 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>CTA가 산보다 큼</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/02-stage-select-tobe.png" alt="Stage Select TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>규칙 4묶음 + icon Start</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/13-stage-select-stage30-ko-640x360.png" alt="현재 Stage Select 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>CTA가 산보다 큼</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>Start를 56/48px 파란 play icon으로 교체하고 우측 safe edge에 둔다.</li><li>Back은 44/40px 투명 arrow icon.</li><li>규칙 줄을 “목표 · R/G 규칙 · 공 수 · 필수 특수 공” 네 묶음으로 16px gap 분리.</li><li>숫자 stage node는 데이터 selector 예외로 번호를 유지한다.</li></ul></article>
@@ -424,7 +436,8 @@
         <div class="screen-head"><div class="screen-number">03</div><div><h2>Briefing</h2><p class="screen-summary">가로 점수 정보, 공 큐, 설정, 뒤로, 조준 시작이 각각 다른 크기와 면 정책을 사용한다. 흰 설정 버튼과 큰 파란 텍스트 CTA가 정보보다 먼저 보인다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/03-briefing-stage08-ko-1280x720.png" alt="현재 Briefing 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>행동 면과 정보 위계 충돌</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/14-briefing-stage08-ko-640x360.png" alt="현재 Briefing 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>수직축과 CTA가 월드 압박</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/03-briefing-tobe.png" alt="Briefing TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>가로 score + icon actions</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/14-briefing-stage08-ko-640x360.png" alt="현재 Briefing 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>수직축과 CTA가 월드 압박</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>브리핑은 가로 ScoreScale만 사용. compact에서도 vertical로 바꾸지 않는다.</li><li>Start 56/48px primary icon, Back 44/40px routine icon.</li><li>Settings normal의 흰 면 제거.</li><li>공 큐는 top-right 정렬을 유지하되 detail을 열기 전에는 정보 카드 없음.</li></ul></article>
@@ -437,7 +450,8 @@
         <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim</h2><p class="screen-summary">가장 큰 실패 화면이다. 왼쪽 수직축은 많은 공간을 쓰면서 목표와 현재 상태를 설명하지 못하고, 하단의 +/- 흰 상자와 Fire 텍스트 slab가 월드보다 먼저 보인다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/04-aiming-stage08-ko-1280x720.png" alt="현재 Aim 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>해석 어려운 수직 score + 흰 steppers</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/15-aiming-stage08-ko-640x360.png" alt="현재 Aim 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좌우 HUD가 산을 누름</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/04-aim-tobe.png" alt="Aim TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>ScoreStatus + icon-only 조작</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/15-aiming-stage08-ko-640x360.png" alt="현재 Aim 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좌우 HUD가 산을 누름</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>수직 ScoreScale 삭제, ScoreStatus로 교체.</li><li>+/- 버튼 normal 투명, 44/40px target. 값은 버튼 바깥 중앙 label.</li><li>Fire는 56/48px 파란 원형 paint-splash icon, visible text 없음.</li><li>Finish와 Settings도 투명 icon. disabled는 흐린 icon만 표시.</li></ul></article>
@@ -450,7 +464,8 @@
         <div class="screen-head"><div class="screen-number">05</div><div><h2>Special Ball Detail</h2><p class="screen-summary">현재 특수 공 설명은 하늘에 outline text로 떠 있다. 읽어야 하는 정보에 containment가 없고, 오히려 정보가 아닌 설정/증감 버튼에 흰 면을 쓴다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/05-queue-detail-stage08-ko-1280x720.png" alt="현재 Special Ball Detail 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>투명 배경에 뜬 설명</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/16-queue-detail-stage08-ko-640x360.png" alt="현재 Special Ball Detail 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>월드와 텍스트가 경쟁</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/05-ball-detail-tobe.png" alt="Special Ball Detail TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>흰 정보 카드 + queue 정렬</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/16-queue-detail-stage08-ko-640x360.png" alt="현재 Special Ball Detail 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>월드와 텍스트가 경쟁</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li><code>BallQueueDescription: Label</code>을 <code>BallDetailCard</code>로 교체.</li><li>warm-white 96% 면, navy text, no outline, 16px padding.</li><li>1행: 현재/다음 · 종류 · R/G. 2행: 행동 설명.</li><li>hover/focus/press가 같은 카드 사용. press는 고정, Escape는 닫기.</li></ul></article>
@@ -463,7 +478,8 @@
         <div class="screen-head"><div class="screen-number">06</div><div><h2>Map</h2><p class="screen-summary">Map에서도 해석 어려운 수직 score가 계속 남고, 선택된 camera mode가 흰 버튼 면으로 보인다. 월드를 넓게 보는 상태인데 HUD가 같은 면적을 고정 점유한다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/06-map-stage08-ko-1280x720.png" alt="현재 Map 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>고정 수직축 + 흰 mode surface</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/17-map-stage08-ko-640x360.png" alt="현재 Map 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좁은 화면의 지속 점유</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/06-map-tobe.png" alt="Map TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>ScoreStatus + 열린 월드</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/17-map-stage08-ko-640x360.png" alt="현재 Map 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좁은 화면의 지속 점유</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>Aim과 같은 ScoreStatus만 유지.</li><li>선택된 map mode는 blue 14% 면 + blue icon, white normal 금지.</li><li>aim steppers와 Fire는 완전히 숨기고 빈 footprint를 남기지 않는다.</li><li>하단 도움말은 non-interactive info이므로 icon + 짧은 text 허용.</li></ul></article>
@@ -476,7 +492,8 @@
         <div class="screen-head"><div class="screen-number">07</div><div><h2>Shot Follow</h2><p class="screen-summary">비행 중에도 왼쪽 수직축이 그대로 남아 시선이 공과 점수 사이에서 분산된다. 우하단 Return은 파란 사각형으로 별도 시스템처럼 보인다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/07-shot-follow-stage08-ko-1280x720.png" alt="현재 Shot Follow 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>비행 중 지속되는 score bar</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/18-shot-follow-stage08-ko-640x360.png" alt="현재 Shot Follow 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Return 사각 버튼</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/07-shot-follow-tobe.png" alt="Shot Follow TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>비행 집중 + transparent Return</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/18-shot-follow-stage08-ko-640x360.png" alt="현재 Shot Follow 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Return 사각 버튼</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>ScoreStatus는 current 값 갱신 시 160ms 강조만 하고 월드를 가리지 않는다.</li><li>BallQueue와 aim controls는 숨김.</li><li>Return은 44/40px 투명 arrow-back-to-cannon icon.</li><li>파란 면은 Fire/Resume/Next 같은 즉시 primary에만 남긴다.</li></ul></article>
@@ -489,7 +506,8 @@
         <div class="screen-head"><div class="screen-number">08</div><div><h2>Pause</h2><p class="screen-summary">현재는 흰 panel 안에 파란 full-width button과 plain text actions가 섞여 있다. 버튼인지 텍스트인지 상태가 달라 보이고, 모든 행동이 같은 세로 폭을 강제로 차지한다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/08-pause-stage01-ko-1280x720.png" alt="현재 Pause 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>흰 menu card + text actions</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/19-pause-stage01-ko-640x360.png" alt="현재 Pause 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>세로 action list</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/08-pause-tobe.png" alt="Pause TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>navy scrim + icon rail</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/19-pause-stage01-ko-640x360.png" alt="현재 Pause 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>세로 action list</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>흰 pause panel 제거. 46% navy scrim 위에 title과 icon action rail만 둔다.</li><li>Resume 56/48px primary play icon.</li><li>Restart, Settings, Stages, Main Menu는 44/40px routine icons.</li><li>파괴적/이탈 action은 tooltip과 confirmation 필요 여부를 별도 적용.</li></ul></article>
@@ -502,7 +520,8 @@
         <div class="screen-head"><div class="screen-number">09</div><div><h2>Settings</h2><p class="screen-summary">설정은 흰 면을 써도 되는 화면이다. 문제는 정보 surface가 아니라 하단의 큰 Close 텍스트 버튼, 열 간 기준선 불일치, compact에서 action이 scroll 내용처럼 움직이는 점이다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/09-settings-stage01-ko-1280x720.png" alt="현재 Settings 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>허용 가능한 form surface, 잘못된 Close CTA</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/20-settings-stage01-ko-640x360.png" alt="현재 Settings 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Close가 scroll footer로 보임</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/09-settings-tobe.png" alt="Settings TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>단일 form sheet + icon Close</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/20-settings-stage01-ko-640x360.png" alt="현재 Settings 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Close가 scroll footer로 보임</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>흰 form sheet는 유지하되 screen당 하나만 사용.</li><li>Close는 top-right 44/40px 투명 X icon, Defaults는 undo icon.</li><li>slider/value/switch는 8px baseline grid로 정렬.</li><li>compact Close는 viewport에 고정하고 설정 content만 scroll.</li></ul></article>
@@ -515,7 +534,8 @@
         <div class="screen-head"><div class="screen-number">10</div><div><h2>Clear Result</h2><p class="screen-summary">현재 hard vertical split과 파란 Next 텍스트 slab가 결과의 감정과 산을 분리한다. 점수, 목표, R/G, 메타, actions가 서로 다른 좌측선을 사용한다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/10-clear-stage08-ko-1280x720.png" alt="현재 Clear Result 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>hard split + mixed action styles</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/21-clear-stage08-ko-640x360.png" alt="현재 Clear Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>action text가 월드 위에 분산</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/10-clear-tobe.png" alt="Clear Result TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>gradient shell + aligned score</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/21-clear-stage08-ko-640x360.png" alt="현재 Clear Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>action text가 월드 위에 분산</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>hard split을 오른쪽 navy gradient scrim으로 바꿔 산과 결과를 연결.</li><li>Next 56/48px primary arrow icon. Same/New/Stages는 routine icons.</li><li>결과 copy와 ScoreScale은 x 기준선 하나만 사용.</li><li>점수와 목표 문장을 먼저, 메타와 action을 그 아래 배치.</li></ul></article>
@@ -528,7 +548,8 @@
         <div class="screen-head"><div class="screen-number">11</div><div><h2>Failure Result</h2><p class="screen-summary">Failure가 Clear와 다른 시스템처럼 보이면 안 된다. 현재는 primary text가 “같은 배치”로 바뀌고 다른 actions가 평문으로 남아, 재시도 선택의 구조가 약하다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/11-failure-stage08-ko-1280x720.png" alt="현재 Failure Result 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>primary만 slab, secondary는 plain text</span></figcaption></figure>
-          <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/22-failure-stage08-ko-640x360.png" alt="현재 Failure Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>retry 선택 관계가 약함</span></figcaption></figure>
+          <figure class="tobe"><img loading="lazy" src="assets/tobe/11-failure-tobe.png" alt="Failure Result TO-BE concept"><figcaption><strong>TO-BE · ImageGen</strong><span>Clear와 동일 shell + retry primary</span></figcaption></figure>
+          <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/22-failure-stage08-ko-640x360.png" alt="현재 Failure Result 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>retry 선택 관계가 약함</span></figcaption></figure>
         </div>
         <div class="screen-grid">
           <article class="card"><h4>정확한 수정</h4><ul><li>Clear와 동일한 result shell, 좌표, typography 사용.</li><li>Same Deal을 primary retry icon으로 지정.</li><li>New Deal은 shuffle icon, Stages는 mountain/stage icon.</li><li>실패 이유와 목표 차이를 점수 바로 아래 한 문장으로 표시.</li></ul></article>

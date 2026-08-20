@@ -1,0 +1,94 @@
+Paint Mountain UIUX TO-BE ImageGen prompt ledger
+Generated: 2026-08-21
+Use case: precise-object-edit
+
+STATUS
+The generated PNG files are visual direction images, not runtime evidence. The HTML
+report's numeric layout contract and current implementation remain authoritative.
+
+SHARED INPUT CONTRACT
+- Image 1 is always the latest 1280 x 720 AS-IS capture for that exact state.
+- Historical approved images are style references only.
+- Preserve the AS-IS world geometry, camera, lighting, paint, cannon, trajectory,
+  projectile, and stage/result state. Edit only the UI overlay.
+- Target a 16:9 desktop game viewport.
+
+SHARED VISUAL CONTRACT
+- Pretendard-like Korean sans serif.
+- Warm paper-white, navy #172538, primary blue #2584FF.
+- Direct edge overlays, 24 px safe margin, strict 8 px spacing grid.
+- Routine actions: 44 px transparent normal state, icon only.
+- Primary action: at most one 56 px blue circular icon.
+- No action words inside buttons. Text remains for information and numeric values.
+- No white button-like normal backgrounds.
+- White surfaces are reserved for the special-ball information card, the Settings
+  form sheet, and confirmation UI.
+- Aim, Map, and Shot Follow do not use a vertical or horizontal 0-100 live scale.
+  They use ScoreStatus in this order: current, target band, R, G.
+- Align icon centers, group baselines, and shared external edges exactly.
+- No extra actions, decorative panels, watermark, device frame, or changed world.
+
+01 MAIN MENU
+Keep the mountain as the hero from roughly x=340. Align the title “페인트 마운틴”
+and the vertical action rail at x=56. Use a blue circular play icon, then transparent
+stage, settings, and quit icons with 12 px gaps. Remove every action label and CTA slab.
+
+02 STAGE SELECT
+Use one restrained 204 px navy gradient scrim at the bottom. Align transparent Back,
+“스테이지 선택”, selected information, and numbered rail to x=48. Separate the rule
+summary into “목표 9-13”, “R +1 / G -1”, “공 6”, and “특수 공 필수” with 16 px gaps.
+The numbered stage selector keeps data labels. Place one blue circular play icon at the
+right safe edge. Remove the large rectangular Start button.
+
+03 BRIEFING
+Keep one horizontal score scale at x=24, y=124, width about 440 and show current,
+target 9-13, R, and G. Never use a vertical scale. Align transparent Settings and the
+three-token queue at the top-right. Use transparent Back and one blue circular Aim/Start
+icon on the bottom baseline. Do not show a ball detail card before inspection.
+
+04 AIM
+Replace the live score axis with ScoreStatus: “현재 0.0”, “목표 9-13”, “R +0.0”,
+“G +0.0”. Keep one top-right status row and queue. Bottom center is one angle -> fire ->
+power row. Minus and plus controls are transparent; values sit outside the buttons. Fire
+is the only blue circular control and uses a white paint-splash icon.
+
+05 SPECIAL BALL DETAIL
+Use the same Aim HUD. Replace floating transparent prose with BallDetailCard directly
+under the queue, right edges aligned. Approximate rect: x=960, y=148, width=296,
+minimum height=88. Use warm white at 96% opacity, navy text, no outline, 16 px padding.
+First row: “현재 · 분열 공 · R +1 / G -1”. Second row: “충돌하면 세 개로 갈라져
+넓게 칠합니다.” Expand only leftward and do not cover the trajectory.
+
+06 MAP
+Use the same ScoreStatus and top-right status baseline as Aim. The selected camera mode
+uses a subtle blue 14% highlight, never white. Hide angle, power, queue, and fire with no
+empty footprint. Bottom center may show the non-interactive hint “드래그로 둘러보기 ·
+휠로 확대” because it is information, not an action.
+
+07 SHOT FOLLOW
+Keep the projectile and flight path as the hero. Use the shared ScoreStatus and top status
+row. Hide queue and all aim controls. At the bottom-right safe edge show only a transparent
+return-to-cannon icon; no blue rectangle and no action word.
+
+08 PAUSE
+Remove the white pause panel. Add one full-viewport navy scrim at about 46% opacity.
+Center “일시정지” around y=244 and one horizontal icon rail around y=326. Resume is the
+only blue circular icon; restart, settings, stages, and main menu are transparent icons.
+
+09 SETTINGS
+Use one warm-white form sheet inset 28 px, with 28 px inner padding and no nested cards.
+Use a two-column form with 48 px gap and strict label/control/value alignment. Put a
+transparent X close icon at the top-right and a small transparent undo/defaults icon near
+the title. Remove the large bottom Close button. Informative labels and values keep text.
+
+10 CLEAR RESULT
+Replace the hard split with a right-side navy gradient that fades left into the mountain.
+Align all content to x=784. Show “클리어”, “스테이지 08”, “12.0 · 목표 9-13”, R/G,
+then a horizontal track that highlights 9-13 and places 12.0 inside it. Use one blue Next
+arrow icon plus transparent retry, shuffle, and stages icons on one baseline.
+
+11 FAILURE RESULT
+Use exactly the same result shell, anchors, type scale, score track, and action baseline as
+Clear. Show “목표 미달”, “스테이지 08”, “6.0 · 목표 9-13”, R/G, and “목표 구간보다
+3.0 부족합니다.” Show current 6.0 outside the 9-13 band without clamping. Same Deal is
+the only blue retry icon; New Deal and Stages are transparent icons.
