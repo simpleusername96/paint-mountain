@@ -27,6 +27,7 @@ static func is_valid_deal(tokens: Array[BallToken], maximum_shots: int, profile:
 	var burst_count := 0
 	var split_count := 0
 	var standard_count := 0
+	var kind_counts := {}
 	var prefix_length := maximum_shots - 2 if maximum_shots >= 4 else maximum_shots
 	for index in range(tokens.size()):
 		var token := tokens[index]
@@ -42,6 +43,7 @@ static func is_valid_deal(tokens: Array[BallToken], maximum_shots: int, profile:
 			split_count += 1
 		else:
 			standard_count += 1
+		kind_counts[token.kind] = int(kind_counts.get(token.kind, 0)) + 1
 		# The correction reserve is outside the constrained prefix. This preserves
 		# the four-shot Standard-only profile while keeping generated prefixes varied.
 		if index < prefix_length and index >= 2 and tokens[index - 1].channel == token.channel and tokens[index - 2].channel == token.channel:
@@ -54,6 +56,9 @@ static func is_valid_deal(tokens: Array[BallToken], maximum_shots: int, profile:
 		return false
 	if maximum_shots >= 3 and standard_count == 0:
 		return false
+	for required_kind in profile.required_kinds:
+		if int(kind_counts.get(required_kind, 0)) == 0:
+			return false
 	if standard_count + burst_count + split_count * 3 > MAXIMUM_RESIDENT_BALLS:
 		return false
 	if maximum_shots >= 4:
@@ -79,6 +84,18 @@ static func _candidate(random: VersionedIntegerPrng, maximum_shots: int, profile
 
 static func _fallback(maximum_shots: int, profile: BallDealProfile) -> Array[BallToken]:
 	var tokens: Array[BallToken] = []
-	for index in range(maximum_shots):
-		tokens.append(BallToken.new(BallKind.Value.STANDARD, index % 2))
+	var prefix_length := maximum_shots - 2 if maximum_shots >= 4 else maximum_shots
+	for kind in profile.required_kinds:
+		if tokens.size() >= prefix_length:
+			return []
+		tokens.append(BallToken.new(kind, tokens.size() % 2))
+	var fill_index := 0
+	while tokens.size() < prefix_length:
+		var kind := profile.allowed_kinds[fill_index % profile.allowed_kinds.size()]
+		tokens.append(BallToken.new(kind, tokens.size() % 2))
+		fill_index += 1
+	if maximum_shots >= 4:
+		var first_channel := tokens.size() % 2
+		tokens.append(BallToken.new(BallKind.Value.STANDARD, first_channel))
+		tokens.append(BallToken.new(BallKind.Value.STANDARD, 1 - first_channel))
 	return tokens

@@ -145,7 +145,7 @@ func _build_catalog() -> Dictionary:
 	result.catalog_version = StageGenerationContract.CONTRACT_VERSION
 	result.progression = load(_progression_path()) as StageProgressionData
 	var existing := load(CATALOG_PATH) as StageCatalogData
-	if existing == null or not existing.is_valid(false):
+	if not _source_catalog_is_usable(existing):
 		push_error("The offline builder needs the complete reviewed thirty-stage source catalog.")
 		return {}
 	var source_stages: Array[StageData] = existing.ordered_stages()
@@ -158,7 +158,7 @@ func _build_catalog() -> Dictionary:
 			return {}
 		var baked: BakedStageLayoutData
 		if reuse_verified_layouts:
-			baked = load(existing.layout_paths[source_index]) as BakedStageLayoutData
+			baked = _migrate_verified_layout(existing.layout_paths[source_index], stage)
 		else:
 			var built := await _generate_and_bake(stage)
 			if built.is_empty():
@@ -201,6 +201,67 @@ func _build_catalog() -> Dictionary:
 			CATALOG_DATA_SCRIPT.generated_bundle_root(result.manifest_sha256), stage_id
 		])
 	return {"catalog": result, "layouts": layouts}
+
+
+static func _source_catalog_is_usable(catalog: StageCatalogData) -> bool:
+	if catalog == null or catalog.catalog_version not in [
+		StageGenerationContract.CONTRACT_VERSION - 1,
+		StageGenerationContract.CONTRACT_VERSION,
+	]:
+		return false
+	if catalog.stages.size() != StageProgressionData.STAGE_COUNT \
+			or catalog.stage_ids.size() != catalog.stages.size() \
+			or catalog.layout_paths.size() != catalog.stages.size():
+		return false
+	for index in range(catalog.stages.size()):
+		var stage := catalog.stages[index]
+		var stage_id := StringName("stage_%02d" % (index + 1))
+		if stage == null or stage.stage_id != stage_id \
+				or catalog.stage_ids[index] != stage_id \
+				or stage.generation_profile == null \
+				or not FileAccess.file_exists(catalog.layout_paths[index]):
+			return false
+	return true
+
+
+static func _migrate_verified_layout(
+		source_path: String,
+		stage: StageData
+) -> BakedStageLayoutData:
+	var source := load(source_path) as BakedStageLayoutData
+	if source == null or stage == null \
+			or String(source.profile_id) != "%s_v%d" % [stage.stage_id, source.profile_version] \
+			or source.terrain_seed != stage.terrain_seed \
+			or source.profile_version not in [
+				StageGenerationContract.CONTRACT_VERSION - 1,
+				StageGenerationContract.CONTRACT_VERSION,
+			] \
+			or source.layout_version != source.profile_version \
+			or source.payload_sha256 != StageLayoutBakeCodec.payload_sha256(source):
+		push_error("Reusable layout is not a verified current/previous payload: %s %s" % [
+			source_path,
+			str({
+				"source_profile": source.profile_id if source != null else &"",
+				"stage_profile": stage.generation_profile.profile_id if stage != null else &"",
+				"source_seed": source.terrain_seed if source != null else -1,
+				"stage_seed": stage.terrain_seed if stage != null else -1,
+				"source_profile_version": source.profile_version if source != null else -1,
+				"source_layout_version": source.layout_version if source != null else -1,
+				"stored_hash": source.payload_sha256 if source != null else "",
+				"computed_hash": StageLayoutBakeCodec.payload_sha256(source),
+			}),
+		])
+		return null
+	var migrated := source.duplicate(true) as BakedStageLayoutData
+	migrated.profile_id = stage.generation_profile.profile_id
+	migrated.profile_version = StageGenerationContract.CONTRACT_VERSION
+	migrated.layout_version = StageGenerationContract.CONTRACT_VERSION
+	migrated.payload_sha256 = StageLayoutBakeCodec.payload_sha256(migrated)
+	if migrated.payload_sha256.is_empty() \
+			or StageLayoutBakeCodec.hydrate(migrated, stage) == null:
+		push_error("Reusable layout could not hydrate under the new contract: %s" % source_path)
+		return null
+	return migrated
 
 
 ## One exact canonical identity either builds completely or fails closed.

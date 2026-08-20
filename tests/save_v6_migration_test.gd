@@ -31,7 +31,20 @@ func _run() -> void:
 	var legacy: Dictionary = migrated.get("legacy_best_results", {})
 	_assert(legacy.has("stage_01") and legacy.has("stage_02"), "migration must merge old and existing legacy bests")
 
+	migrated["best_results"] = {
+		"stage_07": {
+			"result_schema_version": SaveSystem.RESULT_SCHEMA_VERSION,
+			"rule_kind": "legacy_coverage",
+			"coverage": 12.5,
+			"stars": 2,
+			"coverage_metric_version": TargetSurfaceCoverage.METRIC_VERSION,
+		},
+	}
 	game_state.initialize_from_data(migrated)
+	_assert(game_state.best_results.has("stage_07"),
+		"a valid former scalar record must remain preserved in save state")
+	_assert(game_state.best_for(&"stage_07").is_empty(),
+		"a former scalar record must not be presented as target-band Paint Score")
 	var failed_result := _target_result(false, 9.0, 2, 4, 120)
 	_assert(not game_state.complete_target_band_stage(&"stage_01", failed_result, false), "failed result must not persist")
 	_assert(game_state.best_for(&"stage_01").is_empty(), "failed result must leave best empty")

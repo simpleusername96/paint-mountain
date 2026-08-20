@@ -5,7 +5,7 @@ var _failed := false
 
 func _initialize() -> void:
 	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(catalog != null and catalog.is_valid(), "current v10 catalog must be valid")
+	_assert(catalog != null and catalog.is_valid(), "current v11 catalog must be valid")
 	if catalog == null:
 		quit(1)
 		return
@@ -27,7 +27,13 @@ func _initialize() -> void:
 				and StageProgressionData.target_for(26) == 10.0,
 		"late clear targets must follow the shot-tier plateaus"
 	)
-	_assert(StageProgressionData.shots_for(1) == 4 and StageProgressionData.shots_for(30) == 7, "shot endpoints must remain locked")
+	_assert(
+		StageProgressionData.shots_for(1) == 4 \
+				and StageProgressionData.shots_for(7) == 6 \
+				and StageProgressionData.shots_for(16) == 7 \
+				and StageProgressionData.shots_for(30) == 7,
+		"target-band shot tiers must remain resident-safe"
+	)
 	_assert(
 		StageProgressionData.duration_seconds_for(1) == 60 \
 				and StageProgressionData.duration_seconds_for(10) == 60 \
@@ -43,7 +49,7 @@ func _initialize() -> void:
 		var stage := catalog.stages[index]
 		var number := index + 1
 		_assert(stage.stage_id == StringName("stage_%02d" % number), "stage IDs must be ordered")
-		_assert(stage.stage_number == number and stage.stage_version == 10, "stage version and number must match v10")
+		_assert(stage.stage_number == number and stage.stage_version == 11, "stage version and number must match v11")
 		_assert(stage.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED, "%s must use the shared seed" % stage.stage_id)
 		_assert(stage.terrain_size == StageProgressionData.terrain_size_for(number), "%s size must consume progression" % stage.stage_id)
 		_assert(stage.generation_profile.nominal_peak == StageProgressionData.nominal_peak_for(number), "%s peak must consume progression" % stage.stage_id)
@@ -67,7 +73,7 @@ func _initialize() -> void:
 	_assert(catalog.get_stage(&"burst_basin").stage_id == &"stage_02", "legacy Stage 02 alias must remain")
 	_assert(catalog.get_stage(&"split_ridge").stage_id == &"stage_03", "legacy Stage 03 alias must remain")
 	if not _failed:
-		print("stage30_progression_test passed: lower/wider v10 endpoints and thirty-stage ladder")
+		print("stage30_progression_test passed: lower/wider v11 endpoints and thirty-stage ladder")
 	quit(1 if _failed else 0)
 
 

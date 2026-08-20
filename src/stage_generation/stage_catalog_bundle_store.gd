@@ -53,6 +53,7 @@ static func _stage_rule_manifest_descriptor(stage: StageData) -> String:
 		str(stage.target_band.target_max),
 		str(stage.ball_deal_profile.profile_version),
 		str(stage.ball_deal_profile.allowed_kinds),
+		str(stage.ball_deal_profile.required_kinds),
 		str(stage.default_deal_seed),
 		str(stage.red_paint_color),
 		str(stage.green_paint_color),

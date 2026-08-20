@@ -5,7 +5,7 @@ var _failed := false
 
 func _initialize() -> void:
 	var catalog := load("res://resources/stages/catalog.tres") as StageCatalogData
-	_assert(catalog != null and catalog.is_valid(), "v10 catalog must load")
+	_assert(catalog != null and catalog.is_valid(), "active catalog must load")
 	if catalog == null:
 		quit(1)
 		return

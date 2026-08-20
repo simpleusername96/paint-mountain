@@ -156,7 +156,11 @@ func _run_capture() -> void:
 			_app._show_settings(&"gameplay")
 			await get_tree().process_frame
 		"manual_result":
-			await _capture_manual_result(_capture_stage)
+			var manual_stage := StageCatalog.get_stage(_capture_stage)
+			if manual_stage != null and manual_stage.uses_target_band():
+				await _capture_target_result(_capture_stage, true)
+			else:
+				await _capture_manual_result(_capture_stage)
 		"timeout_result":
 			await _capture_timeout_result(_capture_stage)
 		"target_clear_result":

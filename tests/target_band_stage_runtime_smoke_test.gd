@@ -4,12 +4,15 @@ const FIXTURE := preload("res://tests/support/baked_gameplay_fixture.gd")
 const STAGES: Array[StringName] = [
 	&"stage_01", &"stage_02", &"stage_03",
 	&"stage_04", &"stage_05", &"stage_06",
+	&"stage_07", &"stage_18", &"stage_30",
 ]
 
 var _failed := false
 
+
 func _initialize() -> void:
 	call_deferred("_run")
+
 
 func _run() -> void:
 	for stage_id in STAGES:
@@ -23,11 +26,15 @@ func _run() -> void:
 		var controller := gameplay.get_node("StageController") as StageController
 		var initial_deal := controller.attempt_deal_snapshot()
 		_assert(controller.stage_data.uses_target_band(),
-			"prototype stage must use target-band scoring: %s" % stage_id)
+			"canonical stage must use target-band scoring: %s" % stage_id)
 		_assert(initial_deal.size() == controller.stage_data.maximum_shots,
 			"runtime deal must match the authored shot count: %s" % stage_id)
 		_assert(controller.visible_queue_snapshot().size() == mini(3, initial_deal.size()),
 			"runtime must publish only the current-plus-two horizon: %s" % stage_id)
+		if controller.stage_data.stage_number >= 7:
+			_assert(_deal_contains_kind(initial_deal, BallKind.Value.IMPACT_BURST) \
+					and _deal_contains_kind(initial_deal, BallKind.Value.APEX_SPLIT),
+				"later runtime deal must contain both special kinds: %s" % stage_id)
 		_assert(controller.begin_aiming(), "stage must enter aiming: %s" % stage_id)
 		_assert(controller.current_state == StageController.State.AIMING,
 			"stage must remain in aiming: %s" % stage_id)
@@ -39,14 +46,37 @@ func _run() -> void:
 			"shot must inherit the admitted token kind: %s" % stage_id)
 		_assert(shot != null and int(initial_deal[0].get("channel", -1)) == shot.paint_channel,
 			"shot must inherit the admitted token channel: %s" % stage_id)
+		if controller.stage_data.stage_number in [7, 18, 30]:
+			var paint := gameplay.get_node("PaintSystem") as PaintSystem
+			Engine.time_scale = 3.0
+			var paint_budget := Engine.physics_ticks_per_second * 15
+			while paint.painted_target_pixels() <= 0 and paint_budget > 0:
+				await physics_frame
+				paint_budget -= 1
+			Engine.time_scale = 1.0
+			_assert(paint.painted_target_pixels() > 0,
+				"representative later-stage root must paint authoritative target: %s" % stage_id)
+			controller.force_finish_debug()
+			await process_frame
+			_assert(controller.current_state == StageController.State.RESULT \
+					and not controller.result_snapshot().is_empty(),
+				"representative later stage must publish a target-band result: %s" % stage_id)
 		gameplay.queue_free()
 		await process_frame
 	if not _failed:
-		print("Prototype runtime smoke passed: stages 01-06 instantiate, publish a bounded queue, and admit one typed root.")
+		print("Target-band runtime smoke passed: stages 01-07/18/30 publish bounded varied deals, fire, paint, and finish.")
 	quit(1 if _failed else 0)
+
+
+func _deal_contains_kind(deal: Array[Dictionary], kind: int) -> bool:
+	for token in deal:
+		if int(token.get("kind", -1)) == kind:
+			return true
+	return false
+
 
 func _assert(condition: bool, message: String) -> void:
 	if condition:
 		return
 	_failed = true
-	push_error("Prototype runtime smoke failed: %s" % message)
+	push_error("Target-band runtime smoke failed: %s" % message)

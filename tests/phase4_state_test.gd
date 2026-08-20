@@ -63,7 +63,8 @@ func _run_checks() -> void:
 	_assert(camera_director.current_mode == camera_mode_before_pause, "resume must restore the preserved camera presentation")
 
 	# Settling a family, reaching a grade threshold, or exhausting ammunition no
-	# longer decides the stage. Only Finish or timeout may enter RESULT.
+	# longer decides the stage. A target-band stage permits manual Finish only
+	# after the quiet board is inside its authored band; timeout remains terminal.
 	controller.stage_data.target_coverage = 0.0
 	manager.cleanup()
 	await physics_frame
@@ -72,6 +73,8 @@ func _run_checks() -> void:
 	_assert(controller.current_state == StageController.State.AIMING, "coverage and zero ammunition must not auto-end the run")
 	_assert(not controller.request_fire(), "zero ammunition must reject Fire without ending the run")
 	var coverage_before_finish := paint_system.coverage_percent()
+	controller.stage_data.target_band.target_min = -1.0
+	controller.stage_data.target_band.target_max = 1.0
 	_assert(controller.finish_stage(), "Finish must remain available after the first shot")
 	_assert(controller.current_state == StageController.State.RESULT, "manual Finish must produce one RESULT")
 	_assert(is_equal_approx(Engine.time_scale, 1.0), "result must restore normal UI time")

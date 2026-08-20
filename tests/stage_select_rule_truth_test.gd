@@ -39,11 +39,12 @@ func _run() -> void:
 	stage_select.set_page_for_capture(1)
 	await process_frame
 	_assert(stage_select._stage_nodes[0].button_pressed,
-		"the selected coverage stage must have one visible active rail node")
-	_assert("%" in preview_stats.text and "◆" in preview_stats.text,
-		"coverage preview must retain scalar target and glyph mechanism facts")
-	_assert("7–11" not in preview_stats.text,
-		"legacy preview must not claim target-band scoring")
+		"the selected later target-band stage must have one visible active rail node")
+	_assert("◎" in preview_stats.text and "R" in preview_stats.text and "G" in preview_stats.text,
+		"later-stage preview must retain target band and both color weights")
+	_assert(tr("ball.impact_burst") in preview_stats.accessibility_name \
+			and tr("ball.apex_split") in preview_stats.accessibility_name,
+		"later-stage detail must expose both required special kinds")
 
 	var hud := HUD_SCENE.instantiate() as HUDController
 	root.add_child(hud)
@@ -55,8 +56,9 @@ func _run() -> void:
 		"prototype briefing must introduce its active rule through the shared scale")
 	hud.configure(StageCatalog.get_stage(&"stage_09"))
 	hud.show_state(StageController.State.BRIEFING)
-	_assert(score_scale.visible and score_scale.target_range().x > 0.0,
-		"legacy briefing must present its coverage target through the same scale")
+	_assert(score_scale.visible \
+			and score_scale.target_range().is_equal_approx(Vector2(7.0, 11.0)),
+		"later briefing must present its target band through the same scale")
 
 	TranslationServer.set_locale(previous_locale)
 	game_state.persistence_enabled = true
@@ -64,7 +66,7 @@ func _run() -> void:
 	hud.queue_free()
 	await process_frame
 	if not _failed:
-		print("Stage-selection truth passed: prototype rule/kinds and legacy glyph facts stay distinct.")
+		print("Stage-selection truth passed: early and later target-band rules use shared scale and deal detail.")
 	quit(1 if _failed else 0)
 
 

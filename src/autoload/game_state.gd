@@ -90,7 +90,15 @@ func complete_target_band_stage(
 
 
 func best_for(stage_id: StringName) -> Dictionary:
-	return Dictionary(best_results.get(String(StageCatalog.canonical_id(stage_id)), {}))
+	var canonical_id := StageCatalog.canonical_id(stage_id)
+	var entry := Dictionary(best_results.get(String(canonical_id), {}))
+	var stage := StageCatalog.get_stage(canonical_id)
+	if entry.is_empty() or stage == null:
+		return entry
+	# A valid scalar record from the former Stage 07-30 rule remains preserved in
+	# save data, but it is not a Paint Score and must never be shown as one.
+	var expected_rule := "target_band" if stage.uses_target_band() else "legacy_coverage"
+	return entry if String(entry.get("rule_kind", "")) == expected_rule else {}
 
 
 func update_setting(key: StringName, value, persist: bool = true) -> bool:
