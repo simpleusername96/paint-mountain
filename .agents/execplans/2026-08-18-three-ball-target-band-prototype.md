@@ -176,13 +176,13 @@ fidelity change.
 
 ### M9 — Production, approval, and exact itch proof
 
-- [ ] **9.1 Run the final local gate.** Run `codebase-quality-auditor`, the full
+- [x] **9.1 Run the final local gate.** Run `codebase-quality-auditor`, the full
   ordered suite once, `scripts/verify.ps1`, Windows/Web release exports, Web
   static validation, and separate Windows/Web captures. Update specs,
   `.agents/Documentation.md`, and `docs/test-checklist.md` with implemented
   truth only. Evidence names commit, Godot 4.7.1, renderer, locale, viewport,
   and build hash.
-- [ ] **9.2 Run local Web interaction.** Load `npjt-port-guard`, use the protected
+- [x] **9.2 Run local Web interaction.** Load `npjt-port-guard`, use the protected
   codex-lane server and approved browser path, then exercise launcher-equivalent
   activation, untouched Space, pointer Fire, resize/fullscreen, both special
   balls, pause/settings, save/reload, audio unlock, background/resume, and
@@ -220,11 +220,11 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
 
 ## Acceptance checks
 
-- [ ] Fresh Briefing-to-Aim accepts one untouched Space as exactly one legal
+- [x] Fresh Briefing-to-Aim accepts one untouched Space as exactly one legal
   Fire, without a terrain/canvas/control click; pointer Fire is also once-only.
-- [ ] Apex Split atomically produces exactly three Standard children, frames
+- [x] Apex Split atomically produces exactly three Standard children, frames
   that family through a relevant child contact, and never changes simulation.
-- [ ] Impact Burst and Apex Split have distinct once-only cues that agree with
+- [x] Impact Burst and Apex Split have distinct once-only cues that agree with
   accepted paint/lifecycle/observation state.
 - [x] Gameplay HUD, Stage Select, Settings, Pause, and Result pass the viewport/
   locale matrix with bounded content, truthful focus, and readable contrast.
@@ -275,7 +275,9 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
   polluted by multi-second automation-window scheduling stalls, and the exact
   construction-to-`frame_post_draw` boundary is recorded under
   `../evidence/2026-08-20-m8-web-latency/README.md`.
-- [ ] M9 — final local gate, publish approval, and deployed itch proof.
+- [ ] M9 — local gate and production-Web journey pass; scoped commit and
+  explicit publish authorization plus deployed itch proof remain. Evidence is
+  under `../evidence/2026-08-20-m9-local-release/README.md`.
 
 ## Stop conditions and next step
 
@@ -284,6 +286,7 @@ horizon/kinds/channels/stage access, deleting legacy catalog owners, weakening a
 performance/fidelity contract, force-pushing, publishing, or changing itch
 visibility. Failed tests or difficult debugging are not stop conditions.
 
-Execute M9 next. Mark this plan `done` only after all non-conditional checks are
-supported by current evidence and the explicitly authorized deployed artifact
-passes the remote journey.
+Commit the M9 local checkpoint, stop the task-owned local server, and request
+publish authorization. Mark this plan `done` only after all non-conditional
+checks are supported by current evidence and the explicitly authorized deployed
+artifact passes the remote journey.

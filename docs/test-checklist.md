@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-20
 canonical_for: Paint Mountain vertical-slice acceptance and delivery evidence
 scope: automated, manual, performance, persistence, and screenshot validation
 source: source-brief.md
@@ -47,6 +47,7 @@ related:
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../.agents/evidence/2026-08-20-m9-local-release/README.md
 ---
 
 # Test Checklist
@@ -61,6 +62,38 @@ shortcut and HUD presentation clauses do not override the Quiet Context gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Active prototype stabilization and publication gate (2026-08-20)
+
+- [x] A fresh Briefing-to-Aim transition accepts the first untouched Space as
+  exactly one legal Fire without a canvas, terrain, or control click. Pointer
+  Fire also consumes exactly one shot.
+- [x] Impact Burst uses an accepted authoritative radial mark and a distinct
+  once-only cue. Apex Split atomically replaces one root with exactly three
+  Standard children and presents the admitted family without changing rules.
+- [x] Gameplay HUD, Stage Select, Settings, and Pause pass Korean/English
+  viewport bounds, focus, copy, contrast, and rendered-pixel checks from compact
+  stress sizes through 1920x1080.
+- [x] Radius-14 Burst paint is byte/checksum equivalent to completion-barrier
+  execution while advancing in 33 deterministic physics slices with a measured
+  13.6 ms worst slice. Root construction, texture upload, Apex replacement, and
+  Apex effect-to-render boundaries remain below 16.7 ms.
+- [x] The complete ordered suite, `scripts/verify.ps1`, Godot 4.7.1
+  Windows/Web release exports, Web static validation, and five separately
+  inspected Windows/Compatibility release captures pass.
+- [x] The final production Web artifact passes local Chrome activation, first
+  Space, pointer Fire, resize, browser fullscreen, both special balls,
+  Pause/Settings, save/reload, background/resume, and console/network checks.
+  Audio activation reports no browser warning; audible output remains a manual
+  host check.
+- [ ] Foreground whole-window p95/p99/max budgets pass. Current Chrome samples
+  contain multi-second automation-window scheduling stalls; application-owner
+  boundaries and the limitation are retained instead of weakening the target.
+- [ ] After explicit authorization, CI/Butler publishes the intended revision,
+  the deployed itch PCK SHA-256 equals the approved CI PCK, and the public
+  launcher/iframe repeats the full journey including audible audio.
+
+Local evidence: `../.agents/evidence/2026-08-20-m9-local-release/README.md`.
 
 ## Three-ball target-band prototype status
 

@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-20
 canonical_for: Paint Mountain runtime system ownership and interfaces
 scope: Godot runtime architecture, data ownership, signals, persistence, diagnostics, and verification
 source: source-brief.md
@@ -73,6 +73,8 @@ This architecture covers the single-process desktop game. It does not define a b
 | `ProjectileManager` | Parent/child registry, two initial-flight root slots, 21-resident-body cap, family IDs, root-projectile identity publication, per-shot spawn ordinals, paint-command canonicalization, activity facts, and cleanup | Fire admission, projectile tuning, ambient-force generation, camera transforms, or mask writes |
 | `SurfacePaintSweep`, `RadialPaintMark` | Immutable physically justified paint commands with stable source identity and deterministic order | Mask writes, coverage, payload, or flow |
 | `PaintSystem` | Ordered command drain, Playable Terrain Surface paint rasterization, first-threshold weighted Target Area accumulation, one authoritative paint mask/coverage, co-published texture/coverage, and clear | Shot limits, contact fabrication, terrain duplication, or UI formatting |
+| `GameplayFirstUseWarmup` | Render-only first-use submission for terrain, all three projectile visual families, and presentation-effect families, with matching-signature process reuse | Physics bodies, shots, paint, effects, stage actions, or alternate resources |
+| `RuntimeDeliveryTelemetry` | Opt-in correlation of preparation, Fire, construction, paint, texture, effect, and rendered-frame boundaries for delivery evidence | Normal-play timing cost, gameplay decisions, input synthesis, or player-facing state |
 | `TargetSurfaceCoverage` | Metric version and pure canonical-normal physical-area weighting/checksum rules | Mutable paint, texture publication, stage goals, or HUD text |
 | `TerrainGlyphMechanism` | Terrain-conforming flat-glyph presentation, selection, state, charges/cooldown, and reset | Projectile collision bodies, contact classification, or subclass-specific effects |
 | `TerrainMechanismResolver` | Resolve authoritative Playable Terrain Surface contact against visible glyph footprints and invoke one ordered effect | Fabricated contact, paint-mask mutation, or stage outcomes |
@@ -255,7 +257,11 @@ Human / GameplayAgentApi actions
 - Queue surface sweeps and radial marks during physics, canonicalize them through
   stable tick/spawn/source/sequence order, drain at one late fixed-physics
   boundary, reconstruct candidates on the exact shared triangle, and upload at
-  most once per rendered frame.
+  most once per rendered frame. A radial command advances deterministically
+  through candidate scan, connected-component selection, and writes with at
+  most 512 work items per physics tick. It remains pending until all phases
+  finish; no partial completion event, checksum, texture/coverage publication,
+  or queue-id release is allowed.
 - Reject disconnected, opposite-facing, wrong-body, and three-dimensionally
   out-of-radius candidates before persistent writes. Valid Playable Terrain
   Surface paints visibly whether or not it overlaps the Target Area;
@@ -268,6 +274,10 @@ Human / GameplayAgentApi actions
   coverage result.
 - Terrain material samples the same runtime texture. Concept images cannot
   authorize paint that was not produced by a verified surface command.
+- Live projectile nodes and first-use warm-up request the same immutable cached
+  central and silhouette meshes for Standard, Impact Burst, and Apex Split.
+  Warm-up submits only render resources through two completed render frames; it
+  never creates a physics projectile or duplicates gameplay state.
 
 ### Physics and determinism
 

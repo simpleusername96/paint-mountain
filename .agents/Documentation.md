@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-20
 scope: implemented project state and durable bootstrap decisions
 related:
   - Plan.md
@@ -36,6 +36,7 @@ related:
   - execplans/2026-08-11-terrain-centered-orbit.md
   - execplans/2026-08-11-fast-stage-readiness.md
   - execplans/2026-08-11-stage-selection-readiness-deployment.md
+  - execplans/2026-08-18-three-ball-target-band-prototype.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -43,6 +44,7 @@ related:
   - evidence/approved-image-fidelity-correction-2026-08-10/README.md
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
   - evidence/fast-stage-readiness-2026-08-11/README.md
+  - evidence/2026-08-20-m9-local-release/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -57,6 +59,53 @@ related:
 ---
 
 # Project Record
+
+## Three-Ball Prototype Stabilization (2026-08-20)
+
+### Implemented state
+
+- Entering Aim settles camera interaction before HUD focus, so the first Space
+  after Start reaches the existing authoritative Fire path without a canvas or
+  terrain click. Pointer Fire remains once-only.
+- Impact Burst applies only an accepted authoritative radial paint command.
+  Apex Split atomically replaces its root with exactly three Standard children
+  or does not split. Camera and effects observe accepted lifecycle events and
+  do not own simulation.
+- Gameplay HUD, Stage Select, and Settings use safe-area/container-owned
+  responsive layouts. Korean and English layouts are bounded from 640x360
+  stress size through 1920x1080; compact HUD hides duplicate Aim/legend copy but
+  retains keyboard input and Fire.
+- `PaintSystem` advances radial commands through deterministic scan, connected-
+  component, and write phases with at most 512 work items per physics tick.
+  Completion events, checksums, texture/coverage publication, and queue identity
+  occur only after the whole command completes.
+- Live and warm-up projectile families share immutable render meshes. Delivery
+  telemetry is opt-in and correlates Fire, construction, paint, texture,
+  effects, and `frame_post_draw` without timing ordinary play.
+
+### Verified state and limits
+
+- Focused regressions, the complete ordered suite, `scripts/verify.ps1`, final
+  Windows/Web exports, Web static verification, five inspected Windows release
+  captures, and a production-Web Chrome journey pass. Evidence is under
+  `.agents/evidence/2026-08-20-m6-input-special-lifecycle/`,
+  `.agents/evidence/2026-08-20-m7-responsive-ui/`,
+  `.agents/evidence/2026-08-20-m8-web-latency/`, and
+  `.agents/evidence/2026-08-20-m9-local-release/`.
+- The final local Web PCK SHA-256 is
+  `1751DC87AD89DA8130D0E29F4F35EA347284FA39BED7C54CBD89B3BABAD356BF`.
+  Local input, responsive/fullscreen behavior, both special balls,
+  pause/settings, save/reload, background/resume, and console/network health
+  pass. Automated audio activation has no warning; audible output is not
+  claimed.
+- Burst radius-14 raster work now spans 33 deterministic slices with a measured
+  13.6 ms maximum. Root construction is 1.0-1.3 ms, Apex replacement is 12.3
+  ms, and its effect reaches `frame_post_draw` 13.4 ms later. Whole-window
+  Chrome percentiles remain invalidated by automation-window scheduling stalls.
+- No itch.io upload, workflow dispatch, public visibility change, or deployed-
+  artifact claim belongs to this local stabilization checkpoint. The active
+  ExecPlan remains open for explicit publish authorization and exact public PCK
+  plus launcher/iframe verification.
 
 ## Three-Ball Red/Green Target-Band Prototype (2026-08-18)
 
