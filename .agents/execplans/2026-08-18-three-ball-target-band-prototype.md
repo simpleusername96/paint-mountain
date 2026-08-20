@@ -18,6 +18,7 @@ related:
   - ../design/VISUAL_REFERENCES.md
   - ../evidence/three-ball-target-band-prototype-2026-08-18/README.md
   - ../evidence/2026-08-20-local-itch-stability-audit/README.md
+  - ../evidence/2026-08-20-m8-web-latency/README.md
 ---
 
 # Three-Ball Target-Band Prototype Stabilization — Execution Contract
@@ -152,17 +153,17 @@ every affected state. Headless checks alone cannot close this gate.
 
 ### M8 — Attribute and remove visible Web stalls
 
-- [ ] **8.1 Publish truthful latency boundaries.** Record input received, Fire
+- [x] **8.1 Publish truthful latency boundaries.** Record input received, Fire
   accepted, root construction start/end, root admitted, first root frame
   presented, first contact, paint batch start/end, texture publish start/end,
   and effect frame presented. Rename the current muzzle-flash marker that
   falsely implies first paint visibility. Test ordering and once semantics for
   cold Standard/Burst/Split and one warm shot.
-- [ ] **8.2 Capture one foreground release-Web trace before optimization.** Use
+- [x] **8.2 Capture one foreground release-Web trace before optimization.** Use
   cold/warm stage entry, untouched first Space, first/second Standard, first
   Burst contact, and first Apex split/child contact. Correlate Chrome frame data
   with runtime markers and keep the worst frame.
-- [ ] **8.3 Apply only measured owner branches, then trace once more.** Available
+- [x] **8.3 Apply only measured owner branches, then trace once more.** Available
   branches are shared immutable projectile resources; deterministic budgeted
   paint cursors; one dirty texture publication per rendered frame with the
   supported partial path; or exact missing-family render warm-up. Do not run a
@@ -267,7 +268,13 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
   regressions, `scripts/verify.ps1`, and twelve personally inspected
   Windows/Compatibility captures pass; evidence is under
   `../evidence/2026-08-20-m7-responsive-ui/README.md`.
-- [ ] M8 — foreground Web attribution and measured correction.
+- [x] M8 — foreground Web attribution and measured correction. The blocking
+  radius-14 Burst raster is now 33 deterministic slices with a 13.6 ms measured
+  maximum; immutable projectile visuals put root construction at 1.0-1.3 ms
+  and Apex replacement at 12.3 ms. Whole-window Chrome percentiles remain
+  polluted by multi-second automation-window scheduling stalls, and the exact
+  construction-to-`frame_post_draw` boundary is recorded under
+  `../evidence/2026-08-20-m8-web-latency/README.md`.
 - [ ] M9 — final local gate, publish approval, and deployed itch proof.
 
 ## Stop conditions and next step
@@ -277,6 +284,6 @@ horizon/kinds/channels/stage access, deleting legacy catalog owners, weakening a
 performance/fidelity contract, force-pushing, publishing, or changing itch
 visibility. Failed tests or difficult debugging are not stop conditions.
 
-Execute M8 next. Mark this plan `done` only after all non-conditional checks are
+Execute M9 next. Mark this plan `done` only after all non-conditional checks are
 supported by current evidence and the explicitly authorized deployed artifact
 passes the remote journey.

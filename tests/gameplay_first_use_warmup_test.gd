@@ -18,6 +18,7 @@ func _run_checks() -> void:
 	for source in sources:
 		_assert_true(not source.emitting, "warm-up sources must start inactive")
 	_assert_shared_effect_resources(effects)
+	_assert_shared_projectile_visual_resources()
 
 	var warmup := GameplayFirstUseWarmup.new()
 	root.add_child(warmup)
@@ -30,6 +31,10 @@ func _run_checks() -> void:
 	_assert_true(
 		warmup.warmed_effect_family_count() == sources.size(),
 		"warm-up must render each effect material family exactly once"
+	)
+	_assert_true(
+		warmup.warmed_projectile_family_count() == 3,
+		"warm-up must render Standard, Impact Burst, and Apex Split visual families"
 	)
 	_assert_true(completed_count[0] == 1, "first warm-up run must emit one completion")
 	_assert_true(
@@ -60,7 +65,8 @@ func _run_checks() -> void:
 	)
 	_assert_true(
 		shared_completed_count[0] == 1 \
-				and shared_warmup.warmed_effect_family_count() == sources.size(),
+				and shared_warmup.warmed_effect_family_count() == sources.size() \
+				and shared_warmup.warmed_projectile_family_count() == 3,
 		"shared completion must retain the exact warmed effect-family coverage"
 	)
 	_assert_true(
@@ -71,7 +77,8 @@ func _run_checks() -> void:
 	warmup.run(_triangle_mesh(), material, PROJECTILE_DATA, sources)
 	_assert_true(completed_count[0] == 2, "idempotent repeated warm-up must complete synchronously")
 	_assert_true(
-		warmup.warmed_effect_family_count() == sources.size(),
+		warmup.warmed_effect_family_count() == sources.size() \
+				and warmup.warmed_projectile_family_count() == 3,
 		"idempotent repeated warm-up must not render any family twice"
 	)
 	if not _failed:
@@ -122,6 +129,32 @@ func _assert_shared_effect_resources(effects: PresentationEffects) -> void:
 					and first.draw_pass_1 == second.draw_pass_1,
 			"effect family %s must share immutable process and draw resources" % pair[0]
 		)
+
+
+func _assert_shared_projectile_visual_resources() -> void:
+	var first := PaintProjectile.visual_nodes(
+		PROJECTILE_DATA,
+		1.0,
+		PaintChannel.Value.RED,
+		BallKind.Value.APEX_SPLIT,
+		0
+	)
+	var second := PaintProjectile.visual_nodes(
+		PROJECTILE_DATA,
+		1.0,
+		PaintChannel.Value.RED,
+		BallKind.Value.APEX_SPLIT,
+		0
+	)
+	_assert_true(
+		first.size() == 4 and second.size() == 4 \
+				and first[0].mesh == second[0].mesh \
+				and first[1].mesh == second[1].mesh \
+				and first[1].mesh == first[2].mesh,
+		"warm-up and live projectile nodes must reuse immutable central and silhouette meshes"
+	)
+	for visual in first + second:
+		visual.free()
 
 
 func _assert_true(condition: bool, message: String) -> void:

@@ -8,6 +8,7 @@ static var _completed_signatures: Dictionary = {}
 var _running := false
 var _completed := false
 var _warmed_effect_family_count := 0
+var _warmed_projectile_family_count := 0
 
 
 func is_complete() -> bool:
@@ -16,6 +17,10 @@ func is_complete() -> bool:
 
 func warmed_effect_family_count() -> int:
 	return _warmed_effect_family_count
+
+
+func warmed_projectile_family_count() -> int:
+	return _warmed_projectile_family_count
 
 
 ## Exercises only render resources. No physics body, projectile-manager call,
@@ -31,7 +36,9 @@ func run(
 		return
 	var signature := _warmup_signature(terrain_material, projectile_data, effect_sources)
 	if _completed_signatures.has(signature):
-		_warmed_effect_family_count = int(_completed_signatures[signature])
+		var cached: Dictionary = _completed_signatures[signature]
+		_warmed_effect_family_count = int(cached.get("effect_families", 0))
+		_warmed_projectile_family_count = int(cached.get("projectile_families", 0))
 		_completed = true
 		completed.emit()
 		return
@@ -58,11 +65,20 @@ func run(
 	terrain_instance.position = Vector3(0.0, -0.8, 0.0)
 	world_root.add_child(terrain_instance)
 
-	var projectile_instance := MeshInstance3D.new()
-	projectile_instance.name = "ProjectileVisualWarmup"
-	projectile_instance.mesh = PaintProjectile.visual_mesh(projectile_data)
-	projectile_instance.position = Vector3(0.0, 0.0, 0.5)
-	world_root.add_child(projectile_instance)
+	for family_index in range(3):
+		var family_root := Node3D.new()
+		family_root.name = "ProjectileFamilyWarmup%02d" % (family_index + 1)
+		family_root.position = Vector3(float(family_index - 1) * 1.5, 0.0, 0.5)
+		world_root.add_child(family_root)
+		for visual in PaintProjectile.visual_nodes(
+			projectile_data,
+			1.0,
+			PaintChannel.Value.RED,
+			family_index,
+			0
+		):
+			family_root.add_child(visual)
+		_warmed_projectile_family_count += 1
 
 	var warmed_particles: Array[GPUParticles3D] = []
 	for source in effect_sources:
@@ -90,7 +106,10 @@ func run(
 	await scene_tree.process_frame
 	if not is_inside_tree():
 		return
-	_completed_signatures[signature] = _warmed_effect_family_count
+	_completed_signatures[signature] = {
+		"effect_families": _warmed_effect_family_count,
+		"projectile_families": _warmed_projectile_family_count,
+	}
 	_running = false
 	_completed = true
 	completed.emit()
@@ -103,7 +122,7 @@ func _warmup_signature(
 ) -> String:
 	var parts := PackedStringArray([
 		terrain_material.shader.resource_path if terrain_material.shader != null else "",
-		projectile_data.resource_path,
+		"%s|projectile_visual_families=3" % projectile_data.resource_path,
 	])
 	for source in effect_sources:
 		if source == null:

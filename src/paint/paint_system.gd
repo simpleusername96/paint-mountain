@@ -13,6 +13,10 @@ signal paint_commands_drained(
 const MASK_SIZE := 512
 const OWNER_UNPAINTED_BYTE := 255
 const PAINT_DRAIN_PRIORITY := 1000
+# Keep contact-path work below a foreground frame budget. A command retains its
+# canonical place in the queue until every candidate, connectivity step, and
+# write has completed; this limit never changes the final paint mask.
+const PAINT_RASTER_WORK_BUDGET_PER_PHYSICS_TICK := 512
 # The mask remains authoritative in CPU memory; the material only needs a
 # bounded presentation cadence. Ten uploads per second keeps the blue trail
 # visibly continuous while avoiding a texture update on every sixth rendered
@@ -88,6 +92,7 @@ var _nontarget_texture: ImageTexture
 var _terrain_material: ShaderMaterial
 
 var _pending_commands: Array = []
+var _active_radial_cursor: RadialRasterCursor
 var _queued_command_keys: Dictionary = {}
 var _last_drained_physics_tick: int = -1
 var _paint_mask_checksum: int = 0
@@ -109,6 +114,103 @@ var _paint_texture_publish_elapsed: float = 0.0
 var _coverage_changed_since_publish: bool = false
 var _recent_diagnostics_enabled: bool = false
 var _nontarget_diagnostic_build_count: int = 0
+var _dirty_telemetry_shot_ids: Dictionary = {}
+var _telemetry_paint_traces: Dictionary = {}
+var _telemetry_texture_traces: Dictionary = {}
+var _active_paint_telemetry_batch: Dictionary = {}
+
+
+## Incrementally rasterizes one radial command. The three phases deliberately
+## mirror the eager radial path so a sliced command produces byte-for-byte the
+## same authoritative mask and coverage result before it is acknowledged.
+class RadialRasterCursor:
+	var command: RadialPaintMark
+	var pixel_bounds: Rect2i
+	var candidate_generation: int
+	var scan_offset: int = 0
+	var visit_generation: int = 0
+	var component_queue := PackedInt32Array()
+	var component_pixels := PackedInt32Array()
+	var component_cursor: int = 0
+	var write_cursor: int = 0
+	var written_pixel_count: int = 0
+	var newly_painted_pixel_count: int = 0
+	var phase: int = 0
+	const SCAN := 0
+	const CONNECT := 1
+	const WRITE := 2
+	const COMPLETE := 3
+
+	func _init(value: RadialPaintMark, bounds: Rect2i, generation: int) -> void:
+		command = value
+		pixel_bounds = bounds
+		candidate_generation = generation
+
+	func advance(owner: PaintSystem, work_budget: int) -> bool:
+		var remaining := maxi(work_budget, 1)
+		while remaining > 0 and phase != COMPLETE:
+			match phase:
+				SCAN:
+					if scan_offset >= pixel_bounds.size.x * pixel_bounds.size.y:
+						var seed := owner._snap_candidate(command.center, candidate_generation)
+						if seed < 0:
+							phase = COMPLETE
+							continue
+						visit_generation = owner._next_visited_generation()
+						component_queue.append(seed)
+						owner._visited_generation[seed] = visit_generation
+						phase = CONNECT
+						continue
+					var pixel_x := pixel_bounds.position.x + scan_offset % pixel_bounds.size.x
+					var pixel_y := pixel_bounds.position.y + scan_offset / pixel_bounds.size.x
+					scan_offset += 1
+					remaining -= 1
+					var index := pixel_y * MASK_SIZE + pixel_x
+					if not owner._ensure_surface_sample(index):
+						continue
+					if owner._surface_positions[index].distance_squared_to(command.center) > command.radius * command.radius:
+						continue
+					if owner._surface_normals[index].dot(command.normal) < NORMAL_FACING_THRESHOLD:
+						continue
+					owner._candidate_generation[index] = candidate_generation
+				CONNECT:
+					if component_cursor >= component_queue.size():
+						phase = WRITE
+						continue
+					var current := component_queue[component_cursor]
+					component_cursor += 1
+					component_pixels.append(current)
+					remaining -= 1
+					var point := Vector2i(current % MASK_SIZE, current / MASK_SIZE)
+					for offset in NEIGHBOR_OFFSETS:
+						var neighbor := point + offset
+						if neighbor.x < 0 or neighbor.x >= MASK_SIZE \
+								or neighbor.y < 0 or neighbor.y >= MASK_SIZE:
+							continue
+						var neighbor_index := neighbor.y * MASK_SIZE + neighbor.x
+						if owner._candidate_generation[neighbor_index] != candidate_generation \
+								or owner._visited_generation[neighbor_index] == visit_generation:
+							continue
+						owner._visited_generation[neighbor_index] = visit_generation
+						component_queue.append(neighbor_index)
+				WRITE:
+					if write_cursor >= component_pixels.size():
+						phase = COMPLETE
+						continue
+					var write_index := component_pixels[write_cursor]
+					write_cursor += 1
+					remaining -= 1
+					var distance := owner._surface_positions[write_index].distance_to(command.center)
+					var write_result := owner._write_paint_value(
+						write_index,
+						owner._alpha_for_distance(distance, command.radius),
+						command.channel
+					)
+					if write_result != WRITE_RESULT_NONE:
+						written_pixel_count += 1
+					if (write_result & WRITE_RESULT_NEW_TARGET) != 0:
+						newly_painted_pixel_count += 1
+		return phase == COMPLETE
 
 
 func _init() -> void:
@@ -140,6 +242,8 @@ func configure(
 	_terrain_material = terrain_material
 	_surface_tuning = paint_surface_tuning
 	_pending_commands.clear()
+	_active_radial_cursor = null
+	_active_paint_telemetry_batch.clear()
 	_queued_command_keys.clear()
 	_last_drained_physics_tick = -1
 	_create_masks_and_surface_cache(prepared_bootstrap)
@@ -181,7 +285,9 @@ func authoritative_top_surface_identity() -> Dictionary:
 
 
 func _physics_process(_delta: float) -> void:
-	drain_pending_commands()
+	# The interactive path advances at a fixed work budget. Explicit drains used
+	# by results, restart, and tests remain completion barriers.
+	drain_pending_commands(false)
 
 
 func _process(delta: float) -> void:
@@ -207,6 +313,13 @@ func _queue_typed_command(command) -> bool:
 	if command_tick <= _last_drained_physics_tick:
 		paint_command_rejected.emit(command)
 		return false
+	# Once a command has begun its deterministic cursor, later contact reports
+	# from that tick are already stale just as they were after the former eager
+	# drain. Do not let them overtake an in-flight canonical command.
+	if _active_radial_cursor != null \
+			and command_tick <= int(_active_radial_cursor.command.physics_tick):
+		paint_command_rejected.emit(command)
+		return false
 	var key := _command_key(command)
 	if _queued_command_keys.has(key):
 		paint_command_rejected.emit(command)
@@ -216,8 +329,8 @@ func _queue_typed_command(command) -> bool:
 	return true
 
 
-func drain_pending_commands() -> Dictionary:
-	if _pending_commands.is_empty():
+func drain_pending_commands(complete: bool = true) -> Dictionary:
+	if _pending_commands.is_empty() and _active_radial_cursor == null:
 		return {
 			"last_drained_physics_tick": _last_drained_physics_tick,
 			"command_count": 0,
@@ -228,33 +341,78 @@ func drain_pending_commands() -> Dictionary:
 	_clear_recent_region()
 	if _pending_commands.size() > 1:
 		_pending_commands.sort_custom(_typed_command_less)
-	var commands := _pending_commands
-	_pending_commands = []
+	_start_paint_telemetry_batch_if_needed()
 	var written := 0
 	var newly_painted := 0
+	var completed_command_count := 0
 	var drained_tick := _last_drained_physics_tick
-	for command in commands:
-		_queued_command_keys.erase(_command_key(command))
-		var counts := Vector2i.ZERO
+	var work_budget := 0x7fffffff if complete else PAINT_RASTER_WORK_BUDGET_PER_PHYSICS_TICK
+	while work_budget > 0 and (_active_radial_cursor != null or not _pending_commands.is_empty()):
+		if _active_radial_cursor != null:
+			var active_command := _active_radial_cursor.command
+			var measure_slice := not _active_paint_telemetry_batch.is_empty()
+			var slice_started_at := Time.get_ticks_usec() if measure_slice else 0
+			var active_complete := _active_radial_cursor.advance(self, work_budget)
+			if measure_slice:
+				_record_paint_telemetry_slice(
+					active_command,
+					Time.get_ticks_usec() - slice_started_at
+				)
+			# A physics tick never begins a second command after advancing a cursor.
+			# This makes the stated budget a hard upper bound even when its final
+			# phase transition itself requires no additional sample.
+			if not complete:
+				work_budget = 0
+			if not active_complete:
+				break
+			var active_counts := Vector2i(
+				_active_radial_cursor.written_pixel_count,
+				_active_radial_cursor.newly_painted_pixel_count
+			)
+			_active_radial_cursor = null
+			_complete_paint_command(active_command, active_counts)
+			_record_paint_telemetry_command_finished(active_command, active_counts)
+			written += active_counts.x
+			newly_painted += active_counts.y
+			completed_command_count += 1
+			drained_tick = maxi(drained_tick, int(active_command.physics_tick))
+			continue
+		var command = _pending_commands.pop_front()
 		if command is RadialPaintMark:
-			counts = _rasterize_radial_command(command as RadialPaintMark)
-		elif command is SurfacePaintSweep:
+			_active_radial_cursor = _begin_radial_cursor(command as RadialPaintMark)
+			if _active_radial_cursor == null:
+				_record_paint_telemetry_slice(command, 0)
+				_complete_paint_command(command, Vector2i.ZERO)
+				_record_paint_telemetry_command_finished(command, Vector2i.ZERO)
+				completed_command_count += 1
+				drained_tick = maxi(drained_tick, int(command.physics_tick))
+			continue
+		var counts := Vector2i.ZERO
+		if command is SurfacePaintSweep:
+			var measure_sweep := not _active_paint_telemetry_batch.is_empty()
+			var sweep_started_at := Time.get_ticks_usec() if measure_sweep else 0
 			counts = _rasterize_sweep_command(command as SurfacePaintSweep)
-		if counts.x > 0:
-			# Publish once per authoritative command so observers see its complete
-			# incremental checksum without paying a second combine per painted pixel.
-			_publish_paint_mask_checksum()
+			if measure_sweep:
+				_record_paint_telemetry_slice(
+					command,
+					Time.get_ticks_usec() - sweep_started_at
+				)
+		_complete_paint_command(command, counts)
+		_record_paint_telemetry_command_finished(command, counts)
 		written += counts.x
 		newly_painted += counts.y
+		completed_command_count += 1
 		drained_tick = maxi(drained_tick, int(command.physics_tick))
-		paint_command_applied.emit(command, counts.x, counts.y)
+		if not complete:
+			break
 	_last_drained_physics_tick = drained_tick
 	_coverage_changed_since_publish = _coverage_changed_since_publish or newly_painted > 0
 	var checksum := _paint_mask_checksum
-	paint_commands_drained.emit(drained_tick, commands.size(), checksum)
+	if completed_command_count > 0:
+		paint_commands_drained.emit(drained_tick, completed_command_count, checksum)
 	return {
 		"last_drained_physics_tick": drained_tick,
-		"command_count": commands.size(),
+		"command_count": completed_command_count,
 		"written_pixel_count": written,
 		"newly_painted_pixel_count": newly_painted,
 		"paint_mask_checksum": checksum,
@@ -263,6 +421,118 @@ func drain_pending_commands() -> Dictionary:
 
 func _rasterize_radial_command(command: RadialPaintMark) -> Vector2i:
 	return _rasterize_radial(command.center, command.normal, command.radius, command.channel)
+
+
+func _begin_radial_cursor(command: RadialPaintMark) -> RadialRasterCursor:
+	var pixel_bounds := _candidate_pixel_bounds(
+		Vector2(command.center.x - command.radius, command.center.z - command.radius),
+		Vector2(command.center.x + command.radius, command.center.z + command.radius)
+	)
+	if not pixel_bounds.has_area():
+		return null
+	var cursor := RadialRasterCursor.new(command, pixel_bounds, _next_candidate_generation())
+	return cursor
+
+
+func _start_paint_telemetry_batch_if_needed() -> void:
+	if not RuntimeDeliveryTelemetry.enabled() or not _active_paint_telemetry_batch.is_empty():
+		return
+	var commands: Array = _pending_commands.duplicate()
+	if _active_radial_cursor != null:
+		commands.push_front(_active_radial_cursor.command)
+	var command_keys: Dictionary = {}
+	var shot_id_set: Dictionary = {}
+	var trace_id_set: Dictionary = {}
+	for command in commands:
+		var shot_id := int(command.shot_id)
+		var trace_id := RuntimeDeliveryTelemetry.trace_id_for_shot(shot_id)
+		if trace_id <= 0 or _telemetry_paint_traces.has(trace_id):
+			continue
+		command_keys[_command_key(command)] = true
+		shot_id_set[shot_id] = true
+		trace_id_set[trace_id] = true
+	var trace_ids := _sorted_dictionary_int_keys(trace_id_set)
+	if trace_ids.is_empty():
+		return
+	var shot_ids := _sorted_dictionary_int_keys(shot_id_set)
+	_active_paint_telemetry_batch = {
+		"command_keys": command_keys,
+		"command_count": command_keys.size(),
+		"shot_ids": shot_ids,
+		"trace_ids": trace_ids,
+		"started_at": Time.get_ticks_usec(),
+		"slice_count": 0,
+		"max_slice_usec": 0,
+		"written_pixel_count": 0,
+		"newly_painted_pixel_count": 0,
+	}
+	RuntimeDeliveryTelemetry.emit_marker(&"paint_batch_started", {
+		"command_count": command_keys.size(),
+		"shot_ids": shot_ids,
+		"trace_ids": trace_ids,
+	})
+
+
+func _record_paint_telemetry_slice(command, duration_usec: int) -> void:
+	if _active_paint_telemetry_batch.is_empty():
+		return
+	var command_keys: Dictionary = _active_paint_telemetry_batch.command_keys
+	if not command_keys.has(_command_key(command)):
+		return
+	_active_paint_telemetry_batch.slice_count = int(
+		_active_paint_telemetry_batch.slice_count
+	) + 1
+	_active_paint_telemetry_batch.max_slice_usec = maxi(
+		int(_active_paint_telemetry_batch.max_slice_usec),
+		duration_usec
+	)
+
+
+func _record_paint_telemetry_command_finished(command, counts: Vector2i) -> void:
+	if _active_paint_telemetry_batch.is_empty():
+		return
+	var command_keys: Dictionary = _active_paint_telemetry_batch.command_keys
+	var key := _command_key(command)
+	if not command_keys.erase(key):
+		return
+	_active_paint_telemetry_batch.command_keys = command_keys
+	_active_paint_telemetry_batch.written_pixel_count = int(
+		_active_paint_telemetry_batch.written_pixel_count
+	) + counts.x
+	_active_paint_telemetry_batch.newly_painted_pixel_count = int(
+		_active_paint_telemetry_batch.newly_painted_pixel_count
+	) + counts.y
+	if not command_keys.is_empty():
+		return
+	var trace_ids: Array = _active_paint_telemetry_batch.trace_ids
+	RuntimeDeliveryTelemetry.emit_marker(&"paint_batch_finished", {
+		"command_count": int(_active_paint_telemetry_batch.command_count),
+		"shot_ids": _active_paint_telemetry_batch.shot_ids,
+		"trace_ids": trace_ids,
+		"written_pixel_count": int(_active_paint_telemetry_batch.written_pixel_count),
+		"newly_painted_pixel_count": int(
+			_active_paint_telemetry_batch.newly_painted_pixel_count
+		),
+		"paint_mask_checksum": _paint_mask_checksum,
+		"slice_count": int(_active_paint_telemetry_batch.slice_count),
+		"max_slice_usec": int(_active_paint_telemetry_batch.max_slice_usec),
+		"total_duration_usec": Time.get_ticks_usec() - int(
+			_active_paint_telemetry_batch.started_at
+		),
+	})
+	_mark_telemetry_traces_published(trace_ids, _telemetry_paint_traces)
+	_active_paint_telemetry_batch.clear()
+
+
+func _complete_paint_command(command, counts: Vector2i) -> void:
+	_queued_command_keys.erase(_command_key(command))
+	if counts.x > 0:
+		# Observers only receive a command after its complete incremental checksum;
+		# sliced writes never expose a false command boundary.
+		_publish_paint_mask_checksum()
+	paint_command_applied.emit(command, counts.x, counts.y)
+	if RuntimeDeliveryTelemetry.enabled():
+		_dirty_telemetry_shot_ids[int(command.shot_id)] = true
 
 
 func _rasterize_sweep_command(command: SurfacePaintSweep) -> Vector2i:
@@ -614,7 +884,12 @@ func clear() -> void:
 	if _paint_image == null:
 		return
 	_pending_commands.clear()
+	_active_radial_cursor = null
+	_active_paint_telemetry_batch.clear()
 	_queued_command_keys.clear()
+	_dirty_telemetry_shot_ids.clear()
+	_telemetry_paint_traces.clear()
+	_telemetry_texture_traces.clear()
 	_last_drained_physics_tick = -1
 	_paint_mask_bytes.fill(0)
 	if _recent_diagnostics_enabled:
@@ -734,7 +1009,7 @@ func nontarget_diagnostic_build_count() -> int:
 
 
 func pending_work_count() -> int:
-	return _pending_commands.size()
+	return _pending_commands.size() + (1 if _active_radial_cursor != null else 0)
 
 
 func last_drained_physics_tick() -> int:
@@ -1071,6 +1346,29 @@ func _include_pixel(rect: Rect2i, pixel: Vector2i) -> Rect2i:
 func _upload_dirty_images() -> bool:
 	if not _texture_upload_pending:
 		return false
+	var telemetry_enabled := RuntimeDeliveryTelemetry.enabled()
+	var telemetry_started_at := 0
+	var telemetry_shot_ids: Array[int] = []
+	var telemetry_trace_ids: Array[int] = []
+	if telemetry_enabled:
+		telemetry_shot_ids = _sorted_dictionary_int_keys(_dirty_telemetry_shot_ids)
+		# Publish the first texture boundary per trace. Later rolling updates stay
+		# visible to the browser profiler without flooding its console.
+		telemetry_trace_ids = _unpublished_telemetry_trace_ids(
+			telemetry_shot_ids,
+			_telemetry_texture_traces
+		)
+	var paint_dirty_rect := _paint_dirty_rect
+	var upload_path := "partial" if _paint_texture != null \
+			and _paint_texture.has_method(&"set_data_partial") else "full"
+	if not telemetry_trace_ids.is_empty():
+		telemetry_started_at = Time.get_ticks_usec()
+		RuntimeDeliveryTelemetry.emit_marker(&"texture_publish_started", {
+			"shot_ids": telemetry_shot_ids,
+			"trace_ids": telemetry_trace_ids,
+			"dirty_rect": _rect_dictionary(paint_dirty_rect),
+			"upload_path": upload_path,
+		})
 	if _paint_dirty_rect.has_area():
 		_paint_image.set_data(MASK_SIZE, MASK_SIZE, false, Image.FORMAT_RG8, _paint_mask_bytes)
 		_update_texture_region(_paint_texture, _paint_image, _paint_dirty_rect)
@@ -1081,10 +1379,58 @@ func _upload_dirty_images() -> bool:
 	_paint_dirty_rect = Rect2i()
 	_recent_dirty_rect = Rect2i()
 	_texture_upload_pending = false
+	_dirty_telemetry_shot_ids.clear()
 	if _coverage_changed_since_publish:
 		_coverage_changed_since_publish = false
 		coverage_changed.emit(coverage_percent())
+	if not telemetry_trace_ids.is_empty():
+		RuntimeDeliveryTelemetry.emit_marker(&"texture_publish_finished", {
+			"shot_ids": telemetry_shot_ids,
+			"trace_ids": telemetry_trace_ids,
+			"dirty_rect": _rect_dictionary(paint_dirty_rect),
+			"upload_path": upload_path,
+			"upload_batch_count": _texture_upload_batch_count,
+			"duration_usec": Time.get_ticks_usec() - telemetry_started_at,
+		})
+		_mark_telemetry_traces_published(telemetry_trace_ids, _telemetry_texture_traces)
 	return true
+
+
+func _sorted_dictionary_int_keys(source: Dictionary) -> Array[int]:
+	var ids: Array[int] = []
+	for value in source.keys():
+		ids.append(int(value))
+	ids.sort()
+	return ids
+
+
+func _unpublished_telemetry_trace_ids(
+		shot_ids: Array[int],
+		published: Dictionary
+) -> Array[int]:
+	var traces: Dictionary = {}
+	for shot_id in shot_ids:
+		var trace_id := RuntimeDeliveryTelemetry.trace_id_for_shot(shot_id)
+		if trace_id > 0 and not published.has(trace_id):
+			traces[trace_id] = true
+	return _sorted_dictionary_int_keys(traces)
+
+
+func _mark_telemetry_traces_published(
+		trace_ids: Array[int],
+		published: Dictionary
+) -> void:
+	for trace_id in trace_ids:
+		published[trace_id] = true
+
+
+func _rect_dictionary(rect: Rect2i) -> Dictionary:
+	return {
+		"x": rect.position.x,
+		"y": rect.position.y,
+		"width": rect.size.x,
+		"height": rect.size.y,
+	}
 
 
 func _update_texture_region(

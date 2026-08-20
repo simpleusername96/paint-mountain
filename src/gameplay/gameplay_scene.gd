@@ -45,6 +45,8 @@ var _stage_preparation_complete := false
 var _terrain_paint_material: ShaderMaterial
 var _stage_presented_requested := true
 var _delivery_markers: Dictionary = {}
+var _delivery_root_frame_keys: Dictionary = {}
+var _delivery_effect_frame_keys: Dictionary = {}
 
 
 func _ready() -> void:
@@ -325,6 +327,7 @@ func _complete_stage_preparation() -> void:
 	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_warmup_complete", {
 		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
 		"effect_family_count": warmup.warmed_effect_family_count(),
+		"projectile_family_count": warmup.warmed_projectile_family_count(),
 	})
 	warmup.queue_free()
 	_publish_stage_prepared()
@@ -397,16 +400,32 @@ func _on_aim_changed(yaw: float, elevation: float, power: float) -> void:
 	_prediction_scheduler.request_latest()
 
 
-func _on_transient_splash_requested(_projectile: PaintProjectile, contact: ProjectileContact) -> void:
+func _on_transient_splash_requested(projectile: PaintProjectile, contact: ProjectileContact) -> void:
 	_presentation_effects.splash(contact.world_position, clampf(contact.relative_normal_speed / 32.0, 0.7, 1.5))
-	_delivery_marker_once(&"first_paint_effect_visible")
+	if is_instance_valid(projectile):
+		RuntimeDeliveryTelemetry.emit_for_shot(&"splash_requested", projectile.shot_id, {
+			"spawn_ordinal": projectile.spawn_ordinal,
+			"effect_id": "splash",
+		})
+		_queue_effect_frame_marker(projectile.shot_id, projectile.spawn_ordinal, &"splash")
 	_audio_cue(&"impact")
 	_camera_director.add_impact_shake(clampf(contact.relative_normal_speed / 80.0, 0.12, 0.42))
 
 
 func _on_shot_fired(_number: int, _yaw: float, _elevation: float, _power: float) -> void:
 	_presentation_effects.muzzle_flash(_cannon.get_muzzle_position())
-	_delivery_marker_once(&"first_paint_effect_visible")
+	var observation := _stage_controller.current_shot_observation()
+	if observation != null:
+		var root_spawn_ordinal := _root_spawn_ordinal(observation.shot_id)
+		RuntimeDeliveryTelemetry.emit_for_shot(&"muzzle_flash_requested", observation.shot_id, {
+			"spawn_ordinal": root_spawn_ordinal,
+			"effect_id": "muzzle_flash",
+		})
+		_queue_effect_frame_marker(
+			observation.shot_id,
+			root_spawn_ordinal,
+			&"muzzle_flash"
+		)
 	_audio_cue(&"fire")
 
 
@@ -419,7 +438,6 @@ func _on_aim_action_accepted(yaw: float, elevation: float, power: float, _origin
 
 
 func _on_fire_action_accepted(_origin: int) -> void:
-	_delivery_marker_once(&"fire_accepted")
 	_attempt_recorder.record_aim(
 		_cannon.yaw_degrees,
 		_cannon.elevation_degrees,
@@ -438,6 +456,8 @@ func _on_fire_action_accepted(_origin: int) -> void:
 
 
 func _on_restart_action_accepted(_origin: int) -> void:
+	_delivery_root_frame_keys.clear()
+	_delivery_effect_frame_keys.clear()
 	_mechanism_resolver.clear_all()
 	_terrain_aim.reset_for_restart()
 	_attempt_recorder.start_attempt(
@@ -674,6 +694,12 @@ func _on_ball_effect_triggered(
 			_camera_director.add_impact_shake(0.12)
 		_:
 			push_warning("Unknown intrinsic ball effect: %s" % String(effect_id))
+			return
+	RuntimeDeliveryTelemetry.emit_for_shot(&"effect_requested", projectile.shot_id, {
+		"spawn_ordinal": projectile.spawn_ordinal,
+		"effect_id": String(effect_id),
+	})
+	_queue_effect_frame_marker(projectile.shot_id, projectile.spawn_ordinal, effect_id)
 
 
 func _set_mechanism_labels_visible(visible: bool) -> void:
@@ -747,8 +773,81 @@ func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> 
 		)
 
 
-func _on_delivery_projectile_spawned(_projectile: PaintProjectile) -> void:
-	_delivery_marker_once(&"first_projectile_visible")
+func _on_delivery_projectile_spawned(projectile: PaintProjectile) -> void:
+	if not is_instance_valid(projectile) or projectile.split_generation != 0:
+		return
+	var key := "%d:%d" % [projectile.shot_id, projectile.spawn_ordinal]
+	if _delivery_root_frame_keys.has(key):
+		return
+	_delivery_root_frame_keys[key] = true
+	_report_root_frame_presented.call_deferred(
+		projectile.get_instance_id(),
+		projectile.shot_id,
+		projectile.spawn_ordinal
+	)
+
+
+func _report_root_frame_presented(
+		projectile_instance_id: int,
+		shot_id: int,
+		spawn_ordinal: int
+) -> void:
+	var frame_boundary := await _delivery_frame_boundary()
+	if frame_boundary.is_empty() or not is_instance_id_valid(projectile_instance_id):
+		return
+	RuntimeDeliveryTelemetry.emit_for_shot(&"root_frame_presented", shot_id, {
+		"spawn_ordinal": spawn_ordinal,
+		"frame_boundary": frame_boundary,
+	})
+
+
+func _queue_effect_frame_marker(
+		shot_id: int,
+		spawn_ordinal: int,
+		effect_id: StringName
+) -> void:
+	var key := "%d:%d:%s" % [shot_id, spawn_ordinal, String(effect_id)]
+	if _delivery_effect_frame_keys.has(key):
+		return
+	_delivery_effect_frame_keys[key] = true
+	_report_effect_frame_presented.call_deferred(
+		shot_id,
+		spawn_ordinal,
+		effect_id
+	)
+
+
+func _report_effect_frame_presented(
+		shot_id: int,
+		spawn_ordinal: int,
+		effect_id: StringName
+) -> void:
+	var frame_boundary := await _delivery_frame_boundary()
+	if frame_boundary.is_empty():
+		return
+	RuntimeDeliveryTelemetry.emit_for_shot(&"effect_frame_presented", shot_id, {
+		"spawn_ordinal": spawn_ordinal,
+		"effect_id": String(effect_id),
+		"frame_boundary": frame_boundary,
+	})
+
+
+func _delivery_frame_boundary() -> String:
+	if DisplayServer.get_name() == "headless":
+		if not RuntimeDeliveryTelemetry.test_observer_enabled():
+			return ""
+		await get_tree().process_frame
+		return "test_process_frame"
+	await RenderingServer.frame_post_draw
+	return "frame_post_draw"
+
+
+func _root_spawn_ordinal(shot_id: int) -> int:
+	for projectile in _projectile_manager.active_projectiles():
+		if is_instance_valid(projectile) and projectile.shot_id == shot_id \
+				and projectile.split_generation == 0:
+			return projectile.spawn_ordinal
+	return -1
 
 
 func _delivery_marker_once(marker: StringName) -> void:

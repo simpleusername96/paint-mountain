@@ -17,6 +17,8 @@ func _run_checks() -> void:
 	var flat := _configured_system(FIXTURE_FACTORY.Kind.FLAT)
 	_assert_queue_order_and_dirty_batch(flat)
 	flat.clear()
+	_assert_budgeted_burst_cursor_matches_completion_drain(flat)
+	flat.clear()
 	_assert_width_and_centerline(flat, 4.0, 8.0, "flat parent")
 	flat.clear()
 	_assert_width_and_centerline(flat, 3.12, 6.24, "flat child")
@@ -90,6 +92,47 @@ func _assert_queue_order_and_dirty_batch(paint: PaintSystem) -> void:
 		"forced flush must update the persistent runtime texture without allocation or rebinding"
 	)
 	_assert_coverage_matches_threshold_bytes(paint)
+
+
+func _assert_budgeted_burst_cursor_matches_completion_drain(baseline: PaintSystem) -> void:
+	var layout := baseline.generated_layout_read_only()
+	var command := _radial(layout, 17, 0, 0, Vector2.ZERO, 14.0)
+	_assert_true(baseline.queue_radial_paint_mark(command), "radius-14 baseline burst must queue")
+	var baseline_result := baseline.drain_pending_commands()
+	var baseline_bytes := baseline.paint_bytes_read_only()
+	var baseline_checksum := baseline.paint_mask_checksum()
+	var baseline_count := baseline.painted_target_pixels()
+
+	var sliced := _configured_system(FIXTURE_FACTORY.Kind.FLAT)
+	var sliced_layout := sliced.generated_layout_read_only()
+	var sliced_command := _radial(sliced_layout, 17, 0, 0, Vector2.ZERO, 14.0)
+	var applied_count := [0]
+	sliced.paint_command_applied.connect(func(_command, _written: int, _newly: int) -> void:
+		applied_count[0] += 1
+	)
+	_assert_true(sliced.queue_radial_paint_mark(sliced_command), "radius-14 sliced burst must queue")
+	var slices := 0
+	var final_result := {}
+	while sliced.pending_work_count() > 0 and slices < 2048:
+		final_result = sliced.drain_pending_commands(false)
+		slices += 1
+		if sliced.pending_work_count() > 0:
+			_assert_true(
+				applied_count[0] == 0 and int(final_result.command_count) == 0,
+				"a sliced radial command must not acknowledge partial raster work"
+			)
+	_assert_true(slices > 1, "radius-14 Burst must span bounded raster slices")
+	_assert_true(slices < 2048 and sliced.pending_work_count() == 0, "budgeted Burst must complete without lost work")
+	_assert_true(applied_count[0] == 1 and int(final_result.command_count) == 1, "Burst acknowledges exactly once after its final slice")
+	_assert_true(
+		sliced.paint_bytes_read_only() == baseline_bytes
+			and sliced.paint_mask_checksum() == baseline_checksum
+			and sliced.painted_target_pixels() == baseline_count
+			and int(final_result.written_pixel_count) == int(baseline_result.written_pixel_count)
+			and int(final_result.newly_painted_pixel_count) == int(baseline_result.newly_painted_pixel_count),
+		"budgeted radius-14 Burst must match the completion drain byte-for-byte"
+	)
+	sliced.free()
 
 
 func _assert_width_and_centerline(

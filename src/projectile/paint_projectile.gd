@@ -35,6 +35,9 @@ const STANDARD_BALL_BEHAVIOR := preload("res://src/projectile/standard_ball_beha
 const IMPACT_BURST_BALL_BEHAVIOR := preload("res://src/projectile/impact_burst_ball_behavior.gd")
 const APEX_SPLIT_BALL_BEHAVIOR := preload("res://src/projectile/apex_split_ball_behavior.gd")
 
+static var _central_visual_meshes: Dictionary = {}
+static var _silhouette_visual_meshes: Dictionary = {}
+
 enum MotionState {
 	MOVING_AIRBORNE,
 	MOVING_ON_TERRAIN,
@@ -720,19 +723,14 @@ func _build_body() -> void:
 	collision.name = "CollisionShape3D"
 	collision.shape = sphere_shape
 	add_child(collision)
-	var sphere_mesh := visual_mesh(
+	for visual in visual_nodes(
 		projectile_data,
 		0.78 if split_generation > 0 else 1.0,
-		paint_channel
-	)
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "PaintballMesh"
-	mesh_instance.mesh = sphere_mesh
-	add_child(mesh_instance)
-	_add_behavior_silhouette(
-		physical_radius(),
-		sphere_mesh.material as Material
-	)
+		paint_channel,
+		ball_kind,
+		split_generation
+	):
+		add_child(visual)
 
 
 func _emit_burst_intent(contact: ProjectileContact, source_event_index: int) -> bool:
@@ -758,14 +756,17 @@ func _behavior_for_token(token: BallToken, generation: int) -> RefCounted:
 	return STANDARD_BALL_BEHAVIOR.new()
 
 
-## Render-only projectile representation shared by live bodies and the stage
-## warm-up path. It never creates physics state or emits gameplay signals.
+## Shared immutable central mesh used by both live bodies and first-use warm-up.
+## Callers must not mutate the returned resource.
 static func visual_mesh(
 		data: ProjectileData,
 		radius_multiplier: float = 1.0,
 		channel: int = PaintChannel.Value.RED
 ) -> SphereMesh:
 	assert(data != null, "Paint projectile visual requires ProjectileData.")
+	var cache_key := _visual_cache_key(data, radius_multiplier, channel, -1)
+	if _central_visual_meshes.has(cache_key):
+		return _central_visual_meshes[cache_key] as SphereMesh
 	var sphere_mesh := SphereMesh.new()
 	var radius := data.radius * radius_multiplier
 	sphere_mesh.radius = radius
@@ -777,39 +778,102 @@ static func visual_mesh(
 	paint_material.metallic = 0.16
 	paint_material.roughness = 0.24
 	sphere_mesh.material = paint_material
+	_central_visual_meshes[cache_key] = sphere_mesh
 	return sphere_mesh
 
 
-func _add_behavior_silhouette(radius: float, material: Material) -> void:
-	if split_generation > 0 or ball_kind == BallKind.Value.STANDARD:
-		return
-	if ball_kind == BallKind.Value.IMPACT_BURST:
+## Builds the render-only family shared by live projectiles and first-use
+## warm-up. The returned nodes have no physics state or gameplay callbacks.
+static func visual_nodes(
+		data: ProjectileData,
+		radius_multiplier: float = 1.0,
+		channel: int = PaintChannel.Value.RED,
+		kind: int = BallKind.Value.STANDARD,
+		generation: int = 0
+) -> Array[MeshInstance3D]:
+	var result: Array[MeshInstance3D] = []
+	var sphere_mesh := visual_mesh(data, radius_multiplier, channel)
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "PaintballMesh"
+	mesh_instance.mesh = sphere_mesh
+	result.append(mesh_instance)
+	if generation > 0 or kind == BallKind.Value.STANDARD:
+		return result
+	var radius := data.radius * radius_multiplier
+	var material := sphere_mesh.material as Material
+	if kind == BallKind.Value.IMPACT_BURST:
+		var spike_mesh := _silhouette_visual_mesh(
+			data,
+			radius_multiplier,
+			channel,
+			kind,
+			material
+		) as CylinderMesh
 		for direction in [Vector3.UP, Vector3.DOWN, Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
-			var spike_mesh := CylinderMesh.new()
-			spike_mesh.top_radius = radius * 0.16
-			spike_mesh.bottom_radius = radius * 0.28
-			spike_mesh.height = radius * 0.52
-			spike_mesh.radial_segments = 8
-			spike_mesh.material = material
 			var spike := MeshInstance3D.new()
 			spike.mesh = spike_mesh
 			spike.position = direction * radius * 0.92
 			spike.quaternion = Quaternion(Vector3.UP, direction)
 			spike.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-			add_child(spike)
-		return
-	if ball_kind == BallKind.Value.APEX_SPLIT:
+			result.append(spike)
+		return result
+	if kind == BallKind.Value.APEX_SPLIT:
+		var lobe_mesh := _silhouette_visual_mesh(
+			data,
+			radius_multiplier,
+			channel,
+			kind,
+			material
+		) as SphereMesh
 		for angle_degrees in [-90.0, 30.0, 150.0]:
-			var lobe_mesh := SphereMesh.new()
-			lobe_mesh.radius = radius * 0.48
-			lobe_mesh.height = radius * 0.96
-			lobe_mesh.radial_segments = 10
-			lobe_mesh.rings = 6
-			lobe_mesh.material = material
 			var lobe := MeshInstance3D.new()
 			lobe.mesh = lobe_mesh
 			var angle := deg_to_rad(angle_degrees)
 			# Keep the three-lobe identity readable from the authored follow camera;
 			# collision remains the unchanged central sphere.
 			lobe.position = Vector3(cos(angle), sin(angle), 0.0) * radius * 0.84
-			add_child(lobe)
+			result.append(lobe)
+	return result
+
+
+static func _silhouette_visual_mesh(
+		data: ProjectileData,
+		radius_multiplier: float,
+		channel: int,
+		kind: int,
+		material: Material
+) -> PrimitiveMesh:
+	var cache_key := _visual_cache_key(data, radius_multiplier, channel, kind)
+	if _silhouette_visual_meshes.has(cache_key):
+		return _silhouette_visual_meshes[cache_key] as PrimitiveMesh
+	var radius := data.radius * radius_multiplier
+	var mesh: PrimitiveMesh
+	if kind == BallKind.Value.IMPACT_BURST:
+		var spike_mesh := CylinderMesh.new()
+		spike_mesh.top_radius = radius * 0.16
+		spike_mesh.bottom_radius = radius * 0.28
+		spike_mesh.height = radius * 0.52
+		spike_mesh.radial_segments = 8
+		mesh = spike_mesh
+	else:
+		var lobe_mesh := SphereMesh.new()
+		lobe_mesh.radius = radius * 0.48
+		lobe_mesh.height = radius * 0.96
+		lobe_mesh.radial_segments = 10
+		lobe_mesh.rings = 6
+		mesh = lobe_mesh
+	mesh.material = material
+	_silhouette_visual_meshes[cache_key] = mesh
+	return mesh
+
+
+static func _visual_cache_key(
+		data: ProjectileData,
+		radius_multiplier: float,
+		channel: int,
+		kind: int
+) -> String:
+	var data_key := data.resource_path
+	if data_key.is_empty():
+		data_key = "instance:%d" % data.get_instance_id()
+	return "%s|%.6f|%d|%d" % [data_key, radius_multiplier, channel, kind]

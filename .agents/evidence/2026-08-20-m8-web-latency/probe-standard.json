@@ -1,0 +1,262 @@
+{
+  "frame_summary": {
+    "count": 205,
+    "max_ms": 5816.6,
+    "p95_ms": 16.8,
+    "p99_ms": 116.6
+  },
+  "markers": [
+    {
+      "memory_static": 0,
+      "object_count": 3132,
+      "origin": 0,
+      "paint_mountain_marker": "fire_input_received",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "stage_id": "stage_01",
+      "state": "AIMING",
+      "time_usec": 53927800,
+      "trace_id": 1
+    },
+    {
+      "memory_static": 0,
+      "object_count": 3132,
+      "origin": 0,
+      "paint_mountain_marker": "fire_admission_started",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "stage_id": "stage_01",
+      "time_usec": 53929200,
+      "trace_id": 1
+    },
+    {
+      "ball_kind": 0,
+      "memory_static": 0,
+      "object_count": 3133,
+      "paint_mountain_marker": "root_construction_started",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "split_generation": 0,
+      "time_usec": 53930500,
+      "trace_id": 1
+    },
+    {
+      "duration_usec": 1000,
+      "memory_static": 0,
+      "object_count": 3135,
+      "paint_mountain_marker": "root_construction_finished",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "split_generation": 0,
+      "success": true,
+      "time_usec": 53931500,
+      "trace_id": 1
+    },
+    {
+      "active_projectiles": 1,
+      "ball_kind": 0,
+      "memory_static": 0,
+      "object_count": 3139,
+      "paint_mountain_marker": "root_admitted",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "split_generation": 0,
+      "time_usec": 53934900,
+      "trace_id": 1
+    },
+    {
+      "ball_kind": 0,
+      "memory_static": 0,
+      "object_count": 3139,
+      "paint_mountain_marker": "fire_accepted",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "shot_id": 1,
+      "shots_remaining": 3,
+      "spawn_ordinal": 0,
+      "stage_id": "stage_01",
+      "time_usec": 53938200,
+      "trace_id": 1
+    },
+    {
+      "effect_id": "muzzle_flash",
+      "memory_static": 0,
+      "object_count": 3139,
+      "paint_mountain_marker": "muzzle_flash_requested",
+      "physics_frame": 374,
+      "process_frame": 315,
+      "render_video_memory": 57098442,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "time_usec": 53939800,
+      "trace_id": 1
+    },
+    {
+      "frame_boundary": "frame_post_draw",
+      "memory_static": 0,
+      "object_count": 3145,
+      "paint_mountain_marker": "root_frame_presented",
+      "physics_frame": 376,
+      "process_frame": 315,
+      "render_video_memory": 57024282,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "time_usec": 54051200,
+      "trace_id": 1
+    },
+    {
+      "effect_id": "muzzle_flash",
+      "frame_boundary": "frame_post_draw",
+      "memory_static": 0,
+      "object_count": 3144,
+      "paint_mountain_marker": "effect_frame_presented",
+      "physics_frame": 376,
+      "process_frame": 315,
+      "render_video_memory": 57024282,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "time_usec": 54052000,
+      "trace_id": 1
+    },
+    {
+      "contact_category": "terrain",
+      "contact_owner_id": "terrain/top",
+      "memory_static": 0,
+      "object_count": 3143,
+      "paint_mountain_marker": "first_contact",
+      "physics_frame": 411,
+      "process_frame": 338,
+      "render_video_memory": 57031274,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "split_generation": 0,
+      "time_usec": 60212100,
+      "trace_id": 1
+    },
+    {
+      "effect_id": "splash",
+      "memory_static": 0,
+      "object_count": 3143,
+      "paint_mountain_marker": "splash_requested",
+      "physics_frame": 411,
+      "process_frame": 338,
+      "render_video_memory": 57031274,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "time_usec": 60213800,
+      "trace_id": 1
+    },
+    {
+      "effect_id": "splash",
+      "frame_boundary": "frame_post_draw",
+      "memory_static": 0,
+      "object_count": 3145,
+      "paint_mountain_marker": "effect_frame_presented",
+      "physics_frame": 411,
+      "process_frame": 338,
+      "render_video_memory": 57031274,
+      "shot_id": 1,
+      "spawn_ordinal": 0,
+      "time_usec": 60228200,
+      "trace_id": 1
+    },
+    {
+      "command_count": 1,
+      "memory_static": 0,
+      "object_count": 3143,
+      "paint_mountain_marker": "paint_batch_started",
+      "physics_frame": 412,
+      "process_frame": 339,
+      "render_video_memory": 57031274,
+      "shot_ids": [
+        1
+      ],
+      "time_usec": 60230900,
+      "trace_ids": [
+        1
+      ]
+    },
+    {
+      "command_count": 1,
+      "max_slice_usec": 4200,
+      "memory_static": 0,
+      "newly_painted_pixel_count": 199,
+      "object_count": 3142,
+      "paint_mask_checksum": 3174346367904081,
+      "paint_mountain_marker": "paint_batch_finished",
+      "physics_frame": 414,
+      "process_frame": 340,
+      "render_video_memory": 57031274,
+      "shot_ids": [
+        1
+      ],
+      "slice_count": 3,
+      "time_usec": 60501800,
+      "total_duration_usec": 270900,
+      "trace_ids": [
+        1
+      ],
+      "written_pixel_count": 199
+    },
+    {
+      "dirty_rect": {
+        "height": 15,
+        "width": 17,
+        "x": 245,
+        "y": 246
+      },
+      "memory_static": 0,
+      "object_count": 3141,
+      "paint_mountain_marker": "texture_publish_started",
+      "physics_frame": 415,
+      "process_frame": 340,
+      "render_video_memory": 57031274,
+      "shot_ids": [
+        1
+      ],
+      "time_usec": 60503900,
+      "trace_ids": [
+        1
+      ],
+      "upload_path": "full"
+    },
+    {
+      "dirty_rect": {
+        "height": 15,
+        "width": 17,
+        "x": 245,
+        "y": 246
+      },
+      "duration_usec": 2300,
+      "memory_static": 0,
+      "object_count": 3141,
+      "paint_mountain_marker": "texture_publish_finished",
+      "physics_frame": 415,
+      "process_frame": 340,
+      "render_video_memory": 57031274,
+      "shot_ids": [
+        1
+      ],
+      "time_usec": 60506200,
+      "trace_ids": [
+        1
+      ],
+      "upload_batch_count": 2,
+      "upload_path": "full"
+    }
+  ],
+  "scenario": "standard",
+  "url": "http://127.0.0.1:13034/index.html?m8-cdp=1"
+}

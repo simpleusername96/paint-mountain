@@ -94,6 +94,23 @@ func spawn_projectile(
 	var assigned_shot_id := requested_shot_id
 	if split_generation == 0:
 		assigned_shot_id = _next_shot_id
+	var delivery_trace_id := RuntimeDeliveryTelemetry.active_fire_trace_id() \
+			if split_generation == 0 \
+			else RuntimeDeliveryTelemetry.trace_id_for_shot(assigned_shot_id)
+	var construction_started_at := 0
+	if delivery_trace_id > 0:
+		construction_started_at = Time.get_ticks_usec()
+		RuntimeDeliveryTelemetry.emit_for_trace(
+			&"root_construction_started" if split_generation == 0 \
+					else &"split_child_construction_started",
+			delivery_trace_id,
+			{
+				"shot_id": assigned_shot_id,
+				"spawn_ordinal": assigned_ordinal,
+				"split_generation": split_generation,
+				"ball_kind": ball_token.kind if ball_token != null else BallKind.Value.STANDARD,
+			}
+		)
 	var projectile := _build_detached_projectile(
 		projectile_data,
 		origin,
@@ -104,8 +121,22 @@ func spawn_projectile(
 		never_contacted_deadline if split_generation == 0 else -1.0,
 		ball_token
 	)
+	if delivery_trace_id > 0:
+		RuntimeDeliveryTelemetry.emit_for_trace(
+			&"root_construction_finished" if split_generation == 0 \
+					else &"split_child_construction_finished",
+			delivery_trace_id,
+			{
+				"shot_id": assigned_shot_id,
+				"spawn_ordinal": assigned_ordinal,
+				"split_generation": split_generation,
+				"success": projectile != null,
+				"duration_usec": Time.get_ticks_usec() - construction_started_at,
+			}
+		)
 	if projectile == null:
 		return null
+	RuntimeDeliveryTelemetry.bind_shot_trace(delivery_trace_id, assigned_shot_id)
 	_next_spawn_ordinal += 1
 	if split_generation == 0:
 		_next_shot_id += 1
@@ -177,6 +208,16 @@ func _admit_projectile(projectile: PaintProjectile, is_root: bool) -> void:
 		_active_initial_launch_shot_ids[projectile.shot_id] = true
 		_unsettled_shot_family_ids[projectile.shot_id] = true
 		shot_family_started.emit(projectile.shot_id, projectile)
+	RuntimeDeliveryTelemetry.emit_for_shot(
+		&"root_admitted" if is_root else &"split_child_admitted",
+		projectile.shot_id,
+		{
+			"spawn_ordinal": projectile.spawn_ordinal,
+			"split_generation": projectile.split_generation,
+			"ball_kind": projectile.ball_kind,
+			"active_projectiles": _active.size(),
+		}
+	)
 	_emit_activity_changed()
 
 
@@ -529,20 +570,68 @@ func _on_apex_split_requested(
 	var child_token := BallToken.new(BallKind.Value.STANDARD, parent_channel)
 	var detached_children: Array[PaintProjectile] = []
 	var first_ordinal := _next_spawn_ordinal
-	for velocity in child_velocities:
+	var delivery_trace_id := RuntimeDeliveryTelemetry.trace_id_for_shot(parent_shot_id)
+	var replacement_started_at := 0
+	if delivery_trace_id > 0:
+		replacement_started_at = Time.get_ticks_usec()
+		RuntimeDeliveryTelemetry.emit_for_trace(&"split_replacement_started", delivery_trace_id, {
+			"shot_id": parent_shot_id,
+			"parent_spawn_ordinal": parent.spawn_ordinal,
+			"child_count": child_velocities.size(),
+		})
+	for child_index in range(child_velocities.size()):
+		var velocity := child_velocities[child_index]
+		var child_ordinal := first_ordinal + detached_children.size()
+		var construction_started_at := 0
+		if delivery_trace_id > 0:
+			construction_started_at = Time.get_ticks_usec()
+			RuntimeDeliveryTelemetry.emit_for_trace(
+				&"split_child_construction_started",
+				delivery_trace_id,
+				{
+					"shot_id": parent_shot_id,
+					"spawn_ordinal": child_ordinal,
+					"child_index": child_index,
+					"split_generation": 1,
+				}
+			)
 		var child := _build_detached_projectile(
 			parent_data,
 			parent_position,
 			velocity,
 			1,
-			first_ordinal + detached_children.size(),
+			child_ordinal,
 			parent_shot_id,
 			-1.0,
 			child_token
 		)
+		if delivery_trace_id > 0:
+			RuntimeDeliveryTelemetry.emit_for_trace(
+				&"split_child_construction_finished",
+				delivery_trace_id,
+				{
+					"shot_id": parent_shot_id,
+					"spawn_ordinal": child_ordinal,
+					"child_index": child_index,
+					"split_generation": 1,
+					"success": child != null,
+					"duration_usec": Time.get_ticks_usec() - construction_started_at,
+				}
+			)
 		if child == null:
 			for detached in detached_children:
 				detached.free()
+			if delivery_trace_id > 0:
+				RuntimeDeliveryTelemetry.emit_for_trace(
+					&"split_replacement_finished",
+					delivery_trace_id,
+					{
+						"shot_id": parent_shot_id,
+						"success": false,
+						"constructed_children": detached_children.size(),
+						"duration_usec": Time.get_ticks_usec() - replacement_started_at,
+					}
+				)
 			return
 		detached_children.append(child)
 	_next_spawn_ordinal += detached_children.size()
@@ -551,6 +640,13 @@ func _on_apex_split_requested(
 		_admit_projectile(child, false)
 	shot_family_replaced.emit(parent_shot_id, detached_children.duplicate())
 	ball_effect_triggered.emit(parent, &"apex_split", parent_position)
+	if delivery_trace_id > 0:
+		RuntimeDeliveryTelemetry.emit_for_trace(&"split_replacement_finished", delivery_trace_id, {
+			"shot_id": parent_shot_id,
+			"success": true,
+			"constructed_children": detached_children.size(),
+			"duration_usec": Time.get_ticks_usec() - replacement_started_at,
+		})
 
 
 func _on_projectile_stopped(projectile: PaintProjectile, reason: StringName) -> void:

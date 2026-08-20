@@ -413,17 +413,31 @@ func set_aim(yaw: float, elevation: float, power: float, origin: ActionOrigin = 
 
 
 func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
+	var delivery_trace_id := RuntimeDeliveryTelemetry.begin_fire_trace({
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+		"origin": int(origin),
+		"state": state_name(),
+	})
 	var readiness := fire_readiness_snapshot(origin)
 	if not bool(readiness.get("fireable", false)):
 		# Fire is admitted only from this constant-work stage-rule snapshot.
 		_emit_fire_readiness()
+		_reject_delivery_fire_trace(
+			delivery_trace_id,
+			String(readiness.get("reason_key", "readiness"))
+		)
 		return false
+	RuntimeDeliveryTelemetry.emit_for_trace(&"fire_admission_started", delivery_trace_id, {
+		"stage_id": String(stage_data.stage_id),
+		"origin": int(origin),
+	})
 	var launch_origin := _cannon.get_launch_origin()
 	var velocity := _cannon.get_launch_velocity()
 	var never_contacted_deadline := _root_never_contacted_deadline()
 	var ball_token := current_ball_token() if stage_data.uses_target_band() else null
 	if stage_data.uses_target_band() and ball_token == null:
 		_emit_fire_readiness()
+		_reject_delivery_fire_trace(delivery_trace_id, "missing_ball_token")
 		return false
 	coverage_before_shot = _paint_system.coverage_percent()
 	var shot_observation := ShotObservation.new()
@@ -454,7 +468,9 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 		ball_token
 	)
 	if projectile == null:
+		_reject_delivery_fire_trace(delivery_trace_id, "projectile_admission_failed")
 		return false
+	RuntimeDeliveryTelemetry.bind_shot_trace(delivery_trace_id, projectile.shot_id)
 	shot_observation.shot_id = projectile.shot_id
 	shot_observation.peak_active_projectile_count = _projectile_manager.active_count()
 	_shot_observations[projectile.shot_id] = shot_observation
@@ -470,6 +486,13 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	# The cannon remains interactive; only the two-family capacity guard limits fire.
 	_cannon.input_enabled = true
 	shots_changed.emit(shots_remaining, stage_data.maximum_shots)
+	RuntimeDeliveryTelemetry.emit_for_trace(&"fire_accepted", delivery_trace_id, {
+		"stage_id": String(stage_data.stage_id),
+		"shot_id": projectile.shot_id,
+		"spawn_ordinal": projectile.spawn_ordinal,
+		"ball_kind": projectile.ball_kind,
+		"shots_remaining": shots_remaining,
+	})
 	shot_fired.emit(
 		stage_data.maximum_shots - shots_remaining,
 		_cannon.yaw_degrees,
@@ -479,7 +502,16 @@ func request_fire(origin: ActionOrigin = ActionOrigin.HUMAN) -> bool:
 	fire_action_accepted.emit(origin)
 	_emit_fire_readiness()
 	_refresh_score_and_finish_readiness()
+	RuntimeDeliveryTelemetry.end_fire_trace(delivery_trace_id)
 	return true
+
+
+func _reject_delivery_fire_trace(trace_id: int, reason: String) -> void:
+	RuntimeDeliveryTelemetry.emit_for_trace(&"fire_rejected", trace_id, {
+		"stage_id": String(stage_data.stage_id) if stage_data != null else "",
+		"reason": reason,
+	})
+	RuntimeDeliveryTelemetry.end_fire_trace(trace_id)
 
 
 ## Fire only consumes an already-published prediction. It never runs collision
@@ -875,6 +907,13 @@ func _on_projectile_contact_reported(projectile: PaintProjectile, contact: Proje
 		contact,
 		category
 	)
+	if contact.is_first_contact and is_instance_valid(projectile):
+		RuntimeDeliveryTelemetry.emit_for_shot(&"first_contact", projectile.shot_id, {
+			"spawn_ordinal": projectile.spawn_ordinal,
+			"split_generation": projectile.split_generation,
+			"contact_category": String(category),
+			"contact_owner_id": String(contact.contact_owner_id),
+		})
 
 
 func _on_paint_command_applied(
