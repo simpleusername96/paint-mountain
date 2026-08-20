@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-20
 last_reviewed: 2026-08-20
 scope: implement the user-selected Cannon Focus compact shared UI system across every reachable Paint Mountain screen and all 30 stages without changing gameplay rules
@@ -21,6 +21,7 @@ related:
   - ../evidence/2026-08-20-m7-responsive-ui/README.md
   - ../evidence/2026-08-20-m8-web-latency/README.md
   - ../evidence/2026-08-20-m9-local-release/README.md
+  - ../evidence/cross-stage-ui-theme-2026-08-20/README.md
 ---
 
 # Cannon Focus Cross-Stage UI Refinement - Execution Contract
@@ -344,7 +345,7 @@ Source owners: task-owned UI scenes/scripts/tests,
   - Accept: no UI blocker remains; mountain/cannon/trajectory/paint dominate;
     Cannon Focus hierarchy, actual Stage Select terrain, scale endpoints, queue
     descriptions, spacing, typography, and action priority read correctly.
-- [ ] **4.4 Run the built-Web production UI journey.**
+- [x] **4.4 Run the built-Web production UI journey.**
   - Change: export Web, validate the release, load `$npjt-port-guard`, use the
     fastrun manager `codex` lane, and exercise launch, resize, fullscreen, Main
     Menu, Stage Select, Stage 03 Aim/Pause/Settings/Result, Stage 07 Aim/Result,
@@ -363,13 +364,13 @@ Preconditions:
 
 - Phase 4 passes and rendered correction is stable.
 
-- [ ] **5.1 Run `$codebase-quality-auditor`.**
+- [x] **5.1 Run `$codebase-quality-auditor`.**
   - Change: audit task-owned changes for competing Theme/component owners,
     catch-all HUD growth, duplicated layout logic, stale callers, reachable
     loading/failure/focus gaps, test weakening, and missing all-stage coverage;
     apply only small safe corrections.
   - Accept: no material finding remains in the task-owned surface.
-- [ ] **5.2 Run the broad production gate once.**
+- [x] **5.2 Run the broad production gate once.**
   - Change: after announcing cost/scope, run:
 
 ```powershell
@@ -382,13 +383,13 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
 
   - Accept: suite, verification, both exports, and Web static verifier pass on
     the final inputs.
-- [ ] **5.3 Record implemented truth and close the plan.**
+- [x] **5.3 Record implemented truth and close the plan.**
   - Change: update `.agents/Documentation.md`, `docs/test-checklist.md`, design
     authority, and the evidence README with only proven behavior, exact Godot/
     renderer/locale/viewport/build hashes, checks, and remaining warnings.
   - Accept: docs agree with runtime and this plan; every task/gate is checked;
     frontmatter becomes `done`.
-- [ ] **5.4 Finish coherent commits and a clean worktree.**
+- [x] **5.4 Finish coherent commits and a clean worktree.**
   - Change: keep plan/design, shared foundation, app screens, gameplay/all-stage,
     and final evidence/records in responsibility-shaped commits with bodies;
     stage no unrelated user work.
@@ -440,15 +441,12 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 4.
-- Next task: 4.4, export and exercise the built Web artifact on the protected
-  `codex` lane without touching the public itch release.
-- Last completed gate: Phase 4 Windows render correction; the 20-image release
-  matrix in `../evidence/cross-stage-ui-theme-2026-08-20/` covers app screens,
-  both stage families, real Shot Follow, queue detail, success/failure Results,
-  Korean/English, 1280x720, 1920x1080, and 640x360. All files are current-build
-  and nonblank. Hard sheet edges, repeated copy, Map hint density, and English
-  result wrapping were corrected; no P0/P1 visual issue remains.
+- Current phase: Complete.
+- Next task: none. Public itch publication remains outside this plan and needs
+  separate explicit authorization.
+- Last completed gate: coherent task-owned commits preserve the design,
+  component, screen, gameplay, quality, and evidence boundaries. The final
+  worktree check is clean.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

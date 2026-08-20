@@ -22,9 +22,11 @@ related:
   - ../execplans/2026-08-09-quiet-context-ui-system.md
   - ../execplans/2026-08-10-essential-ui-fidelity.md
   - ../execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../execplans/2026-08-20-cross-stage-ui-theme.md
   - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../docs/reports/ui-refinement-2026-08-20/index.html
+  - ../evidence/cross-stage-ui-theme-2026-08-20/README.md
   - ../../resources/ui/paint_mountain_theme.tres
 ---
 
@@ -55,16 +57,18 @@ state.
 
 ## Requirements
 
-### Approved Quiet Context system
+### Quiet Context foundation
 
 The user-approved 2026-08-09 reference
 `.agents/evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png`
 (SHA-256
 `715DA06D3825E97B0C89975153289ECC0BF11F41A9C93A5129DC8397E2DDC33A`)
-is the current interface direction. It supersedes the heavier card and detached
-keycap treatment of the 2026-08-08 casual shared refresh while preserving its
-real navigation, tactile primary actions, and Korean-first interaction
-contracts.
+is the foundation of the current interface direction. It supersedes the heavier
+card and detached keycap treatment of the 2026-08-08 casual shared refresh while
+preserving its real navigation, tactile primary actions, and Korean-first
+interaction contracts. The compact shared-component correction below and its
+Cannon Focus composition supersede Quiet Context where their presentation rules
+differ.
 
 - Put status and labels directly at the screen edges. Use spacing, alignment,
   typography, and a shared contrast scrim before adding any boundary.
@@ -389,6 +393,10 @@ record any capture limitation instead of claiming visual conformance.
 
 ## Related
 
+- `../execplans/2026-08-20-cross-stage-ui-theme.md` records the completed
+  Cannon Focus implementation contract.
+- `../evidence/cross-stage-ui-theme-2026-08-20/README.md` records the final
+  production-render, responsive, Web-journey, and release-gate evidence.
 - `ART_DIRECTION.md` owns world composition and gameplay-object visual language.
 - `VISUAL_REFERENCES.md` explains which image details are current and which are
   superseded.

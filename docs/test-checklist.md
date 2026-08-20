@@ -48,6 +48,9 @@ related:
   - ../design-qa.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../.agents/evidence/2026-08-20-m9-local-release/README.md
+  - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
+  - ../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md
+  - reports/ui-refinement-2026-08-20/index.html
 ---
 
 # Test Checklist
@@ -56,12 +59,44 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The Quiet Context gate below owns current UI presentation. The
+builds. The Cannon Focus gate below owns current UI presentation; the older
+Quiet Context and Essential UI gates remain historical foundations. The
 immediate-aim gate retains interaction and calculation acceptance; its older
-shortcut and HUD presentation clauses do not override the Quiet Context gate.
+shortcut and HUD presentation clauses do not override the Cannon Focus gate.
 The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
+
+## Completed Cannon Focus cross-stage UI gate (2026-08-20)
+
+- [x] One shared Theme and reusable `MetricReadout`, `ScoreScale`, `BallQueue`,
+  `ValueStepper`, `ActionControl`, `StageIdentity`, `StageRail`,
+  `ContextLegend`, `ResultSummary`, and scrim owners serve every reachable UI
+  state; screens do not own competing palettes, StyleBoxes, or icons.
+- [x] Cannon Focus Aim keeps the vertical fixed-domain 0-100 score scale,
+  prototype ball queue, cannon, trajectory, angle, Fire, and power visible at
+  1280x720 and the 640x360 stress size. Queue descriptions are reachable by
+  hover, keyboard focus, and press/touch, with matching accessibility text.
+- [x] Stage Select shows the selected stage's newest real prepared terrain
+  behind a compact rail without committing `GameState` before Start. The same
+  component system covers Main Menu, Briefing, Map, Shot Follow, Pause,
+  Settings, success/failure Result, loading, disabled, and focus states across
+  prototype Stages 01-06 and legacy Stages 07-30.
+- [x] Twenty Windows/Compatibility release captures cover the named states,
+  both stage families, Korean/English, 1280x720, 1920x1080, and 640x360. Direct
+  inspection found no remaining P0/P1 clipping, overlap, obstructive sheet, or
+  hierarchy defect.
+- [x] The built-Web journey covered launch, stage terrain swaps, real firing and
+  paint, queue detail, Pause/Settings, locale, fullscreen, results, and live
+  640x360 resize. All eight requests returned HTTP 200; Chrome recorded zero
+  warning or error messages and no multi-second post-flight paint update.
+- [x] The complete ordered suite, `scripts/verify.ps1`, fresh Godot 4.7.1
+  Windows/Web exports, and final Web static verification pass. Final gzip size
+  is 17,945,291 bytes against the 18,996,696-byte allowance.
+- Public itch upload, channel/visibility change, and deployed launcher proof are
+  outside this completed local gate and still require explicit authorization.
+
+Evidence: `../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md`.
 
 ## Active prototype stabilization and publication gate (2026-08-20)
 

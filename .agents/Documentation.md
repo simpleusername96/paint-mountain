@@ -37,6 +37,7 @@ related:
   - execplans/2026-08-11-fast-stage-readiness.md
   - execplans/2026-08-11-stage-selection-readiness-deployment.md
   - execplans/2026-08-18-three-ball-target-band-prototype.md
+  - execplans/2026-08-20-cross-stage-ui-theme.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -45,6 +46,7 @@ related:
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
   - evidence/fast-stage-readiness-2026-08-11/README.md
   - evidence/2026-08-20-m9-local-release/README.md
+  - evidence/cross-stage-ui-theme-2026-08-20/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
   - evidence/terrain-targeted-aiming-2026-08-08/README.md
@@ -643,9 +645,42 @@ simulation step; focused collision, readiness, and parity checks remain required
 Implemented evidence is recorded in
 [`evidence/double-pace-and-quiet-feedback-2026-08-10/README.md`](evidence/double-pace-and-quiet-feedback-2026-08-10/README.md).
 
-## Current Quiet Context UI System (2026-08-09)
+## Current Cannon Focus Cross-Stage UI System (2026-08-20)
 
 The completed implementation contract is
+[`2026-08-20-cross-stage-ui-theme.md`](execplans/2026-08-20-cross-stage-ui-theme.md),
+the approved composition report is
+[`../docs/reports/ui-refinement-2026-08-20/index.html`](../docs/reports/ui-refinement-2026-08-20/index.html),
+and final production evidence is
+[`evidence/cross-stage-ui-theme-2026-08-20/README.md`](evidence/cross-stage-ui-theme-2026-08-20/README.md).
+
+- Cannon Focus is the canonical Aim composition: a fixed vertical 0-100 score
+  scale sits at the safe left edge, the Stage 01-06 ball queue sits at the
+  upper-right, and angle, Fire, and power form one compact lower sequence around
+  the cannon. Queue detail is shared across hover, focus, press/touch, and
+  accessibility output.
+- The shared Theme and component scenes own presentation. Main Menu, real-terrain
+  Stage Select, Briefing, Aim, Map, Shot Follow, Pause, Settings, and both Result
+  families reuse these owners; gameplay, Briefing, Stage Select, and Result use
+  direct overlays instead of decorative cards, panels, or sheets.
+- `ScoreScale` always exposes the full 0-100 domain. Aim, Map, and Shot Follow
+  use the vertical orientation; Briefing and Result use the horizontal
+  orientation. Prototype target bands and R/G contributions and legacy coverage
+  thresholds remain truthful data inside that domain.
+- The selected Stage Select item presents its newest real prepared terrain
+  without an early `GameState` commit or a second renderer. The shared system
+  covers Stages 01-06 target-band rules and Stages 07-30 legacy coverage rules.
+- Twenty final Windows/Compatibility release captures prove representative
+  states, both locales, both stage families, and 640x360 through 1920x1080. The
+  built-Web journey recorded eight HTTP 200 requests, zero Chrome warnings or
+  errors, and authoritative paint without a multi-second post-flight delay.
+- The complete suite, repository verification, Windows/Web exports, and final
+  Web static verification pass. Public itch publication was not performed and
+  remains a separate explicitly authorized action.
+
+## Historical Quiet Context UI System (2026-08-09)
+
+The superseded implementation contract is
 [`2026-08-09-quiet-context-ui-system.md`](execplans/2026-08-09-quiet-context-ui-system.md),
 and the final comparison report is [`../design-qa.md`](../design-qa.md).
 
