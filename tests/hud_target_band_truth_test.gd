@@ -25,7 +25,7 @@ func _run() -> void:
 	var views: Array[BallQueueTokenView] = rail.token_views()
 	_assert(views[0].visible, "current token must show")
 	_assert(not views[1].visible and not views[2].visible, "empty tail slots must be omitted")
-	_assert(views[0].text.contains("R"), "token must contain a non-color channel letter")
+	_assert(views[0].channel_label() == "R", "token must draw a non-color channel letter")
 	meter.free()
 	rail.free()
 	if not _failed:

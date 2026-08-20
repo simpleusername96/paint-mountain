@@ -22,7 +22,7 @@ func _run() -> void:
 	rule.red_weight = -1
 	rule.green_weight = 1
 	scale.set_preset(ScoreScale.Preset.VERTICAL_LIVE)
-	scale.size = Vector2(116.0, 286.0)
+	scale.size = Vector2(132.0, 410.0)
 	scale.configure_target_band(band, rule)
 	scale.update_target_band(PaintCoverageSnapshot.new(12.0, 18.0, 30.0), 36.0, -1, 1)
 	await process_frame
@@ -32,6 +32,8 @@ func _run() -> void:
 	_assert((scale.get_node("Contributions") as Control).visible, "target-band presentation must expose Red and Green contributions")
 	_assert((scale.get_node("Contributions/Red") as Label).text == "R − 12.0", "Red contribution must include its score role")
 	_assert((scale.get_node("Contributions/Green") as Label).text == "G + 18.0", "Green contribution must include its score role")
+	_assert(scale.track_rect_for_test().size.y >= 300.0, "standard vertical rail must use the available height")
+	_assert(not (scale.get_node("MetricIcon") as TextureRect).visible, "vertical rail must omit the redundant metric icon")
 
 	scale.set_value(-10.0)
 	_assert(is_equal_approx(scale.value(), 0.0), "score values below zero must clamp to zero")
@@ -48,6 +50,7 @@ func _run() -> void:
 	await process_frame
 	_assert(scale.target_range().is_equal_approx(Vector2(62.0, 100.0)), "coverage threshold must extend from target to 100")
 	_assert(_encloses(scale.track_rect_for_test(), scale.target_rect_for_test()), "horizontal target region must stay inside the full track")
+	_assert((scale.get_node("MetricIcon") as TextureRect).visible, "horizontal summary may retain the compact metric icon")
 	scale.set_value(0.0)
 	zero = scale.marker_position_for_test()
 	scale.set_value(100.0)

@@ -65,11 +65,6 @@ func set_value(value: float, minimum: float, maximum: float) -> void:
 	increase_button.disabled = value >= maximum
 
 
-func set_compact(compact: bool) -> void:
-	caption.visible = not compact
-	custom_minimum_size.x = 166.0 if compact else 214.0
-
-
 func _process(delta: float) -> void:
 	if is_zero_approx(_hold_direction):
 		return

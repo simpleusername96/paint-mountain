@@ -9,7 +9,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var meter := METER_SCENE.instantiate() as ScoreScale
-	meter.size = Vector2(116.0, 286.0)
+	meter.size = Vector2(132.0, 410.0)
 	root.add_child(meter)
 	await process_frame
 	var band := TargetBandData.new()

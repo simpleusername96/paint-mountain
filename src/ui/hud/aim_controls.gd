@@ -29,8 +29,6 @@ func update_aim(_yaw: float, elevation: float, power: float) -> void:
 
 
 func set_compact(compact: bool) -> void:
-	angle_stepper.set_compact(compact)
-	power_stepper.set_compact(compact)
 	%FireGap.visible = not compact
-	%FireGap.custom_minimum_size.x = 0.0 if compact else 252.0
-	custom_minimum_size.x = 340.0 if compact else 704.0
+	%FireGap.custom_minimum_size.x = 0.0 if compact else 280.0
+	custom_minimum_size.x = 340.0 if compact else 628.0

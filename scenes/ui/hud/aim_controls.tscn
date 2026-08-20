@@ -4,8 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/components/value_stepper.tscn" id="2_stepper"]
 
 [node name="AimControls" type="Control"]
-custom_minimum_size = Vector2(704, 56)
-offset_right = 704.0
+custom_minimum_size = Vector2(628, 56)
+offset_right = 628.0
 offset_bottom = 56.0
 script = ExtResource("1")
 
@@ -24,7 +24,7 @@ layout_mode = 2
 
 [node name="FireGap" type="Control" parent="Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(252, 0)
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 mouse_filter = 2
 

@@ -55,6 +55,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	for path in [
 		"TopStatusBar/StageValue",
 		"TopStatusBar/SettingsButton",
+		"CameraInteractionControl",
 		"RunStatusCard",
 		"BallQueue",
 		"ActionButtons",
@@ -94,6 +95,8 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 
 	var aim := hud_root.get_node("AimControls") as AimControls
 	var legend := hud_root.get_node("ContextLegend") as ContextLegend
+	var interaction := hud_root.get_node("CameraInteractionControl") as CameraInteractionControl
+	var run_status := hud_root.get_node("RunStatusCard") as RunStatusCard
 	_assert_inside(aim, safe_rect, "AimControls at %s (%s)" % [viewport_size, locale])
 	_assert_true(
 		aim.get_global_rect().encloses((aim.get_node("Content") as Control).get_global_rect()),
@@ -115,6 +118,9 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	var power_decrease := aim.get_node("Content/PowerStepper/Decrease") as Button
 	var power := aim.get_node("Content/PowerStepper/Value") as Label
 	var power_increase := aim.get_node("Content/PowerStepper/Increase") as Button
+	_assert_true(not (aim.get_node("Content/AngleStepper/Caption") as Label).visible
+			and not (aim.get_node("Content/PowerStepper/Caption") as Label).visible,
+		"Aim captions must stay accessible without adding floating visual labels at %s" % viewport_size)
 	_assert_true(
 		angle_decrease.get_global_rect().end.x <= elevation.get_global_rect().position.x
 				and elevation.get_global_rect().end.x <= angle_increase.get_global_rect().position.x,
@@ -139,6 +145,16 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	)
 
 	_assert_true(not legend.visible, "Aim must not repeat visible controls in a text legend at %s" % viewport_size)
+	_assert_true(
+		interaction.text.is_empty() and not interaction.tooltip_text.is_empty()
+				and not interaction.accessibility_name.is_empty(),
+		"view mode must be one icon action with tooltip and accessibility copy at %s" % viewport_size
+	)
+	_assert_true(
+		interaction.get_global_rect().end.x <= run_status.get_global_rect().position.x
+				and is_equal_approx(interaction.get_global_rect().position.y, run_status.get_global_rect().position.y),
+		"view mode must join the top-right status/action row at %s" % viewport_size
+	)
 
 	_assert_true(
 		queue.size.y >= queue.get_combined_minimum_size().y,
@@ -149,6 +165,14 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 				and score_scale.size.y >= score_scale.get_combined_minimum_size().y,
 		"score scale must honor its component minimum geometry at %s" % viewport_size
 	)
+	var expected_track_height := 160.0 if viewport_size.x < 960 or viewport_size.y < 620 else 300.0
+	_assert_true(
+		score_scale.track_rect_for_test().size.y >= expected_track_height
+				and score_scale.track_rect_for_test().size.x >= 20.0,
+		"vertical 0-100 score rail must remain legible at %s" % viewport_size
+	)
+	_assert_true(not (score_scale.get_node("MetricIcon") as TextureRect).visible,
+		"vertical score rail must not repeat a metric icon at %s" % viewport_size)
 
 	var result := hud_root.get_node("ResultPanel") as ResultPanel
 	result.configure_has_next(true)

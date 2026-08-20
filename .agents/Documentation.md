@@ -656,6 +656,8 @@ the approved composition report is
 [`../docs/reports/ui-refinement-2026-08-20/index.html`](../docs/reports/ui-refinement-2026-08-20/index.html),
 and final production evidence is
 [`evidence/cross-stage-ui-theme-2026-08-20/README.md`](evidence/cross-stage-ui-theme-2026-08-20/README.md).
+The current player-capture correction is recorded separately in
+[`evidence/2026-08-20-hud-capture-regression/README.md`](evidence/2026-08-20-hud-capture-regression/README.md).
 
 - Cannon Focus is the canonical Aim composition: a fixed vertical 0-100 score
   scale sits at the safe left edge, the all-stage ball queue sits at the
@@ -670,17 +672,27 @@ and final production evidence is
   use the vertical orientation; Briefing and Result use the horizontal
   orientation. Target bands and signed R/G contributions remain truthful data
   inside that domain for every stage.
+- A later running-game capture review superseded the original Aim/Map/queue
+  visual judgment. Ball Queue now uses transparent default tokens and one
+  direct description label with no native duplicate tooltip or panel. The
+  standard vertical score rail is taller and wider, its redundant target icon
+  is hidden, the icon-only interaction-mode action sits in the top-right status
+  row, and the bottom steppers use a compact caption-free visual sequence while
+  retaining tooltip and accessibility copy.
 - The selected Stage Select item presents its newest real prepared terrain
   without an early `GameState` commit or a second renderer. The shared system
   covers the same target-band rule and queue contract across Stages 01–30.
-- Twenty-two final Windows/Compatibility release captures prove representative
+- Twenty-two earlier Windows/Compatibility release captures cover representative
   states, both locales, Stages 01/03/07/18/30, and 640x360 through 1920x1080.
+  Four newer final-release captures supersede the affected Stage 08 Aim, queue,
+  Map, and 640x360 Aim conclusions and verify the player-reported corrections.
   An earlier built-Web journey proved the shared UI and authoritative paint;
   the final v11 Web artifact passes export/static checks, but its browser rerun
   remains pending because the available browser bridge is not trusted.
 - The complete suite, repository verification, Windows/Web exports, and final
-  Web static verification pass. Public itch publication was not performed and
-  remains a separate explicitly authorized action.
+  Web static verification pass. The current Web artifact is 18,485,674 gzip
+  bytes within its 18,996,696-byte allowance. Public itch publication was not
+  performed and remains a separate explicitly authorized action.
 
 ## Historical Quiet Context UI System (2026-08-09)
 

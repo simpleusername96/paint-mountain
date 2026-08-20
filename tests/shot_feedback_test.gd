@@ -64,17 +64,22 @@ func _run() -> void:
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	_assert_true(
-		interaction_control.visible and interaction_control.text.begins_with("지도 보기") \
+		interaction_control.visible and interaction_control.text.is_empty() \
+				and interaction_control.button_pressed \
+				and interaction_control.tooltip_text == tr("hud.switch_to_aim_lock") \
+				and interaction_control.accessibility_name == interaction_control.tooltip_text \
 				and not hud_root.get_node("AimControls").visible \
 				and not hud_root.get_node("ActionButtons").visible,
-		"Map Inspection must use its direct label and hide aim-only actions"
+		"Map Inspection must select the icon action and hide aim-only controls"
 	)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 	_assert_true(
-		interaction_control.text.begins_with("조준") \
+		interaction_control.text.is_empty() and not interaction_control.button_pressed \
+				and interaction_control.tooltip_text == tr("hud.switch_to_map_inspection") \
+				and interaction_control.accessibility_name == interaction_control.tooltip_text \
 				and hud_root.get_node("AimControls").visible \
 				and hud_root.get_node("ActionButtons").visible,
-		"Aim Lock must restore aim and Fire controls"
+		"Aim Lock must restore the icon state plus aim and Fire controls"
 	)
 	var coverage := hud_root.get_node("ScoreScale") as ScoreScale
 	hud.update_coverage(2.0)

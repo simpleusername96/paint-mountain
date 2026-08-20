@@ -25,10 +25,13 @@ func _run() -> void:
 	await process_frame
 	var views := queue.token_views()
 	_assert(views.size() == 3, "queue must own current plus next two tokens")
+	_assert(queue.get_node("Content/Description") is Label, "queue description must be a direct shared label")
+	_assert(queue.find_children("*", "PanelContainer", true, false).is_empty(), "queue must not contain a card or panel")
 	for index in views.size():
 		_assert(views[index].token().matches(tokens[index]), "token order must match the authoritative queue at %d" % index)
 		_assert(views[index].focus_mode == Control.FOCUS_ALL, "every token must accept native keyboard focus")
 		_assert(not views[index].accessibility_name.is_empty(), "every token must expose its full accessible description")
+		_assert(views[index].tooltip_text.is_empty(), "native tooltips must not duplicate the shared description")
 	_assert("현재" in views[0].description_text(), "first token must be identified as current")
 	_assert("계속 칠" in views[0].description_text(), "standard token must explain continuous terrain paint")
 	_assert("넓게" in views[1].description_text(), "burst token must explain its wide landing behavior")

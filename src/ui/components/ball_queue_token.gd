@@ -27,15 +27,18 @@ func configure(token: BallToken, queue_index: int) -> void:
 	if not visible:
 		_description = ""
 		text = ""
+		tooltip_text = ""
 		return
 	custom_minimum_size = Vector2(52.0, 52.0) if queue_index == 0 else Vector2(44.0, 44.0)
-	text = PaintChannel.short_label(token.channel)
+	text = ""
 	add_theme_color_override(&"font_color", PaintChannel.visual_color(token.channel))
 	add_theme_color_override(&"font_hover_color", PaintChannel.visual_color(token.channel))
 	add_theme_color_override(&"font_pressed_color", PaintChannel.visual_color(token.channel))
 	add_theme_color_override(&"font_focus_color", PaintChannel.visual_color(token.channel))
 	_description = _build_description()
-	tooltip_text = _description
+	# BallQueue owns the single visible description. Native tooltips would show a
+	# second delayed message on top of that shared overlay.
+	tooltip_text = ""
 	accessibility_name = _description
 	queue_redraw()
 
@@ -50,6 +53,10 @@ func queue_index() -> int:
 
 func description_text() -> String:
 	return _description
+
+
+func channel_label() -> String:
+	return PaintChannel.short_label(_token.channel) if _token != null and _token.is_valid() else ""
 
 
 func request_description_for_test(pin: bool = false) -> void:
@@ -85,7 +92,7 @@ func _draw() -> void:
 	var color := PaintChannel.visual_color(_token.channel)
 	var outline := get_theme_color(&"outline", &"BallQueueToken")
 	var radius := 7.0 if _queue_index == 0 else 5.5
-	var center := Vector2(size.x * 0.33, size.y * 0.5)
+	var center := Vector2(15.0 if _queue_index == 0 else 13.0, size.y * 0.5)
 	match _token.kind:
 		BallKind.Value.IMPACT_BURST:
 			for spoke in range(8):
@@ -102,3 +109,17 @@ func _draw() -> void:
 		_:
 			draw_circle(center, radius, outline)
 			draw_circle(center, radius * 0.76, color)
+	var label := channel_label()
+	var font := get_theme_font(&"font", &"BallQueueToken")
+	var font_size := get_theme_font_size(&"font_size", &"BallQueueToken")
+	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
+	var baseline := (size.y - label_size.y) * 0.5 + font.get_ascent(font_size)
+	draw_string(
+		font,
+		Vector2(size.x - label_size.x - 6.0, baseline),
+		label,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1.0,
+		font_size,
+		color
+	)

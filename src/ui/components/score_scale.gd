@@ -143,15 +143,14 @@ func _layout() -> void:
 
 func _apply_minimum_size() -> void:
 	if preset == Preset.VERTICAL_LIVE:
-		custom_minimum_size = Vector2(116.0, 272.0 if _compact else 286.0)
+		custom_minimum_size = Vector2(112.0, 272.0) if _compact else Vector2(132.0, 410.0)
 	else:
 		custom_minimum_size = Vector2(360.0, 78.0) if _compact else Vector2(440.0, 118.0)
 
 
 func _layout_vertical() -> void:
-	_metric_icon.position = Vector2(20.0, 2.0)
-	_metric_icon.size = Vector2(20.0, 20.0)
-	_current_value.position = Vector2(0.0, 24.0)
+	_metric_icon.hide()
+	_current_value.position = Vector2(0.0, 0.0)
 	_current_value.size = Vector2(72.0, 30.0)
 	var track := _track_rect()
 	for index in TICKS.size():
@@ -164,6 +163,7 @@ func _layout_vertical() -> void:
 
 
 func _layout_horizontal() -> void:
+	_metric_icon.show()
 	_metric_icon.position = Vector2(0.0, 2.0)
 	_metric_icon.size = Vector2(20.0, 20.0)
 	_current_value.position = Vector2(26.0, 0.0)
@@ -223,7 +223,7 @@ func _draw() -> void:
 
 func _track_rect() -> Rect2:
 	if preset == Preset.VERTICAL_LIVE:
-		return Rect2(24.0, 62.0, 16.0, maxf(96.0, size.y - 98.0))
+		return Rect2(24.0, 44.0, 24.0, maxf(160.0, size.y - 80.0))
 	return Rect2(16.0, 34.0 if _compact else 42.0, maxf(160.0, size.x - 32.0), 14.0)
 
 

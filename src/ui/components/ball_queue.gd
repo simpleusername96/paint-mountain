@@ -4,9 +4,7 @@ extends Control
 ## Shared queue presentation. Hover, keyboard focus, and press all publish the
 ## same description; press pins it until Escape or a second press.
 
-@onready var _token_box: BoxContainer = %TokenBox
-@onready var _description: PanelContainer = %Description
-@onready var _description_text: Label = %Text
+@onready var _description: Label = %Description
 @onready var _tokens: Array[BallQueueTokenView] = [%NowToken, %NextOne, %NextTwo]
 
 var _pinned_source: BallQueueTokenView
@@ -26,9 +24,8 @@ func configure(tokens: Array[BallToken]) -> void:
 	accessibility_name = _queue_accessibility_text()
 
 
-func set_vertical(vertical: bool) -> void:
-	_token_box.vertical = vertical
-	custom_minimum_size = Vector2(172.0, 180.0) if vertical else Vector2(260.0, 104.0)
+func set_compact(compact: bool) -> void:
+	custom_minimum_size = Vector2(260.0, 104.0) if compact else Vector2(420.0, 104.0)
 
 
 func token_views() -> Array[BallQueueTokenView]:
@@ -40,14 +37,14 @@ func description_visible() -> bool:
 
 
 func description_value() -> String:
-	return _description_text.text
+	return _description.text
 
 
 func dismiss_description() -> void:
 	_pinned_source = null
 	_active_source = null
 	_description.hide()
-	_description_text.text = ""
+	_description.text = ""
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -63,7 +60,7 @@ func _show_description(source: BallQueueTokenView, text: String, pin: bool) -> v
 	_active_source = source
 	if pin:
 		_pinned_source = source
-	_description_text.text = text
+	_description.text = text
 	_description.show()
 
 
@@ -72,7 +69,7 @@ func _release_description(source: BallQueueTokenView) -> void:
 		return
 	_active_source = null
 	_description.hide()
-	_description_text.text = ""
+	_description.text = ""
 
 
 func _queue_accessibility_text() -> String:

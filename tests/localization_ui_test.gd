@@ -242,9 +242,13 @@ func _assert_translation_contract(locale: String) -> void:
 func _assert_score_scale_icon_contract(score_scale: ScoreScale, locale: String) -> void:
 	score_scale.configure_coverage(10.0)
 	var icon := score_scale.get_node_or_null("MetricIcon") as TextureRect
-	_assert_true(icon != null and icon.texture != null, "%s coverage caption must use the approved target texture" % locale)
+	_assert_true(icon != null and icon.texture != null, "%s score summary must retain the approved target texture" % locale)
 	_assert_true(not score_scale.accessibility_name.is_empty(), "%s score scale must retain a localized text alternative" % locale)
+	score_scale.set_preset(ScoreScale.Preset.HORIZONTAL_SUMMARY)
 	_assert_true(icon.get_rect().size == Vector2(20.0, 20.0), "%s score icon must keep its restrained 20px size" % locale)
+	_assert_true(icon.visible, "%s horizontal summary must show the compact target icon" % locale)
+	score_scale.set_preset(ScoreScale.Preset.VERTICAL_LIVE)
+	_assert_true(not icon.visible, "%s vertical rail must avoid a redundant target icon" % locale)
 
 
 func _assert_true(condition: bool, message: String) -> void:

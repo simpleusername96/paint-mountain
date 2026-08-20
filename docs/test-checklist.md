@@ -50,6 +50,7 @@ related:
   - ../.agents/evidence/2026-08-20-m9-local-release/README.md
   - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
   - ../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md
+  - ../.agents/evidence/2026-08-20-hud-capture-regression/README.md
   - reports/ui-refinement-2026-08-20/index.html
 ---
 
@@ -84,8 +85,13 @@ capture is pre-resident-activity-removal history.
   target-band Stages 01-30.
 - [x] Twenty-two Windows/Compatibility release captures cover the named states,
   Stages 01/03/07/18/30, Korean/English, 1280x720, 1920x1080, and 640x360. Direct
-  inspection found no remaining P0/P1 clipping, overlap, obstructive sheet, or
-  hierarchy defect.
+  inspection was later superseded for the affected Aim/Map/queue states by the
+  player-reported regression gate below.
+- [x] Four current Windows release captures prove the corrected Stage 08 Aim,
+  single queue description, Map, and 640x360 Aim states. Queue tokens have no
+  white default cards or panel; native tooltip text is empty; the full 0-100
+  standard rail is tall and bounded; the mode action joins the top-right row;
+  bottom steppers are compact and caption-free without losing accessibility.
 - [x] The earlier built-Web journey covered launch, stage terrain swaps, real firing and
   paint, queue detail, Pause/Settings, locale, fullscreen, results, and live
   640x360 resize. All eight requests returned HTTP 200; Chrome recorded zero
@@ -95,11 +101,12 @@ capture is pre-resident-activity-removal history.
   could not open a controlled session in this task.
 - [x] The complete ordered suite, `scripts/verify.ps1`, fresh Godot 4.7.1
   Windows/Web exports, and final Web static verification pass. Final gzip size
-  is 17,945,291 bytes against the 18,996,696-byte allowance.
+  is 18,485,674 bytes against the 18,996,696-byte allowance.
 - Public itch upload, channel/visibility change, and deployed launcher proof are
   outside this completed local gate and still require explicit authorization.
 
-Evidence: `../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md`.
+Evidence: `../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md` and
+`../.agents/evidence/2026-08-20-hud-capture-regression/README.md`.
 
 ## Active prototype stabilization and publication gate (2026-08-20)
 

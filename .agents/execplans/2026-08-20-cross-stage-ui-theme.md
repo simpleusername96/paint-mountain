@@ -3,7 +3,7 @@ type: plan
 status: active
 created: 2026-08-20
 last_reviewed: 2026-08-20
-scope: implement the user-selected Cannon Focus compact shared UI system, close the reported Web paint-queue latency, and migrate all 30 stages to the Red/Green three-ball target-band loop
+scope: implement and correct the user-selected Cannon Focus compact shared UI system, close the reported Web paint-queue latency, and migrate all 30 stages to the Red/Green three-ball target-band loop
 supersedes:
   - 2026-08-18-three-ball-target-band-prototype.md
 related:
@@ -25,6 +25,7 @@ related:
   - ../evidence/2026-08-20-all-stage-target-band-migration/README.md
   - ../evidence/2026-08-20-m9-local-release/README.md
   - ../evidence/cross-stage-ui-theme-2026-08-20/README.md
+  - ../evidence/2026-08-20-hud-capture-regression/README.md
 ---
 
 # Cannon Focus Cross-Stage UI Refinement - Execution Contract
@@ -584,6 +585,45 @@ final inputs and close the local execution contract without publishing.
   - Final closure: after 8.3 passes, check every task, set frontmatter to `done`,
     and confirm `git status --short` is clean.
 
+### Phase 9: Player-capture HUD regression correction
+
+Goal: correct the concrete HUD regressions visible in the user's current
+running-game captures without changing gameplay rules or creating screen-local
+UI owners. This phase supersedes earlier positive visual judgments for the
+affected states.
+
+- [x] **9.1 Make Ball Queue one compact shared overlay.**
+  - Change: remove the token default white cards and the description panel,
+    correct token glyph/letter alignment and spacing, and keep one custom
+    hover/focus/press description. Disable the native tooltip while preserving
+    full accessibility text.
+  - Accept: the current and next-two balls read as one aligned upper-right
+    cluster; no white section/card appears; one description is visible at a
+    time; keyboard focus and press expose the same information; no native dark
+    tooltip duplicates it.
+- [x] **9.2 Recompose the shared Aim HUD around the cannon.**
+  - Change: move the view-mode action from the isolated left stack into the
+    top-right action/status group, make it icon-only with tooltip and accessible
+    copy, enlarge the standard vertical 0-100 score scale, remove the redundant
+    vertical metric icon, and tighten the bottom angle -> Fire -> power row.
+    Hide visual stepper captions while preserving accessible names and use a
+    world-readable shared value style.
+  - Accept: the left side is owned by the stage identity and a legible fixed
+    0-100 scale; all scale endpoints/ticks and the target band remain inside the
+    track; bottom controls form one compact sequence with no floating labels;
+    no required action, state, or keyboard/accessibility path is removed.
+- [x] **9.3 Prove the correction on current production pixels.**
+  - Change: update focused component/layout tests, run the shared-UI and full
+    project gates once final inputs freeze, create fresh Windows and Web release
+    artifacts, and capture queue-hover plus standard/compact Aim states from
+    the production-style Windows build. Inspect the actual images, then run the
+    codebase-quality audit and make only small safe task-owned corrections.
+  - Accept: automated checks pass; current captures show no duplicate ball
+    message, white queue panel, clipped/undersized standard scale, isolated
+    left mode switch, or loose bottom-control composition. The public itch
+    release remains untouched, and the separate live built-Web journey in 8.3
+    stays open unless a trusted browser bridge becomes available.
+
 ## Validation and Rework Controls
 
 | Cadence | Exact check | Run when | Do not rerun until |
@@ -633,9 +673,9 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 8.
-- Next task: complete the final-v11 built-Web journey when the trusted browser
-  bridge is available, then close 8.3 and the plan frontmatter.
+- Current phase: Phase 8 closure; Phase 9 is complete.
+- Next task: complete the remaining 8.3 built-Web journey when the trusted
+  browser bridge is available, then close the plan frontmatter.
 - Last completed gate: the old three-command-per-tick reproduction reached a
   33-tick pending age. The corrected fixed workload reaches at most 1 tick and
   completes up to three commands per drain. The real Stage 06 six-root/two-Apex
@@ -668,6 +708,19 @@ acceptance.
   later-stage/compact renders were inspected. The final built-Web live journey
   is pending only because the available browser bridge is not trusted; this is
   not converted into a passing browser claim.
+- Phase 9.1-9.2 checkpoint: six focused shared-UI tests and six adjacent HUD
+  regressions pass. Fresh Windows release captures for Stage 08 Aim, queue
+  detail, Map, and 640x360 Aim show one direct queue description, no queue
+  cards, a tall fixed 0-100 rail, one top-right mode action, and a compact
+  caption-free angle -> Fire -> power composition. The diff-scoped quality
+  audit found no competing UI or rule owner; its two local cleanup corrections
+  removed obsolete responsive APIs and tied toggle state to camera truth.
+- Phase 9.3 gate: the complete ordered suite, `scripts/verify.ps1`, fresh
+  Windows/Web releases, and Web static validation pass. Four final Windows
+  release captures were inspected at original resolution and close every
+  player-reported HUD regression. Windows SHA-256 is `585C0E33…57FEE`; Web is
+  12 files and 18,485,674 gzip bytes. Public itch remains untouched, and the
+  unrelated 8.3 live built-Web journey remains open.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

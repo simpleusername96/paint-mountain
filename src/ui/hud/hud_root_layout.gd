@@ -13,6 +13,7 @@ const COMPACT_HEIGHT := 620.0
 @onready var _aim := get_node("AimControls") as AimControls
 @onready var _score_scale := get_node("ScoreScale") as ScoreScale
 @onready var _queue := get_node("BallQueue") as BallQueue
+@onready var _interaction := get_node("CameraInteractionControl") as CameraInteractionControl
 @onready var _legend := get_node("ContextLegend") as ContextLegend
 @onready var _result := get_node("ResultPanel") as ResultPanel
 
@@ -63,15 +64,16 @@ func _responsive_window_size() -> Vector2:
 
 func _apply_standard_layout() -> void:
 	_aim.set_compact(false)
-	_set_rect(_aim, Vector2((size.x - 704.0) * 0.5, size.y - 146.0), Vector2(704.0, 56.0))
-	_set_rect(_actions, Vector2((size.x - 292.0) * 0.5, size.y - 170.0), Vector2(292.0, 86.0))
-	_queue.set_vertical(false)
-	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 260.0, 92.0), Vector2(260.0, 104.0))
+	_set_rect(_aim, Vector2((size.x - 628.0) * 0.5, size.y - 146.0), Vector2(628.0, 56.0))
+	_set_rect(_actions, Vector2((size.x - 256.0) * 0.5, size.y - 170.0), Vector2(256.0, 86.0))
+	_queue.set_compact(false)
+	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 420.0, 92.0), Vector2(420.0, 104.0))
+	_set_rect(_interaction, Vector2(size.x - 430.0, SAFE_MARGIN), Vector2(48.0, 48.0))
 	_score_scale.set_compact(false)
 	if _score_summary:
 		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(440.0, 118.0))
 	else:
-		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(116.0, 286.0))
+		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 84.0), Vector2(132.0, 410.0))
 	_result.set_compact(false)
 	_set_rect(
 		_result,
@@ -86,15 +88,16 @@ func _apply_compact_layout() -> void:
 	_suppress_visibility_capture = false
 	_aim.set_compact(true)
 	var action_top := size.y - COMPACT_SAFE_MARGIN - 86.0
-	_set_rect(_actions, Vector2((size.x - 292.0) * 0.5, action_top), Vector2(292.0, 86.0))
+	_set_rect(_actions, Vector2((size.x - 256.0) * 0.5, action_top), Vector2(256.0, 86.0))
 	_set_rect(_aim, Vector2((size.x - 340.0) * 0.5, action_top - 58.0), Vector2(340.0, 52.0))
-	_queue.set_vertical(false)
+	_queue.set_compact(true)
 	_set_rect(_queue, Vector2(size.x - COMPACT_SAFE_MARGIN - 260.0, 84.0), Vector2(260.0, 104.0))
+	_set_rect(_interaction, Vector2(size.x - 430.0, 24.0), Vector2(48.0, 48.0))
 	_score_scale.set_compact(true)
 	if _score_summary:
 		_set_rect(_score_scale, Vector2(COMPACT_SAFE_MARGIN, 82.0), Vector2(360.0, 104.0))
 	else:
-		_set_rect(_score_scale, Vector2(COMPACT_SAFE_MARGIN, 76.0), Vector2(116.0, 272.0))
+		_set_rect(_score_scale, Vector2(COMPACT_SAFE_MARGIN, 76.0), Vector2(112.0, 272.0))
 	_result.set_compact(true)
 	_set_rect(
 		_result,

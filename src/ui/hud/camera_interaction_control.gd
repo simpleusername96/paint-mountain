@@ -31,14 +31,18 @@ func _request_other_mode() -> void:
 			if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED \
 			else CameraDirector.InteractionMode.AIM_LOCKED
 	interaction_mode_requested.emit(requested)
+	# The request may be rejected if the gameplay state changes in the same frame.
+	# Keep the pressed visual tied to the last authoritative callback.
+	button_pressed = _interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION
 
 
 func _refresh_copy() -> void:
 	theme_type_variation = &"HudModeButtonCompact"
 	icon = _mode_icon
+	text = ""
+	button_pressed = _interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION
 	if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
-		text = tr("hud.aim_lock")
 		tooltip_text = tr("hud.switch_to_map_inspection")
 	else:
-		text = tr("hud.map_inspection")
 		tooltip_text = tr("hud.switch_to_aim_lock")
+	accessibility_name = tooltip_text

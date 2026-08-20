@@ -21,6 +21,8 @@ func _run() -> void:
 				"%s must inherit the canonical Theme" % variation)
 	for variation in [&"BallQueueToken", &"ActionControl", &"StageRailButton"]:
 		_assert(theme.is_type_variation(variation, &"Button"), "%s must be a shared button role" % variation)
+	_assert(theme.is_type_variation(&"BallQueueDescription", &"Label"),
+		"BallQueueDescription must be a shared direct-label role")
 	_assert(theme.has_color(&"world_outline", &"ScoreScale")
 			and theme.has_constant(&"world_outline_size", &"ScoreScale"),
 		"ScoreScale world contrast must remain Theme-owned")
@@ -35,6 +37,8 @@ func _run() -> void:
 	var hud_root := hud.get_node("HUDRoot")
 	_assert(hud_root.get_node("ScoreScale") is ScoreScale, "HUD must compose the sole shared ScoreScale")
 	_assert(hud_root.get_node("BallQueue") is BallQueue, "HUD must compose the sole shared BallQueue")
+	_assert((hud_root.get_node("BallQueue") as BallQueue).find_children("*", "PanelContainer", true, false).is_empty(),
+		"BallQueue must not introduce a white card or section owner")
 	_assert(hud_root.get_node_or_null("CoverageMeter") == null, "legacy coverage component must not remain in production HUD")
 	_assert(hud_root.get_node_or_null("TargetBandMeter") == null, "cropped target-band component must not remain in production HUD")
 	_assert(hud_root.get_node_or_null("QueueRail") == null, "legacy vertical queue must not remain in production HUD")
