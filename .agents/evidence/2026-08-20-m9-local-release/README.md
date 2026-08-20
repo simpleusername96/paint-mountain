@@ -27,8 +27,9 @@ Butler upload, visibility change, or public-page interaction was performed.
 ## Source and artifacts
 
 - Task implementation commits: `eb1ee6c`, `c6bfc23`, `d42168e`, and
-  `6741674`. The current branch also contains the independent instruction-only
-  commit `9e971bf`; it does not change the packaged game.
+  `6741674`; local gate record commit: `16c9e96`. The current branch also
+  contains the independent instruction-only commit `9e971bf`; it does not
+  change the packaged game.
 - Runtime: `4.7.1.stable.official.a13da4feb`, Compatibility renderer, fixed
   60 Hz physics, Windows desktop first and single-thread Web/WebGL2.
 - Windows executable: 120,954,992 bytes, SHA-256

@@ -187,11 +187,14 @@ fidelity change.
   activation, untouched Space, pointer Fire, resize/fullscreen, both special
   balls, pause/settings, save/reload, audio unlock, background/resume, and
   console/network health.
-- [ ] **9.3 Commit and stop for publish authorization.** Create coherent scoped
-  commits with explanatory bodies. Do not push, merge, invoke the publication
-  workflow, or change itch state without explicit approval in this turn. After
-  approval, require the deployed PCK to match the CI PCK hash, then repeat the
-  M9.2 journey on the public page/iframe without changing visibility.
+- [x] **9.3 Commit and stop for publish authorization.** Create coherent scoped
+  commits with explanatory bodies, stop the task-owned local server, and do not
+  push, merge, invoke the publication workflow, or change itch state without
+  explicit approval in this turn.
+- [ ] **9.4 Publish and prove the exact artifact after approval.** Invoke only
+  the authorized workflow, require the deployed PCK to match the CI PCK hash,
+  then repeat the M9.2 journey on the public page/iframe without changing
+  visibility.
 
 Gate: the exact fixed artifact, not only a version label or successful upload,
 passes the real itch journey. Otherwise this plan stays active with the failing
@@ -275,9 +278,10 @@ pwsh -NoProfile -File scripts/verify-web-release.ps1 -ReleaseDirectory builds/we
   polluted by multi-second automation-window scheduling stalls, and the exact
   construction-to-`frame_post_draw` boundary is recorded under
   `../evidence/2026-08-20-m8-web-latency/README.md`.
-- [ ] M9 — local gate and production-Web journey pass; scoped commit and
-  explicit publish authorization plus deployed itch proof remain. Evidence is
-  under `../evidence/2026-08-20-m9-local-release/README.md`.
+- [ ] M9 — local gate, production-Web journey, scoped commit `16c9e96`, and
+  task-owned server shutdown pass; explicit publish authorization and deployed
+  itch proof remain. Evidence is under
+  `../evidence/2026-08-20-m9-local-release/README.md`.
 
 ## Stop conditions and next step
 
@@ -286,7 +290,6 @@ horizon/kinds/channels/stage access, deleting legacy catalog owners, weakening a
 performance/fidelity contract, force-pushing, publishing, or changing itch
 visibility. Failed tests or difficult debugging are not stop conditions.
 
-Commit the M9 local checkpoint, stop the task-owned local server, and request
-publish authorization. Mark this plan `done` only after all non-conditional
-checks are supported by current evidence and the explicitly authorized deployed
-artifact passes the remote journey.
+Request publish authorization. Mark this plan `done` only after all
+non-conditional checks are supported by current evidence and the explicitly
+authorized deployed artifact passes the remote journey.
