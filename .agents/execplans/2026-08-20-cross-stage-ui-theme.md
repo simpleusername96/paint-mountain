@@ -22,6 +22,7 @@ related:
   - ../evidence/2026-08-20-m7-responsive-ui/README.md
   - ../evidence/2026-08-20-m8-web-latency/README.md
   - ../evidence/2026-08-20-paint-queue-latency-correction/README.md
+  - ../evidence/2026-08-20-all-stage-target-band-migration/README.md
   - ../evidence/2026-08-20-m9-local-release/README.md
   - ../evidence/cross-stage-ui-theme-2026-08-20/README.md
 ---
@@ -474,8 +475,7 @@ Locked progression contract:
 | --- | ---: | --- | --- |
 | 01-06 | existing 4/5/5/6/6/6 | existing teaching profiles | preserve exact current rules and bands |
 | 07-15 | 6 | allow all three; require Burst and Apex, Standard remains required | five-pattern cycle below; minimum `7 + floor((n-7)/6)`, maximum `minimum + 4` |
-| 16-25 | 7 | same | same formula/cycle |
-| 26-30 | 8 | same | same formula/cycle |
+| 16-30 | 7 | same | same formula/cycle |
 
 For Stage 07 onward, the deterministic five-stage cycle is `Both Add`,
 `Green Add / Red Subtract`, `Red Add / Green Subtract`, `Green Add / Red
@@ -490,7 +490,7 @@ Preconditions:
 - The committed v10 catalog/bundle is the immutable migration source; no file
   inside that bundle is edited in place.
 
-- [ ] **7.1 Materialize one target-band contract for every stage.**
+- [x] **7.1 Materialize one target-band contract for every stage.**
   - Change: replace the six-stage-only materializer branch with named,
     deterministic progression helpers for score pattern, target band, shots,
     allowed/required kinds, and default deal seed. Preserve the exact Stage
@@ -498,7 +498,7 @@ Preconditions:
   - Accept: all 30 materialized stages use `TARGET_BAND`, pass
     `has_valid_rule_contract()`, and match the locked table without stage-local
     scripts or copied rule resources.
-- [ ] **7.2 Make variety a deal invariant, not a possibility.**
+- [x] **7.2 Make variety a deal invariant, not a possibility.**
   - Change: extend `BallDealProfile` with required kinds and update candidate,
     fallback, validation, diagnostics, and hashing. Stage 07-30 deals require at
     least one Impact Burst and one Apex Split while retaining Standard and both
@@ -506,7 +506,7 @@ Preconditions:
   - Accept: at least 16 deterministic seeds for every stage (480 cases) have
     the exact length, permitted/required kinds, both colors, correction reserve,
     and resident-capacity safety; same stage/seed reproduces exact tokens.
-- [ ] **7.3 Build and atomically promote catalog v11.**
+- [x] **7.3 Build and atomically promote catalog v11.**
   - Change: increment the serialized generation/catalog contract, build a full
     reviewed thirty-stage bundle from the v10 source, validate every generated
     layout and rule contract, and update only the canonical catalog pointer
@@ -514,7 +514,7 @@ Preconditions:
   - Accept: the v10 bundle remains byte-unchanged; v11 contains 30 matching
     stage/layout identities and passes manifest, layout, reachability,
     mechanism, resource, and deterministic rebuild checks.
-- [ ] **7.4 Remove the active legacy-rule presentation split safely.**
+- [x] **7.4 Remove the active legacy-rule presentation split safely.**
   - Change: make Stage Select, Briefing, Aim, Result, HUD, observation, agent,
     retry, timeout, and queue paths present target-band truth for every canonical
     stage. Existing scalar-coverage best records load but are not fabricated
@@ -522,7 +522,7 @@ Preconditions:
   - Accept: Stage 07/18/30 expose score band, Red/Green weights, current plus
     next-two queue, actual ball-kind help, Finish/timeout rules, and target-band
     result fields through the same shared owners as Stage 03.
-- [ ] **7.5 Calibrate representative running stages without overclaiming.**
+- [x] **7.5 Calibrate representative running stages without overclaiming.**
   - Change: run real Stage 07, 18, and 30 root-fire/paint/result scenarios and
     capture Aim plus Result for each. Check that deals contain both special
     kinds, target bands are readable on the fixed 0-100 scale, paint is live,
@@ -538,7 +538,7 @@ Phase 7 gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_deal_generation_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/cross_stage_ui_theme_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/stage_select_rule_truth_test.gd
-& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/prototype_stage_runtime_smoke_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/target_band_stage_runtime_smoke_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/baked_stage_layout_test.gd
 ```
 
@@ -547,14 +547,14 @@ Phase 7 gate:
 Goal: validate the combined UI, paint-latency, and all-stage-rule result once on
 final inputs and close the local execution contract without publishing.
 
-- [ ] **8.1 Audit the final responsibility boundaries.**
+- [x] **8.1 Audit the final responsibility boundaries.**
   - Change: use the codebase quality audit on shared UI, paint scheduling,
     stage/deal materialization, catalog, save compatibility, and tests; apply
     only small safe task-owned corrections.
   - Accept: no second paint owner, rule owner, palette, stage-specific UI clone,
     catch-all expansion, silent result conversion, or reachable failure path
     remains.
-- [ ] **8.2 Run the one broad production gate.**
+- [x] **8.2 Run the one broad production gate.**
   - Change: run `scripts/test.ps1`, `scripts/verify.ps1`, fresh Windows and Web
     release exports, and `verify-web-release.ps1` after all source inputs freeze.
   - Accept: all commands pass, artifact hashes are current, and the public itch
@@ -567,13 +567,22 @@ final inputs and close the local execution contract without publishing.
   - Accept: no seconds-late paint tail, clipped score scale, legacy scalar
     result, missing special kind, relevant console/network error, or stale
     artifact appears.
-- [ ] **8.4 Update durable truth, commit coherently, and close.**
+  - Completed evidence: 22 final Windows release captures were regenerated;
+    representative Stage Select, Stage 07/18/30 Aim/Result, English 1920x1080,
+    and Korean 640x360 states were inspected without a P0/P1 defect. The final
+    Web export and static verifier pass.
+  - Remaining evidence: the in-app browser controller could not establish a
+    session because its privileged native-pipe bridge was not trusted. No
+    second browser stack was used; the final-v11 live Web journey remains open.
+- [x] **8.4 Update durable truth and commit coherently.**
   - Change: update the Korean itch report, `.agents/Documentation.md`, design and
     architecture specs, test checklist, evidence, and this plan with measured
     results and explicit balance/publication limits. Commit only task-owned
     changes with explanatory bodies.
-  - Accept: documents agree with runtime; every task is checked; frontmatter is
-    `done`; `git status --short` is clean.
+  - Accept: documents agree with runtime, task-owned changes are committed, and
+    the plan remains `active` only for the explicit 8.3 built-Web journey.
+  - Final closure: after 8.3 passes, check every task, set frontmatter to `done`,
+    and confirm `git status --short` is clean.
 
 ## Validation and Rework Controls
 
@@ -624,9 +633,9 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 7.
-- Next task: 7.1, materialize the locked all-stage target-band progression;
-  then enforce actual deal variety and atomically promote catalog v11.
+- Current phase: Phase 8.
+- Next task: complete the final-v11 built-Web journey when the trusted browser
+  bridge is available, then close 8.3 and the plan frontmatter.
 - Last completed gate: the old three-command-per-tick reproduction reached a
   33-tick pending age. The corrected fixed workload reaches at most 1 tick and
   completes up to three commands per drain. The real Stage 06 six-root/two-Apex
@@ -634,6 +643,31 @@ acceptance.
   per drain, and a 14.818 ms maximum drain. Deterministic bytes/checksum,
   command order, ownership, disconnected fallback, projectile contact, Burst,
   Apex, and score-rule checks pass.
+- Phase 7 discovery: the existing Stage 26-30 mechanism loadouts may contain a
+  three-child Splitter. Eight retained roots would require 24 residents and
+  violate the fixed 21-body safety cap, so the late tier remains seven shots
+  (maximum 21) rather than expanding the cap or deleting existing mechanisms.
+- Last completed Phase 7 gate: catalog v11 manifest `29c58dab…694e` validates;
+  all 30 target-band profiles and 480 deterministic deals pass. The immutable
+  v10/v11 migration comparison preserves terrain, target mask, routes,
+  mechanisms, decorations, and witnesses. Stage 07/18/30 execute real root
+  fire, authoritative target paint, and Result; six production-render captures
+  show the shared 0-100 scale and varied queue. Human balance remains unclaimed.
+- Phase 8.1 audit: `StageCatalogMaterializer` remains the single rule-data
+  transformer; `BallDealProfile/Generator` alone own kind requirements;
+  `StageController`, `PaintSystem`, and the shared UI retain their prior narrow
+  authorities. v10 is unchanged, v11 is content-addressed, scalar save records
+  are preserved without conversion, obsolete stage-rule tests were replaced,
+  and `git diff --check` reports no patch defect.
+- Phase 8.2 gate: the complete ordered suite and `scripts/verify.ps1` pass.
+  Fresh Windows and single-thread Web releases export; Web static verification
+  reports 12 files, 8 exact-case references, 51,809,060 raw bytes, and
+  18,485,180 gzip bytes below the 18,996,696-byte allowance. The Windows
+  executable is 121,978,464 bytes with SHA-256 `B0C2F5CE…9053F`.
+- Phase 8.3 partial gate: 22 current Windows captures pass and representative
+  later-stage/compact renders were inspected. The final built-Web live journey
+  is pending only because the available browser bridge is not trusted; this is
+  not converted into a passing browser claim.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

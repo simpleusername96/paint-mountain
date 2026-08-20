@@ -29,13 +29,14 @@ related:
 Define stable responsibility boundaries for the Godot vertical slice so data,
 presentation, game rules, diagnostics, and future AI control remain separable.
 
-## Prototype rule boundary
+## Target-band rule boundary
 
 `PaintSystem` owns one strength/latest-owner representation and immutable
 Red/Green/Total physical-area snapshots. `StageController` alone owns deal,
-target-band, retry, and terminal rules for Stages 01–06. Stages 07–30 retain
-legacy v10 scalar/glyph behavior; 96 structural seed cases are not feasibility
-or human-study proof.
+target-band, retry, and terminal rules for all 30 stages. Catalog v11 preserves
+the v10 terrain/mechanism payloads while materializing all-stage rule data; 480
+deterministic deal cases prove structural contracts, not physical feasibility
+or human balance.
 
 ## Scope
 

@@ -22,7 +22,9 @@ $captures = @(
     @{ Name = '17-aiming-stage01-ko-640x360.png'; Screen = 'aiming'; Stage = 'stage_01'; Size = '640x360'; Language = 'ko' },
     @{ Name = '18-stage-select-stage01-en-640x360.png'; Screen = 'stage_select'; Stage = 'stage_01'; Size = '640x360'; Language = 'en' },
     @{ Name = '19-settings-stage01-ko-640x360.png'; Screen = 'settings'; Stage = 'stage_01'; Size = '640x360'; Language = 'ko' },
-    @{ Name = '20-result-stage01-ko-640x360.png'; Screen = 'target_clear_result'; Stage = 'stage_01'; Size = '640x360'; Language = 'ko' }
+    @{ Name = '20-result-stage01-ko-640x360.png'; Screen = 'target_clear_result'; Stage = 'stage_01'; Size = '640x360'; Language = 'ko' },
+    @{ Name = '21-aiming-stage18-ko-1280x720.png'; Screen = 'aiming'; Stage = 'stage_18'; Size = '1280x720'; Language = 'ko' },
+    @{ Name = '22-result-stage18-ko-1280x720.png'; Screen = 'manual_result'; Stage = 'stage_18'; Size = '1280x720'; Language = 'ko' }
 )
 
 foreach ($capture in $captures) {

@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-20
 scope: gameplay, content, presentation, performance, and deliverables
 source: source-brief.md
 related:
@@ -20,18 +20,20 @@ related:
   - ../.agents/execplans/2026-08-07-target-coverage-and-safe-aim-framing.md
   - ../.agents/execplans/2026-08-07-cannon-shot-observation.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
 ---
 
 # Paint Mountain Design Specification
 
-## Six-stage target-band prototype (2026-08-18)
+## All-stage Red/Green target-band progression (2026-08-20)
 
-Stages 01–06 are the active Standard/Impact Burst/Apex Split Red/Green
-prototype. Latest threshold-valid paint owns a texel while strength remains
-monotonic, and the signed Paint Score must finish inside an inclusive band.
-Stages 07–30 remain the v10 scalar/glyph legacy path. Catalog v11, all-stage
-migration, and human feasibility remain deferred; 16 structural seeds per
-prototype stage (96 total) are not human-play evidence.
+All 30 stages use Standard, Impact Burst, and Apex Split Red/Green balls.
+Latest threshold-valid paint owns a texel while strength remains monotonic,
+and the signed Paint Score must finish inside an inclusive band. Stages 07–30
+retain their existing terrain and mechanisms while adding varied deterministic
+deals, signed rule patterns, and progressively higher target bands. The v11
+catalog validates 16 deals per stage (480 total); this structural coverage is
+not a physical-clear or human-balance claim.
 
 ## Purpose
 
@@ -55,7 +57,7 @@ stage timer; the player finishes the run or the timer ends it.
 
 The vertical slice includes a main menu, stage select, briefing/inspection,
 aiming, projectile observation, coverage result, pause, settings, saving,
-debug tooling, audio/visual feedback, thirty all-open stages, one ball type, and
+debug tooling, audio/visual feedback, thirty all-open stages, three ball kinds, and
 exactly three mechanism types.
 
 ## Requirements

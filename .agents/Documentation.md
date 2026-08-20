@@ -109,14 +109,17 @@ related:
   ExecPlan remains open for explicit publish authorization and exact public PCK
   plus launcher/iframe verification.
 
-## Three-Ball Red/Green Target-Band Prototype (2026-08-18)
+## All-Stage Red/Green Target-Band Progression (2026-08-20)
 
-Stages 01–06 implement the bounded Red/Green three-ball prototype, with
-latest-valid-writer ownership, monotonic strength, and physical channel
-measurement. Six default-deal witnesses and 16 structural seeds per stage (96
-total) exist. Stages 07–30 remain legacy v10 scalar/glyph stages. Catalog v11,
-all-stage migration, physical-clear guarantees, and human-study feasibility are
-deferred; structural seed coverage is not a human-play claim.
+All 30 stages implement the bounded Red/Green three-ball rules with
+latest-valid-writer ownership, monotonic strength, physical channel
+measurement, signed scoring, and an inclusive target band. Catalog v11 keeps
+the reviewed v10 terrain, target mask, routes, mechanisms, decorations, and
+camera witnesses unchanged while adding rule/deal data to Stages 07–30. All
+later-stage deals require Standard, Impact Burst, and Apex Split, preserve a
+two-Standard correction reserve, and stay within the 21-resident cap. The 30
+profiles and 480 deterministic deals pass structural checks; catalog-wide
+physical clears and human balance remain unclaimed.
 
 ## Stage Selection Readiness Correction (2026-08-11)
 
@@ -655,7 +658,7 @@ and final production evidence is
 [`evidence/cross-stage-ui-theme-2026-08-20/README.md`](evidence/cross-stage-ui-theme-2026-08-20/README.md).
 
 - Cannon Focus is the canonical Aim composition: a fixed vertical 0-100 score
-  scale sits at the safe left edge, the Stage 01-06 ball queue sits at the
+  scale sits at the safe left edge, the all-stage ball queue sits at the
   upper-right, and angle, Fire, and power form one compact lower sequence around
   the cannon. Queue detail is shared across hover, focus, press/touch, and
   accessibility output.
@@ -665,15 +668,16 @@ and final production evidence is
   direct overlays instead of decorative cards, panels, or sheets.
 - `ScoreScale` always exposes the full 0-100 domain. Aim, Map, and Shot Follow
   use the vertical orientation; Briefing and Result use the horizontal
-  orientation. Prototype target bands and R/G contributions and legacy coverage
-  thresholds remain truthful data inside that domain.
+  orientation. Target bands and signed R/G contributions remain truthful data
+  inside that domain for every stage.
 - The selected Stage Select item presents its newest real prepared terrain
   without an early `GameState` commit or a second renderer. The shared system
-  covers Stages 01-06 target-band rules and Stages 07-30 legacy coverage rules.
-- Twenty final Windows/Compatibility release captures prove representative
-  states, both locales, both stage families, and 640x360 through 1920x1080. The
-  built-Web journey recorded eight HTTP 200 requests, zero Chrome warnings or
-  errors, and authoritative paint without a multi-second post-flight delay.
+  covers the same target-band rule and queue contract across Stages 01–30.
+- Twenty-two final Windows/Compatibility release captures prove representative
+  states, both locales, Stages 01/03/07/18/30, and 640x360 through 1920x1080.
+  An earlier built-Web journey proved the shared UI and authoritative paint;
+  the final v11 Web artifact passes export/static checks, but its browser rerun
+  remains pending because the available browser bridge is not trusted.
 - The complete suite, repository verification, Windows/Web exports, and final
   Web static verification pass. Public itch publication was not performed and
   remains a separate explicitly authorized action.

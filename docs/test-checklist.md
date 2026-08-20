@@ -74,22 +74,25 @@ capture is pre-resident-activity-removal history.
   `ContextLegend`, `ResultSummary`, and scrim owners serve every reachable UI
   state; screens do not own competing palettes, StyleBoxes, or icons.
 - [x] Cannon Focus Aim keeps the vertical fixed-domain 0-100 score scale,
-  prototype ball queue, cannon, trajectory, angle, Fire, and power visible at
+  all-stage ball queue, cannon, trajectory, angle, Fire, and power visible at
   1280x720 and the 640x360 stress size. Queue descriptions are reachable by
   hover, keyboard focus, and press/touch, with matching accessibility text.
 - [x] Stage Select shows the selected stage's newest real prepared terrain
   behind a compact rail without committing `GameState` before Start. The same
   component system covers Main Menu, Briefing, Map, Shot Follow, Pause,
   Settings, success/failure Result, loading, disabled, and focus states across
-  prototype Stages 01-06 and legacy Stages 07-30.
-- [x] Twenty Windows/Compatibility release captures cover the named states,
-  both stage families, Korean/English, 1280x720, 1920x1080, and 640x360. Direct
+  target-band Stages 01-30.
+- [x] Twenty-two Windows/Compatibility release captures cover the named states,
+  Stages 01/03/07/18/30, Korean/English, 1280x720, 1920x1080, and 640x360. Direct
   inspection found no remaining P0/P1 clipping, overlap, obstructive sheet, or
   hierarchy defect.
-- [x] The built-Web journey covered launch, stage terrain swaps, real firing and
+- [x] The earlier built-Web journey covered launch, stage terrain swaps, real firing and
   paint, queue detail, Pause/Settings, locale, fullscreen, results, and live
   640x360 resize. All eight requests returned HTTP 200; Chrome recorded zero
   warning or error messages and no multi-second post-flight paint update.
+- [ ] Repeat that journey on the final v11 Web artifact. Export and static
+  validation pass, but the available in-app browser bridge is not trusted and
+  could not open a controlled session in this task.
 - [x] The complete ordered suite, `scripts/verify.ps1`, fresh Godot 4.7.1
   Windows/Web exports, and final Web static verification pass. Final gzip size
   is 17,945,291 bytes against the 18,996,696-byte allowance.
@@ -130,13 +133,15 @@ Evidence: `../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md`.
 
 Local evidence: `../.agents/evidence/2026-08-20-m9-local-release/README.md`.
 
-## Three-ball target-band prototype status
+## All-stage three-ball target-band status
 
 - [x] Each Stage 01–06 default deal has a bounded physical clear witness.
-- [x] Sixteen deals per prototype stage (96 total) pass structural constraints;
-  this is not catalog-wide physical-clear or human-play evidence.
+- [x] Sixteen deals per stage (480 total) pass structural constraints and every
+  Stage 07–30 deal contains Standard, Impact Burst, Apex Split, both colors,
+  and a two-Standard correction reserve.
 - [ ] Catalog-wide physical guarantees and human-study feasibility are deferred.
-- [x] Stages 07–30 retain legacy v10 scalar/glyph behavior.
+- [x] Stages 07–30 use Red/Green target bands and varied three-ball deals while
+  preserving their reviewed v10 terrain and mechanism identities in catalog v11.
 - [x] Focused checks, the complete ordered suite, and `scripts/verify.ps1` pass
   after the feature set is frozen.
 - [x] The single compact Stage 06 workload launches six representative roots

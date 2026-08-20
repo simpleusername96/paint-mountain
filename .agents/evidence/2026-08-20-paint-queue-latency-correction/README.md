@@ -74,8 +74,9 @@ seconds-long post-contact tail.
 
 ## Remaining proof boundary
 
-This checkpoint is native focused evidence. Phase 8 still owns the complete
-suite, repository verification, fresh Windows/Web exports, and built-Web
-running-game inspection after the newly approved all-stage target-band catalog
-migration. No public itch artifact was uploaded or inspected for this local
+The complete suite, repository verification, fresh Windows/Web exports, and Web
+static verification pass with this correction and catalog v11. Native runtime
+smoke and current Windows renders prove the corrected source; the final
+built-Web live journey remains pending because the available browser bridge was
+not trusted. No public itch artifact was uploaded or inspected for this local
 correction.
