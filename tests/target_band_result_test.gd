@@ -20,6 +20,8 @@ func _run() -> void:
 	_assert(band.stars_for(5.99) == 0 and not invalid_band.is_valid(), "out-of-band and invalid bands must reject")
 	var score := StageScoreSnapshot.new(PaintCoverageSnapshot.new(3.0, 6.0, 9.0), ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT), band)
 	_assert(score.paint_score == 3.0 and not score.in_target_band and score.stars == 0, "score snapshot must compose coverage, rule, and band")
+	var negative_score := StageScoreSnapshot.new(PaintCoverageSnapshot.new(4.0, 1.0, 5.0), ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT), band)
+	_assert(negative_score.paint_score == -3.0 and not negative_score.in_target_band and negative_score.stars == 0, "signed score snapshots must preserve below-zero results")
 	quit(1 if _failed else 0)
 
 

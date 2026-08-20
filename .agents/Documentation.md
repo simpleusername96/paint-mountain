@@ -658,6 +658,8 @@ and final production evidence is
 [`evidence/cross-stage-ui-theme-2026-08-20/README.md`](evidence/cross-stage-ui-theme-2026-08-20/README.md).
 The current player-capture correction is recorded separately in
 [`evidence/2026-08-20-hud-capture-regression/README.md`](evidence/2026-08-20-hud-capture-regression/README.md).
+The signed-score correction and its production pixels are recorded in
+[`evidence/2026-08-20-signed-score-correction/README.md`](evidence/2026-08-20-signed-score-correction/README.md).
 
 - Cannon Focus is the canonical Aim composition: a fixed vertical 0-100 score
   scale sits at the safe left edge, the all-stage ball queue sits at the
@@ -672,6 +674,12 @@ The current player-capture correction is recorded separately in
   use the vertical orientation; Briefing and Result use the horizontal
   orientation. Target bands and signed R/G contributions remain truthful data
   inside that domain for every stage.
+- The shared scale now preserves the authoritative signed Paint Score as its
+  visible/accessibility value and clamps only marker geometry. Negative values
+  remain visible, use the zero endpoint plus a directional underflow shape, and
+  pass unchanged into Result. `HUDController` ignores legacy total-coverage
+  presentation updates on target-band stages, so they cannot overwrite signed
+  score after `StageController.score_changed`.
 - A later running-game capture review superseded the original Aim/Map/queue
   visual judgment. Ball Queue now uses transparent default tokens and one
   direct description label with no native duplicate tooltip or panel. The
@@ -686,6 +694,8 @@ The current player-capture correction is recorded separately in
   states, both locales, Stages 01/03/07/18/30, and 640x360 through 1920x1080.
   Four newer final-release captures supersede the affected Stage 08 Aim, queue,
   Map, and 640x360 Aim conclusions and verify the player-reported corrections.
+  Three signed-score Windows-release captures additionally verify Stage 08
+  `-3.0` Aim/Result truth at 1280x720 and compact Aim at 640x360.
   An earlier built-Web journey proved the shared UI and authoritative paint;
   the final v11 Web artifact passes export/static checks, but its browser rerun
   remains pending because the available browser bridge is not trusted.

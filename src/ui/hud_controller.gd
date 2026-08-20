@@ -92,6 +92,8 @@ func update_shots(remaining: int, _maximum: int) -> void:
 
 func update_coverage(value: float) -> void:
 	_last_coverage = value
+	if _stage_data != null and _stage_data.uses_target_band():
+		return
 	_score_scale.update_coverage(value)
 
 

@@ -21,6 +21,8 @@ stage.prototype_briefing.5,Red adds and Green subtracts. Overwrite paint to corr
 stage.prototype_briefing.6,Red adds to the score. Green paint is neutral.,빨강은 점수에 더해집니다. 초록 페인트는 점수에 영향을 주지 않습니다.
 hud.paint_score,PAINT SCORE,페인트 점수
 hud.target_band,TARGET,목표 구간
+hud.score_below_scale,BELOW 0,0 미만
+hud.score_above_scale,ABOVE 100,100 초과
 app.title,PAINT MOUNTAIN,페인트 마운틴
 ui.play,PLAY,플레이
 ui.stage_select,STAGE SELECT,스테이지 선택

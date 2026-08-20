@@ -82,7 +82,14 @@ func _run() -> void:
 		"Aim Lock must restore the icon state plus aim and Fire controls"
 	)
 	var coverage := hud_root.get_node("ScoreScale") as ScoreScale
-	hud.update_coverage(2.0)
+	hud.update_target_score({
+		"red_percent": 1.0,
+		"green_percent": 1.0,
+		"total_percent": 2.0,
+		"paint_score": 2.0,
+		"paint_mask_checksum": 9,
+	})
+	hud.update_coverage(5.0)
 	await process_frame
 	_assert_true(
 		is_equal_approx(coverage.value(), 2.0)
@@ -91,7 +98,7 @@ func _run() -> void:
 			gameplay.stage_data.target_band.target_max
 		))
 		and coverage.track_rect_for_test().grow(0.01).encloses(coverage.target_rect_for_test()),
-		"score scale must keep the authoritative target band inside its complete 0-100 rail"
+		"legacy coverage publication must not overwrite target-band score truth"
 	)
 	var observation := ShotObservation.new()
 	observation.configure(1, -7.5, 41.0, 72.0, 12.0)

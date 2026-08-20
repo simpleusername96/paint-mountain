@@ -92,6 +92,11 @@ capture is pre-resident-activity-removal history.
   white default cards or panel; native tooltip text is empty; the full 0-100
   standard rail is tall and bounded; the mode action joins the top-right row;
   bottom steppers are compact and caption-free without losing accessibility.
+- [x] Signed Paint Score remains authoritative through live HUD and Result.
+  Stage 08 `R 4.0 / G 1.0` renders `-3.0` instead of `0.0` or total coverage;
+  only the marker projects to the zero endpoint, with a directional shape.
+  Korean Windows-release captures pass at 1280x720 for Aim/Result and 640x360
+  for compact Aim without clipped ticks, target band, contributions, or value.
 - [x] The earlier built-Web journey covered launch, stage terrain swaps, real firing and
   paint, queue detail, Pause/Settings, locale, fullscreen, results, and live
   640x360 resize. All eight requests returned HTTP 200; Chrome recorded zero
@@ -106,7 +111,8 @@ capture is pre-resident-activity-removal history.
   outside this completed local gate and still require explicit authorization.
 
 Evidence: `../.agents/evidence/cross-stage-ui-theme-2026-08-20/README.md` and
-`../.agents/evidence/2026-08-20-hud-capture-regression/README.md`.
+`../.agents/evidence/2026-08-20-hud-capture-regression/README.md` and
+`../.agents/evidence/2026-08-20-signed-score-correction/README.md`.
 
 ## Active prototype stabilization and publication gate (2026-08-20)
 

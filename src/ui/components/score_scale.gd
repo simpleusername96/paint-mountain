@@ -105,14 +105,22 @@ func update_target_band(
 
 
 func set_value(value: float) -> void:
-	_value = clampf(value, DOMAIN_MINIMUM, DOMAIN_MAXIMUM)
-	_current_value.text = "%.1f%s" % [_value, "%" if _show_percent else ""]
+	_value = value
+	_current_value.text = "%s%s" % [_format_value(_value), "%" if _show_percent else ""]
 	_apply_accessibility()
 	queue_redraw()
 
 
 func value() -> float:
 	return _value
+
+
+func marker_value_for_test() -> float:
+	return clampf(_value, DOMAIN_MINIMUM, DOMAIN_MAXIMUM)
+
+
+func range_overflow_direction_for_test() -> int:
+	return _range_overflow_direction()
 
 
 func target_range() -> Vector2:
@@ -219,6 +227,7 @@ func _draw() -> void:
 	else:
 		draw_line(Vector2(marker.x, track.position.y - 8.0),
 				Vector2(marker.x, track.end.y + 8.0), marker_color, 3.0)
+	_draw_range_overflow(track, marker_color)
 
 
 func _track_rect() -> Rect2:
@@ -256,16 +265,55 @@ func _scale_color(role: StringName) -> Color:
 	return get_theme_color(resolved, &"ScoreScale")
 
 
+func _draw_range_overflow(track: Rect2, color: Color) -> void:
+	var direction := _range_overflow_direction()
+	if direction == 0:
+		return
+	var points := PackedVector2Array()
+	if preset == Preset.VERTICAL_LIVE:
+		var endpoint_y := track.position.y if direction > 0 else track.end.y
+		var base_y := endpoint_y + 8.0 if direction > 0 else endpoint_y - 8.0
+		points = PackedVector2Array([
+			Vector2(track.get_center().x, endpoint_y),
+			Vector2(track.get_center().x - 7.0, base_y),
+			Vector2(track.get_center().x + 7.0, base_y),
+		])
+	else:
+		var endpoint_x := track.end.x if direction > 0 else track.position.x
+		var base_x := endpoint_x - 8.0 if direction > 0 else endpoint_x + 8.0
+		points = PackedVector2Array([
+			Vector2(endpoint_x, track.get_center().y),
+			Vector2(base_x, track.get_center().y - 7.0),
+			Vector2(base_x, track.get_center().y + 7.0),
+		])
+	draw_colored_polygon(points, color)
+
+
+func _range_overflow_direction() -> int:
+	return -1 if _value < DOMAIN_MINIMUM else 1 if _value > DOMAIN_MAXIMUM else 0
+
+
 func _sign(weight: int) -> String:
 	return "+" if weight > 0 else "−" if weight < 0 else "0"
 
 
+func _format_value(value: float) -> String:
+	var rounded := snappedf(value, 0.1)
+	return "%.1f" % (0.0 if is_zero_approx(rounded) else rounded)
+
+
 func _apply_accessibility() -> void:
 	var target_text := "%.1f–%.1f" % [_target_minimum, _target_maximum]
-	tooltip_text = "%s %.1f; %s %s" % [
+	var range_state := ""
+	if _value < DOMAIN_MINIMUM:
+		range_state = "; %s" % tr("hud.score_below_scale")
+	elif _value > DOMAIN_MAXIMUM:
+		range_state = "; %s" % tr("hud.score_above_scale")
+	tooltip_text = "%s %s; %s %s%s" % [
 		tr("hud.paint_score") if not _show_percent else tr("hud.coverage"),
-		_value,
+		_format_value(_value),
 		tr("hud.target_band") if not _threshold_mode else tr("hud.target"),
 		target_text if not _threshold_mode else "%.1f" % _target_minimum,
+		range_state,
 	]
 	accessibility_name = tooltip_text

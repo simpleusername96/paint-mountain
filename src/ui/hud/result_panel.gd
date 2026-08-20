@@ -81,7 +81,7 @@ func show_target_band_result(
 ) -> void:
 	_target_result_active = true
 	_target_clear = clear
-	_target_score = clampf(score, 0.0, 100.0)
+	_target_score = score
 	_target_band = target_band
 	_target_coverage_snapshot = coverage
 	_finish_reason = finish_reason

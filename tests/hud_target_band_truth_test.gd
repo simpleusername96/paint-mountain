@@ -20,6 +20,9 @@ func _run() -> void:
 	meter.configure_target_band(band, ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT))
 	meter.update_target_band(PaintCoverageSnapshot.new(3.0, 4.0, 7.0, 9), 1.0, -1, 1)
 	_assert("R −" in meter.get_node("Contributions/Red").text and "G +" in meter.get_node("Contributions/Green").text, "meter must disclose signed channel roles")
+	meter.update_target_band(PaintCoverageSnapshot.new(4.0, 1.0, 5.0, 10), -3.0, -1, 1)
+	_assert((meter.get_node("CurrentValue") as Label).text == "-3.0", "meter must preserve the authoritative negative score")
+	_assert(meter.range_overflow_direction_for_test() == -1 and is_equal_approx(meter.marker_value_for_test(), 0.0), "negative score must use an explicit underflow shape on the zero endpoint")
 	var tokens: Array[BallToken] = [BallToken.new(BallKind.Value.IMPACT_BURST, PaintChannel.Value.RED)]
 	rail.configure(tokens)
 	var views: Array[BallQueueTokenView] = rail.token_views()

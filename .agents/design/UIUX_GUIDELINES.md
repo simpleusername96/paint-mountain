@@ -122,7 +122,10 @@ pixels are composition targets, not runtime or copy authority.
 - `ScoreScale` owns two orientation presets, not two components. Aim View, Map
   View, and Shot Follow use the vertical preset (`100` at the top, `0` at the
   bottom); Briefing and Result use the horizontal preset. Both presets expose
-  the same fixed domain, labels, target data, clamping, and accessibility value.
+  the same fixed domain, labels, target data, marker projection, and
+  accessibility value. Signed Paint Score remains numerically truthful outside
+  the rail: only marker geometry clamps to the nearest endpoint, which adds a
+  directional shape so the out-of-range state never depends on color alone.
 - Each `BallQueue` token exposes its kind, paint role, order, and short behavior
   description on pointer hover, keyboard focus, and press/touch selection. The
   same description is available through the control's accessible name or
@@ -254,7 +257,9 @@ queue truth, and both score endpoints remain visible and operable.
 - `ScoreScale` owns the complete 0–100 axis and clamping geometry. Callers may
   supply current value, target range or threshold, and R/G contributions, but
   cannot supply a different visual minimum/maximum or hide the endpoints.
-  Callers select only the shared vertical-live or horizontal-summary preset.
+  Clamping applies only to marker/target geometry, never to the supplied signed
+  numeric score or its accessibility copy. Callers select only the shared
+  vertical-live or horizontal-summary preset.
 - `BallQueue` owns token hit targets, hover/focus/pressed state, tooltip
   placement, accessible names/descriptions, and pointer-safe dismissal. Callers
   supply authoritative ordered ball data only and do not recreate tooltip copy
@@ -356,6 +361,9 @@ A UI change conforms when:
   quiet context hints preserve the specified hierarchy;
 - every live `ScoreScale` is vertical with `100` and `0` visible, and every
   prototype ball token exposes the same description on hover, focus, and press;
+- subtractive rules keep their actual signed Paint Score in live and Result
+  copy while the shared marker stays bounded and signals endpoint overflow by
+  shape;
 - Stage Select shows the selected stage's real prepared terrain behind the
   shared `StageRail` and updates it without committing `GameState` before Start;
 - aiming contains no Restart or duplicate Fire action;

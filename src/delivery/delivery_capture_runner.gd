@@ -92,6 +92,8 @@ func _run_capture() -> void:
 			await _capture_target_special_queue(_capture_stage)
 		"target_queue_description":
 			await _capture_target_queue_description(_capture_stage)
+		"target_negative_score":
+			await _capture_target_negative_score(_capture_stage)
 		"impact_burst_midflight":
 			await _capture_special_ball_midflight(&"stage_02", BallKind.Value.IMPACT_BURST)
 		"apex_split_midflight":
@@ -167,6 +169,8 @@ func _run_capture() -> void:
 			await _capture_target_result(_capture_stage, true)
 		"target_failed_result":
 			await _capture_target_result(_capture_stage, false)
+		"target_negative_result":
+			await _capture_target_negative_result(_capture_stage)
 		_:
 			push_error("Unknown delivery capture screen: %s" % _screen)
 			get_tree().quit(1)
@@ -626,6 +630,79 @@ func _capture_target_result(stage_id: StringName, cleared: bool) -> void:
 		"elapsed_ticks": Engine.physics_ticks_per_second * 42,
 	}, true)
 	(gameplay.get_node("HUD") as HUDController).show_target_band_result_snapshot(result)
+
+
+func _capture_target_negative_score(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var score := _negative_score_fixture(controller)
+	if score.is_empty():
+		return
+	(gameplay.get_node("HUD") as HUDController).update_target_score(score)
+	await get_tree().process_frame
+
+
+func _capture_target_negative_result(stage_id: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	var score := _negative_score_fixture(controller)
+	if score.is_empty():
+		return
+	controller.force_finish_debug()
+	await get_tree().process_frame
+	if controller.current_state != StageController.State.RESULT:
+		_fail_capture("negative target result capture did not enter RESULT")
+		return
+	var result := controller.result_snapshot()
+	result.merge(score, true)
+	result.merge({
+		"cleared": false,
+		"stars": 0,
+		"shots_used": maxi(1, controller.stage_data.maximum_shots - 1),
+		"elapsed_ticks": Engine.physics_ticks_per_second * 42,
+	}, true)
+	(gameplay.get_node("HUD") as HUDController).show_target_band_result_snapshot(result)
+
+
+func _negative_score_fixture(controller: StageController) -> Dictionary:
+	if controller == null or not controller.stage_data.uses_target_band():
+		_fail_capture("negative score capture requires a target-band stage")
+		return {}
+	var rule := controller.stage_data.color_score_rule
+	var red_percent := 1.0
+	var green_percent := 1.0
+	if rule.red_weight < 0:
+		red_percent = 4.0
+	elif rule.green_weight < 0:
+		green_percent = 4.0
+	else:
+		_fail_capture("negative score capture requires a subtractive score rule")
+		return {}
+	var coverage := PaintCoverageSnapshot.new(
+		red_percent,
+		green_percent,
+		red_percent + green_percent,
+		int(controller.score_snapshot().get("paint_mask_checksum", 0))
+	)
+	var paint_score := rule.score(coverage)
+	if paint_score >= 0.0:
+		_fail_capture("negative score fixture did not produce a negative score")
+		return {}
+	var snapshot := controller.score_snapshot()
+	snapshot.merge({
+		"red_percent": coverage.red_percent,
+		"green_percent": coverage.green_percent,
+		"total_percent": coverage.total_percent,
+		"paint_score": paint_score,
+		"in_target_band": false,
+		"stars": 0,
+		"distance_to_center": absf(paint_score - controller.stage_data.target_band.center()),
+	}, true)
+	return snapshot
 
 
 func _capture_terrain_target_selected(stage_id: StringName) -> void:

@@ -129,6 +129,7 @@ Exact actions requiring owner or user approval:
 | Canonical composition | The report has three actual Aim images; the user selected C | report revision 04 and current conversation | Cannon Focus is canonical; A/B remain historical alternatives | 1.1, 3.1 |
 | Shared style ownership | Theme exists, while HUD scenes still use panel-specific variations and local overrides | `resources/ui/paint_mountain_theme.tres`, `scenes/ui/` | Extend the Theme; never add a second palette/style owner | 1.2 |
 | Full score domain | `CoverageMeter` is vertical 0-100, but `TargetBandMeter` crops to a target-relative range | `src/ui/hud/coverage_meter.gd`, `src/ui/hud/target_band_meter.gd` | Replace both presentation paths with one shared fixed-domain `ScoreScale` | 1.3, 3.2 |
+| Signed score truth | `StageController` and `StageScoreSnapshot` preserve signed Paint Score, but `ScoreScale.set_value()` and `ResultPanel.show_target_band_result()` clamp the displayed value to 0-100; `GameplayScene` also publishes legacy total coverage after signed score to the same live scale, and the existing component/shot-feedback tests require those false displays | `src/stage/stage_controller.gd`, `src/stage/rules/stage_score_snapshot.gd`, `src/gameplay/gameplay_scene.gd`, `src/ui/hud_controller.gd`, `src/ui/components/score_scale.gd`, `src/ui/hud/result_panel.gd`, `tests/color_score_rule_test.gd`, `tests/score_scale_contract_test.gd`, `tests/shot_feedback_test.gd` | Keep the rail and marker geometry fixed to 0-100, preserve the authoritative signed numeric value in live/result UI and accessibility, ignore legacy coverage presentation updates for target-band stages, and use a non-color underflow shape when the marker is projected to 0 | 10.1-10.3 |
 | Ball explanation | `QueueTokenView` is a non-focusable `PanelContainer` and exposes kind/channel only through default hover tooltip | `queue_token_view.tscn/.gd` | Use shared focusable token controls and one shared description bubble/state owner | 1.4, 3.2 |
 | Cannon Focus controls | `AimControls` is one 480 px panel and compact mode hides all angle/power controls | `aim_controls.tscn`, `hud_root_layout.gd` | Compose two shared `ValueStepper`s around the shared Fire action; compact mode reflows rather than hides them | 1.5, 3.1 |
 | Stage Select terrain | Stage Select is a card/detail split and `_show_stage_select()` disables the preview world | `stage_select.tscn/.gd`, `app_root.gd` | Preserve paging/focus/loading truth, replace cards with `StageRail`, and publish prepared terrain atomically | 2.2 |
@@ -325,6 +326,7 @@ Phase 3 gate:
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/target_band_layout_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/ball_queue_tooltip_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_hud_truth_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/shot_feedback_test.gd
 & $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_aiming_composition_test.gd
 ```
 
@@ -624,6 +626,75 @@ affected states.
     release remains untouched, and the separate live built-Web journey in 8.3
     stays open unless a trusted browser bridge becomes available.
 
+### Phase 10: Signed Paint Score truth on the fixed 0-100 scale
+
+Goal: make live and terminal score presentation agree with the authoritative
+signed Paint Score without changing the user-approved complete 0-100 rail,
+stage rules, target bands, paint ownership, or result decisions.
+
+Preconditions:
+
+- Phase 9 shared score composition and current production captures remain the
+  visual baseline for placement, size, hierarchy, and shared ownership.
+- `StageController.score_snapshot()` and `StageScoreSnapshot` remain the sole
+  supplied score/result truth; UI code must not reproduce the score formula.
+
+Source owners: `src/ui/components/score_scale.gd`,
+`scenes/ui/components/score_scale.tscn`, `src/ui/hud/result_panel.gd`,
+`src/ui/components/result_summary.gd`, `src/ui/hud_controller.gd`,
+`translations/ui.csv`, `tests/score_scale_contract_test.gd`,
+`tests/target_band_result_test.gd`, `tests/hud_target_band_truth_test.gd`,
+`src/delivery/delivery_capture_runner.gd`
+
+- [x] **10.1 Separate authoritative value from bounded marker geometry.**
+  - Change: let shared `ScoreScale` retain and format the supplied signed score;
+    clamp only the marker projection to the fixed 0-100 rail. Draw a compact
+    orientation-aware underflow shape at the zero endpoint for negative values,
+    preserve all five tick labels, normalize formatted negative zero, and make
+    tooltip/accessibility copy report the real signed value and below-zero state.
+    Coverage presentation keeps its percent format and the same fixed-domain
+    geometry.
+  - Accept: the shared component reports `-10.0` as its value and visible copy,
+    keeps its marker inside the zero endpoint, exposes a non-color underflow
+    state in both presets, maps `100` to the opposite endpoint, and keeps target
+    geometry and all tick labels bounded.
+  - Guard: do not add a second signed scale, expand the visual domain below
+    zero, move score calculation into UI, or change stage clear/star rules.
+- [x] **10.2 Preserve signed truth through Result.**
+  - Change: remove target-score clamping from `ResultPanel`; pass the supplied
+    score unchanged through `ResultSummary` and its shared horizontal
+    `ScoreScale`. Keep coverage-only result clamping because coverage is defined
+    on 0-100. Preserve verdict, actions, stars, timing, and R/G contribution
+    behavior.
+  - Accept: a failed target-band result with score `-3.0` visibly and
+    accessibly reports `-3.0`; its marker stays at the zero endpoint with the
+    underflow shape; the controller's failure result and all result actions are
+    unchanged.
+- [x] **10.3 Replace the false regression contract and prove production pixels.**
+  - Change: update focused score/HUD/result tests so Stage 08's
+    `Green Add / Red Subtract` example preserves a negative score while marker
+    geometry remains bounded. Add delivery-only negative live/result capture
+    states, generate Korean 1280x720 and compact 640x360 Windows-release
+    captures, inspect them at native size, and record the evidence plus the clarified shared-component
+    contract in the UI spec, implemented-truth record, and test checklist.
+  - Accept: focused tests prove formula -> HUD -> Result signed-value continuity;
+    current production captures show a readable negative numeric score, complete
+    0-100 rail, explicit underflow shape, intact target band, no clipping, and
+    no new panel/card/text block.
+
+Phase 10 gate:
+
+```powershell
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/color_score_rule_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/score_scale_contract_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/target_band_result_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/hud_target_band_truth_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/phase8_hud_truth_test.gd
+& $env:GODOT_BIN --headless --path . --quit-after 7200 --script res://tests/target_band_layout_test.gd
+pwsh -NoProfile -File scripts/verify.ps1 -GodotPath $env:GODOT_BIN
+& $env:GODOT_BIN --headless --path . --export-release 'Windows Desktop' 'builds/windows/PaintMountain.exe'
+```
+
 ## Validation and Rework Controls
 
 | Cadence | Exact check | Run when | Do not rerun until |
@@ -655,6 +726,7 @@ Validation rules:
 | Material fact contradicts this contract | stop the affected branch and update the contract | executor may not choose a new UX, architecture, dependency, gameplay, or validation contract |
 | Generated-image detail conflicts with runtime truth | preserve real behavior/data and apply only hierarchy/spacing | never invent/remove an action/value to match a still |
 | Shared scale clips | fix shared label reserve/clamping/minimum geometry and rerun callers | never zoom to the target range or patch one screen |
+| Signed Paint Score lies outside the visual rail | preserve the signed numeric/accessibility value, project only the marker to the nearest endpoint, and show the shared orientation-aware overflow shape | never clamp the authoritative value, extend the approved rail, or change result truth |
 | Queue description clips or is hover-only | fix shared safe-edge placement and focus/press path | never add screen-local tooltip geometry |
 | Stage Select terrain is stale/blank/wrong | retain the previous valid artifact until the newest selected one is ready, then swap atomically | never create generic art, a second renderer, or early GameState commit |
 | A stress size cannot fit Priority 3 copy | shorten/wrap/suppress duplicated hints | never hide score endpoints, angle, power, Fire, queue truth, or legal actions |
@@ -665,6 +737,7 @@ Validation rules:
 | A migrated target band is structurally valid but a representative journey exposes poor balance | record the exact stage/deal/result and adjust the shared progression tier in a reviewed batch | never claim all-stage human clearability from seed structure or silently special-case one stage |
 | v11 catalog generation fails | leave the v10 pointer/bundle active, fix the shared materializer/validator, and rebuild from scratch | never partially promote or edit generated bundle files in place |
 | Public itch proof is requested | stop, present final local artifact/hash/evidence, and obtain explicit authorization | no workflow dispatch, upload, channel/visibility mutation, or public claim without approval |
+| Canonical Windows export path is locked by an ambiguous running game instance | do not terminate it; export the same preset to a task-named check executable and run final captures from that artifact | canonical replacement waits until the external instance closes; never kill a process without positive task ownership |
 
 Implementation-local mechanics may be handled inside the locked contract when
 they cannot change scope, visible behavior, ownership, architecture, safety, or
@@ -673,7 +746,8 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: task checkboxes in this contract.
-- Current phase: Phase 8 closure; Phase 9 is complete.
+- Current phase: Phase 8.3 built-Web closure; Phase 10 signed-score correction
+  is complete.
 - Next task: complete the remaining 8.3 built-Web journey when the trusted
   browser bridge is available, then close the plan frontmatter.
 - Last completed gate: the old three-command-per-tick reproduction reached a
@@ -721,6 +795,30 @@ acceptance.
   player-reported HUD regression. Windows SHA-256 is `585C0E33…57FEE`; Web is
   12 files and 18,485,674 gzip bytes. Public itch remains untouched, and the
   unrelated 8.3 live built-Web journey remains open.
+- Phase 10 discovery: the score rule and `StageController` preserve negative
+  Paint Score correctly, but the shared live scale and Result clamp the visible
+  value to zero. The fixed 0-100 rail is retained; only marker geometry is
+  bounded, while numeric and accessibility truth remain signed.
+- Phase 10.1-10.2 checkpoint: `ScoreScale` now keeps the supplied signed value,
+  clamps only marker geometry, formats negative zero safely, and draws
+  orientation-aware endpoint triangles outside the 0-100 domain. Result no
+  longer clamps target-band score. Formula, scale, score snapshot, HUD, and
+  Result focused tests pass with the Stage 08-style `-3.0` case.
+- Phase 10.3 render gate: the first release capture exposed a second legacy
+  total-coverage publication that overwrote the live signed value after R/G
+  contributions updated. `HUDController` now ignores that presentation update
+  on target-band stages, and the focused shot-feedback guard passes. Three
+  regenerated Korean Windows-release captures show `-3.0`, complete 0-100
+  rails, endpoint triangles, target bands, R/G contributions, and bounded Aim/
+  Result layouts at 1280x720 and 640x360. Evidence is under
+  `../evidence/2026-08-20-signed-score-correction/README.md`.
+- Phase 10 final gate: the complete ordered test suite, `scripts/verify.ps1`,
+  and the final canonical Windows export pass. The final executable is
+  121,982,464 bytes with SHA-256 `A5E414B0…673CB5C`. The diff-scoped quality
+  audit found no rule duplication, competing score owner, catch-all expansion,
+  or untested reachable score/result path. A temporary canonical-path lock was
+  handled without terminating the ambiguous running game; the process exited
+  naturally, and the canonical export then completed successfully.
 - Update rule: after a checkpoint passes, record concise evidence, check the
   task, and advance this pointer in the same edit.
 

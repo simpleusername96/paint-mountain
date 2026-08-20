@@ -68,11 +68,17 @@ func _run() -> void:
 	band.target_max = 11.0
 	result_panel.configure_target_band_model(
 		band,
-		ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.BOTH_ADD)
+		ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.GREEN_ADD_RED_SUBTRACT)
 	)
 	result_panel.show_target_band_result(
-		false, 4.0, band, 0, PaintCoverageSnapshot.new(2.0, 2.0, 4.0), 60.0, 1
+		false, -3.0, band, 0, PaintCoverageSnapshot.new(4.0, 1.0, 5.0), 60.0, 1
 	)
+	_assert_true((summary.get_node("Value") as Label).text == "-3.0",
+		"failed target-band result must preserve the authoritative signed score")
+	_assert_true(is_equal_approx(summary.score_scale.value(), -3.0)
+			and is_equal_approx(summary.score_scale.marker_value_for_test(), 0.0)
+			and summary.score_scale.range_overflow_direction_for_test() == -1,
+		"result summary must project only marker geometry to the zero endpoint")
 	_assert_primary_action(result_panel, "RetrySameDeal")
 	result_panel.configure_has_next(true)
 	result_panel.show_target_band_result(
