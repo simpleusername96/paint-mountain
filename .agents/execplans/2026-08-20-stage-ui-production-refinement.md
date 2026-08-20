@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-20
 last_reviewed: 2026-08-21
 scope: correct the audited compact UI defects and replace the unmeasured Stage 07-30 rule cycle with a statically certified five-chapter Red/Green progression
@@ -473,12 +473,12 @@ Source owners: this plan, `.agents/Documentation.md`,
     Web blocker in their existing owners.
   - Accept: current runtime, docs, reports, plan, and evidence do not contradict
     each other; the pre-change reports remain historical audit evidence.
-- [ ] **6.2 Commit and push scoped work.**
+- [x] **6.2 Commit and push scoped work.**
   - Change: create coherent task-owned commits with short explanatory bodies,
     exclude unrelated changes, push the current branch, and confirm status.
   - Accept: every task-owned change is committed and pushed; the worktree is
     clean except for explicitly named unrelated user files.
-- [ ] **6.3 Close the execution contract.**
+- [x] **6.3 Close the execution contract.**
   - Change: check every completed task and set this plan to `done` only if the
     inherited live Web journey also passes. Otherwise leave it `active` with
     5.5 as the sole unchecked task and an exact resumption instruction.
@@ -527,9 +527,9 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 6 durable closure, commits, and push.
-- Next task: Task 6.2, create scoped commits, push the current branch, then mark
-  this contract done under Task 6.3.
+- Current phase: complete.
+- Next task: none. Resume only for a new user-requested scope or public itch
+  publication authorization.
 - Last completed gate: Phases 2-3 pass focused Korean/English layout, focus,
   shared-owner, score, queue, Pause, Settings, and gameplay-flow tests. Current
   debug renders under
@@ -571,7 +571,10 @@ acceptance.
   shared vector ball shapes in Stage Select and Ball Queue; final Web Stage
   01/07/30 and current-build Stage 30 Fire rechecks pass without missing glyphs.
   Durable specs, evidence, checklist, and Korean UI/stage/latency reports now
-  describe the v13 static-first boundary and final artifacts.
+  describe the v13 static-first boundary and final artifacts. Commits
+  `f89a168`, `2348019`, `749e020`, `c3dfc6b`, and `03f0242` were pushed to
+  `origin/codex/three-ball-target-band-prototype`; this closing update records
+  the completed execution contract.
 - Update rule: after each phase checkpoint, record concise evidence, check its
   tasks, and advance this pointer in the same edit.
 
