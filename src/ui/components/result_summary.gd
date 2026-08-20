@@ -41,9 +41,18 @@ func configure_target_band(
 	score_scale.update_target_band(coverage, score, rule.red_weight, rule.green_weight)
 
 
-func set_compact(compact: bool) -> void:
-	score_scale.set_compact(compact)
-	%Facts.visible = not compact
-	%Verdict.add_theme_font_size_override(&"font_size", 24 if compact else 30)
-	%Value.add_theme_font_size_override(&"font_size", 44 if compact else 64)
-	custom_minimum_size = Vector2(360.0, 174.0) if compact else Vector2(440.0, 230.0)
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	var resolved_density := maxf(density, 1.0)
+	score_scale.set_compact(compact, resolved_density)
+	%Facts.visible = true
+	%Verdict.add_theme_font_size_override(
+		&"font_size", roundi(22.0 * resolved_density) if compact else 30
+	)
+	%Value.add_theme_font_size_override(
+		&"font_size", roundi(36.0 * resolved_density) if compact else 64
+	)
+	%Facts.add_theme_font_size_override(
+		&"font_size", roundi(14.0 * resolved_density) if compact else 16
+	)
+	custom_minimum_size = Vector2(440.0, 188.0 * resolved_density) \
+			if compact else Vector2(440.0, 230.0)

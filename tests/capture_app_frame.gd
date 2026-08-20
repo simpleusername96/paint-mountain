@@ -10,6 +10,7 @@ func _initialize() -> void:
 func _capture() -> void:
 	var requested_screen := "main_menu"
 	var requested_locale := "ko"
+	var requested_stage := &""
 	var output_path := ProjectSettings.globalize_path("res://.godot/capture-temp/app_capture.png")
 	var background_capture := false
 	var requested_size := Vector2i.ZERO
@@ -20,6 +21,8 @@ func _capture() -> void:
 			output_path = argument.trim_prefix("--output=")
 		elif argument.begins_with("--locale="):
 			requested_locale = argument.trim_prefix("--locale=")
+		elif argument.begins_with("--stage="):
+			requested_stage = StringName(argument.trim_prefix("--stage="))
 		elif argument == "--background":
 			background_capture = true
 		elif argument.begins_with("--size="):
@@ -49,6 +52,14 @@ func _capture() -> void:
 	await process_frame
 	if requested_screen == "stage_select":
 		app._show_stage_select()
+		if not requested_stage.is_empty():
+			var stage := StageCatalog.get_stage(requested_stage)
+			var stage_select := app.get_node("StageSelect") as StageSelectScreen
+			if stage != null:
+				stage_select.set_page_for_capture(floori(
+					float(stage.stage_number - 1) / float(StageSelectScreen.PAGE_SIZE)
+				))
+				stage_select._on_stage_requested(stage.stage_id)
 	elif requested_screen == "settings":
 		app._show_settings(&"main_menu")
 	for _frame in range(20):

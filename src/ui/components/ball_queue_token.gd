@@ -10,6 +10,8 @@ signal description_released(source: BallQueueTokenView)
 var _token: BallToken
 var _queue_index := 0
 var _description := ""
+var _compact := false
+var _density := 1.0
 
 
 func _ready() -> void:
@@ -29,7 +31,7 @@ func configure(token: BallToken, queue_index: int) -> void:
 		text = ""
 		tooltip_text = ""
 		return
-	custom_minimum_size = Vector2(52.0, 52.0) if queue_index == 0 else Vector2(44.0, 44.0)
+	_apply_size()
 	text = ""
 	add_theme_color_override(&"font_color", PaintChannel.visual_color(token.channel))
 	add_theme_color_override(&"font_hover_color", PaintChannel.visual_color(token.channel))
@@ -40,6 +42,16 @@ func configure(token: BallToken, queue_index: int) -> void:
 	# second delayed message on top of that shared overlay.
 	tooltip_text = ""
 	accessibility_name = _description
+	queue_redraw()
+
+
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	_compact = compact
+	_density = maxf(density, 1.0)
+	add_theme_font_size_override(
+		&"font_size", roundi(15.0 * _density) if compact else 14
+	)
+	_apply_size()
 	queue_redraw()
 
 
@@ -91,8 +103,12 @@ func _draw() -> void:
 		return
 	var color := PaintChannel.visual_color(_token.channel)
 	var outline := get_theme_color(&"outline", &"BallQueueToken")
-	var radius := 7.0 if _queue_index == 0 else 5.5
-	var center := Vector2(15.0 if _queue_index == 0 else 13.0, size.y * 0.5)
+	var draw_density := _density if _compact else 1.0
+	var radius := (7.0 if _queue_index == 0 else 5.5) * draw_density
+	var center := Vector2(
+		(16.0 if _queue_index == 0 else 14.0) * draw_density,
+		size.y * 0.5
+	)
 	match _token.kind:
 		BallKind.Value.IMPACT_BURST:
 			for spoke in range(8):
@@ -123,3 +139,8 @@ func _draw() -> void:
 		font_size,
 		color
 	)
+
+
+func _apply_size() -> void:
+	var base := Vector2(52.0, 52.0) if _queue_index == 0 else Vector2(44.0, 44.0)
+	custom_minimum_size = base * (_density if _compact else 1.0)

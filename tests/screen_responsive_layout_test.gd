@@ -133,6 +133,15 @@ func _check_settings(viewport_size: Vector2i, locale: String) -> void:
 	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Defaults") as Button).custom_minimum_size.y >= 40.0, "%s defaults target must remain usable" % locale)
 	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Close") as Button).custom_minimum_size.y >= 40.0, "%s close target must remain usable" % locale)
 	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Close") as Button).has_focus(), "%s Settings open must retain Close focus" % locale)
+	if viewport_size.y < 620 and layout.custom_minimum_size.y > columns.size.y:
+		var language := screen.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout/Display/Language") as OptionButton
+		language.grab_focus()
+		await process_frame
+		await process_frame
+		_assert(columns.scroll_vertical > 0,
+				"%s %s Settings must follow keyboard focus through vertical overflow" % [locale, viewport_size])
+		_assert(columns.get_global_rect().grow(1.0).intersects(language.get_global_rect()),
+				"%s %s focused Settings control must be visible in the scroll viewport" % [locale, viewport_size])
 	screen.queue_free()
 	viewport.queue_free()
 	await process_frame

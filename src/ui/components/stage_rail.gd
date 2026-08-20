@@ -11,6 +11,8 @@ signal next_page_requested
 
 var _selected_id := &""
 var _buttons: Array[Button] = []
+var _compact := false
+var _density := 1.0
 
 
 func _ready() -> void:
@@ -32,12 +34,15 @@ func configure(items: Array[Dictionary], selected_id: StringName) -> void:
 		var stage_name := String(item.get("name", ""))
 		var locked := bool(item.get("locked", false))
 		var completed := bool(item.get("completed", false))
-		button.custom_minimum_size = Vector2(52.0, 52.0)
+		button.custom_minimum_size = _stage_button_size()
 		button.focus_mode = Control.FOCUS_ALL
 		button.toggle_mode = true
 		button.button_pressed = stage_id == selected_id
 		button.disabled = locked
 		button.theme_type_variation = &"StageRailButton"
+		button.add_theme_font_size_override(
+			&"font_size", roundi(16.0 * _density) if _compact else 17
+		)
 		button.text = str(stage_number)
 		var state := tr("result.completed") if completed else "—"
 		button.tooltip_text = "%02d · %s · %s" % [stage_number, stage_name, state]
@@ -52,14 +57,24 @@ func set_page_availability(has_previous: bool, has_next: bool) -> void:
 	_next.disabled = not has_next
 
 
-func set_compact(compact: bool) -> void:
-	custom_minimum_size.x = 520.0 if compact else 688.0
-	_nodes.add_theme_constant_override(&"separation", 4 if compact else 10)
-	var target_size := 40.0 if compact else 52.0
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	_compact = compact
+	_density = maxf(density, 1.0)
+	custom_minimum_size.x = 520.0 * _density if compact else 688.0
+	_nodes.add_theme_constant_override(&"separation", roundi(4.0 * _density) if compact else 10)
+	var target_size := _stage_button_size()
 	for button in _buttons:
-		button.custom_minimum_size = Vector2(target_size, target_size)
-	_previous.custom_minimum_size = Vector2(40.0, 40.0) if compact else Vector2(44.0, 44.0)
+		button.custom_minimum_size = target_size
+		button.add_theme_font_size_override(
+			&"font_size", roundi(16.0 * _density) if compact else 17
+		)
+	_previous.custom_minimum_size = Vector2(40.0, 40.0) * _density \
+			if compact else Vector2(44.0, 44.0)
 	_next.custom_minimum_size = _previous.custom_minimum_size
+	for pager in [_previous, _next]:
+		pager.add_theme_font_size_override(
+			&"font_size", roundi(20.0 * _density) if compact else 20
+		)
 
 
 func stage_buttons() -> Array[Button]:
@@ -84,3 +99,8 @@ func refresh_locale() -> void:
 
 func _request_stage(stage_id: StringName) -> void:
 	stage_requested.emit(stage_id)
+
+
+func _stage_button_size() -> Vector2:
+	var edge := 40.0 * _density if _compact else 52.0
+	return Vector2(edge, edge)

@@ -135,7 +135,6 @@ func show_state(state: StageController.State) -> void:
 	# The interaction toggle is the only mode label during the Board Phase.
 	# Keeping the serial-state "Aiming" chip beside "Map Inspection" is
 	# truthful internally but contradictory to players.
-	_top.mode_value.get_parent().visible = state == StageController.State.BRIEFING
 	_briefing.visible = state == StageController.State.BRIEFING
 	var aiming_surface := state in [
 		StageController.State.AIMING,
@@ -147,6 +146,7 @@ func show_state(state: StageController.State) -> void:
 	_apply_finish_availability()
 	_result.visible = state == StageController.State.RESULT
 	_pause.visible = state == StageController.State.PAUSED and not _pause_overlay_suspended
+	_top.set_settings_visible(state not in [StageController.State.PAUSED, StageController.State.RESULT])
 	_apply_target_rule_visibility()
 	_refresh_context_legend()
 	if state == StageController.State.BRIEFING:

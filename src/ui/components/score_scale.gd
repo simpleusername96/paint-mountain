@@ -28,6 +28,7 @@ var _threshold_mode := true
 var _show_percent := true
 var _compact := false
 var _world_mode := false
+var _density := 1.0
 
 
 func _ready() -> void:
@@ -41,8 +42,10 @@ func set_preset(value: Preset) -> void:
 	_layout()
 
 
-func set_compact(compact: bool) -> void:
+func set_compact(compact: bool, density: float = 1.0) -> void:
 	_compact = compact
+	_density = maxf(density, 1.0)
+	_apply_type_density()
 	_apply_minimum_size()
 	_layout()
 
@@ -151,39 +154,53 @@ func _layout() -> void:
 
 func _apply_minimum_size() -> void:
 	if preset == Preset.VERTICAL_LIVE:
-		custom_minimum_size = Vector2(112.0, 272.0) if _compact else Vector2(132.0, 410.0)
+		custom_minimum_size = Vector2(192.0, 210.0) * _density \
+			if _compact else Vector2(132.0, 410.0)
 	else:
-		custom_minimum_size = Vector2(360.0, 78.0) if _compact else Vector2(440.0, 118.0)
+		custom_minimum_size = Vector2(360.0, 104.0 * _density) \
+			if _compact else Vector2(440.0, 118.0)
 
 
 func _layout_vertical() -> void:
 	_metric_icon.hide()
 	_current_value.position = Vector2(0.0, 0.0)
-	_current_value.size = Vector2(72.0, 30.0)
+	_current_value.size = Vector2(52.0, 30.0) * _density \
+			if _compact else Vector2(76.0, 30.0)
 	var track := _track_rect()
 	for index in TICKS.size():
 		var label := _tick_label(index)
-		label.position = Vector2(track.end.x + 10.0, _point_for_value(TICKS[index]).y - 11.0)
-		label.size = Vector2(42.0, 22.0)
+		label.position = Vector2(
+			track.end.x + 8.0 * _density,
+			_point_for_value(TICKS[index]).y - 11.0 * _density
+		)
+		label.size = Vector2(42.0 * _density, 22.0 * _density)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_contributions.position = Vector2(0.0, size.y - 26.0)
-	_contributions.size = Vector2(size.x, 24.0)
+	if _compact:
+		_contributions.position = Vector2(56.0, 0.0) * _density
+		_contributions.size = Vector2(136.0, 24.0) * _density
+	else:
+		_contributions.position = Vector2(0.0, size.y - 26.0)
+		_contributions.size = Vector2(size.x, 24.0)
 
 
 func _layout_horizontal() -> void:
+	var resolved := _density if _compact else 1.0
 	_metric_icon.show()
-	_metric_icon.position = Vector2(0.0, 2.0)
-	_metric_icon.size = Vector2(20.0, 20.0)
-	_current_value.position = Vector2(26.0, 0.0)
-	_current_value.size = Vector2(92.0, 30.0)
+	_metric_icon.position = Vector2(0.0, 2.0 * resolved)
+	_metric_icon.size = Vector2(20.0, 20.0) * resolved
+	_current_value.position = Vector2(26.0 * resolved, 0.0)
+	_current_value.size = Vector2(92.0, 30.0) * resolved
 	var track := _track_rect()
 	for index in TICKS.size():
 		var label := _tick_label(index)
-		label.position = Vector2(_point_for_value(TICKS[index]).x - 22.0, track.end.y + 5.0)
-		label.size = Vector2(44.0, 22.0)
+		label.position = Vector2(
+			_point_for_value(TICKS[index]).x - 22.0 * resolved,
+			track.end.y + 5.0 * resolved
+		)
+		label.size = Vector2(44.0, 22.0) * resolved
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_contributions.position = Vector2(maxf(130.0, size.x - 184.0), 0.0)
-	_contributions.size = Vector2(184.0, 24.0)
+	_contributions.position = Vector2(maxf(130.0 * resolved, size.x - 184.0 * resolved), 0.0)
+	_contributions.size = Vector2(184.0, 24.0) * resolved
 
 
 func _draw() -> void:
@@ -232,8 +249,19 @@ func _draw() -> void:
 
 func _track_rect() -> Rect2:
 	if preset == Preset.VERTICAL_LIVE:
-		return Rect2(24.0, 44.0, 24.0, maxf(160.0, size.y - 80.0))
-	return Rect2(16.0, 34.0 if _compact else 42.0, maxf(160.0, size.x - 32.0), 14.0)
+		return Rect2(
+			24.0 * _density,
+			44.0 * _density,
+			24.0 * _density,
+			maxf(160.0 * _density, size.y - 50.0 * _density)
+		)
+	var resolved := _density if _compact else 1.0
+	return Rect2(
+		16.0 * resolved,
+		34.0 * resolved if _compact else 42.0,
+		maxf(160.0, size.x - 32.0 * resolved),
+		14.0 * resolved
+	)
 
 
 func _target_rect() -> Rect2:
@@ -317,3 +345,16 @@ func _apply_accessibility() -> void:
 		range_state,
 	]
 	accessibility_name = tooltip_text
+
+
+func _apply_type_density() -> void:
+	var resolved := _density if _compact else 1.0
+	_current_value.add_theme_font_size_override(&"font_size", roundi(20.0 * resolved) if _compact else 22)
+	for index in TICKS.size():
+		_tick_label(index).add_theme_font_size_override(
+			&"font_size", roundi(14.0 * resolved) if _compact else 14
+		)
+	for contribution in [_red, _green]:
+		contribution.add_theme_font_size_override(
+			&"font_size", roundi(14.0 * resolved) if _compact else 14
+		)

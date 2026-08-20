@@ -48,21 +48,23 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var window_size := _responsive_window_size(viewport_size)
 	_compact = window_size.x < 900.0 or window_size.y < 480.0
-	var safe := 12.0 if _compact else 24.0
-	var scrim_height := 178.0 if _compact else 250.0
+	var density := _display_density(viewport_size, window_size) if _compact else 1.0
+	_apply_type_density(density)
+	var safe := 12.0 * density if _compact else 24.0
+	var scrim_height := 178.0 * density if _compact else 250.0
 	_set_rect(_scrim, Vector2(0.0, viewport_size.y - scrim_height),
 			Vector2(viewport_size.x, scrim_height))
-	_set_rect(%Back, Vector2(safe, safe), Vector2(84.0, 44.0))
-	_set_rect(_heading, Vector2(safe + 96.0, safe),
-			Vector2(maxf(160.0, viewport_size.x - safe * 2.0 - 96.0), 48.0))
+	_set_rect(%Back, Vector2(safe, safe), Vector2(84.0, 44.0) * density)
+	_set_rect(_heading, Vector2(safe + 96.0 * density, safe),
+			Vector2(maxf(160.0, viewport_size.x - safe * 2.0 - 96.0 * density), 48.0 * density))
 	if _compact:
-		_set_rect(_selected_info, Vector2(safe, viewport_size.y - 174.0), Vector2(300.0, 92.0))
-		_set_rect(_start_button, Vector2(viewport_size.x - safe - 240.0, viewport_size.y - 170.0),
-				Vector2(240.0, 58.0))
+		_set_rect(_selected_info, Vector2(safe, viewport_size.y - 174.0 * density), Vector2(300.0, 92.0) * density)
+		_set_rect(_start_button, Vector2(viewport_size.x - safe - 240.0 * density, viewport_size.y - 170.0 * density),
+				Vector2(240.0, 58.0) * density)
 		_page_label.hide()
 		_stage_name.hide()
 		_preview_best.hide()
-		_stage_rail.set_compact(true)
+		_stage_rail.set_compact(true, density)
 	else:
 		_set_rect(_selected_info, Vector2(safe + 24.0, viewport_size.y - 244.0), Vector2(520.0, 142.0))
 		_set_rect(_start_button, Vector2(viewport_size.x - safe - 240.0, viewport_size.y - 202.0),
@@ -73,8 +75,8 @@ func _apply_responsive_layout() -> void:
 		_stage_name.show()
 		_preview_best.show()
 		_stage_rail.set_compact(false)
-	_set_rect(_stage_rail, Vector2(safe, viewport_size.y - (64.0 if _compact else 92.0)),
-			Vector2(viewport_size.x - safe * 2.0, 52.0))
+	_set_rect(_stage_rail, Vector2(safe, viewport_size.y - (64.0 * density if _compact else 92.0)),
+			Vector2(viewport_size.x - safe * 2.0, 52.0 * density if _compact else 52.0))
 	_update_preview()
 
 
@@ -91,6 +93,21 @@ func _responsive_window_size(viewport_size: Vector2) -> Vector2:
 		return viewport_size
 	var window_size := Vector2(DisplayServer.window_get_size())
 	return window_size if window_size.x > 0.0 and window_size.y > 0.0 else viewport_size
+
+
+func _display_density(viewport_size: Vector2, window_size: Vector2) -> float:
+	if get_viewport() is SubViewport or window_size.x <= 0.0 or window_size.y <= 0.0:
+		return 1.0
+	return clampf(minf(viewport_size.x / window_size.x, viewport_size.y / window_size.y), 1.0, 2.0)
+
+
+func _apply_type_density(density: float) -> void:
+	var compact_density := density if _compact else 1.0
+	%Back.add_theme_font_size_override(&"font_size", roundi(16.0 * compact_density) if _compact else 17)
+	_heading.add_theme_font_size_override(&"font_size", roundi(18.0 * compact_density) if _compact else 30)
+	_stage_number.add_theme_font_size_override(&"font_size", roundi(36.0 * compact_density) if _compact else 56)
+	_preview_stats.add_theme_font_size_override(&"font_size", roundi(15.0 * compact_density) if _compact else 18)
+	_start_button.add_theme_font_size_override(&"font_size", roundi(17.0 * compact_density) if _compact else 17)
 
 
 func refresh() -> void:
@@ -173,7 +190,9 @@ func _set_page(requested_page: int) -> void:
 			"locked": false,
 		})
 	_stage_rail.configure(items, _selected_stage.stage_id)
-	_stage_rail.set_compact(_compact)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var window_size := _responsive_window_size(viewport_size)
+	_stage_rail.set_compact(_compact, _display_density(viewport_size, window_size) if _compact else 1.0)
 	_stage_rail.set_page_availability(_page_index > 0, _page_index < total_pages - 1)
 	_stage_nodes = _stage_rail.stage_buttons()
 	var first_stage := first_stage_index + 1
@@ -260,8 +279,9 @@ func _apply_start_preparation_state() -> void:
 
 
 func _refresh_locale() -> void:
-	%Back.text = tr("ui.back")
-	%Back.accessibility_name = %Back.text
+	%Back.text = "‹"
+	%Back.tooltip_text = tr("ui.back")
+	%Back.accessibility_name = %Back.tooltip_text
 	_heading.text = tr("ui.choose_mountain")
 	_stage_rail.refresh_locale()
 	_apply_start_preparation_state()

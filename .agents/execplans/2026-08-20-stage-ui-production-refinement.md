@@ -245,7 +245,7 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
 `scenes/ui/hud/hud.tscn`, `src/ui/hud/hud_root_layout.gd`,
 `src/ui/hud_controller.gd`, `scenes/ui/components/action_control.tscn`
 
-- [ ] **2.1 Remove the compact Briefing collision.**
+- [x] **2.1 Remove the compact Briefing collision.**
   - Change: let `HudRootLayout` own a distinct compact Briefing composition:
     reduce nonessential mode copy, use the shared vertical 0-100 scale below
     stage identity, keep the terrain visible, and keep Back/Start at the safe
@@ -253,7 +253,7 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
   - Accept: Stage identity, current score, R/G contributions, all five ticks,
     target band, queue, Gear, and actions are bounded and pairwise non-overlapping
     at 640x360 Korean/English and 1280x720.
-- [ ] **2.2 Attach readable queue detail to the active ball.**
+- [x] **2.2 Attach readable queue detail to the active ball.**
   - Change: enhance `BallQueue` and `BallQueueToken` shared compact presets so
     tokens and R/G signs remain legible and the one custom description appears
     directly below its active token in one or two lines. Keep hover, focus,
@@ -261,7 +261,7 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
   - Accept: no white card/section or native duplicate tooltip appears; detail is
     at least 16 physical pixels at 640x360, stays inside the safe viewport, and
     never overlaps the queue or top status row.
-- [ ] **2.3 Move Shot Follow return out of the observation center.**
+- [x] **2.3 Move Shot Follow return out of the observation center.**
   - Change: add a compact preset to the existing `ActionControl` use and place
     Return to Cannon at the lower safe edge in `HudRootLayout`; keep one clear
     focusable action and preserve its localized/accessibility copy.
@@ -289,20 +289,20 @@ Source owners: `resources/ui/paint_mountain_theme.tres`,
 `src/ui/screens/settings_screen.gd`, `src/ui/screens/pause_overlay.gd`,
 `src/ui/hud_controller.gd`
 
-- [ ] **3.1 Raise compact Stage Select rule and rail readability.**
+- [x] **3.1 Raise compact Stage Select rule and rail readability.**
   - Change: use shared compact world-readout and rail presets, retain the actual
     selected terrain, prioritize stage number, target band, R/G signs, shots,
     and Start, and move lower-value detail to tooltip/accessibility copy.
   - Accept: the selected terrain stays dominant; essential rule and stage nodes
     are comfortably legible and bounded at 640x360 without a card or panel.
-- [ ] **3.2 Raise compact Result hierarchy.**
+- [x] **3.2 Raise compact Result hierarchy.**
   - Change: enhance `ResultSummary` and shared action compact presets so signed
     score, complete scale, R/G contributions, stars/time/shots, and primary/
     secondary actions remain readable; remove only redundant prose.
   - Accept: Clear and Failure share one hierarchy, negative values remain
     truthful, all score endpoints and actions are bounded, and no result panel
     or explanatory body is introduced.
-- [ ] **3.3 Tighten Settings and Pause interruption behavior.**
+- [x] **3.3 Tighten Settings and Pause interruption behavior.**
   - Change: make Settings compact group headings and current controls readable,
     keep footer actions visible, verify scroll follows keyboard focus, make the
     Pause surface content-fit, and hide the background Gear whenever Pause or
@@ -474,10 +474,15 @@ acceptance.
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 2 shared live-HUD correction.
-- Next task: Task 2.1, remove the compact Briefing collision.
-- Last completed gate: Phase 1 passes. Task 1.1 recorded 48/48 v11 physical
-  Results and 17 clears, which corrected the initial unmeasured band draft.
+- Current phase: Phase 4 measured band calibration and bounded witnesses.
+- Next task: Task 4.1, measure the v12 physical score distribution once.
+- Last completed gate: Phases 2-3 pass focused Korean/English layout, focus,
+  shared-owner, score, queue, Pause, Settings, and gameplay-flow tests. Current
+  debug renders under
+  `../evidence/2026-08-20-stage-ui-production-refinement/ui-preview/` prove the
+  compact vertical Briefing scale, attached queue detail, one-row Cannon Focus,
+  lower-right Shot Follow return, terrain-backed Stage Select, compact Settings,
+  content-fit Pause, and readable Result hierarchy before production export.
   The explicit typed 24-row challenge resource now drives Stage 07-30 with no
   direct neutral color and stage-specific special requirements. Immutable
   catalog v12 manifest `5e54530e...68fcf70` is active; the 92-file v11 bundle

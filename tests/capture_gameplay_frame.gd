@@ -97,12 +97,20 @@ func _capture() -> void:
 				push_error("Could not admit the root required for Shot Follow capture.")
 				quit(1)
 				return
+		"queue_description":
+			controller.begin_aiming()
+			await process_frame
+			var queue := gameplay.get_node("HUD/HUDRoot/BallQueue") as BallQueue
+			var tokens := queue.token_views()
+			if tokens.size() > 1:
+				tokens[1].request_description_for_test(false)
 		"late_queue":
 			controller.begin_aiming()
 			var deal: Array[BallToken] = controller._deal
 			controller._queue_cursor = maxi(deal.size() - 1, 0)
 			controller._emit_deal_changed()
-	for _frame in range(40):
+	var settle_frames := 8 if requested_state == "shot_follow" else 40
+	for _frame in range(settle_frames):
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()

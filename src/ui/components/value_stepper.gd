@@ -65,6 +65,20 @@ func set_value(value: float, minimum: float, maximum: float) -> void:
 	increase_button.disabled = value >= maximum
 
 
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	var scale := maxf(density, 1.0) if compact else 1.0
+	custom_minimum_size = Vector2(166.0, 52.0) * scale
+	add_theme_constant_override(&"separation", roundi(4.0 * scale))
+	caption.custom_minimum_size = Vector2(48.0, 48.0) * scale
+	for button in [decrease_button, increase_button]:
+		button.custom_minimum_size = Vector2(42.0, 48.0) * scale
+		button.add_theme_constant_override(&"icon_max_width", roundi(24.0 * scale))
+	value_label.custom_minimum_size = Vector2(70.0, 48.0) * scale
+	value_label.add_theme_font_size_override(
+		&"font_size", roundi(22.0 * scale) if compact else 22
+	)
+
+
 func _process(delta: float) -> void:
 	if is_zero_approx(_hold_direction):
 		return

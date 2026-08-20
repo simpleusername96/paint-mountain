@@ -107,7 +107,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		_assert_pairwise_non_overlap([
 			score_scale,
 			queue,
-			actions,
+			fire,
 			aim.get_node("Content/AngleStepper") as Control,
 			aim.get_node("Content/PowerStepper") as Control,
 		], "compact groups at %s" % viewport_size)
@@ -143,6 +143,16 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 				and not fire.get_global_rect().intersects((aim.get_node("Content/PowerStepper") as Control).get_global_rect()),
 		"Fire must occupy the Cannon Focus gap between angle and power at %s" % viewport_size
 	)
+	if viewport_size == Vector2i(640, 360):
+		aim.set_compact(true, 2.0)
+		actions.set_compact(true, 2.0)
+		_assert_true(angle_decrease.custom_minimum_size.y >= 96.0,
+				"canvas-stretched Aim steppers must preserve physical target size")
+		_assert_true(fire.custom_minimum_size.y >= 124.0,
+				"canvas-stretched Fire must preserve physical target size")
+		# Restore the SubViewport contract before checking the remaining geometry.
+		aim.set_compact(true, 1.0)
+		actions.set_compact(true, 1.0)
 
 	_assert_true(not legend.visible, "Aim must not repeat visible controls in a text legend at %s" % viewport_size)
 	_assert_true(
@@ -155,6 +165,42 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 				and is_equal_approx(interaction.get_global_rect().position.y, run_status.get_global_rect().position.y),
 		"view mode must join the top-right status/action row at %s" % viewport_size
 	)
+
+	hud.show_state(StageController.State.BRIEFING)
+	queue.show()
+	score_scale.show()
+	await process_frame
+	var compact := viewport_size.x < 960 or viewport_size.y < 620
+	_assert_true(
+		score_scale.preset == (ScoreScale.Preset.VERTICAL_LIVE if compact else ScoreScale.Preset.HORIZONTAL_SUMMARY),
+		"Briefing score must use the readable compact or standard preset at %s" % viewport_size
+	)
+	var mode_chip := hud_root.get_node("TopStatusBar/ModeChip") as Control
+	var stage_name := hud_root.get_node("TopStatusBar/StageName") as Label
+	_assert_true(mode_chip.visible == not compact and stage_name.visible == not compact,
+			"compact Briefing must remove duplicate top-left copy at %s" % viewport_size)
+	_assert_pairwise_non_overlap([
+		hud_root.get_node("TopStatusBar/StageValue") as Control,
+		queue,
+		score_scale,
+		hud_root.get_node("BriefingActions") as Control,
+	], "Briefing groups at %s" % viewport_size)
+
+	hud.show_state(StageController.State.AIMING)
+	hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
+	await process_frame
+	var return_to_cannon := hud_root.get_node("ReturnToCannon") as ActionControl
+	_assert_true(return_to_cannon.visible, "Shot Follow must expose Return at %s" % viewport_size)
+	_assert_inside(return_to_cannon, safe_rect, "ReturnToCannon at %s (%s)" % [viewport_size, locale])
+	_assert_true(return_to_cannon.get_global_rect().get_center().x > hud_root.get_global_rect().get_center().x,
+			"Shot Follow Return must stay at the lower-right edge at %s" % viewport_size)
+	_assert_true(return_to_cannon.text == "↩" and not return_to_cannon.accessibility_name.is_empty(),
+			"Shot Follow Return must be icon-led and accessible at %s" % viewport_size)
+	hud.set_camera_mode(CameraDirector.Mode.AIMING)
+	hud.show_state(StageController.State.PAUSED)
+	await process_frame
+	_assert_true(not (hud_root.get_node("TopStatusBar/SettingsButton") as Button).visible,
+			"Pause must not leave the background Settings action visible at %s" % viewport_size)
 
 	_assert_true(
 		queue.size.y >= queue.get_combined_minimum_size().y,

@@ -25,7 +25,8 @@ func _run() -> void:
 	await process_frame
 	var views := queue.token_views()
 	_assert(views.size() == 3, "queue must own current plus next two tokens")
-	_assert(queue.get_node("Content/Description") is Label, "queue description must be a direct shared label")
+	var description := queue.get_node("Description") as Label
+	_assert(description != null, "queue description must be a direct shared label")
 	_assert(queue.find_children("*", "PanelContainer", true, false).is_empty(), "queue must not contain a card or panel")
 	for index in views.size():
 		_assert(views[index].token().matches(tokens[index]), "token order must match the authoritative queue at %d" % index)
@@ -38,8 +39,19 @@ func _run() -> void:
 	_assert("세 개" in views[2].description_text(), "split token must explain its three-ball behavior")
 
 	views[0].request_description_for_test(false)
+	await process_frame
 	_assert(queue.description_visible(), "pointer-equivalent request must show the shared description")
 	_assert(queue.description_value() == views[0].description_text(), "pointer description must equal the accessible description")
+	_assert(description.get_global_rect().size.x >= 280.0,
+			"pointer description must keep a readable shared width")
+	_assert(description.get_global_rect().position.y >= views[0].get_global_rect().end.y,
+			"pointer description must align below the queue tokens")
+	queue.set_compact(true, 2.0)
+	await process_frame
+	_assert(description.get_theme_font_size(&"font_size") >= 32,
+			"canvas-stretched compact description must preserve physical type size")
+	_assert(views[0].custom_minimum_size.y >= 104.0,
+			"canvas-stretched current token must preserve its physical target")
 	views[0].release_description_for_test()
 	_assert(not queue.description_visible(), "un-pinned pointer description must dismiss on release")
 

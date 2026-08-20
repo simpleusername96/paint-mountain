@@ -58,8 +58,12 @@ func _apply_responsive_layout() -> void:
 	if not is_instance_valid(_columns_layout):
 		return
 	var available_width := maxf(_columns_layout.get_parent_control().size.x, 1.0)
-	var responsive_width := _responsive_window_width(available_width)
-	var wide_layout := responsive_width >= 1040.0
+	var viewport_size := get_viewport().get_visible_rect().size
+	var responsive_size := _responsive_window_size(viewport_size)
+	var compact := responsive_size.x < 1040.0 or responsive_size.y < 620.0
+	var density := _display_density(viewport_size, responsive_size) if compact else 1.0
+	_apply_control_density(compact, density)
+	var wide_layout := responsive_size.x >= 1040.0
 	var gutter := 52.0 if wide_layout else 0.0
 	var column_width := (available_width - gutter) * 0.5 if wide_layout else available_width
 	_audio_column.position = Vector2.ZERO
@@ -81,11 +85,66 @@ func _apply_responsive_layout() -> void:
 	_columns_layout.size = _columns_layout.custom_minimum_size
 
 
-func _responsive_window_width(fallback_width: float) -> float:
+func _responsive_window_size(fallback_size: Vector2) -> Vector2:
 	if get_viewport() is SubViewport:
-		return fallback_width
-	var window_width := float(DisplayServer.window_get_size().x)
-	return window_width if window_width > 0.0 else fallback_width
+		return fallback_size
+	var window_size := Vector2(DisplayServer.window_get_size())
+	return window_size if window_size.x > 0.0 and window_size.y > 0.0 else fallback_size
+
+
+func _display_density(viewport_size: Vector2, window_size: Vector2) -> float:
+	if get_viewport() is SubViewport or window_size.x <= 0.0 or window_size.y <= 0.0:
+		return 1.0
+	return clampf(minf(viewport_size.x / window_size.x, viewport_size.y / window_size.y), 1.0, 2.0)
+
+
+func _apply_control_density(compact: bool, density: float) -> void:
+	var scale := maxf(density, 1.0) if compact else 1.0
+	var margin := $SettingsRoot/Panel/Margin as MarginContainer
+	var content := $SettingsRoot/Panel/Margin/Content as VBoxContainer
+	var title := $SettingsRoot/Panel/Margin/Content/Header/Title as Label
+	if compact:
+		for side in [&"margin_left", &"margin_top", &"margin_right", &"margin_bottom"]:
+			margin.add_theme_constant_override(side, roundi(12.0 * scale))
+		content.add_theme_constant_override(&"separation", roundi(8.0 * scale))
+		title.add_theme_font_size_override(&"font_size", roundi(22.0 * scale))
+	else:
+		margin.add_theme_constant_override(&"margin_left", 28)
+		margin.add_theme_constant_override(&"margin_top", 22)
+		margin.add_theme_constant_override(&"margin_right", 28)
+		margin.add_theme_constant_override(&"margin_bottom", 20)
+		content.add_theme_constant_override(&"separation", 16)
+		title.remove_theme_font_size_override(&"font_size")
+	for node in _columns_layout.find_children("*", "Control", true, false):
+		var control := node as Control
+		if control is Label:
+			var font_size := 17.0 if control.theme_type_variation == &"HudAccentSection" else 15.0
+			if compact:
+				control.add_theme_font_size_override(&"font_size", roundi(font_size * scale))
+			else:
+				control.remove_theme_font_size_override(&"font_size")
+		elif control is CheckButton or control is OptionButton:
+			if compact:
+				control.add_theme_font_size_override(&"font_size", roundi(15.0 * scale))
+			else:
+				control.remove_theme_font_size_override(&"font_size")
+		if control is TextureRect:
+			control.custom_minimum_size = Vector2(24.0, 24.0) * scale
+		elif control is HSlider:
+			control.custom_minimum_size.y = 38.0 * scale
+		elif control is OptionButton:
+			control.custom_minimum_size.y = 44.0 * scale
+		elif control is HBoxContainer and control.name.to_lower().ends_with("row"):
+			control.custom_minimum_size.y = 44.0 * scale
+	var defaults := %Defaults as Button
+	var close := %Close as Button
+	defaults.custom_minimum_size = Vector2(220.0, 46.0) * scale
+	close.custom_minimum_size = Vector2(160.0, 46.0) * scale
+	for button in [defaults, close]:
+		if compact:
+			button.add_theme_font_size_override(&"font_size", roundi(16.0 * scale))
+		else:
+			button.remove_theme_font_size_override(&"font_size")
 
 
 func _setup_options() -> void:

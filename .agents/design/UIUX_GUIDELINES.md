@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 canonical_for: Paint Mountain player-facing UI, HUD, menu, typography, and interaction presentation
 scope: HUD, menus, settings, results, layout, copy, localization fit, icons, focus, and visible interaction states
 source: ../../docs/source-brief.md
@@ -121,7 +121,9 @@ pixels are composition targets, not runtime or copy authority.
   segment must remain inside the component bounds at every supported size.
 - `ScoreScale` owns two orientation presets, not two components. Aim View, Map
   View, and Shot Follow use the vertical preset (`100` at the top, `0` at the
-  bottom); Briefing and Result use the horizontal preset. Both presets expose
+  bottom); standard Briefing and Result use the horizontal preset. Compact
+  Briefing reuses the vertical preset so the stage identity and full 0–100
+  range never collide. Both presets expose
   the same fixed domain, labels, target data, marker projection, and
   accessibility value. Signed Paint Score remains numerically truthful outside
   the rail: only marker geometry clamps to the nearest endpoint, which adds a
@@ -163,8 +165,11 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 The canonical Aim composition is **Cannon Focus**. `ScoreScale` stays at the
 safe left edge, `BallQueue` is horizontal at the upper-right, and the lower
 interaction sequence reads angle -> Fire -> power around the cannon. At compact
-sizes, the sequence may tighten and drop redundant text, but angle, power, Fire,
-queue truth, and both score endpoints remain visible and operable.
+sizes, angle -> Fire -> power remains one centered row below the cannon. Canvas
+stretch density scales the shared `ValueStepper` and `ActionControl` geometry so
+their physical text and targets do not collapse; redundant captions may drop,
+but angle, power, Fire, queue truth, and both score endpoints remain visible and
+operable.
 
 - Use the active ExecPlan's baseline rectangles as implementation evidence, not
   permanent design tokens. Recompose a component when its minimum size,
@@ -277,6 +282,10 @@ queue truth, and both score endpoints remain visible and operable.
   assign a smaller rectangle than a child's minimum content geometry. Use at
   least 12 px internal padding for compact controls and 24 px for the rare
   shared interruption surface unless direct rendered evidence requires more.
+- When the project keeps a larger logical canvas in a smaller OS window, shared
+  compact components receive one bounded display-density value. The component
+  scales its own font, icon, hit target, spacing, and minimum geometry together;
+  a screen must not compensate with one-off font or child-control overrides.
 - Prefer direct overlays and whitespace. Do not add a visible containment
   surface to group metrics, queues, steppers, stage nodes, or result values.
 

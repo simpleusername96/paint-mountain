@@ -28,7 +28,11 @@ func update_aim(_yaw: float, elevation: float, power: float) -> void:
 	power_stepper.set_value(power, AimTuple.MINIMUM_POWER_PERCENT, AimTuple.MAXIMUM_POWER_PERCENT)
 
 
-func set_compact(compact: bool) -> void:
-	%FireGap.visible = not compact
-	%FireGap.custom_minimum_size.x = 0.0 if compact else 280.0
-	custom_minimum_size.x = 340.0 if compact else 628.0
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	var scale := maxf(density, 1.0) if compact else 1.0
+	%FireGap.visible = true
+	%FireGap.custom_minimum_size.x = 220.0 * scale if compact else 280.0
+	custom_minimum_size = Vector2(568.0, 52.0) * scale if compact else Vector2(628.0, 56.0)
+	$Content.add_theme_constant_override(&"separation", roundi(8.0 * scale) if compact else 8)
+	angle_stepper.set_compact(compact, scale)
+	power_stepper.set_compact(compact, scale)

@@ -4,6 +4,8 @@ extends Button
 @export var show_icon := true
 
 var _label_key := "ui.fire"
+var _compact_glyph := ""
+var _compact_density := 1.0
 
 
 func _ready() -> void:
@@ -18,8 +20,19 @@ func configure(label_key: String) -> void:
 
 
 func refresh_locale() -> void:
-	text = tr(_label_key)
-	accessibility_name = text
+	var localized := tr(_label_key)
+	text = _compact_glyph if not _compact_glyph.is_empty() else localized
+	accessibility_name = localized
+	tooltip_text = localized if not _compact_glyph.is_empty() else tooltip_text
+
+
+func set_compact_glyph(glyph: String, density: float = 1.0) -> void:
+	_compact_glyph = glyph
+	_compact_density = maxf(density, 1.0)
+	show_icon = false
+	icon = null
+	add_theme_font_size_override(&"font_size", roundi(24.0 * _compact_density))
+	refresh_locale()
 
 
 func set_readiness(enabled: bool, reason: String = "") -> void:

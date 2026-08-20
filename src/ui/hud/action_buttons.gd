@@ -26,3 +26,21 @@ func set_fire_readiness(snapshot: Dictionary) -> void:
 
 func focus_fire() -> void:
 	%FireButton.grab_focus()
+
+
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	var scale := maxf(density, 1.0) if compact else 1.0
+	custom_minimum_size = Vector2(256.0, 86.0) * scale
+	%ReadinessBackdrop.position = Vector2.ZERO
+	%ReadinessBackdrop.size = Vector2(256.0, 22.0) * scale
+	%ReadinessLabel.position = Vector2.ZERO
+	%ReadinessLabel.size = Vector2(256.0, 22.0) * scale
+	%ReadinessLabel.add_theme_font_size_override(
+		&"font_size", roundi(14.0 * scale) if compact else 14
+	)
+	var fire := %FireButton as ActionControl
+	fire.position = Vector2(27.0, 24.0) * scale
+	fire.size = Vector2(202.0, 62.0) * scale
+	fire.custom_minimum_size = fire.size
+	fire.add_theme_font_size_override(&"font_size", roundi(17.0 * scale) if compact else 17)
+	fire.add_theme_constant_override(&"icon_max_width", roundi(24.0 * scale))

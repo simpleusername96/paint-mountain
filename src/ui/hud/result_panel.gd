@@ -97,16 +97,29 @@ func refresh_locale() -> void:
 	_refresh_actions()
 
 
-func set_compact(compact: bool) -> void:
+func set_compact(compact: bool, density: float = 1.0) -> void:
+	var resolved_density := maxf(density, 1.0)
 	custom_minimum_size = Vector2(360.0, 276.0) if compact else Vector2(496.0, 560.0)
-	_summary.set_compact(compact)
-	var action_size := Vector2(122.0, 44.0) if compact else Vector2(136.0, 48.0)
+	_summary.set_compact(compact, resolved_density)
+	var action_size := Vector2(150.0, 44.0) * resolved_density \
+			if compact else Vector2(136.0, 48.0)
 	for action in [_retry, _next, _stages, _retry_same_deal, _new_deal]:
 		action.custom_minimum_size = action_size
-	%Margin.add_theme_constant_override(&"margin_left", 14 if compact else 24)
-	%Margin.add_theme_constant_override(&"margin_top", 12 if compact else 22)
-	%Margin.add_theme_constant_override(&"margin_right", 14 if compact else 24)
-	%Margin.add_theme_constant_override(&"margin_bottom", 12 if compact else 22)
+		action.add_theme_font_size_override(
+			&"font_size", roundi(17.0 * resolved_density) if compact else 17
+		)
+	%Margin.add_theme_constant_override(
+		&"margin_left", roundi(14.0 * resolved_density) if compact else 24
+	)
+	%Margin.add_theme_constant_override(
+		&"margin_top", roundi(12.0 * resolved_density) if compact else 22
+	)
+	%Margin.add_theme_constant_override(
+		&"margin_right", roundi(14.0 * resolved_density) if compact else 24
+	)
+	%Margin.add_theme_constant_override(
+		&"margin_bottom", roundi(12.0 * resolved_density) if compact else 22
+	)
 
 
 func focus_retry() -> void:
