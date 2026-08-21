@@ -199,3 +199,43 @@ and +1. Thin navy connector arrows feed both nodes into one blue-outlined score 
 0.0 and a small target bracket 9–13. A link glyph joins the color inputs. No labels,
 headings, helper copy, card, panel, legend, or arithmetic equation. Preserve all other AIM
 pixels and controls.
+
+
+REVISION 5 — SELECTED TERRAIN MASK PROGRESSION — 2026-08-21
+
+The Terrain Mask direction is selected. Every state is a strict local edit of the same
+1672 x 941 Stage 08 AIM frame. Preserve the world, cannon, trajectory, queue, top-right
+status, bottom controls, camera, lighting, and crop. Only the compact top-left instrument
+may change. The score rail uses a 0–14 local domain for this Stage 08 example. Its nested
+grade regions are outer 9–13 (one star), inner 10–12 (two stars), and center 10.5–11.5
+(three stars). Scores above 13 are failure, not bonus.
+
+STATE 00 — START
+Keep the nested rail quiet. Put the current marker at 0.0. Keep the miniature mountain
+empty with 0% inside. Keep red splat +1 and green circle +1; use an open/broken link glyph.
+No prose, card, panel, success state, or filled paint.
+Saved: assets/tobe/04-aim-terrain-mask-state-00-start-v5.png
+
+STATE 01 — BELOW TARGET
+Move the marker to 6.5, left of the 9–13 bracket. Fill only the miniature terrain mask to
+6.5% using red 4.0% and green 2.5% patches. Use a connected link because both colors are
+present. Do not emphasize a grade tier or add success copy.
+Saved: assets/tobe/04-aim-terrain-mask-state-01-progress-v5.png
+
+STATE 02 — TARGET ENTRY
+Move the marker to 9.5, just inside the left outer target tier. Fill the miniature mask to
+9.5% using red 5.0% and green 4.5%. Emphasize only the outer one-star segment. Communicate
+clear eligibility through position and icon state only.
+Saved: assets/tobe/04-aim-terrain-mask-state-02-clear-entry-v5.png
+
+STATE 03 — BEST GRADE
+Move the marker to the exact band center at 11.0. Fill the miniature mask to 11.0% using
+equal red 5.5% and green 5.5%. Emphasize only the central 10.5–11.5 segment with exactly
+three filled stars. Do not modify the full-size mountain or add celebration UI.
+Saved: assets/tobe/04-aim-terrain-mask-state-03-best-grade-v5.png
+
+STATE 04 — OVERPAINT
+Move the marker to 13.8 beyond the right edge of the inclusive target band. Fill the
+miniature mask to 13.8% using red 7.4% and green 6.4%. Make every star outline-only and use
+a compact right overflow arrow with a restrained red edge. Do not call this a high score.
+Saved: assets/tobe/04-aim-terrain-mask-state-04-overpaint-v5.png

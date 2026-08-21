@@ -190,6 +190,17 @@
     }
     .recommendation strong { display: block; margin-bottom: 6px; color: #075dbd; }
 
+    .state-sequence {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+      align-items: start;
+    }
+    .state-sequence figure { height: 100%; }
+    .state-sequence figcaption { min-height: 64px; align-items: flex-start; }
+    .state-sequence figcaption span { text-align: right; }
+
     .screen-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
     .screen-grid .card { padding: 18px; }
     ul, ol { margin: 8px 0 0; padding-left: 1.25em; }
@@ -205,6 +216,7 @@
 
     @media (max-width: 980px) {
       .verdict, .grid-3, .screen-grid, .evidence-strip, .aim-options { grid-template-columns: 1fr; }
+      .state-sequence { grid-template-columns: 1fr; }
       .grid-2, .edge-gallery { grid-template-columns: 1fr; }
       .shot-pair { grid-template-columns: 1fr; }
       figure.compact-as-is { grid-column: auto; width: 100%; }
@@ -218,6 +230,8 @@
       .screen-head { grid-template-columns: 60px 1fr; gap: 12px; }
       .screen-number { font-size: 44px; }
       .token-grid { grid-template-columns: 1fr; }
+      .state-sequence { grid-template-columns: 1fr; }
+      .state-sequence figcaption { min-height: 0; }
       th, td { padding: 11px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -228,13 +242,13 @@
     <div class="page">
       <p class="eyebrow">Paint Mountain · UIUX correction specification · 2026-08-21</p>
       <h1>직전 refinement가 놓친 문제와 화면별 수정 계약</h1>
-      <p class="hero-lead">이 문서는 최신 실행 화면 28장으로 현재 상태를 기록하고, 11개 AS-IS 상태와 Briefing을 통합한 10개 독립 TO-BE 화면을 비교한다. 이번 v4는 텍스트 표처럼 보였던 AIM v3를 폐기하고, 왼쪽 score HUD를 rail·fill·shape·icon 중심의 세 방향으로 다시 설계했다. Main Menu와 Stage Select + Briefing의 v2 방향 및 나머지 승인안은 유지한다.</p>
+      <p class="hero-lead">이 문서는 최신 실행 화면 28장으로 현재 상태를 기록하고, 11개 AS-IS 상태와 Briefing을 통합한 10개 독립 TO-BE 화면을 비교한다. 이번 v5는 AIM의 Terrain mask를 선택안으로 확정하고, 시작부터 목표 진입·최적 등급·과도색까지 실제 규칙에 맞춘 상태 이미지를 추가했다. Main Menu와 Stage Select + Briefing의 v2 방향 및 나머지 승인안은 유지한다.</p>
       <div class="hero-meta">
         <span>기준 보고서: 2026-08-20 refinement</span>
         <span>비교 보고서: 2026-08-21 PASS</span>
         <span>실행 증거: Windows production export</span>
         <span>기준 화면: 1280×720 + 640×360</span>
-        <span>TO-BE: 독립 상태 10개 · AIM ImageGen v4 icon-first 3안 · 16:9</span>
+        <span>TO-BE: 독립 상태 10개 · AIM ImageGen v5 Terrain mask 5상태 · 16:9</span>
       </div>
       <div class="verdict">
         <div class="verdict-mark">REBUILD<span>UI SYSTEM, NOT PATCHES</span></div>
@@ -467,7 +481,7 @@
       </section>
 
       <section class="screen" id="screen-aim">
-        <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim · icon-first score HUD 3안</h2><p class="screen-summary">조준, trajectory, queue, 상단 status, 하단 angle/fire/power는 건드리지 않는다. 왼쪽 HUD의 새 문장은 0개다. 값은 남기고 의미는 rail, fill, marker, color shape, connector가 전달한다.</p></div></div>
+        <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim · Terrain mask 상태 시퀀스</h2><p class="screen-summary">2안을 선택한다. 조준, trajectory, queue, 상단 status, 하단 angle/fire/power는 건드리지 않는다. 산 silhouette는 전체 paint 양과 R/G 구성, 수평 rail은 signed Paint Score와 목표·별 등급을 맡는다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/04-aiming-stage08-ko-1280x720.png" alt="현재 Aim 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>해석 어려운 수직 score + 흰 steppers</span></figcaption></figure>
           <figure><img loading="lazy" src="assets/tobe/04-aim-score-target-first-v3.png" alt="텍스트 설명이 과도한 폐기된 Aim score v3"><figcaption><strong>REJECTED · v3</strong><span>축을 설명문으로 바꿨을 뿐인 실패</span></figcaption></figure>
@@ -486,7 +500,7 @@
           </figure>
           <figure class="tobe recommended">
             <img loading="lazy" src="assets/tobe/04-aim-score-icon-terrain-mask-v4.png" alt="산 silhouette의 fill로 paint coverage를 보여 주는 AIM score HUD 2안">
-            <figcaption><strong>2 · Terrain mask · 권장</strong><span>산 fill + target bracket + color shape</span></figcaption>
+            <figcaption><strong>2 · Terrain mask · 선택</strong><span>산 fill + grade band + color shape</span></figcaption>
           </figure>
           <figure class="tobe">
             <img loading="lazy" src="assets/tobe/04-aim-score-icon-contribution-flow-v4.png" alt="빨강과 초록 shape가 score target으로 흐르는 AIM score HUD 3안">
@@ -495,8 +509,38 @@
         </div>
 
         <div class="recommendation">
-          <strong>권장: 2안 · Terrain mask</strong>
-          <p>이 게임의 실제 대상인 산 silhouette에 paint fill을 직접 넣어 “얼마나 칠했는가”를 설명 없이 보여 준다. 위의 bracket은 current score와 9–13 target만 비교하고, 아래의 red splat/green circle + sign이 두 색의 역할을 맡는다.</p>
+          <strong>선택: 2안 · Terrain mask</strong>
+          <p>맞다. 산 silhouette의 채워진 면적은 전체 물리 도색량(<code>total_percent</code>)이고, red/green 분할은 각 색의 실제 비율이다. 위 rail은 별개의 값인 signed Paint Score를 보여 준다. Stage 08은 두 색 모두 <code>+1</code>이므로 두 값이 우연히 같지만, 감점 색이 있는 다른 stage에서는 silhouette가 더 차도 marker가 왼쪽으로 움직일 수 있다.</p>
+        </div>
+
+        <h3 style="margin-top: 34px;">진행에 따른 실제 변화 · Stage 08</h3>
+        <p class="section-lead">“더 높은 점수 구간”은 목표 오른쪽에 붙는 bonus 구간이 아니다. 현재 규칙은 9–13 안에서 중앙 11에 가까울수록 높은 별을 준다. 따라서 rail은 <strong>★ 9–13 → ★★ 10–12 → ★★★ 10.5–11.5</strong>를 안쪽으로 포개고, 13 초과는 0별 실패로 표시한다.</p>
+        <div class="state-sequence" aria-label="Terrain mask HUD gameplay progression">
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-terrain-mask-state-00-start-v5.png" alt="Stage 08 시작 상태, score 0.0과 비어 있는 terrain mask">
+            <figcaption><strong>01 · 시작 · 0.0</strong><span>mask 비움 · 목표 tier는 outline</span></figcaption>
+          </figure>
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-terrain-mask-state-01-progress-v5.png" alt="Stage 08 진행 중 상태, score 6.5와 빨강 초록 paint fill">
+            <figcaption><strong>02 · 진행 · 6.5</strong><span>R 4.0 + G 2.5 · 목표 전</span></figcaption>
+          </figure>
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-terrain-mask-state-02-clear-entry-v5.png" alt="Stage 08 목표 진입 상태, score 9.5와 1별 목표 구간 강조">
+            <figcaption><strong>03 · 목표 진입 · 9.5</strong><span>★ clear 가능 · outer tier 강조</span></figcaption>
+          </figure>
+          <figure class="tobe recommended">
+            <img loading="lazy" src="assets/tobe/04-aim-terrain-mask-state-03-best-grade-v5.png" alt="Stage 08 최적 등급 상태, score 11.0과 3별 중앙 구간 강조">
+            <figcaption><strong>04 · 최적 · 11.0</strong><span>★★★ center · R/G 균형</span></figcaption>
+          </figure>
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-terrain-mask-state-04-overpaint-v5.png" alt="Stage 08 과도색 상태, score 13.8과 목표 초과 marker">
+            <figcaption><strong>05 · 과도색 · 13.8</strong><span>0★ fail · right overflow</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="callout">
+          <strong>해석 순서</strong>
+          <p>1) silhouette에서 전체 도색량과 R/G 구성을 본다. 2) marker가 9–13 안인지 본다. 3) 안쪽으로 포개진 별 tier에서 현재 등급을 본다. 4) 양 색이 생기면 link glyph가 연결된다. 이 네 신호만 상시 노출하고 문장 설명은 hover/focus 접근성 정보로만 제공한다.</p>
         </div>
 
         <div class="table-scroll">
@@ -504,7 +548,7 @@
             <thead><tr><th>안</th><th>주요 시각 신호</th><th>강점</th><th>주의점</th></tr></thead>
             <tbody>
               <tr><td><strong>1</strong></td><td>target band와 current marker, unfilled coverage ring</td><td>가장 작고 빠르다. 목표 진입 여부가 첫 시선에 들어온다.</td><td>ring과 score rail의 역할이 처음에는 분리되어 보일 수 있다. hover/focus tooltip으로 학습시킨다.</td></tr>
-              <tr><td><strong>2</strong></td><td>실제 산 silhouette의 paint fill, 상단 target bracket</td><td>게임 오브젝트와 진행 상태가 직접 연결된다. 가장 이미지 중심이고 Paint Mountain만의 HUD가 된다.</td><td>stage silhouette asset이 필요하다. 실제 paint mask를 단순화해 같은 authoritative data에서 갱신해야 한다.</td></tr>
+              <tr><td><strong>2</strong></td><td>실제 산 silhouette의 R/G paint fill, 상단 nested grade rail</td><td>도색량·점수·등급을 서로 다른 shape로 분리한다. 가장 이미지 중심이고 Paint Mountain만의 HUD가 된다.</td><td>stage silhouette asset이 필요하다. HUD는 <code>PaintSystem</code>의 authoritative mask를 downsample해 그리며 별도 진행 상태를 소유하지 않는다.</td></tr>
               <tr><td><strong>3</strong></td><td>red/green nodes에서 score node로 들어가는 connector</td><td>두 색의 +1/−1/0 역할과 total score 관계를 문장 없이 가장 명확히 보여 준다.</td><td>diagram처럼 보일 수 있으므로 선을 얇게 하고 footprint를 300px 이내로 제한한다.</td></tr>
             </tbody>
           </table>
@@ -515,10 +559,11 @@
           <table>
             <thead><tr><th>상태</th><th>보이는 변화</th><th>금지</th></tr></thead>
             <tbody>
-              <tr><td>시작 · 0%</td><td>coverage ring/terrain mask는 완전히 비고 current marker는 0.0에 있다. red/green shape와 weight sign만 유지한다.</td><td>0%인데 rail이나 mask를 색으로 미리 채우지 않는다.</td></tr>
-              <tr><td>칠하는 중</td><td>같은 <code>PaintSystem</code> 결과에서 파생한 R/G 비율로 ring 또는 mountain mask를 채운다. 숫자와 fill만 갱신한다.</td><td>HUD가 별도 coverage 상태나 paint mask를 소유하지 않는다.</td></tr>
-              <tr><td>목표 진입</td><td>current marker가 9–13 band 안에 들어가고 band accent만 강해진다. 성공 문장을 추가하지 않는다.</td><td>새 badge, toast, 흰 card를 만들지 않는다.</td></tr>
-              <tr><td>음수 / target 초과</td><td>값은 실제 부호와 크기를 유지한다. marker는 rail 끝의 방향 arrow로 overflow를 알린다.</td><td>0 또는 100으로 clamp하지 않는다.</td></tr>
+              <tr><td>시작 · 0.0</td><td>terrain mask는 완전히 비고 marker는 rail의 0에 있다. 모든 별은 outline이다.</td><td>0%인데 mask나 tier를 채우지 않는다.</td></tr>
+              <tr><td>진행 · 6.5</td><td><code>PaintSystem</code>에서 파생한 R 4.0 / G 2.5 면적만 miniature mask에 채운다. marker는 target 왼쪽에 있다.</td><td>HUD가 별도 coverage 상태나 paint mask를 소유하지 않는다.</td></tr>
+              <tr><td>목표 진입 · 9.5</td><td>marker가 9–13 outer tier에 들어오고 해당 ★ segment만 강조된다.</td><td>새 badge, toast, 흰 card, 성공 문장을 만들지 않는다.</td></tr>
+              <tr><td>최적 · 11.0</td><td>marker가 center에 오고 10.5–11.5의 ★★★ segment만 가장 밝아진다.</td><td>13 이후를 bonus처럼 보이게 하지 않는다.</td></tr>
+              <tr><td>과도색 · 13.8</td><td>mask fill은 계속 늘지만 marker는 target 오른쪽으로 나가며 별은 outline으로 돌아간다. right overflow arrow가 생긴다.</td><td>값을 13이나 100으로 clamp하거나 clear로 오인시키지 않는다.</td></tr>
               <tr><td>양 색 필수</td><td>한 색이 없으면 link glyph가 열린 shape, 둘 다 존재하면 연결된 solid shape가 된다.</td><td>“두 색 필수” 문장을 지속 노출하지 않는다.</td></tr>
             </tbody>
           </table>
@@ -533,7 +578,7 @@
         </div>
 
         <div class="screen-grid">
-          <article class="card"><h4>고정 범위</h4><ul><li>왼쪽 score 영역만 교체한다. mountain, cannon, trajectory, queue, settings, timer, ball count, angle/fire/power의 위치·크기·색은 그대로 둔다.</li><li>흰 card나 button-like surface를 만들지 않는다. 배경 대비가 부족할 때만 좌측 edge에서 투명해지는 navy scrim을 사용한다.</li><li>선택 전까지 세 안 모두 탐색안이며 canonical design spec을 바꾸지 않는다.</li></ul></article>
+          <article class="card"><h4>고정 범위</h4><ul><li>왼쪽 score 영역만 2안으로 교체한다. mountain, cannon, trajectory, queue, settings, timer, ball count, angle/fire/power의 위치·크기·색은 그대로 둔다.</li><li>흰 card나 button-like surface를 만들지 않는다. 배경 대비가 부족할 때만 좌측 edge에서 투명해지는 navy scrim을 사용한다.</li><li>이번 선택은 report의 구현 방향을 확정한다. canonical design spec과 production UI 변경은 별도 구현 승인을 받은 뒤 진행한다.</li></ul></article>
           <article class="card"><h4>공통 의미·상태 계약</h4><ul><li>기본 HUD에는 새 문장이나 label을 넣지 않는다. 숫자·부호·icon의 baseline만 고정한다.</li><li>빨강은 splat, 초록은 circle, weight는 <code>+1</code>/<code>−1</code>/<code>0</code>, 양 색 필수는 link glyph를 유지한다.</li><li>hover/focus tooltip과 accessible name은 “페인트 점수 0.0, 목표 9–13”처럼 완전한 localized 문장으로 제공한다.</li><li>음수와 100 초과 score는 marker overflow shape로 표시하고 값을 clamp하지 않는다.</li></ul></article>
           <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../src/ui/hud/aim_controls.gd">src/ui/hud/aim_controls.gd</a><a href="../../../src/ui/hud/action_buttons.gd">src/ui/hud/action_buttons.gd</a><a href="../../../src/ui/components/value_stepper.gd">src/ui/components/value_stepper.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
         </div>
