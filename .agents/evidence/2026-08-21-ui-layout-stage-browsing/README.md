@@ -11,6 +11,15 @@ related: ../../execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md
 
 # UI Layout and Stage Browsing Evidence
 
+## Correction notice
+
+The user's later 713x1026 screenshots disproved this folder's broad icon and
+responsive-layout acceptance claim. The 1280x720 and 640x360 images remain
+valid evidence for those exact landscape states, and the stage-browsing timing
+remains valid because its owners did not change. Corrected icon alignment and
+tall-window Result evidence is recorded in
+[`../2026-08-21-responsive-ui-correction/README.md`](../2026-08-21-responsive-ui-correction/README.md).
+
 This folder retains the task's Godot/Compatibility render and timing evidence.
 `phase2/` contains the post-layout development render gate, `phase3/` preserves
 the timing diagnosis and correction sequence, and `phase4/` is the final

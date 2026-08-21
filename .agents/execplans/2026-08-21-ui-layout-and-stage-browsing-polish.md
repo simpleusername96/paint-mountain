@@ -1,6 +1,6 @@
 ---
 type: plan
-status: active
+status: done
 created: 2026-08-21
 scope: Cross-surface UI spacing and icon alignment, Aim and Stage Select composition, and smooth latest-selection stage preparation
 related:
@@ -215,10 +215,10 @@ Source owners: Windows release export, delivery capture runner, `.agents/evidenc
 - [x] **6.1 Inspect exact production states.**
   - Change: export once, then capture Main Menu, Aim, and target-band Failure at 713x1026 plus one 1280x720 Aim/Result regression pair.
   - Accept: the four user-reported defect classes are absent under UIUX Gate Level 4; no clipping, overlap, off-center glyph, full-screen Result sheet, or lost mountain hero remains.
-- [ ] **6.2 Run the final project gates and quality audit.**
+- [x] **6.2 Run the final project gates and quality audit.**
   - Change: run the ordered suite, `scripts/verify.ps1`, and `$codebase-quality-auditor` once after the production pixels pass; apply only small task-scoped corrections.
   - Accept: all gates pass, no shared-UI competing owner or reachable responsive failure remains, and `git diff --check` passes.
-- [ ] **6.3 Correct durable truth and commit.**
+- [x] **6.3 Correct durable truth and commit.**
   - Change: update the evidence README and `.agents/Documentation.md` to retract the invalid two-landscape acceptance claim, mark this plan done, and commit only correction-owned files.
   - Accept: documentation names the 713x1026 evidence and the scoped commit exists.
 
@@ -253,9 +253,9 @@ Implementation-local discoveries may be handled inside the locked contract when 
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Phase 6, corrective production proof and handoff.
-- Next task: 6.2 run the final project gates and quality audit.
-- Last completed gate: focused shared-component/copy/localization/responsive tests pass in Korean and English, including 713x1026 and 768x1024. The Windows release export and five production captures pass: Main Menu, Aim, and target-band Failure at 713x1026 plus Aim and Failure at 1280x720. The Play alpha bounds are centered within 0.5 rendered px, Fire is centered, and the tall Result spine occupies about 48% of the viewport width while preserving the opposite world side. Evidence: `.agents/evidence/2026-08-21-responsive-ui-correction/production/`.
+- Current phase: Complete.
+- Next task: None.
+- Last completed gate: focused shared-component/copy/localization/responsive tests pass in Korean and English, including 713x1026 and 768x1024; the complete ordered suite and `scripts/verify.ps1` pass. The Windows release export and five production captures pass: Main Menu, Aim, and target-band Failure at 713x1026 plus Aim and Failure at 1280x720. The Play alpha bounds are centered within 0.5 rendered px, Fire is centered, and the tall Result spine occupies about 48% of viewport width while preserving the opposite world side. The diff-scoped quality audit is clean. Implementation commit: `3d651c9`; evidence: `.agents/evidence/2026-08-21-responsive-ui-correction/README.md`.
 - Update rule: after a checkpoint passes, record concise evidence, check the task, and advance this pointer in the same edit.
 - Resume rule: read this contract and the current worktree, then continue from the first unchecked task whose prerequisites are satisfied. Treat checked work and passing evidence as current unless its owned input changed.
 

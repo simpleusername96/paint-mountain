@@ -49,6 +49,7 @@ related:
   - evidence/fast-stage-readiness-2026-08-11/README.md
   - evidence/2026-08-20-m9-local-release/README.md
   - evidence/2026-08-21-ui-layout-stage-browsing/README.md
+  - evidence/2026-08-21-responsive-ui-correction/README.md
   - evidence/cross-stage-ui-theme-2026-08-20/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
@@ -70,18 +71,20 @@ related:
 The completed execution contract is
 [`execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md`](execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md),
 with final production evidence in
-[`evidence/2026-08-21-ui-layout-stage-browsing/README.md`](evidence/2026-08-21-ui-layout-stage-browsing/README.md).
+[`evidence/2026-08-21-responsive-ui-correction/README.md`](evidence/2026-08-21-responsive-ui-correction/README.md).
 This section refines the current icon-first UI presentation and Stage Select
 preparation path; it does not change gameplay, score, paint, or stage rules.
 
 - Shared action, stepper, and Settings icons now use one component-owned
-  symmetric texture view around the visible alpha bounds. The approved icon
-  files are unchanged. Stepper, Pause, Result, and rule-summary spacing follows
-  the existing 8 px rhythm with standard/compact target sizes preserved.
+  symmetric texture view around the visible alpha bounds and explicitly center
+  that texture inside the Godot `Button` content box. The approved icon files
+  are unchanged. Main Menu rows now honor their configured primary/routine
+  action edge, and compact Result keeps a bounded right-side spine instead of
+  filling a tall desktop window.
 - `AimScoreStatus` now uses one left spine and separate success-range, current,
   total-paint, and R/G role rows. Stage Select identity/rule/action groups and
-  the Aim/Map/Follow edge layouts retain complete information at 1280x720 and
-  640x360 without overlap or clipping.
+  the Aim/Map/Follow edge layouts retain complete information at 1280x720,
+  640x360, 768x1024, and 713x1026 without overlap or clipping.
 - Stage Select no longer constructs full Gameplay for each intermediate
   selection. Persisted layout hydration runs on one joined pure worker,
   obsolete selected results do not publish, the preview reuses its ground,
@@ -92,10 +95,11 @@ preparation path; it does not change gameplay, score, paint, or stage rules.
   maximum present interval against a `32.776 ms` off-desktop baseline
   (`1.6355x`; the background window is normally near 30 FPS). The original
   failed path peaked at `218.629 ms` and hydrated each layout on the main thread.
-- The complete ordered suite, `scripts/verify.ps1`, Windows release export, and
-  ten production capture scenarios pass on implementation commit `b29505f`.
-  The final executable SHA-256 is
-  `620206D1E3C31A262BC16A2CDAF4AB8B6755B461B37FC77D41FC79D21FED904D`.
+- The original two-landscape acceptance missed the user-reported 713x1026 path;
+  its broad responsive claim is retracted. The corrective complete ordered
+  suite, `scripts/verify.ps1`, Windows release export, three 713x1026 production
+  states, and two 1280x720 regressions pass. The final executable SHA-256 is
+  `98581A86A89443F82BFC382ED9514CC3508A0402141C567D867386F50663C695`.
 
 ## Current Icon-First TO-BE UIUX Parity (2026-08-21)
 
