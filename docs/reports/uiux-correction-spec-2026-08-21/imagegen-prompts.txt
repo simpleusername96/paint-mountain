@@ -133,3 +133,40 @@ red splat icon + “빨강 0.0%    가산 +1”
 green circle icon + “초록 0.0%    가산 +1”
 Use navy text directly on the sky with no white panel and no axis. Make the distinction
 between score, total painted area, and each color's stage weight immediately readable.
+
+
+REVISION 3 — AIM SCORE UI STUDY — 2026-08-21
+
+These prompts edit only the top-left score area of the approved AIM reference. The world,
+cannon, trajectory, queue, top-right status, settings, and bottom angle/fire/power controls
+must remain unchanged. The three outputs are independent information-hierarchy options.
+
+OPTION 1 — TARGET FIRST
+Edit only the top-left score area. Build a transparent target-first HUD with no white card
+or button-like surface. Show “페인트 점수” with a large “0.0”, “목표 9–13”, and “9.0 부족”.
+Under it, show a short local target-window rail: current 0, target band 9–13, and an overflow
+arrow. This is not a 0–100 live scale. Then show “칠한 면적 0.0%” with a restrained thin
+progress rail, followed by red splat + “빨강 0.0% · 더함 +1”, green circle +
+“초록 0.0% · 더함 +1”, and “두 색 필수”. Use navy text directly on the sky and align
+all values to a strict left grid. Preserve every pixel outside this score area.
+
+OPTION 2 — COVERAGE FIRST
+Edit only the top-left score area. Build a coverage-first HUD over one subtle navy-to-
+transparent left edge contrast scrim; do not make a visible card. Show “칠한 면적” and a
+large “0.0%”. Under it, show one thin empty neutral 0–100 progress track; because the value
+is 0.0%, it must contain no red or green fill. Below, show red splat + “빨강 0.0%  점수에 +1”
+and green circle + “초록 0.0%  점수에 +1”. Finish with “페인트 점수 0.0   목표 9–13” and
+“두 색 필수”. Preserve every other AIM element exactly.
+
+OPTION 3 — CONTRIBUTION FIRST
+Edit only the top-left score area. Build a transparent contribution-first HUD with no card,
+chart, or axis. Show “페인트 점수” and a large “0.0”. Then show two aligned calculation rows:
+red splat + “빨강 0.0% × +1 = +0.0” and green circle + “초록 0.0% × +1 = +0.0”. Under a
+restrained divider, show “칠한 면적 0.0%”, then “목표 9–13 | 두 색 필수”. Use navy text and
+one subtle local mist/contrast treatment only if required for legibility. Preserve every
+pixel outside the score area.
+
+OPTION 2 CORRECTION
+Edit only the coverage rail. The displayed total is 0.0%, so the rail must be completely
+empty: a neutral low-contrast track from 0% to 100% with no red or green fill. Keep the
+red splat and green circle rows below as the color-role legend. Do not change anything else.

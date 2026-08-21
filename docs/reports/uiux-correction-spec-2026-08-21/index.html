@@ -173,6 +173,26 @@
     figure.tobe figcaption { background: var(--blue-soft); }
     figure.compact-as-is { grid-column: 1 / -1; width: min(50%, 640px); }
 
+    .aim-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+      align-items: start;
+    }
+    .recommended { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37, 132, 255, .16); }
+    .recommendation {
+      margin-top: 24px;
+      padding: 22px 24px;
+      border: 1px solid #9bc8ff;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #f4f9ff 0%, #eaf3ff 100%);
+    }
+    .recommendation strong { display: block; margin-bottom: 6px; color: #075dbd; }
+    .reference-notes { margin-top: 24px; }
+    .reference-notes td:first-child { width: 25%; font-weight: 800; }
+    .reference-notes td:nth-child(2) { width: 34%; }
+
     .screen-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
     .screen-grid .card { padding: 18px; }
     ul, ol { margin: 8px 0 0; padding-left: 1.25em; }
@@ -187,7 +207,7 @@
     footer { padding: 42px 0 70px; color: var(--muted); font-size: 14px; }
 
     @media (max-width: 980px) {
-      .verdict, .grid-3, .screen-grid, .evidence-strip { grid-template-columns: 1fr; }
+      .verdict, .grid-3, .screen-grid, .evidence-strip, .aim-options { grid-template-columns: 1fr; }
       .grid-2, .edge-gallery { grid-template-columns: 1fr; }
       .shot-pair { grid-template-columns: 1fr; }
       figure.compact-as-is { grid-column: auto; width: 100%; }
@@ -211,13 +231,13 @@
     <div class="page">
       <p class="eyebrow">Paint Mountain · UIUX correction specification · 2026-08-21</p>
       <h1>직전 refinement가 놓친 문제와 화면별 수정 계약</h1>
-      <p class="hero-lead">이 문서는 최신 실행 화면 28장으로 현재 상태를 기록하고, 11개 AS-IS 상태와 Briefing을 통합한 10개 독립 TO-BE 화면을 비교한다. 이번 v2는 Main Menu hover reveal, 실제 지형 기반 Stage Select + Briefing, 의미가 드러나는 AIM 점수 표시만 다시 설계했다. 나머지 승인된 방향은 유지한다.</p>
+      <p class="hero-lead">이 문서는 최신 실행 화면 28장으로 현재 상태를 기록하고, 11개 AS-IS 상태와 Briefing을 통합한 10개 독립 TO-BE 화면을 비교한다. 이번 v3는 AIM의 나머지 요소를 고정하고 왼쪽 score UI만 세 방향으로 다시 설계했다. Main Menu와 Stage Select + Briefing의 v2 방향 및 나머지 승인안은 유지한다.</p>
       <div class="hero-meta">
         <span>기준 보고서: 2026-08-20 refinement</span>
         <span>비교 보고서: 2026-08-21 PASS</span>
         <span>실행 증거: Windows production export</span>
         <span>기준 화면: 1280×720 + 640×360</span>
-        <span>TO-BE: 독립 상태 10개 · ImageGen v2 3장 · 16:9</span>
+        <span>TO-BE: 독립 상태 10개 · AIM ImageGen v3 3안 · 16:9</span>
       </div>
       <div class="verdict">
         <div class="verdict-mark">REBUILD<span>UI SYSTEM, NOT PATCHES</span></div>
@@ -259,7 +279,7 @@
         </div>
         <div class="callout">
           <strong>TO-BE 이미지의 지위</strong>
-          <p>각 화면의 파란 테두리 이미지는 최신 AS-IS를 편집 기준으로 생성한 ImageGen 시각 목표다. v2 이미지는 Main Menu의 hover 종료 상태, 통합된 Stage Select + Briefing, AIM 점수 정보만 교체한다. 정지 이미지는 animation과 terrain 준비 성능을 증명하지 않으며, 그 동작 계약은 바로 아래의 “정확한 수정”과 “정렬 좌표”가 최종 권위다. 프롬프트는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>에 보존했다.</p>
+          <p>각 화면의 파란 테두리 이미지는 최신 AS-IS를 편집 기준으로 생성한 ImageGen 시각 목표다. Main Menu와 통합 Stage Select + Briefing은 v2를 유지한다. AIM은 v3의 세 대안을 비교하며, 아직 구현 확정안은 아니다. 정지 이미지는 animation과 terrain 준비 성능을 증명하지 않으며, 동작·상태 계약이 최종 권위다. 프롬프트는 <a href="imagegen-prompts.txt">imagegen-prompts.txt</a>에 보존했다.</p>
         </div>
         <div class="table-scroll">
           <table>
@@ -267,7 +287,7 @@
             <tbody>
               <tr><td>화면</td><td>Main Menu부터 Clear/Failure까지 11개 주요 상태, 동일한 640×360 상태, 후반 스테이지와 음수 점수 6개</td><td>스크린 리더 실제 낭독, 게임패드 전체 순회, 색 대비의 측정값</td></tr>
               <tr><td>구현</td><td>현재 Theme, HUD layout, ScoreScale, BallQueue, ActionControl, 각 screen owner</td><td>아직 구현되지 않은 TO-BE의 런타임 품질</td></tr>
-              <tr><td>외부 기준</td><td>W3C target/focus/hover, Xbox UI context/focus/contrast, Godot Control/Container 지침</td><td>WCAG 또는 XAG 전체 준수 선언</td></tr>
+              <tr><td>외부 기준</td><td>Nintendo/FuturLab의 paint 진행 피드백, Returnal의 시선 중심 HUD 원칙, bullet chart의 목표 비교, W3C/Xbox의 색·대비 기준, Godot Control/Container 지침</td><td>특정 게임 UI의 시각 복제, WCAG 또는 XAG 전체 준수 선언</td></tr>
             </tbody>
           </table>
         </div>
@@ -284,10 +304,10 @@
             <tbody>
               <tr><td><strong>“패널 없음”</strong></td><td>버튼 normal/hover/pressed의 면 색을 정하지 않았다. 흰 원형/사각 버튼이 TO-BE와 공유 SVG에 남았다.</td><td class="bad">설정, 증감, 모드, 완료가 모두 흰 상자처럼 보인다.</td><td class="good">행동 normal은 투명. 흰 면은 정보 카드·설정 폼·확인 모달만 사용.</td></tr>
               <tr><td><strong>“아이콘 우선”</strong></td><td>아이콘 “우선”인지 아이콘 “전용”인지 불명확했다. 공유 SVG도 “다음/다시” 텍스트를 유지했다.</td><td class="bad">플레이, 시작, 발사, 다음, 닫기가 큰 텍스트 버튼으로 구현됐다.</td><td class="good">동작 버튼의 visible text는 항상 빈 값. 접근성 이름과 tooltip은 유지.</td></tr>
-              <tr><td><strong>“0–100 고정 수직축”</strong></td><td>완전한 범위를 보여 주는 것을 이해 가능성과 동일시했다. 목표 9–13 같은 좁은 구간과 R/G 색의 점수 역할을 읽는 순서를 정의하지 않았다.</td><td class="bad">왼쪽 막대가 화면을 차지하지만 페인트 점수, 실제 칠한 면적, R/G 가중치의 관계를 설명하지 못한다.</td><td class="good">라이브 수직축 폐기. 페인트 점수·목표 → 칠한 면적 → R/G 면적과 가중치 순서의 ScoreStatus로 교체. 전체 축은 결과에서만 사용.</td></tr>
+              <tr><td><strong>“0–100 고정 수직축”</strong></td><td>완전한 범위를 보여 주는 것을 이해 가능성과 동일시했다. 목표 9–13 같은 좁은 구간과 R/G 색의 점수 역할을 읽는 순서를 정의하지 않았다.</td><td class="bad">왼쪽 막대가 화면을 차지하지만 페인트 점수, 실제 칠한 면적, R/G 가중치의 관계를 설명하지 못한다.</td><td class="good">AIM의 라이브 수직축을 폐기하고, 목표·면적·색 기여도 중 무엇을 먼저 읽을지 세 안으로 비교한다. 전체 범위 축은 결과에서만 사용한다.</td></tr>
               <tr><td><strong>“공 설명 한 곳”</strong></td><td>보고서 데모는 어두운 tooltip 박스를 썼지만, shared component surface와 padding을 잠그지 않았다.</td><td class="bad">특수 공 설명이 하늘 위 투명 텍스트로 떠서 정보인지 배경인지 불명확하다.</td><td class="good">큐 아래에 흰 BallDetailCard. 296px 폭, 16px padding, queue 우측선과 동일 정렬.</td></tr>
               <tr><td><strong>“공유 컴포넌트”</strong></td><td>컴포넌트 내부 padding과 화면 외부 gap의 소유자를 나누지 않았다.</td><td class="bad">44/48/52/56/58/62px 크기가 혼재하고, 중심선과 edge가 화면마다 다르다.</td><td class="good">컴포넌트는 내부 치수만, HudRootLayout/screen owner는 좌표만 소유. 8px grid와 두 hit-target 크기만 사용.</td></tr>
-              <tr><td><strong>“compact density”</strong></td><td>축소 비율만 있고 정보 우선순위와 재배치 계약이 없다.</td><td class="bad">640×360에서 거대한 CTA와 수직축이 월드를 압박하고 설정은 스크롤 상태를 설명하지 않는다.</td><td class="good">compact는 별도 좌표 sheet. 행동은 40/48px, 점수는 180×64, 정보 카드는 280px 이내.</td></tr>
+              <tr><td><strong>“compact density”</strong></td><td>축소 비율만 있고 정보 우선순위와 재배치 계약이 없다.</td><td class="bad">640×360에서 거대한 CTA와 수직축이 월드를 압박하고 설정은 스크롤 상태를 설명하지 않는다.</td><td class="good">compact는 별도 좌표 sheet. 행동은 40/48px, score UI는 선택한 위계를 유지하되 내용에 맞춰 축소하고 정보 카드는 280px 이내로 제한한다.</td></tr>
             </tbody>
           </table>
         </div>
@@ -305,7 +325,7 @@
           <article class="card rule-lock"><span class="rule-index">LOCK 01</span><h3>행동은 아이콘만</h3><p>Play, Start, Fire, Finish, Back, Resume, Retry, Next, Close 등 동사는 버튼 안에 쓰지 않는다. 버튼은 실제 아이콘을 사용하고 localized accessibility name과 tooltip을 제공한다.</p></article>
           <article class="card rule-lock"><span class="rule-index">LOCK 02</span><h3>흰 버튼 면 제거</h3><p>routine action의 normal state는 투명이다. hover/pressed/focus에만 비흰색 피드백을 준다. 한 화면의 주요 행동 하나만 파란 원형 면을 가진다.</p></article>
           <article class="card rule-lock"><span class="rule-index">LOCK 03</span><h3>흰 면은 정보에 사용</h3><p>특수 공 설명, 설정 폼, 파괴적 행동 확인처럼 “읽고 판단해야 하는 내용”만 흰 정보 면을 쓴다. 정보 면은 hover/pressed 효과가 없어 버튼으로 오인되지 않는다.</p></article>
-          <article class="card rule-lock"><span class="rule-index">LOCK 04</span><h3>수직 점수축 폐기</h3><p>Aim, Map, Shot Follow에는 0–100 막대를 표시하지 않는다. 페인트 점수와 목표를 먼저, 실제 칠한 면적과 R/G 면적·가중치를 그 아래 보여 준다.</p></article>
+          <article class="card rule-lock"><span class="rule-index">LOCK 04</span><h3>AIM 수직 점수축 폐기</h3><p>AIM에는 0–100 수직 막대를 표시하지 않는다. 현재 점수, 목표 구간, 실제 칠한 면적, R/G 면적·가중치는 선택한 위계 안에서 서로 다른 의미로 읽혀야 한다.</p></article>
           <article class="card rule-lock"><span class="rule-index">LOCK 05</span><h3>내부/외부 정렬 분리</h3><p>컴포넌트는 icon centering과 padding만 소유한다. 화면 layout owner만 좌표, safe margin, group gap을 소유한다. screen script에서 자식의 임의 offset을 추가하지 않는다.</p></article>
           <article class="card rule-lock"><span class="rule-index">LOCK 06</span><h3>값은 텍스트 예외</h3><p>stage number, angle/power 값, timer, score 같은 데이터는 텍스트로 남는다. 버튼의 동작명만 제거한다. 정보 텍스트와 클릭 면을 한 덩어리로 만들지 않는다.</p></article>
         </div>
@@ -353,16 +373,17 @@
           <article class="card"><h4>금지: routine action</h4><p>설정 gear, +/- stepper, Finish, camera mode, Back, Return, secondary result action의 normal state에 흰 면을 쓰지 않는다.</p></article>
         </div>
 
-        <h3>4.4 ScoreStatus와 ScoreScale 역할 분리</h3>
+        <h3>4.4 AIM ScoreStatus 후보와 ScoreScale 역할 분리</h3>
         <div class="grid-2">
           <article class="card">
-            <h4>새 <code>ScoreStatus</code> — 라이브 HUD</h4>
+            <h4><code>ScoreStatus</code> — AIM 공통 계약</h4>
             <ul>
-              <li>표시 순서: <strong>페인트 점수 0.0 · 목표 9–13</strong> → <strong>칠한 면적 0.0%</strong> → <strong>빨강 0.0% · 가산 +1</strong> → <strong>초록 0.0% · 가산 +1</strong>.</li>
+              <li>필수 값은 <strong>페인트 점수·목표 구간</strong>, <strong>칠한 면적</strong>, <strong>빨강/초록 면적과 weight</strong>, <strong>두 색 필수 여부</strong>다.</li>
+              <li>표시 순서는 04 AIM의 세 안처럼 목표 우선, 면적 우선, 기여도 우선으로 달라질 수 있다. 현재 권장은 목표 우선이다.</li>
               <li>페인트 점수는 <code>R% × R weight + G% × G weight</code>. 칠한 면적은 가중치와 무관하게 <code>R% + G%</code>.</li>
-              <li>가중치 copy는 <strong>+1 가산</strong>, <strong>−1 감산</strong>, <strong>0 점수 제외</strong>로 stage data에 맞춰 바꾼다.</li>
-              <li>0/25/50/75/100 tick과 수직 track을 표시하지 않는다.</li>
-              <li>standard 320×150, compact 228×104. 좌측 safe edge에 직접 배치.</li>
+              <li>가중치 copy는 <strong>더함 +1</strong>, <strong>뺌 −1</strong>, <strong>점수 제외 0</strong>으로 stage data에 맞춰 바꾼다.</li>
+              <li>흰 card와 0/25/50/75/100 수직 track을 사용하지 않는다. 배경 대비가 필요하면 좌측 edge scrim만 사용한다.</li>
+              <li>standard x48, compact x12의 safe edge를 유지하고 내용 변화로 block 폭과 baseline이 움직이지 않게 한다.</li>
               <li>음수와 100 초과 값을 clamp하지 않고 부호를 그대로 표시한다.</li>
             </ul>
           </article>
@@ -449,15 +470,63 @@
       </section>
 
       <section class="screen" id="screen-aim">
-        <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim</h2><p class="screen-summary">기존 TO-BE의 조준, trajectory, queue, 상단/하단 control은 그대로 유지한다. 이번 v2는 왼쪽 score 정보만 바꿔 “현재 점수”와 “얼마나 칠했는지”, 빨강·초록의 역할을 분리한다.</p></div></div>
+        <div class="screen-head"><div class="screen-number">04</div><div><h2>Aim · score UI 3안</h2><p class="screen-summary">조준, trajectory, queue, 상단 status, 하단 angle/fire/power는 건드리지 않는다. 왼쪽 HUD만 “지금 무엇을 판단해야 하는가”에 따라 세 가지 정보 위계로 비교한다.</p></div></div>
         <div class="shot-pair">
           <figure><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/04-aiming-stage08-ko-1280x720.png" alt="현재 Aim 1280x720"><figcaption><strong>AS-IS · 1280×720</strong><span>해석 어려운 수직 score + 흰 steppers</span></figcaption></figure>
-          <figure class="tobe"><img loading="lazy" src="assets/tobe/04-aim-score-tobe-v2.png" alt="페인트 점수, 목표, 칠한 면적, 빨강과 초록 가중치를 표시한 Aim TO-BE v2"><figcaption><strong>TO-BE v2 · score only</strong><span>점수 ≠ 면적 · R/G 역할 명시</span></figcaption></figure>
+          <figure><img loading="lazy" src="assets/tobe/04-aim-score-tobe-v2.png" alt="행 단위 텍스트가 빽빽한 직전 Aim score TO-BE v2"><figcaption><strong>REJECTED · v2</strong><span>필요 정보는 있으나 읽는 순서가 없음</span></figcaption></figure>
           <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/15-aiming-stage08-ko-640x360.png" alt="현재 Aim 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좌우 HUD가 산을 누름</span></figcaption></figure>
         </div>
+
+        <div class="recommendation">
+          <strong>권장: 1안 · 목표 우선</strong>
+          <p>이 게임의 AIM에서 가장 급한 질문은 “다음 발로 목표 구간에 들어가는가”다. 1안은 현재 점수, 목표 9–13, 목표까지 남은 양을 한 덩어리로 읽게 하고, 칠한 면적과 빨강·초록의 역할은 바로 아래에 보조 정보로 둔다. 정보량을 줄이지 않고 의사결정 순서만 명확하게 만든다.</p>
+        </div>
+
+        <h3 style="margin-top: 34px;">레퍼런스에서 가져온 원칙</h3>
+        <p class="section-lead">시각 형태를 복사하지 않고, 각 사례가 해결한 정보 문제만 AIM에 적용했다.</p>
+        <div class="table-scroll reference-notes">
+          <table>
+            <thead><tr><th>레퍼런스</th><th>확인한 원칙</th><th>Paint Mountain 적용</th></tr></thead>
+            <tbody>
+              <tr><td><a href="https://splatoon.nintendo.com/en/gameplay/">Nintendo · Splatoon 3 gameplay</a></td><td>승패 기준을 “자기 색으로 더 넓게 덮기”라는 즉시 이해되는 물리 상태로 연결한다.</td><td>빨강·초록은 작은 표가 아니라 splat/circle shape와 면적 수치로 지면 상태에 직접 대응한다.</td></tr>
+              <tr><td><a href="https://www.futurlab.co.uk/news/the-powerwash-simulator-demo-update-is-now-live">FuturLab · PowerWash Simulator progress</a></td><td>현재 겨냥한 표면의 작업 진척을 progress bar와 percentage로 바로 보여 준다.</td><td>“칠한 면적”은 점수와 분리된 물리 진행률로 둔다. 2안은 이 원칙을 가장 강하게 적용한다.</td></tr>
+              <tr><td><a href="https://blog.playstation.com/2021/05/11/unpacking-returnals-ux-design-gameplay-first-ui-retro-futuristic-tech-and-accessibility/">PlayStation · Returnal UX</a></td><td>즉시 필요한 정보는 시선 중심에, 매 순간 필요하지 않은 정보는 주변 HUD에 둔다.</td><td>왼쪽 주변부에는 계산표 전체가 아니라 다음 샷 판단에 필요한 대표값 하나를 가장 크게 둔다.</td></tr>
+              <tr><td><a href="https://docs.cloud.google.com/data-studio/bullet-chart-reference?authuser=2&amp;hl=en">Google · Bullet chart</a></td><td>실제값을 목표 범위와 같은 축에서 비교하면 도달 여부와 부족량을 빠르게 읽을 수 있다.</td><td>1안의 짧은 target-window rail은 전체 0–100 축이 아니라 현재값과 9–13 구간만 비교한다.</td></tr>
+              <tr><td><a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color">W3C · Use of Color</a></td><td>색만으로 상태나 의미를 전달하지 않는다.</td><td>빨강은 splat, 초록은 circle, 각 weight는 부호와 텍스트를 함께 표시한다.</td></tr>
+              <tr><td><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102">Xbox XAG 102</a> · <a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/103">XAG 103</a></td><td>변하는 월드 위 HUD에는 충분한 대비와 색 외의 의미 단서가 필요하다.</td><td>흰 button/card를 만들지 않고, 필요한 경우 화면 가장자리의 국소 contrast scrim만 사용한다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="aim-options" aria-label="AIM score UI 세 가지 제안">
+          <figure class="tobe recommended">
+            <img loading="lazy" src="assets/tobe/04-aim-score-target-first-v3.png" alt="현재 점수와 목표 구간을 가장 크게 보여 주는 AIM score UI 1안">
+            <figcaption><strong>1 · 목표 우선 · 권장</strong><span>현재값 → target band → 면적/R/G</span></figcaption>
+          </figure>
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-score-coverage-first-v3.png" alt="칠한 면적과 빈 진행 rail을 가장 크게 보여 주는 AIM score UI 2안">
+            <figcaption><strong>2 · 면적 우선</strong><span>paint progress → R/G → score</span></figcaption>
+          </figure>
+          <figure class="tobe">
+            <img loading="lazy" src="assets/tobe/04-aim-score-contribution-first-v3.png" alt="빨강과 초록의 점수 기여 계산을 가장 명확하게 보여 주는 AIM score UI 3안">
+            <figcaption><strong>3 · 기여도 우선</strong><span>R/G 계산 근거 → total → target</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>안</th><th>첫 1초에 읽는 것</th><th>강점</th><th>약점 / 사용 조건</th></tr></thead>
+            <tbody>
+              <tr><td><strong>1 · 목표 우선</strong></td><td>“0.0, 목표는 9–13, 9.0 부족”</td><td>샷 계획과 clear 판정을 가장 빨리 연결한다. 목표 구간·현재값·overflow를 한 시선에 처리한다.</td><td>작은 viewport에서는 rail 눈금을 0/current/target 세 지점만 남겨야 한다.</td></tr>
+              <tr><td><strong>2 · 면적 우선</strong></td><td>“현재 0.0% 칠했다”</td><td>실제 산이 얼마나 칠해졌는지 가장 직관적이다. 점수와 물리 면적의 차이를 학습시키기 쉽다.</td><td>stage 목표가 면적 자체가 아닐 때 score 판단이 한 박자 늦다. 0% rail은 반드시 중립색 빈 track이어야 한다.</td></tr>
+              <tr><td><strong>3 · 기여도 우선</strong></td><td>“빨강/초록이 각각 점수에 얼마를 더한다”</td><td>+1/−1/0 weight, 음수 점수, 100 초과 점수까지 오해 없이 설명한다.</td><td>산술 기호가 많아 반복 플레이에서는 과하다. 규칙이 복잡한 stage나 학습 단계에 적합하다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
         <div class="screen-grid">
-          <article class="card"><h4>정확한 수정</h4><ul><li>왼쪽만 <code>ScoreStatus</code>로 교체한다. 다른 AIM 요소의 위치, 크기, 색, icon, trajectory는 v1 TO-BE를 그대로 유지한다.</li><li>첫 줄은 “페인트 점수 0.0 · 목표 9–13”, 둘째 줄은 “칠한 면적 0.0%”.</li><li>셋째/넷째 줄은 색 shape와 함께 “빨강 0.0% · 가산 +1”, “초록 0.0% · 가산 +1”을 표시한다.</li><li>Stage 08은 두 색 모두 필수다. 다른 stage에서는 weight에 따라 “감산 −1” 또는 “점수 제외 0”으로 바뀐다.</li></ul></article>
-          <article class="card"><h4>의미·정렬 계약</h4><ul><li>ScoreStatus x48/y120/w320/h150; compact x12/y56/w228/h104. 값 열과 가중치 열 baseline을 맞춘다.</li><li>빨강은 splat, 초록은 circle shape를 함께 써 색각만으로 구분하지 않는다.</li><li>“칠한 면적”은 항상 R%+G%. “페인트 점수”는 R%×weight + G%×weight이므로 서로 다를 수 있다.</li><li>음수와 100 초과를 clamp하지 않는다. target 판정과 양 색 필수 조건도 점수 줄 하나로 숨기지 않는다.</li></ul></article>
+          <article class="card"><h4>고정 범위</h4><ul><li>왼쪽 score 영역만 교체한다. mountain, cannon, trajectory, queue, settings, timer, ball count, angle/fire/power의 위치·크기·색은 그대로 둔다.</li><li>흰 card나 button-like surface를 만들지 않는다. 배경 대비가 부족할 때만 좌측 edge에서 투명해지는 navy scrim을 사용한다.</li><li>선택 전까지 세 안 모두 탐색안이며 canonical design spec을 바꾸지 않는다.</li></ul></article>
+          <article class="card"><h4>공통 의미·상태 계약</h4><ul><li>“칠한 면적”은 항상 R%+G%. “페인트 점수”는 R%×weight + G%×weight이다.</li><li>빨강은 splat, 초록은 circle을 유지하고 weight는 <code>더함 +1</code>, <code>뺌 −1</code>, <code>점수 제외 0</code>으로 표시한다.</li><li>음수와 100 초과 score를 clamp하지 않는다. 양 색 필수 조건은 별도 badge/문구로 남긴다.</li><li>값이 변할 때 숫자만 갱신하고 block의 폭과 baseline은 움직이지 않는다.</li></ul></article>
           <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../src/ui/hud/aim_controls.gd">src/ui/hud/aim_controls.gd</a><a href="../../../src/ui/hud/action_buttons.gd">src/ui/hud/action_buttons.gd</a><a href="../../../src/ui/components/value_stepper.gd">src/ui/components/value_stepper.gd</a><a href="../../../resources/ui/paint_mountain_theme.tres">resources/ui/paint_mountain_theme.tres</a></div></article>
         </div>
       </section>
@@ -484,8 +553,8 @@
           <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/17-map-stage08-ko-640x360.png" alt="현재 Map 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>좁은 화면의 지속 점유</span></figcaption></figure>
         </div>
         <div class="screen-grid">
-          <article class="card"><h4>정확한 수정</h4><ul><li>Aim과 같은 ScoreStatus만 유지.</li><li>선택된 map mode는 blue 14% 면 + blue icon, white normal 금지.</li><li>aim steppers와 Fire는 완전히 숨기고 빈 footprint를 남기지 않는다.</li><li>하단 도움말은 non-interactive info이므로 icon + 짧은 text 허용.</li></ul></article>
-          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 Aim과 동일 rect.</li><li>mode icon과 run status는 top-right row center 공유.</li><li>context hint center x=640/320, bottom=696/348.</li></ul></article>
+          <article class="card"><h4>정확한 수정</h4><ul><li>이번 AIM v3 연구 범위가 아니다. 기존 승인된 Map ScoreStatus를 유지한다.</li><li>선택된 map mode는 blue 14% 면 + blue icon, white normal 금지.</li><li>aim steppers와 Fire는 완전히 숨기고 빈 footprint를 남기지 않는다.</li><li>하단 도움말은 non-interactive info이므로 icon + 짧은 text 허용.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 기존 Map rect를 유지하고 AIM 후보 선택으로 자동 변경하지 않는다.</li><li>mode icon과 run status는 top-right row center 공유.</li><li>context hint center x=640/320, bottom=696/348.</li></ul></article>
           <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud/camera_interaction_control.gd">src/ui/hud/camera_interaction_control.gd</a><a href="../../../scenes/ui/hud/camera_interaction_control.tscn">scenes/ui/hud/camera_interaction_control.tscn</a><a href="../../../src/ui/hud_controller.gd">src/ui/hud_controller.gd</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a></div></article>
         </div>
       </section>
@@ -498,8 +567,8 @@
           <figure class="compact-as-is"><img loading="lazy" src="../../../.agents/evidence/2026-08-21-stage-ui-final/18-shot-follow-stage08-ko-640x360.png" alt="현재 Shot Follow 640x360"><figcaption><strong>AS-IS · 640×360</strong><span>Return 사각 버튼</span></figcaption></figure>
         </div>
         <div class="screen-grid">
-          <article class="card"><h4>정확한 수정</h4><ul><li>ScoreStatus는 current 값 갱신 시 160ms 강조만 하고 월드를 가리지 않는다.</li><li>BallQueue와 aim controls는 숨김.</li><li>Return은 44/40px 투명 arrow-back-to-cannon icon.</li><li>파란 면은 Fire/Resume/Next 같은 즉시 primary에만 남긴다.</li></ul></article>
-          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 Aim과 동일 rect.</li><li>Return right/bottom safe edge, 44×44/40×40.</li><li>Top status와 settings는 같은 row를 유지.</li></ul></article>
+          <article class="card"><h4>정확한 수정</h4><ul><li>이번 AIM v3 연구 범위가 아니다. 기존 승인된 Follow ScoreStatus를 유지한다.</li><li>BallQueue와 aim controls는 숨김.</li><li>Return은 44/40px 투명 arrow-back-to-cannon icon.</li><li>파란 면은 Fire/Resume/Next 같은 즉시 primary에만 남긴다.</li></ul></article>
+          <article class="card"><h4>정렬 좌표</h4><ul><li>ScoreStatus는 기존 Follow rect를 유지하고 AIM 후보 선택으로 자동 변경하지 않는다.</li><li>Return right/bottom safe edge, 44×44/40×40.</li><li>Top status와 settings는 같은 row를 유지.</li></ul></article>
           <article class="card"><h4>소유 파일</h4><div class="owner-list"><a href="../../../src/ui/hud_controller.gd">src/ui/hud_controller.gd</a><a href="../../../src/ui/hud/hud_root_layout.gd">src/ui/hud/hud_root_layout.gd</a><a href="../../../scenes/ui/hud/hud.tscn">scenes/ui/hud/hud.tscn</a></div></article>
         </div>
       </section>
@@ -585,7 +654,7 @@
             <thead><tr><th>순서</th><th>변경</th><th>주요 소유자</th><th>정지 조건</th></tr></thead>
             <tbody>
               <tr><td><strong>1</strong></td><td><code>ActionControl</code>을 icon-only contract로 전환. Routine/Primary/Selected/Destructive theme variation 추가. 기존 white <code>ButtonNormal</code>을 icon action에서 제거.</td><td>theme, action_control, icon assets</td><td>어떤 화면에도 visible verb text가 든 action button이 없음.</td></tr>
-              <tr><td><strong>2</strong></td><td>새 <code>ScoreStatus</code> 추가. <code>ScoreScale.VERTICAL_LIVE</code> 제거. 점수, 총 칠한 면적, R/G 면적, stage weight를 별도 값으로 바인딩.</td><td>score_status, score_scale, hud_controller</td><td>Aim/Map/Follow에 vertical axis가 없고 점수와 면적, 가산/감산/제외 의미가 정확함.</td></tr>
+              <tr><td><strong>2</strong></td><td>사용자가 선택한 AIM <code>ScoreStatus</code> 한 안만 구현. AIM의 <code>ScoreScale.VERTICAL_LIVE</code>를 제거하고 점수, 총 칠한 면적, R/G 면적, stage weight를 별도 값으로 바인딩. Map/Follow는 이번 단계에서 변경하지 않음.</td><td>score_status, score_scale, hud_controller</td><td>AIM에 vertical axis가 없고 점수와 면적, 더함/뺌/제외 의미가 정확하며 Map/Follow에 회귀가 없음.</td></tr>
               <tr><td><strong>3</strong></td><td><code>BallDetailCard</code> 구현. Queue token/card anchor와 hover/focus/press/Escape policy 정리.</td><td>ball_queue, ball_queue_token, theme</td><td>설명이 white card 한 곳에만 보이고 trigger/card 이동이 끊기지 않음.</td></tr>
               <tr><td><strong>4</strong></td><td><code>HudRootLayout</code>을 8px grid coordinate sheet로 재작성. Aim, Map, Follow를 이식하고 독립 Briefing HUD를 제거.</td><td>hud_root_layout, aim_controls, run_status</td><td>1280×720/640×360에서 좌우/상하 기준선과 center가 수치대로 일치.</td></tr>
               <tr><td><strong>5</strong></td><td>Main Menu hover reveal을 추가하고 Stage Select에 terrain preview, Briefing rules, 3-way navigation을 통합. Pause, Settings, Result는 승인된 v1 방향 그대로 이식.</td><td>각 screen owner, stage_runtime_preparer, app_root, result_panel</td><td>Stage Select→AIM 사이 중복 화면·terrain rebuild·blank frame이 없고 screen-local style 복제가 없음.</td></tr>
@@ -612,7 +681,7 @@
             <thead><tr><th>영역</th><th>반드시 통과할 조건</th><th>증거</th></tr></thead>
             <tbody>
               <tr><td>버튼</td><td>동작 버튼 내부 visible text 0개. Main Menu hover/focus label은 버튼 오른쪽 별도 layer에만 1개. routine normal의 white surface 0개.</td><td>component contract test + 10개 독립 화면 capture</td></tr>
-              <tr><td>점수</td><td>Aim/Map/Follow vertical 축 0개. 페인트 점수, 목표, 칠한 면적, R/G 면적과 가산·감산·제외가 구분되고 음수/100+를 보존.</td><td>Stage 08, Stage 09 음수, weight 0, 100+ fixture</td></tr>
+              <tr><td>점수</td><td>AIM의 선택된 한 안에 vertical 축이 없고 페인트 점수, 목표, 칠한 면적, R/G 면적과 더함·뺌·제외가 구분된다. 음수/100+를 보존하며 Map/Follow는 기존 승인 상태에서 변하지 않는다.</td><td>Stage 08, Stage 09 음수, weight 0, 100+ fixture + Map/Follow regression capture</td></tr>
               <tr><td>Stage flow</td><td>Stage Select와 Briefing은 한 화면. arrow/click/drag가 같은 selection을 만들고 AIM 진입 전후 terrain blank/rebuild가 없음.</td><td>production frame-time trace + interaction recording</td></tr>
               <tr><td>특수 공</td><td>설명은 큐에 붙은 흰 card 1개. hover/focus/press 동일 copy, Escape dismiss, trigger/card hover continuity.</td><td>Stage 08/12/24 standard + compact</td></tr>
               <tr><td>정렬</td><td>safe margin 24/12, routine 44/40, primary 56/48. 같은 row의 중심선 오차 1px 이하, 공유 edge 오차 1px 이하.</td><td>numeric layout test + full viewport capture</td></tr>
@@ -629,12 +698,18 @@
 
         <h3>참조한 외부 기준</h3>
         <ul class="source-list">
+          <li><a href="https://splatoon.nintendo.com/en/gameplay/">Nintendo · Splatoon 3 gameplay</a> — 색과 실제 territory 상태를 직접 연결하는 paint feedback의 참고.</li>
+          <li><a href="https://www.futurlab.co.uk/news/the-powerwash-simulator-demo-update-is-now-live">FuturLab · PowerWash Simulator progress</a> — 겨냥한 표면의 진행률과 percentage를 즉시 표시하는 기준.</li>
+          <li><a href="https://blog.playstation.com/2021/05/11/unpacking-returnals-ux-design-gameplay-first-ui-retro-futuristic-tech-and-accessibility/">PlayStation · Returnal UX</a> — 즉시 필요한 정보와 주변부 HUD를 분리하는 gameplay-first 원칙.</li>
+          <li><a href="https://docs.cloud.google.com/data-studio/bullet-chart-reference?authuser=2&amp;hl=en">Google · Bullet chart</a> — actual value와 target band를 한 축에서 비교하는 AIM 1안의 근거.</li>
+          <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color">W3C · Use of Color</a> — 색 이외의 shape, label, sign을 함께 쓰는 기준.</li>
           <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced">W3C · Target Size (Enhanced)</a> — 자주 쓰는 custom target의 44×44 기준을 참고했다.</li>
           <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus">W3C · Content on Hover or Focus</a> — 특수 공 card의 dismiss/hover/persistence 계약에 반영했다.</li>
           <li><a href="https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/">W3C · WCAG 2.2 focus additions</a> — 2px perimeter와 focus 가시성의 근거로 사용했다.</li>
           <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/113">Xbox Accessibility Guideline 113 · UI focus</a> — game UI focus가 분명해야 한다는 기준을 적용했다.</li>
           <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/114">Xbox Accessibility Guideline 114 · UI context</a> — icon-only action에도 사전 맥락과 consistent labeling이 필요하다는 제한을 반영했다.</li>
           <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102">Xbox Accessibility Guideline 102 · Contrast</a> — 월드 위 텍스트와 정보 면의 대비 필요성을 반영했다.</li>
+          <li><a href="https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/103">Xbox Accessibility Guideline 103 · Use of Color</a> — label과 shape로 색 의미를 보강했다.</li>
           <li><a href="https://docs.godotengine.org/en/stable/tutorials/ui/custom_gui_controls.html">Godot stable · Custom GUI controls</a> — minimum size와 focus drawing 계약의 구현 근거.</li>
           <li><a href="https://docs.godotengine.org/en/latest/tutorials/ui/gui_containers.html">Godot · Using Containers</a> — container가 자식 layout을 소유한다는 책임 경계의 참고. 구현 시 프로젝트 고정 Godot 4.7.1 문서와 다시 대조한다.</li>
         </ul>
