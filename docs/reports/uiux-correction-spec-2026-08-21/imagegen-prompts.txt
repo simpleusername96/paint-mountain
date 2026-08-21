@@ -170,3 +170,32 @@ OPTION 2 CORRECTION
 Edit only the coverage rail. The displayed total is 0.0%, so the rail must be completely
 empty: a neutral low-contrast track from 0% to 100% with no red or green fill. Keep the
 red splat and green circle rows below as the color-role legend. Do not change anything else.
+
+
+REVISION 4 — AIM ICON-FIRST SCORE HUD — 2026-08-21
+
+Revision 3 is rejected. These prompts remove persistent score labels and explanatory copy.
+Every output edits only the top-left score block of the same 1672 x 941 AIM reference.
+The only new visible tokens allowed are numeric values and signs such as 0.0, 9–13, 0%,
+and +1. Meaning comes from target, fill, marker, red splat, green circle, and link glyphs.
+
+TARGET INSTRUMENT
+Replace the score block with a small bullseye icon and one compact horizontal rail. Put a
+blue current marker at 0.0 and a clearly bracketed target band from 9 to 13. Below it, show
+an unfilled coverage ring with 0%, then red splat +1, a link glyph, and green circle +1.
+No labels, headings, helper copy, card, panel, legend, or equation. Preserve all other AIM
+pixels and controls.
+
+TERRAIN MASK
+Replace the score block with a simplified outline silhouette of the same mountain. At 0%
+the silhouette is unfilled; future coverage fills this mask from the authoritative paint
+data. Place a compact score bracket above it with current 0.0 and target 9–13. Under it,
+show red splat +1, a link glyph, and green circle +1. No labels, headings, helper copy,
+card, panel, legend, or equation. Preserve all other AIM pixels and controls.
+
+CONTRIBUTION FLOW
+Replace the score block with red splat and green circle input nodes. Each shows only 0%
+and +1. Thin navy connector arrows feed both nodes into one blue-outlined score node with
+0.0 and a small target bracket 9–13. A link glyph joins the color inputs. No labels,
+headings, helper copy, card, panel, legend, or arithmetic equation. Preserve all other AIM
+pixels and controls.
