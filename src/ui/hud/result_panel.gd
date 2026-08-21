@@ -8,6 +8,7 @@ signal retry_same_deal_requested
 signal new_deal_requested
 
 @onready var _summary: ResultSummary = %Summary
+@onready var _world_scrim: WorldGradientScrim = %WorldScrim
 @onready var _retry: ActionControl = %Retry
 @onready var _next: ActionControl = %Next
 @onready var _stages: ActionControl = %Stages
@@ -129,6 +130,10 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 	%Margin.add_theme_constant_override(
 		&"margin_bottom", roundi(12.0 * resolved_density) if compact else 22
 	)
+
+
+func set_scrim_right_outset(outset: float) -> void:
+	_world_scrim.offset_right = maxf(outset, 0.0)
 
 
 func focus_retry() -> void:

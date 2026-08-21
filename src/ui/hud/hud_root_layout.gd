@@ -96,6 +96,7 @@ func _apply_standard_layout() -> void:
 	else:
 		_set_rect(_score_status, Vector2(SAFE_MARGIN, 88.0), Vector2(210.0, 136.0))
 	_result.set_compact(false)
+	_result.set_scrim_right_outset(SAFE_MARGIN)
 	_set_rect(
 		_result,
 		Vector2(size.x - SAFE_MARGIN - 496.0, maxf(88.0, (size.y - 560.0) * 0.5)),
@@ -153,6 +154,7 @@ func _apply_compact_layout(density: float) -> void:
 	_set_rect(_score_status, Vector2(COMPACT_SAFE_MARGIN * density, score_top), score_size)
 	_result.set_compact(true, density)
 	var result_safe := COMPACT_SAFE_MARGIN * density
+	_result.set_scrim_right_outset(result_safe)
 	var result_width := minf(496.0 * density, size.x * 0.54)
 	var result_minimum := _result.get_combined_minimum_size()
 	var result_height := minf(

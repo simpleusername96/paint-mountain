@@ -48,6 +48,11 @@ func _run() -> void:
 	result_panel.configure_target(5.0)
 	result_panel.show_coverage_result(4.6, 1, 0.0, 60.0, 1, &"manual")
 	var summary := result_panel.get_node("Margin/Content/Summary") as ResultSummary
+	var meta_row := summary.get_node("MetaRow") as HBoxContainer
+	_assert_true(summary.get_node("ScoreScale").get_index() < meta_row.get_index()
+			and meta_row.get_node("Contributions") != null
+			and meta_row.get_node("Facts") != null,
+		"result contributions and run facts must share one aligned row below the score scale")
 	_assert_true(not summary.get_node("VerdictRow/TimeoutClock").visible,
 		"manual results must not show the timeout clock")
 	_assert_true(summary.score_scale.target_range().is_equal_approx(Vector2(5.0, 100.0)),

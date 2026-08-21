@@ -236,6 +236,9 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"Result must suppress the competing top status row at %s" % viewport_size
 	)
 	_assert_inside(result, safe_rect, "ResultPanel at %s (%s)" % [viewport_size, locale])
+	var result_scrim := result.get_node("WorldScrim") as Control
+	_assert_true(is_equal_approx(result_scrim.get_global_rect().end.x, float(viewport_size.x)),
+		"Result scrim must reach the physical right edge at %s (%s)" % [viewport_size, locale])
 	if viewport_size.y > viewport_size.x:
 		_assert_true(result.size.x <= viewport_size.x * 0.54 + 0.5,
 			"tall-window Result must remain a narrow right spine at %s" % viewport_size)

@@ -58,37 +58,6 @@ layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="Contributions" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="RedContributionIcon" type="TextureRect" parent="Contributions"]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-self_modulate = Color(0.898039, 0.223529, 0.207843, 1)
-texture = ExtResource("4_paint")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="RedContribution" type="Label" parent="Contributions"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"ResultWorldFact"
-
-[node name="GreenContributionIcon" type="TextureRect" parent="Contributions"]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-self_modulate = Color(0.141176, 0.580392, 0.278431, 1)
-texture = ExtResource("5_target")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="GreenContribution" type="Label" parent="Contributions"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"ResultWorldFact"
-
 [node name="Gap" type="Label" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -103,17 +72,59 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(440, 82)
 layout_mode = 2
 
-[node name="Facts" type="HBoxContainer" parent="."]
+[node name="MetaRow" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Contributions" type="HBoxContainer" parent="MetaRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="PreviousBest" type="HBoxContainer" parent="Facts"]
+[node name="RedContributionIcon" type="TextureRect" parent="MetaRow/Contributions"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+self_modulate = Color(0.898039, 0.223529, 0.207843, 1)
+texture = ExtResource("4_paint")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedContribution" type="Label" parent="MetaRow/Contributions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ResultWorldFact"
+
+[node name="GreenContributionIcon" type="TextureRect" parent="MetaRow/Contributions"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+self_modulate = Color(0.141176, 0.580392, 0.278431, 1)
+texture = ExtResource("5_target")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GreenContribution" type="Label" parent="MetaRow/Contributions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ResultWorldFact"
+
+[node name="MetaSpacer" type="Control" parent="MetaRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Facts" type="HBoxContainer" parent="MetaRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PreviousBest" type="HBoxContainer" parent="MetaRow/Facts"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Facts/PreviousBest"]
+[node name="Icon" type="TextureRect" parent="MetaRow/Facts/PreviousBest"]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 self_modulate = Color(0.145098, 0.517647, 1, 1)
@@ -121,41 +132,41 @@ texture = ExtResource("5_target")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PreviousBestValue" type="Label" parent="Facts/PreviousBest"]
+[node name="PreviousBestValue" type="Label" parent="MetaRow/Facts/PreviousBest"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"ResultWorldFact"
 
-[node name="Elapsed" type="HBoxContainer" parent="Facts"]
+[node name="Elapsed" type="HBoxContainer" parent="MetaRow/Facts"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Facts/Elapsed"]
+[node name="Icon" type="TextureRect" parent="MetaRow/Facts/Elapsed"]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 texture = ExtResource("3_clock")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ElapsedValue" type="Label" parent="Facts/Elapsed"]
+[node name="ElapsedValue" type="Label" parent="MetaRow/Facts/Elapsed"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"ResultWorldFact"
 
-[node name="Shots" type="HBoxContainer" parent="Facts"]
+[node name="Shots" type="HBoxContainer" parent="MetaRow/Facts"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Facts/Shots"]
+[node name="Icon" type="TextureRect" parent="MetaRow/Facts/Shots"]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 texture = ExtResource("5_target")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ShotsValue" type="Label" parent="Facts/Shots"]
+[node name="ShotsValue" type="Label" parent="MetaRow/Facts/Shots"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"ResultWorldFact"

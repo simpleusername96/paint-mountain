@@ -22,6 +22,7 @@ related:
 - Clear and Failure were also inspected at `640x360` from the same Windows release export.
 - Result: passed. The mountain remains primary; the score ribbon stays inside the result safe region; the five authored grade zones read `1–2–3–2–1`; below-range scores clamp to the ribbon and use an inset red overflow marker; contribution values use their signed score effect; duplicate current-score and target copy is absent; Clear actions end in Next and Failure actions end in Same Deal Retry. No text, action, ribbon, or endpoint label clips in either checked viewport.
 - Accepted P3 difference: the implementation keeps the project renderer, compact native action controls, and existing camera composition rather than reproducing the concept's illustrative terrain and larger typography literally.
+- Follow-up correction: the Result scrim now reaches the viewport's right edge at every responsive margin, and the score contributions plus run facts share one aligned row directly below the score ribbon. Exported Stage 20 Failure evidence is retained at `.agents/evidence/2026-08-21-result-layout-correction/production/failure-stage20-1920x1080.png`.
 
 ## Purpose
 
