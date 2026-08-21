@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/pause_overlay.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/contrast_scrim.tscn" id="2_scrim"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="3_action"]
 
 [node name="PauseOverlay" type="Control"]
 layout_mode = 3
@@ -24,64 +25,60 @@ theme_type_variation = &"WorldScrim"
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_bottom = 0.56
 grow_horizontal = 2
-grow_vertical = 2
 
-[node name="Surface" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(340, 0)
+[node name="Content" type="VBoxContainer" parent="Center"]
+custom_minimum_size = Vector2(420, 160)
 layout_mode = 2
-theme_type_variation = &"InterruptionSurface"
+theme_override_constants/separation = 28
 
-[node name="Margin" type="MarginContainer" parent="Center/Surface"]
+[node name="Title" type="Label" parent="Center/Content"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 20
-
-[node name="Column" type="VBoxContainer" parent="Center/Surface/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Title" type="Label" parent="Center/Surface/Margin/Column"]
-layout_mode = 2
-theme_type_variation = &"ScreenTitle"
+theme_type_variation = &"ScreenTitleLight"
 text = "ui.pause"
+horizontal_alignment = 1
 
-[node name="Resume" type="Button" parent="Center/Surface/Margin/Column"]
+[node name="Actions" type="HBoxContainer" parent="Center/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_type_variation = &"PrimaryButton"
-text = "ui.resume"
+alignment = 1
+theme_override_constants/separation = 16
 
-[node name="Restart" type="Button" parent="Center/Surface/Margin/Column"]
+[node name="Resume" parent="Center/Content/Actions" instance=ExtResource("3_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_type_variation = &"QuietButton"
-text = "ui.restart"
+action_kind = 1
+visual_role = 1
+label_key = "ui.resume"
 
-[node name="Settings" type="Button" parent="Center/Surface/Margin/Column"]
+[node name="Restart" parent="Center/Content/Actions" instance=ExtResource("3_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_type_variation = &"QuietButton"
-text = "ui.settings"
+action_kind = 13
+visual_role = 4
+label_key = "ui.restart"
 
-[node name="Stages" type="Button" parent="Center/Surface/Margin/Column"]
+[node name="Settings" parent="Center/Content/Actions" instance=ExtResource("3_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_type_variation = &"QuietButton"
-text = "ui.stage_select"
+action_kind = 12
+visual_role = 4
+label_key = "ui.settings"
 
-[node name="MainMenu" type="Button" parent="Center/Surface/Margin/Column"]
+[node name="Stages" parent="Center/Content/Actions" instance=ExtResource("3_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_type_variation = &"QuietButton"
-text = "ui.main_menu"
+action_kind = 4
+visual_role = 4
+label_key = "ui.stage_select"
+
+[node name="MainMenu" parent="Center/Content/Actions" instance=ExtResource("3_action")]
+unique_name_in_owner = true
+layout_mode = 2
+action_kind = 5
+visual_role = 4
+label_key = "ui.main_menu"

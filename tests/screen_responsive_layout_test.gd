@@ -45,9 +45,11 @@ func _check_main_menu(viewport_size: Vector2i, locale: String) -> void:
 	var block := screen.get_node("Root/BrandBlock") as Control
 	_assert_safe(block, viewport_size, "%s %s Main Menu block" % [locale, viewport_size], safe_margin)
 	for action_name in ["Play", "StageSelect", "Settings", "Quit"]:
-		var action := screen.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as Button
-		_assert(block.get_global_rect().encloses(action.get_global_rect()), "%s %s %s must stay inside the menu block" % [locale, viewport_size, action_name])
-		_assert(action.custom_minimum_size.y >= 40.0, "%s %s %s must keep a routine target" % [locale, viewport_size, action_name])
+		var item := screen.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as MenuActionItem
+		_assert(block.get_global_rect().encloses(item.get_global_rect()), "%s %s %s must stay inside the menu block" % [locale, viewport_size, action_name])
+		_assert(item.action.custom_minimum_size.y >= 40.0, "%s %s %s must keep a routine target" % [locale, viewport_size, action_name])
+		_assert(item.action.text.is_empty() and item.action.icon != null,
+			"%s %s %s must stay icon-only" % [locale, viewport_size, action_name])
 	screen.queue_free()
 	viewport.queue_free()
 	await process_frame
@@ -61,16 +63,18 @@ func _check_pause(viewport_size: Vector2i, locale: String) -> void:
 	viewport.add_child(pause)
 	await process_frame
 	await process_frame
-	var surface := pause.get_node("Center/Surface") as Control
+	var content := pause.get_node("Center/Content") as Control
 	var margin := 12.0 if viewport_size.y < 480 else SAFE_MARGIN
-	_assert_safe(surface, viewport_size, "%s %s Pause surface" % [locale, viewport_size], margin)
+	_assert_safe(content, viewport_size, "%s %s Pause content" % [locale, viewport_size], margin)
 	for action_name in ["Resume", "Restart", "Settings", "Stages", "MainMenu"]:
-		var action := pause.get_node("Center/Surface/Margin/Column/%s" % action_name) as Button
-		_assert(surface.get_global_rect().encloses(action.get_global_rect()), "%s %s Pause %s must stay inside its interruption surface" % [locale, viewport_size, action_name])
+		var action := pause.get_node("Center/Content/Actions/%s" % action_name) as Button
+		_assert(content.get_global_rect().encloses(action.get_global_rect()), "%s %s Pause %s must stay inside its content rail" % [locale, viewport_size, action_name])
 		_assert(action.custom_minimum_size.y >= 40.0, "%s %s Pause %s must keep a routine target" % [locale, viewport_size, action_name])
+		_assert(action.text.is_empty() and action.icon != null,
+			"%s %s Pause %s must stay icon-only" % [locale, viewport_size, action_name])
 	pause.focus_resume()
 	await process_frame
-	_assert((pause.get_node("Center/Surface/Margin/Column/Resume") as Button).has_focus(), "%s %s Pause must focus Resume" % [locale, viewport_size])
+	_assert((pause.get_node("Center/Content/Actions/Resume") as Button).has_focus(), "%s %s Pause must focus Resume" % [locale, viewport_size])
 	pause.queue_free()
 	viewport.queue_free()
 	await process_frame
@@ -87,19 +91,21 @@ func _check_stage_select(viewport_size: Vector2i, locale: String) -> void:
 	var compact := viewport_size.x < 900 or viewport_size.y < 480
 	var safe_margin := 12.0 if compact else SAFE_MARGIN
 	var rail := screen.get_node("Root/StageRail") as StageRail
-	_assert(screen._stage_nodes.size() == 8, "%s %s Stage Select must expose eight shared nodes per full page" % [locale, viewport_size])
+	_assert(screen._stage_nodes.size() == 10, "%s %s Stage Select must expose ten evenly distributed nodes" % [locale, viewport_size])
 	_assert_safe(screen.get_node("Root/Back") as Control, viewport_size, "%s %s Back" % [locale, viewport_size], safe_margin)
-	_assert_safe(screen.get_node("Root/Heading") as Control, viewport_size, "%s %s heading" % [locale, viewport_size], safe_margin)
 	_assert_safe(screen.get_node("Root/SelectedInfo") as Control, viewport_size, "%s %s selected facts" % [locale, viewport_size], safe_margin)
 	_assert_safe(rail, viewport_size, "%s %s stage rail" % [locale, viewport_size], safe_margin)
-	_assert((rail.get_node("Previous") as Button).custom_minimum_size.y >= 40.0, "%s pager targets must remain usable" % locale)
+	_assert((screen.get_node("Root/PreviousTerrain") as ActionControl).custom_minimum_size.y >= 40.0,
+		"%s previous-terrain target must remain usable" % locale)
+	_assert((screen.get_node("Root/NextTerrain") as ActionControl).custom_minimum_size.y >= 40.0,
+		"%s next-terrain target must remain usable" % locale)
 	screen.focus_primary()
 	await process_frame
 	_assert((screen._stage_nodes[0] as Control).has_focus(), "%s %s Stage Select primary focus must remain selected node" % [locale, viewport_size])
 	_assert_safe(screen._stage_nodes[0] as Control, viewport_size, "%s %s selected node" % [locale, viewport_size], safe_margin)
 	_assert_safe(screen._start_button, viewport_size, "%s %s Start" % [locale, viewport_size], safe_margin)
-	_assert(screen._stage_name.visible != compact and screen._preview_best.visible != compact,
-			"%s %s Stage Select must suppress only secondary selected copy in compact mode" % [locale, viewport_size])
+	_assert(screen._stage_name.visible and screen._preview_best.visible != compact,
+			"%s %s Stage Select must preserve identity and suppress only secondary best copy in compact mode" % [locale, viewport_size])
 	screen.queue_free()
 	viewport.queue_free()
 	await process_frame
@@ -120,7 +126,8 @@ func _check_settings(viewport_size: Vector2i, locale: String) -> void:
 	var layout := screen.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout") as Control
 	var audio := screen.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout/Audio") as Control
 	var display := screen.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout/Display") as Control
-	_assert_safe(panel, viewport_size, "%s %s Settings panel" % [locale, viewport_size])
+	var panel_margin := 12.0 if viewport_size.x < 1040 or viewport_size.y < 620 else SAFE_MARGIN
+	_assert_safe(panel, viewport_size, "%s %s Settings panel" % [locale, viewport_size], panel_margin)
 	_assert(columns.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "%s Settings must never require horizontal scrolling" % locale)
 	_assert(columns.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "%s Settings must show a scrollbar only for real overflow" % locale)
 	var wide_layout := columns.size.x >= 1040.0
@@ -130,9 +137,9 @@ func _check_settings(viewport_size: Vector2i, locale: String) -> void:
 	else:
 		_assert(display.position.y >= audio.position.y + audio.size.y, "%s compact Settings must stack columns" % locale)
 		_assert(layout.custom_minimum_size.y >= display.position.y + display.size.y, "%s compact Settings scroll extent must include display controls" % locale)
-	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Defaults") as Button).custom_minimum_size.y >= 40.0, "%s defaults target must remain usable" % locale)
-	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Close") as Button).custom_minimum_size.y >= 40.0, "%s close target must remain usable" % locale)
-	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Footer/Close") as Button).has_focus(), "%s Settings open must retain Close focus" % locale)
+	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Header/Defaults") as Button).custom_minimum_size.y >= 40.0, "%s defaults target must remain usable" % locale)
+	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Header/Close") as Button).custom_minimum_size.y >= 40.0, "%s close target must remain usable" % locale)
+	_assert((screen.get_node("SettingsRoot/Panel/Margin/Content/Header/Close") as Button).has_focus(), "%s Settings open must retain Close focus" % locale)
 	if viewport_size.y < 620 and layout.custom_minimum_size.y > columns.size.y:
 		var language := screen.get_node("SettingsRoot/Panel/Margin/Content/Columns/Layout/Display/Language") as OptionButton
 		language.grab_focus()

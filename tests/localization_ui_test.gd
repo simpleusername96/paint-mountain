@@ -247,8 +247,8 @@ func _assert_score_scale_icon_contract(score_scale: ScoreScale, locale: String) 
 	score_scale.set_preset(ScoreScale.Preset.HORIZONTAL_SUMMARY)
 	_assert_true(icon.get_rect().size == Vector2(20.0, 20.0), "%s score icon must keep its restrained 20px size" % locale)
 	_assert_true(icon.visible, "%s horizontal summary must show the compact target icon" % locale)
-	score_scale.set_preset(ScoreScale.Preset.VERTICAL_LIVE)
-	_assert_true(not icon.visible, "%s vertical rail must avoid a redundant target icon" % locale)
+	_assert_true(score_scale.preset == ScoreScale.Preset.HORIZONTAL_SUMMARY,
+			"%s ScoreScale must remain result-summary-only" % locale)
 
 
 func _assert_true(condition: bool, message: String) -> void:

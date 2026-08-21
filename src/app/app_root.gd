@@ -3,6 +3,8 @@ extends Node
 
 const GAMEPLAY_SCENE := preload("res://scenes/gameplay/gameplay.tscn")
 const ENVIRONMENT_DRESSING_SCRIPT := preload("res://src/terrain/environment_dressing.gd")
+const OPEN_PLAY_ENVIRONMENT_SCENE := preload("res://scenes/gameplay/open_play_environment.tscn")
+const PREVIEW_SKY_TEXTURE := preload("res://assets/environment/kenney/skybox-day.png")
 const MAIN_MENU_SCENE := preload("res://scenes/ui/screens/main_menu.tscn")
 const STAGE_SELECT_SCENE := preload("res://scenes/ui/screens/stage_select.tscn")
 const SETTINGS_SCENE := preload("res://scenes/ui/screens/settings.tscn")
@@ -12,10 +14,12 @@ const GAMEPLAY_PACE := preload("res://src/gameplay/gameplay_pace.gd")
 const PREVIEW_SAFE_RECT := Rect2(0.30, 0.08, 0.68, 0.86)
 const STAGE_SELECT_PREVIEW_SAFE_RECT := Rect2(0.05, 0.06, 0.90, 0.68)
 const PREVIEW_FRAME_MARGIN := 1.02
+const MAIN_MENU_PREVIEW_FRAME_MARGIN := 1.0
 
 var _preview_world: Node3D
 var _preview_environment: WorldEnvironment
 var _preview_environment_resource: Environment
+var _preview_main_environment_resource: Environment
 var _preview_mountain: MeshInstance3D
 var _preview_camera: Camera3D
 var _main_menu: MainMenuScreen
@@ -27,10 +31,14 @@ var _layout_repository: StageLayoutRepository
 var _runtime_preparer: StageRuntimePreparer
 var _settings_return: StringName = &"main_menu"
 var _preview_dressing: Node3D
+var _preview_ground: OpenPlayEnvironment
 var _preview_material: ShaderMaterial
+var _preview_paint_texture: Texture2D
+var _blank_preview_paint_texture: ImageTexture
 var _active_preview_stage_id: StringName = &""
 var _requested_user_stage_id: StringName = &""
 var _pending_start_stage_id: StringName = &""
+var _preview_stage_select_context := false
 
 
 func _ready() -> void:
@@ -83,6 +91,7 @@ func _show_main_menu() -> void:
 	_set_preview_world_active(true)
 	_main_menu.visible = true
 	_stage_select.visible = false
+	_set_preview_context(false)
 	_main_menu.begin_passive_focus_session()
 	var game_state := get_node("/root/GameState")
 	_request_user_stage(StageCatalog.get_stage(game_state.selected_stage_id))
@@ -97,6 +106,7 @@ func _show_stage_select() -> void:
 	_set_preview_world_active(true)
 	_main_menu.visible = false
 	_stage_select.visible = true
+	_set_preview_context(true)
 	_stage_select.refresh()
 	var selected_stage := StageCatalog.get_stage(_stage_select.selected_stage_id())
 	_set_menu_preview_if_visible(selected_stage)
@@ -423,11 +433,20 @@ func _build_preview_world() -> void:
 	add_child(_preview_world)
 	_preview_environment = WorldEnvironment.new()
 	_preview_environment_resource = Environment.new()
-	_preview_environment_resource.background_mode = Environment.BG_COLOR
-	_preview_environment_resource.background_color = Color("FFFDFC")
-	_preview_environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	_preview_environment_resource.ambient_light_color = Color("E9EDF2")
-	_preview_environment_resource.ambient_light_energy = 0.34
+	var panorama := PanoramaSkyMaterial.new()
+	panorama.panorama = PREVIEW_SKY_TEXTURE
+	var preview_sky := Sky.new()
+	preview_sky.sky_material = panorama
+	_preview_environment_resource.background_mode = Environment.BG_SKY
+	_preview_environment_resource.sky = preview_sky
+	_preview_environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	_preview_environment_resource.ambient_light_energy = 0.42
+	_preview_main_environment_resource = Environment.new()
+	_preview_main_environment_resource.background_mode = Environment.BG_COLOR
+	_preview_main_environment_resource.background_color = Color("FFFDFC")
+	_preview_main_environment_resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	_preview_main_environment_resource.ambient_light_color = Color("E9EDF2")
+	_preview_main_environment_resource.ambient_light_energy = 0.34
 	_preview_environment.environment = _preview_environment_resource
 	_preview_world.add_child(_preview_environment)
 	var sun := DirectionalLight3D.new()
@@ -453,7 +472,20 @@ func _set_preview_world_active(active: bool) -> void:
 	_preview_world.visible = active
 	# Node3D visibility does not deactivate a WorldEnvironment. Release the
 	# preview resource so the gameplay panorama owns the viewport in a stage.
-	_preview_environment.environment = _preview_environment_resource if active else null
+	_preview_environment.environment = (
+		_preview_environment_resource if _preview_stage_select_context
+		else _preview_main_environment_resource
+	) if active else null
+
+
+func _set_preview_context(stage_select_context: bool) -> void:
+	_preview_stage_select_context = stage_select_context
+	if _preview_world != null and _preview_world.visible:
+		_preview_environment.environment = _preview_environment_resource \
+				if stage_select_context else _preview_main_environment_resource
+	if _preview_ground != null and is_instance_valid(_preview_ground):
+		_preview_ground.visible = stage_select_context
+	_apply_preview_paint_texture()
 
 
 func _set_preview_stage(stage: StageData) -> void:
@@ -471,8 +503,8 @@ func _set_preview_stage(stage: StageData) -> void:
 	_preview_mountain.mesh = artifact.geometry.render_mesh
 	_preview_material = ShaderMaterial.new()
 	_preview_material.shader = load("res://src/paint/terrain_paint.gdshader")
-	_preview_material.set_shader_parameter(&"paint_mask", artifact.preview_paint_texture)
-	_preview_material.set_shader_parameter(&"paint_owner_mask", artifact.preview_paint_texture)
+	_preview_paint_texture = artifact.preview_paint_texture
+	_apply_preview_paint_texture()
 	_preview_material.set_shader_parameter(
 		&"target_mask", artifact.paint_bootstrap.target_texture
 	)
@@ -486,6 +518,25 @@ func _set_preview_stage(stage: StageData) -> void:
 	_preview_material.set_shader_parameter(&"rock_color", Color("9FA3A9"))
 	_preview_material.set_shader_parameter(&"shadow_tint", Color("626D7B"))
 	_preview_mountain.material_override = _preview_material
+	_preview_ground = OPEN_PLAY_ENVIRONMENT_SCENE.instantiate() as OpenPlayEnvironment
+	_preview_ground.name = "PreviewGround_%s" % stage.stage_id
+	_preview_world.add_child(_preview_ground)
+	_preview_ground.configure(
+		artifact.runtime_layout.play_bounds,
+		stage.paint_world_bounds(),
+		stage.terrain_center.y
+	)
+	var apron_mesh := _preview_ground.get_node("ApronMesh") as MeshInstance3D
+	var preview_ground_material := apron_mesh.material_override.duplicate() as ShaderMaterial
+	preview_ground_material.set_shader_parameter(&"base_color", Color("8B9456"))
+	preview_ground_material.set_shader_parameter(&"source_saturation", 0.42)
+	preview_ground_material.set_shader_parameter(&"detail_strength", 0.14)
+	apron_mesh.material_override = preview_ground_material
+	_preview_ground.process_mode = Node.PROCESS_MODE_DISABLED
+	_preview_ground.visible = _preview_stage_select_context
+	var preview_body := _preview_ground.get_node("ApronBody") as StaticBody3D
+	preview_body.collision_layer = 0
+	preview_body.collision_mask = 0
 	_preview_dressing = ENVIRONMENT_DRESSING_SCRIPT.new()
 	_preview_dressing.name = "PreviewDressing_%s" % stage.stage_id
 	_preview_world.add_child(_preview_dressing)
@@ -522,7 +573,7 @@ func _fit_preview_camera(local_points: PackedVector3Array) -> void:
 		_preview_camera.fov,
 		aspect_ratio,
 		safe_rect,
-		PREVIEW_FRAME_MARGIN
+		PREVIEW_FRAME_MARGIN if _preview_stage_select_context else MAIN_MENU_PREVIEW_FRAME_MARGIN
 	)
 	if framed.is_empty():
 		return
@@ -540,12 +591,36 @@ func _on_preview_viewport_size_changed() -> void:
 
 
 func _clear_preview_presentation() -> void:
+	if _preview_ground != null and is_instance_valid(_preview_ground):
+		_preview_ground.visible = false
+		_preview_ground.queue_free()
+	_preview_ground = null
 	if _preview_dressing != null and is_instance_valid(_preview_dressing):
 		_preview_dressing.visible = false
 		_preview_dressing.queue_free()
 	_preview_dressing = null
 	_preview_material = null
+	_preview_paint_texture = null
 	_active_preview_stage_id = &""
+
+
+func _apply_preview_paint_texture() -> void:
+	if _preview_material == null:
+		return
+	var texture := _blank_preview_texture() if _preview_stage_select_context \
+			else _preview_paint_texture
+	if texture == null:
+		return
+	_preview_material.set_shader_parameter(&"paint_mask", texture)
+	_preview_material.set_shader_parameter(&"paint_owner_mask", texture)
+
+
+func _blank_preview_texture() -> ImageTexture:
+	if _blank_preview_paint_texture == null:
+		var image := Image.create(96, 96, false, Image.FORMAT_L8)
+		image.fill(Color.BLACK)
+		_blank_preview_paint_texture = ImageTexture.create_from_image(image)
+	return _blank_preview_paint_texture
 
 
 func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bool:

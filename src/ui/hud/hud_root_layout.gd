@@ -13,18 +13,15 @@ const COMPACT_HEIGHT := 620.0
 @onready var _aim := get_node("AimControls") as AimControls
 @onready var _top := get_node("TopStatusBar") as TopStatusBar
 @onready var _run_status := get_node("RunStatusCard") as RunStatusCard
-@onready var _score_scale := get_node("ScoreScale") as ScoreScale
+@onready var _score_status := get_node("AimScoreStatus") as AimScoreStatus
 @onready var _queue := get_node("BallQueue") as BallQueue
 @onready var _interaction := get_node("CameraInteractionControl") as CameraInteractionControl
 @onready var _return_to_cannon := get_node("ReturnToCannon") as ActionControl
-@onready var _briefing_actions := get_node("BriefingActions") as Control
-@onready var _briefing_back := get_node("BriefingActions/Back") as ActionControl
-@onready var _briefing_start := get_node("BriefingActions/Start") as ActionControl
 @onready var _legend := get_node("ContextLegend") as ContextLegend
 @onready var _result := get_node("ResultPanel") as ResultPanel
 
 var _compact_active := false
-var _score_summary := false
+var _score_presentation := AimScoreStatus.Presentation.AIM_RANGE
 var _result_active := false
 var _restore_legend_visible := false
 var _suppress_visibility_capture := false
@@ -37,8 +34,8 @@ func _ready() -> void:
 	_apply_layout.call_deferred()
 
 
-func set_score_summary(summary: bool) -> void:
-	_score_summary = summary
+func set_score_presentation(presentation: AimScoreStatus.Presentation) -> void:
+	_score_presentation = presentation
 	_apply_layout()
 
 
@@ -56,7 +53,7 @@ func _apply_layout() -> void:
 		else:
 			_restore_legend()
 	_compact_active = compact
-	_apply_score_preset()
+	_score_status.set_presentation(_score_presentation)
 	if compact:
 		_apply_compact_layout(_display_density(responsive_size))
 	else:
@@ -78,51 +75,37 @@ func _display_density(responsive_size: Vector2) -> float:
 	return clampf(minf(size.x / responsive_size.x, size.y / responsive_size.y), 1.0, 2.0)
 
 
-func _apply_score_preset() -> void:
-	_score_scale.set_preset(
-		ScoreScale.Preset.HORIZONTAL_SUMMARY
-		if _score_summary and not _compact_active
-		else ScoreScale.Preset.VERTICAL_LIVE
-	)
-
-
 func _apply_standard_layout() -> void:
-	_top.show()
+	_top.visible = not _result_active
 	_top.set_compact(false)
 	_actions.set_compact(false)
-	_set_rect(_briefing_actions, Vector2(SAFE_MARGIN, size.y - 146.0), Vector2(356.0, 56.0))
-	_set_rect(_briefing_back, Vector2.ZERO, Vector2(108.0, 52.0))
-	_set_rect(_briefing_start, Vector2(120.0, 0.0), Vector2(236.0, 52.0))
-	for briefing_action in [_briefing_back, _briefing_start]:
-		briefing_action.add_theme_font_size_override(&"font_size", 17)
 	_aim.set_compact(false)
 	_set_rect(_aim, Vector2((size.x - 628.0) * 0.5, size.y - 146.0), Vector2(628.0, 56.0))
-	_set_rect(_actions, Vector2((size.x - 256.0) * 0.5, size.y - 170.0), Vector2(256.0, 86.0))
+	_set_rect(_actions, Vector2((size.x - 256.0) * 0.5, size.y - 178.0), Vector2(256.0, 96.0))
 	_queue.set_compact(false)
-	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 420.0, 92.0), Vector2(420.0, 124.0))
+	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 420.0, 92.0), Vector2(420.0, 172.0))
 	_set_rect(_interaction, Vector2(size.x - 430.0, SAFE_MARGIN), Vector2(48.0, 48.0))
 	_set_rect(
 		_run_status,
 		Vector2(size.x - 374.0, SAFE_MARGIN),
 		Vector2(284.0, 52.0)
 	)
-	_score_scale.set_compact(false)
-	if _score_summary:
-		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 138.0), Vector2(440.0, 118.0))
+	_score_status.set_compact(false)
+	if _score_presentation == AimScoreStatus.Presentation.AIM_RANGE:
+		_set_rect(_score_status, Vector2(SAFE_MARGIN, 84.0), Vector2(600.0, 164.0))
 	else:
-		_set_rect(_score_scale, Vector2(SAFE_MARGIN, 84.0), Vector2(132.0, 410.0))
+		_set_rect(_score_status, Vector2(SAFE_MARGIN, 84.0), Vector2(190.0, 126.0))
 	_result.set_compact(false)
 	_set_rect(
 		_result,
 		Vector2(size.x - SAFE_MARGIN - 496.0, maxf(88.0, (size.y - 560.0) * 0.5)),
 		Vector2(496.0, 560.0)
 	)
-	_return_to_cannon.set_compact_glyph("↩", 1.0)
-	_return_to_cannon.custom_minimum_size = Vector2(64.0, 56.0)
+	_return_to_cannon.set_compact(false)
 	_set_rect(
 		_return_to_cannon,
-		Vector2(size.x - SAFE_MARGIN - 64.0, size.y - SAFE_MARGIN - 56.0),
-		Vector2(64.0, 56.0)
+		Vector2(size.x - SAFE_MARGIN - 44.0, size.y - SAFE_MARGIN - 44.0),
+		Vector2(44.0, 44.0)
 	)
 
 
@@ -133,26 +116,15 @@ func _apply_compact_layout(density: float) -> void:
 	_top.set_compact(true, density)
 	_top.visible = not _result_active
 	_actions.set_compact(true, density)
-	var briefing_safe := COMPACT_SAFE_MARGIN * density
-	var briefing_size := Vector2(356.0, 52.0) * density
-	_set_rect(
-		_briefing_actions,
-		Vector2(size.x - briefing_safe - briefing_size.x, size.y - briefing_safe - briefing_size.y),
-		briefing_size
-	)
-	_set_rect(_briefing_back, Vector2.ZERO, Vector2(108.0, 52.0) * density)
-	_set_rect(_briefing_start, Vector2(120.0, 0.0) * density, Vector2(236.0, 52.0) * density)
-	for briefing_action in [_briefing_back, _briefing_start]:
-		briefing_action.add_theme_font_size_override(&"font_size", roundi(17.0 * density))
 	_aim.set_compact(true, density)
-	var action_size := Vector2(256.0, 86.0) * density
+	var action_size := Vector2(256.0, 96.0) * density
 	var aim_size := Vector2(568.0, 52.0) * density
 	var action_top := size.y - COMPACT_SAFE_MARGIN * density - action_size.y
 	_set_rect(_actions, Vector2((size.x - action_size.x) * 0.5, action_top), action_size)
 	_set_rect(_aim, Vector2((size.x - aim_size.x) * 0.5, action_top + 24.0 * density), aim_size)
 	_queue.set_compact(true, density)
-	var queue_height := 124.0 * density
-	var queue_width := 420.0 * density
+	var queue_height := 172.0 * density
+	var queue_width := 280.0 * density
 	_set_rect(
 		_queue,
 		Vector2(size.x - COMPACT_SAFE_MARGIN - queue_width, 72.0),
@@ -173,14 +145,12 @@ func _apply_compact_layout(density: float) -> void:
 		Vector2(status_right - status_size.x - compact_safe - 48.0, compact_safe),
 		Vector2(48.0, 48.0)
 	)
-	_score_scale.set_compact(true, density)
+	_score_status.set_compact(true, density)
 	var score_top := 68.0 * density
-	var score_height := 210.0 * density
-	_set_rect(
-		_score_scale,
-		Vector2(COMPACT_SAFE_MARGIN, score_top),
-		Vector2(192.0 * density, score_height)
-	)
+	var score_size := Vector2(300.0, 164.0) * density \
+			if _score_presentation == AimScoreStatus.Presentation.AIM_RANGE \
+			else Vector2(190.0, 126.0) * density
+	_set_rect(_score_status, Vector2(COMPACT_SAFE_MARGIN * density, score_top), score_size)
 	_result.set_compact(true, density)
 	var result_safe := COMPACT_SAFE_MARGIN * density
 	_set_rect(
@@ -188,10 +158,9 @@ func _apply_compact_layout(density: float) -> void:
 		Vector2(result_safe, result_safe),
 		Vector2(size.x - result_safe * 2.0, size.y - result_safe * 2.0)
 	)
-	_return_to_cannon.set_compact_glyph("↩", density)
-	var return_width := 64.0 * density
-	var return_height := 56.0 * density
-	_return_to_cannon.custom_minimum_size = Vector2(return_width, return_height)
+	_return_to_cannon.set_compact(true, density)
+	var return_width := 40.0 * density
+	var return_height := 40.0 * density
 	_set_rect(
 		_return_to_cannon,
 		Vector2(

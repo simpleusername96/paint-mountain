@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/settings_screen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/volume_master.png" id="2_master"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/reduced_motion.png" id="7_motion"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/settings/trajectory.png" id="8_trajectory"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/contrast_scrim.tscn" id="9_scrim"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="10_action"]
 
 [node name="Settings" type="CanvasLayer"]
 layer = 50
@@ -58,12 +59,28 @@ theme_override_constants/separation = 16
 
 [node name="Header" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content"]
 layout_mode = 2
+theme_override_constants/separation = 24
 
 [node name="Title" type="Label" parent="SettingsRoot/Panel/Margin/Content/Header"]
 layout_mode = 2
-size_flags_horizontal = 3
 theme_type_variation = &"ScreenTitle"
 text = "settings.title"
+
+[node name="Defaults" parent="SettingsRoot/Panel/Margin/Content/Header" instance=ExtResource("10_action")]
+unique_name_in_owner = true
+layout_mode = 2
+action_kind = 15
+label_key = "ui.restore_defaults"
+
+[node name="HeaderSpacer" type="Control" parent="SettingsRoot/Panel/Margin/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Close" parent="SettingsRoot/Panel/Margin/Content/Header" instance=ExtResource("10_action")]
+unique_name_in_owner = true
+layout_mode = 2
+action_kind = 6
+label_key = "ui.close"
 
 [node name="Columns" type="ScrollContainer" parent="SettingsRoot/Panel/Margin/Content"]
 layout_mode = 2
@@ -310,22 +327,3 @@ text = "settings.language"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-
-[node name="Footer" type="HBoxContainer" parent="SettingsRoot/Panel/Margin/Content"]
-layout_mode = 2
-alignment = 2
-theme_override_constants/separation = 12
-
-[node name="Defaults" type="Button" parent="SettingsRoot/Panel/Margin/Content/Footer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 46)
-layout_mode = 2
-theme_type_variation = &"QuietButton"
-text = "ui.restore_defaults"
-
-[node name="Close" type="Button" parent="SettingsRoot/Panel/Margin/Content/Footer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 46)
-layout_mode = 2
-theme_type_variation = &"PrimaryButton"
-text = "ui.close"

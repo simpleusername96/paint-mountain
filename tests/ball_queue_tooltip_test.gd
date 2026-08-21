@@ -14,7 +14,7 @@ func _run() -> void:
 	var queue := BALL_QUEUE_SCENE.instantiate() as BallQueue
 	root.add_child(queue)
 	queue.show()
-	queue.size = Vector2(300.0, 120.0)
+	queue.size = Vector2(420.0, 172.0)
 	await process_frame
 	var tokens: Array[BallToken] = [
 		BallToken.new(BallKind.Value.STANDARD, PaintChannel.Value.RED),
@@ -25,9 +25,11 @@ func _run() -> void:
 	await process_frame
 	var views := queue.token_views()
 	_assert(views.size() == 3, "queue must own current plus next two tokens")
-	var description := queue.get_node("Description") as Label
-	_assert(description != null, "queue description must be a direct shared label")
-	_assert(queue.find_children("*", "PanelContainer", true, false).is_empty(), "queue must not contain a card or panel")
+	var card := queue.get_node("DescriptionCard") as Panel
+	var description := queue.get_node("DescriptionCard/Description") as Label
+	_assert(card != null and description != null, "queue must own one white detail card and its exact copy")
+	_assert(queue.find_children("*", "Panel", true, false).size() == 1,
+			"queue must contain exactly one white detail-card surface")
 	for index in views.size():
 		_assert(views[index].token().matches(tokens[index]), "token order must match the authoritative queue at %d" % index)
 		_assert(views[index].focus_mode == Control.FOCUS_ALL, "every token must accept native keyboard focus")
@@ -42,19 +44,22 @@ func _run() -> void:
 	await process_frame
 	_assert(queue.description_visible(), "pointer-equivalent request must show the shared description")
 	_assert(queue.description_value() == views[0].description_text(), "pointer description must equal the accessible description")
-	_assert(description.get_global_rect().size.x >= 280.0,
+	_assert(card.get_global_rect().size.x >= 280.0,
 			"pointer description must keep a readable shared width")
-	_assert(description.get_global_rect().position.y >= views[0].get_global_rect().end.y,
+	_assert(card.get_global_rect().position.y >= views[0].get_global_rect().end.y,
 			"pointer description must align below the queue tokens")
+	_assert((queue.get_node("DescriptionCard/DescriptionIcon") as TextureRect).visible,
+			"detail card must lead with the selected ball's visual mark")
 	queue.set_compact(true, 2.0)
 	await process_frame
 	_assert(description.get_theme_font_size(&"font_size") >= 32,
 			"canvas-stretched compact description must preserve physical type size")
-	_assert(description.get_theme_constant(&"outline_size") >= 8,
-			"canvas-stretched compact description must preserve world contrast")
+	_assert(description.get_theme_constant(&"outline_size") == 0,
+			"white detail card copy must not use a world-outline treatment")
 	_assert(views[0].custom_minimum_size.y >= 104.0,
 			"canvas-stretched current token must preserve its physical target")
 	views[0].release_description_for_test()
+	await create_timer(0.1).timeout
 	_assert(not queue.description_visible(), "un-pinned pointer description must dismiss on release")
 
 	views[1].grab_focus()
@@ -62,7 +67,7 @@ func _run() -> void:
 	_assert(queue.description_visible(), "keyboard focus must show the same description without hover")
 	_assert(queue.description_value() == views[1].description_text(), "focus description must equal the token description")
 	views[1].release_focus()
-	await process_frame
+	await create_timer(0.1).timeout
 	_assert(not queue.description_visible(), "un-pinned focus description must dismiss on focus exit")
 
 	views[2].request_description_for_test(true)

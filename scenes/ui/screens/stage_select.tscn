@@ -21,38 +21,29 @@ grow_vertical = 2
 [node name="BottomScrim" parent="Root" instance=ExtResource("3_scrim")]
 unique_name_in_owner = true
 layout_mode = 0
+mouse_filter = 2
 direction = 1
 
-[node name="Back" type="Button" parent="Root"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(84, 44)
-layout_mode = 0
-focus_mode = 2
-theme_type_variation = &"WorldQuietButton"
-text = "ui.back"
-
-[node name="Heading" type="Label" parent="Root"]
+[node name="Back" parent="Root" instance=ExtResource("4_action")]
 unique_name_in_owner = true
 layout_mode = 0
-mouse_filter = 2
-theme_type_variation = &"WorldTitle"
-text = "ui.choose_mountain"
-vertical_alignment = 1
+action_kind = 2
+label_key = "ui.back"
 
 [node name="SelectedInfo" type="VBoxContainer" parent="Root"]
 unique_name_in_owner = true
 layout_mode = 0
 mouse_filter = 2
-theme_override_constants/separation = 2
+theme_override_constants/separation = 4
 
 [node name="Identity" type="HBoxContainer" parent="Root/SelectedInfo"]
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="StageNumber" type="Label" parent="Root/SelectedInfo/Identity"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 64)
+custom_minimum_size = Vector2(64, 52)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WorldStageNumber"
@@ -77,19 +68,24 @@ layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WorldCaption"
 
+[node name="PreviousTerrain" parent="Root" instance=ExtResource("4_action")]
+unique_name_in_owner = true
+layout_mode = 0
+action_kind = 2
+label_key = "ui.previous"
+
+[node name="NextTerrain" parent="Root" instance=ExtResource("4_action")]
+unique_name_in_owner = true
+layout_mode = 0
+action_kind = 3
+label_key = "ui.next"
+
 [node name="Start" parent="Root" instance=ExtResource("4_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 58)
 layout_mode = 0
-text = "ui.start_stage"
-icon = null
-
-[node name="PageRange" type="Label" parent="Root"]
-unique_name_in_owner = true
-layout_mode = 0
-mouse_filter = 2
-theme_type_variation = &"WorldCaption"
-horizontal_alignment = 1
+action_kind = 10
+visual_role = 1
+label_key = "ui.start_stage"
 
 [node name="StageRail" parent="Root" instance=ExtResource("2_rail")]
 unique_name_in_owner = true

@@ -8,6 +8,8 @@ const BALL_GLYPH_PAINTER := preload("res://src/ui/components/ball_glyph_painter.
 var _stage: StageData
 var _compact := false
 var _density := 1.0
+var _foreground_override := Color(0.0, 0.0, 0.0, 0.0)
+var _accent_override := Color(0.0, 0.0, 0.0, 0.0)
 
 
 func configure(stage: StageData) -> void:
@@ -25,6 +27,12 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 	queue_redraw()
 
 
+func set_foreground(foreground: Color, accent: Color) -> void:
+	_foreground_override = foreground
+	_accent_override = accent
+	queue_redraw()
+
+
 func detail_text() -> String:
 	return tooltip_text
 
@@ -35,9 +43,11 @@ func _draw() -> void:
 	var scale := _density if _compact else 1.0
 	var font := get_theme_font(&"font", &"WorldBody")
 	var font_size := roundi((15.0 if _compact else 18.0) * scale)
-	var color := get_theme_color(&"font_color", &"WorldBody")
+	var color := _foreground_override if _foreground_override.a > 0.0 \
+			else get_theme_color(&"font_color", &"WorldBody")
 	var muted := Color(color, 0.72)
-	var accent := get_theme_color(&"font_color", &"HudAccentValue")
+	var accent := _accent_override if _accent_override.a > 0.0 \
+			else get_theme_color(&"font_color", &"HudAccentValue")
 	var baseline := (size.y - font.get_height(font_size)) * 0.5 + font.get_ascent(font_size)
 	var x := 2.0 * scale
 	var icon_radius := 6.0 * scale

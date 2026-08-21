@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/menu_action_item.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="2_action"]
+
+[node name="MenuActionItem" type="Control"]
+custom_minimum_size = Vector2(264, 48)
+mouse_filter = 1
+script = ExtResource("1_script")
+
+[node name="Action" parent="." instance=ExtResource("2_action")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 2.0
+offset_right = 44.0
+offset_bottom = 46.0
+
+[node name="RevealLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 56.0
+offset_right = 252.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_type_variation = &"HudSection"
+vertical_alignment = 1

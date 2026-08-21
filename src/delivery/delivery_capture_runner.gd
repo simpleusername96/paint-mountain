@@ -61,6 +61,15 @@ func _run_capture() -> void:
 	match _screen:
 		"main_menu":
 			_app._show_main_menu()
+		"main_menu_hover":
+			_app._show_main_menu()
+			await get_tree().process_frame
+			((_app.get_node("MainMenu") as MainMenuScreen).get_node("%StageSelect") \
+					as MenuActionItem).reveal_for_capture()
+		"main_menu_focus":
+			_app._show_main_menu()
+			await get_tree().process_frame
+			(_app.get_node("MainMenu") as MainMenuScreen).focus_primary()
 		"stage_select":
 			_app._show_stage_select()
 		"stage_select_page_2":
@@ -94,6 +103,12 @@ func _run_capture() -> void:
 			await _capture_target_queue_description(_capture_stage)
 		"target_negative_score":
 			await _capture_target_negative_score(_capture_stage)
+		"target_center_score":
+			await _capture_target_score_fixture(_capture_stage, &"center")
+		"target_overflow_score":
+			await _capture_target_score_fixture(_capture_stage, &"overflow")
+		"target_zero_weight_score":
+			await _capture_target_score_fixture(_capture_stage, &"center")
 		"impact_burst_midflight":
 			await _capture_special_ball_midflight(&"stage_02", BallKind.Value.IMPACT_BURST)
 		"apex_split_midflight":
@@ -641,6 +656,41 @@ func _capture_target_negative_score(stage_id: StringName) -> void:
 	if score.is_empty():
 		return
 	(gameplay.get_node("HUD") as HUDController).update_target_score(score)
+	await get_tree().process_frame
+
+
+func _capture_target_score_fixture(stage_id: StringName, mode: StringName) -> void:
+	var gameplay := await _start_stage(stage_id, true)
+	if gameplay == null:
+		return
+	var controller := gameplay.get_node("StageController") as StageController
+	if not controller.stage_data.uses_target_band():
+		_fail_capture("target score fixture requires a target-band stage")
+		return
+	var target_band := controller.stage_data.target_band
+	var paint_score := target_band.center()
+	if mode == &"overflow":
+		paint_score = target_band.target_max + 10.0
+	var red_percent := paint_score * 0.5
+	var green_percent := paint_score * 0.5
+	var rule := controller.stage_data.color_score_rule
+	if rule.red_weight == 0 and rule.green_weight != 0:
+		red_percent = minf(18.0, paint_score)
+		green_percent = paint_score / float(rule.green_weight)
+	elif rule.green_weight == 0 and rule.red_weight != 0:
+		green_percent = minf(18.0, paint_score)
+		red_percent = paint_score / float(rule.red_weight)
+	var snapshot := controller.score_snapshot()
+	snapshot.merge({
+		"red_percent": red_percent,
+		"green_percent": green_percent,
+		"total_percent": minf(red_percent + green_percent, 100.0),
+		"paint_score": paint_score,
+		"in_target_band": target_band.contains(paint_score),
+		"stars": target_band.stars_for(paint_score),
+		"distance_to_center": absf(paint_score - target_band.center()),
+	}, true)
+	(gameplay.get_node("HUD") as HUDController).update_target_score(snapshot)
 	await get_tree().process_frame
 
 

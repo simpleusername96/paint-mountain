@@ -28,6 +28,7 @@ var _target_band: TargetBandData
 var _score_rule: ColorScoreRuleData
 var _target_coverage_snapshot := PaintCoverageSnapshot.new()
 var _has_next := false
+var _stage_number := 1
 
 
 func _ready() -> void:
@@ -36,6 +37,7 @@ func _ready() -> void:
 	_stages.pressed.connect(func() -> void: stages_requested.emit())
 	_retry_same_deal.pressed.connect(func() -> void: retry_same_deal_requested.emit())
 	_new_deal.pressed.connect(func() -> void: new_deal_requested.emit())
+	_summary.set_stage_number(_stage_number)
 	_refresh_actions()
 
 
@@ -43,6 +45,12 @@ func configure_has_next(has_next: bool) -> void:
 	_has_next = has_next
 	_next.disabled = not has_next
 	_refresh_actions()
+
+
+func configure_stage(stage_number: int) -> void:
+	_stage_number = maxi(stage_number, 1)
+	if is_node_ready():
+		_summary.set_stage_number(_stage_number)
 
 
 func configure_target(target_coverage: float) -> void:
@@ -101,13 +109,11 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 	var resolved_density := maxf(density, 1.0)
 	custom_minimum_size = Vector2(360.0, 276.0) if compact else Vector2(496.0, 560.0)
 	_summary.set_compact(compact, resolved_density)
-	var action_size := Vector2(150.0, 44.0) * resolved_density \
-			if compact else Vector2(136.0, 48.0)
+	var action_edge := (48.0 if compact else 56.0) * resolved_density
 	for action in [_retry, _next, _stages, _retry_same_deal, _new_deal]:
-		action.custom_minimum_size = action_size
-		action.add_theme_font_size_override(
-			&"font_size", roundi(17.0 * resolved_density) if compact else 17
-		)
+		action.set_compact(compact, resolved_density)
+		action.set_icon_width(28.0 if compact else 32.0)
+		action.custom_minimum_size = Vector2(action_edge, action_edge)
 	%Margin.add_theme_constant_override(
 		&"margin_left", roundi(14.0 * resolved_density) if compact else 24
 	)
@@ -141,18 +147,20 @@ func _refresh_copy() -> void:
 				_target_band, _score_rule, _target_coverage_snapshot, _target_score
 			)
 		_summary.set_facts(
-			"%s · %s" % [_stars_text(), _metadata_text()],
+			_star_count, _previous_best, false, _elapsed_seconds, _shots_used,
 			_accessible_facts(false)
 		)
+		_summary.set_gap(_target_gap_text() if not _target_clear else "")
 		return
 	var verdict := tr("result.time_expired") if _finish_reason == &"timeout" \
 			else tr("result.completed")
 	_summary.set_verdict(verdict, "%.1f%%" % _final_coverage)
 	_summary.configure_coverage(_target_coverage, _final_coverage)
 	_summary.set_facts(
-		"%s · ↑ %.1f%% · %s" % [_stars_text(), _previous_best, _metadata_text()],
+		_star_count, _previous_best, true, _elapsed_seconds, _shots_used,
 		_accessible_facts(true)
 	)
+	_summary.set_gap("")
 
 
 func _refresh_actions() -> void:
@@ -175,24 +183,23 @@ func _refresh_actions() -> void:
 
 
 func _set_primary(action: ActionControl, primary: bool) -> void:
-	action.theme_type_variation = &"ActionControl" if primary else &"WorldQuietButton"
+	action.set_visual_role(
+		ActionControl.VisualRole.PRIMARY if primary else ActionControl.VisualRole.WORLD
+	)
 
 
-func _stars_text() -> String:
-	return "★".repeat(_star_count) + "☆".repeat(maxi(0, 3 - _star_count))
-
-
-func _metadata_text() -> String:
-	var facts: Array[String] = []
-	if _elapsed_seconds >= 0.0:
-		facts.append("◷ %s" % _format_duration(_elapsed_seconds))
-	if _shots_used >= 0:
-		facts.append("◉ %d" % _shots_used)
-	return " · ".join(facts)
+func _target_gap_text() -> String:
+	if _target_band == null:
+		return ""
+	if _target_score < _target_band.target_min:
+		return tr("result.below_band_gap") % (_target_band.target_min - _target_score)
+	if _target_score > _target_band.target_max:
+		return tr("result.above_band_gap") % (_target_score - _target_band.target_max)
+	return ""
 
 
 func _accessible_facts(include_previous_best: bool) -> String:
-	var facts: Array[String] = ["%s %s" % [tr("result.grade"), _stars_text()]]
+	var facts: Array[String] = ["%s %d/3" % [tr("result.grade"), _star_count]]
 	if include_previous_best:
 		facts.append("%s %.1f%%" % [tr("result.previous_best"), _previous_best])
 	if _elapsed_seconds >= 0.0:

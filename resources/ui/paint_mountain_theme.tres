@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=46 format=3]
+[gd_resource type="Theme" load_steps=56 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/pretendard/PretendardVariable.woff2" id="1_font"]
 [ext_resource type="Texture2D" path="res://assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png" id="2_neutral_depth"]
@@ -209,6 +209,103 @@ corner_radius_bottom_left = 10
 [sub_resource type="StyleBoxEmpty" id="HudModeCompactNormal"]
 
 [sub_resource type="StyleBoxEmpty" id="QuietButtonNormal"]
+
+[sub_resource type="StyleBoxFlat" id="ActionRoutineHover"]
+bg_color = Color(0.145098, 0.517647, 1, 0.14)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="ActionRoutinePressed"]
+bg_color = Color(0.145098, 0.517647, 1, 0.24)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="ActionPrimaryNormal"]
+bg_color = Color(0.145098, 0.517647, 1, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.035294, 0.066667, 0.105882, 0.18)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="ActionPrimaryHover"]
+bg_color = Color(0.258824, 0.603922, 1, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="ActionSelectedNormal"]
+bg_color = Color(0.145098, 0.517647, 1, 0.14)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.145098, 0.517647, 1, 0.7)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="ActionDestructiveHover"]
+bg_color = Color(0.85098, 0.298039, 0.298039, 0.16)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="ActionDisabled"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="ActionWorldNormal"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.72)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="ActionWorldHover"]
+bg_color = Color(1, 1, 1, 0.14)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="ActionFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.439216, 0.666667, 1, 1)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
 
 [sub_resource type="StyleBoxFlat" id="RowHover"]
 bg_color = Color(0.921569, 0.952941, 1, 0.78)
@@ -518,11 +615,11 @@ HudModeButton/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudModeButton/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)
 HudModeButton/fonts/font = SubResource("FontWeight600")
 HudModeButton/font_sizes/font_size = 16
-HudModeButton/styles/normal = SubResource("HudModeNormal")
-HudModeButton/styles/hover = SubResource("HudModeHover")
-HudModeButton/styles/pressed = SubResource("HudModePressed")
-HudModeButton/styles/disabled = SubResource("HudModeDisabled")
-HudModeButton/styles/focus = SubResource("HudModeFocus")
+HudModeButton/styles/normal = SubResource("QuietButtonNormal")
+HudModeButton/styles/hover = SubResource("ActionRoutineHover")
+HudModeButton/styles/pressed = SubResource("ActionSelectedNormal")
+HudModeButton/styles/disabled = SubResource("ActionDisabled")
+HudModeButton/styles/focus = SubResource("ActionFocus")
 HudModeButtonCompact/base_type = &"HudModeButton"
 HudModeButtonCompact/font_sizes/font_size = 14
 HudModeButtonCompact/styles/normal = SubResource("HudModeCompactNormal")
@@ -533,19 +630,19 @@ HudIconButton/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudIconButton/colors/icon_hover_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudIconButton/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
 HudIconButton/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 1)
-HudIconButton/styles/normal = SubResource("ButtonNormal")
-HudIconButton/styles/hover = SubResource("ButtonHover")
-HudIconButton/styles/pressed = SubResource("ButtonPressed")
-HudIconButton/styles/disabled = SubResource("ButtonDisabled")
-HudIconButton/styles/focus = SubResource("Focus")
+HudIconButton/styles/normal = SubResource("QuietButtonNormal")
+HudIconButton/styles/hover = SubResource("ActionRoutineHover")
+HudIconButton/styles/pressed = SubResource("ActionRoutinePressed")
+HudIconButton/styles/disabled = SubResource("ActionDisabled")
+HudIconButton/styles/focus = SubResource("ActionFocus")
 HudFinishButton/base_type = &"Button"
 HudFinishButton/fonts/font = SubResource("FontWeight600")
 HudFinishButton/font_sizes/font_size = 16
-HudFinishButton/styles/normal = SubResource("ButtonNormal")
-HudFinishButton/styles/hover = SubResource("ButtonHover")
-HudFinishButton/styles/pressed = SubResource("ButtonPressed")
-HudFinishButton/styles/disabled = SubResource("ButtonDisabled")
-HudFinishButton/styles/focus = SubResource("Focus")
+HudFinishButton/styles/normal = SubResource("QuietButtonNormal")
+HudFinishButton/styles/hover = SubResource("ActionRoutineHover")
+HudFinishButton/styles/pressed = SubResource("ActionRoutinePressed")
+HudFinishButton/styles/disabled = SubResource("ActionDisabled")
+HudFinishButton/styles/focus = SubResource("ActionFocus")
 HudCoverageProgress/base_type = &"ProgressBar"
 HudCoverageProgress/styles/background = SubResource("ProgressBackground")
 HudCoverageProgress/styles/fill = SubResource("ProgressFill")
@@ -554,6 +651,7 @@ HudModePanel/styles/panel = SubResource("HudModeNormal")
 HudTargetMarker/base_type = &"HSeparator"
 HudTargetMarker/styles/separator = SubResource("TargetMarker")
 ScoreScale/base_type = &"Control"
+AimScoreStatus/base_type = &"Control"
 ScoreScale/colors/track = Color(0.090196, 0.145098, 0.219608, 0.34)
 ScoreScale/colors/target = Color(0.145098, 0.517647, 1, 0.34)
 ScoreScale/colors/target_edge = Color(0.145098, 0.517647, 1, 1)
@@ -569,6 +667,8 @@ ScoreScale/constants/world_outline_size = 3
 ContextLegend/base_type = &"Control"
 ContextLegend/colors/icon_color = Color(0.090196, 0.145098, 0.219608, 1)
 BallQueue/base_type = &"Control"
+BallDetailCard/base_type = &"Panel"
+BallDetailCard/styles/panel = SubResource("Panel")
 BallQueueToken/base_type = &"Button"
 BallQueueToken/colors/font_color = Color(0.090196, 0.145098, 0.219608, 1)
 BallQueueToken/colors/font_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
@@ -595,11 +695,11 @@ ValueStepperButton/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608
 ValueStepperButton/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
 ValueStepperButton/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
 ValueStepperButton/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
-ValueStepperButton/styles/normal = SubResource("ButtonNormal")
-ValueStepperButton/styles/hover = SubResource("ButtonHover")
-ValueStepperButton/styles/pressed = SubResource("ButtonPressed")
-ValueStepperButton/styles/disabled = SubResource("ButtonDisabled")
-ValueStepperButton/styles/focus = SubResource("Focus")
+ValueStepperButton/styles/normal = SubResource("QuietButtonNormal")
+ValueStepperButton/styles/hover = SubResource("ActionRoutineHover")
+ValueStepperButton/styles/pressed = SubResource("ActionRoutinePressed")
+ValueStepperButton/styles/disabled = SubResource("ActionDisabled")
+ValueStepperButton/styles/focus = SubResource("ActionFocus")
 ValueStepperValue/base_type = &"Label"
 ValueStepperValue/colors/font_color = Color(1, 1, 1, 1)
 ValueStepperValue/colors/font_outline_color = Color(0.035294, 0.066667, 0.105882, 0.9)
@@ -607,17 +707,66 @@ ValueStepperValue/constants/outline_size = 3
 ValueStepperValue/fonts/font = SubResource("FontWeight600")
 ValueStepperValue/font_sizes/font_size = 24
 ActionControl/base_type = &"Button"
-ActionControl/colors/font_color = Color(1, 1, 1, 1)
-ActionControl/colors/font_hover_color = Color(1, 1, 1, 1)
-ActionControl/colors/font_pressed_color = Color(1, 1, 1, 1)
-ActionControl/colors/font_focus_color = Color(1, 1, 1, 1)
-ActionControl/fonts/font = SubResource("FontWeight600")
-ActionControl/font_sizes/font_size = 20
-ActionControl/styles/normal = SubResource("KenneyPrimaryDepth")
-ActionControl/styles/hover = SubResource("KenneyPrimaryFlat")
-ActionControl/styles/pressed = SubResource("KenneyPrimaryFlat")
-ActionControl/styles/disabled = SubResource("ButtonDisabled")
-ActionControl/styles/focus = SubResource("Focus")
+ActionControl/styles/normal = SubResource("QuietButtonNormal")
+ActionControl/styles/hover = SubResource("ActionRoutineHover")
+ActionControl/styles/pressed = SubResource("ActionRoutinePressed")
+ActionControl/styles/disabled = SubResource("ActionDisabled")
+ActionControl/styles/focus = SubResource("ActionFocus")
+ActionRoutine/base_type = &"Button"
+ActionRoutine/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionRoutine/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionRoutine/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionRoutine/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionRoutine/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 0.56)
+ActionRoutine/styles/normal = SubResource("QuietButtonNormal")
+ActionRoutine/styles/hover = SubResource("ActionRoutineHover")
+ActionRoutine/styles/pressed = SubResource("ActionRoutinePressed")
+ActionRoutine/styles/disabled = SubResource("ActionDisabled")
+ActionRoutine/styles/focus = SubResource("ActionFocus")
+ActionPrimary/base_type = &"Button"
+ActionPrimary/colors/icon_normal_color = Color(1, 1, 1, 1)
+ActionPrimary/colors/icon_hover_color = Color(1, 1, 1, 1)
+ActionPrimary/colors/icon_pressed_color = Color(1, 1, 1, 1)
+ActionPrimary/colors/icon_focus_color = Color(1, 1, 1, 1)
+ActionPrimary/colors/icon_disabled_color = Color(1, 1, 1, 0.56)
+ActionPrimary/styles/normal = SubResource("ActionPrimaryNormal")
+ActionPrimary/styles/hover = SubResource("ActionPrimaryHover")
+ActionPrimary/styles/pressed = SubResource("ActionPrimaryHover")
+ActionPrimary/styles/disabled = SubResource("ActionDisabled")
+ActionPrimary/styles/focus = SubResource("ActionFocus")
+ActionSelected/base_type = &"Button"
+ActionSelected/colors/icon_normal_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionSelected/colors/icon_hover_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionSelected/colors/icon_pressed_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionSelected/colors/icon_focus_color = Color(0.090196, 0.145098, 0.219608, 1)
+ActionSelected/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 0.56)
+ActionSelected/styles/normal = SubResource("ActionSelectedNormal")
+ActionSelected/styles/hover = SubResource("ActionRoutinePressed")
+ActionSelected/styles/pressed = SubResource("ActionRoutinePressed")
+ActionSelected/styles/disabled = SubResource("ActionDisabled")
+ActionSelected/styles/focus = SubResource("ActionFocus")
+ActionDestructive/base_type = &"Button"
+ActionDestructive/colors/icon_normal_color = Color(0.85098, 0.298039, 0.298039, 1)
+ActionDestructive/colors/icon_hover_color = Color(0.85098, 0.298039, 0.298039, 1)
+ActionDestructive/colors/icon_pressed_color = Color(0.85098, 0.298039, 0.298039, 1)
+ActionDestructive/colors/icon_focus_color = Color(0.85098, 0.298039, 0.298039, 1)
+ActionDestructive/colors/icon_disabled_color = Color(0.407843, 0.45098, 0.517647, 0.56)
+ActionDestructive/styles/normal = SubResource("QuietButtonNormal")
+ActionDestructive/styles/hover = SubResource("ActionDestructiveHover")
+ActionDestructive/styles/pressed = SubResource("ActionDestructiveHover")
+ActionDestructive/styles/disabled = SubResource("ActionDisabled")
+ActionDestructive/styles/focus = SubResource("ActionFocus")
+ActionWorld/base_type = &"Button"
+ActionWorld/colors/icon_normal_color = Color(1, 1, 1, 1)
+ActionWorld/colors/icon_hover_color = Color(1, 1, 1, 1)
+ActionWorld/colors/icon_pressed_color = Color(1, 1, 1, 1)
+ActionWorld/colors/icon_focus_color = Color(1, 1, 1, 1)
+ActionWorld/colors/icon_disabled_color = Color(1, 1, 1, 0.46)
+ActionWorld/styles/normal = SubResource("ActionWorldNormal")
+ActionWorld/styles/hover = SubResource("ActionWorldHover")
+ActionWorld/styles/pressed = SubResource("ActionWorldHover")
+ActionWorld/styles/disabled = SubResource("ActionDisabled")
+ActionWorld/styles/focus = SubResource("ActionFocus")
 StageRail/base_type = &"HBoxContainer"
 StageRailButton/base_type = &"Button"
 StageRailButton/colors/font_color = Color(1, 1, 1, 1)
@@ -626,19 +775,19 @@ StageRailButton/colors/font_pressed_color = Color(1, 1, 1, 1)
 StageRailButton/colors/font_focus_color = Color(1, 1, 1, 1)
 StageRailButton/fonts/font = SubResource("FontWeight700")
 StageRailButton/font_sizes/font_size = 17
-StageRailButton/styles/normal = SubResource("StageNodeNormal")
-StageRailButton/styles/hover = SubResource("StageNodeHover")
-StageRailButton/styles/pressed = SubResource("StageNodeSelected")
-StageRailButton/styles/hover_pressed = SubResource("StageNodeSelected")
-StageRailButton/styles/disabled = SubResource("StageNodeNormal")
-StageRailButton/styles/focus = SubResource("Focus")
+StageRailButton/styles/normal = SubResource("QuietButtonNormal")
+StageRailButton/styles/hover = SubResource("QuietButtonNormal")
+StageRailButton/styles/pressed = SubResource("QuietButtonNormal")
+StageRailButton/styles/hover_pressed = SubResource("QuietButtonNormal")
+StageRailButton/styles/disabled = SubResource("QuietButtonNormal")
+StageRailButton/styles/focus = SubResource("ActionFocus")
 ResultSummary/base_type = &"VBoxContainer"
 ResultWorldTitle/base_type = &"Label"
 ResultWorldTitle/colors/font_color = Color(1, 1, 1, 1)
 ResultWorldTitle/colors/font_outline_color = Color(0.035294, 0.066667, 0.105882, 0.9)
 ResultWorldTitle/constants/outline_size = 4
 ResultWorldTitle/fonts/font = SubResource("FontWeight700")
-ResultWorldTitle/font_sizes/font_size = 30
+ResultWorldTitle/font_sizes/font_size = 42
 ResultWorldValue/base_type = &"Label"
 ResultWorldValue/colors/font_color = Color(0.145098, 0.517647, 1, 1)
 ResultWorldValue/colors/font_outline_color = Color(0.035294, 0.066667, 0.105882, 0.9)

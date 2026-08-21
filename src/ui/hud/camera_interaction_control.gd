@@ -1,14 +1,11 @@
 class_name CameraInteractionControl
-extends Button
+extends ActionControl
 
 signal interaction_mode_requested(mode: int)
 
 var _interaction_mode := CameraDirector.InteractionMode.AIM_LOCKED
-var _mode_icon: Texture2D
-
-
 func _ready() -> void:
-	_mode_icon = icon
+	super._ready()
 	pressed.connect(_request_other_mode)
 	_refresh_copy()
 
@@ -37,9 +34,14 @@ func _request_other_mode() -> void:
 
 
 func _refresh_copy() -> void:
-	theme_type_variation = &"HudModeButtonCompact"
-	icon = _mode_icon
-	text = ""
+	label_key = "hud.switch_to_aim_lock" \
+			if _interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION \
+			else "hud.switch_to_map_inspection"
+	action_kind = ActionControl.IconKind.AIM
+	set_visual_role(ActionControl.VisualRole.SELECTED \
+			if _interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION \
+			else ActionControl.VisualRole.ROUTINE)
+	super.refresh_locale()
 	button_pressed = _interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION
 	if _interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
 		tooltip_text = tr("hud.switch_to_map_inspection")

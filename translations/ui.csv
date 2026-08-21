@@ -111,10 +111,12 @@ result.grade,GRADE,등급
 result.shots_used,SHOTS USED,사용한 탄
 result.previous_best,PREVIOUS BEST,이전 최고
 result.elapsed,ELAPSED,경과 시간
-result.clear,CLEAR,성공
+result.clear,CLEAR,클리어
 result.failed,FAILED,실패
 result.score,SCORE,점수
 result.band,TARGET BAND,목표 구간
+result.below_band_gap,%.1f BELOW TARGET RANGE,목표 구간보다 %.1f 부족합니다
+result.above_band_gap,%.1f ABOVE TARGET RANGE,목표 구간보다 %.1f 초과했습니다
 hud.now,NOW,현재
 hud.next,NEXT,다음
 stage.first_descent.name,FIRST DESCENT,첫 번째 하강

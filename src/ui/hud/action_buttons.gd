@@ -30,7 +30,7 @@ func focus_fire() -> void:
 
 func set_compact(compact: bool, density: float = 1.0) -> void:
 	var scale := maxf(density, 1.0) if compact else 1.0
-	custom_minimum_size = Vector2(256.0, 86.0) * scale
+	custom_minimum_size = Vector2(256.0, 96.0) * scale
 	%ReadinessBackdrop.position = Vector2.ZERO
 	%ReadinessBackdrop.size = Vector2(256.0, 22.0) * scale
 	%ReadinessLabel.position = Vector2.ZERO
@@ -39,8 +39,9 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 		&"font_size", roundi(14.0 * scale) if compact else 14
 	)
 	var fire := %FireButton as ActionControl
-	fire.position = Vector2(27.0, 24.0) * scale
-	fire.size = Vector2(202.0, 62.0) * scale
+	fire.set_compact(compact, scale)
+	fire.set_icon_width(34.0)
+	var edge := (48.0 if compact else 56.0) * scale
+	fire.position = Vector2((256.0 * scale - edge) * 0.5, 32.0 * scale)
+	fire.size = Vector2(edge, edge)
 	fire.custom_minimum_size = fire.size
-	fire.add_theme_font_size_override(&"font_size", roundi(17.0 * scale) if compact else 17)
-	fire.add_theme_constant_override(&"icon_max_width", roundi(24.0 * scale))

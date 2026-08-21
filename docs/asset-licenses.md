@@ -2,7 +2,7 @@
 type: record
 status: active
 created: 2026-08-03
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-21
 scope: approved third-party runtime assets, provenance, hashes, licenses, and uses
 related:
   - ../.agents/Plan.md
@@ -45,6 +45,20 @@ Only the files listed below are approved and bundled. Runtime loading is entirel
 | `assets/ui/icons/minus.png` | `5F4E70ADEA9061D0105DB1860108B669E348D0D99314542A77DD96F707800EC7` | decrease power |
 | `assets/ui/icons/plus.png` | `DC5D564FFE3AE546F2E72CE19EA8349124CF48256418DE50BB045A5D97AB9872` | increase power |
 | `assets/ui/icons/settings.png` | `50B313FFE97DB1733E529D5B0F5AC91EED5C0C8FFEE1034BBB7766508E4F720C` | settings |
+| `assets/ui/icons/actions/play.png` | `C6CB584576C5A4638AD6F883FF14700071B56F0BB83980B15FFC1BAF6576F03B` | icon-only Play/Resume; Kenney Game Icons `PNG/White/1x/forward.png` |
+| `assets/ui/icons/actions/previous.png` | `AE31DB60393C860E404CDA7193C843FE027A1542202BF7FFBAB90B774F342CB6` | icon-only Back/Previous; Kenney Game Icons `PNG/White/2x/arrowLeft.png` |
+| `assets/ui/icons/actions/next.png` | `768D7D882448F78554B4A379B2E8F217403E073C9B1735744A8C92BA7D31005F` | icon-only Next; Kenney Game Icons `PNG/White/2x/arrowRight.png` |
+| `assets/ui/icons/actions/stages.png` | `8AFE8DEA5BBC99F744482486A197983771AFAC1EF118AFF0D9BD386D413A37C8` | icon-only Stage Select; Kenney Game Icons `PNG/White/2x/menuGrid.png` |
+| `assets/ui/icons/actions/home.png` | `1F6D39DF47CB8849FEB8F01AAD329583F5F014C449C622B39AA154A3ECA55160` | icon-only Main Menu; Kenney Game Icons `PNG/White/2x/home.png` |
+| `assets/ui/icons/actions/close.png` | `8293E3758E7DF2EB1C5BB8D6979CCCC826E66C28F8C703E6CBB0A54A3C0EFC33` | icon-only Close; Kenney Game Icons `PNG/White/2x/cross.png` |
+| `assets/ui/icons/actions/quit.png` | `AFB30D057282BE0D610E789D1DCC156A91B2F1F2D31E412041C6652EC36A8153` | icon-only Quit; Kenney Game Icons `PNG/White/2x/power.png` |
+| `assets/ui/icons/actions/finish.png` | `00E3025322DDB4948598B7FB8D385762073DE7B2B534D2CFD44372072608A92A` | icon-only Finish; Kenney Game Icons `PNG/White/2x/checkmark.png` |
+| `assets/ui/icons/actions/return_to_cannon.png` | `99B425EC6D8E49633DDCEA55E7485ADF44A4CA8614ABF39E59B7A83602EE3866` | icon-only Return to Cannon; Kenney Game Icons `PNG/White/2x/return.png` |
+| `assets/ui/icons/actions/settings.png` | `50B313FFE97DB1733E529D5B0F5AC91EED5C0C8FFEE1034BBB7766508E4F720C` | icon-only Settings; Kenney Game Icons `PNG/White/2x/gear.png` |
+| `assets/ui/icons/actions/retry.png` | `99B425EC6D8E49633DDCEA55E7485ADF44A4CA8614ABF39E59B7A83602EE3866` | icon-only Retry/Same Deal; Kenney Game Icons `PNG/White/2x/return.png` |
+| `assets/ui/icons/actions/new_deal.png` | `75B0E25B416F31E4F765EE429D44C17983C2292F0BB5E42681255F6C5C0AAC5C` | icon-only New Deal; Kenney Game Icons `PNG/White/2x/scrollHorizontal.png` |
+| `assets/ui/icons/actions/defaults.png` | `99B425EC6D8E49633DDCEA55E7485ADF44A4CA8614ABF39E59B7A83602EE3866` | icon-only Restore Defaults; Kenney Game Icons `PNG/White/2x/return.png` |
+| `assets/ui/icons/status/star.png` | `8E10578B82D6D46AFF27A9939F4C1ADCCD1BE6DC93C8302C9E28D281E126AAE2` | Aim success-range score tiers; Kenney Game Icons `PNG/White/2x/star.png` |
 | `assets/ui/external/kenney_ui_pack_2/panel_neutral_depth.png` | `7DE9BA1D4BCA313FD2C02E3595F3D699C1201D84D70A3C69828E56782D585CE7` | shared tactile neutral button/card edge |
 | `assets/ui/external/kenney_ui_pack_2/panel_neutral_flat.png` | `C91EE37858BE6035143A8AE26588741E9350E5F42AED548E3EE00910092239E8` | shared neutral button/card surface |
 | `assets/ui/external/kenney_ui_pack_2/button_primary_depth.png` | `6C709A45AAE0330FFFF5B060D9F14CC2297839F664E0A4C9E516D90AD085EC0B` | shared primary button normal state |

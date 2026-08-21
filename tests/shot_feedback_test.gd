@@ -32,7 +32,7 @@ func _run() -> void:
 	)
 	var fire := hud_root.get_node("ActionButtons/FireButton") as Button
 	var aim_controls := hud_root.get_node("AimControls") as Control
-	var coverage_panel := hud_root.get_node("ScoreScale") as Control
+	var coverage_panel := hud_root.get_node("AimScoreStatus") as Control
 	_assert_true(
 		not fire.get_global_rect().intersects((aim_controls.get_node("Content/AngleStepper") as Control).get_global_rect()) \
 				and not fire.get_global_rect().intersects((aim_controls.get_node("Content/PowerStepper") as Control).get_global_rect()) \
@@ -81,7 +81,7 @@ func _run() -> void:
 				and hud_root.get_node("ActionButtons").visible,
 		"Aim Lock must restore the icon state plus aim and Fire controls"
 	)
-	var coverage := hud_root.get_node("ScoreScale") as ScoreScale
+	var coverage := hud_root.get_node("AimScoreStatus") as AimScoreStatus
 	hud.update_target_score({
 		"red_percent": 1.0,
 		"green_percent": 1.0,
@@ -92,12 +92,12 @@ func _run() -> void:
 	hud.update_coverage(5.0)
 	await process_frame
 	_assert_true(
-		is_equal_approx(coverage.value(), 2.0)
+		is_equal_approx(coverage.paint_percent_for_test(), 2.0)
 		and coverage.target_range().is_equal_approx(Vector2(
 			gameplay.stage_data.target_band.target_min,
 			gameplay.stage_data.target_band.target_max
 		))
-		and coverage.track_rect_for_test().grow(0.01).encloses(coverage.target_rect_for_test()),
+		and coverage.overflow_direction_for_test() != 1,
 		"legacy coverage publication must not overwrite target-band score truth"
 	)
 	var observation := ShotObservation.new()

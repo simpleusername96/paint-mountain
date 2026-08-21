@@ -5,35 +5,38 @@ signal back_requested
 signal start_requested(stage_id: StringName)
 signal selection_changed(stage: StageData)
 
-const PAGE_SIZE := 8
+const PAGE_SIZE := 10
+const INK := Color("172538")
+const ACCENT := Color("2584FF")
 
 var _selected_stage: StageData
 var _stage_nodes: Array[Button] = []
-var _page_index := 0
+var _window_start := 0
 var _preparation_stage_id: StringName = &""
 var _preparation_ready := false
 var _preparation_failed := false
 var _compact := false
 
-@onready var _root: Control = $Root
 @onready var _scrim: Control = %BottomScrim
-@onready var _heading: Label = %Heading
 @onready var _selected_info: VBoxContainer = %SelectedInfo
 @onready var _stage_number: Label = %StageNumber
 @onready var _stage_name: Label = %StageName
-@onready var _preview_stats = %PreviewStats
+@onready var _preview_stats: StageRuleSummary = %PreviewStats
 @onready var _preview_best: Label = %PreviewBest
+@onready var _back: ActionControl = %Back
+@onready var _previous: ActionControl = %PreviousTerrain
+@onready var _next: ActionControl = %NextTerrain
 @onready var _start_button: ActionControl = %Start
-@onready var _page_label: Label = %PageRange
 @onready var _stage_rail: StageRail = %StageRail
 
 
 func _ready() -> void:
-	%Back.pressed.connect(func() -> void: back_requested.emit())
+	_apply_reference_palette()
+	_back.pressed.connect(func() -> void: back_requested.emit())
+	_previous.pressed.connect(func() -> void: _select_relative(-1))
+	_next.pressed.connect(func() -> void: _select_relative(1))
 	_start_button.pressed.connect(_on_start_pressed)
 	_stage_rail.stage_requested.connect(_on_stage_requested)
-	_stage_rail.previous_page_requested.connect(func() -> void: _set_page(_page_index - 1))
-	_stage_rail.next_page_requested.connect(func() -> void: _set_page(_page_index + 1))
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state != null:
 		game_state.settings_changed.connect(_on_settings_changed)
@@ -49,35 +52,41 @@ func _apply_responsive_layout() -> void:
 	var window_size := _responsive_window_size(viewport_size)
 	_compact = window_size.x < 900.0 or window_size.y < 480.0
 	var density := _display_density(viewport_size, window_size) if _compact else 1.0
-	_apply_type_density(density)
-	_preview_stats.set_compact(_compact, density)
 	var safe := 12.0 * density if _compact else 24.0
-	var scrim_height := 178.0 * density if _compact else 250.0
+	var routine_edge := 40.0 * density if _compact else 44.0
+	var primary_edge := 48.0 * density if _compact else 56.0
+	for action in [_back, _previous, _next]:
+		action.set_compact(_compact, density)
+	_start_button.set_compact(_compact, density)
+	_previous.set_icon_width(38.0 if _compact else 42.0)
+	_next.set_icon_width(38.0 if _compact else 42.0)
+	_start_button.set_icon_width(32.0 if _compact else 36.0)
+	_preview_stats.set_compact(_compact, density)
+	_stage_rail.set_compact(_compact, density)
+	_apply_type_density(density)
+
+	var scrim_height := 152.0 * density if _compact else 190.0
 	_set_rect(_scrim, Vector2(0.0, viewport_size.y - scrim_height),
 			Vector2(viewport_size.x, scrim_height))
-	_set_rect(%Back, Vector2(safe, safe), Vector2(84.0, 44.0) * density)
-	_set_rect(_heading, Vector2(safe + 96.0 * density, safe),
-			Vector2(maxf(160.0, viewport_size.x - safe * 2.0 - 96.0 * density), 48.0 * density))
-	if _compact:
-		_set_rect(_selected_info, Vector2(safe, viewport_size.y - 174.0 * density), Vector2(300.0, 92.0) * density)
-		_set_rect(_start_button, Vector2(viewport_size.x - safe - 240.0 * density, viewport_size.y - 170.0 * density),
-				Vector2(240.0, 58.0) * density)
-		_page_label.hide()
-		_stage_name.hide()
-		_preview_best.hide()
-		_stage_rail.set_compact(true, density)
-	else:
-		_set_rect(_selected_info, Vector2(safe + 24.0, viewport_size.y - 244.0), Vector2(520.0, 142.0))
-		_set_rect(_start_button, Vector2(viewport_size.x - safe - 240.0, viewport_size.y - 202.0),
-				Vector2(240.0, 58.0))
-		_set_rect(_page_label, Vector2(safe, viewport_size.y - 124.0),
-				Vector2(viewport_size.x - safe * 2.0, 22.0))
-		_page_label.show()
-		_stage_name.show()
-		_preview_best.show()
-		_stage_rail.set_compact(false)
-	_set_rect(_stage_rail, Vector2(safe, viewport_size.y - (64.0 * density if _compact else 92.0)),
-			Vector2(viewport_size.x - safe * 2.0, 52.0 * density if _compact else 52.0))
+	_set_rect(_back, Vector2(safe, safe), Vector2(routine_edge, routine_edge))
+	var info_left := safe + routine_edge + 16.0 * density
+	var info_width := minf(760.0 * density, viewport_size.x - info_left - safe)
+	_set_rect(_selected_info, Vector2(info_left, safe),
+			Vector2(maxf(240.0 * density, info_width), 132.0 * density if _compact else 152.0))
+
+	var arrow_y := (viewport_size.y - routine_edge) * 0.40
+	_set_rect(_previous, Vector2(safe, arrow_y), Vector2(routine_edge, routine_edge))
+	_set_rect(_next, Vector2(viewport_size.x - safe - routine_edge, arrow_y),
+			Vector2(routine_edge, routine_edge))
+	var rail_height := 64.0 * density if _compact else 64.0
+	var rail_bottom := safe
+	_set_rect(_stage_rail, Vector2(safe, viewport_size.y - rail_bottom - rail_height),
+			Vector2(viewport_size.x - safe * 2.0, rail_height))
+	_set_rect(_start_button,
+			Vector2(viewport_size.x - safe - primary_edge,
+				viewport_size.y - rail_bottom - rail_height - 16.0 * density - primary_edge),
+			Vector2(primary_edge, primary_edge))
+	_preview_best.visible = not _compact
 	_update_preview()
 
 
@@ -87,8 +96,6 @@ func _set_rect(control: Control, position: Vector2, control_size: Vector2) -> vo
 	control.size = control_size
 
 
-## Canvas-item stretching retains the logical viewport in compact OS windows.
-## Breakpoints follow physical dimensions while geometry stays logical.
 func _responsive_window_size(viewport_size: Vector2) -> Vector2:
 	if get_viewport() is SubViewport:
 		return viewport_size
@@ -103,11 +110,22 @@ func _display_density(viewport_size: Vector2, window_size: Vector2) -> float:
 
 
 func _apply_type_density(density: float) -> void:
-	var compact_density := density if _compact else 1.0
-	%Back.add_theme_font_size_override(&"font_size", roundi(16.0 * compact_density) if _compact else 17)
-	_heading.add_theme_font_size_override(&"font_size", roundi(18.0 * compact_density) if _compact else 30)
-	_stage_number.add_theme_font_size_override(&"font_size", roundi(36.0 * compact_density) if _compact else 56)
-	_start_button.add_theme_font_size_override(&"font_size", roundi(17.0 * compact_density) if _compact else 17)
+	var scale := density if _compact else 1.0
+	_stage_number.add_theme_font_size_override(&"font_size", roundi((30.0 if _compact else 46.0) * scale))
+	_stage_name.add_theme_font_size_override(&"font_size", roundi((18.0 if _compact else 30.0) * scale))
+	_preview_best.add_theme_font_size_override(&"font_size", roundi((14.0 if _compact else 15.0) * scale))
+
+
+func _apply_reference_palette() -> void:
+	for label in [_stage_number, _stage_name, _preview_best]:
+		label.add_theme_color_override(&"font_color", INK)
+		label.add_theme_constant_override(&"outline_size", 0)
+	_preview_stats.set_foreground(INK, ACCENT)
+	for arrow in [_previous, _next]:
+		arrow.add_theme_color_override(&"icon_normal_color", Color.WHITE)
+		arrow.add_theme_color_override(&"icon_hover_color", Color.WHITE)
+		arrow.add_theme_color_override(&"icon_pressed_color", Color.WHITE)
+		arrow.add_theme_color_override(&"icon_focus_color", Color.WHITE)
 
 
 func refresh() -> void:
@@ -120,8 +138,8 @@ func refresh() -> void:
 				if game_state != null else null
 		if _selected_stage == null:
 			_selected_stage = stages[0]
-		_page_index = maxi(floori(float(_selected_stage.stage_number - 1) / float(PAGE_SIZE)), 0)
-	_set_page(_page_index)
+		_window_start = _window_start_for(_selected_stage.stage_number - 1, stages.size())
+	_rebuild_stage_window()
 	_update_preview()
 	_refresh_locale()
 
@@ -151,35 +169,31 @@ func set_catalog_load_failed() -> void:
 
 
 func set_page_for_capture(page: int) -> void:
-	_set_page(page)
-	var stages := StageCatalog.all_stages()
-	var first_index := _page_index * PAGE_SIZE
-	if first_index >= 0 and first_index < stages.size():
-		_selected_stage = stages[first_index]
-		_set_page(_page_index)
-		_update_preview()
-		selection_changed.emit(_selected_stage)
-
-
-func _set_page(requested_page: int) -> void:
 	var stages := StageCatalog.all_stages()
 	if stages.is_empty():
 		return
-	var total_pages := maxi(1, ceili(float(stages.size()) / float(PAGE_SIZE)))
-	_page_index = clampi(requested_page, 0, total_pages - 1)
-	var first_stage_index := _page_index * PAGE_SIZE
-	var selected_changed := _selected_stage != null and (
-			_selected_stage.stage_number < first_stage_index + 1
-			or _selected_stage.stage_number > first_stage_index + PAGE_SIZE
-	)
-	if _selected_stage == null or selected_changed:
-		_selected_stage = stages[first_stage_index]
+	_window_start = clampi(page * PAGE_SIZE, 0, maxi(0, stages.size() - 1))
+	_selected_stage = stages[_window_start]
+	_rebuild_stage_window()
+	_update_preview()
+	selection_changed.emit(_selected_stage)
+
+
+func select_relative_for_capture(direction: int) -> void:
+	_select_relative(direction)
+
+
+func _rebuild_stage_window() -> void:
+	var stages := StageCatalog.all_stages()
+	if stages.is_empty() or _selected_stage == null:
+		return
+	var selected_index := clampi(_selected_stage.stage_number - 1, 0, stages.size() - 1)
+	if selected_index < _window_start or selected_index >= _window_start + PAGE_SIZE:
+		_window_start = _window_start_for(selected_index, stages.size())
+	_window_start = clampi(_window_start, 0, maxi(0, stages.size() - PAGE_SIZE))
 	var items: Array[Dictionary] = []
 	var game_state := get_node_or_null("/root/GameState")
-	for slot in range(PAGE_SIZE):
-		var stage_index := first_stage_index + slot
-		if stage_index >= stages.size():
-			break
+	for stage_index in range(_window_start, mini(_window_start + PAGE_SIZE, stages.size())):
 		var stage := stages[stage_index]
 		var best: Dictionary = game_state.best_for(stage.stage_id) if game_state != null else {}
 		items.append({
@@ -190,25 +204,29 @@ func _set_page(requested_page: int) -> void:
 			"locked": false,
 		})
 	_stage_rail.configure(items, _selected_stage.stage_id)
-	var viewport_size := get_viewport().get_visible_rect().size
-	var window_size := _responsive_window_size(viewport_size)
-	_stage_rail.set_compact(_compact, _display_density(viewport_size, window_size) if _compact else 1.0)
-	_stage_rail.set_page_availability(_page_index > 0, _page_index < total_pages - 1)
 	_stage_nodes = _stage_rail.stage_buttons()
-	var first_stage := first_stage_index + 1
-	var last_stage := mini(first_stage + PAGE_SIZE - 1, stages.size())
-	_page_label.text = "%02d–%02d / %02d" % [first_stage, last_stage, stages.size()]
-	if selected_changed:
-		_update_preview()
-		selection_changed.emit(_selected_stage)
+	_previous.set_readiness(selected_index > 0)
+	_next.set_readiness(selected_index < stages.size() - 1)
+
+
+func _window_start_for(selected_index: int, stage_count: int) -> int:
+	return clampi((selected_index / PAGE_SIZE) * PAGE_SIZE, 0, maxi(0, stage_count - PAGE_SIZE))
+
+
+func _select_relative(direction: int) -> void:
+	var stages := StageCatalog.all_stages()
+	if stages.is_empty() or _selected_stage == null:
+		return
+	var next_index := clampi(_selected_stage.stage_number - 1 + signi(direction), 0, stages.size() - 1)
+	_on_stage_requested(stages[next_index].stage_id)
 
 
 func _on_stage_requested(stage_id: StringName) -> void:
 	var stage := StageCatalog.get_stage(stage_id)
-	if stage == null:
+	if stage == null or stage == _selected_stage:
 		return
 	_selected_stage = stage
-	_set_page(_page_index)
+	_rebuild_stage_window()
 	_update_preview()
 	selection_changed.emit(_selected_stage)
 
@@ -228,12 +246,12 @@ func _update_preview() -> void:
 	if _selected_stage.uses_target_band():
 		_preview_best.text = "%s —" % tr("stage.best") if best.is_empty() else "%s %s  %s" % [
 			tr("stage.best"), _format_number(float(best.get("paint_score", 0.0))),
-			_stars_text(int(best.get("stars", 0))),
+			_grade_text(int(best.get("stars", 0))),
 		]
 	else:
 		_preview_best.text = "%s %.1f%%  %s" % [
 			tr("stage.best"), float(best.get("coverage", 0.0)),
-			_stars_text(int(best.get("stars", 0))),
+			_grade_text(int(best.get("stars", 0))),
 		]
 	_preview_stats.configure(_selected_stage)
 	_apply_start_preparation_state()
@@ -243,15 +261,18 @@ func _apply_start_preparation_state() -> void:
 	var state_matches := _selected_stage != null and _preparation_stage_id == _selected_stage.stage_id
 	var ready := state_matches and _preparation_ready
 	var failed := _preparation_failed and (_selected_stage == null or state_matches)
-	_start_button.configure("ui.retry_stage_load" if failed else "ui.start_stage" if ready else "ui.loading_stage")
+	_start_button.configure(
+		"ui.retry_stage_load" if failed else "ui.start_stage" if ready else "ui.loading_stage",
+		ActionControl.IconKind.RETRY if failed else ActionControl.IconKind.AIM,
+		ActionControl.VisualRole.PRIMARY
+	)
 	_start_button.set_readiness(ready or failed, tr("ui.stage_load_failed") if failed else "")
 
 
 func _refresh_locale() -> void:
-	%Back.text = "‹"
-	%Back.tooltip_text = tr("ui.back")
-	%Back.accessibility_name = %Back.tooltip_text
-	_heading.text = tr("ui.choose_mountain")
+	_back.configure("ui.back", ActionControl.IconKind.PREVIOUS)
+	_previous.configure("ui.previous", ActionControl.IconKind.PREVIOUS)
+	_next.configure("ui.next", ActionControl.IconKind.NEXT)
 	_stage_rail.refresh_locale()
 	_apply_start_preparation_state()
 
@@ -265,8 +286,8 @@ func _format_number(value: float) -> String:
 	return "%d" % roundi(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
 
 
-func _stars_text(stars: int) -> String:
-	return "★".repeat(stars) + "☆".repeat(maxi(0, 3 - stars))
+func _grade_text(stars: int) -> String:
+	return "%d/3" % clampi(stars, 0, 3)
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:

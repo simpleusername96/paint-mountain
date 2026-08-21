@@ -15,11 +15,12 @@ func _run() -> void:
 	root.add_child(hud)
 	await process_frame
 	var hud_root := hud.get_node("HUDRoot") as Control
-	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
+	var score_status := hud_root.get_node("AimScoreStatus") as AimScoreStatus
 	var queue := hud_root.get_node("BallQueue") as BallQueue
 	var result := hud_root.get_node("ResultPanel") as ResultPanel
-	_assert(hud_root.find_children("*", "ScoreScale", true, false).size() == 2,
-		"HUD must retain one live scale and one result-summary scale")
+	_assert(hud_root.find_children("*", "AimScoreStatus", true, false).size() == 1
+			and hud_root.find_children("*", "ScoreScale", true, false).size() == 1,
+		"HUD must separate one live score status from one result-only scale")
 	_assert(hud_root.find_children("*", "BallQueue", true, false).size() == 1,
 		"HUD must retain one shared queue owner")
 	_assert(result.get_node("Margin/Content/Summary") is ResultSummary,
@@ -33,32 +34,29 @@ func _run() -> void:
 		if stage == null:
 			continue
 		hud.configure(stage)
-		hud.set_camera_mode(CameraDirector.Mode.BRIEFING)
-		hud.show_state(StageController.State.BRIEFING)
-		await process_frame
-		_assert(score_scale.visible, "%s briefing must expose ScoreScale" % stage.stage_id)
-		_assert(score_scale.preset == ScoreScale.Preset.HORIZONTAL_SUMMARY,
-			"%s briefing must use the horizontal score preset" % stage.stage_id)
-		_assert(_range_is_valid(score_scale.target_range()),
-			"%s briefing target must stay in the 0-100 domain" % stage.stage_id)
-		_assert(queue.visible == stage.uses_target_band(),
-			"%s queue visibility must follow its rule family" % stage.stage_id)
-
+		hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 		hud.show_state(StageController.State.AIMING)
 		hud.set_camera_mode(CameraDirector.Mode.AIMING)
 		await process_frame
-		_assert(score_scale.visible and score_scale.preset == ScoreScale.Preset.VERTICAL_LIVE,
-			"%s aiming must use the shared vertical score preset" % stage.stage_id)
-		_assert(_range_is_valid(score_scale.target_range()),
-			"%s aiming target must stay in the 0-100 domain" % stage.stage_id)
+		_assert(score_status.visible
+				and score_status.presentation == AimScoreStatus.Presentation.AIM_RANGE,
+			"%s aiming must use the success-range score presentation" % stage.stage_id)
+		_assert(_range_is_valid(score_status.target_range()),
+			"%s aiming success range must stay ordered" % stage.stage_id)
+		_assert(queue.visible == stage.uses_target_band(),
+			"%s queue visibility must follow its rule family" % stage.stage_id)
 
 		hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
-		_assert(score_scale.visible, "%s map inspection must retain score truth" % stage.stage_id)
+		_assert(score_status.visible
+				and score_status.presentation == AimScoreStatus.Presentation.COMPACT_VALUE,
+			"%s map inspection must retain compact score truth" % stage.stage_id)
 		_assert(not hud_root.get_node("AimControls").visible
 				and not hud_root.get_node("ActionButtons").visible,
 			"%s map inspection must remove cannon actions" % stage.stage_id)
 		hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
-		_assert(score_scale.visible, "%s shot follow must retain score truth" % stage.stage_id)
+		_assert(score_status.visible
+				and score_status.presentation == AimScoreStatus.Presentation.COMPACT_VALUE,
+			"%s shot follow must retain compact score truth" % stage.stage_id)
 		_assert(hud_root.get_node("ReturnToCannon").visible,
 			"%s shot follow must expose the sole legal return action" % stage.stage_id)
 
@@ -84,7 +82,7 @@ func _run() -> void:
 
 
 func _range_is_valid(target: Vector2) -> bool:
-	return target.x >= 0.0 and target.y <= 100.0 and target.x <= target.y
+	return target.is_finite() and target.x <= target.y
 
 
 func _assert(condition: bool, message: String) -> void:

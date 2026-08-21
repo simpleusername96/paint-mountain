@@ -85,6 +85,8 @@ func _run_checks() -> void:
 
 	gameplay.set_stage_presented(true)
 	_assert_true(gameplay.visible and controller.actions_enabled(), "visibility handoff must activate the prepared stage immediately")
+	_assert_true(controller.current_state == StageController.State.AIMING,
+		"the merged Stage Select briefing must hand the prepared world directly to Aim")
 	_assert_true(
 		(gameplay.get_node("HUD") as CanvasLayer).visible,
 		"visibility handoff must reveal the already-configured HUD"

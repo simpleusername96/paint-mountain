@@ -46,11 +46,12 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
 	await process_frame
 	var queue := hud_root.get_node("BallQueue") as BallQueue
-	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
+	var score_status := hud_root.get_node("AimScoreStatus") as AimScoreStatus
 	queue.show()
-	score_scale.show()
+	score_status.show()
 	await process_frame
 	var safe_margin := 12.0 if viewport_size.x < 960 or viewport_size.y < 620 else SAFE_MARGIN
+	var compact := viewport_size.x < 960 or viewport_size.y < 620
 	var safe_rect := Rect2(Vector2(safe_margin, safe_margin), Vector2(viewport_size) - Vector2(safe_margin * 2.0, safe_margin * 2.0))
 	for path in [
 		"TopStatusBar/StageValue",
@@ -59,7 +60,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"RunStatusCard",
 		"BallQueue",
 		"ActionButtons",
-		"ScoreScale",
+		"AimScoreStatus",
 	]:
 		_assert_inside(hud_root.get_node(path) as Control, safe_rect, "%s at %s (%s)" % [path, viewport_size, locale])
 
@@ -105,7 +106,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	if viewport_size.x < 960 or viewport_size.y < 620:
 		_assert_true(aim.visible and not legend.visible, "compact layout must retain aim controls and suppress only hints at %s" % viewport_size)
 		_assert_pairwise_non_overlap([
-			score_scale,
+			score_status,
 			queue,
 			fire,
 			aim.get_node("Content/AngleStepper") as Control,
@@ -148,7 +149,7 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		actions.set_compact(true, 2.0)
 		_assert_true(angle_decrease.custom_minimum_size.y >= 96.0,
 				"canvas-stretched Aim steppers must preserve physical target size")
-		_assert_true(fire.custom_minimum_size.y >= 124.0,
+		_assert_true(fire.custom_minimum_size.y >= 96.0,
 				"canvas-stretched Fire must preserve physical target size")
 		# Restore the SubViewport contract before checking the remaining geometry.
 		aim.set_compact(true, 1.0)
@@ -171,35 +172,26 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"run status must not overlap Settings at %s" % viewport_size
 	)
 
-	hud.show_state(StageController.State.BRIEFING)
-	queue.show()
-	score_scale.show()
+	_assert_true(score_status.presentation == AimScoreStatus.Presentation.AIM_RANGE,
+			"Aim must expose the success-range-only instrument at %s" % viewport_size)
+	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	await process_frame
-	var compact := viewport_size.x < 960 or viewport_size.y < 620
-	_assert_true(
-		score_scale.preset == (ScoreScale.Preset.VERTICAL_LIVE if compact else ScoreScale.Preset.HORIZONTAL_SUMMARY),
-		"Briefing score must use the readable compact or standard preset at %s" % viewport_size
-	)
-	var mode_chip := hud_root.get_node("TopStatusBar/ModeChip") as Control
-	var stage_name := hud_root.get_node("TopStatusBar/StageName") as Label
-	_assert_true(mode_chip.visible == not compact and stage_name.visible == not compact,
-			"compact Briefing must remove duplicate top-left copy at %s" % viewport_size)
-	_assert_pairwise_non_overlap([
-		hud_root.get_node("TopStatusBar/StageValue") as Control,
-		queue,
-		score_scale,
-		hud_root.get_node("BriefingActions") as Control,
-	], "Briefing groups at %s" % viewport_size)
+	_assert_true(score_status.presentation == AimScoreStatus.Presentation.COMPACT_VALUE,
+			"Map must collapse score to a compact numeric readout at %s" % viewport_size)
+	hud.set_interaction_mode(CameraDirector.InteractionMode.AIM_LOCKED)
 
 	hud.show_state(StageController.State.AIMING)
 	hud.set_camera_mode(CameraDirector.Mode.FOLLOW)
 	await process_frame
+	_assert_true(score_status.presentation == AimScoreStatus.Presentation.COMPACT_VALUE,
+			"Shot Follow must keep the compact numeric readout at %s" % viewport_size)
 	var return_to_cannon := hud_root.get_node("ReturnToCannon") as ActionControl
 	_assert_true(return_to_cannon.visible, "Shot Follow must expose Return at %s" % viewport_size)
 	_assert_inside(return_to_cannon, safe_rect, "ReturnToCannon at %s (%s)" % [viewport_size, locale])
 	_assert_true(return_to_cannon.get_global_rect().get_center().x > hud_root.get_global_rect().get_center().x,
 			"Shot Follow Return must stay at the lower-right edge at %s" % viewport_size)
-	_assert_true(return_to_cannon.text == "↩" and not return_to_cannon.accessibility_name.is_empty(),
+	_assert_true(return_to_cannon.text.is_empty() and return_to_cannon.icon != null
+			and not return_to_cannon.accessibility_name.is_empty(),
 			"Shot Follow Return must be icon-led and accessible at %s" % viewport_size)
 	hud.set_camera_mode(CameraDirector.Mode.AIMING)
 	hud.show_state(StageController.State.PAUSED)
@@ -212,18 +204,14 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"ball queue must honor its component minimum height at %s" % viewport_size
 	)
 	_assert_true(
-		score_scale.size.x >= score_scale.get_combined_minimum_size().x
-				and score_scale.size.y >= score_scale.get_combined_minimum_size().y,
-		"score scale must honor its component minimum geometry at %s" % viewport_size
+		score_status.size.x >= score_status.get_combined_minimum_size().x
+				and score_status.size.y >= score_status.get_combined_minimum_size().y,
+		"score status must honor its component minimum geometry at %s" % viewport_size
 	)
-	var expected_track_height := 160.0 if viewport_size.x < 960 or viewport_size.y < 620 else 300.0
 	_assert_true(
-		score_scale.track_rect_for_test().size.y >= expected_track_height
-				and score_scale.track_rect_for_test().size.x >= 20.0,
-		"vertical 0-100 score rail must remain legible at %s" % viewport_size
+		score_status.target_range().y > score_status.target_range().x,
+		"Aim score status must retain a non-empty success range at %s" % viewport_size
 	)
-	_assert_true(not (score_scale.get_node("MetricIcon") as TextureRect).visible,
-		"vertical score rail must not repeat a metric icon at %s" % viewport_size)
 
 	var result := hud_root.get_node("ResultPanel") as ResultPanel
 	result.configure_has_next(true)
@@ -232,8 +220,8 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 	hud.show_state(StageController.State.RESULT)
 	await process_frame
 	_assert_true(
-		(hud_root.get_node("TopStatusBar") as TopStatusBar).visible == not compact,
-		"compact Result must suppress the competing top status row at %s" % viewport_size
+		not (hud_root.get_node("TopStatusBar") as TopStatusBar).visible,
+		"Result must suppress the competing top status row at %s" % viewport_size
 	)
 	_assert_inside(result, safe_rect, "ResultPanel at %s (%s)" % [viewport_size, locale])
 	_assert_true(

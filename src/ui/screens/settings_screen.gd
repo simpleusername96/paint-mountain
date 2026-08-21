@@ -32,6 +32,9 @@ func _ready() -> void:
 	}
 	_setup_options()
 	_connect_controls()
+	(%Defaults as ActionControl).configure(
+		"ui.restore_defaults", ActionControl.IconKind.DEFAULTS)
+	(%Close as ActionControl).configure("ui.close", ActionControl.IconKind.CLOSE)
 	%Defaults.pressed.connect(_restore_defaults)
 	%Close.pressed.connect(_close)
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
@@ -100,18 +103,27 @@ func _display_density(viewport_size: Vector2, window_size: Vector2) -> float:
 
 func _apply_control_density(compact: bool, density: float) -> void:
 	var scale := maxf(density, 1.0) if compact else 1.0
+	var panel := $SettingsRoot/Panel as PanelContainer
 	var margin := $SettingsRoot/Panel/Margin as MarginContainer
 	var content := $SettingsRoot/Panel/Margin/Content as VBoxContainer
 	var title := $SettingsRoot/Panel/Margin/Content/Header/Title as Label
 	if compact:
+		panel.offset_left = 12.0 * scale
+		panel.offset_top = 12.0 * scale
+		panel.offset_right = -12.0 * scale
+		panel.offset_bottom = -12.0 * scale
 		for side in [&"margin_left", &"margin_top", &"margin_right", &"margin_bottom"]:
 			margin.add_theme_constant_override(side, roundi(12.0 * scale))
 		content.add_theme_constant_override(&"separation", roundi(8.0 * scale))
 		title.add_theme_font_size_override(&"font_size", roundi(22.0 * scale))
 	else:
-		margin.add_theme_constant_override(&"margin_left", 28)
-		margin.add_theme_constant_override(&"margin_top", 22)
-		margin.add_theme_constant_override(&"margin_right", 28)
+		panel.offset_left = 56.0
+		panel.offset_top = 48.0
+		panel.offset_right = -56.0
+		panel.offset_bottom = -48.0
+		margin.add_theme_constant_override(&"margin_left", 44)
+		margin.add_theme_constant_override(&"margin_top", 30)
+		margin.add_theme_constant_override(&"margin_right", 44)
 		margin.add_theme_constant_override(&"margin_bottom", 20)
 		content.add_theme_constant_override(&"separation", 16)
 		title.remove_theme_font_size_override(&"font_size")
@@ -136,15 +148,11 @@ func _apply_control_density(compact: bool, density: float) -> void:
 			control.custom_minimum_size.y = 44.0 * scale
 		elif control is HBoxContainer and control.name.to_lower().ends_with("row"):
 			control.custom_minimum_size.y = 44.0 * scale
-	var defaults := %Defaults as Button
-	var close := %Close as Button
-	defaults.custom_minimum_size = Vector2(220.0, 46.0) * scale
-	close.custom_minimum_size = Vector2(160.0, 46.0) * scale
+	var defaults := %Defaults as ActionControl
+	var close := %Close as ActionControl
 	for button in [defaults, close]:
-		if compact:
-			button.add_theme_font_size_override(&"font_size", roundi(16.0 * scale))
-		else:
-			button.remove_theme_font_size_override(&"font_size")
+		button.set_compact(compact, scale)
+		button.set_icon_width(28.0 if compact else 34.0)
 
 
 func _setup_options() -> void:

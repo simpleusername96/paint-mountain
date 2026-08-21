@@ -31,37 +31,48 @@ func _run_checks() -> void:
 	await _assert_main_preview_safe(app, main_menu, &"stage_02")
 	app._set_catalog_load_failed()
 	await process_frame
-	var retry_load := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as Button
+	var retry_load := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as MenuActionItem
 	_assert_true(
-		not retry_load.disabled and retry_load.text == "다시 불러오기",
+		not retry_load.action.disabled and retry_load.action.text.is_empty()
+				and retry_load.action.accessibility_name == "다시 불러오기",
 		"a missing catalog must expose an enabled retry action instead of endless loading"
 	)
 
 	app._show_stage_select()
 	await process_frame
 	_assert_true(stage_select.visible and not main_menu.visible, "stage select must replace the main menu")
+	_assert_true(app._preview_ground != null and app._preview_ground.visible
+			and app._preview_ground.is_configured(),
+		"Stage Select must show the configured gameplay sky/ground preview")
 	app._set_catalog_load_failed()
 	await process_frame
 	var stage_retry := stage_select._start_button
 	_assert_true(
-		not stage_retry.disabled and stage_retry.text == "다시 불러오기",
+		not stage_retry.disabled and stage_retry.text.is_empty()
+				and stage_retry.accessibility_name == "다시 불러오기",
 		"a missing catalog on Stage Select must expose an enabled localized retry action"
 	)
 	for stage_node in stage_select._stage_nodes:
 		_assert_true(not stage_node.disabled, "all-open stage nodes must be keyboard-selectable")
-	_assert_true(stage_select._page_label.text == "01–08 / 30", "stage select must show the inclusive first-page range")
+	_assert_true(stage_select._stage_nodes.size() == 10
+			and stage_select._stage_rail.selected_stage_id() == &"stage_02",
+		"stage select must expose a ten-node full-width line around the provisional selection")
 	stage_select.set_page_for_capture(1)
-	_assert_true(stage_select._page_label.text == "09–16 / 30", "stage select must show the inclusive second-page range")
-	stage_select.set_page_for_capture(3)
-	_assert_true(stage_select._page_label.text == "25–30 / 30", "stage select must show the inclusive final-page range")
+	_assert_true(stage_select._stage_rail.selected_stage_id() == &"stage_11",
+		"the second ten-stage window must start at Stage 11")
+	stage_select.set_page_for_capture(2)
+	_assert_true(stage_select._stage_rail.selected_stage_id() == &"stage_21",
+		"the final ten-stage window must start at Stage 21")
+	stage_select._on_stage_requested(&"stage_30")
 	_assert_true(
-		(stage_select._stage_rail.get_node("Next") as Button).disabled
-				and not (stage_select._stage_rail.get_node("Previous") as Button).disabled,
-		"page edge controls must disable only the unavailable direction"
+		stage_select._next.disabled and not stage_select._previous.disabled,
+		"terrain-side arrows must disable only the unavailable direction"
 	)
 	stage_select.set_page_for_capture(0)
 	stage_select._stage_nodes[1].pressed.emit()
-	_assert_true(stage_select.selected_stage_id() == &"stage_02" and stage_select._stage_nodes[1].button_pressed, "stage selection must expose a visible selected state")
+	_assert_true(stage_select.selected_stage_id() == &"stage_02"
+			and stage_select._stage_rail.selected_stage_id() == &"stage_02",
+		"stage selection must expose one visible selected state")
 
 	app._show_settings(&"stage_select")
 	await process_frame
@@ -91,25 +102,19 @@ func _run_checks() -> void:
 		not app._runtime_preparer.is_preparing(next_stage_id),
 		"active Gameplay must not compete with next-stage artifact preparation"
 	)
-	_assert_true(controller.current_state == StageController.State.BRIEFING, "stage start must enter the separate briefing interface")
-	_assert_true(hud_root.get_node("BriefingActions").visible, "briefing action lane must be visible before aiming")
-	_assert_true(
-		(hud_root.get_node("BriefingActions/Back") as Button).text == tr("ui.back") \
-				and (hud_root.get_node("BriefingActions/Start") as Button).text \
-						== tr("ui.start_aiming"),
-		"briefing actions must resolve their visible locale without renderer-dependent key translation"
-	)
+	_assert_true(controller.current_state == StageController.State.AIMING,
+		"Stage Select briefing must enter the prepared gameplay world directly in Aim")
+	_assert_true(hud_root.get_node_or_null("BriefingActions") == null,
+		"the standalone Briefing action lane must be absent")
 	for mechanism in gameplay.get_node("Mechanisms").get_children():
 		var label := mechanism.get_node_or_null("BriefingLabel") as Label3D
 		_assert_true(mechanism.visible, "%s glyph geometry must remain visible in briefing" % mechanism.name)
 		_assert_true(label != null and not label.visible, "%s briefing text label must stay hidden" % mechanism.name)
-	_assert_true(controller.begin_aiming(), "UI flow test must enter aiming")
-	await process_frame
 	_assert_aiming_hud_contract(hud_root)
 	_assert_true(controller.toggle_pause(), "pause must be reachable from gameplay")
 	var pause_overlay := hud_root.get_node("PauseOverlay") as Control
 	_assert_true(pause_overlay.visible, "pause overlay must expose its own screen")
-	_assert_true(pause_overlay.get_node_or_null("Center/Surface/Margin/Column/Restart") is Button, "Restart must remain available from the paused menu")
+	_assert_true(pause_overlay.get_node_or_null("Center/Content/Actions/Restart") is ActionControl, "Restart must remain available from the paused icon rail")
 	app._on_gameplay_navigation(&"settings")
 	await process_frame
 	_assert_true(settings.visible, "paused gameplay must be able to open full settings")
@@ -123,7 +128,7 @@ func _run_checks() -> void:
 	await process_frame
 	_assert_true(pause_overlay.visible, "closing Settings must restore the Pause presentation")
 	_assert_true(controller.current_state == StageController.State.PAUSED and paused, "closing Settings must not resume the stage or tree")
-	_assert_true(pause_overlay.get_node("Center/Surface/Margin/Column/Settings").has_focus(), "Settings close must restore focus to Pause Settings")
+	_assert_true(pause_overlay.get_node("Center/Content/Actions/Settings").has_focus(), "Settings close must restore focus to Pause Settings")
 	var shots_before_blocked_fire := controller.shots_remaining
 	_assert_true(not controller.request_fire() and controller.shots_remaining == shots_before_blocked_fire, "the paused child-modal flow must keep gameplay input blocked")
 	controller.toggle_pause()
@@ -178,6 +183,9 @@ func _assert_main_preview_safe(
 	_assert_true(artifact != null, "Main Menu preview must reuse the typed runtime artifact")
 	if artifact == null:
 		return
+	_assert_true(app._preview_ground != null and app._preview_ground.is_configured()
+			and not app._preview_ground.visible,
+		"Main Menu must keep the Stage Select ground hidden on its off-white field")
 	var local_points := artifact.presentation_local_points
 	var world_points := PackedVector3Array()
 	for local_point in local_points:
@@ -197,7 +205,7 @@ func _assert_main_preview_safe(
 	)
 	var preview_boundary := 1280.0 * AppRoot.PREVIEW_SAFE_RECT.position.x
 	for action_name in ["Play", "StageSelect", "Settings", "Quit"]:
-		var action := main_menu.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as Button
+		var action := main_menu.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as MenuActionItem
 		_assert_true(
 			action.get_global_rect().end.x <= preview_boundary,
 			"Main Menu action column must not overlap the preview safe region"
@@ -205,31 +213,32 @@ func _assert_main_preview_safe(
 
 
 func _assert_main_menu_focus_startup(main_menu: MainMenuScreen) -> void:
-	var play := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as Button
-	var stage_select := main_menu.get_node("Root/BrandBlock/Margin/Content/StageSelect") as Button
-	var settings := main_menu.get_node("Root/BrandBlock/Margin/Content/Settings") as Button
+	var play := main_menu.get_node("Root/BrandBlock/Margin/Content/Play") as MenuActionItem
+	var stage_select := main_menu.get_node("Root/BrandBlock/Margin/Content/StageSelect") as MenuActionItem
+	var settings := main_menu.get_node("Root/BrandBlock/Margin/Content/Settings") as MenuActionItem
 	_assert_true(
-		not play.has_focus() and not stage_select.has_focus() and not settings.has_focus(),
+		not play.action_has_focus() and not stage_select.action_has_focus()
+				and not settings.action_has_focus(),
 		"passive Main Menu launch must not show a keyboard focus ring"
 	)
 	main_menu.set_play_preparation_state(false)
 	main_menu._unhandled_key_input(_keyboard_navigation_event())
-	_assert_true(stage_select.has_focus(), "first keyboard navigation while loading must focus Stage Select")
+	_assert_true(stage_select.action_has_focus(), "first keyboard navigation while loading must focus Stage Select")
 	main_menu.set_play_preparation_state(true)
-	_assert_true(play.has_focus(), "Play readiness must replace only the loading fallback focus")
+	_assert_true(play.action_has_focus(), "Play readiness must replace only the loading fallback focus")
 	main_menu.begin_passive_focus_session()
 	main_menu.set_play_preparation_state(false)
 	main_menu._unhandled_key_input(_keyboard_navigation_event())
 	main_menu._input(_keyboard_navigation_event())
-	settings.grab_focus()
-	stage_select.grab_focus()
+	settings.focus_action()
+	stage_select.focus_action()
 	main_menu.set_play_preparation_state(true)
 	_assert_true(
-		stage_select.has_focus(),
+		stage_select.action_has_focus(),
 		"Play readiness must preserve a later focus choice even after returning to Stage Select"
 	)
 	main_menu.set_play_preparation_state(false, true)
-	_assert_true(not play.disabled, "load failure must retain its reachable retry action")
+	_assert_true(not play.action.disabled, "load failure must retain its reachable retry action")
 
 
 func _keyboard_navigation_event() -> InputEventKey:
@@ -305,14 +314,14 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	# offsets and the delivery contract use the fixed logical 1280x720 rectangle.
 	var hud_rect := Rect2(rendered_hud_rect.position, logical_size)
 	var hud_center := hud_rect.get_center()
-	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
+	var score_status := hud_root.get_node("AimScoreStatus") as AimScoreStatus
 	var queue := hud_root.get_node("BallQueue") as BallQueue
 	_assert_true(hud_root.get_node_or_null("TopStatusBar/TargetChip") == null, "the left rule meter must remain the sole score target owner")
-	_assert_true(score_scale.is_visible_in_tree(), "Aiming must expose the shared fixed-domain score scale")
-	_assert_true(score_scale.get_global_rect().get_center().x < hud_center.x, "the score scale must remain on the left during aiming")
+	_assert_true(score_status.is_visible_in_tree(), "Aiming must expose the shared success-range score status")
+	_assert_true(score_status.get_global_rect().get_center().x < hud_center.x, "the score status must remain on the left during aiming")
 	_assert_true(
-		score_scale.target_rect_for_test().size.y > 0.0,
-		"the score scale must retain an authoritative target interval or threshold"
+		score_status.target_range().y > score_status.target_range().x,
+		"the score status must retain an authoritative success interval"
 	)
 	if queue.is_visible_in_tree():
 		_assert_true(queue.get_global_rect().get_center().x > hud_center.x, "the target-band queue must remain on the right during aiming")
@@ -353,5 +362,5 @@ func _assert_aiming_hud_contract(hud_root: Control) -> void:
 	)
 	_assert_true(settings_rect.get_center().x > hud_center.x and settings_rect.get_center().y < hud_center.y, "settings must stay in the upper-right")
 	_assert_true(not settings_rect.intersects(status_rect), "settings must not overlap the status instruments")
-	for control in [score_scale, fire, status, settings]:
+	for control in [score_status, fire, status, settings]:
 		_assert_true(hud_rect.encloses(control.get_global_rect()), "%s must remain inside the logical HUD bounds" % control.name)

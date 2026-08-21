@@ -21,12 +21,12 @@ func _run() -> void:
 		 hud_root.get_node_or_null("TopStatusBar/TargetChip") == null,
 		"Target score must have one owner in the left score scale"
 	)
-	var score_scale := hud_root.get_node("ScoreScale") as ScoreScale
-	score_scale.configure_coverage(10.0)
-	var coverage_caption := score_scale.get_node("MetricIcon") as TextureRect
+	var score_status := hud_root.get_node("AimScoreStatus") as AimScoreStatus
+	score_status.configure_coverage(10.0)
 	_assert_true(
-		coverage_caption.texture != null and not score_scale.accessibility_name.is_empty(),
-		"ScoreScale must use the approved target icon with a localized text alternative"
+		not score_status.accessibility_name.is_empty()
+				and score_status.target_range().is_equal_approx(Vector2(10.0, 100.0)),
+		"AimScoreStatus must expose its visual range through a localized text alternative"
 	)
 
 	hud.show_state(StageController.State.AIMING)
@@ -73,7 +73,7 @@ func _run() -> void:
 	result_panel.show_target_band_result(
 		false, -3.0, band, 0, PaintCoverageSnapshot.new(4.0, 1.0, 5.0), 60.0, 1
 	)
-	_assert_true((summary.get_node("Value") as Label).text == "-3.0",
+	_assert_true((summary.get_node("ValueRow/Value") as Label).text == "-3.0",
 		"failed target-band result must preserve the authoritative signed score")
 	_assert_true(is_equal_approx(summary.score_scale.value(), -3.0)
 			and is_equal_approx(summary.score_scale.marker_value_for_test(), 0.0)
@@ -111,8 +111,8 @@ func _assert_true(condition: bool, message: String) -> void:
 func _assert_primary_action(result_panel: ResultPanel, expected_name: String) -> void:
 	var primary_names: Array[String] = []
 	for action_name in ["Retry", "Next", "RetrySameDeal", "NewDeal", "Stages"]:
-		var action := result_panel.get_node("Margin/Content/Actions/%s" % action_name) as Button
-		if action.visible and action.theme_type_variation == &"ActionControl":
+		var action := result_panel.get_node("Margin/Content/Actions/%s" % action_name) as ActionControl
+		if action.visible and action.visual_role == ActionControl.VisualRole.PRIMARY:
 			primary_names.append(action_name)
 	_assert_true(primary_names == [expected_name],
 		"result must expose one primary %s action, got %s" % [expected_name, primary_names])

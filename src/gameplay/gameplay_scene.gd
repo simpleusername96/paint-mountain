@@ -176,9 +176,15 @@ func set_stage_presented(presented: bool) -> void:
 	var hud_layer := get_node_or_null("HUD") as CanvasLayer
 	if hud_layer != null:
 		hud_layer.visible = presented
+	process_mode = Node.PROCESS_MODE_INHERIT if presented else Node.PROCESS_MODE_DISABLED
 	if _stage_controller != null:
 		_stage_controller.set_actions_enabled(presented)
-	process_mode = Node.PROCESS_MODE_INHERIT if presented else Node.PROCESS_MODE_DISABLED
+		# Stage Select already presents all briefing truth. Keep the internal
+		# transition for state-machine ownership, but enter Aim atomically when the
+		# prepared gameplay world becomes visible.
+		if presented and _stage_controller.current_state == StageController.State.BRIEFING:
+			if not _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN):
+				push_error("Prepared gameplay could not enter Aim after Stage Select.")
 
 
 func terrain_layout_read_only() -> GeneratedStageLayout:
@@ -373,7 +379,6 @@ func _connect_systems() -> void:
 	_stage_controller.stage_finished.connect(_on_stage_finished)
 	_camera_director.mode_changed.connect(_on_camera_mode_changed)
 	_camera_director.interaction_mode_changed.connect(_on_interaction_mode_changed)
-	_hud.begin_aiming_requested.connect(func() -> void: _stage_controller.begin_aiming(StageController.ActionOrigin.HUMAN))
 	_hud.fire_requested.connect(func() -> void: _aim_input.request_fire())
 	_hud.finish_requested.connect(func() -> void: _stage_controller.finish_stage(StageController.ActionOrigin.HUMAN))
 	_hud.power_step_requested.connect(_aim_input.adjust_power_button)

@@ -9,6 +9,16 @@ signal main_menu_requested
 
 
 func _ready() -> void:
+	(%Resume as ActionControl).configure(
+		"ui.resume", ActionControl.IconKind.PLAY, ActionControl.VisualRole.PRIMARY)
+	(%Restart as ActionControl).configure(
+		"ui.restart", ActionControl.IconKind.RETRY, ActionControl.VisualRole.WORLD)
+	(%Settings as ActionControl).configure(
+		"ui.settings", ActionControl.IconKind.SETTINGS, ActionControl.VisualRole.WORLD)
+	(%Stages as ActionControl).configure(
+		"ui.stage_select", ActionControl.IconKind.STAGES, ActionControl.VisualRole.WORLD)
+	(%MainMenu as ActionControl).configure(
+		"ui.main_menu", ActionControl.IconKind.HOME, ActionControl.VisualRole.WORLD)
 	%Resume.pressed.connect(func() -> void: resume_requested.emit())
 	%Restart.pressed.connect(func() -> void: restart_requested.emit())
 	%Settings.pressed.connect(func() -> void: settings_requested.emit())
@@ -22,39 +32,25 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var window_size := viewport_size if get_viewport() is SubViewport \
 			else Vector2(DisplayServer.window_get_size())
-	var compact := window_size.y < 480.0
+	var compact := window_size.y < 480.0 or window_size.x < 760.0
 	var density := 1.0 if get_viewport() is SubViewport else clampf(
-		minf(viewport_size.x / maxf(window_size.x, 1.0), viewport_size.y / maxf(window_size.y, 1.0)),
-		1.0, 2.0
-	)
-	var surface := $Center/Surface as PanelContainer
-	var margin := $Center/Surface/Margin as MarginContainer
-	var column := $Center/Surface/Margin/Column as VBoxContainer
-	var title := $Center/Surface/Margin/Column/Title as Label
-	if compact:
-		surface.custom_minimum_size.x = 320.0 * density
-		for side in [&"margin_left", &"margin_top", &"margin_right", &"margin_bottom"]:
-			margin.add_theme_constant_override(side, roundi(8.0 * density))
-		column.add_theme_constant_override(&"separation", roundi(2.0 * density))
-		title.theme_type_variation = &"ScreenTitleCompact"
-		title.add_theme_font_size_override(&"font_size", roundi(22.0 * density))
-		%Resume.custom_minimum_size.y = 44.0 * density
-		for button in [%Restart, %Settings, %Stages, %MainMenu]:
-			button.custom_minimum_size.y = 40.0 * density
-		for button in [%Resume, %Restart, %Settings, %Stages, %MainMenu]:
-			button.add_theme_font_size_override(&"font_size", roundi(16.0 * density))
-	else:
-		surface.custom_minimum_size.x = 340.0
-		for side in [&"margin_left", &"margin_top", &"margin_right", &"margin_bottom"]:
-			margin.add_theme_constant_override(side, 16)
-		column.add_theme_constant_override(&"separation", 4)
-		title.theme_type_variation = &"ScreenTitleCompact"
-		title.add_theme_font_size_override(&"font_size", 26)
-		%Resume.custom_minimum_size.y = 48.0
-		for button in [%Restart, %Settings, %Stages, %MainMenu]:
-			button.custom_minimum_size.y = 42.0
-		for button in [%Resume, %Restart, %Settings, %Stages, %MainMenu]:
-			button.add_theme_font_size_override(&"font_size", 17)
+		minf(viewport_size.x / maxf(window_size.x, 1.0),
+				viewport_size.y / maxf(window_size.y, 1.0)), 1.0, 2.0)
+	var resolved := density if compact else 1.0
+	var content := $Center/Content as VBoxContainer
+	var actions := %Actions as HBoxContainer
+	var title := %Title as Label
+	content.custom_minimum_size = Vector2(340.0, 132.0) * resolved \
+			if compact else Vector2(420.0, 160.0)
+	content.add_theme_constant_override(&"separation", roundi(18.0 * resolved) if compact else 28)
+	actions.add_theme_constant_override(&"separation", roundi(10.0 * resolved) if compact else 16)
+	title.add_theme_font_size_override(&"font_size", roundi(30.0 * resolved) if compact else 42)
+	for action in [%Resume, %Restart, %Settings, %Stages, %MainMenu]:
+		var control := action as ActionControl
+		control.set_compact(compact, resolved)
+		control.set_icon_width(28.0 if compact else 32.0)
+		var edge := (48.0 if compact else 56.0) * resolved
+		control.custom_minimum_size = Vector2(edge, edge)
 
 
 func focus_resume() -> void:

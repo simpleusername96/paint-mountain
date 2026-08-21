@@ -43,7 +43,6 @@ func _run_checks() -> void:
 
 	_assert_absent(stage_select, ["Root/Divider", "Root/CardsPanel", "Root/PreviewPanel"])
 	_assert_present(stage_select, [
-		"Root/Heading",
 		"Root/SelectedInfo/Identity/StageNumber",
 		"Root/SelectedInfo/Identity/StageName",
 		"Root/SelectedInfo/PreviewStats",
@@ -70,8 +69,8 @@ func _run_checks() -> void:
 		"SettingsRoot/Panel/Margin/Content/Columns/Layout/Display/FullscreenRow/Icon",
 		"SettingsRoot/Panel/Margin/Content/Columns/Layout/Display/Resolution",
 		"SettingsRoot/Panel/Margin/Content/Columns/Layout/Display/Language",
-		"SettingsRoot/Panel/Margin/Content/Footer/Defaults",
-		"SettingsRoot/Panel/Margin/Content/Footer/Close",
+		"SettingsRoot/Panel/Margin/Content/Header/Defaults",
+		"SettingsRoot/Panel/Margin/Content/Header/Close",
 	])
 
 	var hud_root := hud.get_node("HUDRoot")
@@ -79,14 +78,13 @@ func _run_checks() -> void:
 		"BriefingPanel",
 		"BriefingRule",
 		"BriefingObjective",
+		"BriefingActions",
 		"ContextLegend/Divider",
 		"ResultPanel/Margin/Content/CoverageLabel",
 		"ResultPanel/Margin/Content/CoverageExplanation",
 		"ResultPanel/Margin/Content/Target",
 	])
 	_assert_present(hud_root, [
-		"BriefingActions/Back",
-		"BriefingActions/Start",
 		"ResultPanel/Margin/Content/Summary",
 		"ResultPanel/Margin/Content/Actions/Retry",
 		"ResultPanel/Margin/Content/Actions/Next",

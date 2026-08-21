@@ -13,6 +13,15 @@ var _loading_fallback_owns_focus := false
 
 
 func _ready() -> void:
+	(%StageSelect as MenuActionItem).configure(
+		"ui.stage_select", ActionControl.IconKind.STAGES
+	)
+	(%Settings as MenuActionItem).configure(
+		"ui.settings", ActionControl.IconKind.SETTINGS
+	)
+	(%Quit as MenuActionItem).configure(
+		"ui.quit", ActionControl.IconKind.QUIT, ActionControl.VisualRole.DESTRUCTIVE
+	)
 	%Play.pressed.connect(func() -> void: play_requested.emit())
 	%StageSelect.pressed.connect(func() -> void: stage_select_requested.emit())
 	%Settings.pressed.connect(func() -> void: settings_requested.emit())
@@ -33,23 +42,27 @@ func _apply_responsive_layout() -> void:
 	var window_size := viewport_size if get_viewport() is SubViewport \
 			else Vector2(DisplayServer.window_get_size())
 	var compact := window_size.x < 900.0 or window_size.y < 520.0
+	var density := _display_density(viewport_size, window_size) if compact else 1.0
 	var block := %BrandBlock as Control
 	var content := %Content as VBoxContainer
 	var title := %Title as Label
 	var spacer := %ActionSpacer as Control
 	block.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	if compact:
-		block.position = Vector2(24.0, 12.0)
-		block.size = Vector2(minf(380.0, viewport_size.x - 48.0), viewport_size.y - 24.0)
+		var safe := 12.0 * density
+		block.position = Vector2(safe, safe)
+		block.size = Vector2(minf(380.0 * density, viewport_size.x - safe * 2.0), viewport_size.y - safe * 2.0)
 		content.add_theme_constant_override(&"separation", 8)
 		title.theme_type_variation = &"MenuTitleCompact"
-		spacer.custom_minimum_size.y = 8.0
+		spacer.custom_minimum_size.y = 8.0 * density
 	else:
 		block.position = Vector2(56.0, maxf(24.0, (viewport_size.y - 528.0) * 0.5))
 		block.size = Vector2(414.0, minf(528.0, viewport_size.y - block.position.y - 24.0))
 		content.add_theme_constant_override(&"separation", 16)
 		title.theme_type_variation = &"MenuTitle"
 		spacer.custom_minimum_size.y = 48.0
+	for action_item in [%Play, %StageSelect, %Settings, %Quit]:
+		(action_item as MenuActionItem).set_compact(compact, density)
 
 
 func set_play_preparation_state(ready: bool, failed: bool = false) -> void:
@@ -60,10 +73,10 @@ func set_play_preparation_state(ready: bool, failed: bool = false) -> void:
 
 
 func focus_primary() -> void:
-	if not %Play.disabled:
-		%Play.grab_focus()
+	if not (%Play as MenuActionItem).action.disabled:
+		(%Play as MenuActionItem).focus_action()
 	else:
-		%StageSelect.grab_focus()
+		(%StageSelect as MenuActionItem).focus_action()
 
 
 func begin_passive_focus_session() -> void:
@@ -87,24 +100,29 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	# keyboard navigation establishes the normal visible focus origin instead.
 	focus_primary()
 	_loading_fallback_owns_focus = not _play_ready and not _play_failed \
-			and %StageSelect.has_focus()
+			and (%StageSelect as MenuActionItem).action_has_focus()
 	get_viewport().set_input_as_handled()
 
 
 func _apply_play_preparation_state(play_became_ready: bool = false) -> void:
-	var play := %Play as ActionControl
+	var play := %Play as MenuActionItem
 	if _play_failed:
-		play.configure("ui.retry_stage_load")
+		play.configure(
+			"ui.retry_stage_load", ActionControl.IconKind.RETRY, ActionControl.VisualRole.PRIMARY
+		)
 	elif not _play_ready:
-		play.configure("ui.loading_stage")
+		play.configure(
+			"ui.loading_stage", ActionControl.IconKind.PLAY, ActionControl.VisualRole.PRIMARY
+		)
 	else:
-		play.configure("ui.play")
+		play.configure("ui.play", ActionControl.IconKind.PLAY, ActionControl.VisualRole.PRIMARY)
 	play.set_readiness(_play_ready or _play_failed,
 			tr("ui.stage_load_failed") if _play_failed else "")
-	if play_became_ready and _loading_fallback_owns_focus and %StageSelect.has_focus():
+	if play_became_ready and _loading_fallback_owns_focus \
+			and (%StageSelect as MenuActionItem).action_has_focus():
 		# Only replace the loading fallback. Any later player focus movement wins.
 		_loading_fallback_owns_focus = false
-		%Play.grab_focus()
+		(%Play as MenuActionItem).focus_action()
 
 
 func _is_keyboard_navigation(event: InputEvent) -> bool:
@@ -121,3 +139,11 @@ func _is_keyboard_navigation(event: InputEvent) -> bool:
 
 func _on_settings_changed(_settings: Dictionary) -> void:
 	_apply_play_preparation_state()
+	for action_item in [%StageSelect, %Settings, %Quit]:
+		(action_item as MenuActionItem).refresh_locale()
+
+
+func _display_density(viewport_size: Vector2, window_size: Vector2) -> float:
+	if get_viewport() is SubViewport or window_size.x <= 0.0 or window_size.y <= 0.0:
+		return 1.0
+	return clampf(minf(viewport_size.x / window_size.x, viewport_size.y / window_size.y), 1.0, 2.0)

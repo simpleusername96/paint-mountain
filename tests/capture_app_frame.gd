@@ -62,6 +62,9 @@ func _capture() -> void:
 				stage_select._on_stage_requested(stage.stage_id)
 	elif requested_screen == "settings":
 		app._show_settings(&"main_menu")
+	elif requested_screen == "main_menu_hover":
+		var play_item := app.get_node("MainMenu/Root/BrandBlock/Margin/Content/Play") as MenuActionItem
+		play_item.reveal_for_capture()
 	for _frame in range(20):
 		await process_frame
 	await RenderingServer.frame_post_draw

@@ -1,7 +1,6 @@
 class_name HUDController
 extends CanvasLayer
 
-signal begin_aiming_requested
 signal fire_requested
 signal restart_requested
 signal new_deal_requested
@@ -19,14 +18,13 @@ signal angle_step_requested(direction: float)
 @onready var _top: TopStatusBar = %TopStatusBar
 @onready var _layout: HudRootLayout = $HUDRoot
 @onready var _aim: AimControls = %AimControls
-@onready var _score_scale: ScoreScale = %ScoreScale
+@onready var _score_status: AimScoreStatus = %AimScoreStatus
 @onready var _queue: BallQueue = %BallQueue
 @onready var _actions: ActionButtons = %ActionButtons
 @onready var _run_status: RunStatusCard = %RunStatusCard
 @onready var _interaction: CameraInteractionControl = %CameraInteractionControl
 @onready var _return_to_cannon: ActionControl = %ReturnToCannon
 @onready var _result: ResultPanel = %ResultPanel
-@onready var _briefing: Control = %BriefingActions
 @onready var _pause: PauseOverlay = %PauseOverlay
 @onready var _context_legend: ContextLegend = %ContextLegend
 var _stage_data: StageData
@@ -42,6 +40,7 @@ var _current_camera_mode := CameraDirector.Mode.BRIEFING
 var _run_started := false
 var _clock_finished := false
 var _pause_overlay_suspended := false
+var _queue_detail_open := false
 
 
 func update_clock(snapshot: Dictionary) -> void:
@@ -56,21 +55,20 @@ func _ready() -> void:
 	_return_to_cannon.configure("hud.return_to_cannon")
 	_connect_components()
 	get_node("/root/GameState").settings_changed.connect(_on_settings_changed)
-	_refresh_briefing_locale()
 	_refresh_context_legend()
 
 
 func configure(stage_data: StageData) -> void:
 	_stage_data = stage_data
-	_refresh_briefing_locale()
 	_top.configure(stage_data)
+	_result.configure_stage(stage_data.stage_number)
 	if stage_data.uses_target_band():
-		_score_scale.configure_target_band(stage_data.target_band, stage_data.color_score_rule)
+		_score_status.configure_target_band(stage_data.target_band, stage_data.color_score_rule)
 		_result.configure_target_band_model(stage_data.target_band, stage_data.color_score_rule)
 		var empty_tokens: Array[BallToken] = []
 		_queue.configure(empty_tokens)
 	else:
-		_score_scale.configure_coverage(stage_data.target_coverage)
+		_score_status.configure_coverage(stage_data.target_coverage)
 	_last_score_snapshot.clear()
 	_finish_ready = false
 	_finish_reason_key = &"hud.finish_disabled_tooltip"
@@ -96,7 +94,7 @@ func update_coverage(value: float) -> void:
 	_last_coverage = value
 	if _stage_data != null and _stage_data.uses_target_band():
 		return
-	_score_scale.update_coverage(value)
+	_score_status.update_coverage(value)
 
 
 func update_target_score(snapshot: Dictionary) -> void:
@@ -109,7 +107,7 @@ func update_target_score(snapshot: Dictionary) -> void:
 		float(snapshot.get("total_percent", 0.0)),
 		int(snapshot.get("paint_mask_checksum", 0))
 	)
-	_score_scale.update_target_band(
+	_score_status.update_target_band(
 		coverage,
 		float(snapshot.get("paint_score", 0.0)),
 		_stage_data.color_score_rule.red_weight,
@@ -139,9 +137,9 @@ func show_state(state: StageController.State) -> void:
 	# The interaction toggle is the only mode label during the Board Phase.
 	# Keeping the serial-state "Aiming" chip beside "Map Inspection" is
 	# truthful internally but contradictory to players.
-	_briefing.visible = state == StageController.State.BRIEFING
 	var aiming_surface := state in [
 		StageController.State.AIMING,
+		StageController.State.PAUSED,
 	]
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
@@ -153,9 +151,7 @@ func show_state(state: StageController.State) -> void:
 	_top.set_settings_visible(state not in [StageController.State.PAUSED, StageController.State.RESULT])
 	_apply_target_rule_visibility()
 	_refresh_context_legend()
-	if state == StageController.State.BRIEFING:
-		%Start.grab_focus()
-	elif state == StageController.State.AIMING:
+	if state == StageController.State.AIMING:
 		if _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED:
 			_actions.focus_fire.call_deferred()
 		else:
@@ -170,13 +166,17 @@ func set_interaction_mode(mode: CameraDirector.InteractionMode) -> void:
 	_current_interaction_mode = mode
 	_interaction.set_interaction_mode(mode)
 	_apply_interaction_presentation(true)
+	_apply_target_rule_visibility()
 	_refresh_context_legend()
 
 
 func set_camera_mode(mode: CameraDirector.Mode) -> void:
 	_current_camera_mode = mode
 	_return_to_cannon.visible = mode == CameraDirector.Mode.FOLLOW
-	var aiming_surface := _current_state == StageController.State.AIMING \
+	var aiming_surface := _current_state in [
+		StageController.State.AIMING,
+		StageController.State.PAUSED,
+	] \
 			and mode == CameraDirector.Mode.AIMING
 	_interaction.visible = aiming_surface
 	_interaction.set_mode_switch_available(aiming_surface)
@@ -246,8 +246,6 @@ func focus_pause_settings() -> void:
 
 
 func _connect_components() -> void:
-	%Start.pressed.connect(func() -> void: begin_aiming_requested.emit())
-	%Back.pressed.connect(func() -> void: stage_select_requested.emit())
 	_aim.power_step_requested.connect(func(direction: float) -> void: power_step_requested.emit(direction))
 	_aim.angle_step_requested.connect(func(direction: float) -> void: angle_step_requested.emit(direction))
 	_top.settings_requested.connect(func() -> void: pause_requested.emit())
@@ -255,6 +253,10 @@ func _connect_components() -> void:
 	_run_status.finish_requested.connect(func() -> void: finish_requested.emit())
 	_interaction.interaction_mode_requested.connect(
 		func(mode: int) -> void: interaction_mode_requested.emit(mode)
+	)
+	_queue.detail_visibility_changed.connect(func(visible: bool) -> void:
+		_queue_detail_open = visible
+		_apply_target_rule_visibility()
 	)
 	_return_to_cannon.pressed.connect(func() -> void: return_to_cannon_requested.emit())
 	_result.retry_requested.connect(func() -> void: restart_requested.emit())
@@ -270,7 +272,6 @@ func _connect_components() -> void:
 
 
 func _on_settings_changed(_settings: Dictionary) -> void:
-	_refresh_briefing_locale()
 	_aim.refresh_locale()
 	_actions.refresh_locale()
 	if _stage_data != null:
@@ -285,27 +286,21 @@ func _on_settings_changed(_settings: Dictionary) -> void:
 		_result.refresh_locale()
 		_context_legend.refresh_locale()
 		if _stage_data.uses_target_band():
-			_score_scale.configure_target_band(_stage_data.target_band, _stage_data.color_score_rule)
+			_score_status.configure_target_band(_stage_data.target_band, _stage_data.color_score_rule)
 			update_target_score(_last_score_snapshot)
 		else:
-			_score_scale.configure_coverage(_stage_data.target_coverage)
-			_score_scale.update_coverage(_last_coverage)
+			_score_status.configure_coverage(_stage_data.target_coverage)
+			_score_status.update_coverage(_last_coverage)
 	show_state(_current_state)
-
-
-func _refresh_briefing_locale() -> void:
-	%Back.configure("ui.back")
-	%Start.configure("ui.start_aiming")
 
 
 func _refresh_context_legend() -> void:
 	if not is_instance_valid(_context_legend):
 		return
 	if _current_state == StageController.State.BRIEFING:
-		_context_legend.visible = true
-		_context_legend.set_context(ContextLegend.Mode.BRIEFING)
+		_context_legend.visible = false
 		return
-	if _current_state != StageController.State.AIMING:
+	if _current_state not in [StageController.State.AIMING, StageController.State.PAUSED]:
 		_context_legend.visible = false
 		return
 	_context_legend.visible = _current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION
@@ -319,7 +314,10 @@ func _refresh_context_legend() -> void:
 
 func _apply_interaction_presentation(update_focus: bool) -> void:
 	var aim_locked := _current_interaction_mode == CameraDirector.InteractionMode.AIM_LOCKED
-	var aiming_surface := _current_state == StageController.State.AIMING \
+	var aiming_surface := _current_state in [
+		StageController.State.AIMING,
+		StageController.State.PAUSED,
+	] \
 			and _current_camera_mode == CameraDirector.Mode.AIMING
 	_aim.visible = aiming_surface and aim_locked
 	_actions.visible = aiming_surface and aim_locked
@@ -345,12 +343,18 @@ func _apply_finish_availability() -> void:
 
 func _apply_target_rule_visibility() -> void:
 	var target_rule := _stage_data != null and _stage_data.uses_target_band()
-	_score_scale.visible = _current_state in [
-		StageController.State.BRIEFING,
+	_score_status.visible = _current_state in [
 		StageController.State.AIMING,
+		StageController.State.PAUSED,
 	]
-	_layout.set_score_summary(_current_state == StageController.State.BRIEFING)
+	var score_presentation := AimScoreStatus.Presentation.COMPACT_VALUE \
+			if _current_camera_mode == CameraDirector.Mode.FOLLOW \
+			or _current_interaction_mode == CameraDirector.InteractionMode.MAP_INSPECTION \
+			or _queue_detail_open \
+			else AimScoreStatus.Presentation.AIM_RANGE
+	_score_status.set_presentation(score_presentation)
+	_layout.set_score_presentation(score_presentation)
 	_queue.visible = target_rule and _current_state in [
-		StageController.State.BRIEFING,
 		StageController.State.AIMING,
+		StageController.State.PAUSED,
 	] and _current_camera_mode != CameraDirector.Mode.FOLLOW

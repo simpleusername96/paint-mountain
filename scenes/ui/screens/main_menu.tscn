@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/screens/main_menu_screen.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/ui/components/action_control.tscn" id="2_action"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/menu_action_item.tscn" id="2_action"]
 
 [node name="MainMenu" type="CanvasLayer"]
 layer = 20
@@ -67,28 +67,21 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 56)
 layout_mode = 2
 size_flags_horizontal = 0
-text = "ui.play"
 
-[node name="StageSelect" type="Button" parent="Root/BrandBlock/Margin/Content"]
+[node name="StageSelect" parent="Root/BrandBlock/Margin/Content" instance=ExtResource("2_action")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_type_variation = &"QuietButton"
-text = "ui.stage_select"
 
-[node name="Settings" type="Button" parent="Root/BrandBlock/Margin/Content"]
+[node name="Settings" parent="Root/BrandBlock/Margin/Content" instance=ExtResource("2_action")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_type_variation = &"QuietButton"
-text = "ui.settings"
 
-[node name="Quit" type="Button" parent="Root/BrandBlock/Margin/Content"]
+[node name="Quit" parent="Root/BrandBlock/Margin/Content" instance=ExtResource("2_action")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_type_variation = &"QuietButton"
-text = "ui.quit"

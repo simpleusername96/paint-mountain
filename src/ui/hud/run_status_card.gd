@@ -12,7 +12,9 @@ var _unavailable_tooltip_key := &"hud.finish_disabled_tooltip"
 
 
 func _ready() -> void:
-	%Finish.pressed.connect(func() -> void: finish_requested.emit())
+	var finish := %Finish as ActionControl
+	finish.configure("ui.finish", ActionControl.IconKind.FINISH)
+	finish.pressed.connect(func() -> void: finish_requested.emit())
 	var finish_shortcut := Shortcut.new()
 	var finish_key := InputEventKey.new()
 	finish_key.physical_keycode = KEY_F
@@ -71,7 +73,7 @@ func focus_finish() -> void:
 func refresh_locale() -> void:
 	%TimeValue.tooltip_text = tr("hud.time")
 	%ShotsValue.tooltip_text = tr("hud.shots")
-	%Finish.text = tr("ui.finish")
+	(%Finish as ActionControl).refresh_locale()
 	_refresh_values()
 	set_finish_available(finish_is_available(), _unavailable_tooltip_key)
 

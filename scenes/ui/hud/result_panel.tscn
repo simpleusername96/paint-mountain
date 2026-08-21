@@ -43,44 +43,47 @@ theme_override_constants/separation = 14
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Actions" type="HFlowContainer" parent="Margin/Content"]
+[node name="Actions" type="HBoxContainer" parent="Margin/Content"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-size_flags_vertical = 3
-alignment = 2
+alignment = 0
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
 [node name="Retry" parent="Margin/Content/Actions" instance=ExtResource("4_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(136, 48)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-show_icon = false
+action_kind = 13
+label_key = "ui.retry"
 
 [node name="Next" parent="Margin/Content/Actions" instance=ExtResource("4_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(184, 48)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-show_icon = false
+action_kind = 3
+label_key = "ui.next"
 
 [node name="RetrySameDeal" parent="Margin/Content/Actions" instance=ExtResource("4_action")]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(184, 48)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-show_icon = false
+action_kind = 13
+label_key = "ui.same_deal"
 
 [node name="NewDeal" parent="Margin/Content/Actions" instance=ExtResource("4_action")]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(136, 48)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-theme_type_variation = &"WorldQuietButton"
-show_icon = false
+action_kind = 14
+label_key = "ui.new_deal"
 
 [node name="Stages" parent="Margin/Content/Actions" instance=ExtResource("4_action")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(136, 48)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-theme_type_variation = &"WorldQuietButton"
-show_icon = false
+action_kind = 4
+label_key = "ui.stages"

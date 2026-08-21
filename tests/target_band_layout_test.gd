@@ -1,6 +1,6 @@
 extends SceneTree
 
-const METER_SCENE := preload("res://scenes/ui/components/score_scale.tscn")
+const METER_SCENE := preload("res://scenes/ui/components/aim_score_status.tscn")
 
 
 func _initialize() -> void:
@@ -8,8 +8,8 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var meter := METER_SCENE.instantiate() as ScoreScale
-	meter.size = Vector2(132.0, 410.0)
+	var meter := METER_SCENE.instantiate() as AimScoreStatus
+	meter.size = Vector2(600.0, 164.0)
 	root.add_child(meter)
 	await process_frame
 	var band := TargetBandData.new()
@@ -18,18 +18,16 @@ func _run() -> void:
 	meter.configure_target_band(band, ColorScoreRuleData.from_pattern(ColorScoreRuleData.Pattern.BOTH_ADD))
 	await process_frame
 	await process_frame
-	var track := meter.track_rect_for_test()
-	var target := meter.target_rect_for_test()
-	var marker := meter.marker_position_for_test()
 	var failed := false
-	if not track.grow(0.01).encloses(target):
-		push_error("Target band must remain inside the complete 0-100 rail.")
+	if not meter.target_range().is_equal_approx(Vector2(7.0, 11.0)):
+		push_error("Aim must use exactly the success range, not a complete 0-100 rail.")
 		failed = true
-	if not is_equal_approx(marker.y, track.end.y):
-		push_error("Zero score marker must map to the bottom endpoint of the vertical range.")
+	if meter.overflow_direction_for_test() != -1 \
+			or not is_equal_approx(meter.marker_normalized_for_test(), 0.0):
+		push_error("A below-range score must map to the left success-range endpoint.")
 		failed = true
 	meter.queue_free()
 	await process_frame
 	if not failed:
-		print("Target-band layout passed: complete scale, target band, and marker survive container layout.")
+		print("Target-band layout passed: exact success range and signed endpoint survive layout.")
 	quit(1 if failed else 0)
