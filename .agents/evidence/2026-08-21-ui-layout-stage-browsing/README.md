@@ -69,16 +69,18 @@ separates layout, artifact, and preview publication across frames.
 - `stage_layout_repository_test.gd`, `stage_selection_readiness_test.gd`, and
   `stage_runtime_preparer_test.gd` pass after the final concurrency and frame
   separation changes.
-- `scripts/test.ps1` passes the complete ordered suite; see
-  `phase4/test-final2.stdout.log`.
-- `scripts/verify.ps1` passes import, script parsing, and main-scene startup;
-  see `phase4/verify-final2.stdout.log`.
+- `scripts/test.ps1` passes the complete ordered suite.
+- `scripts/verify.ps1` passes import, script parsing, and main-scene startup.
 - Windows release export and all ten final production capture scenarios exit
   zero. Final runtime logs contain no task-owned error.
 - The full suite retains its intentional invalid-contact diagnostic warning.
   The forced midflight Follow capture retains the known two-instance ObjectDB
   shutdown warning; the capture exits zero and the warning is not reachable in
   normal play.
+
+The compact command, result, timing, and warning receipt is retained in
+`validation-summary.txt`; verbose local logs remain excluded by repository log
+policy.
 
 ## Quality audit
 

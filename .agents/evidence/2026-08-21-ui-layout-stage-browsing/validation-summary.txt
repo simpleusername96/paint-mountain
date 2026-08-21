@@ -1,0 +1,45 @@
+Paint Mountain UI layout and Stage browsing validation
+Date: 2026-08-21
+Engine: Godot 4.7.1.stable.official.a13da4feb
+Renderer: Compatibility / Intel Iris Xe
+Implementation commit: b29505f
+Windows executable SHA-256: 620206D1E3C31A262BC16A2CDAF4AB8B6755B461B37FC77D41FC79D21FED904D
+
+Focused checks
+- stage_layout_repository_test.gd: PASS
+- stage_selection_readiness_test.gd: PASS; latest preview 475 ms; no Gameplay during browsing; exactly one final Gameplay after Start
+- stage_runtime_preparer_test.gd: PASS
+- shared_ui_component_ownership_test.gd: PASS
+- score_scale_contract_test.gd: PASS
+- screen_responsive_layout_test.gd: PASS
+- hud_layout_responsive_test.gd: PASS
+- localization_ui_test.gd: PASS
+- essential_ui_copy_test.gd: PASS
+
+Broad checks after final source change
+- pwsh -NoProfile -File scripts/test.ps1 -GodotPath $env:GODOT_BIN: PASS (exit 0)
+- pwsh -NoProfile -File scripts/verify.ps1 -GodotPath $env:GODOT_BIN: PASS (exit 0)
+- Windows Desktop release export: PASS (exit 0)
+- Ten production capture scenarios: PASS (all exit 0)
+- git diff --check: PASS
+
+Final exported Stage browse timing
+- Stage 02 selection dispatch: 135 us
+- Stage 03 selection dispatch: 108 us
+- Stage 04 selection dispatch: 175 us
+- Stage 04 artifact maximum slice: 8.890 ms
+- Stage 04 preview publication: 4.591 ms
+- Warmed background-window baseline maximum: 32.776 ms
+- Browse maximum: 53.605 ms
+- Maximum / baseline: 1.63549548450085
+- Intermediate Gameplay instantiations during browsing: 0
+
+Rendered inspection
+- PASS: Stage Select, Aim, Map, Follow, Pause, and Clear at 1280x720
+- PASS: Stage Select, Aim, and Map at 640x360
+- PASS: no task-owned clipping, overlap, icon-centering defect, or empty Stage Select preview
+
+Known non-blocking diagnostics
+- The complete suite intentionally logs one rejected invalid-contact geometry diagnostic in its failure-path fixture.
+- The forced midflight Follow capture logs a two-instance ObjectDB warning while the delivery runner exits with an airborne projectile. The capture exits 0 and the path is not reachable in normal play.
+- No PaintMountain process remained after capture completion.
