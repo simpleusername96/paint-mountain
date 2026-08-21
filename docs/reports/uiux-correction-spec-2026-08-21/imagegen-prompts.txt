@@ -23,8 +23,9 @@ SHARED VISUAL CONTRACT
 - No white button-like normal backgrounds.
 - White surfaces are reserved for the special-ball information card, the Settings
   form sheet, and confirmation UI.
-- Aim, Map, and Shot Follow do not use a vertical or horizontal 0-100 live scale.
-  They use ScoreStatus in this order: current, target band, R, G.
+- Aim does not use a 0-100 live scale. Its bar shows only the stage success range and
+  internal star tiers; total paint is icon + number and R/G roles are shape + sign.
+- Map and Shot Follow retain their existing approved score presentation in this revision.
 - Align icon centers, group baselines, and shared external edges exactly.
 - No extra actions, decorative panels, watermark, device frame, or changed world.
 
@@ -47,10 +48,10 @@ three-token queue at the top-right. Use transparent Back and one blue circular A
 icon on the bottom baseline. Do not show a ball detail card before inspection.
 
 04 AIM
-Replace the live score axis with ScoreStatus: “현재 0.0”, “목표 9-13”, “R +0.0”,
-“G +0.0”. Keep one top-right status row and queue. Bottom center is one angle -> fire ->
-power row. Minus and plus controls are transparent; values sit outside the buttons. Fire
-is the only blue circular control and uses a white paint-splash icon.
+Use the final Revision 6 prompt below. Keep one top-right status row and queue. Bottom
+center is one angle -> Fire -> power row. Minus and plus controls are transparent; values
+sit outside the buttons. Fire is the only blue circular control and uses a white
+paint-splash icon.
 
 05 SPECIAL BALL DETAIL
 Use the same Aim HUD. Replace floating transparent prose with BallDetailCard directly
@@ -122,120 +123,20 @@ selected, and a restrained continuation marker for stages 11–30. Place one blu
 Aim/Start icon at the lower-right above the rail. No white background, no card shell, no
 large text CTA, no standalone Briefing screen, and no extra prose.
 
-04 AIM — SCORE AREA ONLY
-Edit the approved Aim TO-BE reference. Preserve every pixel outside the top-left score
-area as closely as possible: world, cannon, trajectory, ball queue, settings, status,
-angle/power controls, icons, spacing, and colors must not change. Replace only the old
-score display with a transparent, aligned four-line ScoreStatus block. Show:
-“페인트 점수 0.0    목표 9–13”
-“칠한 면적 0.0%”
-red splat icon + “빨강 0.0%    가산 +1”
-green circle icon + “초록 0.0%    가산 +1”
-Use navy text directly on the sky with no white panel and no axis. Make the distinction
-between score, total painted area, and each color's stage weight immediately readable.
+REVISION 6 — FINAL AIM SUCCESS-RANGE BAR — 2026-08-21
 
+Edit target: the latest corrected AIM TO-BE frame. Preserve the world, camera, cannon,
+trajectory, queue, top-right status, bottom angle/Fire/power controls, palette, spacing,
+and framing. Edit only the compact top-left score area.
 
-REVISION 3 — AIM SCORE UI STUDY — 2026-08-21
+Delete the miniature terrain and every older score graphic. Draw one horizontal score bar
+whose visual domain is only the inclusive success range 9–13. Show endpoint numerals 9 and
+13. Divide the bar symmetrically into five segments and show exactly this icon scale:
+★ / ★★ / ★★★ / ★★ / ★. Use pale blue outer segments, medium blue inner segments, and
+vivid blue center. Current score is 0.0, so place “0.0” and a left-underflow arrow outside
+the 9 endpoint; do not extend the bar to zero.
 
-These prompts edit only the top-left score area of the approved AIM reference. The world,
-cannon, trajectory, queue, top-right status, settings, and bottom angle/fire/power controls
-must remain unchanged. The three outputs are independent information-hierarchy options.
-
-OPTION 1 — TARGET FIRST
-Edit only the top-left score area. Build a transparent target-first HUD with no white card
-or button-like surface. Show “페인트 점수” with a large “0.0”, “목표 9–13”, and “9.0 부족”.
-Under it, show a short local target-window rail: current 0, target band 9–13, and an overflow
-arrow. This is not a 0–100 live scale. Then show “칠한 면적 0.0%” with a restrained thin
-progress rail, followed by red splat + “빨강 0.0% · 더함 +1”, green circle +
-“초록 0.0% · 더함 +1”, and “두 색 필수”. Use navy text directly on the sky and align
-all values to a strict left grid. Preserve every pixel outside this score area.
-
-OPTION 2 — COVERAGE FIRST
-Edit only the top-left score area. Build a coverage-first HUD over one subtle navy-to-
-transparent left edge contrast scrim; do not make a visible card. Show “칠한 면적” and a
-large “0.0%”. Under it, show one thin empty neutral 0–100 progress track; because the value
-is 0.0%, it must contain no red or green fill. Below, show red splat + “빨강 0.0%  점수에 +1”
-and green circle + “초록 0.0%  점수에 +1”. Finish with “페인트 점수 0.0   목표 9–13” and
-“두 색 필수”. Preserve every other AIM element exactly.
-
-OPTION 3 — CONTRIBUTION FIRST
-Edit only the top-left score area. Build a transparent contribution-first HUD with no card,
-chart, or axis. Show “페인트 점수” and a large “0.0”. Then show two aligned calculation rows:
-red splat + “빨강 0.0% × +1 = +0.0” and green circle + “초록 0.0% × +1 = +0.0”. Under a
-restrained divider, show “칠한 면적 0.0%”, then “목표 9–13 | 두 색 필수”. Use navy text and
-one subtle local mist/contrast treatment only if required for legibility. Preserve every
-pixel outside the score area.
-
-OPTION 2 CORRECTION
-Edit only the coverage rail. The displayed total is 0.0%, so the rail must be completely
-empty: a neutral low-contrast track from 0% to 100% with no red or green fill. Keep the
-red splat and green circle rows below as the color-role legend. Do not change anything else.
-
-
-REVISION 4 — AIM ICON-FIRST SCORE HUD — 2026-08-21
-
-Revision 3 is rejected. These prompts remove persistent score labels and explanatory copy.
-Every output edits only the top-left score block of the same 1672 x 941 AIM reference.
-The only new visible tokens allowed are numeric values and signs such as 0.0, 9–13, 0%,
-and +1. Meaning comes from target, fill, marker, red splat, green circle, and link glyphs.
-
-TARGET INSTRUMENT
-Replace the score block with a small bullseye icon and one compact horizontal rail. Put a
-blue current marker at 0.0 and a clearly bracketed target band from 9 to 13. Below it, show
-an unfilled coverage ring with 0%, then red splat +1, a link glyph, and green circle +1.
-No labels, headings, helper copy, card, panel, legend, or equation. Preserve all other AIM
-pixels and controls.
-
-TERRAIN MASK
-Replace the score block with a simplified outline silhouette of the same mountain. At 0%
-the silhouette is unfilled; future coverage fills this mask from the authoritative paint
-data. Place a compact score bracket above it with current 0.0 and target 9–13. Under it,
-show red splat +1, a link glyph, and green circle +1. No labels, headings, helper copy,
-card, panel, legend, or equation. Preserve all other AIM pixels and controls.
-
-CONTRIBUTION FLOW
-Replace the score block with red splat and green circle input nodes. Each shows only 0%
-and +1. Thin navy connector arrows feed both nodes into one blue-outlined score node with
-0.0 and a small target bracket 9–13. A link glyph joins the color inputs. No labels,
-headings, helper copy, card, panel, legend, or arithmetic equation. Preserve all other AIM
-pixels and controls.
-
-
-REVISION 5 — SELECTED TERRAIN MASK PROGRESSION — 2026-08-21
-
-The Terrain Mask direction is selected. Every state is a strict local edit of the same
-1672 x 941 Stage 08 AIM frame. Preserve the world, cannon, trajectory, queue, top-right
-status, bottom controls, camera, lighting, and crop. Only the compact top-left instrument
-may change. The score rail uses a 0–14 local domain for this Stage 08 example. Its nested
-grade regions are outer 9–13 (one star), inner 10–12 (two stars), and center 10.5–11.5
-(three stars). Scores above 13 are failure, not bonus.
-
-STATE 00 — START
-Keep the nested rail quiet. Put the current marker at 0.0. Keep the miniature mountain
-empty with 0% inside. Keep red splat +1 and green circle +1; use an open/broken link glyph.
-No prose, card, panel, success state, or filled paint.
-Saved: assets/tobe/04-aim-terrain-mask-state-00-start-v5.png
-
-STATE 01 — BELOW TARGET
-Move the marker to 6.5, left of the 9–13 bracket. Fill only the miniature terrain mask to
-6.5% using red 4.0% and green 2.5% patches. Use a connected link because both colors are
-present. Do not emphasize a grade tier or add success copy.
-Saved: assets/tobe/04-aim-terrain-mask-state-01-progress-v5.png
-
-STATE 02 — TARGET ENTRY
-Move the marker to 9.5, just inside the left outer target tier. Fill the miniature mask to
-9.5% using red 5.0% and green 4.5%. Emphasize only the outer one-star segment. Communicate
-clear eligibility through position and icon state only.
-Saved: assets/tobe/04-aim-terrain-mask-state-02-clear-entry-v5.png
-
-STATE 03 — BEST GRADE
-Move the marker to the exact band center at 11.0. Fill the miniature mask to 11.0% using
-equal red 5.5% and green 5.5%. Emphasize only the central 10.5–11.5 segment with exactly
-three filled stars. Do not modify the full-size mountain or add celebration UI.
-Saved: assets/tobe/04-aim-terrain-mask-state-03-best-grade-v5.png
-
-STATE 04 — OVERPAINT
-Move the marker to 13.8 beyond the right edge of the inclusive target band. Fill the
-miniature mask to 13.8% using red 7.4% and green 6.4%. Make every star outline-only and use
-a compact right overflow arrow with a restrained red edge. Do not call this a high score.
-Saved: assets/tobe/04-aim-terrain-mask-state-04-overpaint-v5.png
+On the next aligned row show only a paint-drop icon + “0%”. Do not draw a progress ring,
+terrain mask, or second bar. On the final row show red splat +1, link/both-required icon,
+and green circle +1. Add no words, labels, equations, card, panel, pill, white surface, or
+new action. Save as assets/tobe/04-aim-score-bar-tobe-v6.png.
