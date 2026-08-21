@@ -67,6 +67,23 @@ func _run() -> void:
 			"Result summary must retain the full horizontal 0–100 result domain")
 	_assert((summary.get_node("MetricIcon") as TextureRect).visible,
 			"Result summary may retain its compact metric icon")
+	summary.set_header_visible(false)
+	summary.configure_target_band(band, rule)
+	summary.update_target_band(PaintCoverageSnapshot.new(), 36.0, -1, 1)
+	await process_frame
+	_assert(summary.target_range().is_equal_approx(Vector2(30.0, 45.0)),
+			"Result target-band scale must use only the authored success range")
+	_assert(summary.marker_normalized_for_test() == 0.4,
+			"Result marker must map locally within the target band")
+	_assert(summary.grade_boundaries_for_test() == PackedFloat32Array(
+			[0.0, 0.25, 0.375, 0.625, 0.75, 1.0]),
+			"Result grade zones must mirror TargetBandData center-distance thresholds")
+	_assert(summary.grade_star_counts_for_test() == PackedInt32Array([1, 2, 3, 2, 1]),
+			"Result grade zones must read one, two, three, two, one stars")
+	summary.update_target_band(PaintCoverageSnapshot.new(), 12.0, -1, 1)
+	_assert(summary.range_overflow_direction_for_test() == -1
+			and is_equal_approx(summary.marker_value_for_test(), 30.0),
+			"below-band Result values must clamp only the marker to the visible endpoint")
 
 	status.queue_free()
 	summary.queue_free()

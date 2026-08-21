@@ -1,9 +1,8 @@
 class_name ScoreScale
 extends Control
 
-## Result-only fixed 0–100 horizontal score scale. Live gameplay uses
-## AimScoreStatus so its success-range and compact modes cannot be confused
-## with this final summary axis.
+## Result-only horizontal score instrument. Target-band results map the complete
+## component to the authored success range; only the marker is clamped.
 
 enum Preset {
 	HORIZONTAL_SUMMARY,
@@ -12,6 +11,9 @@ enum Preset {
 const DOMAIN_MINIMUM := 0.0
 const DOMAIN_MAXIMUM := 100.0
 const TICKS := [100.0, 75.0, 50.0, 25.0, 0.0]
+const GRADE_BOUNDARIES := [0.0, 0.25, 0.375, 0.625, 0.75, 1.0]
+const GRADE_STARS := [1, 2, 3, 2, 1]
+const STAR_TEXTURE := preload("res://assets/ui/icons/status/star.png")
 
 @export var preset := Preset.HORIZONTAL_SUMMARY
 
@@ -82,17 +84,17 @@ func configure_coverage(target: float) -> void:
 	_show_percent = true
 	_contributions.hide()
 	_apply_accessibility()
-	queue_redraw()
+	_layout()
 
 
 func configure_target_band(target_band: TargetBandData, _score_rule: ColorScoreRuleData) -> void:
 	_threshold_mode = false
-	_target_minimum = clampf(target_band.target_min, DOMAIN_MINIMUM, DOMAIN_MAXIMUM)
-	_target_maximum = clampf(target_band.target_max, _target_minimum, DOMAIN_MAXIMUM)
+	_target_minimum = target_band.target_min
+	_target_maximum = target_band.target_max
 	_show_percent = false
-	_contributions.visible = _header_visible
+	_contributions.hide()
 	_apply_accessibility()
-	queue_redraw()
+	_layout()
 
 
 func update_coverage(value: float) -> void:
@@ -125,7 +127,11 @@ func value() -> float:
 
 
 func marker_value_for_test() -> float:
-	return clampf(_value, DOMAIN_MINIMUM, DOMAIN_MAXIMUM)
+	return clampf(_value, _visible_minimum(), _visible_maximum())
+
+
+func marker_normalized_for_test() -> float:
+	return inverse_lerp(_visible_minimum(), _visible_maximum(), marker_value_for_test())
 
 
 func range_overflow_direction_for_test() -> int:
@@ -148,28 +154,47 @@ func track_rect_for_test() -> Rect2:
 	return _track_rect()
 
 
+func grade_boundaries_for_test() -> PackedFloat32Array:
+	return PackedFloat32Array(GRADE_BOUNDARIES)
+
+
+func grade_star_counts_for_test() -> PackedInt32Array:
+	return PackedInt32Array(GRADE_STARS)
+
+
 func _layout() -> void:
 	if not is_node_ready():
 		return
 	var resolved := _density if _compact else 1.0
-	_metric_icon.visible = _header_visible
-	_current_value.visible = _header_visible
+	_metric_icon.visible = _header_visible and _threshold_mode
+	_current_value.visible = _header_visible and _threshold_mode
 	_metric_icon.position = Vector2(0.0, 2.0 * resolved)
 	_metric_icon.size = Vector2(20.0, 20.0) * resolved
 	_current_value.position = Vector2(26.0 * resolved, 0.0)
 	_current_value.size = Vector2(92.0, 30.0) * resolved
 	var track := _track_rect()
-	for index in TICKS.size():
-		var label := _tick_label(index)
-		label.position = Vector2(
-				_point_for_value(TICKS[index]).x - 22.0 * resolved,
-				track.end.y + 5.0 * resolved
-		)
-		label.size = Vector2(44.0, 22.0) * resolved
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_contributions.position = Vector2(0.0, 0.0)
+	if _threshold_mode:
+		for index in TICKS.size():
+			var label := _tick_label(index)
+			label.visible = true
+			label.text = "%d" % roundi(TICKS[index])
+			_position_tick_label(label, _point_for_value(TICKS[index]).x, track, resolved)
+	else:
+		for index in TICKS.size():
+			_tick_label(index).visible = TICKS[index] in [DOMAIN_MINIMUM, DOMAIN_MAXIMUM]
+		%Tick0.text = _format_endpoint(_target_minimum)
+		%Tick100.text = _format_endpoint(_target_maximum)
+		_position_tick_label(%Tick0, track.position.x, track, resolved)
+		_position_tick_label(%Tick100, track.end.x, track, resolved)
+	_contributions.position = Vector2.ZERO
 	_contributions.size = Vector2(184.0, 24.0) * resolved
 	queue_redraw()
+
+
+func _position_tick_label(label: Label, center_x: float, track: Rect2, resolved: float) -> void:
+	label.position = Vector2(center_x - 22.0 * resolved, track.end.y + 5.0 * resolved)
+	label.size = Vector2(44.0, 22.0) * resolved
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _apply_minimum_size() -> void:
@@ -182,6 +207,13 @@ func _apply_minimum_size() -> void:
 
 
 func _draw() -> void:
+	if _threshold_mode:
+		_draw_threshold_scale()
+	else:
+		_draw_target_band_scale()
+
+
+func _draw_threshold_scale() -> void:
 	var track := _track_rect()
 	draw_rect(track, _scale_color(&"track"))
 	var target := _target_rect()
@@ -189,9 +221,6 @@ func _draw() -> void:
 	var edge_color := get_theme_color(&"target_edge", &"ScoreScale")
 	draw_line(Vector2(target.position.x, target.position.y - 4.0),
 			Vector2(target.position.x, target.end.y + 4.0), edge_color, 2.0)
-	if not _threshold_mode:
-		draw_line(Vector2(target.end.x, target.position.y - 4.0),
-				Vector2(target.end.x, target.end.y + 4.0), edge_color, 2.0)
 	var tick_color := _scale_color(&"tick")
 	for tick in TICKS:
 		var point := _point_for_value(tick)
@@ -204,8 +233,54 @@ func _draw() -> void:
 	_draw_range_overflow(track, marker_color)
 
 
+func _draw_target_band_scale() -> void:
+	var track := _track_rect()
+	for index in GRADE_STARS.size():
+		var start_x := lerpf(track.position.x, track.end.x, GRADE_BOUNDARIES[index])
+		var end_x := lerpf(track.position.x, track.end.x, GRADE_BOUNDARIES[index + 1])
+		var segment := Rect2(start_x, track.position.y, end_x - start_x, track.size.y)
+		draw_rect(segment, get_theme_color(_grade_color_role(GRADE_STARS[index]), &"ScoreScale"))
+		if index > 0:
+			draw_line(Vector2(start_x, track.position.y), Vector2(start_x, track.end.y),
+					_scale_color(&"tick"), 1.0)
+		_draw_grade_stars(segment, GRADE_STARS[index])
+	draw_rect(track, get_theme_color(&"target_edge", &"ScoreScale"), false, 1.0)
+	var direction := _range_overflow_direction()
+	var marker_color := get_theme_color(
+			&"overflow_marker" if direction != 0 else &"world_marker", &"ScoreScale")
+	var marker := _point_for_value(_value)
+	draw_line(Vector2(marker.x, track.position.y + 1.0),
+			Vector2(marker.x, track.end.y - 1.0), marker_color, 3.0)
+	_draw_range_overflow(track, marker_color)
+
+
+func _draw_grade_stars(segment: Rect2, star_count: int) -> void:
+	var resolved := _density if _compact else 1.0
+	var edge := 14.0 * resolved
+	var gap := 2.0 * resolved
+	var total_width := edge * star_count + gap * (star_count - 1)
+	if total_width > segment.size.x - 4.0 * resolved:
+		edge = maxf(8.0 * resolved, (segment.size.x - 4.0 * resolved \
+				- gap * (star_count - 1)) / star_count)
+		total_width = edge * star_count + gap * (star_count - 1)
+	var start := Vector2(
+			segment.get_center().x - total_width * 0.5,
+			segment.get_center().y - edge * 0.5)
+	for index in star_count:
+		draw_texture_rect(STAR_TEXTURE,
+				Rect2(start + Vector2((edge + gap) * index, 0.0), Vector2(edge, edge)),
+				false, Color.WHITE)
+
+
 func _track_rect() -> Rect2:
 	var resolved := _density if _compact else 1.0
+	if not _threshold_mode:
+		return Rect2(
+			8.0 * resolved,
+			10.0 * resolved,
+			maxf(160.0, size.x - 16.0 * resolved),
+			34.0 * resolved
+		)
 	return Rect2(
 		16.0 * resolved,
 		(14.0 * resolved if not _header_visible else (
@@ -218,6 +293,8 @@ func _track_rect() -> Rect2:
 
 func _target_rect() -> Rect2:
 	var track := _track_rect()
+	if not _threshold_mode:
+		return track
 	var minimum_point := _point_for_value(_target_minimum)
 	var maximum_point := _point_for_value(_target_maximum)
 	return Rect2(minimum_point.x, track.position.y,
@@ -226,8 +303,17 @@ func _target_rect() -> Rect2:
 
 func _point_for_value(value: float) -> Vector2:
 	var track := _track_rect()
-	var normalized := clampf(value / DOMAIN_MAXIMUM, 0.0, 1.0)
+	var normalized := inverse_lerp(_visible_minimum(), _visible_maximum(),
+			clampf(value, _visible_minimum(), _visible_maximum()))
 	return Vector2(lerpf(track.position.x, track.end.x, normalized), track.get_center().y)
+
+
+func _visible_minimum() -> float:
+	return DOMAIN_MINIMUM if _threshold_mode else _target_minimum
+
+
+func _visible_maximum() -> float:
+	return DOMAIN_MAXIMUM if _threshold_mode else _target_maximum
 
 
 func _tick_label(index: int) -> Label:
@@ -240,21 +326,27 @@ func _scale_color(role: StringName) -> Color:
 	return get_theme_color(resolved, &"ScoreScale")
 
 
+func _grade_color_role(star_count: int) -> StringName:
+	return StringName("tier_%d" % star_count)
+
+
 func _draw_range_overflow(track: Rect2, color: Color) -> void:
 	var direction := _range_overflow_direction()
 	if direction == 0:
 		return
-	var endpoint_x := track.end.x if direction > 0 else track.position.x
-	var base_x := endpoint_x - 8.0 if direction > 0 else endpoint_x + 8.0
+	var resolved := _density if _compact else 1.0
+	var inset := 10.0 * resolved
+	var tip_x := track.end.x - inset if direction > 0 else track.position.x + inset
+	var base_x := tip_x - 7.0 * resolved if direction > 0 else tip_x + 7.0 * resolved
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(endpoint_x, track.get_center().y),
-		Vector2(base_x, track.get_center().y - 7.0),
-		Vector2(base_x, track.get_center().y + 7.0),
+		Vector2(tip_x, track.get_center().y),
+		Vector2(base_x, track.get_center().y - 6.0 * resolved),
+		Vector2(base_x, track.get_center().y + 6.0 * resolved),
 	]), color)
 
 
 func _range_overflow_direction() -> int:
-	return -1 if _value < DOMAIN_MINIMUM else 1 if _value > DOMAIN_MAXIMUM else 0
+	return -1 if _value < _visible_minimum() else 1 if _value > _visible_maximum() else 0
 
 
 func _sign(weight: int) -> String:
@@ -266,12 +358,16 @@ func _format_value(value: float) -> String:
 	return "%.1f" % (0.0 if is_zero_approx(rounded) else rounded)
 
 
+func _format_endpoint(value: float) -> String:
+	return "%d" % roundi(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
+
+
 func _apply_accessibility() -> void:
 	var target_text := "%.1f–%.1f" % [_target_minimum, _target_maximum]
 	var range_state := ""
-	if _value < DOMAIN_MINIMUM:
+	if _value < _visible_minimum():
 		range_state = "; %s" % tr("hud.score_below_scale")
-	elif _value > DOMAIN_MAXIMUM:
+	elif _value > _visible_maximum():
 		range_state = "; %s" % tr("hud.score_above_scale")
 	tooltip_text = "%s %s; %s %s%s" % [
 		tr("hud.paint_score") if not _show_percent else tr("hud.coverage"),
@@ -285,7 +381,8 @@ func _apply_accessibility() -> void:
 
 func _apply_type_density() -> void:
 	var resolved := _density if _compact else 1.0
-	_current_value.add_theme_font_size_override(&"font_size", roundi(20.0 * resolved) if _compact else 22)
+	_current_value.add_theme_font_size_override(
+			&"font_size", roundi(20.0 * resolved) if _compact else 22)
 	for index in TICKS.size():
 		_tick_label(index).add_theme_font_size_override(
 				&"font_size", roundi(14.0 * resolved) if _compact else 14)

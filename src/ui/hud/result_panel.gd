@@ -153,7 +153,7 @@ func _refresh_copy() -> void:
 			_star_count, _previous_best, false, _elapsed_seconds, _shots_used,
 			_accessible_facts(false)
 		)
-		_summary.set_gap(_target_gap_text() if not _target_clear else "")
+		_summary.set_gap("")
 		return
 	var verdict := tr("result.time_expired") if _finish_reason == &"timeout" \
 			else tr("result.completed")
@@ -189,16 +189,6 @@ func _set_primary(action: ActionControl, primary: bool) -> void:
 	action.set_visual_role(
 		ActionControl.VisualRole.PRIMARY if primary else ActionControl.VisualRole.WORLD
 	)
-
-
-func _target_gap_text() -> String:
-	if _target_band == null:
-		return ""
-	if _target_score < _target_band.target_min:
-		return tr("result.below_band_gap") % (_target_band.target_min - _target_score)
-	if _target_score > _target_band.target_max:
-		return tr("result.above_band_gap") % (_target_score - _target_band.target_max)
-	return ""
 
 
 func _accessible_facts(include_previous_best: bool) -> String:

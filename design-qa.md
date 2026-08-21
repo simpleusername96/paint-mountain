@@ -2,7 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-10
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-21
 topic: essential-ui-fidelity
 scope: seven approved UI refinements plus supporting gameplay and responsive states
 source: docs/reports/screen-audit-2026-08-10/assets/refined/
@@ -13,6 +13,15 @@ related:
 ---
 
 # Essential UI Fidelity Design QA
+
+## 2026-08-21 Result Ribbon Addendum
+
+- Source: `.agents/evidence/2026-08-21-clear-page-redesign-concept/selected/result-low-precision-ribbon-1280x720.png`.
+- Exported evidence: `.agents/evidence/2026-08-21-result-low-precision-ribbon/production/`.
+- Direct comparison: `clear-comparison.png` pairs the normalized selected concept and the exported `1280x720` Clear state in one image.
+- Clear and Failure were also inspected at `640x360` from the same Windows release export.
+- Result: passed. The mountain remains primary; the score ribbon stays inside the result safe region; the five authored grade zones read `1–2–3–2–1`; below-range scores clamp to the ribbon and use an inset red overflow marker; contribution values use their signed score effect; duplicate current-score and target copy is absent; Clear actions end in Next and Failure actions end in Same Deal Retry. No text, action, ribbon, or endpoint label clips in either checked viewport.
+- Accepted P3 difference: the implementation keeps the project renderer, compact native action controls, and existing camera composition rather than reproducing the concept's illustrative terrain and larger typography literally.
 
 ## Purpose
 

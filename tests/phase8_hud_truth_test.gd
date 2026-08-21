@@ -73,18 +73,24 @@ func _run() -> void:
 	result_panel.show_target_band_result(
 		false, -3.0, band, 0, PaintCoverageSnapshot.new(4.0, 1.0, 5.0), 60.0, 1
 	)
-	_assert_true((summary.get_node("ValueRow/Value") as Label).text == "-3.0",
-		"failed target-band result must preserve the authoritative signed score")
+	_assert_true(not summary.get_node("ValueRow").visible
+			and "-3.0" in summary.accessibility_name,
+		"target-band result must remove duplicate score copy without losing signed truth")
 	_assert_true(is_equal_approx(summary.score_scale.value(), -3.0)
-			and is_equal_approx(summary.score_scale.marker_value_for_test(), 0.0)
+			and is_equal_approx(summary.score_scale.marker_value_for_test(), 7.0)
 			and summary.score_scale.range_overflow_direction_for_test() == -1,
-		"result summary must project only marker geometry to the zero endpoint")
+		"result summary must project only marker geometry to the target-band endpoint")
 	_assert_primary_action(result_panel, "RetrySameDeal")
+	_assert_true(_visible_action_names(result_panel) == ["Stages", "NewDeal", "RetrySameDeal"],
+		"failed target-band actions must end with the primary same-deal retry")
 	result_panel.configure_has_next(true)
 	result_panel.show_target_band_result(
 		true, 9.0, band, 3, PaintCoverageSnapshot.new(4.0, 5.0, 9.0), 60.0, 1
 	)
 	_assert_primary_action(result_panel, "Next")
+	_assert_true(_visible_action_names(result_panel) == [
+		"Stages", "NewDeal", "RetrySameDeal", "Next",
+	], "clear target-band actions must place the primary Next action at the far right")
 
 	var settings := hud_root.get_node("TopStatusBar/SettingsButton") as Button
 	_assert_true(settings.icon != null, "Settings must keep the approved icon asset")
@@ -116,3 +122,11 @@ func _assert_primary_action(result_panel: ResultPanel, expected_name: String) ->
 			primary_names.append(action_name)
 	_assert_true(primary_names == [expected_name],
 		"result must expose one primary %s action, got %s" % [expected_name, primary_names])
+
+
+func _visible_action_names(result_panel: ResultPanel) -> Array[String]:
+	var names: Array[String] = []
+	for child in result_panel.get_node("Margin/Content/Actions").get_children():
+		if child is ActionControl and child.visible:
+			names.append(child.name)
+	return names

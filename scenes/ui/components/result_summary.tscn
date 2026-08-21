@@ -1,14 +1,12 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/ui/components/result_summary.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/score_scale.tscn" id="2_scale"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/result_timeout_clock.png" id="3_clock"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/paint_splash.svg" id="4_paint"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/target.png" id="5_target"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/status/star.png" id="6_star"]
-
 [node name="ResultSummary" type="VBoxContainer"]
-custom_minimum_size = Vector2(440, 310)
+custom_minimum_size = Vector2(440, 408)
 theme_type_variation = &"ResultSummary"
 theme_override_constants/separation = 8
 script = ExtResource("1_script")
@@ -38,6 +36,7 @@ layout_mode = 2
 theme_type_variation = &"ResultWorldFact"
 
 [node name="ValueRow" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -51,6 +50,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 8
 theme_type_variation = &"ResultWorldFact"
+
+[node name="Spacer" type="Control" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="Contributions" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
@@ -102,33 +108,6 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Star1" type="TextureRect" parent="Facts"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-self_modulate = Color(0.145098, 0.517647, 1, 1)
-texture = ExtResource("6_star")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Star2" type="TextureRect" parent="Facts"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-self_modulate = Color(0.145098, 0.517647, 1, 1)
-texture = ExtResource("6_star")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Star3" type="TextureRect" parent="Facts"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-self_modulate = Color(0.145098, 0.517647, 1, 1)
-texture = ExtResource("6_star")
-expand_mode = 1
-stretch_mode = 5
-
 [node name="PreviousBest" type="HBoxContainer" parent="Facts"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -138,7 +117,7 @@ theme_override_constants/separation = 4
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 self_modulate = Color(0.145098, 0.517647, 1, 1)
-texture = ExtResource("6_star")
+texture = ExtResource("5_target")
 expand_mode = 1
 stretch_mode = 5
 
