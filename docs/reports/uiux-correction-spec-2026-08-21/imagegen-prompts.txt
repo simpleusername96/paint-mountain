@@ -92,3 +92,44 @@ Use exactly the same result shell, anchors, type scale, score track, and action 
 Clear. Show “목표 미달”, “스테이지 08”, “6.0 · 목표 9-13”, R/G, and “목표 구간보다
 3.0 부족합니다.” Show current 6.0 outside the 9-13 band without clamping. Same Deal is
 the only blue retry icon; New Deal and Stages are transparent icons.
+
+
+REVISION 2 — USER-DIRECTED STATES — 2026-08-21
+
+These three prompts supersede only the named screens above. All other TO-BE images and
+contracts remain unchanged. The PNG files are versioned instead of overwriting v1.
+
+01 MAIN MENU — HOVER END STATE
+Edit the latest Main Menu reference without changing the low-poly mountain world, camera,
+lighting, palette, or Korean title. Remove every subtitle, slogan, descriptive sentence,
+and meta tagline below “페인트 마운틴”. Keep the left action rail icon-only in its normal
+state. Show exactly one hover example: the Stage Select icon is hovered and the localized
+label “스테이지 선택” has finished revealing immediately to its right. The icon stays
+fixed. The label has no white card, no pill, no button surface, and no other explanatory
+copy. Keep all non-hovered action labels hidden. This image represents the final frame of
+an animation, not a persistent menu label.
+
+02 STAGE SELECT + BRIEFING — MERGED
+Replace the white Stage Select void with the same in-game low-poly sky, ground, selected
+mountain terrain, camera language, and lighting used by Gameplay/Briefing. Make the actual
+stage terrain the visual focus. Merge briefing information into this one screen: top-left
+shows “08 여덟 번째 산맥” and one restrained rule row with “목표 9–13”, “빨강 +1”,
+“초록 +1”, “공 6”, and “분열 공 필수”; top-right shows the three-ball queue as green
+circle, red splat, green circle plus a transparent settings icon. Place large transparent
+previous/next chevrons on the left and right sides of the terrain. Along the bottom, draw
+a full-width stage line with evenly distributed exact labels 01 through 10, stage 08
+selected, and a restrained continuation marker for stages 11–30. Place one blue circular
+Aim/Start icon at the lower-right above the rail. No white background, no card shell, no
+large text CTA, no standalone Briefing screen, and no extra prose.
+
+04 AIM — SCORE AREA ONLY
+Edit the approved Aim TO-BE reference. Preserve every pixel outside the top-left score
+area as closely as possible: world, cannon, trajectory, ball queue, settings, status,
+angle/power controls, icons, spacing, and colors must not change. Replace only the old
+score display with a transparent, aligned four-line ScoreStatus block. Show:
+“페인트 점수 0.0    목표 9–13”
+“칠한 면적 0.0%”
+red splat icon + “빨강 0.0%    가산 +1”
+green circle icon + “초록 0.0%    가산 +1”
+Use navy text directly on the sky with no white panel and no axis. Make the distinction
+between score, total painted area, and each color's stage weight immediately readable.
