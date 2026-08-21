@@ -1,264 +1,172 @@
 # Paint Mountain Gameplay Fun Redesign — Working Memo
 
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 This is the durable working memo for the current gameplay redesign discussion.
 It is advisory research and does not override `docs/source-brief.md`,
 `docs/design-spec.md`, or an approved implementation plan.
 
-## Correction to the previous memo
+## Core problem statement
 
-The previous version incorrectly treated compact result labels, generic
-fresh-paint rewards, front-only scoring, and fast retry as new gameplay ideas.
-They are presentation, constraints, or already-existing support systems. They do
-not create a new decision and have been removed from the retained idea set.
+Paint Mountain's distinctive strength is not terrain coverage by itself. It is
+the short causal loop:
 
-Every retained idea below must answer both questions:
+`choose a shot -> fire -> watch the terrain transform -> immediately revise the next choice`
 
-1. What does the player decide differently before the next shot?
-2. What concrete new event happens in the simulation or paint state?
+The current design problem appears whenever depth is moved outside that loop.
+Ordered-queue disposal, exact target-band bookkeeping, long preparation phases,
+and a later tower-defense battle may add systems, but they delay the payoff and
+turn the cannon into a setup interface for another game.
 
-## Player experience target
+A useful new mechanic must therefore satisfy all of these conditions:
 
-- Keep each decision brief and the total run fast.
-- Require a small but meaningful decision before each shot.
-- Build a tight `try -> observe -> calibrate -> retry` loop. First-try clears are
-  not required.
-- Put bounded randomness before the decision; once revealed, shot outcomes must
-  remain deterministic enough to learn.
-- Make paint behavior enjoyable to watch without relying on a score number.
-- Do not require accurate reasoning about rear or side surfaces the cannon view
-  cannot read.
+- Cannon angle, power, ball choice, or timing materially changes the visible
+  paint result within a few seconds.
+- The changed terrain itself suggests the next choice; explanatory result text
+  should not carry the design.
+- One shot creates only a few new decisions, not a long management phase.
+- Same-state retry is immediate and deterministic enough for calibration.
+- Randomness is revealed before the decision, not injected into an identical
+  shot's outcome.
+- Paint remains the main spectacle and the main evolving state.
+- A secondary genre must not postpone the value of painting until a later wave
+  or combat phase.
 
-## Base direction already selected for further design
+The tower-defense architecture is therefore deprioritized as the primary game.
+The isolated idea that a landed ball may transform into something useful can be
+revisited later, but only if its effect is immediate inside the shot loop.
 
-- A stage supplies a finite set of roughly four to six ball tokens.
-- The composition may be seeded-random or authored; this remains open.
-- The player chooses any unused token as the next ball. This is a selectable
-  **ball hand**, not a forced queue.
-- A dedicated selectable-hand UI and a UI-independent selection action are
-  required.
-- Negative-scoring paint remains available. The design should give it a
-  systemic use instead of making disposal the automatic answer.
-- Special balls must remain broadly useful. Do not hard-pair one special kind
-  with one authored terrain device or one mandatory route.
-- Core score and required objectives should use the broad cannon-readable front
-  envelope. Hidden paint may remain physical and visible when revealed, but is
-  not a mandatory scoring burden.
+## Base direction that remains open
 
-## Current implementation mismatch
+- A stage may supply a small finite hand of balls, with free choice of the next
+  unused token.
+- The hand may be authored or generated through bounded visible randomness.
+- Negative-scoring paint remains available if it has a direct systemic use.
+- Terrain should be broad, low enough to read quickly, and composed around
+  visible shot routes rather than hidden total surface area.
+- The Apex Split low/fast-trajectory defect remains a separate correctness issue
+  tracked in GitHub Issue #1.
 
-- `src/ball/ball_deal_generator.gd` creates one ordered deal. Deals with at least
-  four shots end with opposite-color Standard correction tokens.
-- `src/stage/stage_controller.gd` consumes one advancing `_queue_cursor` and
-  exposes only the current token plus the next two.
-- `src/ui/components/ball_queue.gd` presents token information but does not
-  publish a gameplay selection action.
-- Free-order play therefore needs stable token identities, a remaining-token
-  collection owned by `StageController`, one human/agent-neutral select action,
-  and a selectable hand component.
-
-## Separate correctness issue: Apex Split can hit before splitting
-
-`src/projectile/apex_split_ball_behavior.gd` resolves only when vertical
-velocity crosses the apex. A low, fast shot can contact terrain first, and valid
-terrain contact then permanently prevents the split.
-
-Treat this independently from the fun redesign. The preferred behavior to test
-is:
-
-- Split at the earliest of normal apex crossing or imminent valid-terrain
-  contact within a small authored lead time/distance.
-- Keep a final contact-time fallback so a legal Apex Split cannot silently act
-  as a Standard ball because the arc was too flat.
-- Preserve deterministic child directions and atomic three-child replacement.
-
-No runtime fix is authorized by this memo.
-
-## Five retained concrete mechanics
+## Five new cross-domain mechanic candidates
 
 These are alternatives and ingredients, not a command to combine all five.
 
-### 1. Paint changes the physics of later balls
+### 1. Ballistics become the brush mode
 
-Give each color one stable physical property in addition to its stage-specific
-score sign:
+Do not choose a separate paint tool. Derive the stroke from the actual approach
+geometry:
 
-- **Slick paint:** later balls crossing it retain tangential speed and use much
-  lower friction.
-- **Grip paint:** later balls crossing it lose bounce and settle into the local
-  downhill direction more quickly.
+- high normal impact: one broad radial splash and a short stop;
+- high tangential impact: one long narrow skid stroke;
+- shallow near-critical impact: two or three skipping splashes.
 
-A ball is affected only by paint left by earlier shots, never by the trail it is
-creating now. This keeps causality readable and deterministic.
+The aiming preview shows only a small predicted stroke icon, not the full final
+path. Angle and power now decide both where the ball lands and what kind of mark
+it makes. This makes the cannon the primary expressive instrument instead of a
+launcher that merely selects a point.
 
-Concrete decision: use an otherwise negative Slick ball first to build a runway
-for a later Split ball, or use Grip paint first to create a catch area for a
-later Burst ball. The color is therefore a terrain edit, not only a score
-number. No authored ball-to-terrain pairing is required.
+### 2. Wet paint creates a short combo window
 
-Implementation fit: `PaintSystem` remains the owner of the channel mask;
-projectile contact queries the existing channel beneath the contact and applies
-one bounded material response. Texture treatment must distinguish slick and
-rough paint without hue alone.
+Fresh paint remains wet for roughly two to three seconds. The next ball may be
+fired before it dries.
 
-### 2. Stopped balls become reusable board pieces
+- Crossing wet paint drags it outward into a large fan-shaped smear.
+- Hitting dry paint behaves normally.
+- Waiting is safe and predictable; firing quickly risks a larger transformation.
 
-A stopped ball stays on the mountain as a large, targetable sleeping ball.
-Later shots can deliberately hit it.
+This introduces speed through a visible physical state, not a timer bonus. The
+player decides whether to inspect carefully or exploit the wet window for a
+rapid two-shot combo.
 
-- A direct hit above a threshold wakes both balls and they resume painting.
-- Two same-color balls that collide above the threshold merge once into one
-  **charged ball**: about `1.35x` radius, one immediate radial splash, and a wider
-  trail until it stops.
-- Opposite colors do not merge; they simply collide and continue.
-- Aim selection receives a generous sleeping-ball target, so this is a planned
-  shot rather than pixel hunting.
+### 3. Three shots stretch a paint membrane
 
-Concrete decision: spend an early ball placing a future collision target, then
-choose whether a later token should reactivate it, merge with it, or avoid it.
-Ball order and previous mistakes both become usable state. The merge supplies a
-clear visual payoff without a fixed terrain mechanism.
+The first impact point of a suitable ball can become a visible paint anchor.
+When three same-channel anchors exist on one readable terrain face, a paint film
+stretches across their triangle and fills it in one fast animation.
 
-Implementation fit: resident rigid bodies already exist conceptually. The new
-work is stable sleeping identities, target selection, one merge limit, and an
-authoritative replacement/splash event.
+- Trails still paint normally on the way to each anchor.
+- The third shot creates the large payoff.
+- A later opposite-color anchor may cut one bounded hole or replace one vertex,
+  if negative paint needs a direct use.
 
-### 3. Opposite-color trail crossings create a cured-paint bloom
+This turns surveying and triangulation into a compact three-shot spatial puzzle.
+It produces a large result without requiring the player to manually cover every
+pixel.
 
-Do not reward simple parallel repainting. Record the local direction of fresh
-trail stamps. When a Red trail and a Green trail cross at a sufficiently
-different angle, the first crossing in that local region triggers a
-**cured-paint bloom**:
+### 4. Trails seed competing growth fronts
 
-- A large neutral white/gold splash grows from the intersection.
-- Cured area counts strongly toward the minimum painted-area requirement.
-- It contributes `0` to the signed Red/Green score.
-- It is locked and cannot be recolored again.
-- Each local crossing region triggers once, preventing repeated farming.
+After a ball settles, its fresh trail expands sideways for about one second like
+a crystallization or reaction front.
 
-Concrete decision: a negative-color shot can lay one half of a future crossing;
-a later positive shot must intersect it from another route. The player is
-planning two trajectories, not discarding a bad color. The crossing and bloom
-are immediately visible.
+- Expansion stops at ridges, dry boundary lines, or another color's front.
+- A long rolling trail seeds a wide ribbon; a short impact seeds a compact island.
+- Opposing fronts meet and freeze into a sharp visible border.
 
-Implementation fit: keep one authoritative paint representation by adding a
-cured ownership state and short-lived trail-direction metadata. Do not create a
-second score mask.
+The player chooses seed curves through ballistics, then watches the map rapidly
+organize itself. The rule can create varied patterns from simple local behavior
+without adding a separate economy or combat phase.
 
-### 4. Terrain depressions fill and spill into paint cascades
+### 5. Retry uses visual bracketing, not manual re-entry
 
-Derive a small drainage graph from the cannon-readable terrain face. Broad
-concave regions become paint basins automatically; they are not hand-authored
-special-ball sockets.
+After a shot, preserve the exact previous setup and show three clickable ghost
+variants around it. They are real nearby ballistic candidates, not text labels:
 
-- Paint commands deliver a small amount of visible volume to the current basin.
-- A basin shows a clear fill rim.
-- When full, it spills over its lowest edge and paints a narrow downhill stream
-  into the next basin.
-- A downstream basin may then fill and spill, creating a bounded chain reaction.
-- The final marks are written through `PaintSystem`; the basin volume is a
-  transient trigger state, not a second coverage authority.
+- one varies power;
+- one varies lateral aim;
+- one preserves impact but changes approach angle.
 
-Concrete decision: spread paint immediately or invest enough of the hand into
-one basin to trigger a larger cascade. Standard, Burst, and Split contribute
-different volume distributions, but none is mandatory for a specific basin.
-
-The first prototype should use only three to five readable basins on one small
-front face and a hard cascade-step cap. This is a lightweight fill-and-spill
-graph, not fluid simulation.
-
-### 5. Exactly one ball in the hand is a visible anomaly
-
-Each hand contains exactly one token with one clearly displayed random modifier.
-The modifier is revealed before any shot and remains identical on `Retry Same
-Hand`:
-
-- **Heavy:** higher mass, lower bounce, wider trail.
-- **Hollow:** lower mass, higher bounce, narrower trail.
-- **Delayed:** makes one radial burst after its third valid surface contact.
-- **Magnetic:** its first valid impact pulls nearby sleeping balls toward the
-  impact point.
-
-Concrete decision: the player decides when the unusual ball is most valuable
-and may build the rest of the order around it. Randomness changes the puzzle
-before play without making an identical revealed shot behave differently.
-
-Keep this to one anomaly and four simple modifiers. Multiple random badges on
-every token would slow the hand-reading step and turn the game into inventory
-analysis.
+The player may select one and fire immediately, or edit normally. This applies
+sequential experiment design to the control loop: each result narrows the next
+set of useful settings while the player still makes the decision.
 
 ## Recommended test order
 
-Do not implement all five at once.
+First test **Idea 1 + Idea 5** on one low, wide map. This directly tests whether
+the cannon can become more expressive while retries become faster.
 
-### Prototype A — lowest-cost systemic test
+Then test **Idea 2** and **Idea 3** separately. Both create clear two- or
+three-shot payoffs and can be judged quickly in manual play.
 
-- Five-ball selectable hand.
-- Idea 1: Slick/Grip paint affects later balls.
-- Idea 5: one visible anomaly token.
-- Three small stages using only the readable front score envelope.
+Test **Idea 4** only after the ordinary trail remains readable; uncontrolled
+front growth could otherwise make calibration harder.
 
-Question: does choosing ball order create fast, understandable route planning?
-
-### Prototype B — persistent-board test
-
-Add Idea 2 only after Prototype A is readable. Use one stage with enlarged
-sleeping-ball targets and a maximum of one charged merge per attempt.
-
-Question: do players deliberately set up a later collision, or does it remain an
-accident too difficult to aim?
-
-### Isolated spectacle tests
-
-Test Idea 3 and Idea 4 separately. Both change paint scoring/state substantially
-and should not initially coexist with each other or with Slick/Grip physics.
-
-Question for Idea 3: does a two-shot crossing plan make negative paint useful?
-
-Question for Idea 4: is filling a basin and watching a bounded cascade enjoyable
-even without reading the score UI?
+Do not migrate all thirty stages or combine all five until one mechanic makes
+repeated shooting enjoyable without relying on score UI.
 
 ## Evaluation questions
 
-- Do players choose different first balls for an explicit mechanical reason?
-- Is average pre-shot decision time short?
-- Does a failed attempt reveal a useful setup or route adjustment through the
-  world state itself?
-- Is throwing a ball outside the objective still commonly optimal?
-- Does negative paint have a use beyond satisfying a forced color requirement?
-- Is the most enjoyable moment visible in the terrain/paint simulation rather
-  than only in UI numbers?
-- Does `Retry Same Hand` produce a materially improved attempt within two or
-  three runs?
+- Can the player explain why a different angle, power, ball, or timing should be
+  used for the next shot?
+- Does the visible paint state provide that reason without a result paragraph?
+- Is the next shot usually chosen within a few seconds?
+- Does an identical retry remain stable enough to learn from?
+- Is a large paint transformation satisfying before any score appears?
+- Does the cannon remain the main verb of the game?
 
 ## Research basis
 
-- Portal 2 and Splatoon make paint alter traversal or surface behavior instead
-  of treating it only as score coloration.
-- Curling makes previously placed stones part of later tactical shots; Suika
-  Game turns same-kind collision into a clear merge payoff.
-- Painting uses grounds, underpainting, and later layers to change the result of
-  the next application rather than treating every coat independently.
-- Hydrologic depressions retain runoff and can connect downstream only after
-  filling and spilling.
-- Balatro demonstrates the value of visible rule-modifying pieces that change a
-  run's decisions; the proposal here limits that principle to one readable ball
-  anomaly rather than importing a full build system.
+- Oblique droplet and spray-coating research shows that impact speed, angle, and
+  surface conditions produce different spreading, splashing, rebound, and
+  elongated-deposition regimes.
+- Wet-on-wet watercolor uses substrate wetness, capillary flow, and timing to
+  create blooms, backruns, soft expansion, and hard dry boundaries.
+- Surveying and computational geometry derive areas and meshes from a small set
+  of points and closed boundaries.
+- Reaction-diffusion and crystal-growth fronts generate complex visible patterns
+  from local propagation and collision rules.
+- Sequential experiment design uses each observed result to choose more useful
+  settings for the next measurement.
 
 ## References consulted
 
-- Nintendo, Splatoon 3 gameplay: https://splatoon.nintendo.com/en/gameplay/
-- Portal Wiki, Gels: https://theportalwiki.com/wiki/Gels
-- World Curling, curling basics: https://worldcurling.org/about/curling/
-- World Curling match reports describing draws, hit-and-rolls, raises, and
-  take-outs: https://worldcurling.org/
-- Nintendo, Suika Game: https://www.nintendo.com/us/store/products/suika-game-switch/
-- USGS, drainage area and fill-and-spill depressions:
-  https://water.usgs.gov/themes/hydrofabric/drainage-area/
-- USGS, watershed runoff: https://www.usgs.gov/water-science-school/science/runoff-surface-and-overland-water-runoff
-- Gamblin, underpainting and ground layers:
-  https://gamblincolors.com/underpainting-2/
-- Winsor & Newton, Underpainting White:
-  https://eu.winsornewton.com/en-row/products/artists-oil-colour-underpainting-white-fast-drying
-- Balatro official site: https://www.playbalatro.com/
+- Splat morphology and spreading behavior due to oblique impact of droplets in
+  plasma spray coating, Surface and Coatings Technology.
+- Effect of Weber number and impact angle on solidification behaviour of a
+  molten droplet on an inclined surface, Experimental Thermal and Fluid Science.
+- Pattern formation by droplet evaporation and imbibition in watercolor
+  paintings.
+- Wicking and flooding of liquids on vertical porous sheets.
+- Shoelace formula / surveyor's formula and Delaunay triangulation references.
+- NIST, On the Growth and Form of Spherulites.
+- NIST, OptBayesExpt: Sequential Bayesian Experiment Design for Adaptive
+  Measurements.
