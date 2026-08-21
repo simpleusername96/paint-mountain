@@ -39,6 +39,7 @@ related:
   - execplans/2026-08-18-three-ball-target-band-prototype.md
   - execplans/2026-08-20-cross-stage-ui-theme.md
   - execplans/2026-08-21-uiux-image-parity.md
+  - execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -47,6 +48,7 @@ related:
   - evidence/web-runtime-responsiveness-2026-08-11/README.md
   - evidence/fast-stage-readiness-2026-08-11/README.md
   - evidence/2026-08-20-m9-local-release/README.md
+  - evidence/2026-08-21-ui-layout-stage-browsing/README.md
   - evidence/cross-stage-ui-theme-2026-08-20/README.md
   - ../docs/reports/environment-grounding-2026-08-11/index.html
   - evidence/resident-activity-hud-removal-2026-08-10/README.md
@@ -62,6 +64,38 @@ related:
 ---
 
 # Project Record
+
+## Current UI Layout and Stage Browsing Polish (2026-08-21)
+
+The completed execution contract is
+[`execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md`](execplans/2026-08-21-ui-layout-and-stage-browsing-polish.md),
+with final production evidence in
+[`evidence/2026-08-21-ui-layout-stage-browsing/README.md`](evidence/2026-08-21-ui-layout-stage-browsing/README.md).
+This section refines the current icon-first UI presentation and Stage Select
+preparation path; it does not change gameplay, score, paint, or stage rules.
+
+- Shared action, stepper, and Settings icons now use one component-owned
+  symmetric texture view around the visible alpha bounds. The approved icon
+  files are unchanged. Stepper, Pause, Result, and rule-summary spacing follows
+  the existing 8 px rhythm with standard/compact target sizes preserved.
+- `AimScoreStatus` now uses one left spine and separate success-range, current,
+  total-paint, and R/G role rows. Stage Select identity/rule/action groups and
+  the Aim/Map/Follow edge layouts retain complete information at 1280x720 and
+  640x360 without overlap or clipping.
+- Stage Select no longer constructs full Gameplay for each intermediate
+  selection. Persisted layout hydration runs on one joined pure worker,
+  obsolete selected results do not publish, the preview reuses its ground,
+  dressing, and material owners, and Start constructs only the final selected
+  Gameplay before committing `GameState`.
+- Final exported timing records `108-175 us` selection dispatch, an `8.890 ms`
+  maximum artifact slice, `4.591 ms` preview publication, and a `53.605 ms`
+  maximum present interval against a `32.776 ms` off-desktop baseline
+  (`1.6355x`; the background window is normally near 30 FPS). The original
+  failed path peaked at `218.629 ms` and hydrated each layout on the main thread.
+- The complete ordered suite, `scripts/verify.ps1`, Windows release export, and
+  ten production capture scenarios pass on implementation commit `b29505f`.
+  The final executable SHA-256 is
+  `620206D1E3C31A262BC16A2CDAF4AB8B6755B461B37FC77D41FC79D21FED904D`.
 
 ## Current Icon-First TO-BE UIUX Parity (2026-08-21)
 
