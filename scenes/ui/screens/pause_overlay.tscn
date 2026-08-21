@@ -46,7 +46,7 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 16
+theme_override_constants/separation = 20
 
 [node name="Resume" parent="Center/Content/Actions" instance=ExtResource("3_action")]
 unique_name_in_owner = true

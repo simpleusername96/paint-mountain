@@ -13,7 +13,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var status := AIM_SCORE_SCENE.instantiate() as AimScoreStatus
 	root.add_child(status)
-	status.size = Vector2(600.0, 164.0)
+	status.size = Vector2(520.0, 176.0)
 	var band := TargetBandData.new()
 	band.target_min = 30.0
 	band.target_max = 45.0
@@ -33,6 +33,12 @@ func _run() -> void:
 			"total painted area must remain an independent numeric value")
 	_assert(status.color_role_weights_for_test() == Vector2i(-1, 1),
 			"red and green score roles must remain authoritative")
+	var layout := status.layout_rects_for_test()
+	_assert(not (layout.paint_icon as Rect2).intersects(layout.red_icon as Rect2),
+			"paint total and color-role rows must keep a distinct vertical rhythm")
+	_assert(is_equal_approx((layout.red_icon as Rect2).get_center().y,
+			(layout.green_icon as Rect2).get_center().y),
+			"red and green role icons must share one row center")
 	_assert("R −1 12.0" in status.accessibility_name
 			and "G +1 18.0" in status.accessibility_name,
 			"icon-led color roles must retain an exact accessible alternative")
@@ -45,7 +51,7 @@ func _run() -> void:
 			and is_equal_approx(status.marker_normalized_for_test(), 1.0),
 			"above-range score must stay signed and clamp only its marker")
 	status.set_presentation(AimScoreStatus.Presentation.COMPACT_VALUE)
-	_assert(status.custom_minimum_size == Vector2(190.0, 126.0),
+	_assert(status.custom_minimum_size == Vector2(210.0, 136.0),
 			"Map and Follow must use the compact numeric instrument")
 
 	var summary := RESULT_SCALE_SCENE.instantiate() as ScoreScale

@@ -4,8 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/components/value_stepper.tscn" id="2_stepper"]
 
 [node name="AimControls" type="Control"]
-custom_minimum_size = Vector2(628, 56)
-offset_right = 628.0
+custom_minimum_size = Vector2(648, 56)
+offset_right = 648.0
 offset_bottom = 56.0
 script = ExtResource("1")
 

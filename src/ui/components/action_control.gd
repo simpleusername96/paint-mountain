@@ -48,6 +48,7 @@ const ICONS := {
 	IconKind.NEW_DEAL: preload("res://assets/ui/icons/actions/new_deal.png"),
 	IconKind.DEFAULTS: preload("res://assets/ui/icons/actions/defaults.png"),
 }
+const CENTERED_ICON_TEXTURE := preload("res://src/ui/components/centered_icon_texture.gd")
 
 const ROLE_THEMES := {
 	VisualRole.ROUTINE: &"ActionRoutine",
@@ -119,7 +120,7 @@ func set_readiness(enabled: bool, reason: String = "") -> void:
 
 func _apply_visual_contract() -> void:
 	text = ""
-	icon = ICONS.get(action_kind) as Texture2D
+	icon = CENTERED_ICON_TEXTURE.from_source(ICONS.get(action_kind) as Texture2D)
 	theme_type_variation = ROLE_THEMES.get(visual_role, &"ActionRoutine")
 	var base_edge := 48.0 if visual_role == VisualRole.PRIMARY and _compact else 56.0 \
 			if visual_role == VisualRole.PRIMARY else 40.0 if _compact else 44.0

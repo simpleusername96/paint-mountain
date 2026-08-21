@@ -1,6 +1,8 @@
 class_name TopStatusBar
 extends Control
 
+const CENTERED_ICON_TEXTURE := preload("res://src/ui/components/centered_icon_texture.gd")
+
 signal settings_requested
 
 @onready var stage_value: Label = %StageValue
@@ -14,6 +16,7 @@ var _current_state := StageController.State.LOADING
 
 
 func _ready() -> void:
+	settings_button.icon = CENTERED_ICON_TEXTURE.from_source(settings_button.icon)
 	%SettingsButton.pressed.connect(func() -> void: settings_requested.emit())
 
 

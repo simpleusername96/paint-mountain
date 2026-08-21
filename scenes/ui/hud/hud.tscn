@@ -41,9 +41,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -314.0
+offset_left = -324.0
 offset_top = -146.0
-offset_right = 314.0
+offset_right = 324.0
 offset_bottom = -90.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -52,9 +52,9 @@ grow_vertical = 0
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
-offset_top = 84.0
-offset_right = 624.0
-offset_bottom = 248.0
+offset_top = 88.0
+offset_right = 544.0
+offset_bottom = 264.0
 
 [node name="BallQueue" parent="HUDRoot" instance=ExtResource("15_queue")]
 unique_name_in_owner = true

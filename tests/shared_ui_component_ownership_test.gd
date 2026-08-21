@@ -1,6 +1,7 @@
 extends SceneTree
 
 const HUD_SCENE := preload("res://scenes/ui/hud/hud.tscn")
+const CENTERED_ICON_TEXTURE := preload("res://src/ui/components/centered_icon_texture.gd")
 
 var _failed := false
 
@@ -37,7 +38,11 @@ func _run() -> void:
 	_assert(action.accessibility_name == tr("ui.play") and not action.tooltip_text.is_empty(),
 		"icon-only actions must retain localized accessibility and tooltip copy")
 	_assert(action.custom_minimum_size == Vector2(44.0, 44.0),
-		"standard routine actions must use the shared 44px target")
+			"standard routine actions must use the shared 44px target")
+	var centered_icon := action.icon as AtlasTexture
+	_assert(centered_icon != null
+			and CENTERED_ICON_TEXTURE.visible_center_error(centered_icon.atlas).length() <= 1.0,
+			"ActionControl must center the visible source mark instead of its transparent canvas")
 	action.set_compact(true)
 	_assert(action.custom_minimum_size == Vector2(40.0, 40.0),
 		"compact routine actions must use the shared 40px target")
@@ -81,6 +86,21 @@ func _run() -> void:
 		_assert(stepper.increase_button.custom_minimum_size.y >= 40.0, "%s increase target must be routine-sized" % stepper_path)
 		_assert(not stepper.decrease_button.accessibility_name.is_empty(), "%s must expose an accessible decrease name" % stepper_path)
 		_assert(not stepper.increase_button.accessibility_name.is_empty(), "%s must expose an accessible increase name" % stepper_path)
+		_assert(stepper.decrease_button.icon is AtlasTexture
+				and stepper.increase_button.icon is AtlasTexture,
+				"%s must normalize both icon canvases through the shared owner" % stepper_path)
+		_assert(stepper.value_label.position.x - stepper.decrease_button.get_rect().end.x >= 7.5
+				and stepper.increase_button.position.x - stepper.value_label.get_rect().end.x >= 7.5,
+				"%s must keep an 8px control-to-value gap" % stepper_path)
+	var settings_icon := (hud_root.get_node("TopStatusBar/SettingsButton") as Button).icon
+	_assert(settings_icon is AtlasTexture,
+			"top status Settings must use the same centered icon geometry")
+	var pause_actions := hud_root.get_node("PauseOverlay/Center/Content/Actions") as HBoxContainer
+	_assert(pause_actions.get_theme_constant(&"separation") >= 20,
+			"standard Pause actions must retain visible group spacing")
+	var result_actions := hud_root.get_node("ResultPanel/Margin/Content/Actions") as HBoxContainer
+	_assert(result_actions.get_theme_constant(&"separation") >= 12,
+			"standard Result actions must retain visible group spacing")
 
 	for scene_path in [
 		"res://scenes/ui/components/stage_rail.tscn",

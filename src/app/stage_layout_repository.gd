@@ -7,18 +7,41 @@ signal layout_failed(stage_id: StringName)
 
 const MAX_CACHED_LAYOUTS := 3
 
+## Hydration validates immutable persisted data and constructs RefCounted layout
+## objects only. Scene-tree, renderer, physics, mesh, and texture work stay on
+## the main thread after publication.
+class HydrationJob extends RefCounted:
+	var baked: BakedStageLayoutData
+	var stage: StageData
+
+	func _init(job_baked: BakedStageLayoutData, job_stage: StageData) -> void:
+		baked = job_baked
+		stage = job_stage
+
+	func run() -> GeneratedStageLayout:
+		return StageLayoutBakeCodec.hydrate(baked, stage)
+
+
 var _active_selected_request: Dictionary = {}
 var _active_prefetch_request: Dictionary = {}
 var _queued_selected_request: Dictionary = {}
 var _queued_prefetch_request: Dictionary = {}
+var _hydration_worker: Thread
+var _active_hydration_job: HydrationJob
+var _active_hydration_request: Dictionary = {}
+var _queued_selected_hydration: Dictionary = {}
+var _queued_prefetch_hydration: Dictionary = {}
+var _desired_selected_stage_id: StringName = &""
 var _layout_cache: Dictionary = {}
 var _least_recently_used: Array[StringName] = []
 
 
 func _process(_delta: float) -> void:
+	_collect_finished_hydration()
 	_poll_active_request(true)
 	_poll_active_request(false)
 	_start_queued_requests()
+	_start_next_hydration()
 
 
 ## A selection and a prefetch can load independently. ResourceLoader requests
@@ -27,6 +50,8 @@ func _process(_delta: float) -> void:
 func request_layout(stage: StageData, layout_path: String, selected: bool = true) -> bool:
 	if stage == null:
 		return false
+	if selected:
+		nominate_selected_stage(stage)
 	if ready_layout(stage) != null:
 		return true
 	if layout_path.is_empty():
@@ -61,6 +86,13 @@ func request_layout(stage: StageData, layout_path: String, selected: bool = true
 	return false
 
 
+## Records the latest selected identity even when a downstream artifact cache
+## means no persisted layout request is necessary.
+func nominate_selected_stage(stage: StageData) -> void:
+	if stage != null:
+		_desired_selected_stage_id = stage.stage_id
+
+
 func ready_layout(stage: StageData) -> GeneratedStageLayout:
 	if stage == null:
 		return null
@@ -77,7 +109,10 @@ func is_preparing(stage_id: StringName) -> bool:
 	return _request_stage_id(_active_selected_request) == stage_id \
 			or _request_stage_id(_active_prefetch_request) == stage_id \
 			or _request_stage_id(_queued_selected_request) == stage_id \
-			or _request_stage_id(_queued_prefetch_request) == stage_id
+			or _request_stage_id(_queued_prefetch_request) == stage_id \
+			or _request_stage_id(_active_hydration_request) == stage_id \
+			or _request_stage_id(_queued_selected_hydration) == stage_id \
+			or _request_stage_id(_queued_prefetch_hydration) == stage_id
 
 
 func active_request_count() -> int:
@@ -102,22 +137,92 @@ func _poll_active_request(selected: bool) -> void:
 	else:
 		_active_prefetch_request = {}
 	var stage := request.stage as StageData
-	var current_selection := selected and _queued_selected_request.is_empty()
 	if status != ResourceLoader.THREAD_LOAD_LOADED or stage == null:
-		if current_selection and stage != null:
+		if selected and stage != null and _desired_selected_stage_id == stage.stage_id:
 			layout_failed.emit(stage.stage_id)
 		return
 	var baked := ResourceLoader.load_threaded_get(path) as BakedStageLayoutData
-	var layout := StageLayoutBakeCodec.hydrate(baked, stage)
-	if not _layout_matches_stage(layout, stage):
-		if current_selection:
-			layout_failed.emit(stage.stage_id)
+	_queue_hydration(request, baked, selected)
+
+
+func _queue_hydration(
+		request: Dictionary,
+		baked: BakedStageLayoutData,
+		selected: bool
+) -> void:
+	var stage := request.get("stage") as StageData
+	if selected and (stage == null or _desired_selected_stage_id != stage.stage_id):
+		return
+	var hydration_request := request.duplicate()
+	hydration_request.baked = baked
+	hydration_request.selected = selected
+	if selected:
+		_queued_selected_hydration = hydration_request
+	else:
+		_queued_prefetch_hydration = hydration_request
+	_start_next_hydration()
+
+
+func _start_next_hydration() -> void:
+	if _hydration_worker != null:
+		return
+	var next_request: Dictionary = {}
+	if not _queued_selected_hydration.is_empty():
+		next_request = _queued_selected_hydration
+		_queued_selected_hydration = {}
+	elif not _queued_prefetch_hydration.is_empty():
+		next_request = _queued_prefetch_hydration
+		_queued_prefetch_hydration = {}
+	if next_request.is_empty():
+		return
+	var stage := next_request.stage as StageData
+	var baked := next_request.baked as BakedStageLayoutData
+	if stage == null or baked == null:
+		_publish_hydration_failure(next_request)
+		_start_next_hydration.call_deferred()
+		return
+	_active_hydration_request = next_request
+	_active_hydration_job = HydrationJob.new(baked, stage)
+	_hydration_worker = Thread.new()
+	var start_error := _hydration_worker.start(_active_hydration_job.run)
+	if start_error == OK:
+		return
+	_hydration_worker = null
+	_active_hydration_job = null
+	_active_hydration_request = {}
+	_publish_hydration_failure(next_request)
+	_start_next_hydration.call_deferred()
+
+
+func _collect_finished_hydration() -> void:
+	if _hydration_worker == null or _hydration_worker.is_alive():
+		return
+	var completed_request := _active_hydration_request
+	var layout := _hydration_worker.wait_to_finish() as GeneratedStageLayout
+	_hydration_worker = null
+	_active_hydration_job = null
+	_active_hydration_request = {}
+	var stage := completed_request.get("stage") as StageData
+	if stage == null or not _layout_matches_stage(layout, stage):
+		_publish_hydration_failure(completed_request)
+		_start_next_hydration()
 		return
 	_cache_layout(stage.stage_id, layout)
-	# Readiness is identity-scoped, so an obsolete selection cannot enter another
-	# stage. Prefetch readiness is still published because AppRoot uses it to
-	# install the Stage 01 menu preview.
-	layout_ready.emit(stage.stage_id, layout)
+	var selected := bool(completed_request.get("selected", false))
+	# Obsolete selected work may finish and enter the bounded cache, but only the
+	# latest selected identity may trigger preview/gameplay preparation.
+	if not selected or _desired_selected_stage_id == stage.stage_id:
+		layout_ready.emit(stage.stage_id, layout)
+	_start_next_hydration()
+
+
+func _publish_hydration_failure(request: Dictionary) -> void:
+	var stage := request.get("stage") as StageData
+	if stage == null:
+		return
+	var selected := bool(request.get("selected", false))
+	if selected and _desired_selected_stage_id == stage.stage_id:
+		layout_failed.emit(stage.stage_id)
 
 
 func _start_queued_requests() -> void:
@@ -192,3 +297,11 @@ func _layout_matches_stage(layout: GeneratedStageLayout, stage: StageData) -> bo
 	return layout != null and layout.matches_stage_identity(stage) and layout.is_runtime_ready() \
 			and layout.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED \
 			and stage.terrain_seed == StageProgressionData.CANONICAL_TERRAIN_SEED
+
+
+func _exit_tree() -> void:
+	if _hydration_worker != null and _hydration_worker.is_started():
+		_hydration_worker.wait_to_finish()
+	_hydration_worker = null
+	_active_hydration_job = null
+	_active_hydration_request = {}

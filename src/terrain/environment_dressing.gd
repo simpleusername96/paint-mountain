@@ -22,6 +22,8 @@ func configure(
 	_stage_data = stage_data
 	_generated_layout = generated_layout
 	for child in get_children():
+		if child is Node3D:
+			(child as Node3D).visible = false
 		child.queue_free()
 	var placements := prepared_placements \
 			if not prepared_placements.is_empty() else _generated_layout.decoration_placements

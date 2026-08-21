@@ -50,7 +50,7 @@ func _ready() -> void:
 	game_state.persistence_enabled = false
 	var initial_data: Dictionary = get_node("/root/SaveSystem").default_data()
 	initial_data.selected_stage_id = &"stage_01" \
-			if _screen == "stage_transition_briefing" else _capture_stage
+			if _screen in ["stage_transition_briefing", "stage_browse_timing"] else _capture_stage
 	_initialize_capture_game_state(game_state, initial_data)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run_capture.call_deferred()
@@ -76,6 +76,8 @@ func _run_capture() -> void:
 			_app._show_stage_select()
 			await get_tree().process_frame
 			_app.get_node("StageSelect").set_page_for_capture(1)
+		"stage_browse_timing":
+			await _capture_stage_browse_timing()
 		"briefing":
 			await _start_stage(_capture_stage, false)
 		"stage_briefing":
@@ -365,6 +367,75 @@ func _capture_stage_transition() -> void:
 		return
 	RuntimeDeliveryTelemetry.emit_marker(&"stage_selection_complete", {
 		"stage_id": String(_capture_stage),
+	})
+
+
+func _capture_stage_browse_timing() -> void:
+	_app._show_stage_select()
+	var stage_select := _app.get_node("StageSelect") as StageSelectScreen
+	var initial_stage := StageCatalog.get_stage(stage_select.selected_stage_id())
+	var initial_deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
+	while Time.get_ticks_msec() < initial_deadline:
+		if initial_stage != null and not stage_select._start_button.disabled \
+				and _app._active_preview_stage_id == initial_stage.stage_id:
+			break
+		await get_tree().process_frame
+	if initial_stage == null or stage_select._start_button.disabled \
+			or _app._active_preview_stage_id != initial_stage.stage_id:
+		_fail_capture("initial Stage Select preview never became ready")
+		return
+	for _warmup_frame in range(3):
+		await RenderingServer.frame_post_draw
+	var baseline_maximum_usec := 0
+	var baseline_present_usec := Time.get_ticks_usec()
+	for _baseline_frame in range(5):
+		await RenderingServer.frame_post_draw
+		var baseline_now := Time.get_ticks_usec()
+		baseline_maximum_usec = maxi(
+			baseline_maximum_usec, int(baseline_now - baseline_present_usec)
+		)
+		baseline_present_usec = baseline_now
+	var target_ids: Array[StringName] = [&"stage_02", &"stage_03", &"stage_04"]
+	var maximum_frame_usec := 0
+	var last_present_usec := Time.get_ticks_usec()
+	for stage_id in target_ids:
+		stage_select._on_stage_requested(stage_id)
+		await RenderingServer.frame_post_draw
+		var now := Time.get_ticks_usec()
+		var frame_usec := int(now - last_present_usec)
+		maximum_frame_usec = maxi(maximum_frame_usec, frame_usec)
+		last_present_usec = now
+		RuntimeDeliveryTelemetry.emit_marker(&"stage_browse_frame", {
+			"stage_id": String(stage_id),
+			"duration_usec": frame_usec,
+		})
+	var final_stage := StageCatalog.get_stage(target_ids.back())
+	var deadline := Time.get_ticks_msec() + STAGE_PREPARATION_TIMEOUT_MSEC
+	while Time.get_ticks_msec() < deadline:
+		if final_stage != null and not stage_select._start_button.disabled \
+				and _app._active_preview_stage_id == final_stage.stage_id:
+			break
+		await RenderingServer.frame_post_draw
+		var now := Time.get_ticks_usec()
+		var frame_usec := int(now - last_present_usec)
+		maximum_frame_usec = maxi(maximum_frame_usec, frame_usec)
+		last_present_usec = now
+		RuntimeDeliveryTelemetry.emit_marker(&"stage_browse_wait_frame", {
+			"stage_id": String(final_stage.stage_id) if final_stage != null else "",
+			"duration_usec": frame_usec,
+		})
+	if final_stage == null or stage_select._start_button.disabled \
+			or _app._active_preview_stage_id != final_stage.stage_id:
+		_fail_capture("rapid stage browse did not settle on Stage 04")
+		return
+	RuntimeDeliveryTelemetry.emit_marker(&"stage_browse_ready", {
+		"stage_id": String(final_stage.stage_id),
+		"baseline_maximum_usec": baseline_maximum_usec,
+		"maximum_frame_usec": maximum_frame_usec,
+		"maximum_to_baseline_ratio": (
+			float(maximum_frame_usec) / float(baseline_maximum_usec)
+			if baseline_maximum_usec > 0 else 0.0
+		),
 	})
 
 

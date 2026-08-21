@@ -37,8 +37,10 @@ var _preview_paint_texture: Texture2D
 var _blank_preview_paint_texture: ImageTexture
 var _active_preview_stage_id: StringName = &""
 var _requested_user_stage_id: StringName = &""
+var _requested_stage_needs_gameplay := true
 var _pending_start_stage_id: StringName = &""
 var _preview_stage_select_context := false
+var _stage_selection_generation := 0
 
 
 func _ready() -> void:
@@ -85,6 +87,7 @@ func _connect_screens() -> void:
 
 func _show_main_menu() -> void:
 	_audio_ui()
+	_stage_selection_generation += 1
 	_pending_start_stage_id = &""
 	if _gameplay_presented:
 		_remove_gameplay()
@@ -94,12 +97,13 @@ func _show_main_menu() -> void:
 	_set_preview_context(false)
 	_main_menu.begin_passive_focus_session()
 	var game_state := get_node("/root/GameState")
-	_request_user_stage(StageCatalog.get_stage(game_state.selected_stage_id))
+	_request_user_stage(StageCatalog.get_stage(game_state.selected_stage_id), true)
 	_request_menu_preview()
 
 
 func _show_stage_select() -> void:
 	_audio_ui()
+	_stage_selection_generation += 1
 	_pending_start_stage_id = &""
 	if _gameplay_presented:
 		_remove_gameplay()
@@ -110,7 +114,7 @@ func _show_stage_select() -> void:
 	_stage_select.refresh()
 	var selected_stage := StageCatalog.get_stage(_stage_select.selected_stage_id())
 	_set_menu_preview_if_visible(selected_stage)
-	_request_user_stage(selected_stage)
+	_request_user_stage(selected_stage, false)
 	_stage_select.focus_primary.call_deferred()
 
 
@@ -120,6 +124,7 @@ func _start_selected_stage() -> void:
 
 
 func _start_stage(stage_id: StringName) -> void:
+	_stage_selection_generation += 1
 	var game_state := get_node("/root/GameState")
 	if not game_state.select_stage(stage_id):
 		_set_catalog_load_failed()
@@ -133,7 +138,7 @@ func _start_stage(stage_id: StringName) -> void:
 		_enter_stage(selected_stage)
 		return
 	_pending_start_stage_id = selected_stage.stage_id
-	_request_user_stage(selected_stage)
+	_request_user_stage(selected_stage, true)
 
 
 func _enter_stage(selected_stage: StageData) -> void:
@@ -157,22 +162,33 @@ func _enter_stage(selected_stage: StageData) -> void:
 
 
 func _on_stage_selection_changed(stage: StageData) -> void:
+	var started_at := Time.get_ticks_usec()
 	if stage == null:
 		return
+	_stage_selection_generation += 1
+	var generation := _stage_selection_generation
 	if not _pending_start_stage_id.is_empty() and _pending_start_stage_id != stage.stage_id:
 		_pending_start_stage_id = &""
-	_set_menu_preview_if_visible(stage)
-	_request_user_stage(stage)
+	_publish_preview_after_frame(stage, generation)
+	_request_user_stage(stage, false)
+	RuntimeDeliveryTelemetry.emit_marker(&"stage_selection_dispatched", {
+		"stage_id": String(stage.stage_id),
+		"generation": generation,
+		"duration_usec": int(Time.get_ticks_usec() - started_at),
+	})
 
 
-func _request_user_stage(stage: StageData) -> void:
+func _request_user_stage(stage: StageData, prepare_gameplay: bool = true) -> void:
 	if stage == null:
 		_set_catalog_load_failed()
 		return
 	# Stage Select does not commit GameState until Start. Keep the newest
 	# asynchronous preparation desire separate from that persisted selection.
 	_requested_user_stage_id = stage.stage_id
-	if not _gameplay_presented and _gameplay != null and is_instance_valid(_gameplay):
+	_requested_stage_needs_gameplay = prepare_gameplay
+	_layout_repository.nominate_selected_stage(stage)
+	if prepare_gameplay and not _gameplay_presented \
+			and _gameplay != null and is_instance_valid(_gameplay):
 		var preparing_stage := _gameplay.get("stage_data") as StageData
 		if preparing_stage == null or preparing_stage.stage_id != stage.stage_id:
 			_remove_gameplay()
@@ -183,7 +199,10 @@ func _request_user_stage(stage: StageData) -> void:
 	_runtime_preparer.cancel_except(stage.stage_id)
 	var artifact := _runtime_preparer.ready_artifact(stage)
 	if artifact != null:
-		_prepare_hidden_gameplay(stage, artifact)
+		if prepare_gameplay:
+			_prepare_hidden_gameplay(stage, artifact)
+		else:
+			_set_stage_preparation_state(stage, true)
 		return
 	var layout := _layout_repository.ready_layout(stage)
 	if layout != null:
@@ -219,7 +238,12 @@ func _prepare_hidden_gameplay(stage: StageData, artifact: StageRuntimeArtifact) 
 			_enter_stage(stage)
 		return
 	_remove_gameplay()
+	var instantiate_started_at := Time.get_ticks_usec()
 	_gameplay = GAMEPLAY_SCENE.instantiate()
+	RuntimeDeliveryTelemetry.emit_marker(&"gameplay_instantiated", {
+		"stage_id": String(stage.stage_id),
+		"duration_usec": int(Time.get_ticks_usec() - instantiate_started_at),
+	})
 	_gameplay.name = "PreparedGameplay"
 	if not bool(_gameplay.call(&"prepare_stage", stage, artifact)):
 		_gameplay.queue_free()
@@ -298,6 +322,23 @@ func _on_layout_ready(stage_id: StringName, layout: GeneratedStageLayout) -> voi
 	if not selected and (_gameplay_presented \
 			or (_gameplay != null and is_instance_valid(_gameplay))):
 		return
+	_request_artifact_after_frame(stage, layout, selected)
+
+
+func _request_artifact_after_frame(
+		stage: StageData,
+		layout: GeneratedStageLayout,
+		was_selected: bool
+) -> void:
+	# Hydrated-layout publication and the artifact's first bounded slice must not
+	# occupy the same frame during Stage Select browsing.
+	await get_tree().process_frame
+	var selected := _requested_user_stage_id == stage.stage_id
+	if was_selected and not selected:
+		return
+	if not selected and (_gameplay_presented \
+			or (_gameplay != null and is_instance_valid(_gameplay))):
+		return
 	_runtime_preparer.request_artifact(stage, layout, selected)
 
 
@@ -322,9 +363,12 @@ func _on_artifact_ready(stage_id: StringName, artifact: StageRuntimeArtifact) ->
 		"layout_checksum": artifact.layout_checksum,
 		"artifact_cache_entries": _runtime_preparer.cached_artifact_count(),
 	})
-	_set_menu_preview_if_visible.call_deferred(stage)
+	_publish_preview_after_frame(stage, _stage_selection_generation)
 	if _requested_user_stage_id == stage_id:
-		_prepare_hidden_gameplay(stage, artifact)
+		if _requested_stage_needs_gameplay:
+			_prepare_hidden_gameplay(stage, artifact)
+		else:
+			_set_stage_preparation_state(stage, true)
 
 
 func _on_artifact_failed(stage_id: StringName) -> void:
@@ -368,6 +412,21 @@ func _set_menu_preview_if_visible(stage: StageData) -> void:
 			and _stage_select.selected_stage_id() == stage.stage_id
 	if main_matches or stage_select_matches:
 		_set_preview_stage(stage)
+
+
+func _publish_preview_if_current(stage: StageData, generation: int) -> void:
+	if generation != _stage_selection_generation or stage == null:
+		return
+	if _stage_select.visible and _stage_select.selected_stage_id() != stage.stage_id:
+		return
+	_set_menu_preview_if_visible(stage)
+
+
+func _publish_preview_after_frame(stage: StageData, generation: int) -> void:
+	# Runtime artifact completion can consume its full bounded slice. Publish the
+	# visual preview on the next frame so mesh/material binding cannot stack on it.
+	await get_tree().process_frame
+	_publish_preview_if_current(stage, generation)
 
 
 func _on_gameplay_navigation(destination: StringName) -> void:
@@ -466,6 +525,26 @@ func _build_preview_world() -> void:
 	_preview_mountain.position = Vector3(0.0, -2.0, -112.0)
 	_preview_mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	_preview_world.add_child(_preview_mountain)
+	_preview_material = ShaderMaterial.new()
+	_preview_material.shader = load("res://src/paint/terrain_paint.gdshader")
+	_preview_mountain.material_override = _preview_material
+	_preview_ground = OPEN_PLAY_ENVIRONMENT_SCENE.instantiate() as OpenPlayEnvironment
+	_preview_ground.name = "PreviewGround"
+	_preview_world.add_child(_preview_ground)
+	_preview_ground.process_mode = Node.PROCESS_MODE_DISABLED
+	_preview_ground.visible = false
+	var preview_body := _preview_ground.get_node("ApronBody") as StaticBody3D
+	preview_body.collision_layer = 0
+	preview_body.collision_mask = 0
+	var apron_mesh := _preview_ground.get_node("ApronMesh") as MeshInstance3D
+	var preview_ground_material := apron_mesh.material_override.duplicate() as ShaderMaterial
+	preview_ground_material.set_shader_parameter(&"base_color", Color("8B9456"))
+	preview_ground_material.set_shader_parameter(&"source_saturation", 0.42)
+	preview_ground_material.set_shader_parameter(&"detail_strength", 0.14)
+	apron_mesh.material_override = preview_ground_material
+	_preview_dressing = ENVIRONMENT_DRESSING_SCRIPT.new()
+	_preview_dressing.name = "PreviewDressing"
+	_preview_world.add_child(_preview_dressing)
 
 
 func _set_preview_world_active(active: bool) -> void:
@@ -498,11 +577,9 @@ func _set_preview_stage(stage: StageData) -> void:
 			and _preview_mountain.mesh == artifact.geometry.render_mesh:
 		_fit_preview_camera(artifact.presentation_local_points)
 		return
-	_clear_preview_presentation()
+	var started_at := Time.get_ticks_usec()
 	_preview_mountain.position = stage.terrain_center
 	_preview_mountain.mesh = artifact.geometry.render_mesh
-	_preview_material = ShaderMaterial.new()
-	_preview_material.shader = load("res://src/paint/terrain_paint.gdshader")
 	_preview_paint_texture = artifact.preview_paint_texture
 	_apply_preview_paint_texture()
 	_preview_material.set_shader_parameter(
@@ -517,29 +594,15 @@ func _set_preview_stage(stage: StageData) -> void:
 	_preview_material.set_shader_parameter(&"green_paint_color", stage.green_paint_color)
 	_preview_material.set_shader_parameter(&"rock_color", Color("9FA3A9"))
 	_preview_material.set_shader_parameter(&"shadow_tint", Color("626D7B"))
-	_preview_mountain.material_override = _preview_material
-	_preview_ground = OPEN_PLAY_ENVIRONMENT_SCENE.instantiate() as OpenPlayEnvironment
-	_preview_ground.name = "PreviewGround_%s" % stage.stage_id
-	_preview_world.add_child(_preview_ground)
 	_preview_ground.configure(
 		artifact.runtime_layout.play_bounds,
 		stage.paint_world_bounds(),
 		stage.terrain_center.y
 	)
-	var apron_mesh := _preview_ground.get_node("ApronMesh") as MeshInstance3D
-	var preview_ground_material := apron_mesh.material_override.duplicate() as ShaderMaterial
-	preview_ground_material.set_shader_parameter(&"base_color", Color("8B9456"))
-	preview_ground_material.set_shader_parameter(&"source_saturation", 0.42)
-	preview_ground_material.set_shader_parameter(&"detail_strength", 0.14)
-	apron_mesh.material_override = preview_ground_material
-	_preview_ground.process_mode = Node.PROCESS_MODE_DISABLED
 	_preview_ground.visible = _preview_stage_select_context
 	var preview_body := _preview_ground.get_node("ApronBody") as StaticBody3D
 	preview_body.collision_layer = 0
 	preview_body.collision_mask = 0
-	_preview_dressing = ENVIRONMENT_DRESSING_SCRIPT.new()
-	_preview_dressing.name = "PreviewDressing_%s" % stage.stage_id
-	_preview_world.add_child(_preview_dressing)
 	_preview_dressing.configure(
 		stage,
 		artifact.runtime_layout,
@@ -548,6 +611,10 @@ func _set_preview_stage(stage: StageData) -> void:
 	)
 	_active_preview_stage_id = stage.stage_id
 	_fit_preview_camera(artifact.presentation_local_points)
+	RuntimeDeliveryTelemetry.emit_marker(&"preview_published", {
+		"stage_id": String(stage.stage_id),
+		"duration_usec": int(Time.get_ticks_usec() - started_at),
+	})
 
 
 func _fit_preview_camera(local_points: PackedVector3Array) -> void:
@@ -588,20 +655,6 @@ func _on_preview_viewport_size_changed() -> void:
 	var artifact := _runtime_preparer.ready_artifact(stage)
 	if artifact != null:
 		_fit_preview_camera(artifact.presentation_local_points)
-
-
-func _clear_preview_presentation() -> void:
-	if _preview_ground != null and is_instance_valid(_preview_ground):
-		_preview_ground.visible = false
-		_preview_ground.queue_free()
-	_preview_ground = null
-	if _preview_dressing != null and is_instance_valid(_preview_dressing):
-		_preview_dressing.visible = false
-		_preview_dressing.queue_free()
-	_preview_dressing = null
-	_preview_material = null
-	_preview_paint_texture = null
-	_active_preview_stage_id = &""
 
 
 func _apply_preview_paint_texture() -> void:

@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://src/ui/components/aim_score_status.gd" id="1_script"]
 
 [node name="AimScoreStatus" type="Control"]
-custom_minimum_size = Vector2(600, 164)
+custom_minimum_size = Vector2(520, 176)
 mouse_filter = 2
 theme_type_variation = &"AimScoreStatus"
 script = ExtResource("1_script")

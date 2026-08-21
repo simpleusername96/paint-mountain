@@ -43,7 +43,7 @@ func _apply_responsive_layout() -> void:
 	content.custom_minimum_size = Vector2(340.0, 132.0) * resolved \
 			if compact else Vector2(420.0, 160.0)
 	content.add_theme_constant_override(&"separation", roundi(18.0 * resolved) if compact else 28)
-	actions.add_theme_constant_override(&"separation", roundi(10.0 * resolved) if compact else 16)
+	actions.add_theme_constant_override(&"separation", roundi(14.0 * resolved) if compact else 20)
 	title.add_theme_font_size_override(&"font_size", roundi(30.0 * resolved) if compact else 42)
 	for action in [%Resume, %Restart, %Settings, %Stages, %MainMenu]:
 		var control := action as ActionControl

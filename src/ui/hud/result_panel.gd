@@ -114,6 +114,9 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 		action.set_compact(compact, resolved_density)
 		action.set_icon_width(28.0 if compact else 32.0)
 		action.custom_minimum_size = Vector2(action_edge, action_edge)
+	%Actions.add_theme_constant_override(
+		&"separation", roundi((10.0 if compact else 12.0) * resolved_density)
+	)
 	%Margin.add_theme_constant_override(
 		&"margin_left", roundi(14.0 * resolved_density) if compact else 24
 	)

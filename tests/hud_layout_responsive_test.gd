@@ -174,6 +174,16 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 
 	_assert_true(score_status.presentation == AimScoreStatus.Presentation.AIM_RANGE,
 			"Aim must expose the success-range-only instrument at %s" % viewport_size)
+	var score_layout := score_status.layout_rects_for_test()
+	_assert_true(not (score_layout.paint_icon as Rect2).intersects(score_layout.red_icon as Rect2),
+			"Aim left metrics must keep separate paint and color-role rows at %s" % viewport_size)
+	_assert_true(absf((score_layout.red_icon as Rect2).get_center().y
+			- (score_layout.green_icon as Rect2).get_center().y) <= 1.0,
+			"Aim color-role icons must share one center at %s" % viewport_size)
+	_assert_true(score_status.get_global_rect().position.x >= safe_rect.position.x
+			and score_status.get_global_rect().position.y
+			>= (hud_root.get_node("TopStatusBar/StageValue") as Label).get_global_rect().end.y + 7.5,
+			"Aim left score must keep a clear gap below stage identity at %s" % viewport_size)
 	hud.set_interaction_mode(CameraDirector.InteractionMode.MAP_INSPECTION)
 	await process_frame
 	_assert_true(score_status.presentation == AimScoreStatus.Presentation.COMPACT_VALUE,

@@ -104,6 +104,12 @@ func _check_stage_select(viewport_size: Vector2i, locale: String) -> void:
 	_assert((screen._stage_nodes[0] as Control).has_focus(), "%s %s Stage Select primary focus must remain selected node" % [locale, viewport_size])
 	_assert_safe(screen._stage_nodes[0] as Control, viewport_size, "%s %s selected node" % [locale, viewport_size], safe_margin)
 	_assert_safe(screen._start_button, viewport_size, "%s %s Start" % [locale, viewport_size], safe_margin)
+	_assert(screen._start_button.get_global_rect().end.y <= rail.get_global_rect().position.y - 11.5,
+			"%s %s Stage Select primary must keep a distinct gap above the rail" % [locale, viewport_size])
+	_assert((screen.get_node("Root/SelectedInfo") as VBoxContainer).get_theme_constant(&"separation") >= 8,
+			"%s %s Stage Select facts must use the shared vertical rhythm" % [locale, viewport_size])
+	_assert((screen.get_node("Root/SelectedInfo/Identity") as HBoxContainer).get_theme_constant(&"separation") >= 16,
+			"%s %s Stage Select identity must separate number and name" % [locale, viewport_size])
 	_assert(screen._stage_name.visible and screen._preview_best.visible != compact,
 			"%s %s Stage Select must preserve identity and suppress only secondary best copy in compact mode" % [locale, viewport_size])
 	screen.queue_free()

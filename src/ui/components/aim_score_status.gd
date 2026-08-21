@@ -120,6 +120,10 @@ func color_role_weights_for_test() -> Vector2i:
 	return Vector2i(_red_weight, _green_weight)
 
 
+func layout_rects_for_test() -> Dictionary:
+	return _aim_layout(_density)
+
+
 func _draw() -> void:
 	if presentation == Presentation.COMPACT_VALUE:
 		_draw_compact_value()
@@ -132,8 +136,8 @@ func _draw_aim_range() -> void:
 	var font := get_theme_font(&"font", &"HudBody")
 	var body_size := roundi(18.0 * scale)
 	var caption_size := roundi(14.0 * scale)
-	var track := Rect2(62.0 * scale, 50.0 * scale,
-			maxf(240.0 * scale, size.x - 84.0 * scale), 18.0 * scale)
+	var layout := _aim_layout(scale)
+	var track := layout.track as Rect2
 	var segment_width := track.size.x / float(STAR_TIERS.size())
 	for index in STAR_TIERS.size():
 		var segment := Rect2(
@@ -150,32 +154,49 @@ func _draw_aim_range() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, caption_size).x
 	draw_string(font, Vector2(track.end.x - maximum_width, 43.0 * scale), maximum_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, caption_size, INK)
-	_draw_score_marker(track, font, caption_size, scale)
+	_draw_score_marker(track, font, caption_size, scale, float(layout.marker_baseline))
 
-	var paint_rect := Rect2(2.0 * scale, 92.0 * scale, 30.0 * scale, 30.0 * scale)
+	var paint_rect := layout.paint_icon as Rect2
 	draw_texture_rect(PAINT_TEXTURE, paint_rect, false, INK)
-	draw_string(font, Vector2(40.0 * scale, 116.0 * scale),
+	draw_string(font, Vector2(float(layout.value_x), float(layout.paint_baseline)),
 			"%s%%" % _format_number(_paint_percent), HORIZONTAL_ALIGNMENT_LEFT,
 			-1.0, body_size, INK)
 	if _show_color_roles:
-		var role_y := 150.0 * scale
-		draw_texture_rect(PAINT_TEXTURE,
-				Rect2(2.0 * scale, 128.0 * scale, 30.0 * scale, 30.0 * scale), false, RED)
-		draw_string(font, Vector2(40.0 * scale, role_y), _weight_text(_red_weight),
+		draw_texture_rect(PAINT_TEXTURE, layout.red_icon as Rect2, false, RED)
+		draw_string(font, Vector2(float(layout.value_x), float(layout.role_baseline)),
+				_weight_text(_red_weight),
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, body_size, INK)
-		draw_texture_rect(TARGET_TEXTURE,
-				Rect2(130.0 * scale, 128.0 * scale, 28.0 * scale, 28.0 * scale), false, GREEN)
-		draw_string(font, Vector2(166.0 * scale, role_y), _weight_text(_green_weight),
+		draw_texture_rect(TARGET_TEXTURE, layout.green_icon as Rect2, false, GREEN)
+		draw_string(font, Vector2(float(layout.green_value_x), float(layout.role_baseline)),
+				_weight_text(_green_weight),
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, body_size, INK)
+
+
+func _aim_layout(scale: float) -> Dictionary:
+	var left := 12.0 * scale
+	var icon_edge := 28.0 * scale
+	var green_left := maxf(156.0 * scale, size.x * 0.34)
+	return {
+		"track": Rect2(left, 50.0 * scale,
+				maxf(240.0 * scale, size.x - left * 2.0), 18.0 * scale),
+		"marker_baseline": 88.0 * scale,
+		"paint_icon": Rect2(left, 98.0 * scale, icon_edge, icon_edge),
+		"paint_baseline": 121.0 * scale,
+		"red_icon": Rect2(left, 138.0 * scale, icon_edge, icon_edge),
+		"green_icon": Rect2(green_left, 138.0 * scale, icon_edge, icon_edge),
+		"value_x": left + icon_edge + 12.0 * scale,
+		"green_value_x": green_left + icon_edge + 12.0 * scale,
+		"role_baseline": 161.0 * scale,
+	}
 
 
 func _draw_compact_value() -> void:
 	var scale := _density
 	var font := get_theme_font(&"font", &"HudBody")
 	var font_size := roundi(18.0 * scale)
-	var row_gap := 30.0 * scale
-	var baseline := 23.0 * scale
-	var value_x := 78.0 * scale
+	var row_gap := 34.0 * scale
+	var baseline := 24.0 * scale
+	var value_x := 86.0 * scale
 	draw_string(font, Vector2(0.0, baseline), tr("hud.now"),
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, INK)
 	draw_string(font, Vector2(value_x, baseline), _format_score(_score),
@@ -209,7 +230,9 @@ func _draw_star_tier(center_x: float, center_y: float, count: int, scale: float)
 						icon_edge, icon_edge), false, ACCENT)
 
 
-func _draw_score_marker(track: Rect2, font: Font, font_size: int, scale: float) -> void:
+func _draw_score_marker(
+		track: Rect2, font: Font, font_size: int, scale: float, value_baseline: float
+) -> void:
 	var direction := overflow_direction_for_test()
 	var normalized := marker_normalized_for_test()
 	var marker_x := lerpf(track.position.x, track.end.x, normalized)
@@ -240,13 +263,13 @@ func _draw_score_marker(track: Rect2, font: Font, font_size: int, scale: float) 
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
 	var score_x := 0.0 if direction < 0 else size.x - score_width if direction > 0 \
 			else clampf(marker_x - score_width * 0.5, 0.0, size.x - score_width)
-	draw_string(font, Vector2(score_x, track.end.y + 17.0 * scale), score_text,
+	draw_string(font, Vector2(score_x, value_baseline), score_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, ACCENT)
 
 
 func _apply_minimum_size() -> void:
-	custom_minimum_size = (Vector2(300.0 if _compact else 600.0, 164.0)
-			if presentation == Presentation.AIM_RANGE else Vector2(190.0, 126.0)) * _density
+	custom_minimum_size = (Vector2(300.0 if _compact else 520.0, 176.0)
+			if presentation == Presentation.AIM_RANGE else Vector2(210.0, 136.0)) * _density
 
 
 func _apply_accessibility() -> void:

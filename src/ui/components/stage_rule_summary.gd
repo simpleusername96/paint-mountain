@@ -22,8 +22,8 @@ func configure(stage: StageData) -> void:
 func set_compact(compact: bool, density: float = 1.0) -> void:
 	_compact = compact
 	_density = maxf(density, 1.0) if compact else 1.0
-	custom_minimum_size = Vector2(300.0, 24.0) * _density if compact \
-			else Vector2(520.0, 28.0)
+	custom_minimum_size = Vector2(320.0, 28.0) * _density if compact \
+			else Vector2(560.0, 32.0)
 	queue_redraw()
 
 
@@ -50,24 +50,24 @@ func _draw() -> void:
 			else get_theme_color(&"font_color", &"HudAccentValue")
 	var baseline := (size.y - font.get_height(font_size)) * 0.5 + font.get_ascent(font_size)
 	var x := 2.0 * scale
-	var icon_radius := 6.0 * scale
+	var icon_radius := (6.0 if _compact else 7.0) * scale
 	_draw_target_icon(Vector2(x + icon_radius, size.y * 0.5), icon_radius, color, accent)
 	x += icon_radius * 2.0 + 8.0 * scale
 	var primary := _band_text() if _stage.uses_target_band() \
 			else "%.1f%%" % _stage.target_coverage
-	x = _draw_text(font, font_size, primary, Vector2(x, baseline), color) + 10.0 * scale
+	x = _draw_text(font, font_size, primary, Vector2(x, baseline), color) + 16.0 * scale
 	x = _draw_separator(Vector2(x, size.y * 0.5), muted, scale)
 	if _stage.uses_target_band():
 		x = _draw_text(font, font_size, "R%s/G%s" % [
 			_weight_text(_stage.color_score_rule.red_weight),
 			_weight_text(_stage.color_score_rule.green_weight),
-		], Vector2(x, baseline), color) + 10.0 * scale
+		], Vector2(x, baseline), color) + 16.0 * scale
 		x = _draw_separator(Vector2(x, size.y * 0.5), muted, scale)
 	BALL_GLYPH_PAINTER.draw(self, Vector2(x + icon_radius, size.y * 0.5),
 			icon_radius, BallKind.Value.STANDARD, color, color, 1.5 * scale)
-	x += icon_radius * 2.0 + 6.0 * scale
+	x += icon_radius * 2.0 + 8.0 * scale
 	x = _draw_text(font, font_size, "%d" % _stage.maximum_shots,
-			Vector2(x, baseline), color) + 10.0 * scale
+			Vector2(x, baseline), color) + 16.0 * scale
 	if _stage.uses_target_band():
 		for kind in _stage.required_ball_kinds_for_clear:
 			x = _draw_separator(Vector2(x, size.y * 0.5), muted, scale)
@@ -89,7 +89,7 @@ func _draw_text(font: Font, font_size: int, value: String, position: Vector2, co
 
 func _draw_separator(center: Vector2, color: Color, scale: float) -> float:
 	draw_circle(center, 1.5 * scale, color)
-	return center.x + 9.0 * scale
+	return center.x + 12.0 * scale
 
 
 func _draw_target_icon(center: Vector2, radius: float, color: Color, accent: Color) -> void:

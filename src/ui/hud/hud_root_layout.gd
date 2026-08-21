@@ -80,7 +80,7 @@ func _apply_standard_layout() -> void:
 	_top.set_compact(false)
 	_actions.set_compact(false)
 	_aim.set_compact(false)
-	_set_rect(_aim, Vector2((size.x - 628.0) * 0.5, size.y - 146.0), Vector2(628.0, 56.0))
+	_set_rect(_aim, Vector2((size.x - 648.0) * 0.5, size.y - 146.0), Vector2(648.0, 56.0))
 	_set_rect(_actions, Vector2((size.x - 256.0) * 0.5, size.y - 178.0), Vector2(256.0, 96.0))
 	_queue.set_compact(false)
 	_set_rect(_queue, Vector2(size.x - SAFE_MARGIN - 420.0, 92.0), Vector2(420.0, 172.0))
@@ -92,9 +92,9 @@ func _apply_standard_layout() -> void:
 	)
 	_score_status.set_compact(false)
 	if _score_presentation == AimScoreStatus.Presentation.AIM_RANGE:
-		_set_rect(_score_status, Vector2(SAFE_MARGIN, 84.0), Vector2(600.0, 164.0))
+		_set_rect(_score_status, Vector2(SAFE_MARGIN, 88.0), Vector2(520.0, 176.0))
 	else:
-		_set_rect(_score_status, Vector2(SAFE_MARGIN, 84.0), Vector2(190.0, 126.0))
+		_set_rect(_score_status, Vector2(SAFE_MARGIN, 88.0), Vector2(210.0, 136.0))
 	_result.set_compact(false)
 	_set_rect(
 		_result,
@@ -147,9 +147,9 @@ func _apply_compact_layout(density: float) -> void:
 	)
 	_score_status.set_compact(true, density)
 	var score_top := 68.0 * density
-	var score_size := Vector2(300.0, 164.0) * density \
+	var score_size := Vector2(300.0, 176.0) * density \
 			if _score_presentation == AimScoreStatus.Presentation.AIM_RANGE \
-			else Vector2(190.0, 126.0) * density
+			else Vector2(210.0, 136.0) * density
 	_set_rect(_score_status, Vector2(COMPACT_SAFE_MARGIN * density, score_top), score_size)
 	_result.set_compact(true, density)
 	var result_safe := COMPACT_SAFE_MARGIN * density

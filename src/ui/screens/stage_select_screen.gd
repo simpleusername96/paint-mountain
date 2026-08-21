@@ -69,10 +69,10 @@ func _apply_responsive_layout() -> void:
 	_set_rect(_scrim, Vector2(0.0, viewport_size.y - scrim_height),
 			Vector2(viewport_size.x, scrim_height))
 	_set_rect(_back, Vector2(safe, safe), Vector2(routine_edge, routine_edge))
-	var info_left := safe + routine_edge + 16.0 * density
+	var info_left := safe + routine_edge + 20.0 * density
 	var info_width := minf(760.0 * density, viewport_size.x - info_left - safe)
 	_set_rect(_selected_info, Vector2(info_left, safe),
-			Vector2(maxf(240.0 * density, info_width), 132.0 * density if _compact else 152.0))
+			Vector2(maxf(240.0 * density, info_width), 136.0 * density if _compact else 160.0))
 
 	var arrow_y := (viewport_size.y - routine_edge) * 0.40
 	_set_rect(_previous, Vector2(safe, arrow_y), Vector2(routine_edge, routine_edge))
@@ -84,7 +84,7 @@ func _apply_responsive_layout() -> void:
 			Vector2(viewport_size.x - safe * 2.0, rail_height))
 	_set_rect(_start_button,
 			Vector2(viewport_size.x - safe - primary_edge,
-				viewport_size.y - rail_bottom - rail_height - 16.0 * density - primary_edge),
+				viewport_size.y - rail_bottom - rail_height - 20.0 * density - primary_edge),
 			Vector2(primary_edge, primary_edge))
 	_preview_best.visible = not _compact
 	_update_preview()

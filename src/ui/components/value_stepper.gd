@@ -5,6 +5,7 @@ signal step_requested(direction: float)
 
 const HOLD_DELAY := 0.30
 const HOLD_REPEAT := 0.08
+const CENTERED_ICON_TEXTURE := preload("res://src/ui/components/centered_icon_texture.gd")
 
 @onready var caption: Label = %Caption
 @onready var decrease_button: Button = %Decrease
@@ -23,6 +24,8 @@ var _next_repeat := HOLD_DELAY
 
 
 func _ready() -> void:
+	decrease_button.icon = CENTERED_ICON_TEXTURE.from_source(decrease_button.icon)
+	increase_button.icon = CENTERED_ICON_TEXTURE.from_source(increase_button.icon)
 	decrease_button.button_down.connect(_begin_hold.bind(_decrease_step))
 	increase_button.button_down.connect(_begin_hold.bind(_increase_step))
 	decrease_button.button_up.connect(_end_hold)
@@ -67,13 +70,13 @@ func set_value(value: float, minimum: float, maximum: float) -> void:
 
 func set_compact(compact: bool, density: float = 1.0) -> void:
 	var scale := maxf(density, 1.0) if compact else 1.0
-	custom_minimum_size = Vector2(166.0, 52.0) * scale
-	add_theme_constant_override(&"separation", roundi(4.0 * scale))
+	custom_minimum_size = Vector2(168.0 if compact else 176.0, 48.0 if compact else 52.0) * scale
+	add_theme_constant_override(&"separation", roundi(8.0 * scale))
 	caption.custom_minimum_size = Vector2(48.0, 48.0) * scale
 	for button in [decrease_button, increase_button]:
-		button.custom_minimum_size = Vector2(42.0, 48.0) * scale
+		button.custom_minimum_size = Vector2(40.0 if compact else 44.0, 48.0) * scale
 		button.add_theme_constant_override(&"icon_max_width", roundi(24.0 * scale))
-	value_label.custom_minimum_size = Vector2(70.0, 48.0) * scale
+	value_label.custom_minimum_size = Vector2(72.0, 48.0) * scale
 	value_label.add_theme_font_size_override(
 		&"font_size", roundi(22.0 * scale) if compact else 22
 	)
