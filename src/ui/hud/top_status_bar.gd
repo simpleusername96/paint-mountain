@@ -17,6 +17,8 @@ var _current_state := StageController.State.LOADING
 
 func _ready() -> void:
 	settings_button.icon = CENTERED_ICON_TEXTURE.from_source(settings_button.icon)
+	settings_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	settings_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	%SettingsButton.pressed.connect(func() -> void: settings_requested.emit())
 
 

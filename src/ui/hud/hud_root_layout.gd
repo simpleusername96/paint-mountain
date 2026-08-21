@@ -153,10 +153,19 @@ func _apply_compact_layout(density: float) -> void:
 	_set_rect(_score_status, Vector2(COMPACT_SAFE_MARGIN * density, score_top), score_size)
 	_result.set_compact(true, density)
 	var result_safe := COMPACT_SAFE_MARGIN * density
+	var result_width := minf(496.0 * density, size.x * 0.54)
+	var result_minimum := _result.get_combined_minimum_size()
+	var result_height := minf(
+		maxf(result_minimum.y, 420.0 * density),
+		size.y - result_safe * 2.0
+	)
 	_set_rect(
 		_result,
-		Vector2(result_safe, result_safe),
-		Vector2(size.x - result_safe * 2.0, size.y - result_safe * 2.0)
+		Vector2(
+			size.x - result_safe - result_width,
+			maxf(result_safe, (size.y - result_height) * 0.5)
+		),
+		Vector2(result_width, result_height)
 	)
 	_return_to_cannon.set_compact(true, density)
 	var return_width := 40.0 * density

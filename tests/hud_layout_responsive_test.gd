@@ -10,6 +10,8 @@ const VIEWPORTS := [
 	Vector2i(1920, 1080),
 	Vector2i(1024, 576),
 	Vector2i(1024, 768),
+	Vector2i(768, 1024),
+	Vector2i(713, 1026),
 	Vector2i(640, 360),
 ]
 
@@ -234,6 +236,13 @@ func _assert_layout(locale: String, viewport_size: Vector2i) -> void:
 		"Result must suppress the competing top status row at %s" % viewport_size
 	)
 	_assert_inside(result, safe_rect, "ResultPanel at %s (%s)" % [viewport_size, locale])
+	if viewport_size.y > viewport_size.x:
+		_assert_true(result.size.x <= viewport_size.x * 0.54 + 0.5,
+			"tall-window Result must remain a narrow right spine at %s" % viewport_size)
+		_assert_true(result.size.y <= viewport_size.y * 0.66 + 0.5,
+			"tall-window Result must not become a full-height sheet at %s" % viewport_size)
+		_assert_true(result.get_global_rect().get_center().x > float(viewport_size.x) * 0.5,
+			"tall-window Result must stay on the right and preserve the mountain side at %s" % viewport_size)
 	_assert_true(
 		result.get_global_rect().encloses(
 			(result.get_node("Margin/Content/Summary") as Control).get_global_rect()

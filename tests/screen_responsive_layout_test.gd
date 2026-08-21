@@ -20,7 +20,11 @@ func _run() -> void:
 	var previous_locale := TranslationServer.get_locale()
 	for locale in ["ko", "en"]:
 		TranslationServer.set_locale(locale)
-		for viewport_size in [Vector2i(1280, 720), Vector2i(1024, 576), Vector2i(1024, 768), Vector2i(1920, 1080), Vector2i(640, 360)]:
+		for viewport_size in [
+			Vector2i(1280, 720), Vector2i(1024, 576), Vector2i(1024, 768),
+			Vector2i(1920, 1080), Vector2i(768, 1024), Vector2i(713, 1026),
+			Vector2i(640, 360),
+		]:
 			await _check_main_menu(viewport_size, locale)
 			await _check_stage_select(viewport_size, locale)
 			await _check_pause(viewport_size, locale)
@@ -44,12 +48,21 @@ func _check_main_menu(viewport_size: Vector2i, locale: String) -> void:
 	var safe_margin := 12.0 if compact else SAFE_MARGIN
 	var block := screen.get_node("Root/BrandBlock") as Control
 	_assert_safe(block, viewport_size, "%s %s Main Menu block" % [locale, viewport_size], safe_margin)
+	var menu_actions: Array[ActionControl] = []
 	for action_name in ["Play", "StageSelect", "Settings", "Quit"]:
 		var item := screen.get_node("Root/BrandBlock/Margin/Content/%s" % action_name) as MenuActionItem
 		_assert(block.get_global_rect().encloses(item.get_global_rect()), "%s %s %s must stay inside the menu block" % [locale, viewport_size, action_name])
 		_assert(item.action.custom_minimum_size.y >= 40.0, "%s %s %s must keep a routine target" % [locale, viewport_size, action_name])
 		_assert(item.action.text.is_empty() and item.action.icon != null,
 			"%s %s %s must stay icon-only" % [locale, viewport_size, action_name])
+		_assert(item.get_global_rect().encloses(item.action.get_global_rect()),
+			"%s %s %s row must own its configured action edge" % [locale, viewport_size, action_name])
+		menu_actions.append(item.action)
+	for index in range(menu_actions.size() - 1):
+		var gap := menu_actions[index + 1].get_global_rect().position.y \
+				- menu_actions[index].get_global_rect().end.y
+		_assert(gap >= 11.5,
+			"%s %s Main Menu action gap must stay deliberate: %.1f" % [locale, viewport_size, gap])
 	screen.queue_free()
 	viewport.queue_free()
 	await process_frame

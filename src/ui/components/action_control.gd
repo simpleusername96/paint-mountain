@@ -71,6 +71,8 @@ var _icon_width_override := 0.0
 func _ready() -> void:
 	clip_text = true
 	expand_icon = true
+	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	focus_mode = Control.FOCUS_ALL
 	_apply_visual_contract()
 	refresh_locale()
@@ -104,6 +106,10 @@ func set_icon_width(width: float) -> void:
 	_apply_visual_contract()
 
 
+func preferred_edge() -> float:
+	return _base_edge() * _density
+
+
 func refresh_locale() -> void:
 	var localized := tr(label_key)
 	text = ""
@@ -122,10 +128,14 @@ func _apply_visual_contract() -> void:
 	text = ""
 	icon = CENTERED_ICON_TEXTURE.from_source(ICONS.get(action_kind) as Texture2D)
 	theme_type_variation = ROLE_THEMES.get(visual_role, &"ActionRoutine")
-	var base_edge := 48.0 if visual_role == VisualRole.PRIMARY and _compact else 56.0 \
-			if visual_role == VisualRole.PRIMARY else 40.0 if _compact else 44.0
-	var edge := base_edge * _density
+	var edge := preferred_edge()
 	custom_minimum_size = Vector2(edge, edge)
 	var icon_width := _icon_width_override if _icon_width_override > 0.0 \
 			else (22.0 if _compact else 24.0)
 	add_theme_constant_override(&"icon_max_width", roundi(icon_width * _density))
+
+
+func _base_edge() -> float:
+	if visual_role == VisualRole.PRIMARY:
+		return 48.0 if _compact else 56.0
+	return 40.0 if _compact else 44.0

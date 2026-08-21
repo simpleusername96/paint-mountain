@@ -35,6 +35,8 @@ func configure(
 ) -> void:
 	_label_key = localized_label_key
 	action.configure(localized_label_key, icon_kind, role)
+	if is_node_ready():
+		_apply_layout()
 	refresh_locale()
 
 
@@ -97,10 +99,10 @@ func _hide_label() -> void:
 
 
 func _apply_layout() -> void:
-	var action_edge := (40.0 if _compact else 44.0) * _density
-	var row_height := maxf(action_edge, (44.0 if _compact else 48.0) * _density)
+	var action_edge := action.preferred_edge()
+	var row_height := action_edge
 	custom_minimum_size = Vector2(264.0 * _density, row_height)
-	action.position = Vector2(0.0, (row_height - action_edge) * 0.5)
+	action.position = Vector2.ZERO
 	action.size = Vector2(action_edge, action_edge)
 	action.set_icon_width(30.0 if _compact else 34.0)
 	_label.position = Vector2(_label_hidden_x(), 0.0)

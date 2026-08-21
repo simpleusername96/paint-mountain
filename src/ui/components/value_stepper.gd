@@ -26,6 +26,9 @@ var _next_repeat := HOLD_DELAY
 func _ready() -> void:
 	decrease_button.icon = CENTERED_ICON_TEXTURE.from_source(decrease_button.icon)
 	increase_button.icon = CENTERED_ICON_TEXTURE.from_source(increase_button.icon)
+	for button in [decrease_button, increase_button]:
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	decrease_button.button_down.connect(_begin_hold.bind(_decrease_step))
 	increase_button.button_down.connect(_begin_hold.bind(_increase_step))
 	decrease_button.button_up.connect(_end_hold)

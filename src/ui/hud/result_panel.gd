@@ -107,7 +107,7 @@ func refresh_locale() -> void:
 
 func set_compact(compact: bool, density: float = 1.0) -> void:
 	var resolved_density := maxf(density, 1.0)
-	custom_minimum_size = Vector2(360.0, 276.0) if compact else Vector2(496.0, 560.0)
+	custom_minimum_size = Vector2(300.0, 276.0) if compact else Vector2(496.0, 560.0)
 	_summary.set_compact(compact, resolved_density)
 	var action_edge := (48.0 if compact else 56.0) * resolved_density
 	for action in [_retry, _next, _stages, _retry_same_deal, _new_deal]:

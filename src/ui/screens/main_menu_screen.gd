@@ -52,7 +52,7 @@ func _apply_responsive_layout() -> void:
 		var safe := 12.0 * density
 		block.position = Vector2(safe, safe)
 		block.size = Vector2(minf(380.0 * density, viewport_size.x - safe * 2.0), viewport_size.y - safe * 2.0)
-		content.add_theme_constant_override(&"separation", 8)
+		content.add_theme_constant_override(&"separation", roundi(12.0 * density))
 		title.theme_type_variation = &"MenuTitleCompact"
 		spacer.custom_minimum_size.y = 8.0 * density
 	else:

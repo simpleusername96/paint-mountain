@@ -106,7 +106,7 @@ func set_compact(compact: bool, density: float = 1.0) -> void:
 	%Gap.add_theme_font_size_override(
 		&"font_size", roundi(16.0 * resolved_density) if compact else 20
 	)
-	custom_minimum_size = Vector2(440.0, 252.0 * resolved_density) \
+	custom_minimum_size = Vector2(300.0, 252.0 * resolved_density) \
 			if compact else Vector2(440.0, 310.0)
 
 

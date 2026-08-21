@@ -1,6 +1,6 @@
 ---
 type: plan
-status: done
+status: active
 created: 2026-08-21
 scope: Cross-surface UI spacing and icon alignment, Aim and Stage Select composition, and smooth latest-selection stage preparation
 related:
@@ -27,6 +27,7 @@ In scope:
 
 - Shared icon centering and internal spacing for `ActionControl`, `ValueStepper`, `StageRuleSummary`, and `AimScoreStatus`.
 - Composition spacing for Stage Select, Aim, Map/Follow compact score, Pause actions, and Result actions where the shared changes are reachable.
+- Main Menu action-row ownership and the compact Result spine at the user-reported 713x1026 Windows viewport.
 - Stage Select selection dispatch, preview reuse, latest-request settlement, artifact readiness, and hidden Gameplay preparation timing.
 - Korean and English layout, focus, loading/disabled/selected states, 1280x720 and 640x360 evidence, and the existing Windows delivery path.
 
@@ -63,6 +64,10 @@ Exact actions requiring owner or user approval:
 | Persisted layout hydration blocks browsing despite asynchronous I/O | Production timing isolated 112-158 ms main-thread gaps between threaded resource completion and each `layout_ready`; `StageLayoutBakeCodec.hydrate()` validates hashes and reconstructs the full `TerrainTopTopology` synchronously | Phase 3 failed timing receipts; `stage_layout_repository.gd`; `stage_layout_bake_codec.gd`; `terrain_top_topology.gd`; architecture requirement at `docs/design-spec.md:394-398` | Restore the documented single pure layout worker for immutable hydration, publish only the latest selected identity, and join the worker on repository exit | 3.2, 3.3 |
 | Preview replacement adds avoidable churn | `_set_preview_stage` frees and recreates preview ground, dressing root, shader material, and their children on each ready stage | `app_root.gd`, `open_play_environment.gd`, `environment_dressing.gd` | Reuse preview roots and material; update stage-owned geometry/data in place while retaining the prior valid preview until the replacement artifact is ready | 3.1 |
 | Existing tests prove fit but not visual rhythm or browse cost | Responsive tests check bounds, target sizes, and non-overlap; readiness test waits for one stage but does not exercise rapid changes or synchronous dispatch cost | `hud_layout_responsive_test.gd`, `screen_responsive_layout_test.gd`, `stage_selection_readiness_test.gd` | Add component alignment and rapid latest-selection assertions, then use production telemetry and rendered captures for the temporal/pixel claims | 1.4, 2.3, 3.3, 4.2 |
+| User evidence disproves the completed icon claim | `ActionControl`, `ValueStepper`, and the top Settings button normalize alpha bounds but leave `Button.icon_alignment` at its left default; the rendered Play glyph centroid is about 12 px left of the blue control center in the 713x1026 release capture | User screenshots and `.agents/evidence/2026-08-21-responsive-ui-correction/before/`; current component scripts | Keep alpha-bound normalization, explicitly center icon-only Button content horizontally and vertically, and assert the actual Button alignment contract | 5.1 |
+| Main Menu primary action crowds the following row | `MenuActionItem._apply_layout()` always allocates a 44/40 px action row, while Play's `ActionControl` minimum is 56/48 px; `configure()` changes the role without recomputing the row | Main Menu source and 713x1026 release capture | Size each menu row from the configured action role and reapply layout after role changes; preserve one larger primary without overflow | 5.2 |
+| Compact Result abandons the approved right spine | `HudRootLayout._apply_compact_layout()` assigns Result to the full safe viewport and `ResultPanel` expands its summary at the top, obscuring the mountain in a tall desktop window | User 713x1026 Failure screenshot, matching release capture, current Result owners, approved icon-first Result reference | Keep Result right-aligned, cap it to a minority of viewport width, bound its height to content, and retain the complete summary/actions without clipping | 5.3 |
+| Prior rendered evidence omitted the failing aspect ratio | Final evidence covered 1280x720 and 640x360 only, so two landscape endpoints passed while the 713x1026 desktop resize path remained wrong | Prior evidence README and responsive test viewport lists | Add 713x1026 plus a neighboring tall desktop case to focused layout tests and make 713x1026 Main Menu, Aim, and Failure production renders mandatory | 5.4, 6.1 |
 
 Readiness statement:
 
@@ -170,6 +175,53 @@ Source owners: `scripts/test.ps1`, `scripts/verify.ps1`, export preset, delivery
   - Change: audit task-owned multi-file/public UI owners, apply only small safe corrections, update `.agents/Documentation.md` and this plan with actual evidence, mark the plan done, and commit only task-owned changes with a short explanatory body.
   - Accept: no competing UI/layout or stage-preparation owner remains, `git diff --check` passes, and the scoped commit exists.
 
+### Phase 5: User-reported icon and tall-window correction
+
+Goal: correct the exact defects visible in the user's production screenshots without reopening stage-preparation behavior or the approved icon-first theme.
+
+Preconditions:
+
+- The user screenshots and the matching 713x1026 release reproduction are the before evidence; prior 1280x720 and 640x360 passes remain valid only for inputs not changed by this phase.
+
+Source owners: `src/ui/components/action_control.gd`, `src/ui/components/menu_action_item.gd`, `src/ui/components/value_stepper.gd`, `src/ui/hud/top_status_bar.gd`, `src/ui/hud/hud_root_layout.gd`, `src/ui/hud/result_panel.gd`, responsive UI tests
+
+- [x] **5.1 Center icon-only Button content in the real control.**
+  - Change: set horizontal and vertical icon alignment in the three icon Button owners while retaining centered alpha regions, focus rings, roles, source assets, and minimum targets.
+  - Accept: component tests assert centered alignment and 713x1026 production pixels show Play and Fire glyphs centered within one rendered pixel of their control centers.
+- [x] **5.2 Give Main Menu roles truthful row geometry.**
+  - Change: recompute `MenuActionItem` after configuration and allocate its primary/routine row from the configured `ActionControl` edge plus an explicit shared gap.
+  - Accept: Play no longer exceeds its row; all four action rectangles are disjoint with at least 12 logical px between visible control bounds at standard and compact/tall sizes.
+- [x] **5.3 Restore the compact right-side Result spine.**
+  - Change: replace the full-safe-viewport Result rectangle with a right-aligned, width-capped, content-height-bounded spine and make compact summary/action minimums agree with that rectangle.
+  - Accept: at 713x1026 the Result occupies no more than 54% of viewport width and 66% of viewport height, remains inside safe margins, shows the full 0-100 axis and reachable actions, and leaves the mountain visible across the opposite side.
+- [x] **5.4 Cover the rejected aspect ratio.**
+  - Change: add 713x1026 and one neighboring tall desktop viewport to the shared screen/HUD responsive matrices, including role-row, icon alignment, Result occupancy, safe-area, and overlap assertions.
+  - Accept: the focused component and responsive tests pass in Korean and English.
+
+Batch gate:
+
+- Run only the affected shared-component, screen-responsive, HUD-responsive, copy, and localization tests after the phase implementation stabilizes.
+
+### Phase 6: Corrective production proof and handoff
+
+Goal: replace the invalid acceptance claim with evidence that exercises the exact rejected window and preserves the desktop baseline.
+
+Preconditions:
+
+- Phase 5 acceptance and its focused batch gate pass.
+
+Source owners: Windows release export, delivery capture runner, `.agents/evidence/2026-08-21-responsive-ui-correction/`, project documentation
+
+- [x] **6.1 Inspect exact production states.**
+  - Change: export once, then capture Main Menu, Aim, and target-band Failure at 713x1026 plus one 1280x720 Aim/Result regression pair.
+  - Accept: the four user-reported defect classes are absent under UIUX Gate Level 4; no clipping, overlap, off-center glyph, full-screen Result sheet, or lost mountain hero remains.
+- [ ] **6.2 Run the final project gates and quality audit.**
+  - Change: run the ordered suite, `scripts/verify.ps1`, and `$codebase-quality-auditor` once after the production pixels pass; apply only small task-scoped corrections.
+  - Accept: all gates pass, no shared-UI competing owner or reachable responsive failure remains, and `git diff --check` passes.
+- [ ] **6.3 Correct durable truth and commit.**
+  - Change: update the evidence README and `.agents/Documentation.md` to retract the invalid two-landscape acceptance claim, mark this plan done, and commit only correction-owned files.
+  - Accept: documentation names the 713x1026 evidence and the scoped commit exists.
+
 ## Validation and Rework Controls
 
 | Cadence | Exact check | Run when | Do not rerun until |
@@ -201,9 +253,9 @@ Implementation-local discoveries may be handled inside the locked contract when 
 ## Progress and Next Steps
 
 - Canonical progress: the task checkboxes in this contract.
-- Current phase: Complete.
-- Next task: None.
-- Last completed gate: final full ordered suite, `scripts/verify.ps1`, Windows release export, and ten production capture scenarios passed after the audit correction and frame separation. The final release records 108-175 us selection dispatch, an 8.890 ms maximum artifact slice, 4.591 ms preview publication, and a 1.6355x maximum-to-warmed-baseline present ratio. The inspected desktop/compact images have no task-owned clipping, overlap, icon-centering defect, or empty Stage Select preview. Implementation commit: `b29505f`; evidence: `.agents/evidence/2026-08-21-ui-layout-stage-browsing/README.md`.
+- Current phase: Phase 6, corrective production proof and handoff.
+- Next task: 6.2 run the final project gates and quality audit.
+- Last completed gate: focused shared-component/copy/localization/responsive tests pass in Korean and English, including 713x1026 and 768x1024. The Windows release export and five production captures pass: Main Menu, Aim, and target-band Failure at 713x1026 plus Aim and Failure at 1280x720. The Play alpha bounds are centered within 0.5 rendered px, Fire is centered, and the tall Result spine occupies about 48% of the viewport width while preserving the opposite world side. Evidence: `.agents/evidence/2026-08-21-responsive-ui-correction/production/`.
 - Update rule: after a checkpoint passes, record concise evidence, check the task, and advance this pointer in the same edit.
 - Resume rule: read this contract and the current worktree, then continue from the first unchecked task whose prerequisites are satisfied. Treat checked work and passing evidence as current unless its owned input changed.
 

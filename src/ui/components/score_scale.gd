@@ -174,10 +174,10 @@ func _layout() -> void:
 
 func _apply_minimum_size() -> void:
 	if not _header_visible:
-		custom_minimum_size = Vector2(360.0, 82.0 * _density) \
+		custom_minimum_size = Vector2(300.0, 82.0 * _density) \
 				if _compact else Vector2(440.0, 82.0)
 	else:
-		custom_minimum_size = Vector2(360.0, 104.0 * _density) \
+		custom_minimum_size = Vector2(300.0, 104.0 * _density) \
 				if _compact else Vector2(440.0, 118.0)
 
 

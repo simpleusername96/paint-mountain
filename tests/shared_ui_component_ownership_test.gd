@@ -35,6 +35,9 @@ func _run() -> void:
 	action.configure("ui.play", ActionControl.IconKind.PLAY, ActionControl.VisualRole.ROUTINE)
 	_assert(action.text.is_empty() and action.icon != null,
 		"ActionControl must show a semantic asset and no visible verb text")
+	_assert(action.icon_alignment == HORIZONTAL_ALIGNMENT_CENTER
+			and action.vertical_icon_alignment == VERTICAL_ALIGNMENT_CENTER,
+		"ActionControl must center its icon inside the actual Button content box")
 	_assert(action.accessibility_name == tr("ui.play") and not action.tooltip_text.is_empty(),
 		"icon-only actions must retain localized accessibility and tooltip copy")
 	_assert(action.custom_minimum_size == Vector2(44.0, 44.0),
@@ -89,12 +92,19 @@ func _run() -> void:
 		_assert(stepper.decrease_button.icon is AtlasTexture
 				and stepper.increase_button.icon is AtlasTexture,
 				"%s must normalize both icon canvases through the shared owner" % stepper_path)
+		_assert(stepper.decrease_button.icon_alignment == HORIZONTAL_ALIGNMENT_CENTER
+				and stepper.increase_button.icon_alignment == HORIZONTAL_ALIGNMENT_CENTER,
+				"%s must center both icons inside their Button content boxes" % stepper_path)
 		_assert(stepper.value_label.position.x - stepper.decrease_button.get_rect().end.x >= 7.5
 				and stepper.increase_button.position.x - stepper.value_label.get_rect().end.x >= 7.5,
 				"%s must keep an 8px control-to-value gap" % stepper_path)
-	var settings_icon := (hud_root.get_node("TopStatusBar/SettingsButton") as Button).icon
+	var settings_button := hud_root.get_node("TopStatusBar/SettingsButton") as Button
+	var settings_icon := settings_button.icon
 	_assert(settings_icon is AtlasTexture,
 			"top status Settings must use the same centered icon geometry")
+	_assert(settings_button.icon_alignment == HORIZONTAL_ALIGNMENT_CENTER
+			and settings_button.vertical_icon_alignment == VERTICAL_ALIGNMENT_CENTER,
+			"top status Settings must center the icon inside its Button content box")
 	var pause_actions := hud_root.get_node("PauseOverlay/Center/Content/Actions") as HBoxContainer
 	_assert(pause_actions.get_theme_constant(&"separation") >= 20,
 			"standard Pause actions must retain visible group spacing")
