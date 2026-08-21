@@ -108,14 +108,14 @@ func _apply_play_preparation_state(play_became_ready: bool = false) -> void:
 	var play := %Play as MenuActionItem
 	if _play_failed:
 		play.configure(
-			"ui.retry_stage_load", ActionControl.IconKind.RETRY, ActionControl.VisualRole.PRIMARY
+			"ui.retry_stage_load", ActionControl.IconKind.RETRY, ActionControl.VisualRole.ROUTINE
 		)
 	elif not _play_ready:
 		play.configure(
-			"ui.loading_stage", ActionControl.IconKind.PLAY, ActionControl.VisualRole.PRIMARY
+			"ui.loading_stage", ActionControl.IconKind.PLAY, ActionControl.VisualRole.ROUTINE
 		)
 	else:
-		play.configure("ui.play", ActionControl.IconKind.PLAY, ActionControl.VisualRole.PRIMARY)
+		play.configure("ui.play", ActionControl.IconKind.PLAY, ActionControl.VisualRole.ROUTINE)
 	play.set_readiness(_play_ready or _play_failed,
 			tr("ui.stage_load_failed") if _play_failed else "")
 	if play_became_ready and _loading_fallback_owns_focus \

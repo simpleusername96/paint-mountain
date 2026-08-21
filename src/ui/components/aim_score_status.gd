@@ -120,6 +120,13 @@ func color_role_weights_for_test() -> Vector2i:
 	return Vector2i(_red_weight, _green_weight)
 
 
+func color_contributions_for_test() -> Vector2:
+	return Vector2(
+		_red_percent * float(_red_weight),
+		_green_percent * float(_green_weight)
+	)
+
+
 func layout_rects_for_test() -> Dictionary:
 	return _aim_layout(_density)
 
@@ -164,11 +171,11 @@ func _draw_aim_range() -> void:
 	if _show_color_roles:
 		draw_texture_rect(PAINT_TEXTURE, layout.red_icon as Rect2, false, RED)
 		draw_string(font, Vector2(float(layout.value_x), float(layout.role_baseline)),
-				_weight_text(_red_weight),
+				_role_contribution_text(_red_percent, _red_weight),
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, body_size, INK)
 		draw_texture_rect(TARGET_TEXTURE, layout.green_icon as Rect2, false, GREEN)
 		draw_string(font, Vector2(float(layout.green_value_x), float(layout.role_baseline)),
-				_weight_text(_green_weight),
+				_role_contribution_text(_green_percent, _green_weight),
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, body_size, INK)
 
 
@@ -211,12 +218,14 @@ func _draw_compact_value() -> void:
 				Rect2(0.0, baseline + row_gap * 2.0 - 20.0 * scale,
 						20.0 * scale, 20.0 * scale), false, RED)
 		draw_string(font, Vector2(28.0 * scale, baseline + row_gap * 2.0),
-				_signed_value(_red_percent), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, INK)
+				_role_contribution_text(_red_percent, _red_weight),
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, INK)
 		draw_texture_rect(TARGET_TEXTURE,
 				Rect2(0.0, baseline + row_gap * 3.0 - 20.0 * scale,
 						20.0 * scale, 20.0 * scale), false, GREEN)
 		draw_string(font, Vector2(28.0 * scale, baseline + row_gap * 3.0),
-				_signed_value(_green_percent), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, INK)
+				_role_contribution_text(_green_percent, _green_weight),
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, INK)
 
 
 func _draw_star_tier(center_x: float, center_y: float, count: int, scale: float) -> void:
@@ -280,8 +289,14 @@ func _apply_accessibility() -> void:
 		"%s %s%%" % [tr("hud.total"), _format_number(_paint_percent)],
 	]
 	if _show_color_roles:
-		parts.append("R %s %.1f" % [_weight_text(_red_weight), _red_percent])
-		parts.append("G %s %.1f" % [_weight_text(_green_weight), _green_percent])
+		parts.append("R %s %.1f%% = %s" % [
+			_weight_text(_red_weight), _red_percent,
+			_signed_value(_red_percent * float(_red_weight)),
+		])
+		parts.append("G %s %.1f%% = %s" % [
+			_weight_text(_green_weight), _green_percent,
+			_signed_value(_green_percent * float(_green_weight)),
+		])
 	accessibility_name = "; ".join(parts)
 	tooltip_text = accessibility_name
 
@@ -290,8 +305,12 @@ func _weight_text(weight: int) -> String:
 	return "+%d" % weight if weight > 0 else "−%d" % absi(weight) if weight < 0 else "0"
 
 
+func _role_contribution_text(percent: float, weight: int) -> String:
+	return "%s · %s" % [_weight_text(weight), _signed_value(percent * float(weight))]
+
+
 func _signed_value(value: float) -> String:
-	return "%+.1f" % value
+	return "0.0" if is_zero_approx(value) else "%+.1f" % value
 
 
 func _format_number(value: float) -> String:

@@ -222,9 +222,13 @@ func _assert_main_menu_focus_startup(main_menu: MainMenuScreen) -> void:
 		"passive Main Menu launch must not show a keyboard focus ring"
 	)
 	main_menu.set_play_preparation_state(false)
+	_assert_true(play.action.visual_role == ActionControl.VisualRole.ROUTINE,
+			"Main Menu Play must keep the black routine role while loading")
 	main_menu._unhandled_key_input(_keyboard_navigation_event())
 	_assert_true(stage_select.action_has_focus(), "first keyboard navigation while loading must focus Stage Select")
 	main_menu.set_play_preparation_state(true)
+	_assert_true(play.action.visual_role == ActionControl.VisualRole.ROUTINE,
+			"Main Menu Play must match neighboring black routine actions when ready")
 	_assert_true(play.action_has_focus(), "Play readiness must replace only the loading fallback focus")
 	main_menu.begin_passive_focus_session()
 	main_menu.set_play_preparation_state(false)
@@ -239,6 +243,8 @@ func _assert_main_menu_focus_startup(main_menu: MainMenuScreen) -> void:
 	)
 	main_menu.set_play_preparation_state(false, true)
 	_assert_true(not play.action.disabled, "load failure must retain its reachable retry action")
+	_assert_true(play.action.visual_role == ActionControl.VisualRole.ROUTINE,
+			"Main Menu retry must retain the same black routine treatment")
 
 
 func _keyboard_navigation_event() -> InputEventKey:

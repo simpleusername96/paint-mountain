@@ -183,6 +183,16 @@ func _start_next_hydration() -> void:
 		return
 	_active_hydration_request = next_request
 	_active_hydration_job = HydrationJob.new(baked, stage)
+	# The itch.io build uses Godot's single-threaded Web template. Starting a
+	# Thread there can remain alive without ever publishing its result, which
+	# leaves Play permanently disabled. Hydration is pure data work, so run that
+	# one Web path on the main thread after the threaded resource load completes.
+	if OS.has_feature("web"):
+		var layout := _active_hydration_job.run()
+		_active_hydration_job = null
+		_active_hydration_request = {}
+		_publish_hydrated_layout(next_request, layout)
+		return
 	_hydration_worker = Thread.new()
 	var start_error := _hydration_worker.start(_active_hydration_job.run)
 	if start_error == OK:
@@ -202,6 +212,13 @@ func _collect_finished_hydration() -> void:
 	_hydration_worker = null
 	_active_hydration_job = null
 	_active_hydration_request = {}
+	_publish_hydrated_layout(completed_request, layout)
+
+
+func _publish_hydrated_layout(
+		completed_request: Dictionary,
+		layout: GeneratedStageLayout
+) -> void:
 	var stage := completed_request.get("stage") as StageData
 	if stage == null or not _layout_matches_stage(layout, stage):
 		_publish_hydration_failure(completed_request)

@@ -111,6 +111,9 @@ localization, focus, and responsive geometry remain authoritative.
   family through `ActionControl`. Main Menu is the sole exception that reveals
   one sibling localized label on hover or focus. Accessible name and tooltip
   remain present even when visible button text is empty.
+- Main Menu Play uses the same black routine icon treatment as its neighboring
+  actions in ready, loading, and retry states. Fire remains the filled-blue
+  gameplay primary action.
 - Routine actions have a transparent normal state. Filled blue belongs only to
   the current primary action. A white surface is allowed only for Settings,
   genuine blocking/information content, or the one open ball-detail card.
@@ -121,8 +124,9 @@ localization, focus, and responsive geometry remain authoritative.
   authoritative minimum-to-maximum success range, divided into higher-star
   segments. It shows the unclamped signed current score, an endpoint overflow
   arrow when needed, numeric total painted target percentage, and real
-  shape-plus-sign Red/Green role cues. It contains no 0–100 axis, terrain mask,
-  prose explanation, or background card.
+  shape-plus-sign Red/Green role cues with each channel's signed score
+  contribution. It contains no 0–100 axis, terrain mask, prose explanation, or
+  background card.
 - Map, Shot Follow, and an open ball-detail state use
   `AimScoreStatus.COMPACT_VALUE`; they do not repeat the success bar. The
   result-only `ScoreScale` retains the horizontal 0–100 summary axis and must

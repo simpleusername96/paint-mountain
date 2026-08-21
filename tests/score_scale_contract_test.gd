@@ -21,7 +21,7 @@ func _run() -> void:
 	rule.red_weight = -1
 	rule.green_weight = 1
 	status.configure_target_band(band, rule)
-	status.update_target_band(PaintCoverageSnapshot.new(12.0, 18.0, 30.0), 36.0, -1, 1)
+	status.update_target_band(PaintCoverageSnapshot.new(12.0, 48.0, 60.0), 36.0, -1, 1)
 	await process_frame
 	_assert(status.target_range().is_equal_approx(Vector2(30.0, 45.0)),
 			"Aim range must use only the authoritative success domain")
@@ -29,19 +29,21 @@ func _run() -> void:
 			"in-range score must map within the success domain")
 	_assert(status.overflow_direction_for_test() == 0,
 			"in-range score must not expose an overflow arrow")
-	_assert(is_equal_approx(status.paint_percent_for_test(), 30.0),
+	_assert(is_equal_approx(status.paint_percent_for_test(), 60.0),
 			"total painted area must remain an independent numeric value")
 	_assert(status.color_role_weights_for_test() == Vector2i(-1, 1),
 			"red and green score roles must remain authoritative")
+	_assert(status.color_contributions_for_test().is_equal_approx(Vector2(-12.0, 48.0)),
+			"color rows must expose the signed contribution that moves the score")
 	var layout := status.layout_rects_for_test()
 	_assert(not (layout.paint_icon as Rect2).intersects(layout.red_icon as Rect2),
 			"paint total and color-role rows must keep a distinct vertical rhythm")
 	_assert(is_equal_approx((layout.red_icon as Rect2).get_center().y,
 			(layout.green_icon as Rect2).get_center().y),
 			"red and green role icons must share one row center")
-	_assert("R −1 12.0" in status.accessibility_name
-			and "G +1 18.0" in status.accessibility_name,
-			"icon-led color roles must retain an exact accessible alternative")
+	_assert("R −1 12.0% = -12.0" in status.accessibility_name
+			and "G +1 48.0% = +48.0" in status.accessibility_name,
+			"icon-led color roles must state weight, painted area, and signed contribution")
 	status.update_target_band(PaintCoverageSnapshot.new(), -3.0, -1, 1)
 	_assert(status.overflow_direction_for_test() == -1
 			and is_equal_approx(status.marker_normalized_for_test(), 0.0),
