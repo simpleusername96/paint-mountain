@@ -23,6 +23,7 @@ related:
   - ../execplans/2026-08-10-essential-ui-fidelity.md
   - ../execplans/2026-08-18-three-ball-target-band-prototype.md
   - ../execplans/2026-08-20-cross-stage-ui-theme.md
+  - ../execplans/2026-08-21-uiux-image-parity.md
   - ../evidence/concepts/full-ui-refresh-2026-08-09/revised-02-context-line.png
   - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../docs/reports/ui-refinement-2026-08-20/index.html
@@ -84,7 +85,7 @@ differ.
   not a player control or useful planning instrument, so `↔`, a yaw degree, A,
   and D are absent from the visible HUD.
 - Apply the same paper-white, navy, blue-accent, restrained radius, type, focus,
-  and state rules to Main Menu, Stage Select, Briefing, Map View, Shot Follow,
+  and state rules to Main Menu, Stage Select with pre-play briefing, Map View, Shot Follow,
   Pause, Settings, and Result. Use a thin rule or outline only for semantic
   focus, selection, containment, editable controls, slider/progress rails, or a
   target marker. Do not use decorative full-width or repeated internal lines.
@@ -93,53 +94,49 @@ differ.
   refine copy density, boundary use, and composition without replacing the
   Quiet Context color, typography, action, or focus system.
 
-### Compact shared component correction
+### Icon-first TO-BE parity correction
 
-The user's 2026-08-20 correction and
-`../../docs/reports/ui-refinement-2026-08-20/index.html` refine Quiet Context
-into a compact direct-overlay system. They supersede the report's earlier
-card, rail-surface, sheet, and cropped target-range concepts. Generated TO-BE
-pixels are composition targets, not runtime or copy authority.
+The user's 2026-08-21 correction and
+`../../docs/reports/uiux-correction-spec-2026-08-21/index.html` replace the
+earlier vertical-live-scale and standalone-Briefing presentation. The selected
+TO-BE files registered in `VISUAL_REFERENCES.md` are the literal hierarchy and
+composition targets for their named states. Runtime terrain, values,
+localization, focus, and responsive geometry remain authoritative.
 
 - Every visible UI element is either a shared component or a structural Godot
   `Container`. Screens supply data, order, anchors, and visibility only. They do
   not copy fonts, colors, icons, borders, radii, StyleBoxes, or interaction
   states.
-- Live gameplay, Briefing, Stage Select, and Result use direct overlays rather
-  than decorative `PanelContainer`, card, sheet, or section surfaces. A shared
-  `ContrastScrim` may improve edge contrast without drawing a boundary. Pause,
-  Settings, and blocking failure states may use one shared interruption surface
-  only when containment communicates input blocking.
-- Prefer shared 20 px or 24 px vector icons to words. Keep visible text to a
-  value, a short unit, a stage identity, a terminal reason, or a one- or
-  two-word action. Rare, destructive, ambiguous, and accessibility-critical
-  actions retain a concise label.
-- `ScoreScale` always renders the complete numeric domain from `0` through
-  `100`, including visible `0`, `25`, `50`, `75`, and `100` labels. Target or
-  required coverage is a segment or marker inside that fixed domain; it never
-  changes the domain. Both endpoints, tick labels, current marker, and target
-  segment must remain inside the component bounds at every supported size.
-- `ScoreScale` owns two orientation presets, not two components. Aim View, Map
-  View, and Shot Follow use the vertical preset (`100` at the top, `0` at the
-  bottom); standard Briefing and Result use the horizontal preset. Compact
-  Briefing reuses the vertical preset so the stage identity and full 0–100
-  range never collide. Both presets expose
-  the same fixed domain, labels, target data, marker projection, and
-  accessibility value. Signed Paint Score remains numerically truthful outside
-  the rail: only marker geometry clamps to the nearest endpoint, which adds a
-  directional shape so the out-of-range state never depends on color alone.
-- Each `BallQueue` token exposes its kind, paint role, order, and short behavior
-  description on pointer hover, keyboard focus, and press/touch selection. The
-  same description is available through the control's accessible name or
-  description; tooltip text is not the only source of essential state.
-- The shared visual inventory is `MetricReadout`, `ScoreScale`, `BallQueue`,
-  `ValueStepper`, `ActionControl`, `StageIdentity`, `StageRail`,
-  `ContextHints`, `ResultSummary`, and `ContrastScrim`. Reuse or enhance the
-  existing owner before adding another component with the same responsibility.
-- Filled blue belongs to the single primary action and current/selected state.
-  Red and green belong to paint semantics. Every paint, completion, lock,
-  disabled, selected, and focus state also has a shape, icon, stroke, or label
-  cue so color is never the sole signal.
+- All actions are icon-only and use the repository-owned monochrome action
+  family through `ActionControl`. Main Menu is the sole exception that reveals
+  one sibling localized label on hover or focus. Accessible name and tooltip
+  remain present even when visible button text is empty.
+- Routine actions have a transparent normal state. Filled blue belongs only to
+  the current primary action. A white surface is allowed only for Settings,
+  genuine blocking/information content, or the one open ball-detail card.
+- Gameplay, Stage Select, and Result use direct overlays. `ContrastScrim` or a
+  right-edge gradient may improve contrast without becoming a card. Pause uses
+  a navy input barrier with no white sheet; Settings uses one warm-white form.
+- `AimScoreStatus` owns live score presentation. In Aim its visual domain is the
+  authoritative minimum-to-maximum success range, divided into higher-star
+  segments. It shows the unclamped signed current score, an endpoint overflow
+  arrow when needed, numeric total painted target percentage, and real
+  shape-plus-sign Red/Green role cues. It contains no 0–100 axis, terrain mask,
+  prose explanation, or background card.
+- Map, Shot Follow, and an open ball-detail state use
+  `AimScoreStatus.COMPACT_VALUE`; they do not repeat the success bar. The
+  result-only `ScoreScale` retains the horizontal 0–100 summary axis and must
+  not be reused as the live Aim component.
+- `BallQueue` owns token shape, order, focus, and one warm-white
+  `BallDetailCard`. Pointer hover, keyboard focus, and press/touch expose the
+  same localized behavior description; press pins it and Escape dismisses it.
+- The shared visual inventory is `AimScoreStatus`, result-only `ScoreScale`,
+  `BallQueue`, `ValueStepper`, `ActionControl`, `StageRail`,
+  `StageRuleSummary`, `ContextLegend`, `ResultSummary`, and the shared scrims.
+  Reuse or enhance the existing owner before adding a competing component.
+- Red and green belong to paint semantics. Every paint, completion, lock,
+  disabled, selected, and focus state also has a shape, icon, stroke, signed
+  value, or accessible label so color is never the sole signal.
 
 ### Aiming HUD hierarchy
 
@@ -157,18 +154,18 @@ At the 1280x720 logical baseline, preserve this relative hierarchy:
 | Stage identity | Upper-left | Shared mountain icon plus compact stage number/name, without a card surface |
 | Interaction-mode chip and toggle | Below Stage | Shows `조준`/`Aim View` or `지도 보기`/`Map View`; the focusable toggle and Tab switch modes |
 | Time, shots, Finish, and Gear | Edge-aligned status area | Shots read remaining / maximum; resident-ball activity stays internal; Gear remains the menu action |
-| Score display | Safe side edge | The shared vertical `ScoreScale` always shows 100–0 in Aim/Map/Shot Follow. Legacy stages add required coverage; prototype stages add the target band, current marker, Paint Score, and signed R/G values |
-| Ball queue | Safe edge | Prototype stages show current plus next two compact shape-coded tokens. Hover, keyboard focus, and press/touch reveal the shared short description; legacy stages omit it |
+| Score display | Upper-left safe edge | `AimScoreStatus` shows the complete success range, star segments, current score, numeric paint total, and signed shape-coded R/G roles in Aim; Map/Follow use compact values only |
+| Ball queue | Upper-right safe edge | All stages show the current plus next tokens as compact shape-coded controls. Hover, focus, and press/touch open the same one-card description |
 | Aim and power | Lower edge, outside the cannon silhouette | One coherent control group |
 | Fire | Bottom-center | Sole primary action |
 
-The canonical Aim composition is **Cannon Focus**. `ScoreScale` stays at the
-safe left edge, `BallQueue` is horizontal at the upper-right, and the lower
+The canonical Aim composition is **Cannon Focus**. `AimScoreStatus` stays at
+the safe upper-left, `BallQueue` is horizontal at the upper-right, and the lower
 interaction sequence reads angle -> Fire -> power around the cannon. At compact
 sizes, angle -> Fire -> power remains one centered row below the cannon. Canvas
-stretch density scales the shared `ValueStepper` and `ActionControl` geometry so
-their physical text and targets do not collapse; redundant captions may drop,
-but angle, power, Fire, queue truth, and both score endpoints remain visible and
+stretch density scales the shared components so their physical text and targets
+do not collapse; redundant captions may drop, but angle, power, Fire, queue
+truth, the signed score, and the success-range endpoints remain visible and
 operable.
 
 - Use the active ExecPlan's baseline rectangles as implementation evidence, not
@@ -224,18 +221,23 @@ operable.
 ### Navigation and pause
 
 - Gear and Escape open the same full-viewport paused input barrier.
-- The paused game menu contains Continue, Restart, Settings, Stage Select, and
-  Main Menu.
+- The paused game menu shows a centered white title and one horizontal icon
+  rail: Continue is the only filled-blue primary, followed by Restart,
+  Settings, Stage Select, and Main Menu as transparent world actions. It has no
+  white sheet and no visible button text.
 - Settings opens as a child of that paused flow and returns to the paused menu.
-  Settings never contains Restart.
+  Settings never contains Restart. Defaults sits beside the title and Close is
+  fixed at the top-right; only form content scrolls in compact mode.
 - Restore the exact pre-pause state on Continue; the menu must not advance the
   simulation or leak input into aiming.
 - Clear and failure screens expose only actions supported by the current game
   state and make Retry unambiguous.
-- Stage Select keeps its current eight-stage paging truth but replaces the card
-  grid/detail split with the shared `StageRail` over the actual selected
-  `StageRuntimeArtifact` terrain preview. Selection changes update that terrain;
-  the preview remains noninteractive and never invents generic landscape art.
+- Stage Select is also the visible Briefing. It places concise stage identity,
+  authoritative rule/deal truth, and a full-width ten-node `StageRail` over the
+  actual selected `StageRuntimeArtifact` terrain, sky, and ground. Terrain-side
+  arrows, rail click, drag, and keyboard navigation use one selection owner.
+  Start is the single bottom-right Aim icon and enters Aim directly; there is
+  no visible standalone Briefing or pager label.
 
 ### Component contracts
 
@@ -256,15 +258,16 @@ operable.
   for a matching target/aim revision; stale arc dots may remain subdued,
   but stale impact/exit markers are hidden. Pending, confirmed, and rejected
   target states use shape as well as color.
-- Icons supplement meaning. Rare, destructive, or menu actions retain visible
-  Korean labels; icon-only controls require an accessible name and clear focus
-  treatment.
-- `ScoreScale` owns the complete 0–100 axis and clamping geometry. Callers may
-  supply current value, target range or threshold, and R/G contributions, but
-  cannot supply a different visual minimum/maximum or hide the endpoints.
-  Clamping applies only to marker/target geometry, never to the supplied signed
-  numeric score or its accessibility copy. Callers select only the shared
-  vertical-live or horizontal-summary preset.
+- `ActionControl` owns icon assignment, icon-only rendering, localized
+  accessible name/tooltip, target size, readiness, and Routine, Primary,
+  Selected, Destructive, and World roles. Screens do not place text inside an
+  action. Main Menu's animated label is a separate `MenuActionItem` child.
+- `AimScoreStatus` owns live success-range and compact-value presentation.
+  Callers supply the authoritative band, score snapshot, and weights; they do
+  not draw an axis, star scale, endpoint arrow, paint percentage, or R/G cue.
+  Clamping applies only to the marker position, never to signed numeric truth.
+- `ScoreScale` is result-only and owns the complete horizontal 0–100 summary
+  axis and clamping geometry. It cannot be selected as a live vertical preset.
 - `BallQueue` owns token hit targets, hover/focus/pressed state, tooltip
   placement, accessible names/descriptions, and pointer-safe dismissal. Callers
   supply authoritative ordered ball data only and do not recreate tooltip copy
@@ -317,8 +320,9 @@ operable.
   separator, icon-state, and focus decisions. Scene-level overrides are for
   layout-only margins, gaps, anchors, and exceptional geometry; do not repeat
   palette or type roles in each HUD scene.
-- Interactive controls are at least 40 px high; primary, mobile-equivalent, or
-  high-importance targets prefer 44-48 px or larger.
+- Standard routine actions are at least 44x44 and primary actions 56x56;
+  compact uses 40x40 and 48x48. A component scales icon, focus, and target
+  together rather than shrinking only its bitmap.
 - Context-hint styling is Theme-owned and quiet. The shared component shows no
   more than three icon/short-label pairs for the current state and may use the
   existing mouse-wheel asset. Fire, Finish, and Aim/Map controls show semantic
@@ -345,15 +349,17 @@ operable.
   dedicated UI guide. Preserve useful stage-objective and mechanism-description
   translation content for those owners, accessibility, and diagnostics; do not
   render it as normal-screen filler.
-- Briefing shows compact stage identity, the complete terrain, Back/Start
-  actions, `ScoreScale`, and at most two context hints. Prototype stages add the
-  shared `BallQueue`; legacy stages retain unlabelled surface glyphs. Neither
-  family adds an objective paragraph, rule panel, or floating mechanism name.
-- Legacy results directly overlay the terminal title, coverage, target, grade,
-  best, time, shots, and supported actions. Prototype results instead directly
-  show Clear/Failed, Paint Score, the shared 0–100 `ScoreScale`, R/G breakdown,
-  grade, time, shots, and Same Deal/New Deal. The painted mountain remains the
-  result hero; no result card or body explanation is used.
+- Stage Select contains the visible pre-play briefing: compact identity,
+  authoritative rule/deal summary, complete terrain, side navigation, full
+  stage line, Back, and one Aim primary. It adds no objective paragraph,
+  strategy prose, floating mechanism name, page label, or separate Briefing
+  action lane.
+- Results use one right-side navy gradient and alignment spine. Clear/Failed,
+  stage number, Paint Score plus target band, R/G breakdown, the result-only
+  horizontal 0–100 scale, grade/time/shots, and supported icon actions remain
+  direct overlays. Failure adds one concise range-gap line below the score. The
+  mountain stays the result hero; no result card or explanation paragraph is
+  used.
 - Check every visible Korean label for clipping, overlap, awkward forced wrap,
   and insufficient button width. Do not solve text fit by making essential text
   unreadably small.
@@ -370,14 +376,15 @@ A UI change conforms when:
 - Shot Follow keeps the new root paintball and first terrain impact readable,
   while the visible return action and Tab restore Aim View without implying
   in-flight steering;
-- the shared 0–100 `ScoreScale`, conditional prototype queue, lower-edge
-  controls, edge status, top-right gear, bottom-center Fire, and at most three
-  quiet context hints preserve the specified hierarchy;
-- every live `ScoreScale` is vertical with `100` and `0` visible, and every
-  prototype ball token exposes the same description on hover, focus, and press;
+- `AimScoreStatus`, the all-stage queue, lower-edge controls, edge status,
+  top-right gear, and bottom-center Fire preserve the specified hierarchy;
+- Aim shows exactly one minimum-to-maximum success bar with internal star tiers,
+  numeric total paint, and shape-plus-sign R/G roles; Map and Follow show only
+  the compact score value, and every ball token exposes the same one-card
+  description on hover, focus, and press;
 - subtractive rules keep their actual signed Paint Score in live and Result
-  copy while the shared marker stays bounded and signals endpoint overflow by
-  shape;
+  copy while only marker geometry stays bounded and signals endpoint overflow
+  by direction;
 - Stage Select shows the selected stage's real prepared terrain behind the
   shared `StageRail`, presents its rule through the shared vector
   `StageRuleSummary`, and updates it without committing `GameState` before Start;
@@ -387,14 +394,16 @@ A UI change conforms when:
 - Korean and English labels fit without clipping at supported desktop sizes;
 - all reachable controls expose stable enabled, disabled, hover, pressed, and
   keyboard-focus states;
-- no decorative panel/card/sheet is present in gameplay, Briefing, Stage
-  Select, or Result, and the shared contrast scrim never blocks input; and
+- no decorative panel/card/sheet is present in gameplay, Stage Select, Pause,
+  or Result; Settings and one open Ball Detail are the only routine white
+  surfaces, and the shared contrast scrim never blocks input; and
 - no reachable screen contains detached shortcut tiles, decorative full-width
   hairlines, repeated unselected-card outlines, avoidable nested card framing,
   duplicated shortcut labels, or a visible yaw readout; and
 - every visible action is connected to real functionality; and
-- every visible UI element resolves a shared component/Theme role, every score
-  scale keeps `0` and `100` fully visible, and no screen-local StyleBox, icon,
+- every visible UI element resolves a shared component/Theme role, the
+  result-only score axis keeps `0` and `100` fully visible, the live Aim status
+  keeps both success endpoints visible, and no screen-local StyleBox, icon,
   font, or palette copy competes with the shared system.
 
 Every substantial UI or visual-composition change requires direct inspection of
@@ -405,9 +414,8 @@ record any capture limitation instead of claiming visual conformance.
 
 ## Non-Goals
 
-- Mobile-specific layouts, ornamental dashboards, explanatory card grids,
-  multiple competing primary actions, or a pixel-for-pixel copy of the original
-  reference HUD.
+- Mobile-specific layouts, ornamental dashboards, explanatory card grids, or
+  multiple competing primary actions.
 - UI-owned game rules, paint calculations, trajectory simulation, or stage
   progression.
 - One-off fonts, colors, panels, or icons that bypass shared project resources.

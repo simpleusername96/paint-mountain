@@ -47,6 +47,7 @@ related:
   - ../.agents/evidence/target-coverage-and-safe-aim-framing-2026-08-07/design-qa.md
   - ../design-qa.md
   - ../.agents/execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../.agents/execplans/2026-08-21-uiux-image-parity.md
   - ../.agents/evidence/2026-08-20-m9-local-release/README.md
   - ../.agents/execplans/2026-08-20-cross-stage-ui-theme.md
   - ../.agents/execplans/2026-08-20-stage-ui-production-refinement.md
@@ -61,7 +62,8 @@ related:
 
 Define the observable checks required before the game may be reported complete.
 Completed gates and older checked sections are historical evidence for earlier
-builds. The Cannon Focus gate below owns current UI presentation; the older
+builds. The Icon-First TO-BE gate below owns current UI presentation; the older
+Cannon Focus,
 Quiet Context and Essential UI gates remain historical foundations. The
 immediate-aim gate retains interaction and calculation acceptance; its older
 shortcut and HUD presentation clauses do not override the Cannon Focus gate.
@@ -69,7 +71,40 @@ The resident-activity HUD gate owns the current top-right status row. The
 wind-retirement gate records the no-wind runtime and data contract, but its HUD
 capture is pre-resident-activity-removal history.
 
-## Completed v13 static-feasibility and final UI gate (2026-08-21)
+## Icon-First TO-BE UIUX parity gate (2026-08-21)
+
+- [x] Main Menu contains title, real terrain hero, and icon rail only. At most
+  one localized sibling label appears through hover/focus animation; marketing
+  eyebrow, tagline, and meta copy are absent.
+- [x] Stage Select combines the visible briefing with the actual prepared
+  terrain, gameplay sky/ground, terrain-side arrows, one ten-node full-width
+  stage line, click/drag/keyboard selection, and one Aim primary. No standalone
+  Briefing action lane or visible pager remains.
+- [x] Aim contains one `AimScoreStatus` success-range bar with internal star
+  tiers, unclamped signed score, endpoint direction, numeric total paint, and
+  shape-plus-sign Red/Green roles. Map, Shot Follow, and ball detail retain the
+  compact value presentation; live vertical 0–100 score UI is absent.
+- [x] Ball Queue owns one white detail card and exposes identical localized
+  behavior copy on hover, focus, and press/touch. Press pins/unpins, Escape
+  dismisses, and pointer travel between trigger and card does not flicker.
+- [x] Every action is icon-only and accessible. Routine normal surfaces are
+  transparent, each screen has at most one filled-blue primary, and white
+  containment is limited to Settings and the open detail card.
+- [x] Pause, Settings, Clear, and Failure match the selected hierarchy: Pause
+  navy barrier plus horizontal icon rail; Settings header Defaults/Close and
+  content-only scrolling; shared right-gradient results with stage, score,
+  target, contributions, axis, facts, gap, and icon actions.
+- [x] Focused essential-copy, responsive screen/HUD, flow, result truth,
+  component ownership, score, queue, localization, cross-stage, feedback, and
+  shortcut contracts pass in Godot 4.7.1.
+- [ ] The full ordered suite, final `scripts/verify.ps1`, Windows release export,
+  production capture sweep, same-viewport final comparison inspection, and
+  code-quality audit must pass before this gate closes.
+
+Evidence owner:
+`.agents/evidence/2026-08-21-uiux-image-parity/README.md`.
+
+## Completed v13 static-feasibility and superseded UI gate (2026-08-21)
 
 - [x] `resources/stages/catalog.tres` selects immutable bundle-format-7 catalog
   `v13-3dc3d250d019c1e699822c6f235beb3fd4917d72cc5a3284bee6857d4bd10b35`.

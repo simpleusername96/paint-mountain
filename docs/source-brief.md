@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-02
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-21
 canonical_for: baseline Paint Mountain directive and recorded later-user supersessions
 scope: complete original user directive plus explicit later revisions
 source: user message in the project-bootstrap conversation
@@ -2629,6 +2629,74 @@ Effective requirements:
 - Continue and close
   `.agents/execplans/2026-08-20-stage-ui-production-refinement.md` using this
   static-first boundary. Public itch publication remains separately authorized.
+
+All earlier requirements not contradicted here remain in force.
+
+## Later User Supersession (2026-08-21): Icon-First TO-BE Image Parity
+
+After reviewing the complete in-game snapshot report and multiple regenerated
+Aim alternatives, the user locked the named TO-BE images in
+`docs/reports/uiux-correction-spec-2026-08-21/` and required the running Godot
+UI to reproduce them. This supersedes only the earlier vertical live score
+scale, visible standalone Briefing, text-bearing action controls, eight-node
+visible Stage Select paging, white Pause sheet, Settings footer actions, and
+conflicting screen compositions.
+
+User directives (verbatim excerpts):
+
+> There should be no or least white background based button-like components,
+> just make buttons with icons and without texts.
+
+> Main Menu쪽에서 icon만 있어도 상관없는데, hovering하면 옆으로 관련
+> 텍스트가 animation처럼 순서대로 등장하도록 해야지. Meta text
+> '산을 칠하고~' 이딴 건 절대로 넣으면 안되고.
+
+> 그리고 stage select와 breifing을 합치자.
+
+> 그냥 score bar를 minimum ~ maximum success range로만 두고, 그 안의
+> scale로 더 높은 점수 구간을 보여주고, 전체 페인트 비율은 숫자로만
+> 보여줘. 빨/초 역할은 적절히 이미지나 아이콘으로 표시하고.
+
+> ㅇㅋ 지금 to be image들과 '완전히 동일하게 UIUX가 고쳐지도록'
+> execplan을 작성해. 기존의 execplan 중 반영 안된 것들이 있으면
+> 그것들도 이번 execplan doc에 merge하고. Use that exec plan doc to fix
+> the issues.
+
+Effective requirements:
+
+- The selected TO-BE set listed in
+  `.agents/execplans/2026-08-21-uiux-image-parity.md` owns current layout,
+  hierarchy, containment, and action language for Main Menu, Stage Select,
+  Aim, special-ball detail, Map, Shot Follow, Pause, Settings, Clear, and
+  Failure. Runtime terrain, authoritative data, localization, focus, and
+  responsive geometry remain real rather than copied from a still image.
+- All normal action controls are icon-only and retain localized accessibility
+  names and tooltips. Main Menu alone reveals the focused or hovered action's
+  localized label beside its icon with a short sequential animation. It shows
+  no marketing eyebrow, tagline, or meta sentence.
+- Stage Select and the visible Briefing are one terrain-first screen. The real
+  prepared terrain, sky, and ground remain visible; terrain-side arrows, a
+  full-width ten-node stage line, click, drag, and keyboard navigation share one
+  selection owner. Start enters Aim directly without a separate Briefing UI.
+- Aim uses one horizontal success-range component whose visual domain is the
+  authoritative minimum-to-maximum band. Internal segments communicate higher
+  star grades. The signed current score may overflow either endpoint; total
+  painted target percentage is numeric only; Red and Green score roles use
+  distinct real shape assets plus signed weights. Map, Shot Follow, and open
+  ball detail use the approved compact numeric score presentation.
+- Routine controls have no white normal-state surface. Filled blue is limited
+  to one primary action per screen. White containment is limited to the
+  Settings form, genuinely blocking/information surfaces, and the single open
+  special-ball detail card.
+- Ball detail is one warm-white card attached to the active queue token and is
+  identical for hover, focus, and press/touch. Pause is a navy input barrier
+  with one horizontal icon rail. Settings keeps Defaults and Close in its fixed
+  header. Clear and Failure share one right-side gradient, score axis, content
+  spine, and icon action rail; Failure adds one concise target-gap line.
+- Preserve the existing stage, score, paint, ball, navigation, persistence,
+  localization, keyboard/gamepad, Windows, and Web behavior. Do not change
+  gameplay values, terrain, paint, physics, or catalog content merely to match
+  generated pixels.
 
 All earlier requirements not contradicted here remain in force.
 

@@ -2,7 +2,7 @@
 type: evidence
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 topic: Paint Mountain visual references and anti-references
 scope: provenance, authority, and permitted interpretation of project visual evidence
 source: ../../docs/handoffs/gameplay-visual-reset-2026-08-03/source-map.md
@@ -12,6 +12,7 @@ related:
   - UIUX_GUIDELINES.md
   - ../execplans/2026-08-10-essential-ui-fidelity.md
   - ../execplans/2026-08-20-cross-stage-ui-theme.md
+  - ../execplans/2026-08-21-uiux-image-parity.md
   - ../../docs/reports/screen-audit-2026-08-10/index.html
   - ../../docs/reports/ui-refinement-2026-08-20/index.html
 ---
@@ -173,7 +174,7 @@ concepts, or asset previews from silently becoming product requirements.
   or screen composition conflicts. Running-build captures remain required
   implementation and acceptance evidence.
 
-### Current Aiming Selection correction
+### Superseded Aiming Selection correction
 
 - Report: [2026-08-20 Aiming Selection refinement](../../docs/reports/ui-refinement-2026-08-20/index.html)
 - Assets: the report's `assets/shared-component-system.svg`, three selectable
@@ -204,7 +205,7 @@ concepts, or asset previews from silently becoming product requirements.
 - Use directionally for: exact edge placement, generated Korean copy, stage
   facts, icon drawing, mountain pixels, and responsive geometry. Production
   code and authoritative game state remain the source of truth.
-- Status: current user-directed correction. It supersedes earlier UI references
+- Historical status: this correction superseded earlier UI references
   wherever they prescribe a cropped target-range scale, a full-width guide, a
   stage card grid, an information panel, a result sheet, or another decorative
   containment surface. The user selected Aim C, **Cannon Focus**, on 2026-08-20:
@@ -212,6 +213,46 @@ concepts, or asset previews from silently becoming product requirements.
   angle, Fire, and power split around the lower cannon region. Aim A and B are
   retained only as rejected alternatives. HTML hover/focus/press behavior is
   interaction-design evidence, not running-game proof.
+
+### Current icon-first TO-BE parity set
+
+- Report: [2026-08-21 UIUX correction specification](../../docs/reports/uiux-correction-spec-2026-08-21/index.html)
+- Provenance: ImageGen edits grounded in the matching running-game captures and
+  iterated through explicit user review. The user rejected the initial Aim
+  alternatives, then locked the success-range-only score presentation and asked
+  that the final selected TO-BE images be implemented as exactly as runtime
+  truth and responsive behavior allow.
+- Selected images and SHA-256:
+  - `assets/tobe/01-main-menu-hover-tobe-v2.png` — `4B6EB2442BD0CD79234E5F3870041DD2C11889A69FBD5E049FE3A2F1E134B0C2`
+  - `assets/tobe/02-stage-select-briefing-tobe-v2.png` — `767B94473A1C7A786185629EE013862C0C4F0A0084059ED7A3E1FF7A0BA45FF9`
+  - `assets/tobe/04-aim-score-bar-tobe-v6.png` — `5C79D14247F553C296224C2141097C5D7B9C142328553F8372216ECD3D619875`
+  - `assets/tobe/05-ball-detail-tobe.png` — `45767BEE71FE9EF5C8AFAF93C6BAC5B6F7ED1690B9481968B64874D2714227`
+  - `assets/tobe/06-map-tobe.png` — `C9E31569F40AB88799197D6F80006FC920F85686478AD9B492F98E8DCEC04CE8`
+  - `assets/tobe/07-shot-follow-tobe.png` — `41F0A592A8C33954F62316AAE74FE4B421DA9486634C471ECC091FB0626F2989`
+  - `assets/tobe/08-pause-tobe.png` — `AFE8A0259B8A76FFFA3A2CDE8A07DCBAC7E756B87DCAA30004312F29BAC742AB`
+  - `assets/tobe/09-settings-tobe.png` — `0460700BFFAC306571EA156C8917888ACAE8453BDDF81D14FB5455BBC21ACAB8`
+  - `assets/tobe/10-clear-tobe.png` — `75A97FCF3CF6C2CA5163906FBF9BBEC83AADE76835E7053E1DBC568ABAD4456B`
+  - `assets/tobe/11-failure-tobe.png` — `6C8CECA75349C93C486DE39651151FEB51A2CB32213E46B6519B37BD5AAAD2F6`
+- Use literally for: icon-only action language; transparent routine controls;
+  one blue primary; Main Menu hover/focus label reveal and lack of meta copy;
+  terrain-first Stage Select plus Briefing with side arrows and a full-width
+  stage line; the Aim success-range-only score bar with internal grade segments,
+  numeric paint total, and shape-coded Red/Green roles; the one white ball-detail
+  card; compact Map/Follow score values; Pause icon rail; Settings header actions;
+  and the shared right-gradient Clear/Failure spine.
+- Use directionally for: exact terrain pixels, current paint marks, numerical
+  examples, localized string width, font rasterization, and compact reflow.
+  Production must show real selected terrain, authoritative stage/score/paint/
+  queue values, complete interaction, focus, and safe responsive geometry.
+- Rejected references: every earlier Aim TO-BE option, the standalone Briefing
+  image, the old Stage Select concept, and any earlier vertical live score-scale
+  image. Retain them only as report history; do not implement or cite them as
+  current acceptance targets.
+- Status: current approved visual evidence for the named surfaces. It
+  supersedes the 2026-08-20 Aiming Selection correction and older UI fidelity
+  images wherever layout, visible copy, containment, action language, live score
+  presentation, or Briefing flow conflicts. Running production captures and
+  interaction tests remain required implementation evidence.
 
 ### External comparative references
 
@@ -259,9 +300,10 @@ not the layout or art.
 - Blue paint and trajectory provide the strongest saturated gameplay contrast;
   environment and UI stay restrained.
 - The HUD is visually secondary and edge-aligned. Its current canonical
-  behavior and component rules come from `UIUX_GUIDELINES.md`; the Compact
-  Overlay correction supplies the current no-panel, icon-first, 0–100 scale
-  hierarchy while running code and active specs preserve real behavior.
+  behavior and component rules come from `UIUX_GUIDELINES.md`; the icon-first
+  TO-BE parity set supplies the current no-panel action language, Aim
+  success-range hierarchy, and merged pre-play flow while running code and
+  active specs preserve real behavior.
 - Existing screenshots and scenes can be useful implementation evidence while
   still being wrong as design direction.
 

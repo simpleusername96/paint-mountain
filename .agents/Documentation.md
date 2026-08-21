@@ -38,6 +38,7 @@ related:
   - execplans/2026-08-11-stage-selection-readiness-deployment.md
   - execplans/2026-08-18-three-ball-target-band-prototype.md
   - execplans/2026-08-20-cross-stage-ui-theme.md
+  - execplans/2026-08-21-uiux-image-parity.md
   - evidence/2026-08-10-repository-hygiene-disposition.md
   - evidence/2026-08-10-codebase-efficiency-review.md
   - evidence/double-pace-and-quiet-feedback-2026-08-10/README.md
@@ -61,6 +62,44 @@ related:
 ---
 
 # Project Record
+
+## Current Icon-First TO-BE UIUX Parity (2026-08-21)
+
+The active execution contract is
+[`execplans/2026-08-21-uiux-image-parity.md`](execplans/2026-08-21-uiux-image-parity.md),
+and the locked source images are registered in
+[`design/VISUAL_REFERENCES.md`](design/VISUAL_REFERENCES.md). This section
+supersedes the UI presentation claims in the v13 record below; its stage,
+paint, score, feasibility, and delivery facts remain valid where unchanged.
+
+- `ActionControl` is icon-only and owns Routine, Primary, Selected,
+  Destructive, and World roles. Routine normal state is transparent; one filled
+  blue primary remains per screen. Main Menu reveals its sibling action label
+  only on hover/focus and contains no tagline or meta copy.
+- Stage Select owns the visible pre-play briefing, the actual prepared terrain
+  with gameplay sky/ground, terrain-side arrows, one ten-node full-width
+  `StageRail`, click/drag/keyboard selection, and the single Aim primary. The
+  standalone `BriefingActions` lane is removed and prepared gameplay enters Aim
+  directly.
+- `AimScoreStatus` is the sole live score owner. Aim uses the authoritative
+  minimum-to-maximum success range with internal star tiers, signed marker and
+  endpoint overflow, numeric total paint percentage, and real shape-coded
+  Red/Green weight cues. Map, Shot Follow, and ball detail use compact values.
+  `ScoreScale` is retained only for the horizontal Result summary.
+- `BallQueue` owns exactly one warm-white detail card with matching
+  hover/focus/press copy, pin/unpin, Escape dismissal, and pointer continuity.
+  Aim controls retain angle -> centered Fire -> power; Fire is a circular
+  icon-only primary and the remaining HUD actions are icon-only.
+- Pause is a navy barrier with an upper-centered horizontal icon rail and no
+  white sheet. Settings is one inset warm-white form with Defaults and Close in
+  its fixed header. Clear and Failure use the same right-side gradient, stage,
+  score/target, R/G contributions, result axis, fact, and icon-action spine;
+  Failure adds the localized target-gap line.
+- 1280x720 same-viewport target/current comparisons were inspected for all
+  selected surfaces during implementation. Focused component, copy,
+  responsive, flow, result-truth, localization, HUD, cross-stage, feedback, and
+  shortcut tests pass. Full ordered regression, production export, retained
+  evidence, and final audit are recorded below when complete.
 
 ## Current v13 Static-First Stage and UI Production Refinement (2026-08-21)
 

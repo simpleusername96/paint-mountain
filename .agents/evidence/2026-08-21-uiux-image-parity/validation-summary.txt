@@ -1,0 +1,32 @@
+Paint Mountain UIUX image parity validation — 2026-08-21
+
+FULL ORDERED SUITE
+command: pwsh -NoProfile -File scripts/test.ps1 -GodotPath $env:GODOT_BIN
+result: exit 0 — Paint Mountain complete test suite passed.
+
+POST-AUDIT FOCUSED CHECKS
+- essential_ui_copy_test.gd: exit 0
+- phase8_hud_truth_test.gd: exit 0
+- score_scale_contract_test.gd: exit 0
+- screen_responsive_layout_test.gd: exit 0
+- stage_select_rule_truth_test.gd: exit 0
+- shared_ui_component_ownership_test.gd: exit 0
+
+FINAL VERIFY
+command: pwsh -NoProfile -File scripts/verify.ps1 -GodotPath $env:GODOT_BIN
+result: exit 0 — import, script parsing, and main-scene startup passed.
+
+WINDOWS RELEASE
+command: & $env:GODOT_BIN --headless --path . --export-release 'Windows Desktop' 'builds/windows/PaintMountain.exe'
+result: exit 0
+size: 119314240 bytes
+sha256: 6FFD498F6679295B72F5A1176C5288B5DB959431B9676EB2E1800D235D99CF39
+
+PRODUCTION CAPTURES
+runner: .agents/evidence/2026-08-21-uiux-image-parity/recapture.ps1
+result: 27/27 full-viewport PNG captures succeeded; no empty file or retained PaintMountain process.
+comparison: 10 same-viewport 1280x720 TO-BE/current sheets inspected; compact overview inspected at 640x360.
+
+QUALITY AUDIT
+result: no remaining material responsibility creep, competing UI owner, reachable stale Briefing branch, or changed-contract breakage.
+small corrections: replaced result/star/time/shot and R/G text-symbol stand-ins with source image assets; removed Stage Select star glyph stand-ins; added deterministic delivery states for hover/focus and Aim score boundaries.

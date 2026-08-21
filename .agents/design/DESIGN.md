@@ -2,7 +2,7 @@
 type: spec
 status: active
 created: 2026-08-04
-last_reviewed: 2026-08-18
+last_reviewed: 2026-08-21
 canonical_for: Agent-facing entry and map for approved Paint Mountain design direction, preserved experience contracts, and production design owners
 scope: visual world and player-facing surfaces in this repository
 source: ../../docs/source-brief.md
@@ -16,6 +16,7 @@ related:
   - ../execplans/2026-08-03-gameplay-visual-reset.md
   - ../execplans/2026-08-07-cannon-shot-observation.md
   - ../execplans/2026-08-18-three-ball-target-band-prototype.md
+  - ../execplans/2026-08-21-uiux-image-parity.md
 ---
 
 # Paint Mountain Design Context
@@ -70,9 +71,10 @@ remains non-canonical and must not silently alter this context.
 
 - Use references to compare composition, hierarchy, mass, depth, faceting,
   palette, paint readability, and restraint.
-- Do not copy literal terrain topology, mechanism placement, HUD coordinates,
-  language, painted state, or apparent physics unless an active spec requires
-  it.
+- Do not copy literal terrain topology, mechanism placement, language, painted
+  state, or apparent physics. Match HUD hierarchy and relative coordinates when
+  the active UI spec names a selected TO-BE image as a literal composition
+  target; real data, focus, localization, and responsive fit still win.
 - Generated concepts remain exploratory until the user explicitly approves a
   demonstrated rule and the relevant spec records it.
 - A still image cannot prove 3D depth, collision, paint continuity,
@@ -124,8 +126,10 @@ gameplay visual change affects what the preview communicates.
 
 ## Experience Contracts
 
-- Reachable player surfaces are Main Menu, Stage Select, Briefing, Aiming,
-  Projectile/Paint Observation, Clear, Failure, Pause, and Settings.
+- Reachable player surfaces are Main Menu, Stage Select with the visible
+  pre-play briefing, Aiming, Map Inspection, Shot Follow, ball detail, Clear,
+  Failure, Pause, and Settings. `StageController.BRIEFING` may remain an
+  internal entry transition but owns no standalone visible UI.
 - `AppRoot` owns application navigation; `StageController` owns shot and result
   state; `HUDController` reflects those states and emits intents.
 - The logical baseline is 1280x720 with a Windows desktop 16:9 target. Preserve
