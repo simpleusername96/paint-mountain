@@ -2,113 +2,151 @@
 
 Last updated: 2026-08-22
 
-This is the durable working memo for the current gameplay redesign discussion.
-It is advisory research and does not override `docs/source-brief.md`,
-`docs/design-spec.md`, or an approved implementation plan.
+This is durable advisory research for the current gameplay redesign discussion.
+It does not override `docs/source-brief.md`, `docs/design-spec.md`, or an
+approved implementation plan.
 
-## Current conclusion
+## Current problem statement
 
-Paint Mountain's distinctive strength is the short causal loop:
+Paint Mountain's strongest loop is:
 
-`choose a shot -> fire -> watch the terrain transform -> immediately revise the next choice`
+`choose a shot -> fire -> watch the terrain transform -> immediately revise`
 
-The current one-player, static-completion puzzle still does not look compelling.
-Changing the completion rule from coverage to marked zones, connections,
-recipes, loops, or effect checklists changes the task but not the source of fun.
-All of them still ask the player to solve an inert board efficiently.
+The current game is an open, static optimization problem. Once the player finds
+a good route, later play becomes repetition or precise calibration. Changing the
+completion checklist does not solve that.
 
-The deeper problem is:
+The next prototype needs one predictable disturbance that changes the board
+after every shot. The disturbance must act through terrain and paint, not through
+a later combat, economy, or management phase.
 
-- The board does not push back or create a new situation between shots.
-- Paint is mostly evidence that a task was completed, not an active conflict.
-- Special launch interactions improve efficiency but do not create stakes by
-  themselves.
-- Once a good route is found, later play becomes repetition or exact tuning.
-- Adding a later tower-defense or management phase moves the payoff away from
-  the cannon and slows the game's strongest loop.
+## Accepted interaction vocabulary
 
-## Hard requirements for the next concept
+These remain promising and may be freely transformed:
 
-Any next prototype must satisfy all of these:
+- Landing geometry changes the operation: direct impact creates an area effect,
+  shallow impact creates a long line, long airtime may split into several
+  smaller balls, and ridge contact may redirect or amplify a result.
+- Colors may overwrite, combine, neutralize, harden, attract, repel, or trigger
+  each other.
+- Paint changes with age. Fresh, curing, cured, and degraded states may behave
+  differently.
+- A small visible hand of balls with free next-ball selection remains compatible
+  with the redesign.
 
-- The goal can be stated in one plain sentence.
-- Every shot changes the immediate win/loss situation, not only a score meter.
-- Angle, power, ball choice, airtime, and collision geometry remain the main
-  controls.
-- The visible paint state itself creates the next decision.
-- One round lasts roughly 60–90 seconds and supports instant same-state retry.
-- Randomness is revealed before the shot; identical revealed shots remain
-  deterministic enough to calibrate.
-- There is no later combat, economy, construction, or management phase.
+## Required pressure design
 
-## Rejected or deprioritized objective families
+- After every resolved shot, the hostile state advances exactly once or makes
+  one fully visible move.
+- Its next action is previewed before the player fires. Difficulty comes from
+  choosing a response, not from hidden randomness.
+- The terrain itself shows urgency. Gloss, cracks, arrows, advancing edges, and
+  highlighted breaches should replace explanatory result text.
+- One round should use roughly four to seven balls and end in about 60–90
+  seconds, with deterministic Same Setup retry.
 
-- Generic percentage coverage and signed target bands.
-- Painting a fixed list of marked regions.
-- Connecting terminals, drawing closed loops, or completing paint recipes as the
-  main game.
-- Effect checklists such as `split + splash + bounce` as the main game goal.
-- Conventional tower defense in which cannon shots only prepare a later wave.
-- Generic combo text, calibration labels, and visual reward layers presented as
-  substitutes for a new rule.
+## Strongest hypothesis: mark, react, and purge a spreading contaminant
 
-These may still appear as secondary stage modifiers, but none currently justifies
-the full game by itself.
+**Goal:** remove every contaminant patch before any patch reaches the protected
+spring or the ball hand is exhausted.
 
-## Strongest next hypothesis: compact ballistic paint duel
+- After each shot, every surviving unrestrained patch spreads one visible step.
+  The exact next spread footprint is previewed.
+- Either color can be applied first. Paint touching contamination marks it and
+  stops that local spread for one turn.
+- Hitting still-wet marked paint with the opposite color triggers a fast
+  neutralization wave through the connected marked patch, removing it and
+  leaving cured safe paint.
+- Applying the same color again before drying thickens it into a persistent
+  barrier instead of purging it.
+- Unreacted paint eventually degrades and can be consumed by the contaminant.
 
-Use one shared, low, wide, fully readable basin. The player and a fast AI rival
-alternate four to six cannon shots. Both receive a small visible ball hand and
-may choose the order of their remaining balls.
+Landing behavior determines how the player performs those operations:
 
-**Goal:** when the final shot is resolved, control more of the central arena than
-the rival.
+- direct impact: mark or purge one broad patch;
+- shallow skid: draw a long temporary barrier;
+- long-airtime split: mark several separated outbreaks;
+- ridge redirect: reach a patch hidden behind local relief.
 
-The important difference from the old coverage puzzle is that territory is
-contested and unstable:
+This creates an immediate choice after every shot: buy time, build a barrier, or
+cash out a prepared region with a purge chain. Paint remains the visible state
+and the main spectacle.
 
-- A shot can claim empty ground, overwrite rival paint, protect an exposed area,
-  or set up a later color reaction.
-- The rival's latest shot creates a new problem immediately; the board is never
-  merely waiting to be solved once.
-- High direct impacts, long skids, ridge skips, airborne splits, and repaint
-  reactions are tactical ways to attack or defend territory, not separate goal
-  checkboxes.
-- The round ends after a fixed small number of shots, so there is no long
-  preparation phase.
-- `Retry Same Match` preserves the map, hands, and rival seed for calibration;
-  `New Match` changes the revealed hands and rival plan.
+## Four comparison hypotheses
 
-No towers, units, economy, or separate combat layer are part of this hypothesis.
-The cannon and paint remain the entire game.
+### Herd a mobile stain into a drain
 
-## Solo fallback hypothesis
+One coherent stain moves after every shot. Fresh color fields attract or repel
+it, while dried fields lose or reverse that effect. Direct impacts push it,
+skids create long fields, and split balls create multiple bait or repulsion
+points. The next movement arrow is always visible.
 
-If a rival is undesirable, replace the opponent with one visible hostile paint
-front that advances once after each player shot. The player must reclaim or
-contain it before the hand ends. This preserves immediate counter-pressure but
-is weaker than a rival because its responses may become predictable.
+### Complete a containment line
 
-## Falsification prototype
+An expanding stain escapes if it crosses the map boundary. Fresh paint delays it
+for one turn; a second compatible coat cures into a permanent line. The player
+must close the remaining breach before the stain reaches it. Long skids build
+line segments, splashes patch gaps, and splits handle several breaches.
 
-Build only one compact map, two colors, one ordinary ball, one airborne-split
-ball, five shots per side, simple overwrite rules, and one fast AI policy. Do not
-add progression or all thirty stages.
+### Repair a cracking surface
+
+Cracks grow once after each shot, with the next growth shown beforehand. Fresh
+paint bridges a crack temporarily; a second reacting coat cures the repair.
+Direct impacts fill wide breaks, skids stitch long cracks, and split balls repair
+several tips. Clear by curing every crack before one reaches the protected edge.
+
+### Route unstable fluid into a purge basin
+
+Several shallow basins contain a hostile fluid. A shot changes local surface
+behavior: one paint state attracts or absorbs flow, another repels it, and curing
+locks the effect. The next spill direction is previewed. Clear by draining all
+fluid into the purge basin before any protected basin overflows.
+
+## UI nudge contract
+
+- Aim view shows only the current operation class: `SPLASH`, `SKID`, `SPLIT ×N`,
+  or `REDIRECT`, plus a coarse confidence state.
+- Hostile spread or movement for the next step appears as a translucent terrain
+  overlay.
+- Fresh paint is glossy and animated; cured paint is matte and solid; degrading
+  paint visibly cracks or fades.
+- The HUD may show remaining balls and one short goal sentence. It must not
+  explain the tactical answer.
+
+## Prototype recommendation
+
+Test only the mark/react/purge hypothesis:
+
+- one low, wide map;
+- one protected spring;
+- three contaminant patches;
+- two symmetric colors;
+- Standard and airborne-split balls;
+- five player shots;
+- one-step telegraphed spread after each shot;
+- Same Setup and New Setup retry.
 
 Primary question:
 
-**Does the rival's latest paint result make the player immediately want to aim a
-new shot, and is that repeated exchange enjoyable for several short matches?**
+**Does the previewed next spread make the player immediately want to choose and
+calibrate another cannon shot, while the final purge chain is enjoyable without
+reading a score meter?**
 
-If the answer is no, stop adding objectives and supporting systems. That would
-be strong evidence that the current cannon-and-paint interaction is better used
-inside another project than expanded into a full standalone game.
+If not, stop adding goal variants. That would be evidence that the current
+cannon-and-paint system is better reused inside another project.
 
-## Base direction and separate issue
+## Separate correctness issue
 
-- A small visible ball hand with free next-ball selection remains compatible
-  with the hypothesis.
-- Post-launch behavior based on airtime, impact speed, collision angle, and
-  terrain contact remains promising as the shot vocabulary.
-- The Apex Split low/fast-trajectory defect remains a separate correctness issue
-  tracked in GitHub Issue #1.
+The Apex Split low/fast-trajectory defect remains independent and is tracked in
+GitHub Issue #1.
+
+## Research basis
+
+- Fully telegraphed hostile intent in compact tactics.
+- Wildfire control lines and containment.
+- Ring containment around an outbreak.
+- Immune tagging followed by elimination.
+- Attraction and repulsion gradients used to guide moving agents.
+- Wettability gradients used to direct fluid motion.
+- Responsive and self-healing coatings that change behavior after damage or
+  during curing.
